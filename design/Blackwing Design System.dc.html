@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#FFFFFF;font-family:'Poppins',system-ui,sans-serif;color:#16171D;-webkit-font-smoothing:antialiased}
+a{color:#B01A2D;text-underline-offset:3px}a:hover{color:#16171D}
+@keyframes bwpulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes bwshimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</helmet>
+
+<section id="t0" style="padding:40px 72px 56px;display:flex;flex-direction:column;gap:56px">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <img src="https://cdn.prod.website-files.com/69e90ea41839aa80aa5fdae3/69ec953a8a72056d2173b400_Main%20Logo.png" alt="tinycrows" style="height:40px">
+    <div style="display:flex;gap:32px;font:400 14px 'Poppins';color:#16171D">
+      <a href="#t1" style="color:#16171D;text-decoration:none">Principles</a><a href="#t2" style="color:#16171D;text-decoration:none">References</a><a href="#t3" style="color:#16171D;text-decoration:none">Colour</a><a href="#t4" style="color:#16171D;text-decoration:none">Type</a><a href="#t6" style="color:#16171D;text-decoration:none">Components</a><a href="Blackwing Screens.dc.html" style="color:#fff;background:#B01A2D;padding:8px 20px;border-radius:6px;text-decoration:none">Open screens</a>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:64px;align-items:center">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <span style="font:500 14px 'Poppins';color:#B01A2D">Blackwing design system, working file</span>
+      <h1 style="margin:0;font:600 56px/66px 'Poppins';letter-spacing:-.01em;text-wrap:balance">Built for clarity, control and <span style="color:#B01A2D">authorised testing</span></h1>
+      <p style="margin:0;max-width:640px;font:400 16px/28px 'Poppins';color:#3E424D;text-wrap:pretty">How the Blackwing console was put together: the brief, the references, the decisions, and the components that came out of them. Blackwing is the tinycrows console for AI-agent security assessments. Agents run only after people sign off.</p>
+    </div>
+    <img src="https://cdn.prod.website-files.com/69e90ea41839aa80aa5fdae3/69ec953abebfc9ed2233bc55_Red%201.png" alt="" style="width:280px;justify-self:end">
+  </div>
+</section>
+
+<section id="t1" style="padding:56px 72px;background:#F7F7F8">
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:36px"><span style="font:500 13px 'Poppins';color:#B01A2D">01</span><h2 style="margin:0;font:600 34px/44px 'Poppins'">What the brief <span style="color:#B01A2D">asks for</span></h2></div>
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,380px));gap:24px">
+    <sc-for list="{{ principles }}" as="p" hint-placeholder-count="3">
+      <div style="background:#fff;border:1px solid #E6E7EA;border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:12px">
+        <img src="{{ p.img }}" alt="" style="width:44px;height:44px;object-fit:contain">
+        <div style="font:600 18px/26px 'Poppins'">{{ p.title }}</div>
+        <p style="margin:0;font:400 14px/23px 'Poppins';color:#3E424D">{{ p.body }}</p>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section id="t2" style="padding:56px 72px">
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:36px"><span style="font:500 13px 'Poppins';color:#B01A2D">02</span><h2 style="margin:0;font:600 34px/44px 'Poppins'">References, and what we <span style="color:#B01A2D">took from each</span></h2></div>
+  <div style="display:grid;grid-template-columns:repeat(5,minmax(0,260px));gap:20px">
+    <sc-for list="{{ refs }}" as="r" hint-placeholder-count="5">
+      <div style="border:1px solid #E6E7EA;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px">
+        <div style="font:600 16px 'Poppins'">{{ r.title }}</div>
+        <div style="font:400 13px/21px 'Poppins';color:#16171D"><div style="font:600 12px 'Poppins';color:#16171D;margin-bottom:4px">We took</div>{{ r.take }}</div>
+        <div style="font:400 13px/21px 'Poppins';color:#5A5E69"><div style="font:600 12px 'Poppins';color:#B01A2D;margin-bottom:4px">We left</div>{{ r.leave }}</div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section id="t3" style="padding:56px 72px;background:#F7F7F8">
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:36px"><span style="font:500 13px 'Poppins';color:#B01A2D">03</span><h2 style="margin:0;font:600 34px/44px 'Poppins'">Brand <span style="color:#B01A2D">Colours</span>, remapped for a safety tool</h2></div>
+  <div style="display:grid;grid-template-columns:auto minmax(0,460px);gap:64px;align-items:center;margin-bottom:48px">
+    <div style="display:flex">
+      <div style="width:170px;height:170px;border-radius:50%;background:#16171D;display:flex;align-items:center;justify-content:center;font:500 14px 'Poppins';color:#fff">#16171d</div>
+      <div style="width:170px;height:170px;border-radius:50%;background:#B01A2D;margin-left:-40px;display:flex;align-items:center;justify-content:center;font:500 14px 'Poppins';color:#fff">#b01a2d</div>
+      <div style="width:170px;height:170px;border-radius:50%;background:#004777;margin-left:-40px;display:flex;align-items:center;justify-content:center;font:500 14px 'Poppins';color:#fff">#004777</div>
+      <div style="width:170px;height:170px;border-radius:50%;background:#fff;border:1px solid #9A9DA5;margin-left:-40px;display:flex;align-items:center;justify-content:center;font:500 14px 'Poppins';color:#16171D;box-sizing:border-box">#ffffff</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;font:400 14px/23px 'Poppins';color:#3E424D">
+      <p style="margin:0">On the website red is the main brand colour. Here it is used only for the <b style="color:#B01A2D">Kill</b> button, the Killed state and the logo. If Save and Kill were the same colour, people would stop noticing it.</p>
+      <p style="margin:0">Navy <b style="color:#004777">#004777</b> moves up to primary for actions, links, focus and running states. Ink <b style="color:#16171D">#16171d</b> is the text colour in light theme and the surface colour in dark.</p>
+    </div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+    <sc-for list="{{ tokenTables }}" as="tt" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font:600 14px 'Poppins'">{{ tt.label }}</div>
+        <div style="width:620px;background:{{ tt.surface }};border:1px solid {{ tt.border }};border-radius:12px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:40px 1fr 90px 120px;gap:0 12px;padding:12px 16px;font:500 12px 'Poppins';color:{{ tt.muted }};border-bottom:1px solid {{ tt.border }}"><span></span><span>Token</span><span>Value</span><span>Contrast on surface</span></div>
+          <sc-for list="{{ tt.rows }}" as="r" hint-placeholder-count="12">
+            <div style="display:grid;grid-template-columns:40px 1fr 90px 120px;gap:0 12px;align-items:center;padding:7px 16px;border-bottom:1px solid {{ tt.border }}">
+              <div style="width:28px;height:28px;border-radius:50%;background:{{ r.v }};border:1px solid {{ tt.border }};box-sizing:border-box"></div>
+              <div style="display:flex;flex-direction:column"><span style="font:500 12px 'JetBrains Mono';color:{{ tt.text }}">{{ r.name }}</span><span style="font:400 12px 'Poppins';color:{{ tt.muted }}">{{ r.use }}</span></div>
+              <span style="font:400 12px 'JetBrains Mono';color:{{ tt.text }}">{{ r.v }}</span>
+              <span style="font:500 12px 'Poppins';color:{{ r.passColor }}">{{ r.ratio }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section id="t4" style="padding:56px 72px">
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:36px"><span style="font:500 13px 'Poppins';color:#B01A2D">04</span><h2 style="margin:0;font:600 34px/44px 'Poppins'">Type: <span style="color:#B01A2D">Poppins</span>, as on tinycrows.com</h2></div>
+  <div style="display:grid;grid-template-columns:minmax(0,920px) 340px;gap:56px;align-items:start">
+    <div style="border:1px solid #E6E7EA;border-radius:16px;overflow:hidden">
+      <sc-for list="{{ typeScale }}" as="t" hint-placeholder-count="10">
+        <div style="display:grid;grid-template-columns:120px 140px 1fr;gap:16px;align-items:baseline;padding:14px 24px;border-bottom:1px solid #EEEFF1">
+          <span style="font:600 13px 'Poppins'">{{ t.name }}</span><span style="font:400 12px 'JetBrains Mono';color:#5A5E69">{{ t.spec }}</span>
+          <div style="font:{{ t.font }};font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.sample }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;font:400 14px/23px 'Poppins';color:#3E424D">
+      <p style="margin:0">Poppins is geometric and wide. In dense tables it runs at 13px with weight 400 for data and 500 for row titles. Headings use 600, as on the website.</p>
+      <p style="margin:0">JetBrains Mono is used only where characters have to be exact: IDs, hashes, HTTP, CVSS vectors and code.</p>
+      <p style="margin:0">One word in each page heading is set in brand red, the same way the site does it. Inside the console this only happens on sign-in, empty states and report covers.</p>
+    </div>
+  </div>
+</section>
+
+<section id="t5" style="padding:56px 72px;background:#F7F7F8">
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:36px"><span style="font:500 13px 'Poppins';color:#B01A2D">05</span><h2 style="margin:0;font:600 34px/44px 'Poppins'">Grid, spacing and <span style="color:#B01A2D">icons</span></h2></div>
+  <div style="display:grid;grid-template-columns:440px 380px 540px;gap:40px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 14px 'Poppins'">App shell at 1440</div>
+      <div style="width:440px;height:270px;border:1px solid #D3D5DA;border-radius:12px;display:grid;grid-template-rows:30px 1fr;grid-template-columns:80px 1fr;background:#fff;overflow:hidden">
+        <div style="grid-column:1/3;border-bottom:1px solid #E6E7EA;font:500 11px 'Poppins';color:#5A5E69;display:flex;align-items:center;justify-content:space-between;padding:0 10px"><span>Top bar 56</span><span style="background:#B01A2D;color:#fff;padding:2px 8px;border-radius:4px">Kill</span></div>
+        <div style="background:#F7F7F8;border-right:1px solid #E6E7EA;font:500 11px 'Poppins';color:#5A5E69;padding:10px">Sidebar 260, collapsed 64</div>
+        <div style="padding:14px;display:grid;grid-template-columns:repeat(12,1fr);gap:6px"><sc-for list="{{ twelve }}" as="c" hint-placeholder-count="12"><div style="background:rgba(176,26,45,.06);border-radius:3px"></div></sc-for></div>
+      </div>
+      <p style="margin:0;font:400 13px/21px 'Poppins';color:#3E424D">12 columns, 24 gutter, 32 page padding, content max 1600. Table rows 48 comfortable, 36 compact.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="font:600 14px 'Poppins'">Spacing on a 4px base</div>
+      <sc-for list="{{ spacing }}" as="s" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:80px 1fr;align-items:center;gap:12px"><span style="font:400 12px 'JetBrains Mono';color:#5A5E69">{{ s.name }}</span><div style="height:10px;width:{{ s.px }};background:#16171D;border-radius:2px"></div></div>
+      </sc-for>
+      <div style="font:600 14px 'Poppins';margin-top:14px">Radius</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font:400 11px 'Poppins';color:#5A5E69">
+        <div style="width:80px;height:52px;border:1px solid #16171D;border-radius:6px;padding:6px;box-sizing:border-box">6 controls</div>
+        <div style="width:80px;height:52px;border:1px solid #16171D;border-radius:12px;padding:6px;box-sizing:border-box">12 cards</div>
+        <div style="width:80px;height:52px;border:1px solid #16171D;border-radius:16px;padding:6px;box-sizing:border-box">16 modals</div>
+        <div style="width:80px;height:28px;margin:12px 0;border:1px solid #16171D;border-radius:999px;padding:4px 8px;box-sizing:border-box">pill</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 14px 'Poppins'">Icons: line style, 1.5 stroke, 16 and 20</div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+        <sc-for list="{{ iconList }}" as="i" hint-placeholder-count="24">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;background:#fff;border:1px solid #E6E7EA;border-radius:10px">
+            <svg width="20" height="20" viewBox="0 0 24 24" style="fill:none;stroke:#16171D;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="{{ i.d }}"></path></svg>
+            <span style="font:400 10.5px 'Poppins';color:#5A5E69">{{ i.n }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="t6" style="padding:56px 72px">
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"><span style="font:500 13px 'Poppins';color:#B01A2D">06</span><h2 style="margin:0;font:600 34px/44px 'Poppins'">Components in <span style="color:#B01A2D">light and dark</span></h2></div>
+  <p style="margin:0 0 32px;font:400 14px/23px 'Poppins';color:#3E424D;max-width:720px">Both panels use the same markup with different variables. The grey label on each block gives the shadcn/ui primitive it is built on.</p>
+  <div style="display:flex;flex-direction:column;gap:40px">
+  <sc-for list="{{ themes }}" as="th" hint-placeholder-count="2">
+    <div style="{{ th.vars }}">
+    <div style="width:1360px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:20px;padding:40px;display:flex;flex-direction:column;gap:40px;box-sizing:border-box">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:600 22px 'Poppins'">{{ th.name }}</span><span style="font:400 12px 'JetBrains Mono';color:var(--muted)">data-theme="{{ th.key }}"</span></div>
+
+      <div style="display:grid;grid-template-columns:760px 1fr;gap:48px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font:600 14px 'Poppins'">Button</span><span style="font:400 12px 'Poppins';color:var(--muted)">Button</span></div>
+          <div style="display:grid;grid-template-columns:110px repeat(5,1fr);gap:12px;align-items:center">
+            <span></span><span style="font:500 11.5px 'Poppins';color:var(--muted)">Default</span><span style="font:500 11.5px 'Poppins';color:var(--muted)">Hover</span><span style="font:500 11.5px 'Poppins';color:var(--muted)">Focus</span><span style="font:500 11.5px 'Poppins';color:var(--muted)">Disabled</span><span style="font:500 11.5px 'Poppins';color:var(--muted)">Loading</span>
+            <sc-for list="{{ buttonMatrix }}" as="bv" hint-placeholder-count="5">
+              <span style="font:500 12.5px 'Poppins';color:var(--muted)">{{ bv.name }}</span>
+              <sc-for list="{{ bv.cells }}" as="c" hint-placeholder-count="5"><div><span style="{{ c.style }}">{{ c.label }}</span></div></sc-for>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font:600 14px 'Poppins'">Disabled, with the reason</span><span style="font:400 12px 'Poppins';color:var(--muted)">Tooltip</span></div>
+          <div style="background:var(--text);color:var(--surface);font:400 12.5px/19px 'Poppins';padding:10px 12px;border-radius:8px;max-width:340px">You requested this plan, so a different person has to approve it. Sam Ortiz or Alex Kim can approve.</div>
+          <span style="display:inline-flex;align-self:flex-start;align-items:center;gap:8px;height:38px;padding:0 16px;border-radius:8px;background:var(--surface2);color:var(--muted);font:500 13px 'Poppins'"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.lock }}"></path></svg>Approve plan</span>
+          <div style="display:flex;gap:10px;align-items:baseline;margin-top:10px"><span style="font:600 14px 'Poppins'">Keyboard hints</span><span style="font:400 12px 'Poppins';color:var(--muted)">Kbd</span></div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;font:400 12.5px 'Poppins';color:var(--muted)">
+            <sc-for list="{{ kbds }}" as="k" hint-placeholder-count="5"><span style="display:inline-flex;gap:6px;align-items:center"><span style="font:500 11px 'Poppins';min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text)">{{ k.k }}</span>{{ k.l }}</span></sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;gap:10px;align-items:baseline"><span style="font:600 14px 'Poppins'">Badges</span><span style="font:400 12px 'Poppins';color:var(--muted)">Badge. Fixed facts use a 6px radius, live states use a pill.</span></div>
+        <div style="display:grid;grid-template-columns:160px 1fr;gap:14px 16px;align-items:center">
+          <sc-for list="{{ chipGroups }}" as="g" hint-placeholder-count="7">
+            <span style="font:500 12.5px 'Poppins';color:var(--muted)">{{ g.name }}</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <sc-for list="{{ g.items }}" as="c" hint-placeholder-count="5">
+                <span title="{{ c.tip }}" style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px 0 8px;box-sizing:border-box;font:500 12px 'Poppins';border-radius:{{ c.r }};background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">
+                  <sc-if value="{{ c.bars }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;gap:1.5px;align-items:flex-end;height:10px"><sc-for list="{{ c.bars }}" as="b" hint-placeholder-count="4"><span style="width:2.5px;height:{{ b.h }};background:currentColor;opacity:{{ b.o }};border-radius:1px"></span></sc-for></span></sc-if>
+                  <sc-if value="{{ c.d }}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round;animation:{{ c.anim }}"><path d="{{ c.d }}"></path></svg></sc-if>
+                  {{ c.label }}</span>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:420px 1fr;gap:48px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font:600 14px 'Poppins'">IDs, hashes and time</span><span style="font:400 12px 'Poppins';color:var(--muted)">IdChip, Time</span></div>
+          <span style="display:inline-flex;align-self:flex-start;align-items:center;gap:8px;height:28px;padding:0 4px 0 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font:500 12px 'JetBrains Mono'">run_01JABC7Q3M<span style="width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;background:var(--surface2);color:var(--muted)"><svg width="12" height="12" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.copy }}"></path></svg></span></span>
+          <span style="font:400 12px 'JetBrains Mono';color:var(--muted)">sha256:<span style="color:var(--text)">7f3a91...e4c91e</span></span>
+          <span style="display:inline-flex;gap:10px;align-items:baseline"><span style="font:400 12px 'JetBrains Mono'">2026-10-20T10:42:13Z</span><span style="font:400 12.5px 'Poppins';color:var(--muted)">3 min ago, 11:42 BST</span></span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font:600 14px 'Poppins'">Run lifecycle</span><span style="font:400 12px 'Poppins';color:var(--muted)">RunStepper, state executing</span></div>
+          <div style="display:flex;align-items:flex-start">
+            <sc-for list="{{ stepper }}" as="s" hint-placeholder-count="12">
+              <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:0">
+                <div style="display:flex;align-items:center"><span style="width:12px;height:12px;flex:none;border-radius:50%;box-sizing:border-box;background:{{ s.dot }};border:2px solid {{ s.ring }};animation:{{ s.anim }}"></span><span style="height:2px;flex:1;background:{{ s.line }}"></span></div>
+                <span style="font:{{ s.font }};color:{{ s.color }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:4px">{{ s.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <span style="font:400 12.5px 'Poppins';color:var(--muted)">When paused, the reason appears under Executing (Gate 2 pending, cost cap, operator pause). Terminal states replace the end of the line: Cancelled, Killed, Failed, Expired.</span>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:420px 1fr;gap:48px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font:600 14px 'Poppins'">Budget bars</span><span style="font:400 12px 'Poppins';color:var(--muted)">Progress. Amber from 80%, red at 100%.</span></div>
+          <sc-for list="{{ budgets }}" as="b" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;justify-content:space-between;font:400 12.5px 'Poppins'"><span style="color:var(--muted)">{{ b.label }}</span><span style="font:500 12px 'JetBrains Mono';color:{{ b.c }}">{{ b.val }}</span></div>
+              <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="height:100%;width:{{ b.pct }};background:{{ b.c }};border-radius:3px"></div></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font:600 14px 'Poppins'">Gate 2 countdown</span><span style="font:400 12px 'Poppins';color:var(--muted)">Countdown. No decision means deny.</span></div>
+          <div style="display:flex;gap:16px">
+            <sc-for list="{{ countdowns }}" as="c" hint-placeholder-count="3">
+              <div style="flex:1;border:1px solid {{ c.bd }};background:{{ c.bg }};border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:2px">
+                <span style="font:500 12px 'Poppins';color:{{ c.fg }}">{{ c.state }}</span>
+                <span style="font:600 32px/40px 'Poppins';color:{{ c.fg }};font-variant-numeric:tabular-nums;animation:{{ c.anim }}">{{ c.t }}</span>
+                <span style="font:400 12px 'Poppins';color:var(--muted)">Denied automatically at 00:00</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 400px;gap:48px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font:600 14px 'Poppins'">Banners</span><span style="font:400 12px 'Poppins';color:var(--muted)">Alert. Info, warning, critical (sticky).</span></div>
+          <div style="display:flex;gap:12px;align-items:center;padding:12px 16px;border-radius:10px;background:var(--surface2)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:var(--primary);stroke-width:1.75;stroke-linecap:round"><path d="{{ ic.info }}"></path></svg><span style="font:400 13px 'Poppins';flex:1">Suspected findings are never included in reports.</span></div>
+          <div style="display:flex;gap:12px;align-items:center;padding:12px 16px;border-radius:10px;border:1px solid var(--warn);background:var(--warn-soft)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:var(--warn);stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.clock }}"></path></svg><span style="font:400 13px 'Poppins';flex:1"><b style="font-weight:600">1 action is waiting for Gate 2 approval.</b> Denied automatically in <span style="font-variant-numeric:tabular-nums;font-weight:600">06:41</span>.</span><span style="font:600 13px 'Poppins';text-decoration:underline">Review</span></div>
+          <div style="display:flex;gap:12px;align-items:center;padding:14px 16px;border-radius:10px;background:var(--kill);color:var(--on-kill)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.kill }}"></path></svg><span style="font:400 13px 'Poppins';flex:1"><b style="font-weight:600">Run killed by SOC on-call at 10:42:13 UTC.</b> Egress blocked in 1.2 s, sandboxes terminated in 6.8 s.</span><span style="font:600 13px 'Poppins';text-decoration:underline">Audit event</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font:600 14px 'Poppins'">Toast and audit note</span><span style="font:400 12px 'Poppins';color:var(--muted)">Toast</span></div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.12);display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;gap:8px;align-items:center;font:600 13.5px 'Poppins'"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:var(--ok);stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.check }}"></path></svg>Finding released</div>
+            <div style="font:400 12.5px 'Poppins';color:var(--muted)">fnd_01JXYZ02 was sent to Jira as ACME-1184.</div>
+            <span style="font:500 12.5px 'Poppins';color:var(--primary)">View in audit ledger</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;font:400 12px 'Poppins';color:var(--muted)"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round"><path d="{{ ic.ledger }}"></path></svg>This action is recorded in the audit ledger.</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:400px 1fr;gap:48px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font:600 14px 'Poppins'">Input</span><span style="font:400 12px 'Poppins';color:var(--muted)">Input, with inline validation</span></div>
+          <sc-for list="{{ inputs }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:500 12.5px 'Poppins'">{{ f.label }} <span style="font:400 11.5px 'Poppins';color:var(--muted)">{{ f.state }}</span></span>
+              <div style="height:40px;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;border-radius:8px;font:400 13px 'JetBrains Mono';background:{{ f.bg }};border:1px solid {{ f.bd }};color:{{ f.fg }};box-shadow:{{ f.ring }}">{{ f.val }}</div>
+              <span style="font:400 12px 'Poppins';color:{{ f.mc }}">{{ f.msg }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font:600 14px 'Poppins'">Max intrusiveness</span><span style="font:400 12px 'Poppins';color:var(--muted)">RadioGroup cards. Destructive cannot be selected.</span></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+            <sc-for list="{{ intrCards }}" as="c" hint-placeholder-count="4">
+              <div style="border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:140px;box-sizing:border-box;background:{{ c.bg }};border:{{ c.bd }};color:{{ c.fg }}">
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="width:16px;height:16px;border-radius:50%;box-sizing:border-box;border:{{ c.radio }};display:inline-flex;align-items:center;justify-content:center"><span style="width:6px;height:6px;border-radius:50%;background:{{ c.dot }}"></span></span><span style="font:500 11.5px 'Poppins';color:{{ c.tagc }}">{{ c.tag }}</span></div>
+                <span style="font:600 14px 'Poppins'">{{ c.title }}</span>
+                <span style="font:400 12px/18px 'Poppins';color:var(--muted)">{{ c.desc }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:10px;align-items:baseline;margin-top:8px"><span style="font:600 14px 'Poppins'">Assessment mode</span><span style="font:400 12px 'Poppins';color:var(--muted)">Shows which agents run in each mode</span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
+              <div style="border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;background:{{ m.bg }};border:{{ m.bd }}">
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:600 14px 'Poppins'">{{ m.title }}</span><span style="font:500 11.5px 'Poppins';color:var(--primary)">{{ m.tag }}</span></div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ m.agents }}" as="a" hint-placeholder-count="3"><span style="font:400 11.5px 'Poppins';padding:3px 8px;border-radius:999px;background:var(--surface2)">{{ a }}</span></sc-for></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:460px 1fr;gap:48px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font:600 14px 'Poppins'">Type to confirm</span><span style="font:400 12px 'Poppins';color:var(--muted)">AlertDialog</span></div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.18);overflow:hidden">
+            <div style="padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+              <div style="font:600 18px 'Poppins'">Stop testing</div>
+              <div style="font:400 13px/21px 'Poppins';color:var(--muted)">This stops all testing for <b style="color:var(--text);font-weight:600">Acme Shop</b> within seconds. Target traffic is blocked first.</div>
+              <span style="font:500 12.5px 'Poppins'">Type <span style="font-family:'JetBrains Mono';background:var(--surface2);padding:2px 6px;border-radius:4px">ACME SHOP</span> to confirm</span>
+              <div style="height:40px;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;border-radius:8px;border:1px solid var(--primary);box-shadow:0 0 0 3px var(--focus);font:400 13px 'JetBrains Mono'">ACME SH<span style="width:1px;height:16px;background:var(--text);animation:bwpulse 1s steps(1) infinite"></span></div>
+            </div>
+            <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+              <span style="font:400 12px 'Poppins';color:var(--muted)">Recorded in the audit ledger</span>
+              <div style="display:flex;gap:8px"><span style="height:38px;padding:0 16px;display:inline-flex;align-items:center;border-radius:8px;border:1px solid var(--border2);font:500 13px 'Poppins'">Cancel</span><span style="height:38px;padding:0 16px;display:inline-flex;align-items:center;border-radius:8px;background:var(--kill);color:var(--on-kill);opacity:.45;font:600 13px 'Poppins'">Stop now</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:10px;align-items:baseline"><span style="font:600 14px 'Poppins'">Untrusted content and HTTP evidence</span><span style="font:400 12px 'Poppins';color:var(--muted)">Untrusted. Target HTML is never rendered.</span></div>
+          <div style="border:1px dashed var(--border2);border-radius:10px;background:var(--code)">
+            <div style="display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px dashed var(--border2);font:500 12px 'Poppins';color:var(--muted)"><span>Reason given by the agent (not verified)</span><span>web-api-specialist</span></div>
+            <div style="padding:12px 14px;font:400 12.5px/20px 'JetBrains Mono'">"Export endpoint may expose all orders. One POST would confirm the authorisation check is missing."</div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:10px;background:var(--code);overflow:hidden">
+            <div style="display:flex;gap:18px;padding:8px 14px;border-bottom:1px solid var(--border);font:500 12px 'Poppins';color:var(--muted)"><span style="color:var(--text)">Request</span><span>Response</span><span>Compare with negative control</span><span style="margin-left:auto;font:400 11.5px 'JetBrains Mono'">sha256:a91c...02fe</span></div>
+            <div style="padding:12px 14px;white-space:pre;font:400 12px/20px 'JetBrains Mono'"><span style="color:var(--primary);font-weight:500">GET</span> /api/orders/<span style="background:var(--warn-soft);color:var(--warn)">10442</span> HTTP/1.1
+<span style="color:var(--muted)">Host:</span> api.acme.example
+<span style="color:var(--muted)">Authorization:</span> Bearer <span style="background:var(--surface2);padding:0 6px;border-radius:4px;color:var(--muted)">redacted</span>
+<span style="color:var(--muted)">X-Blackwing-Run:</span> run_01JABC7Q3M</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px">
+        <div style="border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:28px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+          <span style="font:500 12px 'Poppins';color:var(--muted)">Empty</span>
+          <img src="https://cdn.prod.website-files.com/69e90ea41839aa80aa5fdae3/69ec953a2a2e2d902ffaa288_Blue2%201.png" alt="" style="width:52px">
+          <span style="font:600 18px 'Poppins'">No assets <span style="color:var(--kill)">yet</span></span>
+          <span style="font:400 13px/21px 'Poppins';color:var(--muted)">Add your first web app, API, host or repository to start authorised testing.</span>
+          <span style="height:38px;padding:0 16px;display:inline-flex;align-items:center;border-radius:8px;background:var(--primary);color:var(--on-primary);font:500 13px 'Poppins'">Add asset</span>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:28px;display:flex;flex-direction:column;gap:14px">
+          <span style="font:500 12px 'Poppins';color:var(--muted)">Loading</span>
+          <sc-for list="{{ skel }}" as="s" hint-placeholder-count="4">
+            <div style="display:flex;gap:12px;align-items:center"><div style="width:24px;height:24px;border-radius:6px;background:linear-gradient(90deg,var(--surface2),var(--border),var(--surface2));background-size:800px 100%;animation:bwshimmer 1.6s linear infinite"></div><div style="height:10px;width:{{ s }};border-radius:5px;background:linear-gradient(90deg,var(--surface2),var(--border),var(--surface2));background-size:800px 100%;animation:bwshimmer 1.6s linear infinite"></div></div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:28px;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+          <span style="font:500 12px 'Poppins';color:var(--muted)">Error</span>
+          <span style="font:600 18px 'Poppins'">Couldn't load runs</span>
+          <span style="font:400 13px/21px 'Poppins';color:var(--muted)">The request timed out after 10 seconds. Nothing was changed.</span>
+          <span style="font:400 11.5px 'JetBrains Mono';color:var(--muted)">req_01JB29F 504</span>
+          <span style="height:38px;padding:0 16px;display:inline-flex;align-items:center;border-radius:8px;border:1px solid var(--border2);font:500 13px 'Poppins'">Retry</span>
+        </div>
+      </div>
+    </div>
+    </div>
+  </sc-for>
+  </div>
+</section>
+
+<section id="t7" style="padding:56px 72px 80px;background:#16171D;color:#fff">
+  <div style="display:grid;grid-template-columns:minmax(0,760px) 200px;gap:64px;align-items:center">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <h2 style="margin:0;font:600 34px/44px 'Poppins'">Open <span style="color:#E2485B">questions</span></h2>
+      <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:12px;font:400 14px/23px 'Poppins';color:#C9CBD1">
+        <li>Is there a vector (SVG) version of the crow shield? The PNGs from the website hold up at 40px and above, but the 16px favicon needs a simpler cut.</li>
+        <li>Should operator mode take the blue shield from the website as its identity, with a navy top bar?</li>
+        <li>The repository TinycrowsLab/Blacwing_SAAS is linked, but I can't read it from here yet. Token names should match its Tailwind theme once I can.</li>
+      </ol>
+    </div>
+    <img src="https://cdn.prod.website-files.com/69e90ea41839aa80aa5fdae3/69ec953bfbac4b280fcfbfd8_gear%201.png" alt="" style="width:180px">
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const L = {bg:'#FFFFFF',surface:'#FFFFFF',surface2:'#F4F4F5',border:'#E6E7EA',border2:'#CDD0D6',text:'#16171D',muted:'#5A5E69',primary:'#004777','primary-soft':'#E5EEF4','on-primary':'#FFFFFF',ok:'#157A3A','ok-soft':'#E8F4EC',warn:'#9A4D00','warn-soft':'#FCF2E4',bad:'#B42318','bad-soft':'#FBECEA',kill:'#B01A2D','on-kill':'#FFFFFF','crit-bg':'#6E1520','crit-fg':'#FFFFFF',high:'#B42318','high-soft':'#FBECEA',med:'#A8450A','med-soft':'#FDF1E7',low:'#7A5600','low-soft':'#FAF3DE',sinfo:'#4B5160','sinfo-soft':'#F0F1F3',code:'#FAFAFA',focus:'rgba(0,71,119,.3)',navy:'#00304F'};
+    const D = {bg:'#16171D',surface:'#1E1F26',surface2:'#26282F',border:'#30323A',border2:'#41444E',text:'#ECECEE',muted:'#A0A3AC',primary:'#6CB4E4','primary-soft':'#122C3E','on-primary':'#04131F',ok:'#4CC27A','ok-soft':'#132A1C',warn:'#F0A83A','warn-soft':'#2E2210',bad:'#F2776B','bad-soft':'#351A18',kill:'#C8243A','on-kill':'#FFFFFF','crit-bg':'#4A0E16','crit-fg':'#FFB4BD',high:'#F2776B','high-soft':'#351A18',med:'#F59A5A','med-soft':'#352312',low:'#E3C04D','low-soft':'#2E2812',sinfo:'#A8AEBA','sinfo-soft':'#2A2C33',code:'#191A20',focus:'rgba(108,180,228,.4)',navy:'#0F4C75'};
+    const uses = {bg:'Page',surface:'Cards and tables',surface2:'Raised, table header',border:'Dividers',border2:'Inputs',text:'Body text',muted:'Secondary text',primary:'Actions and links','primary-soft':'Selected row',ok:'Allowed, passed',warn:'Needs approval',bad:'Blocked, denied',kill:'Kill only','crit-bg':'Critical badge',high:'High',med:'Medium',low:'Low',sinfo:'Info severity',navy:'Operator mode bar'};
+    const lum = h => { const n=parseInt(h.slice(1),16); return [n>>16&255,n>>8&255,n&255].map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)}).reduce((a,v,i)=>a+v*[.2126,.7152,.0722][i],0); };
+    const cr = (a,b) => { const x=lum(a),y=lum(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+    const surf = ['bg','surface','surface2','border','border2','primary-soft'];
+    const table = (T,label) => ({label, surface:T.surface, border:T.border, text:T.text, muted:T.muted,
+      rows:Object.keys(uses).map(k=>{
+        if (surf.includes(k)) return {name:'--'+k,v:T[k],use:uses[k],ratio:'Surface',passColor:T.muted};
+        const r = k==='crit-bg'||k==='navy' ? cr('#FFFFFF',T[k]) : cr(T[k],T.surface);
+        const pass = r>=4.5?'AA':r>=3?'AA large':'Fails';
+        return {name:'--'+k,v:T[k],use:uses[k],ratio:r.toFixed(1)+' : 1 '+pass+(k==='crit-bg'||k==='navy'?' (white text)':''),passColor:pass==='Fails'?T.bad:pass==='AA'?T.ok:T.warn}; })});
+    const varsOf = T => { const o={}; Object.keys(T).forEach(k=>o['--'+k]=T[k]); return o; };
+    const ic = {lock:'M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4',copy:'M9 9h11v11H9z M5 15H4V4h11v1',ledger:'M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01',
+      eye:'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z',probe:'M12 2v4 M12 18v4 M2 12h4 M18 12h4 M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z',
+      warn:'M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z M12 9v4 M12 17h.01',kill:'M7.9 2h8.2L22 7.9v8.2L16.1 22H7.9L2 16.1V7.9z M15 9l-6 6 M9 9l6 6',
+      check:'M20 6 9 17l-5-5',x:'M18 6 6 18 M6 6l12 12',shield:'M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z M9 12l2 2 4-4',clock:'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20z M12 6v6l4 2',
+      info:'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20z M12 16v-4 M12 8h.01',pause:'M8 5v14 M16 5v14',dot:'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z',
+      search:'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z M21 21l-4.3-4.3',bell:'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10.3 21a1.9 1.9 0 0 0 3.4 0',
+      web:'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20z M2 12h20 M12 2a15 15 0 0 1 0 20 M12 2a15 15 0 0 0 0 20',api:'M4 7h16 M4 12h16 M4 17h10',host:'M3 4h18v6H3z M3 14h18v6H3z M7 7h.01 M7 17h.01',
+      repo:'M6 3v12 M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M18 9a9 9 0 0 1-9 9',agent:'M4 8h16v12H4z M12 4v4 M9 13h.01 M15 13h.01',
+      approve:'M9 11l3 3 8-8 M20 12v7H4V5h11',sign:'M14 2H6v20h12V6z M14 2v4h4 M8 17c2-2 3 1 4-1s2 0 4 0',key:'M8 11a4 4 0 1 0 0 8a4 4 0 1 0 0-8z M11 14l10-10 M17 8l3 3',
+      settings:'M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6',grid:'M3 3h7v9H3z M14 3h7v5h-7z M14 12h7v9h-7z M3 16h7v5H3z',
+      term:'M4 17l6-6-6-6 M12 19h8',undo:'M9 14 4 9l5-5 M4 9h11a5 5 0 0 1 0 10h-3',minus:'M5 12h14',plus:'M12 5v14 M5 12h14'};
+    const names = {lock:'Lock',copy:'Copy',ledger:'Ledger',eye:'Passive',probe:'Active-safe',warn:'State-changing',kill:'Kill',check:'Allowed',x:'Denied',shield:'Verified',clock:'Countdown',info:'Info',pause:'Pause',search:'Search',bell:'Alerts',web:'Web app',api:'API',host:'Host',repo:'Repo',agent:'Agent',approve:'Approvals',sign:'Authorisation',key:'Secret ref',settings:'Settings'};
+    const iconList = Object.keys(names).map(n=>({n:names[n], d:ic[n]}));
+    const V = n => 'var(--'+n+')';
+    const bars = n => [1,2,3,4].map(i=>({h:(3+i*1.75)+'px',o:i<=n?1:.25}));
+    const chip = (label,o) => Object.assign({label,r:'6px',bg:'transparent',bd:'transparent',fg:V('text'),tip:'',anim:'none',bars:null,d:null},o);
+    const sev = (l,n,fg,bg) => chip(l,{bars:bars(n),fg:V(fg),bg:V(bg)});
+    const chipGroups = [
+      {name:'Severity', items:[sev('Critical',4,'crit-fg','crit-bg'),sev('High',3,'high','high-soft'),sev('Medium',2,'med','med-soft'),sev('Low',1,'low','low-soft'),sev('Info',0,'sinfo','sinfo-soft')]},
+      {name:'Intrusiveness', items:[chip('Passive',{d:ic.eye,fg:V('sinfo'),bg:V('sinfo-soft')}),chip('Active-safe',{d:ic.probe,fg:V('primary'),bg:V('primary-soft')}),chip('State-changing',{d:ic.warn,fg:V('warn'),bg:V('warn-soft')}),chip('Destructive, never allowed',{d:ic.lock,fg:V('muted'),bg:V('surface2'),bd:V('border2'),tip:'Destructive testing is never allowed in Blackwing'})]},
+      {name:'Environment', items:[chip('PROD',{fg:V('bad'),bd:V('bad'),d:ic.dot}),chip('Staging',{bg:V('surface2')}),chip('Dev',{bg:V('surface2'),fg:V('muted')}),chip('Test',{bg:V('surface2'),fg:V('muted')})]},
+      {name:'Ownership', items:[chip('Verified, DNS TXT',{d:ic.shield,fg:V('ok'),bg:V('ok-soft')}),chip('Pending',{d:ic.clock,fg:V('warn'),bg:V('warn-soft')}),chip('Unverified',{d:ic.lock,fg:V('muted'),bd:V('border2')}),chip('Rejected',{d:ic.x,fg:V('bad'),bd:V('bad')})]},
+      {name:'Run state', items:[chip('Executing',{r:'999px',d:ic.dot,fg:V('on-primary'),bg:V('primary'),anim:'bwpulse 1.6s ease-in-out infinite'}),chip('Awaiting Gate 1',{r:'999px',d:ic.clock,fg:V('warn'),bg:V('warn-soft')}),chip('Paused for Gate 2',{r:'999px',d:ic.pause,fg:V('warn'),bd:V('warn')}),chip('Completed',{r:'999px',d:ic.check,fg:V('ok'),bg:V('ok-soft')}),chip('Cancelled',{r:'999px',d:ic.minus,fg:V('muted'),bg:V('surface2')}),chip('Failed',{r:'999px',d:ic.x,fg:V('bad'),bd:V('bad')}),chip('Expired',{r:'999px',d:ic.warn,fg:'#3A2400',bg:V('warn')}),chip('Killed in 1.2 s',{r:'999px',d:ic.kill,fg:V('on-kill'),bg:V('kill')})]},
+      {name:'Finding', items:[chip('Confirmed',{d:ic.check,fg:V('ok'),bg:V('ok-soft')}),chip('Validating',{d:ic.clock,fg:V('primary'),bg:V('primary-soft')}),chip('Suspected',{d:ic.info,fg:V('warn'),bd:V('warn')}),chip('New',{r:'999px',d:ic.plus,fg:V('primary'),bd:V('primary')}),chip('Open',{r:'999px',bd:V('border2')}),chip('Fixed',{r:'999px',d:ic.check,fg:V('ok'),bd:V('ok')}),chip('Returned',{r:'999px',d:ic.undo,fg:V('bad'),bd:V('bad')}),chip('Not retested',{r:'999px',fg:V('muted'),bd:V('border2')})]},
+      {name:'Role', items:['AppSec Engineer','Asset Owner','Developer','SOC','Auditor (read only)'].map(l=>chip(l,{r:'999px',bg:V('surface2')})).concat([chip('Operator',{r:'999px',fg:'#FFFFFF',bg:V('navy')})])}
+    ];
+    const base = {display:'inline-flex',alignItems:'center',gap:6,height:38,padding:'0 16px',borderRadius:8,font:"500 13px 'Poppins'",boxSizing:'border-box',whiteSpace:'nowrap'};
+    const B = (o) => Object.assign({},base,o);
+    const variant = (name,label,def,hov,dis) => ({name, cells:[
+      {label, style:B(def)},{label, style:B(hov)},{label, style:B(Object.assign({},def,{boxShadow:'0 0 0 2px var(--bg), 0 0 0 4px var(--primary)'}))},
+      {label, style:B(dis)},{label:'Working...', style:B(Object.assign({},def,{opacity:.75,cursor:'progress'}))}]});
+    const dis = {background:V('surface2'),color:V('muted'),cursor:'not-allowed'};
+    const buttonMatrix = [
+      variant('Primary','Release',{background:V('primary'),color:V('on-primary')},{background:V('primary'),color:V('on-primary'),filter:'brightness(.88)'},dis),
+      variant('Secondary','Request changes',{background:V('surface'),color:V('text'),border:'1px solid var(--border2)'},{background:V('surface2'),color:V('text'),border:'1px solid var(--border2)'},Object.assign({},dis,{border:'1px solid var(--border)'})),
+      variant('Ghost','Cancel',{background:'transparent',color:V('text')},{background:V('surface2'),color:V('text')},{background:'transparent',color:V('muted'),cursor:'not-allowed'}),
+      variant('Deny','Deny',{background:V('text'),color:V('bg')},{background:V('text'),color:V('bg'),filter:'brightness(.85)'},dis),
+      variant('Kill','Kill',{background:V('kill'),color:V('on-kill'),fontWeight:600},{background:V('kill'),color:V('on-kill'),fontWeight:600,filter:'brightness(.88)'},{background:V('kill'),color:V('on-kill'),opacity:.4,cursor:'not-allowed'})
+    ];
+    const steps = ['Draft','Preflight','Recon','Planning','Gate 1','Approved','Executing','Validating','Gate 3','Released','Reporting','Completed'];
+    const stepper = steps.map((l,i)=>{ const done=i<6, cur=i===6;
+      return {label:l, dot:done?V('primary'):cur?V('surface'):V('surface'), ring:done||cur?V('primary'):V('border2'), line:i===steps.length-1?'transparent':done?V('primary'):V('border'), anim:cur?'bwpulse 1.6s ease-in-out infinite':'none', font:cur?"600 11.5px 'Poppins'":"400 11.5px 'Poppins'", color:done||cur?V('text'):V('muted')}; });
+    const budgets = [{label:'Cost',val:'$12.40 of $50.00',pct:'25%',c:V('primary')},{label:'Requests',val:'16,840 of 20,000',pct:'84%',c:V('warn')},{label:'Duration',val:'4h 00m of 4h 00m',pct:'100%',c:V('bad')}];
+    const countdowns = [{state:'Normal',t:'08:12',fg:V('text'),bg:V('surface'),bd:V('border'),anim:'none'},{state:'Under 5 minutes',t:'04:32',fg:V('warn'),bg:V('warn-soft'),bd:V('warn'),anim:'none'},{state:'Final minute',t:'00:41',fg:V('bad'),bg:V('bad-soft'),bd:V('bad'),anim:'bwpulse 1s ease-in-out infinite'}];
+    const inputs = [
+      {label:'Include host',state:'Default',val:'shop.staging.acme.example',bg:V('surface'),bd:V('border2'),fg:V('text'),ring:'none',msg:'Hostname or wildcard.',mc:V('muted')},
+      {label:'Include path',state:'Focus',val:'/api/**',bg:V('surface'),bd:V('primary'),fg:V('text'),ring:'0 0 0 3px var(--focus)',msg:'Matches 214 endpoints from the OpenAPI spec.',mc:V('muted')},
+      {label:'Port',state:'Error',val:'44300000',bg:V('surface'),bd:V('bad'),fg:V('text'),ring:'none',msg:'Port must be between 1 and 65535.',mc:V('bad')},
+      {label:'Secret reference',state:'Read only',val:'vault://acme/shop/admin',bg:V('surface2'),bd:V('border'),fg:V('muted'),ring:'none',msg:'The value is stored in Vault and is never shown.',mc:V('muted')}];
+    const intrCards = [
+      {title:'Passive',desc:'No crafted traffic. OSINT and observing normal responses.',tag:'',tagc:V('muted'),bg:V('surface'),bd:'1px solid var(--border)',fg:V('text'),radio:'1.5px solid var(--border2)',dot:'transparent'},
+      {title:'Active-safe',desc:'Crafted requests that should not change state.',tag:'Selected',tagc:V('primary'),bg:V('primary-soft'),bd:'1.5px solid var(--primary)',fg:V('text'),radio:'1.5px solid var(--primary)',dot:V('primary')},
+      {title:'State-changing',desc:'Reversible changes. Needs Gate 1 and a reversal journal entry.',tag:'Needs approval',tagc:V('warn'),bg:V('surface'),bd:'1px solid var(--border)',fg:V('text'),radio:'1.5px solid var(--border2)',dot:'transparent'},
+      {title:'Destructive',desc:'Never allowed in Blackwing. This cannot be changed by any role.',tag:'Locked',tagc:V('muted'),bg:V('surface2'),bd:'1px dashed var(--border2)',fg:V('muted'),radio:'1.5px dashed var(--border2)',dot:'transparent'}];
+    const modes = [
+      {title:'Black box',tag:'',agents:['Passive recon','OSINT','Active recon','Threat intel'],bg:V('surface'),bd:'1px solid var(--border)'},
+      {title:'Grey box',tag:'Recommended',agents:['Active recon','Threat intel','Spec ingestion','Session setup'],bg:V('primary-soft'),bd:'1.5px solid var(--primary)'},
+      {title:'White box',tag:'',agents:['Source ingestion','Spec ingestion','Threat intel','Session setup','Minimal recon'],bg:V('surface'),bd:'1px solid var(--border)'}];
+    const imgR='https://cdn.prod.website-files.com/69e90ea41839aa80aa5fdae3/69ec953abebfc9ed2233bc55_Red%201.png', imgB='https://cdn.prod.website-files.com/69e90ea41839aa80aa5fdae3/69ec953a2a2e2d902ffaa288_Blue2%201.png', imgG='https://cdn.prod.website-files.com/69e90ea41839aa80aa5fdae3/69ec953bfbac4b280fcfbfd8_gear%201.png';
+    return {
+      ic, iconList, chipGroups, buttonMatrix, stepper, budgets, countdowns, inputs, intrCards, modes,
+      tokenTables:[table(L,'Light'),table(D,'Dark')],
+      themes:[{name:'Light',key:'light',vars:varsOf(L)},{name:'Dark',key:'dark',vars:varsOf(D)}],
+      principles:[
+        {img:imgR,title:'Every action happens under a signature',body:'Assets, authorisations, gates, releases and kills all have a named person behind them. Run pages always show who authorised the test, the scope, and when the authorisation ends.'},
+        {img:imgB,title:'No answer means no',body:'Gate 2 denies automatically, an expired authorisation stops traffic, and destructive tests never run. Deny is the main button. Approving takes more steps.'},
+        {img:imgG,title:'Agent output is evidence, not instruction',body:'Anything an agent or a target produced is shown in a dashed, labelled box in mono type. It is never styled like a system message.'}],
+      refs:[
+        {title:'tinycrows.com',take:'Poppins, white space, red on one word per heading, the shield imagery, rounded cards and solid red calls to action.',leave:'Marketing-scale type inside dense tables. Red as the default button colour.'},
+        {title:'claude.ai',take:'A calm neutral sidebar listing recent work, generous reading width, and a quiet top bar so the content leads.',leave:'Chat as the main input. Blackwing scoping uses structured forms.'},
+        {title:'chatgpt.com',take:'Collapsible sidebar with grouped history. Live streaming text that you can pause and scroll back through.',leave:'Hidden model internals. Every tool call here is shown and auditable.'},
+        {title:'gemini.google.com',take:'Soft pill chips for context and a clear display of which tools are active for a request.',leave:'Gradient accents and glowing motion around AI activity.'},
+        {title:'Aircraft cockpits',take:'Red is used only for warnings. Status is shown in a fixed place, and checklists confirm each step.',leave:'Dense skeuomorphic panels.'}],
+      typeScale:[
+        {name:'Display',spec:'Poppins 600 40/50',font:"600 40px/50px 'Poppins'",sample:'Stop all testing now'},
+        {name:'H1',spec:'Poppins 600 28/38',font:"600 28px/38px 'Poppins'",sample:'Live run run_01JABC7Q3M'},
+        {name:'H2',spec:'Poppins 600 20/30',font:"600 20px/30px 'Poppins'",sample:'Agent team'},
+        {name:'H3',spec:'Poppins 600 16/24',font:"600 16px/24px 'Poppins'",sample:'Authorised under SA-0042'},
+        {name:'Body',spec:'Poppins 400 14/22',font:"400 14px/22px 'Poppins'",sample:'The Customer role can read other customers\' orders.'},
+        {name:'Table',spec:'Poppins 400 13/20',font:"400 13px/20px 'Poppins'",sample:'Acme Orders API   CWE-639   1,204 requests   3 min ago'},
+        {name:'Small',spec:'Poppins 400 12/18',font:"400 12px/18px 'Poppins'",sample:'Recorded in the audit ledger'},
+        {name:'Label',spec:'Poppins 500 11.5/16',font:"500 11.5px/16px 'Poppins'",sample:'Requests used'},
+        {name:'Mono',spec:'JetBrains Mono 400 12.5/20',font:"400 12.5px/20px 'JetBrains Mono'",sample:'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:N'},
+        {name:'Figures',spec:'Poppins 600 32 tabular',font:"600 32px/40px 'Poppins'",sample:'$12.40   8,214   04:32'}],
+      spacing:[4,8,12,16,24,32,48,64].map(n=>({name:n+'px',px:(n*3)+'px'})),
+      twelve:Array.from({length:12},(_, i)=>i),
+      kbds:[{k:'J',l:'Next'},{k:'K',l:'Previous'},{k:'R',l:'Release'},{k:'F',l:'False positive'},{k:'Ctrl K',l:'Search'}],
+      skel:['70%','52%','84%','40%']
+    };
+  }
+}
+</script>
+</body>
+</html>

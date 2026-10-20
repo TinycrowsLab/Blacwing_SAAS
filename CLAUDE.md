@@ -41,6 +41,7 @@ runtime. See [§1](docs/architecture/CONTEXT_PACK.md#1-product-in-one-paragraph)
 | `infra/` | `tofu/` (AWS), `helm/`, `k3s/`, `docker/` (Dockerfiles, sandbox image), `compose/` (dev stack). |
 | `eval/` | Local vulnerable targets, ground truth, eval harness. |
 | `docs/` | `adr/`, `architecture/`, `runbooks/`, `api/`, `user/`. |
+| `design/` | The UI design exported from Claude Design. It is the source of truth for every GUI: design system, screens and `tokens.json`. See [`design/README.md`](design/README.md). |
 | `scripts/` | Repo tooling with `node:test` self-tests. `check-layout.mjs` fails `pnpm install` when the layout drifts from §6. |
 
 Pack §6 is the full layout. Adding or removing an app, package or fixed directory means updating §6 and
@@ -88,6 +89,9 @@ In short:
   dependency graph: apps never import other apps, and deep imports (`@blackwing/x/src/...`) are not allowed.
 - **Data access** goes through `withTenant` (RLS, `SET LOCAL app.tenant_id`). A missing tenant context fails closed.
   Every data-access module needs cross-tenant tests.
+- **GUI follows `design/`.** Any change to `apps/web`, `packages/ui`, the SOC or emergency pages, or report and
+  e-mail templates must match [`design/`](design/README.md). Use its tokens via `packages/ui` (never hard-coded hex),
+  its components and states, and its screen layouts. Where the design is silent, compose from its system.
 - **Offline substitutes.** When a local fake stands in for something that must go online later, mark the site with
   `OFFLINE-STUB(online-porting #N): <why>` and link the `online-porting` issue.
 

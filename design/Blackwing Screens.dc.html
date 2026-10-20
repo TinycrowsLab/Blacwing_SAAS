@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F4F5;font-family:'Poppins',system-ui,sans-serif;color:#16171D;-webkit-font-smoothing:antialiased}
+a{color:#B01A2D;text-underline-offset:3px}a:hover{color:#16171D}
+input,textarea{font-family:inherit}
+.dv-oid{display:inline-flex;align-items:center;white-space:nowrap;flex:none;font:600 11px/16px 'Poppins';padding:3px 8px;background:#16171D;color:#fff;border-radius:999px;text-decoration:none}
+.dv-opt:target .dv-oid{background:#B01A2D}
+@keyframes bwpulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes bwspin{to{transform:rotate(360deg)}}
+@keyframes bwping{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.4);opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+
+<section id="t0" style="padding:40px 64px 24px;display:flex;justify-content:space-between;align-items:flex-end;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:820px">
+    <div style="display:flex;align-items:center;gap:14px"><img src="https://cdn.prod.website-files.com/69e90ea41839aa80aa5fdae3/69ec953a8a72056d2173b400_Main%20Logo.png" alt="tinycrows" style="height:34px"><span style="width:1px;height:24px;background:#CDD0D6"></span><span style="font:600 16px/24px 'Poppins';white-space:nowrap">Blackwing screens, pass 1</span></div>
+    <h1 style="margin:0;font:600 40px/50px 'Poppins'">The moments that <span style="color:#B01A2D">can't go wrong</span></h1>
+    <p style="margin:0;font:400 15px/25px 'Poppins';color:#3E424D;text-wrap:pretty">This pass covers the live run, the Gate 2 decision and the kill flow, which are the screens where operators act under time pressure. Everything here is live. The clock runs, the agent lanes scroll, the countdown drains, and the kill and emergency buttons work. Theme is set in Tweaks. Tokens and components are in <a href="Blackwing Design System.dc.html">Blackwing Design System</a>.</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+    <a href="#1a" class="dv-oid">1a Flight deck</a><a href="#1b" class="dv-oid">1b Transcript</a><a href="#2a" class="dv-oid">2a Gate 2</a><a href="#2b" class="dv-oid">2b Gate 2 mobile</a><a href="#3a" class="dv-oid">3a Kill</a><a href="#3b" class="dv-oid">3b Emergency link</a>
+  </div>
+</section>
+
+<section id="t1" style="padding:24px 64px 48px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:12px"><span style="font:500 13px 'Poppins';color:#B01A2D">01</span><span style="font:600 22px/30px 'Poppins';white-space:nowrap">Live run, two ways to read it</span></div>
+  <div style="display:flex;flex-direction:column;gap:56px">
+
+  <div class="dv-opt" id="1a" style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:center;gap:12px"><a class="dv-oid" href="#1a">1a</a><span style="font:500 14px/22px 'Poppins';white-space:nowrap">Flight deck. Agents shown as lanes on a scrolling time axis, so stalls and blocks are visible at a glance.</span></div>
+    <div style="display:flex;gap:24px;align-items:flex-start">
+    <div style="{{ vars }}">
+    <div style="width:1440px;background:var(--bg);color:var(--text);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08),0 20px 60px rgba(0,0,0,.08);border:1px solid var(--border)">
+      <div style="height:56px;display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--surface)">
+        <div style="display:flex;align-items:center;gap:10px"><img src="https://cdn.prod.website-files.com/69e90ea41839aa80aa5fdae3/69ec953abebfc9ed2233bc55_Red%201.png" alt="" style="width:26px;height:26px;object-fit:contain"><span style="font:600 16px 'Poppins'">Blackwing</span></div>
+        <span style="display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:999px;background:var(--surface2);font:500 13px 'Poppins'">Acme Corp<svg width="12" height="12" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M6 9l6 6 6-6"></path></svg></span>
+        <div style="flex:1;max-width:460px;height:36px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:10px;background:var(--surface2);color:var(--muted);font:400 13px 'Poppins'"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round"><path d="{{ ic.search }}"></path></svg><span style="flex:1">Search assets, runs, findings</span><span style="font:500 11px 'Poppins';padding:2px 6px;border:1px solid var(--border2);border-radius:5px">Ctrl K</span></div>
+        <div style="flex:1"></div>
+        <span style="position:relative;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;color:var(--text)"><svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.bell }}"></path></svg><span style="position:absolute;top:4px;right:4px;min-width:16px;height:16px;border-radius:8px;background:var(--warn);color:#fff;font:600 10px/16px 'Poppins';text-align:center">3</span></span>
+        <span style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:8px;background:var(--kill);color:var(--on-kill);font:600 13px 'Poppins'"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.kill }}"></path></svg>Kill</span>
+        <span style="width:34px;height:34px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:inline-flex;align-items:center;justify-content:center;font:600 12px 'Poppins'">PN</span>
+      </div>
+      <div style="display:grid;grid-template-columns:64px 1fr">
+        <div style="border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 0">
+          <sc-for list="{{ rail }}" as="r" hint-placeholder-count="9">
+            <span title="{{ r.n }}" style="position:relative;width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:{{ r.bg }};color:{{ r.fg }}"><svg width="19" height="19" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round"><path d="{{ r.d }}"></path></svg><sc-if value="{{ r.badge }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--warn);animation:bwpulse 1.4s ease-in-out infinite"></span></sc-if></span>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;min-width:0">
+          <div style="padding:20px 28px 16px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;gap:8px;align-items:center;font:400 12.5px 'Poppins';color:var(--muted)">Assessments<span>/</span><span style="font:500 12px 'JetBrains Mono';color:var(--text);padding:2px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface)">run_01JABC7Q3M</span></div>
+              <div style="display:flex;align-items:center;gap:12px"><span style="font:600 24px/32px 'Poppins'">Acme Shop and Acme Orders API</span>
+                <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 12px;border-radius:999px;background:var(--surface2);font:500 12px 'Poppins'">Grey box</span>
+                <span style="display:inline-flex;align-items:center;gap:7px;height:26px;padding:0 12px;border-radius:999px;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);font:500 12px 'Poppins'"><span style="width:7px;height:7px;border-radius:50%;background:currentColor;animation:bwpulse 1.4s infinite"></span>Executing, 1 branch paused</span></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <span style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);font:500 13px 'Poppins'"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round"><path d="{{ ic.pause }}"></path></svg>Pause run</span>
+              <span style="display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);font:500 13px 'Poppins'">Run manifest</span>
+              <span style="display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 22px;border-radius:8px;background:var(--kill);color:var(--on-kill);font:600 14px 'Poppins';box-shadow:0 0 0 4px var(--kill-soft)"><svg width="17" height="17" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.kill }}"></path></svg>Kill run</span>
+            </div>
+          </div>
+
+          <div style="margin:0 28px;display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:12px;background:var(--warn-soft);border:1px solid var(--warn)">
+            <span style="position:relative;width:10px;height:10px;flex:none"><span style="position:absolute;inset:0;border-radius:50%;background:var(--warn)"></span><span style="position:absolute;inset:0;border-radius:50%;background:var(--warn);animation:bwping 1.6s ease-out infinite"></span></span>
+            <span style="font:400 13.5px 'Poppins';flex:1"><b style="font-weight:600">web-api-specialist wants to send POST /api/admin/export.</b> That path is excluded in SA-0042. If no one decides, it is denied in <b style="font-weight:600;font-variant-numeric:tabular-nums">{{ g2Clock }}</b>.</span>
+            <a href="#2a" style="display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:8px;background:var(--text);color:var(--bg);font:500 13px 'Poppins';text-decoration:none">Review</a>
+          </div>
+
+          <div style="margin:12px 28px 0;display:grid;grid-template-columns:auto 1fr 1fr 1fr 1fr;border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden">
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-right:1px solid var(--border)"><svg width="20" height="20" viewBox="0 0 24 24" style="fill:none;stroke:var(--ok);stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.shield }}"></path></svg><div style="display:flex;flex-direction:column"><span style="font:600 13px 'Poppins'">Authorised under SA-0042</span><span style="font:400 12px 'Poppins';color:var(--muted)">Signed by Sam Ortiz, key bw-sa-2026-10</span></div></div>
+            <sc-for list="{{ authStrip }}" as="a" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;justify-content:center;padding:10px 16px;border-right:1px solid var(--border)"><span style="font:400 11.5px 'Poppins';color:var(--muted)">{{ a.k }}</span><span style="font:500 12.5px 'Poppins';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.v }}</span></div></sc-for>
+          </div>
+
+          <div style="margin:12px 28px 0;display:grid;grid-template-columns:220px repeat(3,1fr);gap:12px">
+            <div style="border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:2px"><span style="font:400 12px 'Poppins';color:var(--muted)">Elapsed</span><span style="font:600 30px/38px 'Poppins';font-variant-numeric:tabular-nums">{{ elapsed }}</span><span style="font:400 11.5px 'JetBrains Mono';color:var(--muted)">{{ clockUtc }}</span></div>
+            <sc-for list="{{ gauges }}" as="g" hint-placeholder-count="3">
+              <div style="border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:400 12px 'Poppins';color:var(--muted)">{{ g.label }}</span><span style="font:400 11.5px 'Poppins';color:var(--muted)">{{ g.cap }}</span></div>
+                <span style="font:600 22px/28px 'Poppins';font-variant-numeric:tabular-nums;color:{{ g.c }}">{{ g.val }}</span>
+                <div style="height:6px;border-radius:3px;background:var(--surface2);overflow:hidden"><div style="height:100%;width:{{ g.pct }};background:{{ g.c }};border-radius:3px;transition:width 1s linear"></div></div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="margin:12px 28px 0;border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)">
+              <span style="font:600 14px 'Poppins'">Agent team</span>
+              <div style="display:flex;gap:16px;font:400 12px 'Poppins';color:var(--muted);align-items:center">
+                <span style="display:inline-flex;gap:6px;align-items:center"><span style="width:6px;height:6px;border-radius:50%;background:var(--primary)"></span>HTTP request</span>
+                <span style="display:inline-flex;gap:6px;align-items:center"><span style="width:7px;height:7px;background:var(--text);border-radius:1px"></span>Tool call</span>
+                <span style="display:inline-flex;gap:6px;align-items:center"><span style="width:7px;height:7px;border:1.5px solid var(--warn);border-radius:50%;box-sizing:border-box"></span>Blocked by policy</span>
+                <span style="display:inline-flex;gap:6px;align-items:center"><span style="width:7px;height:7px;background:var(--high);transform:rotate(45deg)"></span>Candidate finding</span>
+                <span>Last 2 minutes</span>
+              </div>
+            </div>
+            <sc-for list="{{ lanes }}" as="l" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:300px 1fr;border-bottom:1px solid var(--border)">
+                <div style="padding:10px 16px;display:flex;flex-direction:column;gap:3px;border-right:1px solid var(--border)">
+                  <div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:{{ l.dot }};animation:{{ l.anim }}"></span><span style="font:500 13px 'JetBrains Mono'">{{ l.name }}</span><span style="margin-left:auto;font:400 11.5px 'Poppins';color:var(--muted);font-variant-numeric:tabular-nums">{{ l.turns }} turns, {{ l.cost }}</span></div>
+                  <span style="font:400 12px/17px 'Poppins';color:{{ l.taskc }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.task }}</span>
+                </div>
+                <div style="position:relative;height:56px;overflow:hidden;background:{{ l.bg }}">
+                  <div style="position:absolute;top:0;bottom:0;left:0;transform:{{ trackX }};transition:transform 1s linear">
+                    <sc-for list="{{ l.events }}" as="e" hint-placeholder-count="0"><span style="position:absolute;top:{{ e.top }};left:{{ e.x }};width:{{ e.s }};height:{{ e.s }};background:{{ e.bg }};border:{{ e.bd }};border-radius:{{ e.r }};transform:{{ e.rot }};box-sizing:border-box"></span></sc-for>
+                    <sc-if value="{{ l.pausedX }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:8px;bottom:8px;left:{{ l.pausedX }};width:3000px;border-radius:6px;background:repeating-linear-gradient(135deg,var(--warn-soft) 0 6px,transparent 6px 12px);border-left:2px solid var(--warn)"></span></sc-if>
+                  </div>
+                  <span style="position:absolute;top:0;bottom:0;right:0;width:1px;background:var(--primary)"></span>
+                </div>
+              </div>
+            </sc-for>
+            <div style="display:grid;grid-template-columns:300px 1fr;font:400 11px 'Poppins';color:var(--muted)"><span></span><div style="display:flex;justify-content:space-between;padding:6px 8px 8px"><span>2 min ago</span><span>90 s</span><span>60 s</span><span>30 s</span><span style="color:var(--primary);font-weight:500">Now</span></div></div>
+          </div>
+
+          <div style="margin:12px 28px 28px;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:12px">
+            <div style="border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)"><span style="font:600 14px 'Poppins'">Activity</span><div style="display:flex;gap:6px"><sc-for list="{{ streamFilters }}" as="f" hint-placeholder-count="4"><span style="height:28px;padding:0 12px;display:inline-flex;align-items:center;border-radius:999px;font:500 12px 'Poppins';background:{{ f.bg }};color:{{ f.fg }}">{{ f.l }}</span></sc-for></div></div>
+              <sc-for list="{{ feed }}" as="it" hint-placeholder-count="7">
+                <div style="display:grid;grid-template-columns:82px 150px 1fr auto;gap:12px;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);background:{{ it.rowbg }};transition:background .8s ease-out">
+                  <span style="font:400 11.5px 'JetBrains Mono';color:var(--muted)">{{ it.time }}</span>
+                  <span style="font:500 12px 'JetBrains Mono';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.agent }}</span>
+                  <span style="display:flex;gap:8px;align-items:center;min-width:0"><span style="flex:none;height:20px;padding:0 8px;display:inline-flex;align-items:center;border-radius:5px;font:500 11px 'Poppins';background:{{ it.kbg }};color:{{ it.kfg }}">{{ it.kind }}</span><span style="font:400 12.5px 'Poppins';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.text }}</span></span>
+                  <span style="font:400 11.5px 'JetBrains Mono';color:var(--muted);white-space:nowrap">{{ it.meta }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;justify-content:space-between"><span style="font:600 14px 'Poppins'">Test cases</span><span style="font:400 12px 'Poppins';color:var(--muted)">42 in plan v2</span></div>
+                <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px"><sc-for list="{{ tests }}" as="t" hint-placeholder-count="6"><span style="width:{{ t.pct }};background:{{ t.c }}"></span></sc-for></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px"><sc-for list="{{ tests }}" as="t" hint-placeholder-count="6"><span style="display:flex;align-items:center;gap:8px;font:400 12.5px 'Poppins'"><span style="width:8px;height:8px;border-radius:2px;background:{{ t.c }}"></span><span style="flex:1;color:var(--muted)">{{ t.l }}</span><b style="font-weight:600;font-variant-numeric:tabular-nums">{{ t.n }}</b></span></sc-for></div>
+              </div>
+              <div style="border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden">
+                <div style="display:flex;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)"><span style="font:600 14px 'Poppins'">Candidate findings</span><span style="font:400 12px 'Poppins';color:var(--muted)">Released only after Gate 3</span></div>
+                <sc-for list="{{ cands }}" as="c" hint-placeholder-count="4">
+                  <div style="display:flex;flex-direction:column;gap:6px;padding:10px 16px;border-bottom:1px solid var(--border)">
+                    <div style="display:flex;gap:8px;align-items:center"><span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;font:500 11.5px 'Poppins';background:{{ c.sbg }};color:{{ c.sfg }}"><span style="display:inline-flex;gap:1.5px;align-items:flex-end;height:9px"><sc-for list="{{ c.bars }}" as="b" hint-placeholder-count="4"><span style="width:2.5px;height:{{ b.h }};background:currentColor;opacity:{{ b.o }}"></span></sc-for></span>{{ c.sev }}</span><span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:500 11.5px 'Poppins';color:{{ c.vc }}"><span style="width:10px;height:10px;border-radius:50%;box-sizing:border-box;border:{{ c.spin }};animation:{{ c.anim }}"></span>{{ c.v }}</span></div>
+                    <span style="font:500 12.5px/18px 'Poppins'">{{ c.title }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div style="width:240px;display:flex;flex-direction:column;gap:14px;font:400 12.5px/20px 'Poppins';color:#3E424D;padding-top:8px">
+      <div style="font:600 13px 'Poppins';color:#16171D">Who sees it</div><span>AppSec, Asset Owner, SOC and Admin get Kill and Pause. Developers see a read-only view. Auditors see the ledger version.</span>
+      <div style="font:600 13px 'Poppins';color:#16171D">Audited</div><span>Pause, resume, kill, Gate 2 decisions and opening the run manifest.</span>
+      <div style="font:600 13px 'Poppins';color:#16171D">Why lanes</div><span>A paused agent appears as a hatched band that keeps growing, which is harder to miss than a status word. Policy blocks show as rings on the lane, so you can see when they happened.</span>
+    </div>
+    </div>
+  </div>
+
+  <div class="dv-opt" id="1b" style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:center;gap:12px"><a class="dv-oid" href="#1b">1b</a><span style="font:500 14px/22px 'Poppins';white-space:nowrap">Transcript. Reads like a conversation with no prompt box. Decisions appear inline where the agent asked.</span></div>
+    <div style="display:flex;gap:24px;align-items:flex-start">
+    <div style="{{ vars }}">
+    <div style="width:1440px;height:1240px;background:var(--bg);color:var(--text);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08),0 20px 60px rgba(0,0,0,.08);border:1px solid var(--border);display:grid;grid-template-columns:272px 1fr 340px">
+      <div style="background:var(--surface2);display:flex;flex-direction:column;padding:16px 12px;gap:4px;border-right:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px;padding:4px 8px 14px"><img src="https://cdn.prod.website-files.com/69e90ea41839aa80aa5fdae3/69ec953abebfc9ed2233bc55_Red%201.png" alt="" style="width:26px;height:26px;object-fit:contain"><span style="font:600 16px 'Poppins'">Blackwing</span><span style="margin-left:auto;font:500 12px 'Poppins';color:var(--muted)">Acme Corp</span></div>
+        <span style="display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);font:500 13px 'Poppins'"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round"><path d="M12 5v14 M5 12h14"></path></svg>New assessment</span>
+        <sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
+          <span style="font:500 11.5px 'Poppins';color:var(--muted);padding:16px 12px 6px">{{ h.group }}</span>
+          <sc-for list="{{ h.items }}" as="i" hint-placeholder-count="2">
+            <span style="display:flex;flex-direction:column;gap:1px;padding:8px 12px;border-radius:10px;background:{{ i.bg }}">
+              <span style="display:flex;align-items:center;gap:8px;font:500 13px 'Poppins'"><span style="width:7px;height:7px;border-radius:50%;flex:none;background:{{ i.dot }};animation:{{ i.anim }}"></span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ i.t }}</span></span>
+              <span style="font:400 11.5px 'Poppins';color:var(--muted);padding-left:15px">{{ i.s }}</span>
+            </span>
+          </sc-for>
+        </sc-for>
+        <div style="flex:1"></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-top:1px solid var(--border)"><span style="width:32px;height:32px;border-radius:50%;background:var(--primary);color:var(--on-primary);display:inline-flex;align-items:center;justify-content:center;font:600 12px 'Poppins'">PN</span><div style="display:flex;flex-direction:column"><span style="font:500 13px 'Poppins'">Priya Nair</span><span style="font:400 11.5px 'Poppins';color:var(--muted)">AppSec Engineer</span></div></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;min-width:0;position:relative">
+        <div style="height:60px;flex:none;display:flex;align-items:center;gap:12px;padding:0 28px;border-bottom:1px solid var(--border)">
+          <span style="font:600 15px 'Poppins'">Acme Shop and Acme Orders API</span><span style="font:400 12px 'JetBrains Mono';color:var(--muted)">run_01JABC7Q3M</span>
+          <span style="margin-left:auto;font:500 13px 'Poppins';font-variant-numeric:tabular-nums;color:var(--muted)">{{ elapsed }}</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:8px;background:var(--kill);color:var(--on-kill);font:600 13px 'Poppins'"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.kill }}"></path></svg>Kill run</span>
+        </div>
+        <div style="flex:1;overflow:hidden;display:flex;justify-content:center;align-items:flex-end">
+          <div style="width:720px;display:flex;flex-direction:column;gap:22px;padding:28px 0 120px">
+            <div style="border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:16px 18px;display:flex;gap:14px;align-items:flex-start">
+              <svg width="22" height="22" viewBox="0 0 24 24" style="flex:none;fill:none;stroke:var(--ok);stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.shield }}"></path></svg>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font:600 14px 'Poppins'">Testing is authorised under SA-0042</span>
+                <span style="font:400 13px/21px 'Poppins';color:var(--muted)">shop.staging.acme.example and api.acme.example, paths /api/** except /api/admin/** and /api/payments/**. Active-safe at most. Mon to Fri, 22:00 to 06:00 Europe/London. Signed by Sam Ortiz on 2026-10-01, expires 2026-12-31.</span>
+              </div>
+            </div>
+            <sc-for list="{{ transcript }}" as="m" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:26px;height:26px;border-radius:8px;background:var(--surface2);display:inline-flex;align-items:center;justify-content:center;color:var(--text)"><svg width="15" height="15" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.agent }}"></path></svg></span><span style="font:500 13px 'JetBrains Mono'">{{ m.agent }}</span><span style="font:400 12px 'Poppins';color:var(--muted)">{{ m.time }}</span></div>
+                <p style="margin:0;padding-left:36px;font:400 14.5px/25px 'Poppins';color:var(--text)">{{ m.text }}</p>
+                <div style="padding-left:36px;display:flex;flex-direction:column;gap:6px">
+                  <sc-for list="{{ m.calls }}" as="c" hint-placeholder-count="0">
+                    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font:400 12.5px 'JetBrains Mono'"><span style="font-weight:500;color:var(--primary)">{{ c.m }}</span><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.p }}</span><span style="font:500 11.5px 'Poppins';padding:2px 8px;border-radius:5px;background:{{ c.sbg }};color:{{ c.sfg }}">{{ c.s }}</span><span style="color:var(--muted);font-size:11.5px">{{ c.t }}</span></div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <div style="margin-left:36px;border:1.5px solid var(--warn);border-radius:16px;background:var(--surface);overflow:hidden">
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--warn-soft)"><span style="font:600 13.5px 'Poppins';color:var(--warn);flex:1">Gate 2: decision needed</span><span style="font:600 20px 'Poppins';font-variant-numeric:tabular-nums;color:{{ g2Color }}">{{ g2Clock }}</span></div>
+              <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+                <span style="font:400 13.5px/22px 'Poppins'">Wants to send <span style="font-family:'JetBrains Mono';font-size:12.5px;background:var(--surface2);padding:2px 6px;border-radius:4px">POST /api/admin/export</span> to api.acme.example. This path is excluded by SA-0042. The branch stays paused until someone decides.</span>
+                <div style="height:6px;border-radius:3px;background:var(--surface2);overflow:hidden"><div style="height:100%;width:{{ g2Pct }};background:{{ g2Color }};transition:width 1s linear"></div></div>
+                <div style="display:flex;gap:8px;align-items:center"><span style="height:38px;padding:0 20px;display:inline-flex;align-items:center;border-radius:8px;background:var(--text);color:var(--bg);font:600 13px 'Poppins'">Deny</span><span style="height:38px;padding:0 16px;display:inline-flex;align-items:center;border-radius:8px;border:1px solid var(--border2);font:500 13px 'Poppins'">Approve once</span><span style="margin-left:auto;font:400 12px 'Poppins';color:var(--muted)">No decision means deny</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="position:absolute;left:50%;bottom:24px;transform:translateX(-50%);width:720px;border:1px solid var(--border);border-radius:18px;background:var(--surface);box-shadow:0 12px 40px rgba(0,0,0,.12);padding:12px 14px;display:flex;align-items:center;gap:16px">
+          <span style="display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border-radius:10px;background:var(--surface2);font:500 13px 'Poppins'"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round"><path d="{{ ic.pause }}"></path></svg>Pause</span>
+          <sc-for list="{{ gauges }}" as="g" hint-placeholder-count="3">
+            <div style="flex:1;display:flex;flex-direction:column;gap:5px"><div style="display:flex;justify-content:space-between;font:400 11.5px 'Poppins';color:var(--muted)"><span>{{ g.label }}</span><span style="font-variant-numeric:tabular-nums;color:{{ g.c }}">{{ g.val }}</span></div><div style="height:4px;border-radius:2px;background:var(--surface2);overflow:hidden"><div style="height:100%;width:{{ g.pct }};background:{{ g.c }};transition:width 1s linear"></div></div></div>
+          </sc-for>
+          <span style="font:400 12px 'Poppins';color:var(--muted)">Controls only.<br>No free-text steering.</span>
+        </div>
+      </div>
+
+      <div style="border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:20px;padding:20px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <svg width="180" height="180" viewBox="0 0 180 180">
+            <circle cx="90" cy="90" r="74" style="fill:none;stroke:var(--surface2);stroke-width:14"></circle>
+            <sc-for list="{{ testArcs }}" as="a" hint-placeholder-count="6"><circle cx="90" cy="90" r="74" transform="rotate(-90 90 90)" style="fill:none;stroke:{{ a.c }};stroke-width:14;stroke-dasharray:{{ a.dash }};stroke-dashoffset:{{ a.off }}"></circle></sc-for>
+            <text x="90" y="88" text-anchor="middle" style="font:600 30px 'Poppins';fill:var(--text)">23</text>
+            <text x="90" y="110" text-anchor="middle" style="font:400 12px 'Poppins';fill:var(--muted)">of 42 executed</text>
+          </svg>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;width:100%"><sc-for list="{{ tests }}" as="t" hint-placeholder-count="6"><span style="display:flex;align-items:center;gap:8px;font:400 12px 'Poppins'"><span style="width:8px;height:8px;border-radius:2px;background:{{ t.c }}"></span><span style="flex:1;color:var(--muted)">{{ t.l }}</span><b style="font-weight:600">{{ t.n }}</b></span></sc-for></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font:600 14px 'Poppins'">Candidate findings</span>
+          <sc-for list="{{ cands }}" as="c" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;border:1px solid var(--border)">
+              <div style="display:flex;gap:8px;align-items:center"><span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;font:500 11.5px 'Poppins';background:{{ c.sbg }};color:{{ c.sfg }}">{{ c.sev }}</span><span style="margin-left:auto;font:500 11.5px 'Poppins';color:{{ c.vc }}">{{ c.v }}</span></div>
+              <span style="font:500 12.5px/18px 'Poppins'">{{ c.title }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div style="width:240px;display:flex;flex-direction:column;gap:14px;font:400 12.5px/20px 'Poppins';color:#3E424D;padding-top:8px">
+      <div style="font:600 13px 'Poppins';color:#16171D">Why a transcript</div><span>Asset Owners and Developers read this more easily than lanes. It works like chat apps, but the input box is replaced by a control bar so no one can steer the agents with free text.</span>
+      <div style="font:600 13px 'Poppins';color:#16171D">Sidebar</div><span>Runs are grouped like chat history: running, waiting on you, earlier. A pulsing dot means traffic is flowing right now.</span>
+      <div style="font:600 13px 'Poppins';color:#16171D">Trade-off</div><span>Fewer events fit on screen. Lanes (1a) suit AppSec on a big monitor. One option could be a toggle between the two.</span>
+    </div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<section id="t2" style="padding:24px 64px 48px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:12px"><span style="font:500 13px 'Poppins';color:#B01A2D">02</span><span style="font:600 22px/30px 'Poppins';white-space:nowrap">Gate 2 decision. The clock is the interface.</span></div>
+  <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+    <div class="dv-opt" id="2a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px"><a class="dv-oid" href="#2a">2a</a><span style="font:500 14px/22px 'Poppins';white-space:nowrap">Desktop, opened from the banner or a notification</span></div>
+      <div style="{{ vars }}">
+      <div style="width:1100px;background:var(--bg);color:var(--text);border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.08);border:1px solid var(--border);display:grid;grid-template-columns:400px 1fr">
+        <div style="background:var(--surface);border-right:1px solid var(--border);padding:32px;display:flex;flex-direction:column;align-items:center;gap:20px">
+          <span style="align-self:flex-start;font:500 12.5px 'Poppins';color:var(--muted)">Approvals / Gate 2 / g2_01JB7K</span>
+          <div style="position:relative;width:300px;height:300px">
+            <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute;inset:0">
+              <circle cx="150" cy="150" r="128" style="fill:none;stroke:var(--surface2);stroke-width:12"></circle>
+              <circle cx="150" cy="150" r="128" transform="rotate(-90 150 150)" style="fill:none;stroke:{{ g2Color }};stroke-width:12;stroke-linecap:round;stroke-dasharray:804.2;stroke-dashoffset:{{ g2Off }};transition:stroke-dashoffset 1s linear,stroke .4s"></circle>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+              <span style="font:500 13px 'Poppins';color:var(--muted)">{{ g2Label }}</span>
+              <span style="font:600 64px/72px 'Poppins';font-variant-numeric:tabular-nums;color:{{ g2Color }};animation:{{ g2Anim }}">{{ g2Clock }}</span>
+              <span style="font:400 12.5px 'Poppins';color:var(--muted)">of 10:00 allowed</span>
+            </div>
+          </div>
+          <p style="margin:0;text-align:center;font:500 14px/22px 'Poppins'">If no one decides, this action<br>is <span style="color:var(--bad)">denied automatically</span>.</p>
+          <div style="width:100%;display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--border)">
+            <span style="font:400 12px 'Poppins';color:var(--muted)">Paged</span>
+            <span style="display:flex;justify-content:space-between;font:400 13px 'Poppins'"><span>Sam Ortiz, Asset Owner</span><span style="color:var(--muted)">Seen 1 min ago</span></span>
+            <span style="display:flex;justify-content:space-between;font:400 13px 'Poppins'"><span>SOC on-call</span><span style="color:var(--muted)">Delivered</span></span>
+          </div>
+        </div>
+        <div style="padding:32px;display:flex;flex-direction:column;gap:20px">
+          <sc-if value="{{ g2Pending }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:6px"><span style="font:500 13px 'Poppins';color:var(--muted)">web-api-specialist wants to</span><span style="font:500 26px/34px 'JetBrains Mono'">POST /api/admin/export</span><span style="font:400 13.5px 'Poppins';color:var(--muted)">on api.acme.example, run run_01JABC7Q3M</span></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+              <div style="border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--surface);display:flex;flex-direction:column;gap:6px"><span style="font:400 12px 'Poppins';color:var(--muted)">Intrusiveness</span><span style="display:inline-flex;align-self:flex-start;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:6px;background:var(--warn-soft);color:var(--warn);font:500 12px 'Poppins'"><svg width="12" height="12" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.warn }}"></path></svg>State-changing</span></div>
+              <div style="border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--surface);display:flex;flex-direction:column;gap:6px"><span style="font:400 12px 'Poppins';color:var(--muted)">Environment</span><span style="display:inline-flex;align-self:flex-start;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:6px;border:1px solid var(--bad);color:var(--bad);font:500 12px 'Poppins'">PROD</span></div>
+              <div style="border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--surface);display:flex;flex-direction:column;gap:6px"><span style="font:400 12px 'Poppins';color:var(--muted)">Reversal</span><span style="font:500 13px 'Poppins'">Journal entry ready</span></div>
+            </div>
+            <div style="border-radius:12px;background:var(--surface);border:1px solid var(--border);padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+              <span style="font:600 13px 'Poppins'">Why this is outside the authorisation</span>
+              <div style="display:flex;align-items:center;gap:10px;font:400 12.5px 'JetBrains Mono'"><span style="padding:3px 8px;border-radius:5px;background:var(--bad-soft);color:var(--bad);font-family:'Poppins';font-weight:500;font-size:11.5px">EXCLUDE</span>path /api/admin/**<span style="font-family:'Poppins';color:var(--muted)">in SA-0042, rule 4</span></div>
+              <div style="display:flex;align-items:center;gap:10px;font:400 12.5px 'JetBrains Mono'"><span style="padding:3px 8px;border-radius:5px;background:var(--bad-soft);color:var(--bad);font-family:'Poppins';font-weight:500;font-size:11.5px">ABOVE MAX</span>State-changing<span style="font-family:'Poppins';color:var(--muted)">SA allows Active-safe</span></div>
+            </div>
+            <div style="border:1px dashed var(--border2);border-radius:12px;background:var(--code)">
+              <div style="padding:8px 14px;border-bottom:1px dashed var(--border2);font:500 12px 'Poppins';color:var(--muted)">Reason given by the agent (not verified)</div>
+              <div style="padding:12px 14px;font:400 12.5px/20px 'JetBrains Mono'">"Export endpoint returned 401 for Customer but 200 for Support role on GET. One POST would show whether the export runs without an admin check."</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font:500 12.5px 'Poppins'">Reason <span style="font-weight:400;color:var(--muted)">(required to approve)</span></span>
+              <input value="{{ g2Reason }}" onChange="{{ onG2Reason }}" placeholder="Why it is safe to allow this once" style="height:42px;box-sizing:border-box;padding:0 12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font:400 13.5px 'Poppins';outline:none">
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <span onClick="{{ onDeny }}" style="cursor:pointer;height:48px;padding:0 32px;display:inline-flex;align-items:center;gap:8px;border-radius:10px;background:var(--text);color:var(--bg);font:600 14.5px 'Poppins';box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--text)"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round"><path d="{{ ic.x }}"></path></svg>Deny</span>
+              <span onClick="{{ onApprove }}" style="{{ approveStyle }}">Approve once</span>
+              <span style="margin-left:auto;font:400 12px 'Poppins';color:var(--muted)">Recorded in the audit ledger</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ g2Done }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:16px;align-items:flex-start;padding-top:40px">
+              <span style="width:56px;height:56px;border-radius:50%;background:{{ g2DoneBg }};color:{{ g2DoneFg }};display:inline-flex;align-items:center;justify-content:center"><svg width="26" height="26" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ g2DoneIcon }}"></path></svg></span>
+              <span style="font:600 26px/34px 'Poppins'">{{ g2DoneTitle }}</span>
+              <span style="font:400 14px/23px 'Poppins';color:var(--muted);max-width:520px">{{ g2DoneBody }}</span>
+              <span style="font:400 12px 'JetBrains Mono';color:var(--muted)">audit evt_01JB7M4Q · sha256:9c1e...77ab</span>
+              <span onClick="{{ onG2Reset }}" style="cursor:pointer;height:38px;padding:0 16px;display:inline-flex;align-items:center;border-radius:8px;border:1px solid var(--border2);font:500 13px 'Poppins'">Replay the demo</span>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px"><a class="dv-oid" href="#2b">2b</a><span style="font:500 14px/22px 'Poppins';white-space:nowrap">390 mobile, opened from SMS or Slack</span></div>
+      <div style="{{ vars }}">
+      <div style="width:390px;height:844px;background:var(--bg);color:var(--text);border-radius:44px;overflow:hidden;border:10px solid #16171D;box-sizing:content-box;display:flex;flex-direction:column;position:relative">
+        <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font:600 14px 'Poppins'"><span>23:14</span><span style="width:110px;height:28px;border-radius:14px;background:#16171D"></span><span style="font-size:12px">5G</span></div>
+        <div style="height:4px;background:var(--surface2)"><div style="height:100%;width:{{ g2Pct }};background:{{ g2Color }};transition:width 1s linear"></div></div>
+        <div style="padding:20px 20px 0;display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center">
+          <span style="font:500 13px 'Poppins';color:var(--muted)">Gate 2, {{ g2Label }}</span>
+          <span style="font:600 76px/84px 'Poppins';font-variant-numeric:tabular-nums;color:{{ g2Color }};animation:{{ g2Anim }}">{{ g2Clock }}</span>
+          <span style="font:500 13.5px 'Poppins'">No decision means <span style="color:var(--bad)">deny</span></span>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:20px;display:flex;flex-direction:column;gap:12px">
+          <div style="border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:6px">
+            <span style="font:400 12px 'Poppins';color:var(--muted)">web-api-specialist wants to</span>
+            <span style="font:500 16px/22px 'JetBrains Mono'">POST /api/admin/export</span>
+            <span style="font:400 12.5px 'Poppins';color:var(--muted)">api.acme.example, PROD</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;padding-top:4px"><span style="height:24px;padding:0 10px;display:inline-flex;align-items:center;border-radius:6px;background:var(--warn-soft);color:var(--warn);font:500 12px 'Poppins'">State-changing</span><span style="height:24px;padding:0 10px;display:inline-flex;align-items:center;border-radius:6px;background:var(--bad-soft);color:var(--bad);font:500 12px 'Poppins'">Excluded path</span></div>
+          </div>
+          <div style="border:1px dashed var(--border2);border-radius:16px;background:var(--code);padding:12px 14px;display:flex;flex-direction:column;gap:6px"><span style="font:500 11.5px 'Poppins';color:var(--muted)">Agent's reason (not verified)</span><span style="font:400 12px/19px 'JetBrains Mono'">"One POST would show whether the export runs without an admin check."</span></div>
+          <div style="border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:12px 16px;display:flex;flex-direction:column;gap:4px"><span style="font:400 12px 'Poppins';color:var(--muted)">Authorised under</span><span style="font:500 13px 'Poppins'">SA-0042, signed by Sam Ortiz</span><span style="font:400 12px 'Poppins';color:var(--muted)">Max Active-safe, /api/admin/** excluded</span></div>
+        </div>
+        <div style="padding:16px 20px 30px;display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--border);background:var(--surface)">
+          <span style="height:56px;border-radius:14px;background:var(--text);color:var(--bg);display:flex;align-items:center;justify-content:center;font:600 16px 'Poppins'">Deny</span>
+          <span style="height:48px;border-radius:14px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font:500 14px 'Poppins'">Approve once, with reason</span>
+          <span style="text-align:center;font:400 11.5px 'Poppins';color:var(--muted)">Recorded in the audit ledger</span>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <div style="width:240px;display:flex;flex-direction:column;gap:14px;font:400 12.5px/20px 'Poppins';color:#3E424D;padding-top:40px">
+      <div style="font:600 13px 'Poppins';color:#16171D">Try it</div><span>Deny works right away. Approve once stays disabled until you type a reason. The clock turns amber under 5 minutes and red with a pulse in the last minute.</span>
+      <div style="font:600 13px 'Poppins';color:#16171D">Who sees it</div><span>Asset Owners of the affected asset and the paged on-call. If the requester opens it, Approve is disabled and names who can approve.</span>
+      <div style="font:600 13px 'Poppins';color:#16171D">Why Deny is dark</div><span>Deny gets the heaviest button but not red, because red is reserved for Kill. Approve is the lighter, outlined option.</span>
+    </div>
+  </div>
+</section>
+
+<section id="t3" style="padding:24px 64px 80px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:12px"><span style="font:500 13px 'Poppins';color:#B01A2D">03</span><span style="font:600 22px/30px 'Poppins';white-space:nowrap">Kill switch. Pick the blast radius, then watch it stop.</span></div>
+  <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+    <div class="dv-opt" id="3a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px"><a class="dv-oid" href="#3a">3a</a><span style="font:500 14px/22px 'Poppins';white-space:nowrap">Kill dialog. Scopes are drawn as nested rings, so you can see that an organisation kill includes every run.</span></div>
+      <div style="{{ vars }}">
+      <div style="width:1000px;height:640px;position:relative;background:var(--bg);border-radius:14px;overflow:hidden;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.08);color:var(--text)">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,var(--surface2) 0 1px,transparent 1px 44px);opacity:.8"></div>
+        <div style="position:absolute;inset:0;background:rgba(22,23,29,.55)"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:840px;background:var(--surface);border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden">
+          <sc-if value="{{ killForm }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid;grid-template-columns:320px 1fr">
+              <div style="background:var(--surface2);display:flex;align-items:center;justify-content:center;padding:24px">
+                <svg width="270" height="270" viewBox="0 0 270 270">
+                  <sc-for list="{{ rings }}" as="r" hint-placeholder-count="3">
+                    <circle onClick="{{ r.pick }}" cx="135" cy="135" r="{{ r.rad }}" style="cursor:pointer;fill:{{ r.fill }};stroke:{{ r.stroke }};stroke-width:{{ r.sw }};transition:fill .25s,stroke .25s"></circle>
+                    <text onClick="{{ r.pick }}" x="135" y="{{ r.ty }}" text-anchor="middle" style="cursor:pointer;font:500 11.5px 'Poppins';fill:{{ r.tc }}">{{ r.label }}</text>
+                  </sc-for>
+                </svg>
+              </div>
+              <div style="padding:28px;display:flex;flex-direction:column;gap:16px">
+                <div style="display:flex;align-items:center;gap:10px"><svg width="22" height="22" viewBox="0 0 24 24" style="fill:none;stroke:var(--kill);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.kill }}"></path></svg><span style="font:600 22px/30px 'Poppins';white-space:nowrap">Stop testing</span></div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{ scopes }}" as="s" hint-placeholder-count="3">
+                    <div onClick="{{ s.pick }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:{{ s.bd }};background:{{ s.bg }};transition:background .2s,border-color .2s">
+                      <span style="width:18px;height:18px;border-radius:50%;box-sizing:border-box;border:{{ s.radio }};display:inline-flex;align-items:center;justify-content:center;flex:none"><span style="width:8px;height:8px;border-radius:50%;background:{{ s.dot }}"></span></span>
+                      <div style="display:flex;flex-direction:column;flex:1"><span style="font:600 13.5px 'Poppins'">{{ s.t }}</span><span style="font:400 12px 'Poppins';color:var(--muted)">{{ s.d }}</span></div>
+                      <span style="font:500 12px 'Poppins';color:var(--muted);white-space:nowrap">{{ s.n }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <span style="font:400 13px/21px 'Poppins';color:var(--muted)">All agents in scope stop at once. Target traffic is blocked first, then sandboxes are terminated.</span>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <span style="font:500 12.5px 'Poppins'">Type <span style="font-family:'JetBrains Mono';background:var(--surface2);padding:2px 6px;border-radius:4px">{{ confirmWord }}</span> to confirm</span>
+                  <input value="{{ typed }}" onChange="{{ onType }}" placeholder="{{ confirmWord }}" style="height:44px;box-sizing:border-box;padding:0 12px;border-radius:10px;border:{{ typedBd }};background:var(--surface);color:var(--text);font:400 14px 'JetBrains Mono';outline:none;transition:border-color .2s">
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding-top:4px">
+                  <span style="font:400 12px 'Poppins';color:var(--muted);flex:1">Recorded in the audit ledger</span>
+                  <span style="height:44px;padding:0 18px;display:inline-flex;align-items:center;border-radius:10px;border:1px solid var(--border2);font:500 13.5px 'Poppins'">Cancel</span>
+                  <span onClick="{{ onKill }}" style="{{ stopStyle }}">Stop now</span>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ killRun }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:32px;display:flex;flex-direction:column;gap:22px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-end">
+                <div style="display:flex;flex-direction:column;gap:4px"><span style="font:500 13px 'Poppins';color:var(--muted)">{{ killScopeLabel }}</span><span style="font:600 24px 'Poppins'">{{ killTitle }}</span></div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font:400 12px 'Poppins';color:var(--muted)">Total halt time</span><span style="font:600 52px/58px 'Poppins';font-variant-numeric:tabular-nums;color:{{ killTotalColor }}">{{ killTotal }}</span></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <sc-for list="{{ haltSteps }}" as="h" hint-placeholder-count="4">
+                  <div style="display:grid;grid-template-columns:28px 230px 1fr 70px;gap:14px;align-items:center">
+                    <span style="width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:{{ h.ibg }};color:{{ h.ifg }};border:{{ h.ibd }};box-sizing:border-box;transition:background .3s"><sc-if value="{{ h.done }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if><sc-if value="{{ h.active }}" hint-placeholder-val="{{ false }}"><span style="width:12px;height:12px;border-radius:50%;border:2px solid var(--primary);border-top-color:transparent;animation:bwspin .7s linear infinite"></span></sc-if></span>
+                    <div style="display:flex;flex-direction:column"><span style="font:600 14px 'Poppins';color:{{ h.tc }}">{{ h.l }}</span><span style="font:400 12px 'Poppins';color:var(--muted)">{{ h.target }}</span></div>
+                    <div style="position:relative;height:10px;border-radius:5px;background:var(--surface2)"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ h.w }};border-radius:5px;background:{{ h.bar }};transition:width .5s ease-out"></div><span style="position:absolute;top:-4px;bottom:-4px;left:{{ h.tx }};width:2px;background:var(--muted);opacity:{{ h.to }}"></span></div>
+                    <span style="font:600 14px 'Poppins';font-variant-numeric:tabular-nums;text-align:right;color:{{ h.tc }}">{{ h.t }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;border-top:1px solid var(--border)">
+                <span style="font:400 12px 'JetBrains Mono';color:var(--muted)">{{ killAudit }}</span>
+                <div style="display:flex;gap:8px"><span onClick="{{ onKillReset }}" style="cursor:pointer;height:40px;padding:0 16px;display:inline-flex;align-items:center;border-radius:10px;border:1px solid var(--border2);font:500 13px 'Poppins'">Replay the demo</span><span style="height:40px;padding:0 16px;display:inline-flex;align-items:center;border-radius:10px;background:var(--primary);color:var(--on-primary);font:500 13px 'Poppins'">View audit event</span></div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="3b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px"><a class="dv-oid" href="#3b">3b</a><span style="font:500 14px/22px 'Poppins';white-space:nowrap">Emergency link for SOC. No login. Hold the button to stop.</span></div>
+      <div style="display:flex;gap:24px">
+      <div style="width:390px;height:844px;background:#0E0F13;color:#fff;border-radius:44px;overflow:hidden;border:10px solid #16171D;box-sizing:content-box;display:flex;flex-direction:column">
+        <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font:600 14px 'Poppins'"><span>23:14</span><span style="width:110px;height:28px;border-radius:14px;background:#000"></span><span style="font-size:12px">4G</span></div>
+        <div style="padding:16px 24px;display:flex;align-items:center;gap:10px"><img src="https://cdn.prod.website-files.com/69e90ea41839aa80aa5fdae3/69ec953abebfc9ed2233bc55_Red%201.png" alt="" style="width:28px;height:28px;object-fit:contain"><span style="font:600 16px 'Poppins'">Blackwing</span><span style="margin-left:auto;font:500 12px 'Poppins';color:#A0A3AC">Emergency stop</span></div>
+        <sc-if value="{{ eIdle }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:8px 24px;display:flex;flex-direction:column;gap:6px">
+            <span style="font:600 30px/38px 'Poppins'">Stop all testing for <span style="color:#FF5A6E">Acme Corp</span></span>
+            <span style="font:400 14px/22px 'Poppins';color:#C9CBD1">2 runs are active right now. Test window: Mon to Fri, 22:00 to 06:00 Europe/London.</span>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center">
+            <div onPointerDown="{{ holdStart }}" onPointerUp="{{ holdEnd }}" onPointerLeave="{{ holdEnd }}" style="position:relative;width:250px;height:250px;border-radius:50%;cursor:pointer;user-select:none;touch-action:none">
+              <svg width="250" height="250" viewBox="0 0 250 250" style="position:absolute;inset:0"><circle cx="125" cy="125" r="118" style="fill:none;stroke:#3A1E24;stroke-width:8"></circle><circle cx="125" cy="125" r="118" transform="rotate(-90 125 125)" style="fill:none;stroke:#FFFFFF;stroke-width:8;stroke-linecap:round;stroke-dasharray:741.4;stroke-dashoffset:{{ holdOff }}"></circle></svg>
+              <div style="position:absolute;inset:18px;border-radius:50%;background:#B01A2D;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transform:{{ holdScale }};transition:transform .15s;box-shadow:0 0 0 10px rgba(176,26,45,.18)">
+                <svg width="34" height="34" viewBox="0 0 24 24" style="fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="{{ ic.kill }}"></path></svg>
+                <span style="font:700 20px/24px 'Poppins';text-align:center">STOP ALL<br>TESTING NOW</span>
+              </div>
+            </div>
+          </div>
+          <div style="padding:0 24px 34px;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center">
+            <span style="font:600 15px 'Poppins'">{{ holdHint }}</span>
+            <span style="font:400 12.5px 'Poppins';color:#A0A3AC">Link issued to soc@acme.example, valid until 2026-10-21 06:00 UTC</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ eRun }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:8px 24px;display:flex;flex-direction:column;gap:6px">
+            <span style="font:500 13px 'Poppins';color:#A0A3AC">{{ eSub }}</span>
+            <span style="font:600 64px/70px 'Poppins';font-variant-numeric:tabular-nums">{{ eTotal }}</span>
+          </div>
+          <div style="padding:16px 24px;display:flex;flex-direction:column;gap:12px;flex:1">
+            <sc-for list="{{ eSteps }}" as="h" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;background:{{ h.mbg }};transition:background .3s">
+                <span style="width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:{{ h.mi }};color:#0E0F13;flex:none"><sc-if value="{{ h.done }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if></span>
+                <span style="flex:1;font:500 15px 'Poppins';color:{{ h.mt }}">{{ h.l }}</span>
+                <span style="font:600 15px 'Poppins';font-variant-numeric:tabular-nums;color:{{ h.mt }}">{{ h.t }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:0 24px 34px;display:flex;flex-direction:column;gap:10px">
+            <span style="font:400 13px/20px 'Poppins';color:#C9CBD1">Acme Corp admins and Blackwing on-call have been notified.</span>
+            <span onClick="{{ onEReset }}" style="cursor:pointer;height:48px;border-radius:14px;border:1px solid #41444E;display:flex;align-items:center;justify-content:center;font:500 14px 'Poppins'">Replay the demo</span>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="width:390px;height:844px;background:#0E0F13;color:#fff;border-radius:44px;overflow:hidden;border:10px solid #16171D;box-sizing:content-box;display:flex;flex-direction:column">
+        <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font:600 14px 'Poppins'"><span>09:02</span><span style="width:110px;height:28px;border-radius:14px;background:#000"></span><span style="font-size:12px">4G</span></div>
+        <div style="padding:16px 24px;display:flex;align-items:center;gap:10px"><img src="https://cdn.prod.website-files.com/69e90ea41839aa80aa5fdae3/69ec953abebfc9ed2233bc55_Red%201.png" alt="" style="width:28px;height:28px;object-fit:contain"><span style="font:600 16px 'Poppins'">Blackwing</span></div>
+        <div style="padding:24px;display:flex;flex-direction:column;gap:14px">
+          <span style="font:500 13px 'Poppins';color:#F0A83A">Link expired</span>
+          <span style="font:600 28px/36px 'Poppins'">This emergency link has expired</span>
+          <span style="font:400 14px/23px 'Poppins';color:#C9CBD1">It was valid until 2026-10-21 06:00 UTC. If testing is still affecting your systems, call now.</span>
+        </div>
+        <div style="padding:0 24px;display:flex;flex-direction:column;gap:12px">
+          <span style="height:64px;border-radius:16px;background:#fff;color:#0E0F13;display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font:600 16px 'Poppins'">Blackwing emergency line</span><span style="font:500 13px 'Poppins'">+44 20 0000 0000</span></span>
+          <span style="height:64px;border-radius:16px;border:1px solid #41444E;display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font:600 15px 'Poppins'">Acme escalation contact</span><span style="font:400 13px 'Poppins';color:#C9CBD1">Alex Kim, +44 20 0000 0001</span></span>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <div style="width:240px;display:flex;flex-direction:column;gap:14px;font:400 12.5px/20px 'Poppins';color:#3E424D;padding-top:40px">
+      <div style="font:600 13px 'Poppins';color:#16171D">Try it</div><span>In 3a, click a ring or a row, type the name, then press Stop now. In 3b, press and hold the red button for 1.5 seconds. Letting go cancels.</span>
+      <div style="font:600 13px 'Poppins';color:#16171D">Why hold</div><span>A double tap can happen by accident in a pocket. Holding is deliberate and still takes under two seconds. The ring fills so you can see your progress.</span>
+      <div style="font:600 13px 'Poppins';color:#16171D">Timing bars</div><span>Each step's bar is drawn against its target (2 s for egress, 10 s for sandboxes). The tick marks the target, so a slow halt is obvious.</span>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;}}">
+class Component extends DCLogic {
+  state = { tick:0, g2:401, g2dec:null, g2Reason:'', scope:'asset', typed:'', kphase:'form', kstep:0, kms:0, hold:0, ephase:'idle', estep:0, ems:0 };
+  componentDidMount(){ this.iv=setInterval(()=>this.setState(s=>({tick:s.tick+1, g2: s.g2dec ? s.g2 : (s.g2<=1 ? 401 : s.g2-1)})),1000); }
+  componentWillUnmount(){ clearInterval(this.iv); clearInterval(this.kiv); clearInterval(this.eiv); clearInterval(this.hiv); }
+  runHalt(prefix){
+    const marks=[600,1500,1900,2200]; const start=Date.now();
+    const iv = setInterval(()=>{ const ms=Date.now()-start; const st=marks.filter(m=>ms>=m).length;
+      this.setState({[prefix+'ms']:ms,[prefix+'step']:st}); if(st>=4) clearInterval(iv); },60);
+    if(prefix==='k') { clearInterval(this.kiv); this.kiv=iv; } else { clearInterval(this.eiv); this.eiv=iv; }
+  }
+  renderVals(){
+    const s=this.state, V=n=>'var(--'+n+')';
+    const L={bg:'#F7F7F8',surface:'#FFFFFF',surface2:'#F1F1F3',border:'#E6E7EA',border2:'#CDD0D6',text:'#16171D',muted:'#5A5E69',primary:'#004777','primary-soft':'#E5EEF4','on-primary':'#FFFFFF',ok:'#157A3A','ok-soft':'#E8F4EC',warn:'#9A4D00','warn-soft':'#FCF2E4',bad:'#B42318','bad-soft':'#FBECEA',kill:'#B01A2D','kill-soft':'rgba(176,26,45,.14)','on-kill':'#FFFFFF','crit-bg':'#6E1520','crit-fg':'#FFFFFF',high:'#B42318','high-soft':'#FBECEA',med:'#A8450A','med-soft':'#FDF1E7',low:'#7A5600','low-soft':'#FAF3DE',code:'#FAFAFA',focus:'rgba(0,71,119,.3)'};
+    const D={bg:'#16171D',surface:'#1E1F26',surface2:'#26282F',border:'#30323A',border2:'#41444E',text:'#ECECEE',muted:'#A0A3AC',primary:'#6CB4E4','primary-soft':'#122C3E','on-primary':'#04131F',ok:'#4CC27A','ok-soft':'#132A1C',warn:'#F0A83A','warn-soft':'#2E2210',bad:'#F2776B','bad-soft':'#351A18',kill:'#C8243A','kill-soft':'rgba(200,36,58,.22)','on-kill':'#FFFFFF','crit-bg':'#4A0E16','crit-fg':'#FFB4BD',high:'#F2776B','high-soft':'#351A18',med:'#F59A5A','med-soft':'#352312',low:'#E3C04D','low-soft':'#2E2812',code:'#191A20',focus:'rgba(108,180,228,.4)'};
+    const T=(this.props.theme??'light')==='dark'?D:L; const vars={}; Object.keys(T).forEach(k=>vars['--'+k]=T[k]);
+    const pad=n=>String(n).padStart(2,'0'); const mmss=x=>pad(Math.floor(x/60))+':'+pad(x%60);
+    const ic={search:'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z M21 21l-4.3-4.3',bell:'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10.3 21a1.9 1.9 0 0 0 3.4 0',kill:'M7.9 2h8.2L22 7.9v8.2L16.1 22H7.9L2 16.1V7.9z M15 9l-6 6 M9 9l6 6',pause:'M8 5v14 M16 5v14',shield:'M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z M9 12l2 2 4-4',agent:'M4 8h16v12H4z M12 4v4 M9 13h.01 M15 13h.01',warn:'M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z M12 9v4 M12 17h.01',x:'M18 6 6 18 M6 6l12 12',check:'M20 6 9 17l-5-5'};
+    const railD=[['Dashboard','M3 3h7v9H3z M14 3h7v5h-7z M14 12h7v9h-7z M3 16h7v5H3z'],['Assets','M3 4h18v6H3z M3 14h18v6H3z M7 7h.01 M7 17h.01'],['Authorisations','M14 2H6v20h12V6z M14 2v4h4 M8 17c2-2 3 1 4-1s2 0 4 0'],['Assessments','M4 17l6-6-6-6 M12 19h8'],['Approvals','M9 11l3 3 8-8 M20 12v7H4V5h11'],['Findings','M8 6a4 4 0 0 1 8 0v1H8z M6 9h12v6a6 6 0 0 1-12 0z M12 9v12 M3 13h3 M18 13h3'],['Reports','M14 2H6v20h12V6z M14 2v4h4 M9 13h6 M9 17h6'],['Audit ledger','M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01'],['Settings','M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6']];
+    const rail=railD.map(([n,d],i)=>({n,d,bg:i===3?V('primary-soft'):'transparent',fg:i===3?V('primary'):V('muted'),badge:i===4}));
+    const t=s.tick, el=4320+t;
+    const elapsed=Math.floor(el/3600)+'h '+pad(Math.floor(el%3600/60))+'m '+pad(el%60)+'s';
+    const cu=82360+t; const clockUtc=pad(Math.floor(cu/3600)%24)+':'+pad(Math.floor(cu%3600/60))+':'+pad(cu%60)+' UTC';
+    const cost=12.40+t*0.03, req=8214+t*7, durPct=el/14400;
+    const gc=p=>p>=1?V('bad'):p>=.8?V('warn'):V('primary');
+    const gauges=[{label:'Model cost',cap:'cap $50.00',val:'$'+cost.toFixed(2),pct:Math.min(100,cost/50*100)+'%',c:gc(cost/50)},{label:'Requests',cap:'budget 20,000',val:req.toLocaleString('en-GB'),pct:Math.min(100,req/200)+'%',c:gc(req/20000)},{label:'Duration',cap:'max 4h',val:Math.round(durPct*100)+'%',pct:durPct*100+'%',c:gc(durPct)}];
+    const authStrip=[{k:'Scope',v:'shop.staging.acme.example, api.acme.example /api/**'},{k:'Window',v:'Mon to Fri 22:00 to 06:00 Europe/London'},{k:'Max intrusiveness',v:'Active-safe'},{k:'Expires',v:'2026-12-31, in 72 days'}];
+    const PX=6, W=1060, hash=(a,b)=>{let h=(a*374761393+b*668265263)|0; h=(h^(h>>>13))*1274126177|0; return ((h^(h>>>16))>>>0)/4294967296;};
+    const laneDefs=[
+      {name:'orchestrator',task:'Coordinating 5 sessions across 42 test cases',turns:118,cost:'$2.10',p:.18,st:'run'},
+      {name:'recon',task:'Mapping /api/** from openapi.yaml and crawl',turns:64,cost:'$1.30',p:.32,st:'run'},
+      {name:'web-api-specialist',task:'Paused. Waiting for Gate 2 on POST /api/admin/export',turns:212,cost:'$4.80',p:.4,st:'pause'},
+      {name:'authz-specialist',task:'Testing IDOR on /api/orders/:id as Customer B',turns:176,cost:'$3.20',p:.45,st:'run'},
+      {name:'validator',task:'Replaying fnd_01JXYZ03 against the negative control',turns:41,cost:'$1.00',p:.22,st:'run'}];
+    const pauseAt=4320-(401-s.g2)-200+ (s.g2dec?0:0);
+    const pauseSec=4300-(401-401); 
+    const lanes=laneDefs.map((d,li)=>{ const ev=[];
+      for(let sec=el-185; sec<=el; sec++){ if(d.st==='pause'&&sec>pauseSec) break; const r=hash(li+1,sec); if(r<d.p){ const k=hash(sec,li+7);
+        const type=k<.62?'http':k<.88?'tool':k<.96?'block':'find'; const y=8+Math.floor(hash(sec,li+3)*30);
+        ev.push(type==='http'?{x:sec*PX+'px',top:y+'px',s:'6px',bg:V('primary'),bd:'none',r:'50%',rot:'none'}:type==='tool'?{x:sec*PX+'px',top:y+'px',s:'7px',bg:V('text'),bd:'none',r:'1px',rot:'none'}:type==='block'?{x:sec*PX+'px',top:y+'px',s:'9px',bg:'transparent',bd:'1.5px solid '+V('warn'),r:'50%',rot:'none'}:{x:sec*PX+'px',top:y+'px',s:'8px',bg:V('high'),bd:'none',r:'1px',rot:'rotate(45deg)'}); } }
+      const paused=d.st==='pause';
+      return {name:d.name,task:d.task,turns:d.turns+(paused?0:Math.floor(t/(3+li))),cost:d.cost,events:ev,dot:paused?V('warn'):V('primary'),anim:paused?'none':'bwpulse 1.6s ease-in-out infinite',taskc:paused?V('warn'):V('muted'),bg:'transparent',pausedX:paused?(pauseSec*PX)+'px':null}; });
+    const trackX='translateX('+(W-el*PX)+'px)';
+    const script=[['recon','HTTP','GET /api/products?q=shoe','200, 4.1 KB, 182 ms'],['web-api-specialist','Tool','Sent probe set sqli-time-v3 to parameter q, 12 requests','policy ok'],['authz-specialist','HTTP','GET /api/orders/10442 as Customer B','200, 1.9 KB'],['policy','Blocked','Out-of-scope host api.partner.example. Request not sent.','rule 2'],['validator','Tool','Replaying candidate 2 of 3 with negative control','sandbox sb_7f2'],['authz-specialist','HTTP','GET /api/orders/10443 as Customer B','200, 2.0 KB'],['recon','Tool','Parsed openapi.yaml, 214 operations, 38 tagged admin','spec v3.1'],['web-api-specialist','Gate 2','Requested approval for POST /api/admin/export','paged 2'],['validator','Finding','Confirmed BOLA on GET /api/orders/:id, 3 of 3 replays','fnd_01JXYZ02'],['orchestrator','Tool','Moved 4 test cases off web-api-specialist while paused','plan v2'],['recon','HTTP','GET /.well-known/security.txt','404, 0.2 KB'],['authz-specialist','HTTP','PATCH /api/profile as Customer A, token redacted','403'],['oob','Callback','DNS lookup received for c7f2.oob.blackwing.example','from 34.0.0.0/8'],['validator','Tool','Negative control for SSRF candidate behaved as expected','pass']];
+    const kindStyle=k=>({HTTP:[V('surface2'),V('text')],Tool:[V('primary-soft'),V('primary')],Blocked:[V('warn-soft'),V('warn')],'Gate 2':[V('warn'),'#fff'],Finding:[V('high-soft'),V('high')],Callback:[V('ok-soft'),V('ok')]}[k]);
+    const idx=Math.floor(t/2)+8, feed=[];
+    for(let j=0;j<8;j++){ const n=idx-j, it=script[((n%14)+14)%14], ks=kindStyle(it[1]); const sec=cu-j*2-(t%2);
+      feed.push({time:pad(Math.floor(sec/3600)%24)+':'+pad(Math.floor(sec%3600/60))+':'+pad(sec%60),agent:it[0],kind:it[1],text:it[2],meta:it[3],kbg:ks[0],kfg:ks[1],rowbg:j===0&&t%2===0?V('primary-soft'):'transparent'}); }
+    const streamFilters=[{l:'All agents',bg:V('text'),fg:V('bg')},{l:'HTTP',bg:V('surface2'),fg:V('text')},{l:'Policy',bg:V('surface2'),fg:V('text')},{l:'Errors only',bg:V('surface2'),fg:V('text')}];
+    const testsRaw=[['Executed',23,V('primary')],['Executing',5,'#4F8DB8'],['Proposed',9,V('border2')],['Skipped',2,V('muted')],['Blocked',2,V('warn')],['Model declined',1,V('bad')]];
+    const tests=testsRaw.map(([l,n,c])=>({l,n,c,pct:(n/42*100)+'%'}));
+    const C=2*Math.PI*74; let acc=0; const testArcs=testsRaw.map(([l,n,c])=>{ const len=n/42*C; const a={c,dash:(Math.max(len-2,0))+' '+C,off:-acc}; acc+=len; return a; });
+    const bars=n=>[1,2,3,4].map(i=>({h:(2+i*1.75)+'px',o:i<=n?1:.25}));
+    const valid=t%6<3;
+    const cands=[
+      {sev:'Critical',bars:bars(4),sbg:V('crit-bg'),sfg:V('crit-fg'),title:'SQL injection in GET /api/products?q',v:'Confirmed',vc:V('ok'),spin:'2px solid '+V('ok'),anim:'none'},
+      {sev:'High',bars:bars(3),sbg:V('high-soft'),sfg:V('high'),title:'Broken object-level authorisation on GET /api/orders/:id',v:'Confirmed',vc:V('ok'),spin:'2px solid '+V('ok'),anim:'none'},
+      {sev:'High',bars:bars(3),sbg:V('high-soft'),sfg:V('high'),title:'Blind SSRF via webhook URL, callback received',v:'Validating, replay '+(1+t%3)+' of 3',vc:V('primary'),spin:'2px solid '+V('primary'),anim:'bwspin .8s linear infinite'},
+      {sev:'Medium',bars:bars(2),sbg:V('med-soft'),sfg:V('med'),title:'Verbose error discloses stack trace',v:'Suspected',vc:V('warn'),spin:'2px dashed '+V('warn'),anim:'none'}];
+    cands[2].spin='2px solid '+V('primary'); if(true){ cands[2].spin='2px solid transparent'; cands[2].spinTop=V('primary'); cands[2].spin='2px solid '+V('border2'); }
+    const history=[{group:'Running',items:[{t:'Acme Shop and Orders API',s:'Executing, 1 branch paused',bg:V('surface'),dot:V('primary'),anim:'bwpulse 1.6s infinite'}]},{group:'Waiting on you',items:[{t:'Plan v2 for Acme Shop',s:'Gate 1, requested by Priya',bg:'transparent',dot:V('warn'),anim:'none'},{t:'POST /api/admin/export',s:'Gate 2, '+mmss(s.g2)+' left',bg:'transparent',dot:V('warn'),anim:'bwpulse 1.4s infinite'}]},{group:'Earlier',items:[{t:'acme/storefront white box',s:'Completed 2026-10-14',bg:'transparent',dot:V('ok'),anim:'none'},{t:'Retest fnd_01JXYZ04',s:'Fixed, retest passed',bg:'transparent',dot:V('ok'),anim:'none'},{t:'Acme Orders API',s:'Killed by SOC in 7.4 s',bg:'transparent',dot:V('kill'),anim:'none'}]}];
+    const sbg=(c)=>c<300?[V('ok-soft'),V('ok')]:c<500?[V('warn-soft'),V('warn')]:[V('bad-soft'),V('bad')];
+    const call=(m,p,c,tm)=>{const x=sbg(c);return {m,p,s:String(c),sbg:x[0],sfg:x[1],t:tm};};
+    const transcript=[
+      {agent:'recon',time:'23:02 UTC',text:'Ingested openapi.yaml for Acme Orders API. 214 operations in scope, 38 tagged admin and excluded by SA-0042. Confirmed the surface with a light crawl.',calls:[call('GET','/api/products?q=shoe',200,'182 ms'),call('GET','/.well-known/security.txt',404,'41 ms')]},
+      {agent:'authz-specialist',time:'23:08 UTC',text:'Customer B can read order 10442, which belongs to Customer A. The negative control (anonymous) gets 401. Handing to the validator.',calls:[call('GET','/api/orders/10442 as Customer B',200,'96 ms'),call('GET','/api/orders/10442 anonymous',401,'38 ms')]},
+      {agent:'validator',time:'23:10 UTC',text:'Replay passed 3 of 3 and the negative control behaved as expected. Marked as confirmed. It goes to Gate 3 triage and is not released yet.',calls:[]},
+      {agent:'web-api-specialist',time:'23:12 UTC',text:'The admin export accepts GET from the Support role. Checking whether it runs on POST needs a state-changing request on an excluded path, so I asked for approval and paused this branch.',calls:[]}];
+    const g2=s.g2, g2Color=g2<=60?V('bad'):g2<=300?V('warn'):V('text');
+    const g2Label=g2<=60?'Final minute':g2<=300?'Under 5 minutes':'Auto-deny in';
+    const reasonOk=s.g2Reason.trim().length>=8;
+    const approveStyle={cursor:reasonOk?'pointer':'not-allowed',height:48,padding:'0 22px',display:'inline-flex',alignItems:'center',borderRadius:10,border:'1px solid '+V('border2'),color:reasonOk?V('text'):V('muted'),background:reasonOk?V('surface'):V('surface2'),font:"500 14px 'Poppins'"};
+    const dec=s.g2dec;
+    const words={run:'run_01JABC7Q3M',asset:'ACME SHOP',org:'ACME CORP'};
+    const order={run:0,asset:1,org:2}; const match=s.typed.trim().toLowerCase()===words[s.scope].toLowerCase();
+    const pick=k=>()=>this.setState({scope:k,typed:''});
+    const ringDefs=[{k:'org',rad:122,label:'Acme Corp, all runs',ty:34},{k:'asset',rad:84,label:'Acme Shop',ty:72},{k:'run',rad:44,label:'This run',ty:139}];
+    const rings=ringDefs.map(r=>{ const inc=order[s.scope]>=order[r.k], sel=s.scope===r.k;
+      return {rad:r.rad,label:r.label,ty:r.ty,pick:pick(r.k),fill:inc?'rgba(176,26,45,'+(sel?.16:.10)+')':V('surface'),stroke:inc?V('kill'):V('border2'),sw:sel?2.5:1.25,tc:inc?V('kill'):V('muted')}; });
+    const scopeDefs=[{k:'run',t:'This run',d:'run_01JABC7Q3M',n:'5 agents'},{k:'asset',t:'This asset',d:'Acme Shop, every run on it',n:'2 runs'},{k:'org',t:'Entire organisation',d:'Acme Corp, all runs and assets',n:'3 runs'}];
+    const scopes=scopeDefs.map(d=>{ const sel=s.scope===d.k; return Object.assign({},d,{pick:pick(d.k),bd:sel?'1.5px solid '+V('kill'):'1px solid '+V('border'),bg:sel?'rgba(176,26,45,.06)':V('surface'),radio:sel?'1.5px solid '+V('kill'):'1.5px solid '+V('border2'),dot:sel?V('kill'):'transparent'}); });
+    const stopStyle={cursor:match?'pointer':'not-allowed',height:44,padding:'0 22px',display:'inline-flex',alignItems:'center',borderRadius:10,background:V('kill'),color:V('on-kill'),opacity:match?1:.4,font:"600 14px 'Poppins'",transition:'opacity .2s'};
+    const H=[{l:'Egress blocked',target:'Target under 2 s',t:1.2,tg:2},{l:'Sandboxes terminated',target:'Target under 10 s',t:6.8,tg:10},{l:'Model access keys revoked',target:'After sandboxes',t:7.1,tg:null},{l:'Workflows cancelled',target:'Last step',t:7.4,tg:null}];
+    const haltSteps=H.map((h,i)=>{ const done=s.kstep>i, active=s.kstep===i&&s.kphase==='run';
+      return {l:h.l,target:h.target,done,active,t:done?h.t.toFixed(1)+' s':active?'...':'',w:done?(h.t/10*100)+'%':active?'8%':'0%',bar:done?V('ok'):V('primary'),tx:h.tg?(h.tg/10*100)+'%':'0%',to:h.tg?.6:0,ibg:done?V('ok'):'transparent',ifg:'#fff',ibd:done?'none':'1.5px solid '+V('border2'),tc:done||active?V('text'):V('muted')}; });
+    const kdone=s.kstep>=4, sim=Math.min(7.4,s.kms/2200*7.4);
+    const eSteps=H.map((h,i)=>{ const done=s.estep>i; return {l:h.l,t:done?h.t.toFixed(1)+' s':'',done,mbg:done?'#1E2A22':'#1E1F26',mi:done?'#4CC27A':'#41444E',mt:done?'#FFFFFF':'#A0A3AC'}; });
+    const edone=s.estep>=4, esim=Math.min(7.4,s.ems/2200*7.4);
+    const HC=741.4;
+    return { vars, ic, rail, elapsed, clockUtc, gauges, authStrip, lanes, trackX, feed, streamFilters, tests, testArcs, cands, history, transcript,
+      g2Clock:mmss(g2), g2Color, g2Label, g2Anim:g2<=60?'bwpulse 1s ease-in-out infinite':'none', g2Off:804.2*(1-g2/600), g2Pct:(g2/600*100)+'%',
+      g2Pending:!dec, g2Done:!!dec, g2Reason:s.g2Reason, onG2Reason:e=>this.setState({g2Reason:e.target.value}), approveStyle,
+      onDeny:()=>this.setState({g2dec:'deny'}), onApprove:()=>{ if(reasonOk) this.setState({g2dec:'approve'}); }, onG2Reset:()=>this.setState({g2dec:null,g2:401,g2Reason:''}),
+      g2DoneTitle:dec==='approve'?'Approved once':'Denied',g2DoneBody:dec==='approve'?'One POST /api/admin/export is allowed for this branch only. A reversal journal entry was opened, and the branch resumes within a few seconds.':'The request was not sent. The branch moves on to its next test case and the agent is told the action is out of scope.',
+      g2DoneBg:dec==='approve'?V('warn-soft'):V('surface2'),g2DoneFg:dec==='approve'?V('warn'):V('text'),g2DoneIcon:dec==='approve'?ic.check:ic.x,
+      rings, scopes, confirmWord:words[s.scope], typed:s.typed, onType:e=>this.setState({typed:e.target.value}), typedBd:match?'1.5px solid '+V('kill'):'1px solid '+V('border2'), stopStyle,
+      onKill:()=>{ if(match){ this.setState({kphase:'run',kstep:0,kms:0}); this.runHalt('k'); } },
+      killForm:s.kphase==='form', killRun:s.kphase==='run', killScopeLabel:'Stopping '+scopeDefs.find(d=>d.k===s.scope).d, killTitle:kdone?'All testing stopped':'Stopping now', killTotal:sim.toFixed(1)+' s', killTotalColor:kdone?V('ok'):V('text'), haltSteps,
+      killAudit:kdone?'audit evt_01JB7P2K, kill by Priya Nair':'Recording to audit ledger',
+      onKillReset:()=>{ clearInterval(this.kiv); this.setState({kphase:'form',kstep:0,kms:0,typed:''}); },
+      eIdle:s.ephase==='idle', eRun:s.ephase==='run', holdOff:HC*(1-s.hold/100), holdScale:s.hold>0?'scale(.96)':'scale(1)', holdHint:s.hold>0?'Keep holding':'Press and hold for 1.5 seconds',
+      holdStart:()=>{ clearInterval(this.hiv); this.hiv=setInterval(()=>{ this.setState(st=>{ const h=Math.min(100,st.hold+100/15); if(h>=100){ clearInterval(this.hiv); setTimeout(()=>{ this.setState({ephase:'run',estep:0,ems:0,hold:0}); this.runHalt('e'); },0); } return {hold:h}; }); },100); },
+      holdEnd:()=>{ clearInterval(this.hiv); if(this.state.ephase==='idle') this.setState({hold:0}); },
+      eSub:edone?'All testing for Acme Corp stopped':'Stopping all testing for Acme Corp', eTotal:esim.toFixed(1)+' s', eSteps,
+      onEReset:()=>{ clearInterval(this.eiv); this.setState({ephase:'idle',estep:0,ems:0,hold:0}); }
+    };
+  }
+}
+</script>
+</body>
+</html>

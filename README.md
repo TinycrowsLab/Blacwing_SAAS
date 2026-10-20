@@ -78,6 +78,18 @@ flowchart TB
 
 ---
 
+## UI design (source of truth for every GUI)
+
+The console's look and behaviour come from the Claude Design export in [`design/`](design/README.md):
+
+- [`Blackwing Design System.dc.html`](design/Blackwing%20Design%20System.dc.html): colour tokens for light and dark, Poppins and JetBrains Mono type, grid, icons and components.
+- [`Blackwing Screens.dc.html`](design/Blackwing%20Screens.dc.html): pass 1 covers the live run (flight deck and transcript), the Gate 2 decision (desktop and mobile), the kill dialog and the SOC emergency link.
+- [`design/tokens.json`](design/tokens.json): the tokens as data, for `packages/ui`.
+
+**Every GUI issue (`apps/web`, `packages/ui`, SOC and emergency pages, report and e-mail templates) implements this design.** Screens it does not cover yet are composed from its design system. To view it locally: `python3 -m http.server 8099 -d design`.
+
+---
+
 ## Feature list (v1)
 
 > This is the customer feature list. **SaaS-edition overrides** (in `CONTEXT_PACK.md` §1.1) take precedence where they differ — notably: **multi-tenant is IN scope** for SaaS (feature 41's single-node/single-tenant is the later on-prem edition), and **"bring your own model" (36) means a Claude endpoint only** — Anthropic API, AWS Bedrock, GCP Vertex or Microsoft Foundry (no Azure OpenAI / third-party models).
@@ -208,6 +220,7 @@ Every member extends the strict root `tsconfig.base.json` and is wired into one 
 | [`docs/architecture/FEATURE_LIST.md`](docs/architecture/FEATURE_LIST.md) | The complete feature list. |
 | [`docs/architecture/EPICS.md`](docs/architecture/EPICS.md) | Epic catalogue. |
 | [`docs/architecture/REFERENCES.md`](docs/architecture/REFERENCES.md) | Prior-art, OSS tooling, orchestration patterns, persona template, standards IDs. |
+| [`design/`](design/README.md) | **UI source of truth**: Claude Design export (design system, screens, `tokens.json`). |
 | [`CLAUDE.md`](CLAUDE.md) | Per-session working rules and the non-negotiable invariants. |
 | GitHub Issues | 69 epics + ~771 self-contained task issues, dependency-wired. |
 | *Blackwing SaaS v1* project board | Kanban view (Backlog / Ready / In progress / In review / Blocked / Done). |

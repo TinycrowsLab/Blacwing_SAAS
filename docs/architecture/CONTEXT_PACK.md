@@ -286,6 +286,7 @@ eval/
   targets/  ground-truth/  harness/
 docs/
   adr/  architecture/  runbooks/  api/  user/
+design/               Claude Design export: UI source of truth for every GUI (design system, screens, tokens.json); see design/README.md
 .github/ (workflows, ISSUE_TEMPLATE, PULL_REQUEST_TEMPLATE.md, CODEOWNERS)
 CLAUDE.md  README.md  SECURITY.md  LICENSE (proprietary notice)
 ```
