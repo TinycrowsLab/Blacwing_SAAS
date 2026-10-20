@@ -53,7 +53,7 @@ export class PriceTableError extends Error {
  * Tiered pricing approximation: long-context tiers are NOT modelled. Every request is costed at the
  * standard (base) tier rate, which is the cheapest tier, so budgets may under-estimate long-context
  * calls; the model gateway hard caps remain the enforcement point. Cache writes use the 5-minute
- * TTL rate (1.25x input); cache reads are 0.1x input (Opus 5.5 is 0.05x).
+ * TTL rate (1.25x input); cache reads are 0.1x input.
  *
  * SUPERSEDED by 2026-10-21: the 5.5-generation rates here were older-generation values. This
  * version stays frozen (its digest is recorded) so any run pinned to it replays identically.
