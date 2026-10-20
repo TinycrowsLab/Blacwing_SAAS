@@ -8,13 +8,25 @@
   "include": ["src"],
   "references": [
     {
+      "path": "../config"
+    },
+    {
       "path": "../contracts"
+    },
+    {
+      "path": "../errors"
     },
     {
       "path": "../ids"
     },
     {
+      "path": "../logger"
+    },
+    {
       "path": "../testing"
+    },
+    {
+      "path": "../time"
     }
   ]
 }

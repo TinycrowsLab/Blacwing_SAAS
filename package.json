@@ -56,6 +56,8 @@
     "graphql:generate": "pnpm -r --if-present run graphql:generate",
     "db:generate": "pnpm -r --if-present run db:generate",
     "db:migrate": "pnpm --filter @blackwing/db run db:migrate",
+    "db:seed": "pnpm --filter @blackwing/db run db:seed",
+    "db:seed:reset": "pnpm --filter @blackwing/db run db:seed:reset",
     "check:drift": "node scripts/check-drift.mjs stale",
     "check:images": "node scripts/check-images.mjs",
     "check:codeql": "node scripts/check-codeql.mjs",
