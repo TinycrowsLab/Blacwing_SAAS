@@ -5,11 +5,11 @@
  * `src/**\/*.int.test.ts` and run only under `pnpm test:int`. A member opts in with two files
  * under `src/` (so the member's tsconfig typechecks and lints them) and two scripts:
  *
- *   // src/vitest.config.ts   ("test": "vitest run --config src/vitest.config.ts")
+ *   // src/vitest.config.ts   ("test": "vitest run --configLoader runner --config src/vitest.config.ts")
  *   import { defineUnitConfig } from "@blackwing/testing/vitest-config";
  *   export default defineUnitConfig();
  *
- *   // src/vitest.int.config.ts   ("test:int": "vitest run --config src/vitest.int.config.ts")
+ *   // src/vitest.int.config.ts   ("test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts")
  *   import { defineIntegrationConfig } from "@blackwing/testing/vitest-config";
  *   export default defineIntegrationConfig();
  *

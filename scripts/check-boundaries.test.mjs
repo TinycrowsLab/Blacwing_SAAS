@@ -272,6 +272,7 @@ describe('the boundary model', () => {
       'packages/testing/typefixtures/strict.ts',
       'apps/web/e2e/login.ts',
       'packages/a/vitest.config.ts',
+      'packages/db/src/vitest.int.config.ts',
     ]) {
       assert.equal(isTestCode(file), true, file);
     }
@@ -279,6 +280,7 @@ describe('the boundary model', () => {
       'packages/a/src/x.ts',
       'packages/a/src/testing.ts',
       'apps/web/src/latest.ts',
+      'packages/a/src/vitest.other.config.ts',
     ]) {
       assert.equal(isTestCode(file), false, file);
     }

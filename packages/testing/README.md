@@ -15,14 +15,15 @@ for property tests). It makes the §8.6 tenant-isolation test the cheap default 
 
 Unit tests are `src/**/*.test.ts` and never need Docker. Integration tests are `src/**/*.int.test.ts` and run only
 under `pnpm test:int`. A member opts in with two config files under `src/` (so its tsconfig typechecks and
-lints them) and two scripts:
+lints them) and two scripts. `--configLoader runner` is required: the preset is TypeScript source, which
+Vitest's default bundling loader cannot import from a workspace dependency.
 
 ```ts
-// src/vitest.config.ts, with "test": "vitest run --config src/vitest.config.ts"
+// src/vitest.config.ts, with "test": "vitest run --configLoader runner --config src/vitest.config.ts"
 import { defineUnitConfig } from '@blackwing/testing/vitest-config';
 export default defineUnitConfig();
 
-// src/vitest.int.config.ts, with "test:int": "vitest run --config src/vitest.int.config.ts"
+// src/vitest.int.config.ts, with "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts"
 import { defineIntegrationConfig } from '@blackwing/testing/vitest-config';
 export default defineIntegrationConfig();
 ```
