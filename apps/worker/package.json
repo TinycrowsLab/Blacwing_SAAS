@@ -9,15 +9,27 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run --config src/vitest.config.ts",
     "test:int": "vitest run --config src/vitest.int.config.ts",
     "typecheck": "tsc -b --pretty false"
   },
-  "devDependencies": {
-    "@temporalio/client": "catalog:",
+  "dependencies": {
+    "@blackwing/config": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/logger": "workspace:*",
+    "@blackwing/workflow-shared": "workspace:*",
+    "@opentelemetry/api": "catalog:",
     "@temporalio/worker": "catalog:",
     "@temporalio/workflow": "catalog:",
+    "fastify": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@temporalio/client": "catalog:",
+    "tsx": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

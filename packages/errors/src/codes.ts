@@ -58,10 +58,24 @@ const DEFINITIONS = {
   CONFIG_INVALID: { status: 500, title: 'Invalid configuration', retryable: false },
   // Temporal connection (WORKFLOW-001). Misconfiguration is a server fault (500, never retried);
   // an unreachable server is a dependency outage (503, retryable).
-  TEMPORAL_CONFIG_INVALID: { status: 500, title: 'Invalid Temporal configuration', retryable: false },
-  TEMPORAL_TLS_MISCONFIGURED: { status: 500, title: 'Temporal TLS misconfigured', retryable: false },
-  TEMPORAL_NAMESPACE_NOT_FOUND: { status: 500, title: 'Temporal namespace not found', retryable: false },
+  TEMPORAL_CONFIG_INVALID: {
+    status: 500,
+    title: 'Invalid Temporal configuration',
+    retryable: false,
+  },
+  TEMPORAL_TLS_MISCONFIGURED: {
+    status: 500,
+    title: 'Temporal TLS misconfigured',
+    retryable: false,
+  },
+  TEMPORAL_NAMESPACE_NOT_FOUND: {
+    status: 500,
+    title: 'Temporal namespace not found',
+    retryable: false,
+  },
   TEMPORAL_UNAVAILABLE: { status: 503, title: 'Temporal unavailable', retryable: true },
+  // Worker bootstrap (WORKFLOW-002): a misconfigured process refuses to start rather than polling a guess.
+  WORKER_QUEUE_UNKNOWN: { status: 500, title: 'Unknown worker task queue', retryable: false },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

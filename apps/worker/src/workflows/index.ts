@@ -1,0 +1,8 @@
+// Workflow bundle entry (WORKFLOW-002). This graph is bundled for the deterministic workflow sandbox:
+// import only `@temporalio/workflow` and pure modules here, never Node built-ins or the client.
+// ORCH and SCHED add their workflows by re-exporting them from this file.
+
+/** Trivial workflow proving the worker end to end. It is not a product workflow. */
+export function noopWorkflow(): Promise<void> {
+  return Promise.resolve();
+}
