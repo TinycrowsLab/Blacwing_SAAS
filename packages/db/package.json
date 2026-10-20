@@ -6,15 +6,29 @@
   "license": "UNLICENSED",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./migrations/*": "./migrations/*"
   },
   "scripts": {
+    "db:generate": "drizzle-kit generate --config src/drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config src/drizzle.config.ts",
     "lint": "eslint . --max-warnings=0",
-    "test": "vitest run",
+    "test": "vitest run --configLoader runner --config src/vitest.config.ts",
+    "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts",
     "typecheck": "tsc -b --pretty false"
   },
+  "dependencies": {
+    "@blackwing/contracts": "workspace:*",
+    "drizzle-orm": "0.45.3",
+    "pg": "8.23.1",
+    "zod": "catalog:"
+  },
   "devDependencies": {
+    "@blackwing/ids": "workspace:*",
+    "@blackwing/testing": "workspace:*",
     "@types/node": "catalog:",
+    "@types/pg": "8.23.1",
+    "drizzle-kit": "0.31.11",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

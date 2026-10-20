@@ -48,6 +48,7 @@
     "openapi:generate": "pnpm -r --if-present run openapi:generate",
     "graphql:generate": "pnpm -r --if-present run graphql:generate",
     "db:generate": "pnpm -r --if-present run db:generate",
+    "db:migrate": "pnpm --filter @blackwing/db run db:migrate",
     "check:drift": "node scripts/check-drift.mjs stale",
     "check:images": "node scripts/check-images.mjs",
     "check:codeql": "node scripts/check-codeql.mjs",

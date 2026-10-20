@@ -19,6 +19,9 @@ CREATE EXTENSION IF NOT EXISTS vector;
 ALTER SCHEMA public OWNER TO bw_owner;
 REVOKE ALL ON SCHEMA public FROM PUBLIC;
 GRANT USAGE ON SCHEMA public TO bw_app;
+-- The platform-operator path (KILL-001) only reaches what a migration grants it explicitly (global
+-- kill events); it gets no default table privileges.
+GRANT USAGE ON SCHEMA public TO bw_operator;
 
 DO $$
 BEGIN

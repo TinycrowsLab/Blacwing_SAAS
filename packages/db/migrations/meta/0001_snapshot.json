@@ -1,0 +1,592 @@
+{
+  "id": "2ac89260-cb31-4673-a36e-5c8af214349b",
+  "prevId": "3b40bfc4-aa58-41c6-ab1c-375ae2553f12",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.kill_events": {
+      "name": "kill_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope_ref_id": {
+          "name": "scope_ref_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_type": {
+          "name": "actor_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_ref": {
+          "name": "actor_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'initiated'"
+        },
+        "triggered_at": {
+          "name": "triggered_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "egress_blocked_at": {
+          "name": "egress_blocked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sandboxes_terminated_at": {
+          "name": "sandboxes_terminated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "keys_revoked_at": {
+          "name": "keys_revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "workflows_cancelled_at": {
+          "name": "workflows_cancelled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "halt_ms": {
+          "name": "halt_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "affected": {
+          "name": "affected",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "reenabled_at": {
+          "name": "reenabled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reenabled_by": {
+          "name": "reenabled_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "kill_events_tenant_scope_ref_idx": {
+          "name": "kill_events_tenant_scope_ref_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope_ref_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "kill_events_tenant_triggered_at_idx": {
+          "name": "kill_events_tenant_triggered_at_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "triggered_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "kill_events_tenant_isolation": {
+          "name": "kill_events_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["bw_app"],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        },
+        "kill_events_operator_global": {
+          "name": "kill_events_operator_global",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["bw_operator"],
+          "using": "tenant_id IS NULL AND scope = 'global'",
+          "withCheck": "tenant_id IS NULL AND scope = 'global'"
+        }
+      },
+      "checkConstraints": {
+        "kill_events_scope_check": {
+          "name": "kill_events_scope_check",
+          "value": "\"kill_events\".\"scope\" IN ('run', 'asset', 'tenant', 'global')"
+        },
+        "kill_events_source_check": {
+          "name": "kill_events_source_check",
+          "value": "\"kill_events\".\"source\" IN ('console', 'api', 'soc_link', 'operator', 'system')"
+        },
+        "kill_events_status_check": {
+          "name": "kill_events_status_check",
+          "value": "\"kill_events\".\"status\" IN ('initiated', 'propagating', 'halted', 'partially_halted', 'failed')"
+        },
+        "kill_events_scope_ref_check": {
+          "name": "kill_events_scope_ref_check",
+          "value": "(\"kill_events\".\"scope\" IN ('run', 'asset')) = (\"kill_events\".\"scope_ref_id\" IS NOT NULL)"
+        },
+        "kill_events_tenant_check": {
+          "name": "kill_events_tenant_check",
+          "value": "\"kill_events\".\"tenant_id\" IS NOT NULL OR \"kill_events\".\"scope\" = 'global'"
+        },
+        "kill_events_reason_check": {
+          "name": "kill_events_reason_check",
+          "value": "length(btrim(\"kill_events\".\"reason\")) > 0"
+        },
+        "kill_events_halt_ms_check": {
+          "name": "kill_events_halt_ms_check",
+          "value": "\"kill_events\".\"halt_ms\" IS NULL OR \"kill_events\".\"halt_ms\" >= 0"
+        },
+        "kill_events_affected_check": {
+          "name": "kill_events_affected_check",
+          "value": "jsonb_typeof(\"kill_events\".\"affected\") = 'object'"
+        },
+        "kill_events_reenabled_check": {
+          "name": "kill_events_reenabled_check",
+          "value": "(\"kill_events\".\"reenabled_at\" IS NULL) = (\"kill_events\".\"reenabled_by\" IS NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.soc_contacts": {
+      "name": "soc_contacts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset_id": {
+          "name": "asset_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "citext",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notify_prewindow": {
+          "name": "notify_prewindow",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "notify_start": {
+          "name": "notify_start",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "notify_end": {
+          "name": "notify_end",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'en'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "soc_contacts_tenant_asset_idx": {
+          "name": "soc_contacts_tenant_asset_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "asset_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "soc_contacts_tenant_id_id_key": {
+          "name": "soc_contacts_tenant_id_id_key",
+          "nullsNotDistinct": false,
+          "columns": ["tenant_id", "id"]
+        }
+      },
+      "policies": {
+        "soc_contacts_tenant_isolation": {
+          "name": "soc_contacts_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "soc_contacts_status_check": {
+          "name": "soc_contacts_status_check",
+          "value": "\"soc_contacts\".\"status\" IN ('active', 'disabled')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.soc_kill_tokens": {
+      "name": "soc_kill_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope_ref_id": {
+          "name": "scope_ref_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_sha256": {
+          "name": "token_sha256",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_uses": {
+          "name": "max_uses",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "use_count": {
+          "name": "use_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "soc_kill_tokens_tenant_scope_ref_idx": {
+          "name": "soc_kill_tokens_tenant_scope_ref_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope_ref_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "soc_kill_tokens_tenant_contact_idx": {
+          "name": "soc_kill_tokens_tenant_contact_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "contact_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "soc_kill_tokens_contact_fk": {
+          "name": "soc_kill_tokens_contact_fk",
+          "tableFrom": "soc_kill_tokens",
+          "tableTo": "soc_contacts",
+          "columnsFrom": ["tenant_id", "contact_id"],
+          "columnsTo": ["tenant_id", "id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "soc_kill_tokens_token_sha256_key": {
+          "name": "soc_kill_tokens_token_sha256_key",
+          "nullsNotDistinct": false,
+          "columns": ["token_sha256"]
+        }
+      },
+      "policies": {
+        "soc_kill_tokens_tenant_isolation": {
+          "name": "soc_kill_tokens_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": ["public"],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "soc_kill_tokens_scope_check": {
+          "name": "soc_kill_tokens_scope_check",
+          "value": "\"soc_kill_tokens\".\"scope\" IN ('run', 'asset', 'tenant')"
+        },
+        "soc_kill_tokens_scope_ref_check": {
+          "name": "soc_kill_tokens_scope_ref_check",
+          "value": "(\"soc_kill_tokens\".\"scope\" IN ('run', 'asset')) = (\"soc_kill_tokens\".\"scope_ref_id\" IS NOT NULL)"
+        },
+        "soc_kill_tokens_sha256_length_check": {
+          "name": "soc_kill_tokens_sha256_length_check",
+          "value": "octet_length(\"soc_kill_tokens\".\"token_sha256\") = 32"
+        },
+        "soc_kill_tokens_uses_check": {
+          "name": "soc_kill_tokens_uses_check",
+          "value": "\"soc_kill_tokens\".\"max_uses\" >= 1 AND \"soc_kill_tokens\".\"use_count\" >= 0 AND \"soc_kill_tokens\".\"use_count\" <= \"soc_kill_tokens\".\"max_uses\""
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

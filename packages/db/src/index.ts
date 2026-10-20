@@ -3,3 +3,12 @@ export const name = '@blackwing/db';
 
 /** Package version; kept in sync with package.json. */
 export const version = '0.0.0';
+
+export {
+  migrateDatabase,
+  type MigrationLogger,
+  migrationNames,
+  MIGRATIONS_DIR,
+  MIGRATIONS_TABLE,
+} from './migrate.js';
+export * from './schema/index.js';

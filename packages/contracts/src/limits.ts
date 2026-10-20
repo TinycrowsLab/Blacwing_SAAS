@@ -34,4 +34,10 @@ export const LIMITS = Object.freeze({
   costCapUsdMax: 100_000,
   /** Highest CVSS score. */
   cvssScoreMax: 10,
+  /** Largest value of a Postgres `integer` column. */
+  int32Max: 2_147_483_647,
+  /** An e-mail address (RFC 5321 path limit). */
+  emailMax: 320,
+  /** Upper bound for the uses of one SOC kill-link token. */
+  killTokenUsesMax: 1000,
 } as const);
