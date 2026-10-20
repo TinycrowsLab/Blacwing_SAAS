@@ -43,8 +43,8 @@ describe('check-integration', () => {
     const bad = workflow
       .replaceAll('attempt', 'try')
       .replaceAll('junit', 'xml')
-      .replace(
-        'if: ${{ failure() }}\n        uses: actions/upload-artifact',
+      .replaceAll(
+        'if: ${{ !cancelled() }}\n        uses: actions/upload-artifact',
         'if: ${{ success() }}\n        uses: actions/upload-artifact',
       );
     const out = checkWorkflow(bad).join('\n');

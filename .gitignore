@@ -47,3 +47,4 @@ Thumbs.db
 
 # mkcert output for the dev TLS proxy (DEVENV-013): certs and keys are never committed
 infra/compose/tls/certs/
+**/reports/junit-int.xml

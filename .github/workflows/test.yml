@@ -45,3 +45,55 @@ jobs:
             packages/*/coverage
           if-no-files-found: warn
           retention-days: 14
+
+  # Integration job (CI-004, #138): Testcontainers boots Postgres/Valkey/Neo4j/MinIO on the runner's
+  # Docker daemon (random ports, never reused). Images come from infra/images.lock, the same
+  # digests the helpers and the dev compose stack use. No secrets, read-only token.
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      TZ: UTC
+      # Every container is fresh per run: reuse stays off so CI never sees another run's state.
+      BW_FC_SEED: '20240101'
+      TESTCONTAINERS_REUSE_ENABLE: 'false'
+      BW_TESTCONTAINERS_REUSE: 'false'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Pre-pull data-service images (retry)
+        run: |
+          set -euo pipefail
+          while IFS='=' read -r name ref; do
+            case "$name" in ''|'#'*) continue ;; esac
+            for attempt in 1 2 3 4; do
+              if docker pull --quiet "$ref" >/dev/null; then break; fi
+              if [ "$attempt" -eq 4 ]; then echo "failed to pull $name ($ref)" >&2; exit 1; fi
+              echo "pull of $name failed (attempt $attempt), retrying" >&2
+              sleep $((attempt * 5))
+            done
+          done < infra/images.lock
+      - name: Integration tests (includes cross-tenant RLS denial, 8.6)
+        run: pnpm test:int:ci
+      - name: Dump container logs on failure
+        if: ${{ failure() }}
+        run: |
+          mkdir -p integration-logs
+          docker ps -a > integration-logs/docker-ps.txt || true
+          for id in $(docker ps -aq); do
+            docker logs --tail 500 "$id" > "integration-logs/$id.log" 2>&1 || true
+          done
+      - name: Upload JUnit reports and container logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: integration-reports
+          path: |
+            apps/*/reports/junit-int.xml
+            packages/*/reports/junit-int.xml
+            integration-logs
+          if-no-files-found: warn
+          retention-days: 14

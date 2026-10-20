@@ -43,6 +43,7 @@
     "test:int": "turbo run test:int",
     "test:e2e": "turbo run test:e2e",
     "test:ci": "node scripts/ci-unit.mjs",
+    "test:int:ci": "turbo run test:int -- --reporter=default --reporter=junit --outputFile.junit=reports/junit-int.xml",
     "test:hygiene": "node scripts/check-test-hygiene.mjs",
     "test:scripts": "node --test \"scripts/**/*.test.mjs\"",
     "check:layout": "node scripts/check-layout.mjs",
