@@ -80,11 +80,16 @@ export const EXPECTED_DIR_FILES = Object.freeze({
  * `.github/` entries (CONTEXT_PACK §6). `dirs` and `files` must exist with that kind;
  * `optional` entries are allowed but not required. The templates, CODEOWNERS and the
  * label catalogue (`labels.yml`) arrived with FOUND-016 (#18); `actions` (reusable composite
- * actions such as `setup`) with CI-001 (#135).
+ * actions such as `setup`) with CI-001 (#135); the dependency-review policy with CI-014 (#148).
  */
 export const GITHUB_LAYOUT = Object.freeze({
   dirs: Object.freeze(['workflows', 'actions', 'ISSUE_TEMPLATE']),
-  files: Object.freeze(['PULL_REQUEST_TEMPLATE.md', 'CODEOWNERS', 'labels.yml']),
+  files: Object.freeze([
+    'PULL_REQUEST_TEMPLATE.md',
+    'CODEOWNERS',
+    'labels.yml',
+    'dependency-review-config.yml',
+  ]),
   optional: Object.freeze([]),
 });
 

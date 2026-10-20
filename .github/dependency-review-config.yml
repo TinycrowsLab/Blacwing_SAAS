@@ -1,0 +1,29 @@
+# Policy for .github/workflows/dependency-review.yml (CI-014, #148).
+# fail-on-severity: block any PR that adds a dependency with a HIGH or CRITICAL advisory.
+fail-on-severity: high
+# Scopes: runtime and dev/build dependencies both reach CI and release artifacts.
+fail-on-scopes:
+  - runtime
+  - development
+  - unknown
+# Deny-list is explicit (allow-licenses is intentionally unused so unknown-but-permissive
+# licenses are not blocked). Ambiguous or undetected licenses are surfaced in the PR comment
+# for manual review (warn-on-openssf-scorecard-level is not used; see docs/runbooks/dependency-review.md).
+# §5 license-review gate: nmap (NPSL) and similar copyleft/source-available licenses need legal
+# sign-off before they may be added.
+deny-licenses:
+  - LicenseRef-NPSL
+  - LicenseRef-NPSL-0.92
+  - LicenseRef-NPSL-0.95
+  - LicenseRef-Nmap
+  - AGPL-1.0-only
+  - AGPL-1.0-or-later
+  - AGPL-3.0-only
+  - AGPL-3.0-or-later
+  - SSPL-1.0
+  - BUSL-1.1
+  - Commons-Clause
+comment-summary-in-pr: always
+# Detect dependency changes in every manifest in the monorepo (package.json, pnpm-lock.yaml, go.mod).
+vulnerability-check: true
+license-check: true
