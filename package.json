@@ -20,6 +20,7 @@
     "dev:deps:obs": "node scripts/dev-deps.mjs obs",
     "dev:deps:obs:smoke": "node scripts/obs-smoke.mjs",
     "dev:tls": "node scripts/dev-deps.mjs tls",
+    "dev:openbao:bootstrap": "bash infra/compose/openbao/bootstrap.sh",
     "dev:deps:config": "node scripts/dev-deps.mjs config",
     "dev:deps:reset": "node scripts/dev-deps.mjs reset",
     "dev:deps:smoke": "node scripts/compose-smoke.mjs",

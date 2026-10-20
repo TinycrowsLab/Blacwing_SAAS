@@ -1,15 +1,16 @@
 # Local dependency stack (`docker-compose.dev.yml`)
 
 The dev stack every app and integration test talks to. DEVENV-002 (#156) adds the skeleton and the core data
-services; DEVENV-004 (#158) adds Keycloak. OpenBao arrives with its own
-issues and join the same file, network and project.
+services; DEVENV-004 (#158) adds Keycloak and DEVENV-005 (#159) adds OpenBao. Later services join the
+same file, network and project.
 
 ```bash
 pnpm dev:deps                  # creates .env from .env.example (random dev passwords), starts the stack, waits for healthy
 pnpm dev:deps postgres valkey  # start only some services
 pnpm dev:deps:smoke            # asserts the acceptance checks below against the running stack
+pnpm dev:openbao:bootstrap     # idempotent OpenBao setup: Transit + tenant keys, KV v2, policies, app token
 pnpm dev:deps:config           # docker compose config --quiet (lint)
-pnpm dev:deps:reset --yes      # stops the stack and DROPS its volumes (pgdata, valkeydata, neo4jdata)
+pnpm dev:deps:reset --yes      # stops the stack and DROPS its volumes (pgdata, valkeydata, neo4jdata, openbaodata)
 docker compose -p bwdev --env-file .env -f infra/compose/docker-compose.dev.yml logs -f <service>
 ```
 
@@ -38,6 +39,7 @@ docker compose -p bwdev --env-file .env -f infra/compose/docker-compose.dev.yml 
 | temporal | `temporalio/auto-setup:1.29.7` (digest-pinned) | 17233 gRPC (`BW_DEV_TEMPORAL_PORT`) | `TEMPORAL_ADDRESS=127.0.0.1:17233`, namespace `blackwing-dev` |
 | temporal-ui | `temporalio/ui:2.49.0` (digest-pinned) | 18233 (`BW_DEV_TEMPORAL_UI_PORT`) | http://127.0.0.1:18233 |
 | keycloak | `quay.io/keycloak/keycloak:26.4.2` | 18080 (`BW_DEV_KEYCLOAK_PORT`) | issuer `http://localhost:18080/realms/blackwing-dev` |
+| openbao | `openbao/openbao:2.4.3` | 18200 (`BW_DEV_OPENBAO_PORT`) | `OPENBAO_ADDR=http://127.0.0.1:18200`, app token from the file named by `OPENBAO_TOKEN_FILE` |
 
 **Port already in use:** set the override in `.env` (for example `BW_DEV_POSTGRES_PORT=25432`) and update the matching
 URL. The container-side ports never change.
@@ -340,6 +342,65 @@ is stable and committable. To manage a new section or setting, add it to the kee
 **Keep in sync.** The redirect URIs and web origins (`CONSOLE_ORIGINS`, `BFF_CALLBACK_PATH` in
 `scripts/keycloak-realm.mjs`) must match the BFF route and the `*.bw.localhost` proxy (DEVENV-013). The issuer host
 is `BW_DEV_KEYCLOAK_PUBLIC_URL`; containers can reach Keycloak at `http://keycloak:8080` (dynamic backchannel).
+### OpenBao 2.4 (secrets and per-tenant keys)
+
+OpenBao is Blackwing's secrets and key service (pack §5, ADR-0009): **Transit** holds one envelope key per
+tenant and **KV v2** at `secret/` holds platform secrets. Credentials are always used by reference (§8.7).
+
+```bash
+pnpm dev:deps openbao            # start it (healthcheck: /v1/sys/health)
+pnpm dev:openbao:bootstrap       # configure it; safe to re-run at any time
+```
+
+`openbao/bootstrap.sh` (curl + jq, against the HTTP API) waits for `/v1/sys/health`, then makes sure that:
+
+- `transit/` is enabled and `transit/keys/tenant-<slug>` exists for every slug in `BW_DEV_OPENBAO_TENANTS`
+  (default `acme`): `aes256-gcm96`, not exportable, no plaintext backup, deletion disabled;
+- `secret/` is KV v2, with dev placeholders at `secret/platform/smtp` (local Mailpit) and
+  `secret/platform/interactsh` (interactsh-local), written only when absent (`cas=0`);
+- policies `bw-app-platform` (read `secret/data/platform/*`, list its metadata) and `bw-app-tenant-<slug>`
+  (`encrypt`, `decrypt`, `rewrap`, `datakey/*` on that tenant's key only) exist. The app token cannot read
+  other KV paths, read or export keys, rotate, delete, touch `sys/*` or mint tokens;
+- an app token from the orphan, periodic token role `bw-app` is in `.bw-dev/openbao/app-token` (mode `0600`,
+  in the ignore list). A still-valid token with the same policies is kept; otherwise a new one is issued.
+
+Re-running changes nothing that exists: no duplicate mounts, key versions or secret versions. The script never
+prints a token. Apps read `OPENBAO_ADDR` and `OPENBAO_TOKEN_FILE` from `.env` (`.env.example` lists them) and
+never see the root token.
+
+**Root token.** `BW_DEV_OPENBAO_ROOT_TOKEN` is random per machine and lives only in the untracked `.env`
+(`pnpm dev:deps` generates every empty `*_TOKEN` and `*_PASSWORD`). The server refuses to start without it. Only
+the bootstrap uses it.
+
+**Ephemeral by default.** `-dev` keeps everything in memory: restarting the container loses every key, secret
+and token, and data encrypted with the old keys can no longer be decrypted. Re-run the bootstrap after a restart.
+For persistence set `BW_DEV_OPENBAO_STORAGE=file` in `.env` and recreate the container
+(`pnpm dev:deps openbao`). The file backend (`openbao/config/storage-file.hcl`, volume `openbaodata`) starts
+sealed. The bootstrap initialises it once with a single key share, stores the unseal key and root token in
+`.bw-dev/openbao/init.json` (mode `0600`), and unseals it on every run. That is a dev-only shortcut: production
+uses HA OpenBao with auto-unseal (INFRA epic).
+
+**Audit.** OpenBao 2.x accepts audit devices only from config, so `openbao/config/audit.hcl` declares a file
+device that writes JSON lines to stdout with secrets HMAC'd: `docker compose ... logs openbao` is the dev audit
+trail. The bootstrap fails if no audit device is enabled.
+
+#### Envelope encryption (what `packages/crypto` builds on)
+
+1. **Encrypt.** Ask for a fresh data key: `POST transit/datakey/plaintext/tenant-<slug>` (`bits: 256`). The
+   response has `plaintext` (the DEK, base64) and `ciphertext` (the DEK wrapped by the tenant key,
+   `vault:v<N>:...`). Encrypt the payload locally with AES-256-GCM under the DEK, store
+   `{ wrappedDek: ciphertext, iv, tag, payload }`, and drop the plaintext DEK from memory. Use
+   `transit/datakey/wrapped/...` when the caller only needs to store a key for later.
+2. **Decrypt.** `POST transit/decrypt/tenant-<slug>` with the wrapped DEK returns the DEK; decrypt the payload
+   locally. The tenant comes from the request context, never from the stored blob, so a blob from tenant A
+   cannot be opened with tenant B's key.
+3. **Rotate.** `bao write -f transit/keys/tenant-<slug>/rotate` (root/operator only) adds a key version. New
+   data keys use the latest version; old wrapped DEKs still decrypt because every version is kept until
+   `min_decryption_version` is raised. `POST transit/rewrap/tenant-<slug>` re-wraps an old DEK under the latest
+   version without exposing it; run it over stored blobs before raising `min_decryption_version`.
+
+Small values (tokens, connector credentials) can use `transit/encrypt` / `transit/decrypt` directly. Plaintext
+secrets never go into logs, the model or a sandbox (§8.7).
 
 ## Troubleshooting
 

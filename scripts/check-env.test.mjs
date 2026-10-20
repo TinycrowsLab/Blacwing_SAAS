@@ -90,7 +90,8 @@ describe('.env.example', () => {
 
   it('holds no real secret: secret-shaped keys are empty, change-me-dev or a ${REF}', () => {
     for (const [k, v] of vars) {
-      if (!/(PASSWORD|SECRET|TOKEN)/.test(k) || k.endsWith('_ENABLED')) continue;
+      if (!/(PASSWORD|SECRET|TOKEN)/.test(k) || k.endsWith('_ENABLED') || k.endsWith('_FILE'))
+        continue;
       assert.ok(
         v === '' || v === 'change-me-dev' || /^\$\{[A-Z0-9_]+\}$/.test(v),
         `${k} looks real`,

@@ -73,10 +73,12 @@ function composeConfig() {
       'KEYCLOAK_TEST_USER',
       'MINIO_ROOT',
       'MINIO_APP',
+      'GRAFANA_ADMIN',
     ].map((k) => [`BW_DEV_${k}_PASSWORD`, 'x-dummy-pass']),
   );
   for (const k of ['BFF', 'API', 'CI']) dummy[`BW_DEV_KEYCLOAK_${k}_SECRET`] = 'x-dummy';
   dummy.BW_DEV_INTERACTSH_TOKEN = 'x-dummy-token';
+  dummy.BW_DEV_OPENBAO_ROOT_TOKEN = 'x-dummy-token';
   const res = spawnSync(
     'docker',
     [

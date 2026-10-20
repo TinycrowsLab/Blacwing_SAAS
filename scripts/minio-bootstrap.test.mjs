@@ -53,6 +53,8 @@ function services() {
         BW_DEV_KEYCLOAK_BFF_SECRET: 'x-kc-bff',
         BW_DEV_KEYCLOAK_API_SECRET: 'x-kc-api',
         BW_DEV_KEYCLOAK_CI_SECRET: 'x-kc-ci',
+        BW_DEV_OPENBAO_ROOT_TOKEN: 'x-openbao-root',
+        BW_DEV_GRAFANA_ADMIN_PASSWORD: 'x-grafana-admin',
         BW_DEV_MINIO_ROOT_PASSWORD: 'x-minio-root',
         BW_DEV_MINIO_APP_PASSWORD: 'x-minio-app-secret',
       },
@@ -107,6 +109,8 @@ describe('DEVENV-006 MinIO dev buckets', () => {
           BW_DEV_KEYCLOAK_BFF_SECRET: 'x-kc-bff',
           BW_DEV_KEYCLOAK_API_SECRET: 'x-kc-api',
           BW_DEV_KEYCLOAK_CI_SECRET: 'x-kc-ci',
+          BW_DEV_OPENBAO_ROOT_TOKEN: 'x-openbao-root',
+          BW_DEV_GRAFANA_ADMIN_PASSWORD: 'x-grafana-admin',
         },
       },
     );

@@ -7,7 +7,7 @@
 //   node scripts/dev-deps.mjs tls             # `pnpm dev:tls`: mkcert certs + Traefik HTTPS proxy (DEVENV-013)
 //   node scripts/dev-deps.mjs config          # validate/render the compose file
 //
-// `.env` is created from `.env.example`; every empty `*_PASSWORD=` / `*_SECRET=` gets a random dev value
+// `.env` is created from `.env.example`; every empty `*_PASSWORD=` / `*_SECRET=` / `*_TOKEN=` gets a random dev value
 // (except `*_CLIENT_SECRET=`: externally issued, e.g. an IdP's OAuth client, filled by hand).
 // Existing `.env` values are never overwritten, and no credential is ever printed.
 
@@ -193,7 +193,7 @@ export async function main(argv) {
   if (cmd === 'reset') {
     if (!rest.includes('--yes')) {
       process.stderr.write(
-        'dev:deps:reset drops the shared bwdev stack AND its volumes (pgdata incl. Keycloak, valkeydata, neo4jdata).\n' +
+        'dev:deps:reset drops the shared bwdev stack AND its volumes (pgdata incl. Keycloak, valkeydata, neo4jdata, miniodata, openbaodata).\n' +
           'Re-run with --yes: pnpm dev:deps:reset --yes\n',
       );
       return 2;

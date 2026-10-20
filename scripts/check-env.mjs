@@ -33,7 +33,15 @@ export function parseEnv(text) {
 }
 
 /** Keys that may stay empty because the owner supplies them out of band. */
-export const OPTIONAL_EMPTY = new Set(['BW_DEV_GOOGLE_CLIENT_ID', 'BW_DEV_GOOGLE_CLIENT_SECRET']);
+export const OPTIONAL_EMPTY = new Set([
+  'BW_DEV_GOOGLE_CLIENT_ID',
+  'BW_DEV_GOOGLE_CLIENT_SECRET',
+  // Temporal mTLS PEM paths: only needed when TEMPORAL_TLS_ENABLED=true (not the plain dev server).
+  'TEMPORAL_CLIENT_CERT_PATH',
+  'TEMPORAL_CLIENT_KEY_PATH',
+  // apps/worker queue subset: empty means every queue.
+  'WORKER_TASK_QUEUES',
+]);
 
 /**
  * @param {string} example contents of .env.example

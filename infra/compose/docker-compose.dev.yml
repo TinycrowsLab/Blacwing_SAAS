@@ -830,6 +830,36 @@ services:
       resources:
         limits: { cpus: '1', memory: 384m }
 
+  # OpenBao (DEVENV-005, #159): Transit (per-tenant envelope keys) + KV v2 (platform secrets).
+  # `-dev` by default (in-memory, EPHEMERAL: a restart loses every key and secret); set
+  # BW_DEV_OPENBAO_STORAGE=file for the persistent file backend. Configure it with
+  # `pnpm dev:openbao:bootstrap` (infra/compose/openbao/bootstrap.sh); see infra/compose/README.md.
+  openbao:
+    <<: *defaults
+    image: openbao/openbao:2.4.3@sha256:48174d0c98dbb955731c5d54a7e7083987fd25a7fb5d793181db8576ada8ed64
+    entrypoint: ['dumb-init', '--', '/bw/openbao/start.sh']
+    environment:
+      BW_OPENBAO_STORAGE: ${BW_DEV_OPENBAO_STORAGE:-dev}
+      # Dev-mode root token: random per machine, only in the untracked .env. Never used by apps.
+      BAO_DEV_ROOT_TOKEN_ID: ${BW_DEV_OPENBAO_ROOT_TOKEN:?set BW_DEV_OPENBAO_ROOT_TOKEN in .env (pnpm dev:deps creates it)}
+      BAO_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      BAO_ADDR: http://127.0.0.1:8200
+      SKIP_SETCAP: 'true'
+    ports:
+      - '127.0.0.1:${BW_DEV_OPENBAO_PORT:-18200}:8200'
+    volumes:
+      - openbaodata:/openbao/file
+      - ./openbao:/bw/openbao:ro
+    healthcheck:
+      test: ['CMD', '/bw/openbao/healthcheck.sh']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+    deploy:
+      resources:
+        limits: { cpus: '1', memory: 512m }
+
 networks:
   bw-dev:
     name: bw-dev
@@ -849,3 +879,4 @@ volumes:
   lokidata:
   tempodata:
   grafanadata:
+  openbaodata:

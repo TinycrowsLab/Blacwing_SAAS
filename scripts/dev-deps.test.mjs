@@ -27,6 +27,7 @@ const DUMMY_ENV = {
   BW_DEV_KEYCLOAK_BFF_SECRET: 'x-kc-bff',
   BW_DEV_KEYCLOAK_API_SECRET: 'x-kc-api',
   BW_DEV_KEYCLOAK_CI_SECRET: 'x-kc-ci',
+  BW_DEV_OPENBAO_ROOT_TOKEN: 'x-openbao-root',
 };
 /** One-shot init services: they exit 0 and must not restart. */
 const ONE_SHOT = new Set(['keycloak-db', 'minio-init', 'temporal-bootstrap']);
@@ -90,7 +91,8 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
     assert.ok(net, 'bw-dev network');
     assert.equal(net.name, 'bw-dev');
     assert.equal(net.driver, 'bridge');
-    for (const v of ['pgdata', 'valkeydata', 'neo4jdata']) assert.ok(v in c.volumes, v);
+    for (const v of ['pgdata', 'valkeydata', 'neo4jdata', 'openbaodata'])
+      assert.ok(v in c.volumes, v);
   });
 
   it('defines the core data services', () => {
@@ -118,6 +120,7 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
       'temporal-ui': { 8080: '18233' },
       keycloak: { 8080: '18080' },
       'keycloak-db': {},
+      openbao: { 8200: '18200' },
     };
     for (const [svc, map] of Object.entries(expected)) {
       const ports = c.services[svc]?.ports ?? [];
@@ -142,6 +145,7 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
       BW_DEV_INTERACTSH_HTTP_PORT: '28081',
       BW_DEV_INTERACTSH_DNS_PORT: '25353',
       BW_DEV_KEYCLOAK_PORT: '28180',
+      BW_DEV_OPENBAO_PORT: '28200',
       BW_DEV_TEMPORAL_PORT: '27233',
       BW_DEV_TEMPORAL_UI_PORT: '28233',
     });
@@ -162,6 +166,7 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
         '28025',
         '28081',
         '28180',
+        '28200',
         '28233',
         '29000',
         '29001',

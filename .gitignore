@@ -23,6 +23,9 @@ coverage/
 *.p12
 *.pfx
 
+# Dev-only state written by scripts (OpenBao app token, file-mode init keys)
+.bw-dev/
+
 # Logs and reports
 *.log
 eslint-report.json

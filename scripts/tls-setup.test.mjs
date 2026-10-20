@@ -57,6 +57,7 @@ function composeConfig(env = {}, args = /** @type {string[]} */ ([])) {
         BW_DEV_VALKEY_PASSWORD: 'x',
         BW_DEV_NEO4J_PASSWORD: 'x-neo4j-pass',
         BW_DEV_INTERACTSH_TOKEN: 'x-interactsh-token',
+        BW_DEV_OPENBAO_ROOT_TOKEN: 'x-openbao-root',
         BW_DEV_KEYCLOAK_ADMIN_PASSWORD: 'x-kc-admin',
         BW_DEV_KEYCLOAK_DB_PASSWORD: 'x-kc-db',
         BW_DEV_KEYCLOAK_TEST_USER_PASSWORD: 'x-kc-users',
