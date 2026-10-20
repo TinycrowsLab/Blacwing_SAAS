@@ -1,0 +1,14 @@
+# Allow-list build inputs for infra/docker/sandbox/Dockerfile (reproducible, minimal context).
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!apps/agent-runtime
+!packages
+!infra/docker/sandbox/entrypoint.sh
+**/node_modules
+**/.turbo
+**/dist
+**/coverage
+**/*.test.*
+**/.env*

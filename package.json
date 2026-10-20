@@ -61,6 +61,8 @@
     "db:seed:reset": "pnpm --filter @blackwing/db run db:seed:reset",
     "check:drift": "node scripts/check-drift.mjs stale",
     "check:images": "node scripts/check-images.mjs",
+    "check:sandbox-image": "node scripts/check-sandbox-image.mjs",
+    "test:sandbox-image": "node --test scripts/check-sandbox-image.int.mjs",
     "check:codeql": "node scripts/check-codeql.mjs",
     "check:trivy": "node scripts/check-trivy.mjs ignore && node scripts/check-trivy.mjs wiring",
     "test:trivy": "node --test scripts/check-trivy.int.mjs",
