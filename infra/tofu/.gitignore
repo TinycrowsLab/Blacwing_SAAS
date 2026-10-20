@@ -1,0 +1,12 @@
+# OpenTofu working data and state are never committed (state may hold sensitive outputs).
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+# Bootstrap's first apply selects the local backend through an override file (README "Bootstrap").
+backend_override.tf
+*_override.tf
+# Real bootstrap inputs; the committed template is terraform.tfvars.example.
+bootstrap/terraform.tfvars

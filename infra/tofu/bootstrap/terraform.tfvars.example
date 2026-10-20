@@ -1,0 +1,8 @@
+# Copy to terraform.tfvars (gitignored for bootstrap) and fill in. aws_account_id is passed with
+# TF_VAR_aws_account_id, never written here.
+environment = "dev"
+aws_region  = "eu-central-1"
+
+state_admin_principal_arns = [
+  "arn:aws:iam::<account-id>:role/blackwing-ops",
+]
