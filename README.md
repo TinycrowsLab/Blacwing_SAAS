@@ -220,6 +220,10 @@ ESLint 9 (flat config, [`eslint.config.mjs`](eslint.config.mjs)) and Prettier ([
 - Generated code (`generated/`, `__generated__/`, `*.generated.*`, `*.gen.*`) is ignored by both tools; keep the two ignore lists in sync. `eslint-config-prettier` is the last config entry, so ESLint never reports formatting.
 - `scripts/lint-config.test.mjs` lints the failing fixtures in `scripts/fixtures/eslint/` and proves each rule fires.
 
+### Architectural boundaries
+
+`pnpm boundaries:check` ([`scripts/check-boundaries.mjs`](scripts/check-boundaries.mjs), dependency-cruiser) enforces the allowed dependency DAG between apps and packages on every import (type-only imports included) and on the workspace dependencies in each `package.json`: apps never import other apps, `@blackwing/contracts` imports nothing internal, deep imports such as `@blackwing/config/src/...` are rejected, sandbox code never reaches server-only packages, and package or module cycles are reported separately. It exits non-zero and names each offending edge. `pnpm boundaries:report` also writes `boundaries-report.json` for CI annotations. The graph is documented in [`docs/architecture/dependency-graph.md`](docs/architecture/dependency-graph.md), which `pnpm boundaries:docs` generates from the same model; the check fails when the file is stale.
+
 ---
 
 ## Repository map

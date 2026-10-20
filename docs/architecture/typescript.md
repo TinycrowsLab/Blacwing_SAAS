@@ -117,18 +117,18 @@ first edges are `packages/ids -> packages/errors` (`IdValidationError` extends `
 types, FOUND-008) and `packages/logger -> packages/errors` (built-in credential patterns and error
 serialisation).
 
-Edges must follow the allowed layering, which FOUND-005 (#7) enforces with a boundaries check and
-documents in `docs/architecture/dependency-graph.md`:
+Edges must follow the allowed layering. `pnpm boundaries:check` (FOUND-005, #7) enforces it on every
+import and every declared workspace dependency; the generated
+[`dependency-graph.md`](dependency-graph.md) is the authoritative description. In short:
 
 ```
-errors               -> (nothing internal)   (AppError hierarchy; config, logger and everything else throw it)
-contracts            -> errors
-shared libs          -> contracts, errors    (config, logger, ids, time, telemetry, testing, crypto, ...)
-logger               -> config               (the one shared-lib edge: the redaction registry, §8.7)
+contracts            -> (nothing internal)
+shared libs          -> contracts, other shared libs   (config, errors, ids, logger, time, telemetry, crypto, testing)
 domain, policy       -> contracts, shared libs
-other packages       -> contracts, shared libs, domain, policy
+service libs         -> contracts, shared libs, domain, policy, other service libs   (db, audit, agents, ...)
 apps/*               -> any package, never another app
-test code            -> may also use @blackwing/testing
+apps/egress-gateway  -> (nothing internal; Go module)
+test code            -> may also use @blackwing/testing (production code never does)
 ```
 
 Cycles are not allowed. `tsc -b` rejects circular references with TS6202, and `check-tsconfig`

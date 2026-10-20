@@ -30,12 +30,16 @@
     "check:turbo": "node scripts/check-turbo.mjs",
     "check:github": "node scripts/check-github.mjs --quiet",
     "labels:check": "node scripts/sync-labels.mjs --check-docs",
-    "labels:sync": "node scripts/sync-labels.mjs"
+    "labels:sync": "node scripts/sync-labels.mjs",
+    "boundaries:check": "node scripts/check-boundaries.mjs",
+    "boundaries:report": "node scripts/check-boundaries.mjs --json boundaries-report.json",
+    "boundaries:docs": "node scripts/check-boundaries.mjs --write-docs"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
     "@types/node": "catalog:",
     "@vitest/eslint-plugin": "1.6.27",
+    "dependency-cruiser": "18.5.0",
     "eslint": "9.39.5",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-import": "2.32.0",

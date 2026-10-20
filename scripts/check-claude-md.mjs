@@ -32,7 +32,6 @@ export const MAX_LINES = 200;
  */
 export const PENDING_LINK_TARGETS = Object.freeze({
   'docs/adr/README.md': 'FOUND-015 (#17)',
-  'docs/architecture/dependency-graph.md': 'FOUND-005 (#7)',
 });
 
 /** Repository-relative files CLAUDE.md must link to. */

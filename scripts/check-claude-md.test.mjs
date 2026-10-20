@@ -255,10 +255,7 @@ describe('CLAUDE.md failure modes', () => {
   });
 
   it('allows pending link targets to be missing, then checks them once they exist', () => {
-    assert.deepEqual(Object.keys(PENDING_LINK_TARGETS).sort(), [
-      'docs/adr/README.md',
-      'docs/architecture/dependency-graph.md',
-    ]);
+    assert.deepEqual(Object.keys(PENDING_LINK_TARGETS).sort(), ['docs/adr/README.md']);
     const text = `${REAL_TEXT}\n[adr](docs/adr/README.md#index)\n`;
     const base = {
       [CONTEXT_PACK]: REAL_PACK,
@@ -268,6 +265,7 @@ describe('CLAUDE.md failure modes', () => {
       'docs/labels.md': '# Labels\n',
       'docs/runbooks/code-owners.md': '# Code owners\n',
       'design/README.md': '# Design\n',
+      'docs/architecture/dependency-graph.md': '# Allowed package dependency graph\n',
     };
 
     const pending = makeRoot({ ...base, [CLAUDE_MD]: text });
@@ -281,6 +279,24 @@ describe('CLAUDE.md failure modes', () => {
 
     const landedGood = makeRoot({ ...base, [CLAUDE_MD]: text, 'docs/adr/README.md': '# Index\n' });
     assert.deepEqual(checkClaudeMd(landedGood).errors, []);
+  });
+
+  it('requires the dependency graph doc now that FOUND-005 (#7) has landed', () => {
+    assert.equal(
+      Object.hasOwn(PENDING_LINK_TARGETS, 'docs/architecture/dependency-graph.md'),
+      false,
+    );
+    const files = {
+      [CONTEXT_PACK]: REAL_PACK,
+      [CLAUDE_MD]: REAL_TEXT,
+      'SECURITY.md': 'x\n',
+      'docs/architecture/EPICS.md': '# E\n',
+      'docs/architecture/FEATURE_LIST.md': '# F\n',
+      'docs/labels.md': '# Labels\n',
+      'docs/runbooks/code-owners.md': '# Code owners\n',
+      'design/README.md': '# Design\n',
+    };
+    assertError(checkClaudeMd(makeRoot(files)).errors, /dependency-graph\.md/);
   });
 
   it('does not fetch external links', () => {
