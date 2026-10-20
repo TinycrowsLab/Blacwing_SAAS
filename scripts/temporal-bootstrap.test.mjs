@@ -30,17 +30,19 @@ exit 2
 `;
 
 describe('temporal bootstrap.sh', () => {
-  let dir;
-  let bin;
+  let dir = '';
+  let bin = '';
   before(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bw-temporal-'));
     bin = path.join(dir, 'temporal');
     fs.writeFileSync(bin, STUB, { mode: 0o755 });
   });
-  after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  after(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
 
   const state = () => fs.mkdtempSync(path.join(dir, 's-'));
-  const run = (s, env = {}) =>
+  const run = (/** @type {string} */ s, /** @type {Record<string, string>} */ env = {}) =>
     spawnSync('sh', [SCRIPT], {
       encoding: 'utf8',
       env: {
@@ -51,7 +53,8 @@ describe('temporal bootstrap.sh', () => {
         ...env,
       },
     });
-  const read = (s, f) => fs.readFileSync(path.join(s, f), 'utf8');
+  const read = (/** @type {string} */ s, /** @type {string} */ f) =>
+    fs.readFileSync(path.join(s, f), 'utf8');
 
   it('creates the namespace with retention and registers all search attributes', () => {
     const s = state();
@@ -101,7 +104,7 @@ describe('docker-compose.dev.yml temporal services', () => {
   it('pins temporal images by digest and avoids container_name', () => {
     const images = [...text.matchAll(/image:\s*(temporalio\/\S+)/g)];
     assert.equal(images.length, 3);
-    for (const m of images) assert.match(m[1], /@sha256:[0-9a-f]{64}$/);
+    for (const m of images) assert.match(m[1] ?? '', /@sha256:[0-9a-f]{64}$/);
     assert.doesNotMatch(text, /^\s*container_name:/m);
   });
   it('waits for postgres and for the server', () => {
