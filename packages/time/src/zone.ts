@@ -52,7 +52,8 @@ export interface ZonedToUtcOptions {
 /**
  * The time-zone library and the tz database actually in use, for pinned-version records (§8.9).
  * Luxon reads zone rules from the runtime's ICU (`Intl`), so the database version is Node's
- * `process.versions.tz`; it changes only when the pinned Node version (`.nvmrc`) changes.
+ * `process.versions.tz`. `.nvmrc` pins only the Node major, and Node minor releases can ship newer
+ * tz data, so record the version reported here rather than assuming one.
  */
 export interface TimeZoneRuntime {
   readonly library: 'luxon';

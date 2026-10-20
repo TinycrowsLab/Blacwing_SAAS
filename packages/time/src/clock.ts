@@ -125,12 +125,18 @@ export class Deadline {
    * other than a finite number (a broken custom `Clock`) counts as expired.
    */
   isExpired(): boolean {
-    const now = this.#clock.nowMs();
-    return !(Number.isFinite(now) && now < this.#expiresAtMs);
+    return this.#remainingAt(this.#clock.nowMs()) === 0;
   }
 
-  /** Milliseconds left before expiry, never negative; 0 whenever {@link isExpired} is true. */
+  /**
+   * Milliseconds left before expiry, never negative; 0 whenever {@link isExpired} is true. The clock
+   * is read once, so a clock that moves (or breaks) between reads cannot yield a negative or `NaN`.
+   */
   remainingMs(): number {
-    return this.isExpired() ? 0 : this.#expiresAtMs - this.#clock.nowMs();
+    return this.#remainingAt(this.#clock.nowMs());
+  }
+
+  #remainingAt(now: number): number {
+    return Number.isFinite(now) && now < this.#expiresAtMs ? this.#expiresAtMs - now : 0;
   }
 }

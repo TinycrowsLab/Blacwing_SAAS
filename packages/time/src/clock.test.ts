@@ -167,6 +167,23 @@ describe('Deadline', () => {
     expect(deadline.remainingMs()).toBe(0);
   });
 
+  it('reads the clock once per call, so remainingMs is never negative or NaN', () => {
+    const expiresAtMs = Date.UTC(2026, 2, 8, 7);
+    // Before expiry on the first read, past it (or broken) on any later read.
+    const readings = (later: number) => {
+      let calls = 0;
+      const clock: Clock = {
+        now: () => new Date(0),
+        nowMs: () => (calls++ === 0 ? expiresAtMs - 1 : later),
+        monotonicMs: () => 0,
+      };
+      return clock;
+    };
+    expect(new Deadline(expiresAtMs, readings(expiresAtMs + 1_000)).remainingMs()).toBe(1);
+    expect(new Deadline(expiresAtMs, readings(Number.NaN)).remainingMs()).toBe(1);
+    expect(new Deadline(expiresAtMs, readings(expiresAtMs + 1_000)).isExpired()).toBe(false);
+  });
+
   it('defensively copies expiresAt', () => {
     const deadline = new Deadline(START, new FixedClock(START));
     deadline.expiresAt.setUTCFullYear(2999);

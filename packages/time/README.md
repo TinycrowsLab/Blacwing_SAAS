@@ -118,9 +118,11 @@ scheduler epics. They build on these primitives.
 ## Version pinning and tz data
 
 Luxon is pinned exactly (`3.7.2`, asserted by a test). Luxon reads zone rules from the runtime's ICU
-through `Intl`, so the tz database version is Node's `process.versions.tz`. It changes only when the
-pinned Node version (`.nvmrc`) changes. `timeZoneRuntime()` reports both versions, for the per-run
-pinned-version record (§8.9). Updating tz data means bumping Node, then rerunning the DST tests.
+through `Intl`, so the tz database version is Node's `process.versions.tz`. `.nvmrc` pins only the
+Node major (`22`), and Node minor releases do ship newer ICU tz data, so the database can change with
+a Node update even though Luxon does not. That is why `timeZoneRuntime()` reports the version actually
+loaded (both Luxon's and the tz data's) for the per-run pinned-version record (§8.9), instead of
+assuming it. Updating tz data means updating Node, then rerunning the DST tests.
 
 ## Errors
 
