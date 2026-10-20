@@ -1,0 +1,10 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "../dist/typefixtures",
+    "tsBuildInfoFile": "../dist/typefixtures/.tsbuildinfo"
+  },
+  "include": ["**/*.ts"],
+  "references": []
+}

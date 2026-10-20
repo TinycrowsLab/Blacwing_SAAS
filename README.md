@@ -161,10 +161,13 @@ Requirements: **Node.js 22 LTS** (pinned in `.nvmrc` / `.node-version`) and **pn
 ```bash
 pnpm install --frozen-lockfile   # preinstall refuses npm/yarn, Node != 22, and layout drift
 pnpm check:layout                # JSON summary of workspace members; non-zero exit on drift
+pnpm typecheck                   # strict tsc -b over every member (project references)
 pnpm test                        # scripts/ self-tests + every workspace member's tests
 ```
 
 The workspace (`pnpm-workspace.yaml`: `apps/*`, `packages/*`) holds 9 apps and 22 packages, each named `@blackwing/<dir>`, exactly as laid out in [`CONTEXT_PACK.md` §6](docs/architecture/CONTEXT_PACK.md). `scripts/check-layout.mjs` enforces that layout; when an issue adds or removes an app, package or fixed directory, update its expected lists and §6 in the same commit.
+
+Every member extends the strict root `tsconfig.base.json` and is wired into one incremental `tsc -b` build through project references; `scripts/check-tsconfig.mjs` guards that setup. See [`docs/architecture/typescript.md`](docs/architecture/typescript.md) for the options, the `apps/web` exception, the `import type` pattern and how to add a workspace dependency.
 
 ---
 

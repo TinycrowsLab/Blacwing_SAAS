@@ -1,0 +1,98 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "apps/agent-runtime"
+    },
+    {
+      "path": "apps/api"
+    },
+    {
+      "path": "apps/cli"
+    },
+    {
+      "path": "apps/egress-gateway"
+    },
+    {
+      "path": "apps/model-gateway"
+    },
+    {
+      "path": "apps/sandbox-controller"
+    },
+    {
+      "path": "apps/session-manager"
+    },
+    {
+      "path": "apps/web"
+    },
+    {
+      "path": "apps/worker"
+    },
+    {
+      "path": "packages/agents"
+    },
+    {
+      "path": "packages/audit"
+    },
+    {
+      "path": "packages/config"
+    },
+    {
+      "path": "packages/connectors"
+    },
+    {
+      "path": "packages/contracts"
+    },
+    {
+      "path": "packages/cost"
+    },
+    {
+      "path": "packages/crypto"
+    },
+    {
+      "path": "packages/db"
+    },
+    {
+      "path": "packages/domain"
+    },
+    {
+      "path": "packages/evidence"
+    },
+    {
+      "path": "packages/logger"
+    },
+    {
+      "path": "packages/mcp-tools"
+    },
+    {
+      "path": "packages/memory"
+    },
+    {
+      "path": "packages/notify"
+    },
+    {
+      "path": "packages/oob"
+    },
+    {
+      "path": "packages/policy"
+    },
+    {
+      "path": "packages/replay"
+    },
+    {
+      "path": "packages/reporting"
+    },
+    {
+      "path": "packages/secrets"
+    },
+    {
+      "path": "packages/telemetry"
+    },
+    {
+      "path": "packages/testing"
+    },
+    {
+      "path": "packages/ui"
+    }
+  ]
+}

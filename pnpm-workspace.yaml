@@ -8,5 +8,9 @@ packages:
 
 # Single pinned version for shared tooling, referenced from members as "catalog:".
 # Vitest is the unit-test runner fixed in CONTEXT_PACK §5; its shared preset lands with FOUND-012.
+# TypeScript 5.x and Node 22 typings back the strict project-reference build (FOUND-003,
+# docs/architecture/typescript.md); every TS member pulls them in as devDependencies.
 catalog:
+  "@types/node": 22.20.5
+  typescript: 5.9.3
   vitest: 3.2.4
