@@ -1,0 +1,152 @@
+{
+  "description": "AUDIT-001 shared vectors: canonical = JCS (RFC 8785) of the NFC-normalised event without \"hash\"; sha256 = hex SHA-256 of the UTF-8 canonical text.",
+  "vectors": [
+    {
+      "name": "genesis event, every optional field",
+      "input": {
+        "id": "01900000-0000-7000-8000-0000000000a1",
+        "tenantId": "01900000-0000-7000-8000-000000000001",
+        "occurredAt": "2026-01-01T00:00:00.000Z",
+        "action": "gate2.decided",
+        "severity": "notice",
+        "actor": {
+          "type": "user",
+          "id": "01900000-0000-7000-8000-000000000002",
+          "email": "approver@example.test"
+        },
+        "target": {
+          "type": "run",
+          "id": "01900000-0000-7000-8000-0000000000b1",
+          "publicId": "run_01j0000000000000000000000a"
+        },
+        "outcome": "denied",
+        "reason": "Gate 2 timed out; denied by default",
+        "metadata": {
+          "decision": "deny",
+          "timeoutSeconds": 300,
+          "escalation": {
+            "tool": "nuclei"
+          }
+        },
+        "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+        "runId": "01900000-0000-7000-8000-0000000000b1",
+        "ip": "192.0.2.10",
+        "userAgent": "Mozilla/5.0",
+        "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "seq": 1
+      },
+      "canonical": "{\"action\":\"gate2.decided\",\"actor\":{\"email\":\"approver@example.test\",\"id\":\"01900000-0000-7000-8000-000000000002\",\"type\":\"user\"},\"id\":\"01900000-0000-7000-8000-0000000000a1\",\"ip\":\"192.0.2.10\",\"metadata\":{\"decision\":\"deny\",\"escalation\":{\"tool\":\"nuclei\"},\"timeoutSeconds\":300},\"occurredAt\":\"2026-01-01T00:00:00.000Z\",\"outcome\":\"denied\",\"prevHash\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"reason\":\"Gate 2 timed out; denied by default\",\"runId\":\"01900000-0000-7000-8000-0000000000b1\",\"seq\":1,\"severity\":\"notice\",\"target\":{\"id\":\"01900000-0000-7000-8000-0000000000b1\",\"publicId\":\"run_01j0000000000000000000000a\",\"type\":\"run\"},\"tenantId\":\"01900000-0000-7000-8000-000000000001\",\"traceId\":\"4bf92f3577b34da6a3ce929d0e0e4736\",\"userAgent\":\"Mozilla/5.0\"}",
+      "sha256": "805283e6117fc62f7cdee8aa523a00907bbb11ce914627c211069986326176c4"
+    },
+    {
+      "name": "required fields only",
+      "input": {
+        "id": "01900000-0000-7000-8000-0000000000a1",
+        "tenantId": "01900000-0000-7000-8000-000000000001",
+        "occurredAt": "2026-01-01T00:00:00.000Z",
+        "action": "kill.fired",
+        "severity": "critical",
+        "actor": {
+          "type": "system"
+        },
+        "target": {
+          "type": "tenant",
+          "id": "01900000-0000-7000-8000-000000000001"
+        },
+        "outcome": "success",
+        "metadata": {},
+        "prevHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "seq": 2
+      },
+      "canonical": "{\"action\":\"kill.fired\",\"actor\":{\"type\":\"system\"},\"id\":\"01900000-0000-7000-8000-0000000000a1\",\"metadata\":{},\"occurredAt\":\"2026-01-01T00:00:00.000Z\",\"outcome\":\"success\",\"prevHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"seq\":2,\"severity\":\"critical\",\"target\":{\"id\":\"01900000-0000-7000-8000-000000000001\",\"type\":\"tenant\"},\"tenantId\":\"01900000-0000-7000-8000-000000000001\"}",
+      "sha256": "4a1d0da0da0826da483a58eafcf424fefd1123618e5c008fc7bfabea3f8eea05"
+    },
+    {
+      "name": "NFD strings are hashed as NFC; non-ASCII is not escaped",
+      "input": {
+        "id": "01900000-0000-7000-8000-0000000000a1",
+        "tenantId": "01900000-0000-7000-8000-000000000001",
+        "occurredAt": "2026-01-01T00:00:00.000Z",
+        "action": "config.changed",
+        "severity": "notice",
+        "actor": {
+          "type": "system"
+        },
+        "target": {
+          "type": "tenant",
+          "id": "01900000-0000-7000-8000-000000000001"
+        },
+        "outcome": "success",
+        "metadata": {
+          "Amélie — 😀": "Amélie — 😀"
+        },
+        "prevHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "seq": 2,
+        "reason": "Amélie — 😀"
+      },
+      "canonical": "{\"action\":\"config.changed\",\"actor\":{\"type\":\"system\"},\"id\":\"01900000-0000-7000-8000-0000000000a1\",\"metadata\":{\"Amélie — 😀\":\"Amélie — 😀\"},\"occurredAt\":\"2026-01-01T00:00:00.000Z\",\"outcome\":\"success\",\"prevHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"reason\":\"Amélie — 😀\",\"seq\":2,\"severity\":\"notice\",\"target\":{\"id\":\"01900000-0000-7000-8000-000000000001\",\"type\":\"tenant\"},\"tenantId\":\"01900000-0000-7000-8000-000000000001\"}",
+      "sha256": "3d2b72a86527f5f5641de86ad9b290f758ab9014d4d3af5a62a338118d6455d3"
+    },
+    {
+      "name": "numbers, nesting and key order",
+      "input": {
+        "id": "01900000-0000-7000-8000-0000000000a1",
+        "tenantId": "01900000-0000-7000-8000-000000000001",
+        "occurredAt": "2026-01-01T00:00:00.000Z",
+        "action": "tool.invoked",
+        "severity": "info",
+        "actor": {
+          "type": "system"
+        },
+        "target": {
+          "type": "tenant",
+          "id": "01900000-0000-7000-8000-000000000001"
+        },
+        "outcome": "success",
+        "metadata": {
+          "z": [3, -0.5, 1e21, 0],
+          "a": {
+            "y": true,
+            "b": null,
+            "é": "e-acute",
+            "B": "upper"
+          },
+          "m": 12.25
+        },
+        "prevHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "seq": 9007199254740991
+      },
+      "canonical": "{\"action\":\"tool.invoked\",\"actor\":{\"type\":\"system\"},\"id\":\"01900000-0000-7000-8000-0000000000a1\",\"metadata\":{\"a\":{\"B\":\"upper\",\"b\":null,\"y\":true,\"é\":\"e-acute\"},\"m\":12.25,\"z\":[3,-0.5,1e+21,0]},\"occurredAt\":\"2026-01-01T00:00:00.000Z\",\"outcome\":\"success\",\"prevHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"seq\":9007199254740991,\"severity\":\"info\",\"target\":{\"id\":\"01900000-0000-7000-8000-000000000001\",\"type\":\"tenant\"},\"tenantId\":\"01900000-0000-7000-8000-000000000001\"}",
+      "sha256": "7a0eb470fb2a106a2467fd642bb8609b60b5cf68abacfe62a9e4764df32d81fb"
+    },
+    {
+      "name": "control characters and escapes",
+      "input": {
+        "id": "01900000-0000-7000-8000-0000000000a1",
+        "tenantId": "01900000-0000-7000-8000-000000000001",
+        "occurredAt": "2026-01-01T00:00:00.000Z",
+        "action": "egress.blocked",
+        "severity": "warning",
+        "actor": {
+          "type": "system"
+        },
+        "target": {
+          "type": "tenant",
+          "id": "01900000-0000-7000-8000-000000000001"
+        },
+        "outcome": "success",
+        "metadata": {},
+        "prevHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "seq": 2,
+        "reason": "tab\there \"quoted\" \\ \u0007 /"
+      },
+      "canonical": "{\"action\":\"egress.blocked\",\"actor\":{\"type\":\"system\"},\"id\":\"01900000-0000-7000-8000-0000000000a1\",\"metadata\":{},\"occurredAt\":\"2026-01-01T00:00:00.000Z\",\"outcome\":\"success\",\"prevHash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"reason\":\"tab\\there \\\"quoted\\\" \\\\ \\u0007 /\",\"seq\":2,\"severity\":\"warning\",\"target\":{\"id\":\"01900000-0000-7000-8000-000000000001\",\"type\":\"tenant\"},\"tenantId\":\"01900000-0000-7000-8000-000000000001\"}",
+      "sha256": "2c74c92b9900e4af3a1ea34bbb5d76f0d14f05156a303b17e892d5e398aba9ef"
+    }
+  ]
+}

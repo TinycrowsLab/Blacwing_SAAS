@@ -6,7 +6,9 @@
   "license": "UNLICENSED",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./schemas/audit-event.schema.json": "./schemas/audit-event.schema.json",
+    "./test-vectors/audit-event-hash.json": "./test-vectors/audit-event-hash.json"
   },
   "scripts": {
     "lint": "eslint . --max-warnings=0",
@@ -15,6 +17,8 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "ajv": "catalog:",
+    "ajv-formats": "catalog:",
     "fast-check": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

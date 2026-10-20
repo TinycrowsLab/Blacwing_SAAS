@@ -1,0 +1,321 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "tenantId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "auth.login",
+        "auth.logout",
+        "auth.sso_link",
+        "auth.api_token_issued",
+        "auth.api_token_revoked",
+        "authz.denied",
+        "authz.role_changed",
+        "asset.created",
+        "asset.verified",
+        "sa.requested",
+        "sa.approved",
+        "sa.rejected",
+        "sa.revoked",
+        "gate1.decided",
+        "gate2.decided",
+        "gate3.released",
+        "run.created",
+        "run.state_changed",
+        "tool.invoked",
+        "egress.blocked",
+        "kill.fired",
+        "kill.completed",
+        "finding.released",
+        "finding.risk_accepted",
+        "export.generated",
+        "secret.resolved",
+        "config.changed",
+        "connector.configured"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["info", "notice", "warning", "critical"]
+    },
+    "actor": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "user"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[\\x21-\\x7e]{1,255}$"
+            },
+            "email": {
+              "type": "string",
+              "maxLength": 320,
+              "format": "email",
+              "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+            },
+            "tokenId": {
+              "type": "string",
+              "pattern": "^[\\x21-\\x7e]{1,255}$"
+            }
+          },
+          "required": ["type", "id"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "operator"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[\\x21-\\x7e]{1,255}$"
+            },
+            "email": {
+              "type": "string",
+              "maxLength": 320,
+              "format": "email",
+              "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+            },
+            "tokenId": {
+              "type": "string",
+              "pattern": "^[\\x21-\\x7e]{1,255}$"
+            }
+          },
+          "required": ["type", "id"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "service"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[\\x21-\\x7e]{1,255}$"
+            },
+            "tokenId": {
+              "type": "string",
+              "pattern": "^[\\x21-\\x7e]{1,255}$"
+            }
+          },
+          "required": ["type", "id"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "system"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[\\x21-\\x7e]{1,255}$"
+            }
+          },
+          "required": ["type"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "anonymous"
+            }
+          },
+          "required": ["type"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "tenant",
+            "user",
+            "api_token",
+            "asset",
+            "standing_authorisation",
+            "run",
+            "test_case",
+            "tool_call",
+            "egress_request",
+            "finding",
+            "report",
+            "export",
+            "secret_ref",
+            "config",
+            "connector",
+            "session",
+            "platform"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[\\x21-\\x7e]{1,255}$"
+        },
+        "publicId": {
+          "type": "string",
+          "pattern": "^[a-z]{1,16}_[0-9a-hjkmnp-tv-z]{26}$"
+        }
+      },
+      "required": ["type", "id"],
+      "additionalProperties": false
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["success", "failure", "denied"]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "metadata": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/__schema0"
+      }
+    },
+    "metadataRef": {
+      "type": "object",
+      "properties": {
+        "evidenceKey": {
+          "type": "string",
+          "pattern": "^[\\x21-\\x7e]{1,1024}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 16385,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["evidenceKey", "sha256", "sizeBytes"],
+      "additionalProperties": false
+    },
+    "traceId": {
+      "type": "string",
+      "pattern": "^(?!0{32})[0-9a-f]{32}$"
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "ip": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "ipv4",
+          "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$"
+        },
+        {
+          "type": "string",
+          "format": "ipv6",
+          "pattern": "^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))$"
+        }
+      ]
+    },
+    "userAgent": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "prevHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "id",
+    "tenantId",
+    "occurredAt",
+    "action",
+    "severity",
+    "actor",
+    "target",
+    "outcome",
+    "metadata",
+    "prevHash",
+    "hash",
+    "seq"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "__schema0": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema0"
+          }
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/__schema0"
+          }
+        }
+      ]
+    }
+  },
+  "$id": "urn:blackwing:contracts:audit-event:v1",
+  "title": "Blackwing audit event",
+  "description": "Canonical audit ledger event (AUDIT-001). Rules outside JSON Schema that every producer applies: strings are NFC-normalised; canonical (RFC 8785) metadata is at most 16384 UTF-8 bytes, larger metadata goes to the evidence store via metadataRef; severity is never below the action catalogue default; metadata is redacted by the producer; hash = sha256(JCS(event without hash))."
+}
