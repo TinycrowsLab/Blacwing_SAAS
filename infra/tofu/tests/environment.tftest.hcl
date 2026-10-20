@@ -16,6 +16,24 @@ mock_provider "aws" {
     }
   }
 
+  mock_data "aws_iam_policy_document" {
+    defaults = {
+      json = "{\"Version\":\"2012-10-17\",\"Statement\":[]}"
+    }
+  }
+
+  mock_resource "aws_ses_domain_dkim" {
+    defaults = {
+      dkim_tokens = ["tokena", "tokenb", "tokenc"]
+    }
+  }
+
+  mock_resource "aws_sns_topic" {
+    defaults = {
+      arn = "arn:aws:sns:eu-central-1:123456789012:mock-ses-events"
+    }
+  }
+
   mock_resource "aws_iam_role" {
     defaults = {
       arn = "arn:aws:iam::123456789012:role/mock-vpc-flow-logs"
@@ -214,6 +232,20 @@ run "egress_ip_list_url_follows_the_domain" {
   assert {
     condition     = output.egress_ips_url == "https://egress.${var.domain_name}/.well-known/blackwing-egress-ips.json"
     error_message = "The egress-IP list URL must be https://egress.<domain>/.well-known/blackwing-egress-ips.json."
+  }
+}
+
+run "email_is_wired_for_the_environment_domain" {
+  command = plan
+
+  assert {
+    condition     = output.email_smtp_port == 587 && output.email_from_address == "no-reply@${var.domain_name}" && output.email_smtp_password_parameter == "/blackwing/${var.environment}/email/smtp-password"
+    error_message = "SES outputs must derive from the environment's domain and expose SSM references, never credentials."
+  }
+
+  assert {
+    condition     = startswith(module.email.dmarc_record, var.environment == "prod" ? "v=DMARC1; p=quarantine;" : "v=DMARC1; p=none;")
+    error_message = "Only prod enforces DMARC quarantine."
   }
 }
 

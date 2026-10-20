@@ -2,7 +2,7 @@
 
 One directory per module (`modules/<name>/` with `main.tf`, `variables.tf`, `outputs.tf`), composed
 by the environment roots in `../environments/<env>/main.tf`. Modules arrive with their own issues
-(network INFRA-002, node pools INFRA-004, buckets INFRA-006, ...). Present: `dns` (INFRA-007, see docs/runbooks/dns-delegation.md), `egress-ips` (INFRA-015, see docs/runbooks/egress-ip-list.md).
+(network INFRA-002, node pools INFRA-004, buckets INFRA-006, ...). Present: `dns` (INFRA-007, see docs/runbooks/dns-delegation.md), `egress-ips` (INFRA-015, see docs/runbooks/egress-ip-list.md), `email` (INFRA-008, docs/runbooks/ses-email.md).
 
 Rules for every module:
 
