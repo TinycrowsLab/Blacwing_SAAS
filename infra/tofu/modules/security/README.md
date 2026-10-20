@@ -26,7 +26,10 @@ group). The sandbox-to-metadata guarantee (CONTEXT_PACK §8 #2, §4.1) comes fro
    kubelet, CNI) is unaffected.
 2. The NetworkPolicy that denies sandbox pods `169.254.169.254` (INFRA-011), as defence in depth
    against SSRF-style credential theft (CWE-918).
-3. The sandbox instance role has no AWS permission beyond ECR pull and writing its own log group.
+3. The sandbox instance role has no AWS permission beyond ECR pull, writing its own log group and,
+   attached by the k3s module (INFRA-004), reading the agent-only join token and the published
+   server version (`ssm:GetParameter` on those two parameters, `kms:Decrypt` via SSM for the token
+   only). The agent token cannot join a server and the server token stays control-plane only.
 
 ## IAM
 

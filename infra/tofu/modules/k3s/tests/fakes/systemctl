@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Fake systemctl for the k3s node bootstrap harness: records calls; "starting" k3s writes the
+# kubeconfig k3s itself would write. is-active succeeds once a unit was started.
+set -euo pipefail
+echo "$*" >>"$FAKE_STATE/systemctl.log"
+case "$1" in
+  start)
+    unit="${*: -1}"
+    echo "$unit" >>"$FAKE_STATE/started"
+    if [[ "$unit" == "k3s" ]]; then
+      mkdir -p "$BW_ROOT/etc/rancher/k3s"
+      printf 'apiVersion: v1\nclusters:\n- cluster:\n    certificate-authority-data: RkFLRS1DQQ==\n    server: https://127.0.0.1:6443\n  name: default\n' >"$BW_ROOT/etc/rancher/k3s/k3s.yaml"
+    fi
+    ;;
+  is-active)
+    unit="${*: -1}"
+    [[ "${FAKE_NEVER_ACTIVE:-}" != "$unit" ]] && grep -qx "$unit" "$FAKE_STATE/started" 2>/dev/null
+    ;;
+  *) ;;
+esac

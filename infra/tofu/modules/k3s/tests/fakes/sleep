@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Fake sleep: records the backoff delay instead of waiting.
+echo "$1" >>"$FAKE_STATE/sleep.log"

@@ -1,0 +1,25 @@
+#cloud-config
+${yamlencode({
+  write_files = [
+    {
+      path        = "/etc/blackwing/k3s-node.env"
+      permissions = "0644"
+      owner       = "root:root"
+      content     = join("", [for k in sort(keys(env)) : "${k}='${env[k]}'\n"])
+    },
+    {
+      path        = "/etc/rancher/k3s/config.yaml"
+      permissions = "0600"
+      owner       = "root:root"
+      content     = yamlencode(config)
+    },
+    {
+      path        = "/usr/local/sbin/bw-k3s-bootstrap"
+      permissions = "0755"
+      owner       = "root:root"
+      encoding    = "gz+b64"
+      content     = script
+    },
+  ]
+  runcmd = [["/usr/local/sbin/bw-k3s-bootstrap"]]
+})}

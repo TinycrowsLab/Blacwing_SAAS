@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Fake timedatectl: reports NTPSynchronized=no for the first $FAKE_NTP_UNSYNCED calls (clock skew).
+set -euo pipefail
+counter="$FAKE_STATE/ntp-calls"
+n="$(cat "$counter" 2>/dev/null || echo 0)"
+echo $((n + 1)) >"$counter"
+if ((n < ${FAKE_NTP_UNSYNCED:-0})); then echo no; else echo yes; fi

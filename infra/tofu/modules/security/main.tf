@@ -9,8 +9,9 @@
 #      at the first routing hop, which is a container's virtual ethernet pair. Only the host
 #      network namespace can complete the IMDSv2 handshake.
 #   2. The Kubernetes NetworkPolicy that denies sandbox pods 169.254.169.254 (INFRA-011).
-# Sandbox nodes additionally have an IAM role with no permission beyond ECR pull and log writes,
-# so even a hypothetical leak yields nothing useful. Do not claim more than that.
+# Sandbox nodes additionally have an IAM role with no permission beyond ECR pull, log writes and
+# (attached by the k3s module, INFRA-004) reading the agent-only k3s join token and the published
+# server version. An agent token can join an agent, never a server. Do not claim more than that.
 
 locals {
   roles = toset(["control-plane", "sandbox", "egress"])
@@ -438,7 +439,8 @@ resource "aws_iam_role_policy" "ecr_pull" {
   })
 }
 
-# Only the control plane reads the join token. Sandbox and egress nodes never hold SSM permissions.
+# Only the control plane reads the server join token. Sandbox and egress nodes never read it: the k3s
+# module (INFRA-004) grants them the separate agent-only token parameter instead.
 resource "aws_iam_role_policy" "join_token" {
   name = "read-k3s-join-token"
   role = aws_iam_role.node["control-plane"].id

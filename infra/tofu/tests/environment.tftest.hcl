@@ -40,6 +40,45 @@ mock_provider "aws" {
       arn = "arn:aws:iam::123456789012:instance-profile/mock-node"
     }
   }
+
+  # k3s node pools (INFRA-004).
+  mock_data "aws_default_tags" {
+    defaults = {
+      tags = { Project = "blackwing", Environment = "dev", ManagedBy = "opentofu" }
+    }
+  }
+
+  mock_data "aws_ssm_parameter" {
+    defaults = {
+      insecure_value = "ami-0fedcba9876543210"
+    }
+  }
+
+  mock_resource "aws_kms_key" {
+    defaults = {
+      arn = "arn:aws:kms:eu-central-1:123456789012:key/11111111-2222-3333-4444-555555555555"
+    }
+  }
+
+  mock_resource "aws_lb" {
+    defaults = {
+      arn      = "arn:aws:elasticloadbalancing:eu-central-1:123456789012:loadbalancer/net/mock-k3s-api/0123456789abcdef"
+      dns_name = "mock-k3s-api.elb.eu-central-1.amazonaws.com"
+    }
+  }
+
+  mock_resource "aws_lb_target_group" {
+    defaults = {
+      arn = "arn:aws:elasticloadbalancing:eu-central-1:123456789012:targetgroup/mock-k3s-api/0123456789abcdef"
+    }
+  }
+
+  mock_resource "aws_launch_template" {
+    defaults = {
+      id             = "lt-0123456789abcdef0"
+      latest_version = 1
+    }
+  }
 }
 
 mock_provider "aws" {

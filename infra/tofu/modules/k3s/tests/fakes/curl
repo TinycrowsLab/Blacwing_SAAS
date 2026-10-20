@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+"""Fake curl for the k3s node bootstrap harness (scripts/k3s-node-bootstrap.test.mjs).
+
+Serves IMDSv2, SSM (GetParameter / PutParameter), CloudWatch Logs and artifact downloads from the
+files in $FAKE_STATE and $FAKE_ARTIFACTS. Never touches the network. Every call's argv is appended
+to $FAKE_STATE/calls.jsonl so the tests can prove secrets never reach a process argument list.
+"""
+import json
+import os
+import shutil
+import sys
+import urllib.parse
+
+state = os.environ["FAKE_STATE"]
+args = sys.argv[1:]
+
+
+def bump(name):
+    path = os.path.join(state, name)
+    n = int(open(path).read()) if os.path.exists(path) else 0
+    with open(path, "w") as f:
+        f.write(str(n + 1))
+    return n
+
+
+def fail_first(env, counter):
+    limit = int(os.environ.get(env, "0"))
+    return bump(counter) < limit
+
+
+headers, out, data, url, method, config = [], None, None, None, "GET", ""
+i = 0
+while i < len(args):
+    a = args[i]
+    if a in ("-H", "--header"):
+        headers.append(args[i + 1]); i += 2; continue
+    if a in ("-o", "--output"):
+        out = args[i + 1]; i += 2; continue
+    if a == "--data-binary":
+        data = args[i + 1]; i += 2; continue
+    if a == "-X":
+        method = args[i + 1]; i += 2; continue
+    if a == "-K":
+        config = sys.stdin.read() if args[i + 1] == "-" else open(args[i + 1]).read(); i += 2; continue
+    if a in ("--max-time", "--aws-sigv4", "--retry"):
+        i += 2; continue
+    if a.startswith("-"):
+        i += 1; continue
+    url = a; i += 1
+
+with open(os.path.join(state, "calls.jsonl"), "a") as f:
+    f.write(json.dumps({"argv": args, "stdin_config": bool(config)}) + "\n")
+
+parsed = urllib.parse.urlparse(url)
+target = next((h.split(":", 1)[1].strip() for h in headers if h.lower().startswith("x-amz-target:")), "")
+store_path = os.path.join(state, "ssm.json")
+
+if parsed.hostname == "imds.test":
+    p = parsed.path
+    if p == "/latest/api/token" and method == "PUT":
+        print("imds-session-token", end="")
+    elif p == "/latest/meta-data/iam/security-credentials/":
+        print("bw-node-role")
+    elif p == "/latest/meta-data/iam/security-credentials/bw-node-role":
+        print(json.dumps({"AccessKeyId": "AKIAFAKEFAKEFAKE", "SecretAccessKey": "fake-secret-access-key", "Token": "fake-session-token"}))
+    elif p == "/latest/meta-data/instance-id":
+        print("i-0123456789abcdef0", end="")
+    else:
+        sys.exit(22)
+    sys.exit(0)
+
+if parsed.hostname and parsed.hostname.endswith(".amazonaws.com"):
+    if "AKIAFAKEFAKEFAKE" not in config or "fake-session-token" not in config:
+        sys.stderr.write("fake curl: AWS call without credentials on stdin\n")
+        sys.exit(22)
+    body = json.load(open(data[1:]))
+    service = parsed.hostname.split(".")[0]
+    if service == "logs":
+        with open(os.path.join(state, "logs.jsonl"), "a") as f:
+            f.write(json.dumps({"target": target, "body": body}) + "\n")
+        print("{}")
+        sys.exit(0)
+    if fail_first("FAKE_SSM_FAIL_FIRST", "ssm-calls"):
+        sys.exit(22)
+    store = json.load(open(store_path)) if os.path.exists(store_path) else {}
+    if target == "AmazonSSM.GetParameter":
+        name = body["Name"]
+        with open(os.path.join(state, "gets.log"), "a") as f:
+            f.write(name + "\n")
+        if name not in store:
+            sys.exit(22)
+        print(json.dumps({"Parameter": {"Name": name, "Value": store[name]["Value"]}}))
+    elif target == "AmazonSSM.PutParameter":
+        store[body["Name"]] = body
+        json.dump(store, open(store_path, "w"))
+        with open(os.path.join(state, "puts.jsonl"), "a") as f:
+            f.write(json.dumps({"Name": body["Name"], "Type": body["Type"], "KeyId": body.get("KeyId"), "Tier": body.get("Tier")}) + "\n")
+        print('{"Version": 2}')
+    else:
+        sys.exit(22)
+    sys.exit(0)
+
+# Artifact download: https://<host>/<path> -> $FAKE_ARTIFACTS/<host>/<decoded path>.
+if fail_first("FAKE_DOWNLOAD_FAIL_FIRST", "download-calls"):
+    sys.exit(22)
+src = os.path.join(os.environ["FAKE_ARTIFACTS"], parsed.hostname or "", urllib.parse.unquote(parsed.path).lstrip("/"))
+if not os.path.isfile(src):
+    sys.exit(22)
+if out:
+    shutil.copyfile(src, out)
+else:
+    sys.stdout.write(open(src).read())

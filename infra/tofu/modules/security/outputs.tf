@@ -31,3 +31,8 @@ output "metadata_options" {
   description = "IMDS settings every node launch template MUST use: IMDSv2 required, hop limit 1."
   value       = local.metadata_options
 }
+
+output "iam_role_names" {
+  description = "IAM role names by node role, for the policies the k3s module (INFRA-004) attaches."
+  value       = { for role, r in aws_iam_role.node : role => r.name }
+}
