@@ -25,3 +25,16 @@ module "vpc" {
   single_nat  = var.vpc_single_nat
   eip_quota   = var.vpc_eip_quota
 }
+
+# Per-node-role security groups, IAM instance profiles and IMDSv2-only settings (INFRA-003). The
+# node pools (INFRA-004) consume security_group_ids, instance_profile_names and metadata_options.
+module "security" {
+  source = "../../modules/security"
+
+  name_prefix    = local.name_prefix
+  vpc_id         = module.vpc.vpc_id
+  vpc_cidr_block = module.vpc.vpc_cidr_block
+  join_token_parameter_arns = [
+    "arn:aws:ssm:${var.aws_region}:${var.aws_account_id}:parameter/blackwing/${var.environment}/k3s/join-token",
+  ]
+}

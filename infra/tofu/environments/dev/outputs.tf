@@ -47,3 +47,18 @@ output "vpc_single_nat" {
   description = "Whether this environment shares one NAT gateway across AZs."
   value       = module.vpc.single_nat
 }
+
+output "node_security_group_ids" {
+  description = "Security group IDs by node role (control-plane, sandbox, egress)."
+  value       = module.security.security_group_ids
+}
+
+output "node_instance_profile_names" {
+  description = "Instance profile names by node role."
+  value       = module.security.instance_profile_names
+}
+
+output "node_metadata_options" {
+  description = "IMDS settings every node launch template must use (IMDSv2 required, hop limit 1)."
+  value       = module.security.metadata_options
+}

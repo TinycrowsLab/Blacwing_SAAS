@@ -21,6 +21,18 @@ mock_provider "aws" {
       arn = "arn:aws:iam::123456789012:role/mock-vpc-flow-logs"
     }
   }
+
+  mock_resource "aws_vpc" {
+    defaults = {
+      id = "vpc-0123456789abcdef0"
+    }
+  }
+
+  mock_resource "aws_iam_instance_profile" {
+    defaults = {
+      arn = "arn:aws:iam::123456789012:instance-profile/mock-node"
+    }
+  }
 }
 
 variables {
