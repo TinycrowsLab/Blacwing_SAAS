@@ -59,6 +59,9 @@
       "path": "packages/evidence"
     },
     {
+      "path": "packages/ids"
+    },
+    {
       "path": "packages/logger"
     },
     {

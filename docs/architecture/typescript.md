@@ -1,6 +1,6 @@
 # TypeScript configuration and project references
 
-Every TypeScript workspace member (9 apps, 22 packages) compiles under one strict base config and
+Every TypeScript workspace member (9 apps, 23 packages) compiles under one strict base config and
 is wired into a single incremental `tsc -b` build through project references. This page is the
 reference for that setup (FOUND-003); CONTEXT_PACK §5 sets the conventions it enforces.
 

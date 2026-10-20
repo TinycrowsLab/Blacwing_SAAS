@@ -1,0 +1,21 @@
+{
+  "name": "@blackwing/ids",
+  "version": "0.0.0",
+  "private": true,
+  "description": "UUIDv7 generation and prefixed public-id helpers with branded entity types",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "fast-check": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
