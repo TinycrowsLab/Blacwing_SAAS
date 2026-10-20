@@ -297,6 +297,71 @@ describe('path and key-name redaction', () => {
     expect(out.text()).not.toContain('from-serializer');
   });
 
+  it("sanitises a child's own serializer and formatter output and its msgPrefix", () => {
+    const { out, log } = setup();
+    const child = log.child(
+      {},
+      {
+        msgPrefix: 'Bearer prefix0token0value ',
+        serializers: {
+          req: () => ({
+            auth: 'Bearer serializer0token0value',
+            clientSecret: 's1',
+            big: 'x'.repeat(20_000),
+          }),
+        },
+        formatters: {
+          log: (object) => ({
+            ...object,
+            fromFormatter: 'Basic Zm9ybWF0dGVyOnBhc3M=',
+            apiKey: 's2',
+          }),
+          bindings: (bindings) => ({ ...bindings, privateKey: 's3' }),
+        },
+      },
+    );
+    child.info({ req: 1 }, 'hello');
+    const text = out.text();
+    for (const leak of [
+      'prefix0token0value',
+      'serializer0token0value',
+      'Zm9ybWF0dGVyOnBhc3M=',
+      '"s1"',
+      '"s2"',
+      '"s3"',
+    ]) {
+      expect(text).not.toContain(leak);
+    }
+    const record = out.last();
+    expect(record.msg).toBe('Bearer [REDACTED] hello');
+    expect(record.req).toMatchObject({ auth: REDACTED, clientSecret: REDACTED });
+    expect((record.req as { big: string }).big.endsWith('[truncated]')).toBe(true);
+  });
+
+  it('sanitises setBindings like child bindings', () => {
+    const value = secret('setbindings-secret-0001');
+    const { out, log } = setup();
+    const child = log.child({ component: 'c' });
+    child.setBindings({
+      clientSecret: 'plain-client-secret',
+      header: 'Bearer setbindings0token',
+      echo: value,
+      traceId: 'trace-from-setbindings',
+    });
+    child.info('after');
+    const text = out.text();
+    expect(text).not.toContain('plain-client-secret');
+    expect(text).not.toContain('setbindings0token');
+    expect(text).not.toContain(value);
+    expect(out.last()).toMatchObject({
+      component: 'c',
+      clientSecret: REDACTED,
+      echo: REDACTED,
+      traceId: 'trace-from-setbindings',
+    });
+    expect(text.match(/"traceId"/g)).toHaveLength(1);
+  });
+
   it('classifies key names', () => {
     for (const key of [
       'password',
@@ -307,6 +372,12 @@ describe('path and key-name redaction', () => {
       'pwd',
       'Cookie',
       'set-cookie',
+      'AWS_SECRET_ACCESS_KEY',
+      'secretKey',
+      'encryption_key',
+      'jwtSigningKey',
+      'auth',
+      'JWT',
     ]) {
       expect(isSensitiveKey(key), key).toBe(true);
     }
@@ -317,6 +388,10 @@ describe('path and key-name redaction', () => {
       'username',
       'signatureValid',
       'authority',
+      'author',
+      'accessKeyId',
+      'publicKey',
+      'jwtIssuer',
     ]) {
       expect(isSensitiveKey(key), key).toBe(false);
     }

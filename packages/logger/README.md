@@ -54,8 +54,9 @@ runLog.info({ req }, "request received");
 
 ## Redaction (§8.7)
 
-Every argument of every log call (merge object, message, format arguments) and every child binding
-goes through a safe object walk before pino serialises it:
+Every argument of every log call (merge object, message, format arguments), every child or
+`setBindings` binding, a child's `msgPrefix`, and the output of a child's own `serializers` and
+`formatters` go through a safe object walk before pino serialises them:
 
 1. **Values.** Every string, keys included, has these replaced with `[REDACTED]`: every value in the
    `@blackwing/config` redaction registry (`zSecret()`, `zSecretUrl()`, URL passwords, `markSecret()`),
@@ -66,8 +67,9 @@ goes through a safe object walk before pino serialises it:
    Longer secrets are replaced first.
 2. **Key names.** The whole value under a sensitive key is replaced at any depth. That covers
    `password`, `secret`, `token`, `apiKey`, `authorization`, `cookie`, `signature`, `privateKey`,
-   `credentials`, as exact names or suffixes, in any case and with `-`, `_` or spaces. For example
-   `clientSecret`, `x-api-key` and `set-cookie`. `inputTokens`, `secretRef`, `tokenId` and boolean flags
+   `credentials`, `secretKey`, `secretAccessKey`, `encryptionKey`, `signingKey`, as exact names or
+   suffixes, plus `pwd`, `auth` and `jwt` as exact names, in any case and with `-`, `_` or spaces. For
+   example `clientSecret`, `x-api-key`, `AWS_SECRET_ACCESS_KEY` and `set-cookie`. `inputTokens`, `secretRef`, `tokenId` and boolean flags
    stay visible.
 3. **pino `redact.paths`** (`REDACT_PATHS`): `password`, `*.password`, `*.token`, `headers.authorization`,
    `req.headers.cookie` and the rest. These apply to anything that reaches pino without passing the walk.

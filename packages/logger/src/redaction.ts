@@ -170,7 +170,8 @@ export function redactSerializedLine(line: string): string {
 /**
  * Key names whose values are always redacted, at any depth. Compared after lower-casing and removing
  * `-`, `_` and spaces, as an exact name or as a suffix (`clientSecret`, `x-auth-token`,
- * `githubApiKey`). `tokens` is not `token`: LLM usage counters such as `inputTokens` stay visible.
+ * `githubApiKey`, `AWS_SECRET_ACCESS_KEY`). `tokens` is not `token`: LLM usage counters such as
+ * `inputTokens` stay visible.
  */
 const SENSITIVE_KEY_SUFFIXES = Object.freeze([
   'password',
@@ -184,12 +185,19 @@ const SENSITIVE_KEY_SUFFIXES = Object.freeze([
   'signature',
   'privatekey',
   'credentials',
+  'secretkey',
+  'secretaccesskey',
+  'encryptionkey',
+  'signingkey',
 ]);
+
+/** Key names redacted only as the whole (normalised) name: as suffixes they would hit `authority`. */
+const SENSITIVE_KEY_NAMES = Object.freeze(['pwd', 'auth', 'jwt']);
 
 /** True when values under `key` must never be logged. */
 export function isSensitiveKey(key: string): boolean {
   const normalised = key.toLowerCase().replace(/[-_\s]/g, '');
-  if (normalised === 'pwd') return true;
+  if (SENSITIVE_KEY_NAMES.includes(normalised)) return true;
   return SENSITIVE_KEY_SUFFIXES.some((suffix) => normalised.endsWith(suffix));
 }
 

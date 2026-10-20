@@ -233,42 +233,95 @@ export function buildPinoOptions(name: string, settings: ResolvedSettings): pino
 }
 
 type ChildFn = (bindings: pino.Bindings, options?: pino.ChildLoggerOptions) => Logger;
+type SetBindingsFn = (bindings: pino.Bindings) => void;
+type ChildFormatters = NonNullable<pino.ChildLoggerOptions['formatters']>;
+
+interface SplitBindings {
+  /** Sanitised bindings without `name`, `traceId` and `spanId`. */
+  readonly rest: pino.Bindings;
+  /** `traceId`/`spanId` bindings, kept as the mixin's fallback instead of duplicate keys. */
+  readonly trace: TraceFields | undefined;
+}
+
+function splitBindings(bindings: pino.Bindings, limits: SanitizeLimits): SplitBindings {
+  // `name` is fixed by createLogger (a second `name` binding would be a duplicate key); use a
+  // `component` binding for sub-components.
+  // A plain object again (pino calls `bindings.hasOwnProperty`); spreading keeps a `__proto__` key
+  // as an own property.
+  const rest: pino.Bindings = { ...sanitizeRecord(bindings, limits) };
+  const { traceId, spanId } = rest;
+  delete rest.traceId;
+  delete rest.spanId;
+  delete rest.name;
+  const trace: TraceFields | undefined =
+    typeof traceId === 'string' || typeof spanId === 'string'
+      ? {
+          ...(typeof traceId === 'string' ? { traceId } : {}),
+          ...(typeof spanId === 'string' ? { spanId } : {}),
+        }
+      : undefined;
+  return { rest, trace };
+}
 
 /**
- * Wraps `child` on the root logger (children inherit it through the prototype chain) so that child
- * bindings are sanitised like log arguments, `traceId`/`spanId` bindings become the mixin's fallback
- * instead of duplicate keys, re-binding an existing key replaces it instead of repeating it, and a
+ * A child's own serializers and formatters run after the `logMethod` hook, on values pino writes
+ * as-is, so their output goes through the same walk as log arguments. A `msgPrefix` is sanitised once,
+ * when the child is created. Redact paths can only be added to, never replaced.
+ */
+function safeChildOptions(
+  options: pino.ChildLoggerOptions,
+  limits: SanitizeLimits,
+): pino.ChildLoggerOptions {
+  const safe: pino.ChildLoggerOptions = { ...options };
+  if (options.redact !== undefined) {
+    const extra = Array.isArray(options.redact) ? options.redact : options.redact.paths;
+    safe.redact = { paths: [...REDACT_PATHS, ...extra], censor: REDACTED };
+  }
+  if (options.serializers !== undefined) {
+    const serializers: Record<string, pino.SerializerFn> = {};
+    for (const [key, serializer] of Object.entries(options.serializers)) {
+      serializers[key] = (value: unknown): unknown => sanitize(serializer(value), limits);
+    }
+    safe.serializers = serializers;
+  }
+  if (options.formatters !== undefined) {
+    const { level, bindings, log } = options.formatters;
+    // Plain objects again: pino calls `hasOwnProperty` on formatter results.
+    const plain = (value: object): Record<string, unknown> => ({
+      ...sanitizeRecord(value, limits),
+    });
+    const formatters: ChildFormatters = {};
+    if (level !== undefined) formatters.level = (label, number) => plain(level(label, number));
+    if (bindings !== undefined) formatters.bindings = (values) => plain(bindings(values));
+    if (log !== undefined) formatters.log = (object) => plain(log(object));
+    safe.formatters = formatters;
+  }
+  if (typeof options.msgPrefix === 'string') {
+    safe.msgPrefix = sanitizeString(options.msgPrefix, limits);
+  }
+  return safe;
+}
+
+/**
+ * Wraps `child` and `setBindings` on the root logger (children inherit them through the prototype
+ * chain) so that bindings are sanitised like log arguments, `traceId`/`spanId` bindings become the
+ * mixin's fallback instead of duplicate keys, re-binding an existing key replaces it instead of
+ * repeating it, a child's own serializers, formatters and `msgPrefix` cannot bypass redaction, and a
  * child's own `redact` option can only add paths.
  */
 function installChildHook(root: Logger, limits: SanitizeLimits): void {
   const originalChild = root.child.bind(root) as unknown as ChildFn;
-  const rawChild = Object.getPrototypeOf(root) as { child: ChildFn };
+  const proto = Object.getPrototypeOf(root) as { child: ChildFn; setBindings: SetBindingsFn };
+
+  function setBindings(this: Logger, bindings: pino.Bindings): void {
+    const { rest, trace } = splitBindings(bindings, limits);
+    proto.setBindings.call(this, rest);
+    setBoundTrace(this, trace);
+  }
 
   function child(this: Logger, bindings: pino.Bindings, options?: pino.ChildLoggerOptions): Logger {
-    // `name` is fixed by createLogger (a second `name` binding would be a duplicate key); use a
-    // `component` binding for sub-components.
-    // A plain object again (pino calls `bindings.hasOwnProperty`); spreading keeps a `__proto__` key
-    // as an own property.
-    const rest: pino.Bindings = { ...sanitizeRecord(bindings, limits) };
-    const { traceId, spanId } = rest;
-    delete rest.traceId;
-    delete rest.spanId;
-    delete rest.name;
-    const trace: TraceFields | undefined =
-      typeof traceId === 'string' || typeof spanId === 'string'
-        ? {
-            ...(typeof traceId === 'string' ? { traceId } : {}),
-            ...(typeof spanId === 'string' ? { spanId } : {}),
-          }
-        : undefined;
-    let childOptions = options;
-    if (options?.redact !== undefined) {
-      const extra = Array.isArray(options.redact) ? options.redact : options.redact.paths;
-      childOptions = {
-        ...options,
-        redact: { paths: [...REDACT_PATHS, ...extra], censor: REDACTED },
-      };
-    }
+    const { rest, trace } = splitBindings(bindings, limits);
+    const childOptions = options === undefined ? undefined : safeChildOptions(options, limits);
 
     const current = this.bindings();
     const rebinding = Object.keys(rest).some((key) => Object.hasOwn(current, key));
@@ -280,13 +333,18 @@ function installChildHook(root: Logger, limits: SanitizeLimits): void {
       delete merged.name;
       instance = originalChild(merged, { level: this.level, ...childOptions });
     } else {
-      instance = rawChild.child.call(this, rest, childOptions);
+      instance = proto.child.call(this, rest, childOptions);
     }
     setBoundTrace(instance, trace ?? boundTrace(this));
     return instance;
   }
 
   Object.defineProperty(root, 'child', { value: child, writable: true, configurable: true });
+  Object.defineProperty(root, 'setBindings', {
+    value: setBindings,
+    writable: true,
+    configurable: true,
+  });
 }
 
 /**
