@@ -3,11 +3,13 @@
 # SPF, DMARC, configuration set with bounce/complaint events, account suppression list and the
 # SMTP credentials Nodemailer uses. Runbook: docs/runbooks/ses-email.md. Dev stays on Mailpit.
 
+# DMARC uses aspf=r: the envelope sender is the MAIL FROM subdomain, so strict SPF alignment could
+# never match the From domain. DKIM stays strict (d= is the domain itself).
 locals {
   mail_from_domain = "${var.mail_from_label}.${var.domain_name}"
   from_address     = "${var.from_local_part}@${var.domain_name}"
   smtp_host        = "email-smtp.${var.aws_region}.amazonaws.com"
-  dmarc_record     = "v=DMARC1; p=${var.dmarc_policy}; rua=mailto:${var.dmarc_report_local_part}@${var.domain_name}; adkim=s; aspf=s; pct=100"
+  dmarc_record     = "v=DMARC1; p=${var.dmarc_policy}; rua=mailto:${var.dmarc_report_local_part}@${var.domain_name}; adkim=s; aspf=r; pct=100"
   spf_record       = "v=spf1 include:amazonses.com ${var.spf_qualifier}"
   config_set_name  = "${var.name_prefix}-default"
   identity_arn     = "arn:aws:ses:${var.aws_region}:${var.aws_account_id}:identity/${var.domain_name}"

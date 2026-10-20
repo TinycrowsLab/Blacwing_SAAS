@@ -58,8 +58,8 @@ run "spf_dmarc_and_mail_from_are_published" {
   }
 
   assert {
-    condition     = aws_route53_record.dmarc.name == "_dmarc.test.blackwing.example" && startswith(one(aws_route53_record.dmarc.records), "v=DMARC1; p=quarantine;") && strcontains(one(aws_route53_record.dmarc.records), "rua=mailto:dmarc@test.blackwing.example")
-    error_message = "DMARC defaults to p=quarantine with rua=mailto:dmarc@<domain>."
+    condition     = aws_route53_record.dmarc.name == "_dmarc.test.blackwing.example" && startswith(one(aws_route53_record.dmarc.records), "v=DMARC1; p=quarantine;") && strcontains(one(aws_route53_record.dmarc.records), "rua=mailto:dmarc@test.blackwing.example") && strcontains(one(aws_route53_record.dmarc.records), "aspf=r;")
+    error_message = "DMARC defaults to p=quarantine with rua=mailto:dmarc@<domain> and relaxed SPF alignment for the MAIL FROM subdomain."
   }
 
   assert {
