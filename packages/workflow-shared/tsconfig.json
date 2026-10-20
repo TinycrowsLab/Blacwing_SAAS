@@ -6,5 +6,10 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
   "include": ["src"],
-  "references": [{ "path": "../errors" }, { "path": "../config" }, { "path": "../logger" }]
+  "references": [
+    { "path": "../errors" },
+    { "path": "../config" },
+    { "path": "../logger" },
+    { "path": "../testing" }
+  ]
 }
