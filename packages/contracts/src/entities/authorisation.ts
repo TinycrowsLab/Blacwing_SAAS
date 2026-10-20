@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { type RunBudget, runBudgetSchema } from '../budget.js';
 import { type IntrusivenessClass, intrusivenessClassSchema } from '../intrusiveness.js';
 import { LIMITS } from '../limits.js';
 import {
@@ -54,13 +55,12 @@ export const scopeRulesSchema = z.strictObject({
 });
 export type ScopeRules = z.infer<typeof scopeRulesSchema>;
 
-/** Run budgets (§7 `runs.budgets`): cost cap in USD, request cap and wall-clock cap. */
-export const runBudgetsSchema = z.strictObject({
-  costCapUsd: z.number().positive().max(LIMITS.costCapUsdMax),
-  maxRequests: z.int().positive(),
-  maxDurationMs: z.int().positive(),
-});
-export type RunBudgets = z.infer<typeof runBudgetsSchema>;
+/**
+ * Run budgets (§7 `runs.budgets`): cost cap in USD, request cap and wall-clock cap. Defined once in
+ * `../budget.ts` (SCOPE-004); kept here as an alias for the entity schemas.
+ */
+export const runBudgetsSchema = runBudgetSchema;
+export type RunBudgets = RunBudget;
 
 /** A test window: a cron expression evaluated in an IANA time zone, open for `durationMs`. */
 export const testWindowSchema = z.strictObject({

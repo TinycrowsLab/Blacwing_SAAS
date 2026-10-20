@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { type RequestBudget, requestBudgetSchema } from '../budget.js';
 import { LIMITS } from '../limits.js';
 import {
   checkTimestamps,
@@ -35,14 +36,12 @@ export const TEST_CASE_STATUSES_WITH_REASON: readonly TestCaseStatus[] = Object.
   'not_applicable',
 ]);
 
-/** Per-test-case traffic budget (§7 `test_cases.budget`). */
-export const testCaseBudgetSchema = z.strictObject({
-  maxRequests: z.int().positive(),
-  maxRps: z.number().positive(),
-  maxConcurrency: z.int().positive(),
-  maxBytes: z.int().positive(),
-});
-export type TestCaseBudget = z.infer<typeof testCaseBudgetSchema>;
+/**
+ * Per-test-case traffic budget (§7 `test_cases.budget`). Defined once in `../budget.ts` (SCOPE-004);
+ * kept here as an alias for the entity schemas.
+ */
+export const testCaseBudgetSchema = requestBudgetSchema;
+export type TestCaseBudget = RequestBudget;
 
 /**
  * A declared validation check (§7 `oracle`, `negative_control`). The oracle catalogue (#392) owns the

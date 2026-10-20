@@ -40,6 +40,8 @@ frozen. Codes are public API: never rename or reuse one, add a new one instead.
 | `SCOPE_INTRUSIVENESS_EXCEEDS_CEILING` | 403 | `IntrusivenessError` (in `@blackwing/contracts`, SCOPE-003) | no |
 | `SCOPE_DESTRUCTIVE_FORBIDDEN` | 403 | `IntrusivenessError` (in `@blackwing/contracts`, SCOPE-003) | no |
 | `SCOPE_INVALID_CLASS` | 422 | `IntrusivenessError` (in `@blackwing/contracts`, SCOPE-003) | no |
+| `SCOPE_INVALID_BUDGET` | 422 | `BudgetError` (in `@blackwing/contracts`, SCOPE-004) | no |
+| `SCOPE_BUDGET_EXCEEDS_SA` | 403 | `BudgetError` (in `@blackwing/contracts`, SCOPE-004) | no |
 | `CONFIG_INVALID` | 500 | `ConfigValidationError` (in `@blackwing/config`, FOUND-007) | no |
 | `INTERNAL` | 500 | `InternalError` | no |
 

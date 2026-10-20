@@ -85,6 +85,9 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'SCOPE_INTRUSIVENESS_EXCEEDS_CEILING',
   'SCOPE_DESTRUCTIVE_FORBIDDEN',
   'SCOPE_INVALID_CLASS',
+  // BudgetError, @blackwing/contracts (SCOPE-004), for the same reason.
+  'SCOPE_INVALID_BUDGET',
+  'SCOPE_BUDGET_EXCEEDS_SA',
 ];
 
 describe('AppError subclasses', () => {

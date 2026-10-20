@@ -45,6 +45,38 @@ The error codes are registered in `@blackwing/errors`. `contracts` is the root o
 graph and cannot import that package, so `IntrusivenessError` is a plain `Error` carrying the registered
 `code`; API callers wrap it with `new AppError(err.code, …)` to answer with problem+json.
 
+## Request budgets (SCOPE-004)
+
+`src/budget.ts` is the only definition of the budget model (§2 F5, §7). `testCaseBudgetSchema` and
+`runBudgetsSchema` in the entity contracts are aliases of it. Enforcement is out of scope here: the egress
+gateway enforces test-case budgets (EGRESS-010), the model gateway and cost tracker enforce cost caps
+(GATEWAY-011).
+
+| Export | Behaviour |
+|---|---|
+| `requestBudgetSchema` / `RequestBudget` | `{ maxRequests, maxRps, maxConcurrency, maxBytes }`: positive, finite, integers except `maxRps` (sub-1 RPS such as `0.5` is allowed); `maxRps <= maxRequests`, `maxConcurrency <= maxRequests`, `maxConcurrency <= max(1, maxRps * 60)` |
+| `runBudgetSchema` / `RunBudget` | `{ costCapUsd, maxRequests, maxDurationMs }`, all positive and finite |
+| `BUDGET_CEILINGS` | Absolute sanity ceilings (above them a budget is rejected as absurd; also rejects unsafe integers) |
+| `DEFAULT_REQUEST_BUDGETS`, `defaultBudgetForClass(c, defaults?)` | Shipped per-class constants (below); `destructive` throws `SCOPE_DESTRUCTIVE_FORBIDDEN` |
+| `parseBudgetDefaultsEnv(raw)`, `resolveBudgetDefaults(override)` | Applies the `SCOPE_BUDGET_DEFAULTS` JSON override; missing dimensions are filled from the class default |
+| `validateBudget`, `validateRequestBudget`, `validateRunBudget` | Throw `BudgetError('SCOPE_INVALID_BUDGET')` for 0, negatives, NaN, Infinity, unsafe integers and absurd ceilings |
+| `assertWithinSaDefaults(requested, saDefaults)` / `isWithinSaDefaults` | `SCOPE_BUDGET_EXCEEDS_SA` when any dimension the SA bounds is exceeded |
+| `resolveTestCaseBudget(sa, request, testCase)` | Per-dimension minimum (most restrictive wins), clamped down to stay self-consistent; monotone |
+| `checkTestCaseBudgetsAgainstRun(budgets, run)` | Flags test-case budgets whose sum (or any one) exceeds the run's `maxRequests` |
+
+Shipped defaults:
+
+| Class | `maxRequests` | `maxRps` | `maxConcurrency` | `maxBytes` |
+|---|---|---|---|---|
+| `passive` | 200 | 5 | 2 | 50 MiB |
+| `active_safe` | 2000 | 20 | 5 | 200 MiB |
+| `state_changing` | 500 | 5 | 2 | 100 MiB |
+
+Units: RPS is requests per second; bytes are request + response bytes as counted by the egress gateway;
+cost is USD priced from the price-table version pinned on the run (§8.9). This model carries the cap, never
+the price. A run's `maxRequests` bounds the sum of its test-case budgets; a single request or test-case
+budget above the run total is flagged at submit, and strict enforcement is EGRESS/GATEWAY.
+
 ## Audit event contract (AUDIT-001)
 
 `src/audit/` defines the one shape every audit producer emits (CONTEXT_PACK §8.8). Persistence and the hash

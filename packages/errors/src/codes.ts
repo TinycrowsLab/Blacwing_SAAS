@@ -46,6 +46,14 @@ const DEFINITIONS = {
     retryable: false,
   },
   SCOPE_INVALID_CLASS: { status: 422, title: 'Invalid intrusiveness class', retryable: false },
+  // Request-budget validation (SCOPE-004, F5). A malformed or absurd budget is invalid input (422);
+  // a budget above the standing authorisation's defaults is an authorised-scope refusal (403).
+  SCOPE_INVALID_BUDGET: { status: 422, title: 'Invalid request budget', retryable: false },
+  SCOPE_BUDGET_EXCEEDS_SA: {
+    status: 403,
+    title: 'Budget exceeds the standing authorisation',
+    retryable: false,
+  },
   // `@blackwing/config` (FOUND-007) refuses to start on an invalid environment: a server fault.
   CONFIG_INVALID: { status: 500, title: 'Invalid configuration', retryable: false },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
