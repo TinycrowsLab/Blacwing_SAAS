@@ -1,0 +1,96 @@
+name: trivy
+
+# Trivy repository scan (CI-009, #143): dependency vulnerabilities, IaC/Dockerfile misconfiguration
+# (helm/tofu are picked up as INFRA lands) and a `.trivyignore` allowlist guard. SARIF goes to code
+# scanning (Security tab); HIGH/CRITICAL fixable findings fail the job. Image scans by digest are the
+# `trivy` job in build-images.yml (they need images.json). Policy and triage: docs/runbooks/trivy.md.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '41 4 * * *' # daily: new advisories can fail an unchanged tree
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trivy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  allowlist:
+    # Fails on an expired, unjustified or undated .trivyignore entry (and on wiring drift).
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          checkout: 'false'
+      - run: node scripts/check-trivy.mjs ignore
+      - run: node scripts/check-trivy.mjs wiring
+
+  fs:
+    needs: allowlist
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write # upload SARIF to code scanning only
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Pass 1: report everything actionable to code scanning. exit-code 0 so SARIF is always
+      # uploaded; the gate is pass 2. The action caches the vulnerability DB between runs and
+      # retries the download, and a failed download fails the job closed (never "no findings").
+      - name: Scan dependencies and IaC (SARIF)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+          format: sarif
+          output: trivy-fs.sarif
+          exit-code: '0'
+          limit-severities-for-sarif: true
+        env:
+          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db:2,public.ecr.aws/aquasecurity/trivy-db:2
+          TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db:1,public.ecr.aws/aquasecurity/trivy-java-db:1
+      - name: Summarise findings
+        run: |
+          set -euo pipefail
+          {
+            echo '| scan | findings | CRITICAL | HIGH | MEDIUM | LOW | UNKNOWN |'
+            echo '|---|---|---|---|---|---|---|'
+          } >> "$GITHUB_STEP_SUMMARY"
+          node scripts/check-trivy.mjs summary --sarif trivy-fs.sarif --label fs --summary "$GITHUB_STEP_SUMMARY"
+      # Forks cannot get security-events: write, so only upload for same-repo events.
+      - uses: github/codeql-action/upload-sarif@48870fdd6b42ee6474ec4207209ff87609271a5e # v4.39.0
+        if: always() && hashFiles('trivy-fs.sarif') != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+      # Pass 2: the severity gate. Fails the build on any fixable HIGH/CRITICAL that is not allowlisted.
+      - name: Severity gate
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+          format: table
+          exit-code: '1'
+        env:
+          TRIVY_SKIP_DB_UPDATE: 'true'
+          TRIVY_SKIP_CHECK_UPDATE: 'true'

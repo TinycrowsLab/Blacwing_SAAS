@@ -20,6 +20,8 @@ on:
       - scripts/check-images.mjs
       - scripts/build-images-json.mjs
       - scripts/check-sbom.mjs
+      - scripts/check-trivy.mjs
+      - .trivyignore
   push:
     branches: [main]
     tags: ['v*']
@@ -256,3 +258,94 @@ jobs:
           name: sbom-${{ matrix.service }}
           path: sboms/${{ matrix.service }}.cdx.json
           if-no-files-found: error
+
+  trivy:
+    # Trivy image scan by immutable digest from images.json (never by tag, CI-009, #143): SARIF to
+    # code scanning, then a gate that fails on fixable HIGH/CRITICAL findings not in .trivyignore.
+    # Online-only like sbom; the repo (fs/config) scan in trivy.yml runs offline-capable on every PR.
+    # OFFLINE-STUB(online-porting #874): scanning pulls from GHCR, so the job stays off until BW_ONLINE is set.
+    needs: images-json
+    if: vars.BW_ONLINE == 'true' && github.event_name != 'pull_request' && github.event.repository.fork == false && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write # upload SARIF to code scanning only
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - api
+          - web
+          - worker
+          - agent-runtime
+          - model-gateway
+          - egress-gateway
+          - session-manager
+          - sandbox-controller
+          - cli
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          checkout: 'false'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: images.json
+      - name: Resolve digest
+        id: ref
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: |
+          set -euo pipefail
+          node scripts/check-trivy.mjs ignore
+          ref="$(jq -er --arg s "$SERVICE" '.[$s]' images.json)"
+          case "$ref" in *@sha256:*) ;; *) echo "::error::${SERVICE} is not pinned by digest"; exit 1 ;; esac
+          echo "ref=${ref}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Scan image (SARIF)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.ref.outputs.ref }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+          format: sarif
+          output: trivy-${{ matrix.service }}.sarif
+          exit-code: '0'
+          limit-severities-for-sarif: true
+        env:
+          TRIVY_PLATFORM: linux/amd64
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db:2,public.ecr.aws/aquasecurity/trivy-db:2
+      - name: Summarise findings
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: node scripts/check-trivy.mjs summary --sarif "trivy-${SERVICE}.sarif" --label "$SERVICE" --summary "$GITHUB_STEP_SUMMARY"
+      - uses: github/codeql-action/upload-sarif@48870fdd6b42ee6474ec4207209ff87609271a5e # v4.39.0
+        if: always() && hashFiles(format('trivy-{0}.sarif', matrix.service)) != ''
+        with:
+          sarif_file: trivy-${{ matrix.service }}.sarif
+          category: trivy-image-${{ matrix.service }}
+      - name: Severity gate
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.ref.outputs.ref }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+          format: table
+          exit-code: '1'
+        env:
+          TRIVY_PLATFORM: linux/amd64
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          TRIVY_SKIP_DB_UPDATE: 'true'
+          TRIVY_SKIP_CHECK_UPDATE: 'true'

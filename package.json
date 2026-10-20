@@ -45,6 +45,8 @@
     "check:drift": "node scripts/check-drift.mjs stale",
     "check:images": "node scripts/check-images.mjs",
     "check:codeql": "node scripts/check-codeql.mjs",
+    "check:trivy": "node scripts/check-trivy.mjs ignore && node scripts/check-trivy.mjs wiring",
+    "test:trivy": "node --test scripts/check-trivy.int.mjs",
     "check:github": "node scripts/check-github.mjs --quiet",
     "labels:check": "node scripts/sync-labels.mjs --check-docs",
     "labels:sync": "node scripts/sync-labels.mjs",

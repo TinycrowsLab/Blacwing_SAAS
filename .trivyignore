@@ -1,0 +1,11 @@
+# Trivy allowlist (CI-009, #143). Reviewed by security owners (CODEOWNERS); see docs/runbooks/trivy.md.
+#
+# Every entry is a block directly above the id line, with no blank line in between:
+#
+#   # reason: why this is a false positive or accepted risk, and the tracking issue
+#   # expires: YYYY-MM-DD
+#   CVE-YYYY-NNNN exp:YYYY-MM-DD
+#
+# The date must be in the future and at most 180 days ahead. `node scripts/check-trivy.mjs ignore`
+# fails the build on a missing reason, a missing or expired date, or an exp: that differs from the
+# comment. Trivy itself also stops ignoring an id once exp: has passed.
