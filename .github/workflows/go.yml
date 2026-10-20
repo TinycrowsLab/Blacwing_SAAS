@@ -1,0 +1,66 @@
+name: go
+
+# Go build, test, vet and golangci-lint (incl. gosec) for apps/egress-gateway (CI-005, #139).
+# Every step calls the Makefile target developers run locally, with the committed
+# .golangci.yml, so local and CI results agree. -race stays on (§8.1/§8.2 critical code).
+
+on:
+  pull_request:
+    paths:
+      - apps/egress-gateway/**
+      - .github/workflows/go.yml
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: go-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: apps/egress-gateway
+
+jobs:
+  egress-gateway:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The go.mod `toolchain` directive is the single pin; setup-go reads it from go.mod.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: apps/egress-gateway/go.mod
+          cache-dependency-path: apps/egress-gateway/go.sum
+      - name: Toolchain matches the go.mod pin
+        run: |
+          set -euo pipefail
+          want="$(sed -n 's/^toolchain //p' go.mod)"
+          have="$(go env GOVERSION)"
+          [ "$have" = "$want" ] || { echo "::error::go version $have != go.mod toolchain $want"; exit 1; }
+          make check-go check-dockerfile
+      - name: Module is tidy
+        run: make tidy-check
+      - name: Build
+        run: make build
+      - name: Vet
+        run: make vet
+      - name: Test (race detector, coverage)
+        run: make test
+      - name: Lint (golangci-lint with gosec, committed .golangci.yml)
+        run: make lint
+      - name: Coverage summary
+        run: go tool cover -func=bin/coverage.out | tail -n 1
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: egress-gateway-coverage
+          path: apps/egress-gateway/bin/coverage.out
+          if-no-files-found: error
+          retention-days: 14
