@@ -40,6 +40,7 @@ cmd/gateway          CLI: run | check-config | version | help
 internal/obs         slog JSON logger, Prometheus metrics, OpenTelemetry, stopwatch
 internal/server      lifecycle, management plane, readiness, hook interfaces
 internal/config      environment loader (fail closed) and the Secret type
+internal/identity    proxy identity parser (tc/role/sess/run + token), verifier contract, 407/SOCKS mapping
 internal/proxy       HTTP(S) MITM + SOCKS5 listeners (EGRESS epic)
 internal/policy      Cedar evaluation of the signed policy snapshot (EGRESS/POLICY)
 internal/dns         scoped resolver, IP pinning, anti-rebinding (EGRESS epic)
@@ -149,6 +150,26 @@ build is never ready. The control API (EGRESS-013) mounts on the management plan
 A `DataPlane` is started at most once, and only after the gateway first becomes
 ready; it receives a `Gate` and must deny every request while `Gate.Ready()` is
 false (readiness can drop again, and is latched off during shutdown).
+
+### Proxy identity (`internal/identity`, EGRESS-002)
+
+Sandbox credentials are `tc_<uuidv7>[.role_<uuidv7>][.sess_<uuidv7>][.run_<uuidv7>]`
+(username) and a short-lived per-session token (password), over HTTP
+`Proxy-Authorization: Basic` (decoded once by `ParseProxyAuthorization`) or SOCKS5
+RFC 1929 auth. `Parse` enforces the grammar (canonical lowercase UUIDv7, each
+segment at most once, no unknown segments, at most 512 bytes per field, no control
+or non-ASCII characters). `Authenticator.Authenticate` then calls a
+`TokenVerifier` (the in-memory `StaticVerifier` today; Valkey/broker-backed with
+EGRESS-010; nil means `UnavailableVerifier`) and re-checks the run/session/test-case
+binding and expiry (`expires_at <= now` is expired) itself. Every failure is a deny:
+`Middleware` answers `407` with `Proxy-Authenticate` before any upstream connection
+and strips `Proxy-Authorization` on success; `SOCKSStatus` gives the RFC 1929
+failure byte. A verifier error is `ErrTokenInvalid` (`verifier_unavailable`) and
+increments `egress_identity_verifier_unavailable_total`. Denials increment
+`egress_identity_rejected_total{reason}`, log `component=identity` with `run_id`,
+`session_id`, `token_sha256_prefix` and `reason`, and emit the
+`egress.identity_rejected` audit event. The token itself is never logged, audited or
+printed (`String`/`LogValue` redact it); tokens are compared in constant time.
 
 ## Lifecycle
 
