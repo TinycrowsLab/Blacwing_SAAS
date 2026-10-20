@@ -12,11 +12,13 @@ catalogs:
     '@opentelemetry/context-async-hooks':
       specifier: 2.11.0
       version: 2.11.0
-<<<<<<< HEAD
     '@temporalio/activity':
       specifier: 1.13.2
       version: 1.13.2
     '@temporalio/client':
+      specifier: 1.13.2
+      version: 1.13.2
+    '@temporalio/common':
       specifier: 1.13.2
       version: 1.13.2
     '@temporalio/worker':
@@ -25,14 +27,6 @@ catalogs:
     '@temporalio/workflow':
       specifier: 1.13.2
       version: 1.13.2
-=======
-    '@temporalio/client':
-      specifier: 1.24.0
-      version: 1.24.0
-    '@temporalio/common':
-      specifier: 1.24.0
-      version: 1.24.0
->>>>>>> 634f004 (feat(workflow): configure Temporal connection and typed client factory)
     '@types/node':
       specifier: 22.20.5
       version: 22.20.5
@@ -698,10 +692,10 @@ importers:
         version: 1.9.1
       '@temporalio/client':
         specifier: 'catalog:'
-        version: 1.24.0
+        version: 1.13.2
       '@temporalio/common':
         specifier: 'catalog:'
-        version: 1.24.0
+        version: 1.13.2
     devDependencies:
       '@blackwing/testing':
         specifier: workspace:*
@@ -714,7 +708,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1)
+        version: 3.2.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
 
 packages:
 
@@ -1697,7 +1691,6 @@ packages:
     resolution: {integrity: sha512-r7jh49VJxGerfAcTQA6gXcKc+98zOp/tqRwzYjgOE+iSQsP6cEU1hq2QzbuipmP68QtYdY9wKEhiCQZIzHgZ4Q==}
     engines: {node: '>=18.0.0'}
 
-<<<<<<< HEAD
   '@swc/core-darwin-arm64@1.16.18':
     resolution: {integrity: sha512-ozgiCHyFDCwfXzTnaLR+i8WxEyt06GTudn9rPh08vj+u3Z8vMvt5Pi8T+BikyNXm7y++h6UMdqsnJuWrV+tk2A==}
     engines: {node: '>=10'}
@@ -1816,19 +1809,6 @@ packages:
   '@temporalio/workflow@1.13.2':
     resolution: {integrity: sha512-vK8s0iCTMGNLtUZeKiFVfmLd4nVUDaJ4aS0yCy8WvMUpgqBTpaaOWPAy7KiH0grKB7zIskiWljEMtpt3ce586w==}
     engines: {node: '>= 18.0.0'}
-=======
-  '@temporalio/client@1.24.0':
-    resolution: {integrity: sha512-/GGg6ZYl+pN/bQEvq414CyjDvyM+MM1WsMzi/7SCYb3UlivVXx9nOmH/6BGx8OfYFayp11fkmfSh6rt7vW/ePQ==}
-    engines: {node: '>= 20.3.0'}
-
-  '@temporalio/common@1.24.0':
-    resolution: {integrity: sha512-jXp77fXwynBcVNc/CaGMT33TVYnhcN26S959HDv7Q71oc0rN6d8RHWR5z0nRCDAu5CQwZQRRhVK0TRdyAiEg7Q==}
-    engines: {node: '>= 20.3.0'}
-
-  '@temporalio/proto@1.24.0':
-    resolution: {integrity: sha512-vhlhB9GpoyJx+78r3lDahHywpdri6LKx7kt7djLIw6XzHyb8FQTIi4lX8DSJBqKp3+HVfL1CLwiqO26KFRzg/g==}
-    engines: {node: '>= 20.3.0'}
->>>>>>> 634f004 (feat(workflow): configure Temporal connection and typed client factory)
 
   '@turbo/darwin-64@2.11.7':
     resolution: {integrity: sha512-Z2LFOxwbiJueD1miByXJS/BrW21vv6YaQXZustty5jEX4vQYw6zyh101Sz1QO7WG0mqBzKagZ/DoAeeujI0/Sw==}
@@ -3458,15 +3438,9 @@ packages:
     resolution: {integrity: sha512-9W/Tk7EyjZHtv87NFpqoIbl0mlQx8bX8phUFzAM9xmeJrRpGDvqkpdQzc11DjwzywQCdhifaZPSvokSnAp7YTg==}
     engines: {node: '>=18.0.0'}
 
-<<<<<<< HEAD
   nexus-rpc@0.0.1:
     resolution: {integrity: sha512-hAWn8Hh2eewpB5McXR5EW81R3pR/ziuGhKCF3wFyUVCklanPqrIgMNr7jKCbzXeNVad0nUDfWpFRqh2u+zxQtw==}
     engines: {node: '>= 18.0.0'}
-=======
-  nexus-rpc@0.0.3:
-    resolution: {integrity: sha512-ksIBeYHDv6FHAR1h3Vwk0kQ6REhdo1STqDHXMzu/yn/VN/XzgOor2IUjewG6paoA7IgxlIPZoOU/PD78PC6HTg==}
-    engines: {node: '>= 20.0.0'}
->>>>>>> 634f004 (feat(workflow): configure Temporal connection and typed client factory)
 
   node-exports-info@1.6.2:
     resolution: {integrity: sha512-kXs9Go0cah0qHVV2v389IXQLdLCeE1xfFtjOAF+iobu0OIoG1pje8At2vMHyaPMiPMnG/LWP50twML21eMcAag==}
@@ -3697,10 +3671,6 @@ packages:
 
   protobufjs@7.6.6:
     resolution: {integrity: sha512-dYDWdjSl5RNb7SgPxGQcRU+GtvP7s2fpkrY0r432PcOIaZ0/rBcxEZnQN67iJhFuQiVw754JDoPruPCNdGsbjg==}
-    engines: {node: '>=12.0.0'}
-
-  protobufjs@8.8.1:
-    resolution: {integrity: sha512-d9e9179bjXSJdpJ3+R9fP8hzXsnKLyxTjHLG1dUzje8a27pPyXCe6PrcRtgx2rjoM3IZzHd2vAs+6J/BsO1k7Q==}
     engines: {node: '>=12.0.0'}
 
   pump@3.0.4:
@@ -5329,7 +5299,6 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-<<<<<<< HEAD
   '@swc/core-darwin-arm64@1.16.18':
     optional: true
 
@@ -5482,30 +5451,6 @@ snapshots:
       '@temporalio/common': 1.13.2
       '@temporalio/proto': 1.13.2
       nexus-rpc: 0.0.1
-=======
-  '@temporalio/client@1.24.0':
-    dependencies:
-      '@grpc/grpc-js': 1.14.6
-      '@temporalio/common': 1.24.0
-      '@temporalio/proto': 1.24.0
-      abort-controller: 3.0.0
-      long: 5.3.2
-      nexus-rpc: 0.0.3
-      uuid: 11.1.1
-
-  '@temporalio/common@1.24.0':
-    dependencies:
-      '@temporalio/proto': 1.24.0
-      long: 5.3.2
-      ms: 3.0.0-canary.1
-      nexus-rpc: 0.0.3
-      protobufjs: 8.8.1
-
-  '@temporalio/proto@1.24.0':
-    dependencies:
-      long: 5.3.2
-      protobufjs: 8.8.1
->>>>>>> 634f004 (feat(workflow): configure Temporal connection and typed client factory)
 
   '@turbo/darwin-64@2.11.7':
     optional: true
@@ -7283,11 +7228,7 @@ snapshots:
       neo4j-driver-core: 6.2.0
       rxjs: 7.8.2
 
-<<<<<<< HEAD
   nexus-rpc@0.0.1: {}
-=======
-  nexus-rpc@0.0.3: {}
->>>>>>> 634f004 (feat(workflow): configure Temporal connection and typed client factory)
 
   node-exports-info@1.6.2:
     dependencies:
@@ -7589,10 +7530,6 @@ snapshots:
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.2
       '@types/node': 22.20.5
-      long: 5.3.2
-
-  protobufjs@8.8.1:
-    dependencies:
       long: 5.3.2
 
   pump@3.0.4:
@@ -8253,11 +8190,7 @@ snapshots:
 
   uuid@11.1.1: {}
 
-<<<<<<< HEAD
   vite-node@3.2.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1):
-=======
-  vite-node@3.2.4(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1):
->>>>>>> 634f004 (feat(workflow): configure Temporal connection and typed client factory)
     dependencies:
       cac: 6.7.14
       debug: 4.4.3
