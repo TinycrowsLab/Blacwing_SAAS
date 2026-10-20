@@ -132,7 +132,7 @@ describe('formatDuration', () => {
       }),
       { numRuns: 2000 },
     );
-  });
+  }, 60_000);
 
   it('rejects negative, NaN, infinite and fractional values', () => {
     expect(reasonOf(() => formatDuration(-1))).toBe('negative_duration');

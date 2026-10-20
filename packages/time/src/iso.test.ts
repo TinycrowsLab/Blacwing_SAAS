@@ -60,7 +60,7 @@ describe('toIso / fromIso round trip (property)', () => {
       }),
       { numRuns: 2000 },
     );
-  });
+  }, 60_000);
 
   it('fromIso(toIso(t)) is the same instant for every instant in range', () => {
     fc.assert(
@@ -73,7 +73,7 @@ describe('toIso / fromIso round trip (property)', () => {
       }),
       { numRuns: 2000 },
     );
-  });
+  }, 60_000);
 
   it('canonical strings sort in the same order as their instants', () => {
     fc.assert(

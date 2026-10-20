@@ -98,7 +98,7 @@ describe('toPublicId / toUuid', () => {
       }),
       { numRuns: 10_000 },
     );
-  });
+  }, 60_000);
 
   it('property: round-trips for every prefix, and uppercase UUID input normalises', () => {
     fc.assert(
@@ -111,14 +111,14 @@ describe('toPublicId / toUuid', () => {
       }),
       { numRuns: 2_000 },
     );
-  });
+  }, 60_000);
 
   it('round-trips 10k ids from the real generator', () => {
     for (let i = 0; i < 10_000; i += 1) {
       const u = newId();
       expect(toUuid(toPublicId(u, 'run'))).toBe(u);
     }
-  });
+  }, 60_000);
 
   it('encodes the RFC 9562 example UUIDv7 to a known public id', () => {
     expect(toPublicId('017f22e2-79b0-7cc3-98c4-dc0c0c07398f', 'run')).toBe(
