@@ -6,11 +6,22 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { SETUP_ACTION, checkPins, checkRepo, checkSetupAction, main } from './check-actions.mjs';
+import {
+  PR_WORKFLOW,
+  REQUIRED_CHECKS,
+  SETUP_ACTION,
+  checkPins,
+  checkPrWorkflow,
+  checkRepo,
+  checkSetupAction,
+  checkZeroWarnings,
+  main,
+} from './check-actions.mjs';
 import { REPO_ROOT } from './test-fixtures.mjs';
 
 const SHA = '3d3c42e5aac5ba805825da76410c181273ba90b1';
 const realSetup = () => readFileSync(path.join(REPO_ROOT, SETUP_ACTION), 'utf8');
+const realPr = () => readFileSync(path.join(REPO_ROOT, PR_WORKFLOW), 'utf8');
 
 describe('checkPins', () => {
   it('accepts SHA pins with a version comment and local actions', () => {
@@ -131,6 +142,107 @@ describe('checkRepo / main', () => {
       const errors = checkRepo(dir);
       assert.ok(errors.some((e) => e.includes('x.yml:4')));
       assert.ok(errors.some((e) => e.includes('missing')));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('checkPrWorkflow (CI-002, #136)', () => {
+  it('accepts the real pull-request workflow', () => {
+    assert.deepEqual(checkPrWorkflow(realPr()), []);
+  });
+
+  it('keeps the required check names stable', () => {
+    assert.deepEqual([...REQUIRED_CHECKS], ['lint', 'typecheck', 'commitlint']);
+    const renamed = realPr().replace('    name: typecheck\n', '    name: Type check\n');
+    assert.match(checkPrWorkflow(renamed).join(), /'typecheck' must be named 'typecheck'/);
+    const dropped = realPr().replace(
+      '  commitlint:\n    name: commitlint\n',
+      '  cl:\n    name: cl\n',
+    );
+    assert.match(checkPrWorkflow(dropped).join(), /'commitlint' is missing/);
+  });
+
+  it('rejects a Node matrix (it would rename the check to "lint (22)")', () => {
+    const matrix = realPr().replace(
+      '    name: lint\n',
+      "    name: lint\n    strategy:\n      matrix:\n        node: ['22']\n",
+    );
+    assert.match(checkPrWorkflow(matrix).join(), /must not use a matrix/);
+  });
+
+  it('runs with least privilege and no secrets (fork PRs need none)', () => {
+    const write = realPr().replace(
+      'permissions:\n  contents: read',
+      'permissions:\n  contents: write',
+    );
+    assert.match(checkPrWorkflow(write).join(), /contents: read/);
+    const leaky = realPr().replace("FORCE_COLOR: '0'", 'TOKEN: ${{ secrets.GH_TOKEN }}');
+    assert.match(checkPrWorkflow(leaky).join(), /secrets/);
+    const target = realPr().replace('  pull_request:\n', '  pull_request_target:\n');
+    assert.match(checkPrWorkflow(target).join(), /pull_request_target/);
+  });
+
+  it('cancels superseded runs per ref (huge diffs, rapid pushes)', () => {
+    const noCancel = realPr().replace('cancel-in-progress: true', 'cancel-in-progress: false');
+    assert.match(checkPrWorkflow(noCancel).join(), /cancel-in-progress/);
+  });
+
+  it('rejects trigger path filters, which leave required checks pending', () => {
+    const filtered = realPr().replace(
+      '  pull_request:\n',
+      "  pull_request:\n    paths-ignore: ['docs/**']\n",
+    );
+    assert.match(checkPrWorkflow(filtered).join(), /path filters/);
+  });
+
+  it('requires a fail-closed docs-only skip', () => {
+    const open = realPr().replace(
+      "if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}",
+      "if: needs.changes.outputs.code == 'true'",
+    );
+    assert.match(checkPrWorkflow(open).join(), /fail-closed/);
+  });
+
+  it('requires pipefail, the annotator and the matchers', () => {
+    const noPipefail = realPr().replaceAll('set -o pipefail\n', '');
+    assert.match(checkPrWorkflow(noPipefail).join(), /pipefail/);
+    const noMatchers = realPr().replaceAll(
+      '      - uses: ./.github/actions/problem-matchers\n',
+      '',
+    );
+    assert.match(checkPrWorkflow(noMatchers).join(), /problem matchers/);
+    const noFormat = realPr().replace('run: pnpm format:check', 'run: echo skipped');
+    assert.match(checkPrWorkflow(noFormat).join(), /format:check/);
+  });
+
+  it('lints the full PR commit range and never skips commitlint', () => {
+    const shallow = realPr().replace("fetch-depth: '0'", "fetch-depth: '1'");
+    assert.match(checkPrWorkflow(shallow).join(), /full history/);
+  });
+});
+
+describe('checkZeroWarnings', () => {
+  it('passes on the repository', () => {
+    assert.deepEqual(checkZeroWarnings(REPO_ROOT), []);
+  });
+
+  it('flags an eslint script that tolerates warnings', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'bw-zero-warn-'));
+    try {
+      mkdirSync(path.join(dir, 'packages', 'x'), { recursive: true });
+      writeFileSync(
+        path.join(dir, 'package.json'),
+        '{"scripts":{"lint:root":"eslint . --max-warnings=0"}}',
+      );
+      writeFileSync(
+        path.join(dir, 'packages', 'x', 'package.json'),
+        '{"scripts":{"lint":"eslint ."}}',
+      );
+      assert.deepEqual(checkZeroWarnings(dir), [
+        "packages/x/package.json: script 'lint' must run eslint with --max-warnings=0",
+      ]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

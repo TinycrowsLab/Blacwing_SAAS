@@ -1,0 +1,15 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "bw-prettier",
+      "severity": "error",
+      "pattern": [
+        {
+          "regexp": "^\\[warn\\] (?!Code style issues)(\\S.*)$",
+          "file": 1,
+          "message": 1
+        }
+      ]
+    }
+  ]
+}

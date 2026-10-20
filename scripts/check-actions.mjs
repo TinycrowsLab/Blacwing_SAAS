@@ -5,7 +5,12 @@
 // - the reusable setup composite action (.github/actions/setup) installs with
 //   `--frozen-lockfile`, derives pnpm only from package.json "packageManager" (Corepack),
 //   keys the Turborepo cache on pnpm-lock.yaml + turbo.json with a branch fallback, keeps
-//   caches restore-only on forked pull requests, and references no secrets.
+//   caches restore-only on forked pull requests, and references no secrets;
+// - the pull-request workflow (.github/workflows/pr.yml, CI-002 #136) keeps the stable required
+//   check names `lint`, `typecheck` and `commitlint` (no matrix), runs on pull_request and push to
+//   main with read-only permissions and cancel-in-progress concurrency, uses the setup action and
+//   the problem matchers, gates docs-only skips fail-closed, and references no secrets; every
+//   ESLint script enforces zero warnings.
 //
 // Usage: node scripts/check-actions.mjs [--root <dir>]
 // Exits non-zero (listing every problem) when the policy is not met.
@@ -17,6 +22,9 @@ import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 
 export const SETUP_ACTION = '.github/actions/setup/action.yml';
+export const PR_WORKFLOW = '.github/workflows/pr.yml';
+/** Required status checks referenced by branch protection (CI-019); job id = check name. */
+export const REQUIRED_CHECKS = Object.freeze(['lint', 'typecheck', 'commitlint']);
 const SHA_PIN = /^[^@\s]+@[0-9a-f]{40}$/;
 const VERSION_COMMENT = /#\s*v\d+(\.\d+){0,2}\b/;
 
@@ -135,6 +143,148 @@ export function checkSetupAction(text) {
 }
 
 /**
+ * @param {string} text contents of .github/workflows/pr.yml
+ * @returns {string[]} problems
+ */
+export function checkPrWorkflow(text) {
+  const W = PR_WORKFLOW;
+  /** @type {string[]} */
+  const errors = [];
+  /** @type {unknown} */
+  const doc = parse(text);
+  if (!isRecord(doc)) return [`${W}: not a YAML mapping`];
+  // YAML 1.1 parsers read a bare `on` key as boolean true; the `yaml` package keeps the string.
+  const on = isRecord(doc.on) ? doc.on : {};
+  if (!('pull_request' in on)) errors.push(`${W}: must run on pull_request`);
+  if ('pull_request_target' in on) {
+    errors.push(`${W}: pull_request_target would run fork code with a write token`);
+  }
+  const push = isRecord(on.push) ? on.push : {};
+  if (!Array.isArray(push.branches) || !push.branches.includes('main')) {
+    errors.push(`${W}: must run on push to main`);
+  }
+  if (
+    'paths' in push ||
+    'paths-ignore' in push ||
+    (isRecord(on.pull_request) && ('paths' in on.pull_request || 'paths-ignore' in on.pull_request))
+  ) {
+    errors.push(
+      `${W}: trigger path filters leave required checks pending; skip inside jobs instead`,
+    );
+  }
+  const perms = doc.permissions;
+  if (!isRecord(perms) || Object.keys(perms).join() !== 'contents' || perms.contents !== 'read') {
+    errors.push(`${W}: permissions must be exactly 'contents: read'`);
+  }
+  const conc = isRecord(doc.concurrency) ? doc.concurrency : {};
+  if (conc['cancel-in-progress'] !== true) errors.push(`${W}: concurrency must cancel-in-progress`);
+  if (typeof conc.group !== 'string' || !conc.group.includes('github.ref')) {
+    errors.push(`${W}: concurrency group must be per ref`);
+  }
+  const env = isRecord(doc.env) ? doc.env : {};
+  if (String(env.NODE_VERSION) !== '22') errors.push(`${W}: NODE_VERSION must be 22`);
+  const jobs = isRecord(doc.jobs) ? doc.jobs : {};
+  for (const id of REQUIRED_CHECKS) {
+    const job = jobs[id];
+    if (!isRecord(job)) {
+      errors.push(`${W}: required check job '${id}' is missing`);
+      continue;
+    }
+    if (job.name !== id) errors.push(`${W}: job '${id}' must be named '${id}' (stable check name)`);
+    if (isRecord(job.strategy) && 'matrix' in job.strategy) {
+      errors.push(`${W}: job '${id}' must not use a matrix (it renames the check)`);
+    }
+    if ('permissions' in job) errors.push(`${W}: job '${id}' must not widen permissions`);
+    const steps = Array.isArray(job.steps) ? job.steps.filter((s) => isRecord(s)) : [];
+    const setup = steps.find((s) => s.uses === './.github/actions/setup');
+    if (setup === undefined) {
+      errors.push(`${W}: job '${id}' must use ./.github/actions/setup`);
+    } else if (!isRecord(setup.with) || setup.with['node-version'] !== '${{ env.NODE_VERSION }}') {
+      errors.push(`${W}: job '${id}' must pass node-version: \${{ env.NODE_VERSION }}`);
+    }
+    const runs = steps.map((s) => (typeof s.run === 'string' ? s.run : '')).join('\n');
+    const matchers = steps.some((s) => s.uses === './.github/actions/problem-matchers');
+    if (id === 'lint') {
+      if (!runs.includes('pnpm lint 2>&1 | node scripts/ci-annotate.mjs')) {
+        errors.push(`${W}: lint must pipe 'pnpm lint' through scripts/ci-annotate.mjs`);
+      }
+      if (!runs.includes('pnpm format:check'))
+        errors.push(`${W}: lint must run 'pnpm format:check'`);
+    }
+    if (
+      id === 'typecheck' &&
+      !runs.includes('pnpm typecheck 2>&1 | node scripts/ci-annotate.mjs')
+    ) {
+      errors.push(`${W}: typecheck must pipe 'pnpm typecheck' through scripts/ci-annotate.mjs`);
+    }
+    if (id !== 'commitlint') {
+      if (!matchers) errors.push(`${W}: job '${id}' must register the problem matchers`);
+      if (!runs.includes('set -o pipefail')) {
+        errors.push(
+          `${W}: job '${id}' must 'set -o pipefail' so the annotator keeps the exit code`,
+        );
+      }
+    }
+    if (id === 'commitlint') {
+      if (!runs.includes('node scripts/ci-pr.mjs commitlint')) {
+        errors.push(`${W}: commitlint must run 'node scripts/ci-pr.mjs commitlint'`);
+      }
+      if (!isRecord(setup?.with) || String(setup.with['fetch-depth']) !== '0') {
+        errors.push(`${W}: commitlint needs full history (fetch-depth: '0')`);
+      }
+      if ('needs' in job || 'if' in job) {
+        errors.push(`${W}: commitlint must never be skipped`);
+      }
+    }
+    // A skipped job satisfies a required check, so a skip must only follow a proven docs-only
+    // classification, never a failed or missing one.
+    const cond = typeof job.if === 'string' ? job.if : '';
+    if (
+      cond !== '' &&
+      (!cond.includes('!cancelled()') || /outputs\.code\s*==\s*'true'/.test(cond))
+    ) {
+      errors.push(
+        `${W}: job '${id}' condition must be fail-closed (!cancelled() and code != 'false')`,
+      );
+    }
+  }
+  if (/\$\{\{\s*secrets\./.test(text)) errors.push(`${W}: must not reference secrets`);
+  return errors;
+}
+
+/**
+ * Every ESLint script (root and members) must fail on warnings.
+ * @param {string} root
+ * @returns {string[]} problems
+ */
+export function checkZeroWarnings(root) {
+  /** @type {string[]} */
+  const errors = [];
+  const manifests = existsSync(path.join(root, 'package.json')) ? ['package.json'] : [];
+  for (const group of ['apps', 'packages']) {
+    const abs = path.join(root, group);
+    if (!existsSync(abs)) continue;
+    for (const d of readdirSync(abs)) {
+      if (existsSync(path.join(abs, d, 'package.json')))
+        manifests.push(`${group}/${d}/package.json`);
+    }
+  }
+  for (const rel of manifests) {
+    /** @type {unknown} */
+    const pkg = JSON.parse(readFileSync(path.join(root, rel), 'utf8'));
+    const scripts = isRecord(pkg) && isRecord(pkg.scripts) ? pkg.scripts : {};
+    for (const [name, cmd] of Object.entries(scripts)) {
+      if (typeof cmd !== 'string' || !/^lint(:root)?$/.test(name) || !/\beslint\b/.test(cmd))
+        continue;
+      if (!cmd.includes('--max-warnings=0')) {
+        errors.push(`${rel}: script '${name}' must run eslint with --max-warnings=0`);
+      }
+    }
+  }
+  return errors;
+}
+
+/**
  * @param {string} root repository root
  * @returns {string[]} problems
  */
@@ -160,6 +310,10 @@ export function checkRepo(root) {
   const setup = path.join(root, SETUP_ACTION);
   if (existsSync(setup)) errors.push(...checkSetupAction(readFileSync(setup, 'utf8')));
   else errors.push(`${SETUP_ACTION}: missing`);
+  const pr = path.join(root, PR_WORKFLOW);
+  if (existsSync(pr)) errors.push(...checkPrWorkflow(readFileSync(pr, 'utf8')));
+  else errors.push(`${PR_WORKFLOW}: missing`);
+  errors.push(...checkZeroWarnings(root));
   return errors;
 }
 

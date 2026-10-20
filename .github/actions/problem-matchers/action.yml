@@ -1,0 +1,22 @@
+name: Blackwing problem matchers
+description: >-
+  Register the tsc, ESLint and Prettier problem matchers that turn CI diagnostics into inline PR
+  annotations. Turborepo output must go through `node scripts/ci-annotate.mjs` first, which
+  rewrites tsc and ESLint diagnostics into the canonical, repository-relative lines these
+  matchers read. Replaces the tsc and ESLint matchers that actions/setup-node registers, so each
+  diagnostic is annotated once.
+
+runs:
+  using: composite
+  steps:
+    - name: Register problem matchers
+      shell: bash
+      env:
+        MATCHERS: ${{ github.action_path }}
+      run: |
+        echo "::remove-matcher owner=tsc::"
+        echo "::remove-matcher owner=eslint-stylish::"
+        echo "::remove-matcher owner=eslint-compact::"
+        echo "::add-matcher::${MATCHERS}/tsc.json"
+        echo "::add-matcher::${MATCHERS}/eslint.json"
+        echo "::add-matcher::${MATCHERS}/prettier.json"

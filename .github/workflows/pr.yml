@@ -1,0 +1,130 @@
+name: pr
+
+# Pull-request gate (CI-002, #136): ESLint with zero warnings plus the Prettier check, commit
+# messages (Conventional Commits) and the project-wide typecheck, on every pull request and every
+# push to main. The job names `lint`, `typecheck` and `commitlint` are the required status checks
+# that branch protection references (CI-019): never rename them, and never give them a matrix
+# (a matrix appends its values to the check name). Node 22 is the single supported version.
+#
+# Unit, integration, e2e and Go jobs live in their own workflows (CI-003, CI-004, CI-006, CI-005).
+# No job needs a secret; forked pull requests get read-only caches from the setup action.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run per pull request (or per pushed ref): a newer push cancels the superseded run.
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  FORCE_COLOR: '0'
+  TURBO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  # Docs-only change sets let ESLint and tsc skip. The classifier fails closed: anything it cannot
+  # prove to be docs-only (or a failure of this job) runs every check.
+  changes:
+    name: changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: classify
+        name: Classify the change set
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: node scripts/ci-pr.mjs changes
+
+  lint:
+    name: lint
+    needs: changes
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      # A local composite action is only readable after a checkout; fetch just its directory.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - id: setup
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          fetch-depth: '1'
+      - uses: ./.github/actions/problem-matchers
+      - name: ESLint (zero warnings)
+        id: eslint
+        if: ${{ needs.changes.outputs.code != 'false' }}
+        run: |
+          set -o pipefail
+          pnpm lint 2>&1 | node scripts/ci-annotate.mjs --task lint
+      # Runs even when ESLint failed, so one push reports both. Line endings are LF everywhere
+      # (.gitattributes), so this check is stable across platforms.
+      - name: Prettier check
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: pnpm format:check
+
+  typecheck:
+    name: typecheck
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - id: setup
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          fetch-depth: '1'
+      - uses: ./.github/actions/problem-matchers
+      # Turborepo restores cached typecheck results (the setup action restores .turbo), so a
+      # re-run of an unchanged commit is a full cache hit; the job summary reports the hit rate.
+      - name: Typecheck (tsc -b via Turborepo)
+        run: |
+          set -o pipefail
+          pnpm typecheck 2>&1 | node scripts/ci-annotate.mjs --task typecheck
+
+  commitlint:
+    name: commitlint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          fetch-depth: '0'
+      # Lints every commit in the pull request (base..head), or every pushed commit (before..after).
+      - name: Lint commit messages
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: node scripts/ci-pr.mjs commitlint

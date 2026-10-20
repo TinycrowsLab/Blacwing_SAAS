@@ -67,7 +67,7 @@ Pack §6 is the full layout. Adding or removing an app, package or fixed directo
 | `pnpm db:seed` | Seeds the demo tenant `acme`, users per role, a verified lab asset and an active SA. |
 | `pnpm check:layout` / `pnpm check:claude-md` / `pnpm check:tsconfig` / `pnpm check:turbo` | Repo-layout, CLAUDE.md, tsconfig and Turborepo pipeline drift checks. |
 | `pnpm check:adr` | ADR format, Context Pack citations, supersession links and the index (`docs/adr/`). |
-| `pnpm check:actions` | GitHub Actions policy: every `uses:` SHA-pinned with a version comment; the setup composite action (`.github/actions/setup`) is frozen-lockfile, Corepack-only and fork-safe. |
+| `pnpm check:actions` | GitHub Actions policy: every `uses:` SHA-pinned with a version comment; the setup composite action (`.github/actions/setup`) is frozen-lockfile, Corepack-only and fork-safe; the `pr` workflow keeps the required checks `lint`, `typecheck` and `commitlint` stable and least-privilege (see `docs/runbooks/ci-pr-checks.md`). |
 | `pnpm check:github` / `pnpm labels:check` | Issue/PR templates, CODEOWNERS and label-catalogue checks. `pnpm labels:sync --dry-run` lists the catalogue. |
 | `pnpm check:renovate` | Renovate policy checks on `renovate.json` (pins, digests, groups, automerge limits); see [`docs/runbooks/renovate.md`](docs/runbooks/renovate.md). |
 
