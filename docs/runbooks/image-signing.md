@@ -19,7 +19,7 @@ to the image. There are no long-lived keys.
 `infra/docker/signing-identity.json` is the single source of truth for the issuer, repository, workflow path
 and trusted refs. `node scripts/signing.mjs identity` derives the certificate-identity regexp from it and
 fails if the workflow file no longer exists (identity drift). Deploy-time verification (CI-011) must read the
-same file.
+same file; see [image-verification.md](image-verification.md) for the deploy-time gate.
 
 ```sh
 cosign verify \

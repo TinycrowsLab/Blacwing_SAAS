@@ -1,0 +1,32 @@
+# Admission-time image verification (CI-011, #145): defence in depth behind the deploy-time
+# verify-images gate. Sigstore policy-controller ClusterImagePolicy for the k3s cluster; INFRA
+# installs the controller and applies this manifest (out of scope here). It admits a
+# ghcr.io/tinycrowslab/bw-* image only when it carries a keyless signature from the CI-010 sign
+# job identity (Fulcio cert + Rekor entry) AND both the CycloneDX SBOM and SLSA v1 provenance
+# attestations. The subjectRegExp and issuer MUST equal `node scripts/signing.mjs identity`
+# (infra/docker/signing-identity.json); scripts/verify-images.test.mjs fails on drift.
+# Enforcement applies to namespaces labelled policy.sigstore.dev/include=true; label every
+# Blackwing namespace. mode: enforce rejects (never warns) unverified pods.
+# OFFLINE-STUB(online-porting #874): applied only once the cluster pulls from GHCR with Sigstore reachable.
+apiVersion: policy.sigstore.dev/v1beta1
+kind: ClusterImagePolicy
+metadata:
+  name: blackwing-verify-images
+spec:
+  mode: enforce
+  images:
+    - glob: 'ghcr.io/tinycrowslab/bw-*'
+  authorities:
+    - name: ci-010-keyless
+      keyless:
+        url: https://fulcio.sigstore.dev
+        identities:
+          - issuer: https://token.actions.githubusercontent.com
+            subjectRegExp: '^https://github\.com/TinycrowsLab/Blacwing_SAAS/\.github/workflows/build-images\.yml@(refs/heads/main|refs/tags/v.+)$'
+      ctlog:
+        url: https://rekor.sigstore.dev
+      attestations:
+        - name: sbom-cyclonedx
+          predicateType: cyclonedx
+        - name: provenance-slsa1
+          predicateType: slsaprovenance1
