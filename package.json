@@ -33,6 +33,7 @@
     "check:renovate": "node scripts/check-renovate.mjs",
     "check:actions": "node scripts/check-actions.mjs",
     "check:dependency-review": "node scripts/check-dependency-review.mjs",
+    "check:images": "node scripts/check-images.mjs",
     "check:github": "node scripts/check-github.mjs --quiet",
     "labels:check": "node scripts/sync-labels.mjs --check-docs",
     "labels:sync": "node scripts/sync-labels.mjs",

@@ -1,0 +1,14 @@
+# Root build context for infra/docker/service.Dockerfile: sources and manifests only.
+**/node_modules
+**/.turbo
+**/dist
+**/.next
+**/coverage
+.git
+.github
+.env*
+design
+docs
+eval
+infra
+apps/egress-gateway
