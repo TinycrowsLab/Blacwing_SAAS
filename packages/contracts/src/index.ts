@@ -4,6 +4,27 @@ export const name = '@blackwing/contracts';
 /** Package version; kept in sync with package.json. */
 export const version = '0.0.0';
 
+export {
+  assertWithinCeiling,
+  compareIntrusiveness,
+  INTRUSIVENESS_CLASSES,
+  INTRUSIVENESS_DESCRIPTORS,
+  INTRUSIVENESS_ERROR_CODES,
+  INTRUSIVENESS_ORDER,
+  type IntrusivenessClass,
+  intrusivenessClassSchema,
+  type IntrusivenessDescriptor,
+  IntrusivenessError,
+  type IntrusivenessErrorCode,
+  intrusivenessRank,
+  isIntrusivenessClass,
+  isIntrusivenessError,
+  isSelectable,
+  isWithinCeiling,
+  parseIntrusivenessClass,
+  requiresReversalJournal,
+  SELECTABLE_INTRUSIVENESS_CLASSES,
+} from './intrusiveness.js';
 export { LIMITS } from './limits.js';
 export {
   checkTimestamps,

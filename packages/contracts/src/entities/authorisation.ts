@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { type IntrusivenessClass, intrusivenessClassSchema } from '../intrusiveness.js';
 import { LIMITS } from '../limits.js';
 import {
   checkTimestamps,
@@ -9,14 +10,12 @@ import {
   uuidV7Schema,
 } from '../primitives.js';
 
-/** Intrusiveness classes, §3.5 (F4), ordered from least to most intrusive. */
-export const intrusivenessSchema = z.enum([
-  'passive',
-  'active_safe',
-  'state_changing',
-  'destructive',
-]);
-export type Intrusiveness = z.infer<typeof intrusivenessSchema>;
+/**
+ * Intrusiveness classes, §3.5 (F4), ordered from least to most intrusive. Defined once in
+ * `../intrusiveness.ts` (SCOPE-003); these names are kept as aliases for the entity schemas.
+ */
+export const intrusivenessSchema = intrusivenessClassSchema;
+export type Intrusiveness = IntrusivenessClass;
 
 /**
  * The classes a standing authorisation may grant. `destructive` is hard-blocked by the platform

@@ -27,6 +27,9 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   TENANT_CONTEXT_MISSING: 500,
   KILL_SWITCH_ACTIVE: 423,
   SCOPE_VIOLATION: 403,
+  SCOPE_INTRUSIVENESS_EXCEEDS_CEILING: 403,
+  SCOPE_DESTRUCTIVE_FORBIDDEN: 403,
+  SCOPE_INVALID_CLASS: 422,
   CONFIG_INVALID: 500,
   INTERNAL: 500,
 };
@@ -41,7 +44,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(13);
+    expect(ERROR_CODE_LIST).toHaveLength(16);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -135,6 +138,9 @@ describe('error-code registry', () => {
       | 'TENANT_CONTEXT_MISSING'
       | 'KILL_SWITCH_ACTIVE'
       | 'SCOPE_VIOLATION'
+      | 'SCOPE_INTRUSIVENESS_EXCEEDS_CEILING'
+      | 'SCOPE_DESTRUCTIVE_FORBIDDEN'
+      | 'SCOPE_INVALID_CLASS'
       | 'CONFIG_INVALID'
       | 'INTERNAL'
     >();

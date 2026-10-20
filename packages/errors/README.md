@@ -37,6 +37,9 @@ frozen. Codes are public API: never rename or reuse one, add a new one instead.
 | `TENANT_CONTEXT_MISSING` | 500 | `TenantContextMissingError` (fails closed, §7/§8.6) | no |
 | `KILL_SWITCH_ACTIVE` | 423 | `KillSwitchActiveError` (`scope`: run/asset/tenant/global) | no |
 | `SCOPE_VIOLATION` | 403 | `ScopeViolationError` | no |
+| `SCOPE_INTRUSIVENESS_EXCEEDS_CEILING` | 403 | `IntrusivenessError` (in `@blackwing/contracts`, SCOPE-003) | no |
+| `SCOPE_DESTRUCTIVE_FORBIDDEN` | 403 | `IntrusivenessError` (in `@blackwing/contracts`, SCOPE-003) | no |
+| `SCOPE_INVALID_CLASS` | 422 | `IntrusivenessError` (in `@blackwing/contracts`, SCOPE-003) | no |
 | `CONFIG_INVALID` | 500 | `ConfigValidationError` (in `@blackwing/config`, FOUND-007) | no |
 | `INTERNAL` | 500 | `InternalError` | no |
 

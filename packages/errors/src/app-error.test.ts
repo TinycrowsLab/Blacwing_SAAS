@@ -78,7 +78,14 @@ const SUBCLASSES: readonly (readonly [
 ];
 
 /** Codes whose subclass lives in the package that owns the failure, not here. */
-const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = ['CONFIG_INVALID']; // ConfigValidationError, @blackwing/config
+const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
+  'CONFIG_INVALID', // ConfigValidationError, @blackwing/config
+  // IntrusivenessError, @blackwing/contracts (SCOPE-003): contracts is the root of the dependency
+  // graph and cannot import this package, so its error carries the registered code instead.
+  'SCOPE_INTRUSIVENESS_EXCEEDS_CEILING',
+  'SCOPE_DESTRUCTIVE_FORBIDDEN',
+  'SCOPE_INVALID_CLASS',
+];
 
 describe('AppError subclasses', () => {
   it('cover every registered code (except those subclassed by their owning package)', () => {

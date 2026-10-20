@@ -32,6 +32,20 @@ const DEFINITIONS = {
   TENANT_CONTEXT_MISSING: { status: 500, title: 'Tenant context missing', retryable: false },
   KILL_SWITCH_ACTIVE: { status: 423, title: 'Kill switch active', retryable: false },
   SCOPE_VIOLATION: { status: 403, title: 'Out of authorised scope', retryable: false },
+  // Intrusiveness-class validation (SCOPE-003, §3.5/§8.3). Exceeding a ceiling or naming
+  // `destructive` as a ceiling is a refusal of an authorised-scope boundary (403); an unknown class
+  // string is malformed input (422).
+  SCOPE_INTRUSIVENESS_EXCEEDS_CEILING: {
+    status: 403,
+    title: 'Intrusiveness exceeds the authorised ceiling',
+    retryable: false,
+  },
+  SCOPE_DESTRUCTIVE_FORBIDDEN: {
+    status: 403,
+    title: 'Destructive intrusiveness is forbidden',
+    retryable: false,
+  },
+  SCOPE_INVALID_CLASS: { status: 422, title: 'Invalid intrusiveness class', retryable: false },
   // `@blackwing/config` (FOUND-007) refuses to start on an invalid environment: a server fault.
   CONFIG_INVALID: { status: 500, title: 'Invalid configuration', retryable: false },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },

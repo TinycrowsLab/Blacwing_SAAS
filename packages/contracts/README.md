@@ -23,3 +23,24 @@ These are the baseline shapes. The owning epics extend them: tenants and users i
 and its scope rules in #373 and #566, runs in #564 (state machine #225), test cases in #427, findings in #739. The API maps ids to prefixed
 public ids (`@blackwing/ids`) at its boundary. `@blackwing/testing` factories produce valid instances of every
 schema.
+
+## Intrusiveness classes (SCOPE-003)
+
+`src/intrusiveness.ts` is the only definition of the §3.5 taxonomy and its order. Import it; never
+re-declare the classes or their ranks.
+
+| Export | Behaviour |
+|---|---|
+| `IntrusivenessClass`, `INTRUSIVENESS_CLASSES` | `passive` < `active_safe` < `state_changing` < `destructive` |
+| `INTRUSIVENESS_ORDER` | `{ passive: 0, active_safe: 1, state_changing: 2, destructive: 3 }` |
+| `intrusivenessClassSchema` | Strict, case-sensitive Zod enum; unknown input fails with `SCOPE_INVALID_CLASS` |
+| `parseIntrusivenessClass(v)` | Parses untrusted input, throws `IntrusivenessError('SCOPE_INVALID_CLASS')` |
+| `isSelectable(c)` / `SELECTABLE_INTRUSIVENESS_CLASSES` | `false` only for `destructive`, which the UI/API never offer (§8.3) |
+| `assertWithinCeiling(requested, ceiling)` | `SCOPE_DESTRUCTIVE_FORBIDDEN` for a `destructive` ceiling; `SCOPE_INTRUSIVENESS_EXCEEDS_CEILING` when `requested` ranks above `ceiling`; `SCOPE_INVALID_CLASS` for a non-canonical value (fails closed) |
+| `isWithinCeiling` | Non-throwing form of the above |
+| `requiresReversalJournal(c)` | `true` iff `state_changing` |
+| `INTRUSIVENESS_DESCRIPTORS` | Label, meaning, generic examples and v1 status per class, for UI/help text |
+
+The error codes are registered in `@blackwing/errors`. `contracts` is the root of the dependency
+graph and cannot import that package, so `IntrusivenessError` is a plain `Error` carrying the registered
+`code`; API callers wrap it with `new AppError(err.code, …)` to answer with problem+json.
