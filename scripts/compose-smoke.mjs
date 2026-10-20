@@ -10,10 +10,14 @@
 //   4. Neo4j rejects a node without tenantId, and rejects removing or changing a tenantId;
 //   5. `valkey-cli ping` returns PONG;
 //   6. MinIO is healthy, the buckets exist with object lock + versioning, the WORM and scoped-key
-//      properties hold (infra/compose/minio/verify.sh, DEVENV-006).
+//      properties hold (infra/compose/minio/verify.sh, DEVENV-006);
+//   7. Mailpit receives SMTP mail; interactsh rejects anonymous and accepts token-authenticated
+//      registration + poll (DEVENV-008).
 // Exits non-zero on the first failed check. Never prints credentials.
 
 import { execFileSync } from 'node:child_process';
+import { generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -232,6 +236,42 @@ export function smoke(opts) {
     `wget -S -qO- --post-data '{}' http://127.0.0.1:80/register 2>&1 | head -1 || true`,
   );
   check('interactsh rejects an unauthenticated registration', /401|403/.test(unauth));
+
+  // A client registers with the token and polls its correlation id (what packages/oob will do).
+  const token =
+    /^BW_DEV_INTERACTSH_TOKEN=(.+)$/m.exec(readFileSync(opts.envFile, 'utf8'))?.[1] ?? '';
+  const ishPort = compose(opts, ['port', 'interactsh', '80']).split(':').at(-1);
+  const ishUrl = `http://127.0.0.1:${String(ishPort)}`;
+  const { publicKey } = generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+  });
+  const cid = randomBytes(10).toString('hex');
+  const secret = randomUUID();
+  // The token goes in over stdin (`-H @-`) so it never shows up in the process list.
+  const ish = (/** @type {string[]} */ args) =>
+    execFileSync('curl', ['-fsS', '-H', '@-', ...args], {
+      encoding: 'utf8',
+      input: `Authorization: ${token}\n`,
+    });
+  const reg = ish([
+    '-H',
+    'Content-Type: application/json',
+    '--data',
+    JSON.stringify({
+      'public-key': Buffer.from(publicKey).toString('base64'),
+      'secret-key': secret,
+      'correlation-id': cid,
+    }),
+    `${ishUrl}/register`,
+  ]);
+  check(
+    'interactsh accepts a token-authenticated registration',
+    reg.includes('registration successful'),
+  );
+  const poll = ish([`${ishUrl}/poll?id=${cid}&secret=${secret}`]);
+  check('interactsh answers a poll for the registered correlation id', poll.includes('"data"'));
 
   return passed;
 }

@@ -176,7 +176,7 @@ proxy family as the k3s default ingress). It makes dev behave like production fo
   tenant-scoped (section 8.6); the local server is a single shared instance, so `packages/oob` must scope
   correlation ids per tenant and run.
 - **Checks:** `pnpm dev:deps:smoke` sends an SMTP message and reads it from the Mailpit API, and asserts
-  interactsh rejects unauthenticated registration.
+  interactsh rejects unauthenticated registration and accepts a token-authenticated registration and poll.
 
 ### Temporal (server, Web UI, namespace bootstrap)
 
