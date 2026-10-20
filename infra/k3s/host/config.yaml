@@ -1,0 +1,17 @@
+# k3s server config for the Blackwing dev host (DEVENV-014).
+# install-dev.sh installs this file as /etc/rancher/k3s/config.yaml.
+#
+# The embedded kube-router network-policy controller MUST stay enabled: sandbox
+# egress isolation depends on it. Never add `disable-network-policy` here;
+# install-dev.sh refuses to run when it is set. Flannel (the default CNI) plus
+# kube-router enforces Kubernetes NetworkPolicy.
+write-kubeconfig-mode: '0600'
+node-name: bw-dev
+secrets-encryption: true
+# Pod-level pids limit (CONTEXT_PACK §4.1). Kubernetes has no per-pod pids
+# field, so the kubelet enforces it for every pod on the node.
+kubelet-arg:
+  - 'pod-max-pids=512'
+tls-san:
+  - '127.0.0.1'
+  - 'localhost'

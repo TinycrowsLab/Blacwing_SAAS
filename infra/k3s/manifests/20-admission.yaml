@@ -1,0 +1,79 @@
+# Sandbox admission guard (DEVENV-014, CONTEXT_PACK §4.1, §1.1, ADR-0011).
+#
+# Deterministic, in-API-server enforcement (ValidatingAdmissionPolicy, CEL) for
+# every Pod in a namespace labelled blackwing.io/sandbox=true, on top of Pod
+# Security "restricted". It makes the §4.1 sandbox contract non-optional:
+#   - no hostPath volumes at all, so the host Docker/containerd socket can never
+#     be mounted (CLAUDE.md "Never expose the host Docker socket");
+#   - runtimeClassName must be gvisor;
+#   - no host namespaces, no service-account token, no privileged containers;
+#   - every container (incl. init and ephemeral/debug containers) runs with a
+#     read-only rootfs, no privilege escalation, ALL capabilities dropped and
+#     CPU + memory limits.
+# failurePolicy: Fail, so a broken policy rejects instead of admitting.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: blackwing-sandbox-guard
+  labels:
+    app.kubernetes.io/part-of: blackwing
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources: ['pods', 'pods/ephemeralcontainers']
+  variables:
+    - name: containers
+      expression: >-
+        object.spec.containers
+        + (has(object.spec.initContainers) ? object.spec.initContainers : [])
+        + (has(object.spec.ephemeralContainers) ? object.spec.ephemeralContainers : [])
+  validations:
+    - expression: '!has(object.spec.volumes) || object.spec.volumes.all(v, !has(v.hostPath))'
+      message: 'hostPath volumes are forbidden in sandbox namespaces (the host container socket is never exposed to a sandbox)'
+      reason: Forbidden
+    - expression: "has(object.spec.runtimeClassName) && object.spec.runtimeClassName == 'gvisor'"
+      message: 'sandbox pods must set runtimeClassName: gvisor'
+      reason: Forbidden
+    - expression: >-
+        !(has(object.spec.hostNetwork) && object.spec.hostNetwork)
+        && !(has(object.spec.hostPID) && object.spec.hostPID)
+        && !(has(object.spec.hostIPC) && object.spec.hostIPC)
+        && !(has(object.spec.hostUsers) && object.spec.hostUsers == true)
+      message: 'sandbox pods must not use host network, PID, IPC or user namespaces'
+      reason: Forbidden
+    - expression: 'has(object.spec.automountServiceAccountToken) && object.spec.automountServiceAccountToken == false'
+      message: 'sandbox pods must set automountServiceAccountToken: false'
+      reason: Forbidden
+    - expression: >-
+        variables.containers.all(c, has(c.securityContext)
+        && has(c.securityContext.readOnlyRootFilesystem) && c.securityContext.readOnlyRootFilesystem == true
+        && has(c.securityContext.allowPrivilegeEscalation) && c.securityContext.allowPrivilegeEscalation == false
+        && !(has(c.securityContext.privileged) && c.securityContext.privileged == true)
+        && has(c.securityContext.capabilities) && has(c.securityContext.capabilities.drop)
+        && c.securityContext.capabilities.drop.exists(x, x == 'ALL')
+        && !(has(c.securityContext.capabilities.add) && size(c.securityContext.capabilities.add) > 0))
+      message: 'every sandbox container needs readOnlyRootFilesystem, allowPrivilegeEscalation=false, drop ALL capabilities and no added capabilities'
+      reason: Forbidden
+    - expression: >-
+        object.spec.containers.all(c, has(c.resources) && has(c.resources.limits)
+        && 'cpu' in c.resources.limits && 'memory' in c.resources.limits)
+      message: 'every sandbox container needs CPU and memory limits'
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: blackwing-sandbox-guard
+  labels:
+    app.kubernetes.io/part-of: blackwing
+spec:
+  policyName: blackwing-sandbox-guard
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        blackwing.io/sandbox: 'true'

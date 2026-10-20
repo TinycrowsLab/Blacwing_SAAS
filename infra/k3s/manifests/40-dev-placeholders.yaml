@@ -1,0 +1,273 @@
+# Dev placeholders (DEVENV-014): stand-ins for the three destinations a sandbox may
+# reach (CONTEXT_PACK §4.1) until the real app charts land (INFRA), plus one
+# "outside" service that sandboxes must NOT reach. Each is a tiny static HTTP
+# server (busybox httpd serving /etc, so GET /hostname answers) used only by
+# infra/k3s/verify.sh as positive/negative controls for the NetworkPolicy.
+# The real services keep the same names, labels and ports.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: egress-gateway
+  namespace: bw-system
+  labels:
+    app.kubernetes.io/name: egress-gateway
+    app.kubernetes.io/part-of: blackwing
+    blackwing.io/dev-placeholder: 'true'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: egress-gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: egress-gateway
+        app.kubernetes.io/part-of: blackwing
+        blackwing.io/dev-placeholder: 'true'
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: http
+          image: busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+          command: ['httpd', '-f', '-v', '-p', '13128', '-h', '/etc']
+          ports:
+            - name: http
+              containerPort: 13128
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 32Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: egress-gateway
+  namespace: bw-system
+  labels:
+    app.kubernetes.io/name: egress-gateway
+    app.kubernetes.io/part-of: blackwing
+spec:
+  selector:
+    app.kubernetes.io/name: egress-gateway
+  ports:
+    - name: http
+      port: 13128
+      targetPort: 13128
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-gateway
+  namespace: bw-system
+  labels:
+    app.kubernetes.io/name: model-gateway
+    app.kubernetes.io/part-of: blackwing
+    blackwing.io/dev-placeholder: 'true'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: model-gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: model-gateway
+        app.kubernetes.io/part-of: blackwing
+        blackwing.io/dev-placeholder: 'true'
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: http
+          image: busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+          command: ['httpd', '-f', '-v', '-p', '13500', '-h', '/etc']
+          ports:
+            - name: http
+              containerPort: 13500
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 32Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: model-gateway
+  namespace: bw-system
+  labels:
+    app.kubernetes.io/name: model-gateway
+    app.kubernetes.io/part-of: blackwing
+spec:
+  selector:
+    app.kubernetes.io/name: model-gateway
+  ports:
+    - name: http
+      port: 13500
+      targetPort: 13500
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: run-broker
+  namespace: bw-system
+  labels:
+    app.kubernetes.io/name: run-broker
+    app.kubernetes.io/part-of: blackwing
+    blackwing.io/dev-placeholder: 'true'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: run-broker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: run-broker
+        app.kubernetes.io/part-of: blackwing
+        blackwing.io/dev-placeholder: 'true'
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: http
+          image: busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+          command: ['httpd', '-f', '-v', '-p', '13400', '-h', '/etc']
+          ports:
+            - name: http
+              containerPort: 13400
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 32Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: run-broker
+  namespace: bw-system
+  labels:
+    app.kubernetes.io/name: run-broker
+    app.kubernetes.io/part-of: blackwing
+spec:
+  selector:
+    app.kubernetes.io/name: run-broker
+  ports:
+    - name: http
+      port: 13400
+      targetPort: 13400
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: outside-http
+  namespace: bw-dev-outside
+  labels:
+    app.kubernetes.io/name: outside-http
+    app.kubernetes.io/part-of: blackwing
+    blackwing.io/dev-placeholder: 'true'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: outside-http
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: outside-http
+        app.kubernetes.io/part-of: blackwing
+        blackwing.io/dev-placeholder: 'true'
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: http
+          image: busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+          command: ['httpd', '-f', '-v', '-p', '18080', '-h', '/etc']
+          ports:
+            - name: http
+              containerPort: 18080
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 32Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: outside-http
+  namespace: bw-dev-outside
+  labels:
+    app.kubernetes.io/name: outside-http
+    app.kubernetes.io/part-of: blackwing
+spec:
+  selector:
+    app.kubernetes.io/name: outside-http
+  ports:
+    - name: http
+      port: 18080
+      targetPort: 18080
+      protocol: TCP

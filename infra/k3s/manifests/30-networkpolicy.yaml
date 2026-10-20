@@ -1,0 +1,65 @@
+# Sandbox network isolation (DEVENV-014, CONTEXT_PACK §4.1, §8.2, ADR-0011).
+#
+# Default-deny ingress AND egress for every Pod in the sandbox namespace, then
+# exactly three egress allowances, each to one bw-system service on one port:
+#   egress gateway   app.kubernetes.io/name=egress-gateway  TCP 13128
+#   model gateway    app.kubernetes.io/name=model-gateway   TCP 13500
+#   Run Broker API   app.kubernetes.io/name=run-broker      TCP 13400
+# There is deliberately NO ipBlock and NO DNS rule: the cloud metadata endpoint
+# (169.254.169.254 and the IPv6 fd00:ec2::254), node IPs, other namespaces and
+# all of the internet are unreachable. Sandboxes get the three addresses
+# injected at creation (hostAliases/env) by the sandbox controller, so no
+# resolver is needed and DNS cannot be used as an exfiltration channel.
+# Enforced by the k3s embedded kube-router policy controller (host/config.yaml).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: sandbox
+  labels:
+    app.kubernetes.io/part-of: blackwing
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sandbox-egress-allowlist
+  namespace: sandbox
+  labels:
+    app.kubernetes.io/part-of: blackwing
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: bw-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: egress-gateway
+      ports:
+        - protocol: TCP
+          port: 13128
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: bw-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: model-gateway
+      ports:
+        - protocol: TCP
+          port: 13500
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: bw-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: run-broker
+      ports:
+        - protocol: TCP
+          port: 13400

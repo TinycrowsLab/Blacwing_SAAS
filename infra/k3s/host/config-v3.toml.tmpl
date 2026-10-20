@@ -1,0 +1,7 @@
+{{ template "base" . }}
+
+# Blackwing (DEVENV-014): register gVisor as the `runsc` runtime handler. The
+# `gvisor` RuntimeClass (manifests/00-runtimeclass.yaml) points at this handler.
+# containerd-shim-runsc-v1 must be on root's PATH (installed by infra/bootstrap.sh).
+[plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runsc]
+  runtime_type = "io.containerd.runsc.v1"

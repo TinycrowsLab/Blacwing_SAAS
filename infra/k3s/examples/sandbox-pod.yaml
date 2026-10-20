@@ -1,0 +1,83 @@
+# Canonical sandbox Pod (DEVENV-014): the §4.1 / ADR-0011 hardening contract the
+# sandbox-controller KubernetesDriver builds on. infra/k3s/verify.sh applies it
+# and probes every property below from inside the running Pod.
+#
+#   runtimeClassName: gvisor            user-space kernel (runsc)
+#   runAsNonRoot / runAsUser 65532      non-root
+#   readOnlyRootFilesystem              read-only rootfs
+#   capabilities.drop [ALL]             no capabilities
+#   allowPrivilegeEscalation: false     no-new-privileges
+#   seccompProfile RuntimeDefault       seccomp
+#   limits cpu / memory / ephemeral     resource limits; pids via kubelet pod-max-pids
+#   /workspace emptyDir medium Memory   tmpfs workspace (size-limited)
+#   automountServiceAccountToken false  no Kubernetes API credentials
+#   enableServiceLinks false            no env leak of cluster services
+#   no hostPath / host namespaces       the host container socket is never mounted
+#   hostAliases                         the only three reachable destinations;
+#                                       the sandbox controller fills in their
+#                                       ClusterIPs (verify.sh does it in dev).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sandbox-example
+  namespace: sandbox
+  labels:
+    app.kubernetes.io/name: bw-sandbox
+    app.kubernetes.io/part-of: blackwing
+    blackwing.io/run-id: example
+spec:
+  runtimeClassName: gvisor
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 5
+  hostNetwork: false
+  hostPID: false
+  hostIPC: false
+  dnsPolicy: None
+  dnsConfig:
+    nameservers: ['127.0.0.1']
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: session
+      image: busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+      command: ['sh', '-c', 'exec sleep 3600']
+      workingDir: /workspace
+      securityContext:
+        runAsNonRoot: true
+        privileged: false
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ['ALL']
+        seccompProfile:
+          type: RuntimeDefault
+      resources:
+        requests:
+          cpu: 100m
+          memory: 64Mi
+          ephemeral-storage: 16Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
+          ephemeral-storage: 64Mi
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: tmp
+          mountPath: /tmp
+  volumes:
+    - name: workspace
+      emptyDir:
+        medium: Memory
+        sizeLimit: 128Mi
+    - name: tmp
+      emptyDir:
+        medium: Memory
+        sizeLimit: 32Mi

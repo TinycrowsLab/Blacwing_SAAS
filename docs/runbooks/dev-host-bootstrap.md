@@ -15,7 +15,7 @@ machine. It installs, at the exact versions pinned in [`infra/versions.env`](../
 
 Binaries land in `/usr/local/lib/blackwing/<tool>/<version>/` and are linked from `/usr/local/bin`. `runsc` is
 registered as a Docker runtime in `/etc/docker/daemon.json` (other keys are preserved). k3s and the gVisor
-RuntimeClass are DEVENV-014. The compose dev stack starts with DEVENV-002.
+RuntimeClass are DEVENV-014 ([dev-k3s.md](dev-k3s.md)). The compose dev stack starts with DEVENV-002.
 
 ## Run it
 
