@@ -16,13 +16,22 @@ const doc = parse(
 const wf = /** @type {Wf} */ (doc);
 /** @param {Job} job */
 const runs = (job) => job.steps.map((s) => s.run ?? '').join('\n');
+/**
+ * @param {string} name
+ * @returns {Job}
+ */
+const jobOf = (name) => {
+  const job = wf.jobs[name];
+  if (!job) throw new Error(`labels.yml has no ${name} job`);
+  return job;
+};
 
 test('defaults to read-only contents', () => {
   assert.deepEqual(wf.permissions, { contents: 'read' });
 });
 
 test('labels-check is read-only, checks docs and never writes labels', () => {
-  const job = wf.jobs['labels-check'];
+  const job = jobOf('labels-check');
   assert.equal(job.permissions.issues, 'read');
   assert.match(runs(job), /sync-labels\.mjs --check-docs/);
   assert.match(runs(job), /--dry-run --repo/);
@@ -31,11 +40,11 @@ test('labels-check is read-only, checks docs and never writes labels', () => {
 });
 
 test('labels-sync is gated by BW_ONLINE, serialised, and the only writer', () => {
-  const job = wf.jobs['labels-sync'];
-  assert.match(job.if, /vars\.BW_ONLINE == 'true'/);
-  assert.equal(job.concurrency.group, 'labels-sync');
+  const job = jobOf('labels-sync');
+  assert.match(job.if ?? '', /vars\.BW_ONLINE == 'true'/);
+  assert.equal(job.concurrency?.group, 'labels-sync');
   assert.equal(job.permissions.issues, 'write');
   assert.doesNotMatch(runs(job), /--prune|--dry-run/);
-  assert.notEqual(wf.jobs['labels-check'].permissions.issues, 'write');
+  assert.notEqual(jobOf('labels-check').permissions.issues, 'write');
   assert.ok(wf.on.workflow_dispatch !== undefined);
 });
