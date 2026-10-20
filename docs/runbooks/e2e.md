@@ -28,6 +28,10 @@ pnpm dev &                    # apps, logs in dev-apps.log
 pnpm test:e2e
 ```
 
+`pnpm db:seed` fails closed until the tables it writes exist: it needs the tenants, users and memberships
+schema (#94) and the asset and authorisation tables. Until those migrations land, the seed step (and so the
+job) fails with `SeedPreflightError` after the stack is healthy and migrated.
+
 When a service does not become healthy, `wait-for-health` names it and prints its last log lines, with
 credentials redacted.
 

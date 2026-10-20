@@ -57,8 +57,8 @@ Notes:
   example the Google SSO client) are issued externally and filled by hand.
 - Run `pnpm dev:doctor` at any time. It lists missing `.env` keys, the health of every service and the endpoints.
   It prints key names and URLs, never values.
-- `pnpm test:e2e` runs the `test:e2e` script of every workspace that defines one. Until the Playwright suites land
-  (CI-002, #140) no workspace defines it, so the command runs zero tasks and exits 0. Unit tests are `pnpm test`;
+- `pnpm test:e2e` runs the Playwright suite in `apps/web/e2e` (CI-006, #140) against the stack and Juice Shop
+  (`pnpm targets:up`); see [`docs/runbooks/e2e.md`](../runbooks/e2e.md). Unit tests are `pnpm test`;
   integration tests (`pnpm test:int`) use Testcontainers on random ports and need no running stack.
 - Optional pieces: `pnpm dev:tls` (HTTPS on `*.bw.localhost`), `pnpm dev:deps:obs` (Grafana stack),
   `pnpm targets:up --all` (every training target), the k3s/gVisor sandbox runtime ([dev-k3s.md](../runbooks/dev-k3s.md)).
