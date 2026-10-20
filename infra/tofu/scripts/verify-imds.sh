@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Verifies the IMDS hardening of INFRA-003 ON a running node (run it on the node itself).
 # Never run by CI or offline: it needs an EC2 instance launched with the module's metadata_options.
+# OFFLINE-STUB(online-porting #889): the per-role node integration run (this script on real EC2) is deferred to M10.
 #
 #   host        IMDSv1 (no token) must return 401, and IMDSv2 from the host must work.
 #   container   with --container IMAGE, IMDSv2 from a container (an extra hop) must fail.
