@@ -97,6 +97,11 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'TEMPORAL_UNAVAILABLE',
   // Raised by apps/worker as a plain AppError (WORKFLOW-002).
   'WORKER_QUEUE_UNKNOWN',
+  // Subclassed by apps/sandbox-controller (SANDBOX-001).
+  'SBX_UNAUTHENTICATED',
+  'SBX_BAD_REQUEST',
+  'SBX_CONFIG_INVALID',
+  'SBX_DRIVER_UNAVAILABLE',
 ];
 
 describe('AppError subclasses', () => {

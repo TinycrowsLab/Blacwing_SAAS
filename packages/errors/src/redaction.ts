@@ -32,6 +32,7 @@ const BUILTIN_RULES: readonly Rule[] = Object.freeze([
     replacement: REDACTED,
   },
   { pattern: /\b(?:bwk|bw_pat|bw_ci)_[A-Za-z0-9_-]+/g, replacement: REDACTED },
+  { pattern: /\bbw_run_[A-Za-z0-9_.-]+/g, replacement: REDACTED },
   { pattern: /\b(Bearer|Basic|Token)\s+[A-Za-z0-9._~+/=-]{8,}/gi, replacement: `$1 ${REDACTED}` },
   // The lookbehind anchors the scheme at its first character. Without it, every position inside a long
   // run of scheme characters re-scans the rest of the run, which is quadratic (seconds for a few KB).

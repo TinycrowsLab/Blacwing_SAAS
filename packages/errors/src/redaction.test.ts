@@ -12,6 +12,7 @@ describe('redactBuiltinSecrets', () => {
     ['a virtual model key', 'key=bwk_9fA-b_c2 used', 'key=[REDACTED] used'],
     ['a personal access token', 'token bw_pat_ABCdef123 expired', 'token [REDACTED] expired'],
     ['a CI token', '(bw_ci_x)', '([REDACTED])'],
+    ['a run-scoped token', '(bw_run_eyJ0.c2ln)', '([REDACTED])'],
     [
       'a bearer header value',
       'Authorization: Bearer eyJhbGciOi.abc.def',

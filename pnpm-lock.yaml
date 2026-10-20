@@ -266,10 +266,41 @@ importers:
         version: 3.2.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   apps/sandbox-controller:
+    dependencies:
+      '@blackwing/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@blackwing/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@blackwing/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@opentelemetry/api':
+        specifier: 'catalog:'
+        version: 1.9.1
+      fastify:
+        specifier: 'catalog:'
+        version: 5.12.7
+      ioredis:
+        specifier: 5.11.1
+        version: 5.11.1
+      prom-client:
+        specifier: 'catalog:'
+        version: 15.1.3
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
+      '@blackwing/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

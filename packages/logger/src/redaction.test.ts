@@ -403,6 +403,7 @@ describe('path and key-name redaction', () => {
       {
         pat: 'bw_pat_0123456789abcdef',
         ci: 'bw_ci_fedcba9876543210',
+        run: 'bw_run_eyJydW4iOjF9.c2lnbmF0dXJlMTIz',
         auth: 'Bearer eyJhbGciOiJIUzI1NiJ9.e30.sig',
         dsn: 'postgres://bw:pw-in-dsn@db:5432/bw',
         pem: '-----BEGIN PRIVATE KEY-----\nMIIBVQ\n-----END PRIVATE KEY-----',
@@ -412,6 +413,8 @@ describe('path and key-name redaction', () => {
     for (const leak of [
       '0123456789abcdef',
       'fedcba9876543210',
+      'eyJydW4iOjF9',
+      'c2lnbmF0dXJlMTIz',
       'eyJhbGciOiJIUzI1NiJ9',
       'pw-in-dsn',
       'MIIBVQ',
@@ -424,7 +427,12 @@ describe('path and key-name redaction', () => {
 describe('registerSecretPattern', () => {
   it('registers the Blackwing credential prefixes by default', () => {
     expect(secretPatternNames()).toEqual(
-      expect.arrayContaining(['virtual-model-key', 'personal-access-token', 'ci-token']),
+      expect.arrayContaining([
+        'virtual-model-key',
+        'personal-access-token',
+        'ci-token',
+        'run-token',
+      ]),
     );
   });
 

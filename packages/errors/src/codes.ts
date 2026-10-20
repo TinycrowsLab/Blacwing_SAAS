@@ -78,6 +78,17 @@ const DEFINITIONS = {
   TEMPORAL_UNAVAILABLE: { status: 503, title: 'Temporal unavailable', retryable: true },
   // Worker bootstrap (WORKFLOW-002): a misconfigured process refuses to start rather than polling a guess.
   WORKER_QUEUE_UNKNOWN: { status: 500, title: 'Unknown worker task queue', retryable: false },
+  // Sandbox controller (SANDBOX-001, #448). Its internal API refuses callers without a valid
+  // run-scoped token (401, fail closed); a bad body is refused before any processing (400); a bad
+  // environment stops the process (500); an unreachable driver or Valkey is an outage (503).
+  SBX_UNAUTHENTICATED: { status: 401, title: 'Run token required', retryable: false },
+  SBX_BAD_REQUEST: { status: 400, title: 'Malformed request', retryable: false },
+  SBX_CONFIG_INVALID: {
+    status: 500,
+    title: 'Invalid sandbox controller configuration',
+    retryable: false,
+  },
+  SBX_DRIVER_UNAVAILABLE: { status: 503, title: 'Sandbox driver unavailable', retryable: true },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

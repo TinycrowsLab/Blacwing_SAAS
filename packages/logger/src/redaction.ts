@@ -25,11 +25,13 @@ interface PatternEntry {
 const patterns = new Map<string, PatternEntry>();
 let patternsVersion = 0;
 
-/** Built-in Blackwing credential formats (§9: `bw_pat_`/`bw_ci_` bearer tokens; virtual model keys `bwk_`). */
+/** Built-in Blackwing credential formats (§9: `bw_pat_`/`bw_ci_` bearer tokens; virtual model keys `bwk_`; run-scoped `bw_run_` tokens). */
 export const BUILTIN_SECRET_PATTERNS: Readonly<Record<string, RegExp>> = Object.freeze({
   'virtual-model-key': /bwk_[A-Za-z0-9_-]+/g,
   'personal-access-token': /bw_pat_[A-Za-z0-9_-]+/g,
   'ci-token': /bw_ci_[A-Za-z0-9_-]+/g,
+  // Run-scoped service tokens (sandbox controller, Run Broker): `bw_run_<payload>.<signature>`.
+  'run-token': /bw_run_[A-Za-z0-9_.-]+/g,
 });
 
 /**
