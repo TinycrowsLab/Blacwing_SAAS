@@ -41,6 +41,8 @@ export const OPTIONAL_EMPTY = new Set([
   'TEMPORAL_CLIENT_KEY_PATH',
   // apps/worker queue subset: empty means every queue.
   'WORKER_TASK_QUEUES',
+  // Model-gateway provider credential: the dev mock upstream needs none (.env.example).
+  'GATEWAY_ANTHROPIC_API_KEY',
 ]);
 
 /**
