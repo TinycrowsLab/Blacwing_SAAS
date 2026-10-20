@@ -1,0 +1,181 @@
+// Blackwing Cedar schema (POLICY-001). SCHEMA_VERSION 1.0.0 — keep in sync with
+// packages/policy/src/schema-version.ts; any change here must bump that version (see
+// packages/policy/schema/README.md for the evolution rules).
+//
+// One shared contract for every policy, the TS engine (@cedar-policy/cedar-wasm), the Go
+// egress gateway (github.com/cedar-policy/cedar-go) and the parity vectors.
+//
+// Deliberate division of labour: Cedar never does scope/CIDR/host matching. The caller
+// computes `Target.inScope` with the SCOPE-002 matcher and passes the boolean in. Every
+// attribute is a deterministic fact supplied by the gateway or the PreToolUse hook; no
+// secrets ever appear here (ids and refs only).
+
+namespace Blackwing {
+  // Intrusiveness classes, least to most intrusive. Must equal INTRUSIVENESS_CLASSES in
+  // @blackwing/contracts (SCOPE-003); a shared-constant test guards the parity.
+  entity IntrusivenessClass enum ["passive", "active_safe", "state_changing", "destructive"];
+
+  // An intrusiveness value: the class plus its rank in the SCOPE-003 total order, so the
+  // baseline can compare against a ceiling (`a.rank <= b.rank`). Callers build it only with
+  // intrusivenessValue() from @blackwing/policy, which derives rank from the class.
+  type Intrusiveness = {
+    level: IntrusivenessClass,
+    rank: Long,
+  };
+
+  // The standing-authorisation envelope the run executes under (§8.1).
+  type Envelope = {
+    saId: String,
+    validFrom: datetime,
+    expiresAt: datetime,
+    maxIntrusiveness: Intrusiveness,
+    scopeHash: String,
+  };
+
+  // Facts available to every decision.
+  type DecisionContext = {
+    nowUtc: datetime,
+    envelope: Envelope,
+    intrusiveness: Intrusiveness,
+    reversalJournalPresent: Bool,
+    windowOpen: Bool,
+    tenantId: String,
+  };
+
+  // DecisionContext plus the tool being invoked (Tool::Action::"invoke").
+  type ToolInvokeContext = {
+    nowUtc: datetime,
+    envelope: Envelope,
+    intrusiveness: Intrusiveness,
+    reversalJournalPresent: Bool,
+    windowOpen: Bool,
+    tenantId: String,
+    toolName: String,
+  };
+
+  // DecisionContext plus who raised the request being decided, so requester != approver can
+  // be expressed (§8.4).
+  type GateDecideContext = {
+    nowUtc: datetime,
+    envelope: Envelope,
+    intrusiveness: Intrusiveness,
+    reversalJournalPresent: Bool,
+    windowOpen: Bool,
+    tenantId: String,
+    gate: String,
+    requestedBy: String,
+  };
+
+  // ---- Principals -------------------------------------------------------------------
+
+  // One agent session inside a run (a persona executing under the run's envelope).
+  entity AgentSession = {
+    tenantId: String,
+    persona: String,
+    runId: String,
+    sessionId: String,
+    egressIdentity: String,
+    intrusivenessCeiling: Intrusiveness,
+  };
+
+  // A human user of the console.
+  entity User = {
+    tenantId: String,
+    userId: String,
+    roles: Set<String>,
+  };
+
+  // A CI / automation service account (bw_ci_ tokens). `saId` binds it to one SA if set.
+  entity ServiceAccount = {
+    tenantId: String,
+    scopes: Set<String>,
+    saId?: String,
+  };
+
+  // ---- Resources --------------------------------------------------------------------
+
+  // A concrete destination of target traffic. `ip` is the pinned, resolved address as text
+  // (never matched in Cedar); `inScope` is computed in code by the SCOPE-002 matcher.
+  entity Target = {
+    tenantId: String,
+    host: String,
+    ip: String,
+    port: Long,
+    path: String,
+    method: String,
+    inScope: Bool,
+  };
+
+  entity TestCase = {
+    tenantId: String,
+    class: Intrusiveness,
+    runId: String,
+    oracleType: String,
+  };
+
+  entity Run = {
+    tenantId: String,
+    runId: String,
+    saId: String,
+    mode: String,
+    state: String,
+  };
+
+  entity Asset = {
+    tenantId: String,
+    assetId: String,
+    verified: Bool,
+  };
+}
+
+namespace Egress {
+  action "httpRequest" appliesTo {
+    principal: [Blackwing::AgentSession],
+    resource: [Blackwing::Target],
+    context: Blackwing::DecisionContext,
+  };
+
+  action "tcpConnect" appliesTo {
+    principal: [Blackwing::AgentSession],
+    resource: [Blackwing::Target],
+    context: Blackwing::DecisionContext,
+  };
+
+  action "dnsResolve" appliesTo {
+    principal: [Blackwing::AgentSession],
+    resource: [Blackwing::Target],
+    context: Blackwing::DecisionContext,
+  };
+}
+
+namespace Tool {
+  action "invoke" appliesTo {
+    principal: [Blackwing::AgentSession],
+    resource: [Blackwing::Target, Blackwing::TestCase],
+    context: Blackwing::ToolInvokeContext,
+  };
+}
+
+namespace Scope {
+  action "requestException" appliesTo {
+    principal: [Blackwing::AgentSession],
+    resource: [Blackwing::Target],
+    context: Blackwing::DecisionContext,
+  };
+}
+
+namespace Policy {
+  action "edit" appliesTo {
+    principal: [Blackwing::User, Blackwing::ServiceAccount],
+    resource: [Blackwing::Asset, Blackwing::Run],
+    context: Blackwing::DecisionContext,
+  };
+}
+
+namespace Gate {
+  action "decide" appliesTo {
+    principal: [Blackwing::User],
+    resource: [Blackwing::Run, Blackwing::TestCase],
+    context: Blackwing::GateDecideContext,
+  };
+}

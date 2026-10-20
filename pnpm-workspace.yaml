@@ -10,6 +10,7 @@ packages:
 # Vitest is the unit-test runner fixed in CONTEXT_PACK §5; its shared presets are @blackwing/testing/vitest-config (FOUND-012).
 # TypeScript 5.x and Node 22 typings back the strict project-reference build (FOUND-003,
 # docs/architecture/typescript.md); every TS member pulls them in as devDependencies.
+# @cedar-policy/cedar-wasm is the TS Cedar engine fixed in CONTEXT_PACK §5 (schema first validated by @blackwing/policy, POLICY-001).
 # Zod is the boundary-validation library fixed in CONTEXT_PACK §5 (first used by @blackwing/config, FOUND-007).
 # Ajv (+ ajv-formats) checks committed JSON Schema artifacts against the Zod fixtures in tests (AUDIT-001).
 # fast-check backs the property tests §5 calls for (first used by @blackwing/ids, FOUND-010).
@@ -22,6 +23,7 @@ packages:
 # in-memory span exporter its tests assert spans with.
 catalog:
   '@anthropic-ai/sdk': 0.135.0
+  '@cedar-policy/cedar-wasm': 4.13.0
   '@opentelemetry/api': 1.9.1
   '@opentelemetry/context-async-hooks': 2.11.0
   '@opentelemetry/core': 2.11.0
