@@ -182,7 +182,8 @@ resource "aws_s3_bucket_logging" "this" {
 
   bucket        = aws_s3_bucket.this[each.key].id
   target_bucket = var.access_log_bucket
-  target_prefix = "s3/${aws_s3_bucket.this[each.key].id}/"
+  # Must stay under s3-access/: the bootstrap log bucket policy only accepts delivery there.
+  target_prefix = "s3-access/${aws_s3_bucket.this[each.key].id}/"
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "this" {

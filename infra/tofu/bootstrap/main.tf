@@ -141,7 +141,8 @@ resource "aws_s3_bucket_policy" "logs" {
         Action    = "s3:PutObject"
         Resource  = "${aws_s3_bucket.logs.arn}/s3-access/*"
         Condition = {
-          ArnLike      = { "aws:SourceArn" = aws_s3_bucket.state.arn }
+          # The state bucket and the INFRA-006 storage buckets (bw-<env>-*) of this account.
+          ArnLike      = { "aws:SourceArn" = [aws_s3_bucket.state.arn, "arn:aws:s3:::bw-*"] }
           StringEquals = { "aws:SourceAccount" = var.aws_account_id }
         }
       },

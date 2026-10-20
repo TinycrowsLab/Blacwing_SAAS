@@ -20,7 +20,7 @@ Outputs for Helm values and app config: `bucket_names`, `bucket_arns`, `kms_key_
 - Bucket policy: deny `s3:*` when `aws:SecureTransport=false`; deny `PutObject` unless
   `s3:x-amz-server-side-encryption=aws:kms` and the key is the bucket's own CMK.
 - Evidence, exports and transcripts also deny `PutObject` outside `t/*`. No PII in keys: use IDs only.
-- S3 server access logs go to the bootstrap log bucket under `s3/<bucket>/`. S3 data events for all four buckets go
+- S3 server access logs go to the bootstrap log bucket under `s3-access/<bucket>/` (its policy accepts delivery from `bw-*` buckets of the account). S3 data events for all four buckets go
   to a CloudTrail Lake event data store (`<prefix>-s3-data-events`, termination protection on). A CloudWatch alarm per
   bucket fires on 4xx (including 403) requests.
 

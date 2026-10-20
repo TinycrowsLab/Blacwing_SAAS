@@ -273,6 +273,11 @@ run "access_logging_and_denied_request_alarm_on_every_bucket" {
     condition     = length(aws_s3_bucket_logging.this) == 4 && length(aws_cloudwatch_metric_alarm.denied_requests) == 4
     error_message = "All four buckets need access logging and a 4xx alarm."
   }
+
+  assert {
+    condition     = alltrue([for k, v in aws_s3_bucket_logging.this : startswith(v.target_prefix, "s3-access/")])
+    error_message = "Access logs must go under s3-access/, the only prefix the bootstrap log bucket accepts."
+  }
 }
 
 run "outputs_expose_names_and_cmk_arns" {
