@@ -67,3 +67,19 @@ idempotent (SANDBOX-010).
 never by value. Until the `@blackwing/audit` emitter (#82) lands they are written as structured `audit`
 log lines. Logs are pino JSON via `@blackwing/logger`, with `component`, and on internal requests also
 `tenant_id`, `run_id` and `sandbox_id`.
+
+## Drivers
+
+`src/drivers/driver.ts` defines `SandboxDriver`, the one interface KubernetesDriver (SANDBOX-003) and
+DockerDriver (SANDBOX-004) implement; `SBX_DRIVER` picks one without touching call sites. Its data contracts
+(`SandboxSpec`, `RunNetworkSpec`, `SandboxHandle`, `SandboxLifecycleEvent`, `MountSpec`, ...) are Zod schemas in
+`@blackwing/contracts` (`packages/contracts/src/sandbox.ts`):
+
+- every spec carries `tenantId` and `runId`, and `list` always filters by tenant (§8.6);
+- `imageDigest` must be digest-pinned and `runtimeClass` is recorded (§8.9);
+- non-tmpfs mounts are read-only (type and parse enforced), mount targets are unique;
+- a run network with no allowed destination is rejected (fail closed);
+- `caBundleRef` is a `<scheme>://` reference and PEM material is refused anywhere in the spec (§8.7).
+
+`FakeDriver` is an in-memory implementation for controller unit tests; `UnavailableDriver` is the default
+until the real drivers land and rejects every call.

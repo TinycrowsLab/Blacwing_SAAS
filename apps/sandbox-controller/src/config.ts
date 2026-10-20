@@ -11,10 +11,12 @@ import {
   zSecret,
   zSecretUrl,
 } from '@blackwing/config';
+import { SANDBOX_DRIVER_KINDS } from '@blackwing/contracts';
 
 import { SbxConfigInvalidError } from './errors.js';
 
-export const SANDBOX_DRIVERS = ['kubernetes', 'docker'] as const;
+/** Same list as the shared contract, so config and driver kinds can never drift. */
+export const SANDBOX_DRIVERS = SANDBOX_DRIVER_KINDS;
 export type SandboxDriverKind = (typeof SANDBOX_DRIVERS)[number];
 
 export const DEFAULT_MGMT_ADDR = ':7070';

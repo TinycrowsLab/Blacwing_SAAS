@@ -1,22 +1,15 @@
 import { SbxDriverUnavailableError } from '../errors.js';
 
-import type { SandboxDriverKind } from '../config.js';
-import type { SandboxDriver } from './types.js';
+import type { SandboxDriver } from './driver.js';
+import type { SandboxDriverKind } from '@blackwing/contracts';
 
-export type {
-  CaProvisioner,
-  NetworkProvisioner,
-  RunCaRef,
-  RunNetworkRef,
-  RunScope,
-  SandboxCreateRequest,
-  SandboxDriver,
-  SandboxHandle,
-} from './types.js';
+export type { SandboxDriver } from './driver.js';
+export { FakeDriver, type FakeDriverOptions } from './fake.js';
+export type { CaProvisioner, RunCaRef, RunScope } from './types.js';
 
 /**
  * Stand-in for a driver this build does not ship yet (KubernetesDriver: SANDBOX-003, DockerDriver:
- * SANDBOX-004). It fails closed: `ping` always rejects, so `/readyz` stays 503 and nothing is created.
+ * SANDBOX-004). It fails closed: every operation rejects, so `/readyz` stays 503 and nothing is created.
  */
 export class UnavailableDriver implements SandboxDriver {
   readonly kind: SandboxDriverKind;
@@ -33,11 +26,42 @@ export class UnavailableDriver implements SandboxDriver {
     return Promise.reject(this.unavailable());
   }
 
+  ensureNetwork(): Promise<never> {
+    return Promise.reject(this.unavailable());
+  }
+
+  removeNetwork(): Promise<void> {
+    return Promise.reject(this.unavailable());
+  }
+
   create(): Promise<never> {
     return Promise.reject(this.unavailable());
   }
 
+  start(): Promise<void> {
+    return Promise.reject(this.unavailable());
+  }
+
+  health(): Promise<never> {
+    return Promise.reject(this.unavailable());
+  }
+
+  logs(): AsyncIterable<never> {
+    const error = this.unavailable();
+    return {
+      [Symbol.asyncIterator]: () => ({ next: () => Promise.reject(error) }),
+    };
+  }
+
+  stop(): Promise<void> {
+    return Promise.reject(this.unavailable());
+  }
+
   destroy(): Promise<void> {
+    return Promise.reject(this.unavailable());
+  }
+
+  list(): Promise<never> {
     return Promise.reject(this.unavailable());
   }
 

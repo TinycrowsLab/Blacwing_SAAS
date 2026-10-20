@@ -51,13 +51,11 @@ export {
   type CaProvisioner,
   createDriver,
   type DriverFactory,
-  type NetworkProvisioner,
+  FakeDriver,
+  type FakeDriverOptions,
   type RunCaRef,
-  type RunNetworkRef,
   type RunScope,
-  type SandboxCreateRequest,
   type SandboxDriver,
-  type SandboxHandle,
   UnavailableDriver,
 } from './drivers/index.js';
 export {

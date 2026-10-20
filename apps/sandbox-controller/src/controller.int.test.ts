@@ -13,10 +13,9 @@ import { surfaceContainerLogsOnFailure } from '@blackwing/testing/vitest';
 import { signRunToken } from './auth.js';
 import { loadSandboxControllerConfig, type SandboxControllerConfig } from './config.js';
 import { startSandboxController, type RunningController } from './controller.js';
-import { SbxDriverUnavailableError } from './errors.js';
+import { FakeDriver } from './drivers/index.js';
 
 import type { AuditEmitter, ControllerAuditEvent } from './audit.js';
-import type { SandboxDriver } from './drivers/index.js';
 import type { FastifyPluginAsync } from 'fastify';
 
 const SECRET = 'i'.repeat(48);
@@ -76,17 +75,8 @@ async function config(
   return loadSandboxControllerConfig(rawEnv(await freePort(), overrides));
 }
 
-function fakeDriver(): SandboxDriver & { reachable: boolean } {
-  const driver = {
-    kind: 'docker' as const,
-    reachable: false,
-    ping: () =>
-      driver.reachable ? Promise.resolve() : Promise.reject(new SbxDriverUnavailableError('down')),
-    create: () => Promise.reject(new Error('not used')),
-    destroy: () => Promise.reject(new Error('not used')),
-    close: () => Promise.resolve(),
-  };
-  return driver;
+function fakeDriver(): FakeDriver {
+  return new FakeDriver({ reachable: false });
 }
 
 function recordingAudit(): AuditEmitter & { events: ControllerAuditEvent[] } {
