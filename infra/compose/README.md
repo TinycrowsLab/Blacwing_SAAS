@@ -103,7 +103,7 @@ trigger is the backstop.
 - **Legal hold vs retention:** independent. Retention expires with time; a legal hold never does, and it blocks
   deleting a version even for root with a governance bypass. Only an explicit `legalhold clear` releases it.
   `verify.sh` proves both.
-- **Scoped app key** (`BW_DEV_MINIO_APP_ACCESS_KEY` / `_SECRET_KEY`, policy `bw-app` in
+- **Scoped app key** (`BW_DEV_MINIO_APP_ACCESS_KEY` / `BW_DEV_MINIO_APP_PASSWORD`, policy `bw-app` in
   `minio/policy-app.json`): object get/put/delete (delete adds a delete marker), list, retention and legal-hold
   on the three buckets. Explicitly denied: `s3:DeleteObjectVersion`, `s3:BypassGovernanceRetention`, bucket
   deletion, versioning and lock configuration. No `admin:*`. Root credentials are for the bootstrap job and the
