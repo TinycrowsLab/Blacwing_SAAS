@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
-import { COMPOSE_FILE, PROJECT } from './dev-deps.mjs';
+import { COMPOSE_FILE, PROJECT, parseEnv } from './dev-deps.mjs';
 import {
   ALL_SERVICES,
   DEFAULT_SERVICES,
@@ -21,16 +21,15 @@ import {
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 
-const DUMMY_ENV = {
-  BW_DEV_POSTGRES_SUPERUSER_PASSWORD: 'x-super',
-  BW_DEV_POSTGRES_APP_PASSWORD: 'x-app',
-  BW_DEV_POSTGRES_MIGRATOR_PASSWORD: 'x-migrator',
-  BW_DEV_VALKEY_PASSWORD: 'x-valkey',
-  BW_DEV_NEO4J_PASSWORD: 'x-neo4j-pass',
-  BW_DEV_MINIO_ROOT_PASSWORD: 'x-minio-root',
-  BW_DEV_MINIO_APP_PASSWORD: 'x-minio-app-secret',
-  BW_DEV_INTERACTSH_TOKEN: 'x-interactsh-token',
-};
+/**
+ * A dummy value for every empty `BW_DEV_*` secret in .env.example, so compose's required-variable
+ * checks pass however many dev services the stack grows (no real secrets involved).
+ */
+const DUMMY_ENV = Object.fromEntries(
+  Object.entries(parseEnv(readFileSync(path.join(ROOT, '.env.example'), 'utf8')))
+    .filter(([k, v]) => k.startsWith('BW_DEV_') && v === '')
+    .map(([k]) => [k, `x-dummy-${k.toLowerCase()}`]),
+);
 
 /**
  * @typedef {{ host_ip?: string, published?: string }} Port
@@ -74,6 +73,18 @@ function render(profiles, extra = {}) {
   return /** @type {Compose} */ (parsed);
 }
 
+/**
+ * A rendered service, failing the test when compose dropped it.
+ * @param {Compose} c
+ * @param {string} name
+ * @returns {Service}
+ */
+function svcOf(c, name) {
+  const svc = c.services[name];
+  assert.ok(svc, `service ${name} missing from the rendered config`);
+  return svc;
+}
+
 describe('targets profile (DEVENV-012)', () => {
   const cfg = render(['targets']);
   const targetServices = Object.entries(cfg.services).filter(([name]) =>
@@ -100,7 +111,7 @@ describe('targets profile (DEVENV-012)', () => {
   });
 
   it('runs only on the dedicated bw-targets network, never bw-dev', () => {
-    assert.equal(cfg.networks[TARGETS_NETWORK].name, 'bw-targets');
+    assert.equal(cfg.networks[TARGETS_NETWORK]?.name, 'bw-targets');
     for (const [name, svc] of targetServices) {
       assert.deepEqual(Object.keys(svc.networks ?? {}), [TARGETS_NETWORK], name);
     }
@@ -122,7 +133,7 @@ describe('targets profile (DEVENV-012)', () => {
     assert.deepEqual(ports, [13000, 13010, 13020, 13030, 13040, 13050]);
     assert.equal(new Set(ports).size, ports.length);
     for (const t of TARGETS) {
-      const svc = cfg.services[t.service];
+      const svc = svcOf(cfg, t.service);
       assert.equal(svc.ports?.[0]?.published, String(t.port), t.service);
       assert.ok(svc.networks?.[TARGETS_NETWORK]?.aliases?.includes(t.host), t.host);
       assert.ok(t.host.endsWith('.bw.localhost'));
@@ -131,7 +142,7 @@ describe('targets profile (DEVENV-012)', () => {
 
   it('honours a port override (collision avoidance)', () => {
     const over = render(['targets'], { BW_TARGET_JUICE_SHOP_PORT: '23000' });
-    assert.equal(over.services['juice-shop'].ports[0].published, '23000');
+    assert.equal(svcOf(over, 'juice-shop').ports?.[0]?.published, '23000');
     assert.equal(
       targetUrl('juice-shop', { BW_TARGET_JUICE_SHOP_PORT: '23000' }),
       'http://127.0.0.1:23000',
@@ -140,7 +151,7 @@ describe('targets profile (DEVENV-012)', () => {
 
   it('gives every published target a healthcheck (slow starts tolerated)', () => {
     for (const t of TARGETS) {
-      const hc = cfg.services[t.service].healthcheck;
+      const hc = svcOf(cfg, t.service).healthcheck;
       assert.ok(hc, `${t.service} has no healthcheck`);
       assert.ok(hc.start_period, `${t.service} has no start_period`);
     }
@@ -158,7 +169,7 @@ describe('targets profile (DEVENV-012)', () => {
         assert.ok(!allowed.has(name), name);
       }
     }
-    const edge = full.services[TLS_EDGE_SERVICE];
+    const edge = svcOf(full, TLS_EDGE_SERVICE);
     assert.equal(
       edge.ports?.every((p) => p.host_ip === '127.0.0.1'),
       true,
@@ -246,11 +257,11 @@ describe('wiring', () => {
   it('exposes pnpm targets:up/down/reset and keeps them out of dev:deps', () => {
     /** @type {unknown} */
     const raw = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
-    const pkg = /** @type {{ scripts: Record<string, string> }} */ (raw);
-    assert.match(pkg.scripts['targets:up'], /targets\.mjs up/);
-    assert.match(pkg.scripts['targets:down'], /targets\.mjs down/);
-    assert.match(pkg.scripts['targets:reset'], /targets\.mjs reset/);
-    assert.doesNotMatch(pkg.scripts['dev:deps'], /targets/);
+    const pkg = /** @type {{ scripts: Record<string, string | undefined> }} */ (raw);
+    assert.match(pkg.scripts['targets:up'] ?? '', /targets\.mjs up/);
+    assert.match(pkg.scripts['targets:down'] ?? '', /targets\.mjs down/);
+    assert.match(pkg.scripts['targets:reset'] ?? '', /targets\.mjs reset/);
+    assert.doesNotMatch(pkg.scripts['dev:deps'] ?? '', /targets/);
   });
   it('documents ports in .env.example', () => {
     const env = readFileSync(path.join(ROOT, '.env.example'), 'utf8');
