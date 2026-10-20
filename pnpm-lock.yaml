@@ -215,6 +215,9 @@ importers:
       '@blackwing/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@blackwing/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../../packages/errors

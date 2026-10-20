@@ -9,6 +9,7 @@
   "include": ["src"],
   "references": [
     { "path": "../../packages/config" },
+    { "path": "../../packages/contracts" },
     { "path": "../../packages/errors" },
     { "path": "../../packages/ids" },
     { "path": "../../packages/logger" },

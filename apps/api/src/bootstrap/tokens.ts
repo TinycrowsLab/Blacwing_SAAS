@@ -12,3 +12,8 @@ export const API_HEALTH_PROBES = Symbol.for('blackwing.api.health.probes');
 
 /** DI token of the health gauges. */
 export const API_HEALTH_METRICS = Symbol.for('blackwing.api.health.metrics');
+/** DI token of the optional {@link SecurityEventSink}; AUDIT wires `emitAudit` behind it. */
+export const API_SECURITY_EVENT_SINK = Symbol.for('blackwing.api.security-event-sink');
+
+/** DI token of the `ProblemRegistry` the exception filter resolves codes against. */
+export const API_PROBLEM_REGISTRY = Symbol.for('blackwing.api.problem-registry');

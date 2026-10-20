@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@blackwing/config": "workspace:*",
+    "@blackwing/contracts": "workspace:*",
     "@blackwing/errors": "workspace:*",
     "@blackwing/ids": "workspace:*",
     "@blackwing/logger": "workspace:*",

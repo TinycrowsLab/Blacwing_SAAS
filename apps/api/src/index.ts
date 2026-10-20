@@ -21,7 +21,14 @@ export {
   TRACER_NAME,
 } from './bootstrap/request-context.js';
 export { SHUTDOWN_SIGNALS } from './bootstrap/shutdown.js';
-export { API_CONFIG, API_LOGGER, API_METRICS } from './bootstrap/tokens.js';
+export {
+  API_CONFIG,
+  API_LOGGER,
+  API_METRICS,
+  API_PROBLEM_REGISTRY,
+  API_SECURITY_EVENT_SINK,
+} from './bootstrap/tokens.js';
+export * from './errors/index.js';
 export { deriveTraceId, traceIdFromTraceparent } from './bootstrap/trace-id.js';
 export {
   type ApiConfig,

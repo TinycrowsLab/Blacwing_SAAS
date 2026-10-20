@@ -14,6 +14,8 @@ export interface HttpMetrics {
   readonly duration: Histogram<'method' | 'route' | 'status'>;
   /** Requests rejected by the Zod validation pipe, by matched route template (API-002). */
   readonly validationFailures: Counter<'route'>;
+  /** `http_errors_total{code,status}`: every problem+json the exception filter rendered (API-004). */
+  readonly errors: Counter<'code' | 'status'>;
 }
 
 /** A private registry per app instance, so tests and multiple instances never share counters. */
@@ -38,6 +40,12 @@ export function createHttpMetrics(): HttpMetrics {
       name: 'http_validation_failures_total',
       help: 'Requests rejected by request validation (422), by matched route template.',
       labelNames: ['route'],
+      registers: [registry],
+    }),
+    errors: new Counter({
+      name: 'http_errors_total',
+      help: 'Error responses rendered as problem+json, by stable error code and status.',
+      labelNames: ['code', 'status'],
       registers: [registry],
     }),
   };

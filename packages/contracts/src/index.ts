@@ -351,3 +351,9 @@ export {
   type TmpfsMountSpec,
   tmpfsMountSpecSchema,
 } from './sandbox.js';
+export {
+  type Problem,
+  type ProblemFieldError,
+  problemFieldErrorSchema,
+  problemSchema,
+} from './problem.js';

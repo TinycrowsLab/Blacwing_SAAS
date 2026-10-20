@@ -1,8 +1,14 @@
 import { type DynamicModule, Global, Module, type ModuleMetadata } from '@nestjs/common';
-import { APP_PIPE } from '@nestjs/core';
+import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 
 import { createHttpMetrics, type HttpMetrics } from './bootstrap/metrics.js';
-import { API_CONFIG, API_LOGGER, API_METRICS } from './bootstrap/tokens.js';
+import {
+  API_CONFIG,
+  API_LOGGER,
+  API_METRICS,
+  API_SECURITY_EVENT_SINK,
+} from './bootstrap/tokens.js';
+import { ProblemJsonExceptionFilter, type SecurityEventSink } from './errors/problem-filter.js';
 import { HealthModule } from './health/health.module.js';
 import { SmokeController } from './smoke.controller.js';
 import { createValidationPipe } from './validation/zod-validation.pipe.js';
@@ -44,6 +50,8 @@ export interface AppModuleOptions {
   readonly metrics?: HttpMetrics;
   /** Dependencies the health endpoints check (postgresProbe, valkeyProbe, ...). */
   readonly healthProbes?: readonly HealthProbe[];
+  /** Receives security-relevant errors (`permission_denied`, `tenant_context_missing`); AUDIT wires `emitAudit`. */
+  readonly securityEventSink?: SecurityEventSink;
   /** Extra modules to mount (feature modules of later issues; test-only routes). */
   readonly imports?: NonNullable<ModuleMetadata['imports']>;
 }
@@ -72,6 +80,9 @@ export class AppModule {
           inject: [API_CONFIG, API_METRICS, API_LOGGER],
           useFactory: createValidationPipe,
         },
+        { provide: API_SECURITY_EVENT_SINK, useFactory: () => options.securityEventSink },
+        // Global problem+json filter: catches pipe/guard/handler errors and Fastify's own (API-004).
+        { provide: APP_FILTER, useClass: ProblemJsonExceptionFilter },
       ],
       controllers: [SmokeController],
     };
