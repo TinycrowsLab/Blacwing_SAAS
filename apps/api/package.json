@@ -13,7 +13,8 @@
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
     "lint": "eslint . --max-warnings=0",
-    "test": "vitest run",
+    "test": "vitest run --configLoader runner --config src/vitest.config.ts",
+    "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts",
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
@@ -30,13 +31,16 @@
     "@opentelemetry/api": "catalog:",
     "@opentelemetry/core": "catalog:",
     "fastify": "catalog:",
+    "pg": "8.23.1",
     "prom-client": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@blackwing/testing": "workspace:*",
     "@opentelemetry/sdk-trace-base": "catalog:",
+    "@types/pg": "8.23.1",
     "@types/node": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",

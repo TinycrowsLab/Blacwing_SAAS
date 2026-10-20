@@ -79,7 +79,7 @@ export const EXPECTED_DIRS = Object.freeze({
  */
 export const EXPECTED_DIR_FILES = Object.freeze({
   docs: Object.freeze(['labels.md']),
-  infra: Object.freeze(['bootstrap.sh', 'versions.env']),
+  infra: Object.freeze(['bootstrap.sh', 'images.lock', 'versions.env']),
 });
 
 /**

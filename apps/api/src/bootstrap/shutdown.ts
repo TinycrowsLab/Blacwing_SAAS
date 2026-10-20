@@ -7,6 +7,7 @@ import {
 import { HttpAdapterHost } from '@nestjs/core';
 
 import { API_CONFIG, API_LOGGER } from './tokens.js';
+import { HealthService } from '../health/health.service.js';
 
 import type { ApiConfig } from '../config.js';
 import type { Logger } from '@blackwing/logger';
@@ -29,9 +30,13 @@ export class ShutdownDrain implements BeforeApplicationShutdown, OnApplicationSh
     @Inject(HttpAdapterHost) private readonly host: HttpAdapterHost,
     @Inject(API_CONFIG) private readonly config: Readonly<ApiConfig>,
     @Inject(API_LOGGER) private readonly logger: Logger,
+    @Inject(HealthService) private readonly health: HealthService,
   ) {}
 
   beforeApplicationShutdown(signal?: string): void {
+    // First: readiness must read 503 the instant the signal arrives so the load balancer stops routing
+    // new traffic while in-flight requests drain.
+    this.health.beginDrain();
     const graceMs = this.config.API_SHUTDOWN_GRACE_MS;
     this.startedAt = performance.now();
     this.logger.info({ signal: signal ?? null, graceMs }, 'api.shutdown.draining');

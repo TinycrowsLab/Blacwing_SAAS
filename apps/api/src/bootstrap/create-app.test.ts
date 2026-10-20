@@ -22,14 +22,6 @@ const SECRET = 'hunter2-not-for-logs';
 
 let echoCalls = 0;
 
-@Controller('health')
-class FakeHealthController {
-  @Get()
-  health(): { readonly ok: true } {
-    return { ok: true };
-  }
-}
-
 @Controller('graphql')
 class FakeGraphqlController {
   @Get()
@@ -77,7 +69,7 @@ class ProbeController {
 }
 
 @Module({
-  controllers: [FakeHealthController, FakeGraphqlController, FakeBrokerController, ProbeController],
+  controllers: [FakeGraphqlController, FakeBrokerController, ProbeController],
 })
 class ProbeModule {}
 
@@ -147,7 +139,9 @@ describe('createApiApp', () => {
     expect(GLOBAL_PREFIX_EXCLUDES).toEqual(
       expect.arrayContaining(['health', 'health/live', 'health/ready', 'graphql']),
     );
-    expect((await h.app.inject({ method: 'GET', url: '/health' })).json()).toEqual({ ok: true });
+    expect((await h.app.inject({ method: 'GET', url: '/health' })).json()).toMatchObject({
+      status: 'ok',
+    });
     expect((await h.app.inject({ method: 'GET', url: '/graphql' })).json()).toEqual({
       graphql: true,
     });

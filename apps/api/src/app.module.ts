@@ -3,10 +3,12 @@ import { APP_PIPE } from '@nestjs/core';
 
 import { createHttpMetrics, type HttpMetrics } from './bootstrap/metrics.js';
 import { API_CONFIG, API_LOGGER, API_METRICS } from './bootstrap/tokens.js';
+import { HealthModule } from './health/health.module.js';
 import { SmokeController } from './smoke.controller.js';
 import { createValidationPipe } from './validation/zod-validation.pipe.js';
 
 import type { ApiConfig } from './config.js';
+import type { HealthProbe } from './health/health.types.js';
 import type { Logger } from '@blackwing/logger';
 
 /** Provides the validated, frozen `ApiConfig` (from `@blackwing/config`) under `API_CONFIG`. */
@@ -40,6 +42,8 @@ export interface AppModuleOptions {
   readonly logger: Logger;
   /** Metrics of this app instance; a private set is created when omitted. */
   readonly metrics?: HttpMetrics;
+  /** Dependencies the health endpoints check (postgresProbe, valkeyProbe, ...). */
+  readonly healthProbes?: readonly HealthProbe[];
   /** Extra modules to mount (feature modules of later issues; test-only routes). */
   readonly imports?: NonNullable<ModuleMetadata['imports']>;
 }
@@ -48,15 +52,20 @@ export interface AppModuleOptions {
 @Module({})
 export class AppModule {
   static forRoot(options: AppModuleOptions): DynamicModule {
+    const metrics = options.metrics ?? createHttpMetrics();
     return {
       module: AppModule,
       imports: [
         ConfigModule.forRoot(options.config),
         LoggerModule.forRoot(options.logger),
+        HealthModule.forRoot({
+          registry: metrics.registry,
+          ...(options.healthProbes === undefined ? {} : { probes: options.healthProbes }),
+        }),
         ...(options.imports ?? []),
       ],
       providers: [
-        { provide: API_METRICS, useValue: options.metrics ?? createHttpMetrics() },
+        { provide: API_METRICS, useValue: metrics },
         // Global Zod validation (API-002): acts only on handler params bound to a Zod DTO.
         {
           provide: APP_PIPE,

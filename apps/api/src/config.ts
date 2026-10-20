@@ -23,6 +23,10 @@ export const DEFAULT_API_SHUTDOWN_GRACE_MS = 10_000;
 /** Deepest JSON nesting a request body may have (API-002, #54). */
 export const DEFAULT_API_MAX_JSON_DEPTH = 32;
 
+/** Health probes (API-011, #63). */
+export const DEFAULT_API_HEALTH_CHECK_TIMEOUT_MS = 2000;
+export const DEFAULT_API_HEALTH_CACHE_MS = 1000;
+
 const byteCount = z
   .string()
   .regex(/^[1-9][0-9]{0,14}$/, 'must be a positive integer number of bytes')
@@ -48,6 +52,15 @@ export const apiEnvShape = {
   API_TRUST_PROXY: zBool().default(true),
   /** How long in-flight requests may take to finish after SIGTERM/SIGINT. */
   API_SHUTDOWN_GRACE_MS: positiveDuration.default(DEFAULT_API_SHUTDOWN_GRACE_MS),
+  /** Per-dependency health check budget; a slower dependency is reported `down`, never awaited. */
+  API_HEALTH_CHECK_TIMEOUT_MS: positiveDuration.default(DEFAULT_API_HEALTH_CHECK_TIMEOUT_MS),
+  /** How long a health result is reused, so a burst of probes does not hammer the dependencies. */
+  API_HEALTH_CACHE_MS: zDurationMs().default(DEFAULT_API_HEALTH_CACHE_MS),
+  /** Include the (non-critical) Temporal check in readiness and the detailed report. */
+  API_HEALTH_CHECK_TEMPORAL: zBool().default(true),
+  /** Release version and commit echoed by `/health`. Neither is a secret. */
+  API_VERSION: z.string().min(1).default('0.0.0'),
+  API_COMMIT: z.string().min(1).default('unknown'),
   /**
    * Comma-separated browser origins allowed by CORS (the web console). Required with no default: an
    * unset value must never silently allow, or silently block, every origin.

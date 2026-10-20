@@ -14,6 +14,7 @@ import { SHUTDOWN_SIGNALS, ShutdownDrain } from './shutdown.js';
 import { deriveTraceId } from './trace-id.js';
 
 import type { ApiConfig } from '../config.js';
+import type { HealthProbe } from '../health/health.types.js';
 import type { Logger } from '@blackwing/logger';
 import type { Tracer } from '@opentelemetry/api';
 import type { IncomingMessage } from 'node:http';
@@ -39,6 +40,8 @@ export interface CreateApiAppOptions {
   readonly logger: Logger;
   readonly tracer?: Tracer;
   readonly metrics?: HttpMetrics;
+  /** Dependencies the health endpoints check; wired by the process entry point. */
+  readonly healthProbes?: readonly HealthProbe[];
   /** Extra modules to mount (feature modules; test-only routes). */
   readonly imports?: NonNullable<ModuleMetadata['imports']>;
   /**
@@ -79,6 +82,7 @@ export async function createApiApp(options: CreateApiAppOptions): Promise<ApiApp
       config,
       logger,
       metrics,
+      ...(options.healthProbes === undefined ? {} : { healthProbes: options.healthProbes }),
       imports: [ShutdownModule, ...(options.imports ?? [])],
     }),
     adapter,
