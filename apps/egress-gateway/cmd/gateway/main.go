@@ -2,10 +2,11 @@
 // sandboxes to targets (HTTP(S) MITM, SOCKS5, scoped DNS), enforcing the signed
 // authorisation envelope and failing closed (CONTEXT_PACK §4.1, §8.1, §8.2).
 //
-// This is the FOUND-013 skeleton: it validates configuration, sets up structured
-// JSON logging and a signal-driven lifecycle, but binds no data-plane listener, so
-// every egress attempt is denied by construction. The EGRESS epic fills in the
-// listeners, policy evaluation, budgets and capture.
+// This build is the EGRESS-001 chassis: typed configuration, structured JSON logs,
+// Prometheus metrics, OpenTelemetry tracing, the management plane (/healthz,
+// /readyz, /metrics) and a graceful SIGTERM/SIGINT drain. No data-plane listener is
+// registered yet and the gateway is never ready until a verified policy snapshot
+// is loaded (EGRESS-003), so every egress attempt is denied.
 //
 // Usage:
 //
@@ -26,8 +27,11 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/config"
+	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/obs"
+	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/server"
 )
 
 // Build information, overridden at link time by the Makefile
@@ -36,8 +40,6 @@ var (
 	version = "dev"
 	commit  = "unknown"
 )
-
-const serviceName = "egress-gateway"
 
 // Process exit codes.
 const (
@@ -113,29 +115,61 @@ func noArgs(cmd string, args []string, stderr io.Writer) bool {
 	return true
 }
 
-// cmdRun loads the configuration, then holds the deny-all skeleton posture until the
-// context is cancelled. Invalid configuration exits non-zero before anything starts.
+// cmdRun loads the configuration and runs the gateway until ctx is cancelled.
+// Invalid configuration exits non-zero before any listener is bound.
 func cmdRun(ctx context.Context, lookup config.LookupFunc, logOut io.Writer) int {
 	cfg, err := config.Load(lookup)
 	if err != nil {
 		// The level is not known yet: log at the default level.
-		logConfigError(newLogger(logOut, slog.LevelInfo), err)
+		logConfigError(obs.NewLogger(logOut, slog.LevelInfo, version), err)
 		return exitError
 	}
 
-	logger := newLogger(logOut, cfg.LogLevel).With(slog.String("component", "bootstrap"))
-	logger.Info("egress gateway starting",
+	logger := obs.NewLogger(logOut, cfg.LogLevel, version)
+	boot := obs.Component(logger, obs.ComponentBootstrap)
+	boot.Info("egress gateway starting",
 		slog.Any("config", *cfg),
 		slog.Any("config_keys", config.Keys()),
+		slog.String("config_hash", cfg.Hash()),
 	)
-	// Fail closed: no data-plane listener exists in this build, so nothing can be
-	// forwarded. The EGRESS epic binds listeners only after a verified policy snapshot.
-	logger.Warn("data plane not implemented in this build: no listeners bound, all egress denied",
+	// Fail closed: no data-plane listener is registered in this build, and data
+	// planes are only ever started after a verified policy snapshot is loaded.
+	boot.Warn("data plane not implemented in this build: no listeners bound, all egress denied",
 		slog.String("posture", "deny_all"),
 	)
 
-	<-ctx.Done()
-	logger.Info("egress gateway stopped", slog.String("reason", stopReason(ctx)))
+	tp, err := obs.NewTracerProvider(ctx, cfg.OTLPEndpoint, version)
+	if err != nil {
+		boot.Error("telemetry setup failed: refusing to start", slog.String("error", err.Error()))
+		return exitError
+	}
+	defer func() {
+		flushCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if ferr := obs.FlushAndShutdown(flushCtx, tp); ferr != nil {
+			boot.Warn("telemetry shutdown failed", slog.String("error", ferr.Error()))
+		}
+	}()
+
+	gw, err := server.New(server.Options{
+		Config:    cfg,
+		Logger:    logger,
+		Metrics:   obs.NewMetrics(version, commit),
+		Version:   version,
+		Commit:    commit,
+		Tracer:    tp,
+		Telemetry: tp,
+	})
+	if err != nil {
+		boot.Error("gateway setup failed: refusing to start", slog.String("error", err.Error()))
+		return exitError
+	}
+	if err := gw.Run(ctx); err != nil {
+		boot.Error("egress gateway failed", slog.String("error", err.Error()),
+			slog.String("reason", stopReason(ctx)))
+		return exitError
+	}
+	boot.Info("egress gateway exited", slog.String("reason", stopReason(ctx)))
 	return exitOK
 }
 
@@ -150,7 +184,7 @@ func cmdCheckConfig(lookup config.LookupFunc, stdout, stderr io.Writer) int {
 }
 
 func logConfigError(logger *slog.Logger, err error) {
-	attrs := []any{slog.String("component", "bootstrap")}
+	attrs := []any{slog.String(obs.FieldComponent, obs.ComponentBootstrap)}
 	var verr *config.ValidationError
 	if errors.As(err, &verr) {
 		attrs = append(attrs, slog.Any("issues", verr), slog.Any("invalid_keys", verr.Keys()))
@@ -160,27 +194,10 @@ func logConfigError(logger *slog.Logger, err error) {
 	logger.Error("configuration invalid: refusing to start", attrs...)
 }
 
-// newLogger returns the service's structured JSON logger. Field names follow the
-// EGRESS logging contract (ts, level, msg, component, ...) and will align with the
-// OpenTelemetry log data model when telemetry is wired in.
-func newLogger(w io.Writer, level slog.Level) *slog.Logger {
-	h := slog.NewJSONHandler(w, &slog.HandlerOptions{
-		Level: level,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if len(groups) == 0 && a.Key == slog.TimeKey {
-				a.Key = "ts"
-				a.Value = slog.StringValue(a.Value.Time().UTC().Format("2006-01-02T15:04:05.000Z07:00"))
-			}
-			return a
-		},
-	})
-	return slog.New(h).With(
-		slog.String("service", serviceName),
-		slog.String("version", version),
-	)
-}
-
 func stopReason(ctx context.Context) string {
+	if ctx.Err() == nil {
+		return "fatal error"
+	}
 	if cause := context.Cause(ctx); cause != nil && !errors.Is(cause, context.Canceled) {
 		return cause.Error()
 	}
@@ -189,7 +206,7 @@ func stopReason(ctx context.Context) string {
 
 func versionString() string {
 	return fmt.Sprintf("%s %s (commit %s, %s, %s/%s)",
-		serviceName, version, commit, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+		obs.ServiceName, version, commit, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 }
 
 // writeOut writes CLI output. A failed write to stdout/stderr cannot be reported

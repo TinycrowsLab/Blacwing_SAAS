@@ -17,9 +17,33 @@ import (
 // sentinel is a value that must never appear in any error or log output.
 const sentinel = "s3cr3t-sentinel-value-0xDEADBEEF"
 
+// required holds valid values for the required non-enum keys; load adds them unless
+// the test sets (or deletes, with the value "<unset>") the key itself.
+var required = map[string]string{
+	"POLICY_SNAPSHOT_PATH": "/var/run/blackwing/policy.snapshot",
+	"VALKEY_URL":           "redis://localhost:16379/0",
+}
+
+const unset = "<unset>"
+
+func withRequired(env map[string]string) map[string]string {
+	out := map[string]string{}
+	for k, v := range required {
+		out[k] = v
+	}
+	for k, v := range env {
+		if v == unset {
+			delete(out, k)
+			continue
+		}
+		out[k] = v
+	}
+	return out
+}
+
 func load(t *testing.T, env map[string]string) (*config.Config, *config.ValidationError) {
 	t.Helper()
-	cfg, err := config.Load(config.MapLookup(env))
+	cfg, err := config.Load(config.MapLookup(withRequired(env)))
 	if err == nil {
 		require.NotNil(t, cfg)
 		return cfg, nil
@@ -158,6 +182,9 @@ func TestLoadRejectsNilLookup(t *testing.T) {
 func TestFromEnvironReadsProcessEnvironment(t *testing.T) {
 	t.Setenv("BW_ENV", "test")
 	t.Setenv("LOG_LEVEL", "debug")
+	for k, v := range required {
+		t.Setenv(k, v)
+	}
 	cfg, err := config.FromEnviron()
 	require.NoError(t, err)
 	assert.Equal(t, config.EnvTest, cfg.Env)
@@ -170,11 +197,20 @@ func TestConfigLogValueListsFieldsExplicitly(t *testing.T) {
 
 	var buf bytes.Buffer
 	slog.New(slog.NewJSONHandler(&buf, nil)).Info("config loaded", slog.Any("config", *cfg))
-	assert.Contains(t, buf.String(), `"config":{"env":"production","log_level":"error"}`)
+	assert.Contains(t, buf.String(), `"config":{"env":"production","log_level":"error",`+
+		`"mgmt_addr":":9090","http_proxy_addr":":3128","socks_addr":":1080","dns_addr":":5353",`+
+		`"policy_snapshot_path":"/var/run/blackwing/policy.snapshot","valkey_url":"[REDACTED]",`+
+		`"otlp_export":false,"drain_timeout":"10s"}`)
 }
 
 func TestKeysAreSortedAndComplete(t *testing.T) {
 	keys := config.Keys()
-	assert.Equal(t, []string{"BW_ENV", "LOG_LEVEL"}, keys)
-	assert.True(t, strings.Compare(keys[0], keys[1]) < 0)
+	assert.Equal(t, []string{
+		"BW_ENV", "GATEWAY_DNS_ADDR", "GATEWAY_DRAIN_TIMEOUT", "GATEWAY_HTTP_PROXY_ADDR",
+		"GATEWAY_MGMT_ADDR", "GATEWAY_SOCKS_ADDR", "LOG_LEVEL", "OTEL_EXPORTER_OTLP_ENDPOINT",
+		"POLICY_SNAPSHOT_PATH", "VALKEY_URL",
+	}, keys)
+	for i := 1; i < len(keys); i++ {
+		assert.True(t, strings.Compare(keys[i-1], keys[i]) < 0)
+	}
 }

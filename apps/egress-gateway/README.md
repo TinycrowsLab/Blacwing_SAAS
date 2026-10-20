@@ -5,10 +5,13 @@ route from run sandboxes to targets: HTTP/1.1 + HTTPS (per-run CA, MITM), SOCKS5
 scoped DNS. It enforces the signed authorisation envelope and request budgets,
 captures evidence, and **fails closed** (CONTEXT_PACK §8.1, §8.2).
 
-This directory holds the Go module skeleton (FOUND-013). The skeleton validates
-configuration, logs structured JSON and handles SIGINT/SIGTERM, but it **binds no
-listener**, so all egress is denied by construction. Proxy, policy, DNS and capture
-logic arrive with the EGRESS epic.
+This directory holds the gateway chassis (FOUND-013 module skeleton, EGRESS-001
+lifecycle): typed configuration, structured JSON logs, Prometheus metrics,
+OpenTelemetry tracing, the management plane (`/healthz`, `/readyz`, `/metrics`) and a
+graceful SIGTERM/SIGINT drain. It is **never ready** until a verified policy snapshot
+is loaded (EGRESS-003) and no data-plane listener is registered yet, so all egress is
+denied by construction. Proxy, policy, DNS and capture logic arrive with the EGRESS
+epic through the hook points in `internal/server`.
 
 The `package.json` and `src/` stub only make the directory a pnpm/Turborepo workspace
 member (`@blackwing/egress-gateway`). Go tooling ignores them; the Go module is not
@@ -33,7 +36,9 @@ skeleton binary. Delete a `deps.go` file once real code imports its library.
 ## Layout
 
 ```
-main.go              minimal CLI: run | check-config | version | help
+cmd/gateway          CLI: run | check-config | version | help
+internal/obs         slog JSON logger, Prometheus metrics, OpenTelemetry, stopwatch
+internal/server      lifecycle, management plane, readiness, hook interfaces
 internal/config      environment loader (fail closed) and the Secret type
 internal/proxy       HTTP(S) MITM + SOCKS5 listeners (EGRESS epic)
 internal/policy      Cedar evaluation of the signed policy snapshot (EGRESS/POLICY)
@@ -78,18 +83,90 @@ with `TOOLS_GOTOOLCHAIN=auto` and still lint the module against the pinned toolc
 ## Configuration
 
 Read once from the environment by `internal/config`. Any missing or invalid key makes
-`run` and `check-config` exit `1` before anything starts, listing every bad key with a
-reason and **never the value**. There is no default for a required key and no default
+`run` and `check-config` exit `1` before any listener is bound, listing every bad key
+with a reason and **never the value**. Required keys have no default and no default
 weakens security.
 
 | Key | Required | Values | Default |
 |---|---|---|---|
 | `BW_ENV` | yes | `dev`, `test`, `staging`, `production` | none |
-| `LOG_LEVEL` | no | `debug`, `info`, `warn`, `error` | `info` when unset; an empty value is rejected |
+| `LOG_LEVEL` | no | `debug`, `info`, `warn`, `error` | `info` |
+| `GATEWAY_MGMT_ADDR` | no | `host:port` (port 1..65535) | `:9090` |
+| `GATEWAY_HTTP_PROXY_ADDR` | no | `host:port` | `:3128` |
+| `GATEWAY_SOCKS_ADDR` | no | `host:port` | `:1080` |
+| `GATEWAY_DNS_ADDR` | no | `host:port` | `:5353` |
+| `POLICY_SNAPSHOT_PATH` | yes | path of the signed policy snapshot | none |
+| `VALKEY_URL` | yes | `redis://`, `rediss://`, `valkey://`, `valkeys://` URL (stored as `Secret`) | none |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | no | collector base URL, `http(s)://host:port`, no credentials | unset: spans not exported |
+| `GATEWAY_DRAIN_TIMEOUT` | no | Go duration in `(0, 5m]` | `10s` |
 
-Enum values tolerate surrounding whitespace and are case-sensitive. Values that carry
-credentials (added by later issues) must be stored as `config.Secret`, which renders
-`[REDACTED]` through every fmt verb, `slog`, `encoding/json` and `MarshalText`.
+An optional key that is present but empty is rejected rather than defaulted. Two
+listeners may not share a port on overlapping hosts, so the management plane can
+never share a socket with a sandbox-facing data plane. In deployment
+`GATEWAY_MGMT_ADDR` must be an internal interface address, never the sandbox-facing
+one (the Helm chart sets it). Values that carry credentials are stored as
+`config.Secret`, which renders `[REDACTED]` through every fmt verb, `slog`,
+`encoding/json` and `MarshalText`. `Config.Hash()` is the SHA-256 config fingerprint
+used in audit events; secret fields contribute only whether they are set.
+
+`make run` supplies dev values: management `127.0.0.1:13129`, proxy
+`127.0.0.1:13128`, SOCKS `127.0.0.1:11080`, DNS `127.0.0.1:15354`, Valkey
+`redis://127.0.0.1:16379/0` and a snapshot path under `bin/dev/` that does not exist,
+so the dev gateway stays not ready.
+
+## Management plane and readiness
+
+The management plane is its own listener and mux; data planes never share it.
+
+| Endpoint | Behaviour |
+|---|---|
+| `GET /healthz` | liveness: `200 {"status":"ok"}` while the process serves. |
+| `GET /readyz` | `200` only when config is valid, a **verified** policy snapshot is loaded and Valkey answers `PING`; otherwise `503`. Body: `{"ready":bool,"reason":"...","checks":{"config":{...},"policy":{...},"valkey":{...}}}`. |
+| `GET /metrics` | Prometheus exposition: `egress_build_info{version,commit}`, `egress_up`, `egress_ready`, the label-free `egress_not_ready_reason` code, Go and process collectors. |
+
+Other methods get `405`. Reasons (and `egress_not_ready_reason` codes): `ready` 0,
+`starting` 1, `policy_not_loaded` 2, `policy_unreadable` 3, `policy_unverified` 4,
+`valkey_unreachable` 5, `shutting_down` 6. Readiness is re-checked every second while
+ready and with capped exponential backoff (250 ms to 30 s) while not ready, so a
+Valkey that is down at boot keeps the gateway fail closed until it appears.
+
+The default policy provider only checks that the snapshot file is readable and
+reports it `policy_unverified`; verification is EGRESS-003's job, so the default
+build is never ready. The control API (EGRESS-013) mounts on the management plane via
+`Gateway.HandleControl`.
+
+### Hook points (`internal/server`)
+
+| Interface | Owner | Default (fail closed) |
+|---|---|---|
+| `PolicyProvider` | EGRESS-003 | `SnapshotFileProvider` (never verified) |
+| `BudgetStore` | EGRESS-004 | `ValkeyProbe` (RESP `AUTH`/`PING` only) |
+| `Capturer` | capture issue | returns `ErrNotImplemented` |
+| `SessionInjector` | session-injection issue | returns `ErrNotImplemented` |
+| `DataPlane` | EGRESS-005/007/008 | none registered |
+| `AuditSink` | audit wiring | `LogAuditSink` (component `audit`) |
+
+A `DataPlane` is started at most once, and only after the gateway first becomes
+ready; it receives a `Gate` and must deny every request while `Gate.Ready()` is
+false (readiness can drop again, and is latched off during shutdown).
+
+## Lifecycle
+
+1. Load and validate config; on error exit `1` with nothing bound.
+2. Span `gateway.startup`: bind the management listener (a port in use is a fatal
+   error, exit `1`), serve it, set `egress_up 1`, emit the `gateway.started` audit
+   event with the config hash.
+3. Evaluate readiness asynchronously; start data planes on the first ready.
+4. On SIGTERM/SIGINT: latch `shutting_down` (not ready), stop accepting new
+   connections, drain in-flight management and data-plane work for up to
+   `GATEWAY_DRAIN_TIMEOUT`, flush telemetry, set `egress_up 0`, emit
+   `gateway.stopped`. A drain that exceeds the timeout closes the remaining
+   connections and exits `1`.
+
+**SIGKILL** cannot be handled: no drain happens and in-flight connections drop.
+That is safe because the gateway fails closed: a dropped connection is a denied
+request, never an unchecked one. Durations (startup, drain) use the monotonic clock,
+so wall-clock skew never distorts them; log timestamps are wall-clock UTC.
 
 ## CLI and exit codes
 
@@ -105,10 +182,10 @@ command, unknown command, unexpected arguments).
 ## Logging
 
 `log/slog` JSON on stderr, one object per line, with `ts` (UTC, RFC 3339 with
-milliseconds), `level`, `msg`, `service`, `version` and `component`. The field
-names follow the EGRESS logging contract and will line up with the OpenTelemetry
-log data model when telemetry is wired in. Configuration is logged as keys and
-non-secret values only.
+milliseconds), `level`, `msg`, `service`, `version` and `component` (`bootstrap`,
+`readiness`, `mgmt`, `audit`). Inside a run, `obs.WithRun` adds `run_id` and
+`session_id`. Logs never carry secrets or request/response bodies; configuration is
+logged through `Config.LogValue` (the Valkey URL renders `[REDACTED]`).
 
 ## Container image
 
@@ -120,5 +197,5 @@ docker buildx build --platform linux/amd64,linux/arm64 apps/egress-gateway
 Multi-stage: `golang:<pin>-bookworm` builds a static binary (`CGO_ENABLED=0`,
 `-trimpath`, `GOTOOLCHAIN=local`) for the target platform, and the runtime image is
 `gcr.io/distroless/static-debian12:nonroot` with entrypoint `/egress-gateway run`.
-No port is exposed until the EGRESS epic adds listeners (dev ports: proxy 13128,
-management 13129).
+The image exposes the management port 9090; data-plane ports arrive with the
+listener issues (dev ports: proxy 13128, management 13129).

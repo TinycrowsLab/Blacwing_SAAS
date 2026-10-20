@@ -65,6 +65,13 @@ DOCKERFILE_GO_VERSION := $(shell sed -n 's/^ARG GO_VERSION=//p' Dockerfile)
 # Dev-only defaults for `make run`; the binary itself has no BW_ENV default.
 BW_ENV    ?= dev
 LOG_LEVEL ?= debug
+# Dev port map (bw-tools brief): proxy 13128, management 13129; Valkey 16379.
+# The snapshot path does not exist in dev until EGRESS-003, so `make run` stays
+# not ready (fail closed) and /readyz answers 503.
+DEV_RUN_ENV := GATEWAY_MGMT_ADDR=127.0.0.1:13129 GATEWAY_HTTP_PROXY_ADDR=127.0.0.1:13128 \
+	GATEWAY_SOCKS_ADDR=127.0.0.1:11080 GATEWAY_DNS_ADDR=127.0.0.1:15354 \
+	POLICY_SNAPSHOT_PATH=$(abspath $(BIN_DIR))/dev/policy.snapshot \
+	VALKEY_URL=redis://127.0.0.1:16379/0
 
 .DEFAULT_GOAL := help
 
@@ -106,7 +113,7 @@ build: check-go ## Build the binary for GOOS/GOARCH into bin/<os>_<arch>/ and co
 	$(GO) build ./...
 	$(GO) build -tags $(DEPS_TAGS) ./...
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) \
-		$(GO) build -trimpath -ldflags "$(LDFLAGS)" -o $(BINARY) .
+		$(GO) build -trimpath -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd/gateway
 	@echo "built $(BINARY)"
 
 .PHONY: build-cross
@@ -161,7 +168,7 @@ tidy-check: check-go ## Fail if go.mod/go.sum are not tidy
 
 .PHONY: run
 run: build ## Build and run the gateway locally (BW_ENV defaults to dev here only)
-	BW_ENV="$(BW_ENV)" LOG_LEVEL="$(LOG_LEVEL)" ./$(BINARY) run
+	BW_ENV="$(BW_ENV)" LOG_LEVEL="$(LOG_LEVEL)" $(DEV_RUN_ENV) ./$(BINARY) run
 
 .PHONY: tools
 tools: $(GOLANGCI_LINT_BIN) $(GOSEC_BIN) $(GOVULNCHECK_BIN) ## Install the pinned golangci-lint, gosec and govulncheck into bin/tools

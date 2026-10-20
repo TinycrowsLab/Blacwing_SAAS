@@ -24,13 +24,14 @@ RUN go mod download && go mod verify
 COPY . .
 RUN GOOS="$TARGETOS" GOARCH="$TARGETARCH" \
     go build -trimpath -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" \
-    -o /out/egress-gateway .
+    -o /out/egress-gateway ./cmd/gateway
 
 # Static, shell-less, non-root runtime image.
 FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
 COPY --from=build /out/egress-gateway /egress-gateway
 USER nonroot:nonroot
-# No ports are exposed yet: the skeleton binds no listener (fail closed). The EGRESS
-# epic adds the proxy (13128 in dev) and management (13129 in dev) listeners.
+# Management plane (health, readiness, metrics; GATEWAY_MGMT_ADDR, default :9090).
+# Data-plane ports are added by the listener issues; they bind only once ready.
+EXPOSE 9090
 ENTRYPOINT ["/egress-gateway"]
 CMD ["run"]
