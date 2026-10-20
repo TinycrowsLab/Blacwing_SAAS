@@ -140,8 +140,15 @@ export function checkTofu(root) {
   const providers = has('providers.tf')
     ? stripComments(read(root, path.join(TOFU_DIR, 'providers.tf')))
     : '';
-  if (!/default_tags\s*{\s*tags\s*=\s*local\.common_tags\s*}/.test(providers)) {
-    errors.push('providers.tf must set default_tags { tags = local.common_tags }');
+  // Every provider "aws" configuration (aliases included) must carry them.
+  const providerBlocks = (providers.match(/provider\s+"aws"\s*{/g) ?? []).length;
+  const taggedBlocks = (
+    providers.match(/default_tags\s*{\s*tags\s*=\s*local\.common_tags\s*}/g) ?? []
+  ).length;
+  if (providerBlocks === 0 || taggedBlocks < providerBlocks) {
+    errors.push(
+      'providers.tf must set default_tags { tags = local.common_tags } in every provider "aws" block',
+    );
   }
   for (const [key, value] of [
     ['Project', '"blackwing"'],
