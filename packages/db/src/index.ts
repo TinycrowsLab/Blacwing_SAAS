@@ -51,3 +51,4 @@ export {
   type PoolName,
 } from './pool.js';
 export * from './schema/index.js';
+export * from './columns.js';

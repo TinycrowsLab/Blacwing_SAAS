@@ -116,12 +116,12 @@ afterAll(async () => {
 
 describe('kill.rls migrations', () => {
   it('applies the forward-only migrations as the owner and logs their names', async () => {
-    expect(migrationNames()).toEqual(['0000_extensions', '0001_kill_switch']);
+    expect(migrationNames()).toEqual(['0000_extensions', '0001_kill_switch', '0002_column_mixins']);
     expect(logged.map((entry) => entry.message)).toEqual([
       'applying database migrations',
       'database migrations applied',
     ]);
-    expect(logged[0]?.fields).toEqual({ migrations: ['0000_extensions', '0001_kill_switch'] });
+    expect(logged[0]?.fields).toEqual({ migrations: ['0000_extensions', '0001_kill_switch', '0002_column_mixins'] });
     const { rows } = await db.ownerPool.query<{
       relname: string;
       owner: string;
@@ -144,7 +144,7 @@ describe('kill.rls migrations', () => {
       const { rows } = await client.query<{ count: string }>(
         'SELECT count(*) FROM drizzle.__drizzle_migrations',
       );
-      expect(rows[0]?.count).toBe('2');
+      expect(rows[0]?.count).toBe('3');
     } finally {
       client.release();
     }

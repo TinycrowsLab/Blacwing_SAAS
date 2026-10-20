@@ -25,7 +25,8 @@ import {
   SOC_KILL_TOKEN_SCOPES,
 } from '@blackwing/contracts';
 
-import { bytea, citext, TENANT_PREDICATE, timestamps } from './columns.js';
+import { timestamps } from '../columns.js';
+import { bytea, citext, TENANT_PREDICATE } from './columns.js';
 
 /**
  * Kill-switch persistence (KILL-001, F33, CONTEXT_PACK §7, §8.5, §8.6). Schema only: propagation,
@@ -74,7 +75,7 @@ export const killEvents = pgTable(
     affected: jsonb('affected').$type<KillAffected>().notNull().default({}),
     reenabledAt: ts('reenabled_at'),
     reenabledBy: uuid('reenabled_by'),
-    ...timestamps,
+    ...timestamps(),
   },
   (t) => [
     index('kill_events_tenant_scope_ref_idx').on(t.tenantId, t.scope, t.scopeRefId),
@@ -128,7 +129,7 @@ export const socContacts = pgTable(
     notifyEnd: boolean('notify_end').notNull().default(true),
     locale: text('locale').notNull().default('en'),
     status: text('status', { enum: SOC_CONTACT_STATUSES }).notNull().default('active'),
-    ...timestamps,
+    ...timestamps(),
   },
   (t) => [
     index('soc_contacts_tenant_asset_idx').on(t.tenantId, t.assetId),
@@ -160,7 +161,7 @@ export const socKillTokens = pgTable(
     useCount: integer('use_count').notNull().default(0),
     lastUsedAt: ts('last_used_at'),
     revokedAt: ts('revoked_at'),
-    ...timestamps,
+    ...timestamps(),
   },
   (t) => [
     unique('soc_kill_tokens_token_sha256_key').on(t.tokenSha256),

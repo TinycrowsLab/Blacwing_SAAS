@@ -15,6 +15,13 @@
       "when": 1792497245240,
       "tag": "0001_kill_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792525439115,
+      "tag": "0002_column_mixins",
+      "breakpoints": true
     }
   ]
 }
