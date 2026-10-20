@@ -75,7 +75,8 @@ export const EXPECTED_DIRS = Object.freeze({
 
 /**
  * Files that must exist directly inside a fixed directory (label catalogue doc: FOUND-016, #18;
- * dev-host bootstrap and its pinned-version manifest: DEVENV-001, #155).
+ * dev-host bootstrap and its pinned-version manifest: DEVENV-001, #155; the integration-test image
+ * manifest `images.lock`: CI-004).
  */
 export const EXPECTED_DIR_FILES = Object.freeze({
   docs: Object.freeze(['labels.md']),
