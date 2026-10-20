@@ -88,7 +88,7 @@ class AppError extends Error {
 
 The secret-value registry belongs to `@blackwing/config` and `@blackwing/logger` (FOUND-007/FOUND-008),
 which sit above this package in the dependency graph. The boundary therefore injects the logger's value
-redactor as `options.redact`. It runs first. Then a built-in pass always runs, whatever was injected,
+redactor (`redactText` from `@blackwing/logger`) as `options.redact`. It runs first. Then a built-in pass always runs, whatever was injected,
 for Blackwing's own credential formats: `bwk_…`, `bw_pat_…`, `bw_ci_…`, `Bearer`/`Basic`/`Token`
 values, URL userinfo and PEM private keys. If the injected redactor throws or returns something other
 than a string, the text is dropped from the response (and replaced with `[REDACTED]` in the log). It

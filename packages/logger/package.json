@@ -13,8 +13,17 @@
     "test": "vitest run",
     "typecheck": "tsc -b --pretty false"
   },
+  "dependencies": {
+    "@blackwing/config": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@opentelemetry/api": "catalog:",
+    "pino": "catalog:",
+    "pino-pretty": "catalog:"
+  },
   "devDependencies": {
+    "@opentelemetry/context-async-hooks": "catalog:",
     "@types/node": "catalog:",
+    "fast-check": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

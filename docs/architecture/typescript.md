@@ -112,7 +112,10 @@ A member declares a workspace dependency in two places, and both must agree:
 `tsc -b` fails as well (TS6307) if source from an unreferenced package is pulled into a project.
 That way every edge in the build graph is declared. Each epic adds edges as it adds real imports. The
 first edges are `packages/ids -> packages/errors` (`IdValidationError` extends `ValidationError`) and
-`packages/config -> packages/errors` (`ConfigValidationError` extends `AppError`).
+`packages/config -> packages/errors` (`ConfigValidationError` extends `AppError`), then
+`packages/logger -> packages/config` (the logger reads the secret-redaction registry and `LOG_LEVEL`
+types, FOUND-008) and `packages/logger -> packages/errors` (built-in credential patterns and error
+serialisation).
 
 Edges must follow the allowed layering, which FOUND-005 (#7) enforces with a boundaries check and
 documents in `docs/architecture/dependency-graph.md`:
@@ -121,6 +124,7 @@ documents in `docs/architecture/dependency-graph.md`:
 errors               -> (nothing internal)   (AppError hierarchy; config, logger and everything else throw it)
 contracts            -> errors
 shared libs          -> contracts, errors    (config, logger, ids, time, telemetry, testing, crypto, ...)
+logger               -> config               (the one shared-lib edge: the redaction registry, §8.7)
 domain, policy       -> contracts, shared libs
 other packages       -> contracts, shared libs, domain, policy
 apps/*               -> any package, never another app
