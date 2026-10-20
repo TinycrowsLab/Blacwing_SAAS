@@ -1,6 +1,6 @@
 //go:build egressdeps
 
-// This file is compiled only with -tags egressdeps (make deps-check). It pins the
+// This file is compiled only with -tags egressdeps (make build/test/vet/lint). It pins the
 // data-plane libraries chosen in CONTEXT_PACK §5 as direct, versioned module
 // dependencies before the EGRESS epic uses them, without linking them into the
 // skeleton binary. Remove it once real code imports these packages.
