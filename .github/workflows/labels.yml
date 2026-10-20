@@ -1,0 +1,94 @@
+name: labels
+
+# Keeps the repository labels in line with the catalogue .github/labels.yml (docs/labels.md).
+# Job names labels-check and labels-sync are stable: they may become required checks (#153).
+# --prune is never used in CI; deleting labels stays a manual, reviewed action.
+on:
+  pull_request:
+    paths:
+      - .github/labels.yml
+      - docs/labels.md
+      - scripts/sync-labels.mjs
+      - .github/workflows/labels.yml
+  push:
+    branches: [main]
+    paths:
+      - .github/labels.yml
+      - docs/labels.md
+      - scripts/sync-labels.mjs
+      - .github/workflows/labels.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  labels-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - uses: ./.github/actions/setup
+        with:
+          fetch-depth: '1'
+      - name: Catalogue and docs are valid and current
+        run: node scripts/sync-labels.mjs --check-docs
+      - name: Dry run against the repository (read-only)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          {
+            echo '## Label sync dry run'
+            echo
+            echo '```text'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if node scripts/sync-labels.mjs --dry-run --repo "$REPO" > dry-run.txt 2>&1; then
+            {
+              cat dry-run.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            # Fork PRs get a token without read access: fall back to the offline check only.
+            cat dry-run.txt
+            {
+              cat dry-run.txt
+              echo '```'
+              echo
+              echo 'Live label read failed (for example a fork pull request); only the catalogue and docs check (--check-docs) was performed.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  # OFFLINE-STUB(online-porting #885): runs only when the repository variable BW_ONLINE is 'true'.
+  labels-sync:
+    if: github.event_name != 'pull_request' && vars.BW_ONLINE == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: labels-sync
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: ./.github/actions/setup
+        with:
+          fetch-depth: '1'
+      - name: Apply the catalogue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          # The script re-reads the labels after applying and exits 1 if changes are still pending.
+          set -o pipefail
+          node scripts/sync-labels.mjs --repo "$REPO" | tee sync.txt
+          {
+            echo '## Label sync'
+            echo
+            echo '```text'
+            cat sync.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
