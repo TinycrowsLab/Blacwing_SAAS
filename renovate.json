@@ -1,0 +1,110 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Blackwing dependency policy (FOUND-017). Exact pins everywhere, digests for images and Actions, weekly grouped PRs, tight automerge. See docs/runbooks/renovate.md.",
+  "extends": ["config:best-practices", ":dependencyDashboard"],
+  "rangeStrategy": "pin",
+  "pinDigests": true,
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Dependency dashboard (Renovate)",
+  "timezone": "UTC",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "branchConcurrentLimit": 8,
+  "minimumReleaseAge": "3 days",
+  "labels": ["dependencies"],
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+  "commitMessageLowerCase": "auto",
+  "automerge": false,
+  "major": { "automerge": false },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true,
+    "schedule": ["before 6am on monday"],
+    "commitMessageAction": "refresh",
+    "commitMessageTopic": "lockfile"
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["dependencies", "security"],
+    "schedule": ["at any time"],
+    "minimumReleaseAge": null,
+    "automerge": false
+  },
+  "osvVulnerabilityAlerts": true,
+  "packageRules": [
+    {
+      "description": "Patch updates automerge once the required checks are green; minor and major never do.",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    },
+    {
+      "matchDatasources": ["docker"],
+      "pinDigests": true
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "pinDigests": true
+    },
+    {
+      "groupName": "typescript",
+      "matchPackageNames": ["typescript", "ts-node", "tsx", "@types/node"]
+    },
+    {
+      "groupName": "eslint",
+      "matchPackageNames": [
+        "eslint",
+        "eslint-*",
+        "@eslint/**",
+        "typescript-eslint",
+        "@typescript-eslint/**",
+        "@vitest/eslint-plugin"
+      ]
+    },
+    {
+      "groupName": "nestjs",
+      "matchPackageNames": ["@nestjs/**"]
+    },
+    {
+      "groupName": "next",
+      "matchPackageNames": ["next", "eslint-config-next", "@next/**"]
+    },
+    {
+      "groupName": "testing",
+      "matchPackageNames": [
+        "vitest",
+        "@vitest/**",
+        "fast-check",
+        "testcontainers",
+        "@testcontainers/**",
+        "playwright",
+        "@playwright/**"
+      ]
+    },
+    {
+      "groupName": "go",
+      "matchManagers": ["gomod"]
+    },
+    {
+      "groupName": "docker",
+      "matchManagers": ["dockerfile", "docker-compose"]
+    },
+    {
+      "groupName": "github-actions",
+      "matchManagers": ["github-actions"]
+    },
+    {
+      "description": "Last rules win: never automerge Actions digests or any major update.",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["digest", "pin", "pinDigest", "major"],
+      "automerge": false
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "addLabels": ["major"]
+    }
+  ]
+}

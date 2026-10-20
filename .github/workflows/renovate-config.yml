@@ -1,0 +1,33 @@
+name: renovate-config
+
+on:
+  pull_request:
+    paths:
+      - renovate.json
+      - scripts/check-renovate.mjs
+      - .github/workflows/renovate-config.yml
+  push:
+    branches: [main]
+    paths:
+      - renovate.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: renovate-config-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Policy checks
+        run: node scripts/check-renovate.mjs
+      - name: renovate-config-validator
+        run: npx --yes --package renovate@44.171.5 renovate-config-validator --strict renovate.json

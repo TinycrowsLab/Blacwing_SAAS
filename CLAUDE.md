@@ -68,6 +68,7 @@ Pack §6 is the full layout. Adding or removing an app, package or fixed directo
 | `pnpm check:layout` / `pnpm check:claude-md` / `pnpm check:tsconfig` / `pnpm check:turbo` | Repo-layout, CLAUDE.md, tsconfig and Turborepo pipeline drift checks. |
 | `pnpm check:adr` | ADR format, Context Pack citations, supersession links and the index (`docs/adr/`). |
 | `pnpm check:github` / `pnpm labels:check` | Issue/PR templates, CODEOWNERS and label-catalogue checks. `pnpm labels:sync --dry-run` lists the catalogue. |
+| `pnpm check:renovate` | Renovate policy checks on `renovate.json` (pins, digests, groups, automerge limits); see [`docs/runbooks/renovate.md`](docs/runbooks/renovate.md). |
 
 Root scripts run through Turborepo (`turbo.json`, local cache only; see the README). Each script arrives with the
 issue that owns it: lint in FOUND-004 (#6), the dev stack in DEVENV-010 (#164), seed data in DEVENV-011 (#165).

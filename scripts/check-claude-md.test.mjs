@@ -264,6 +264,7 @@ describe('CLAUDE.md failure modes', () => {
       'docs/architecture/FEATURE_LIST.md': '# F\n',
       'docs/labels.md': '# Labels\n',
       'docs/runbooks/code-owners.md': '# Code owners\n',
+      'docs/runbooks/renovate.md': '# Renovate\n',
       'design/README.md': '# Design\n',
       'docs/architecture/dependency-graph.md': '# Allowed package dependency graph\n',
     };
@@ -291,6 +292,7 @@ describe('CLAUDE.md failure modes', () => {
       'docs/architecture/FEATURE_LIST.md': '# F\n',
       'docs/labels.md': '# Labels\n',
       'docs/runbooks/code-owners.md': '# Code owners\n',
+      'docs/runbooks/renovate.md': '# Renovate\n',
       'design/README.md': '# Design\n',
       'docs/architecture/dependency-graph.md': '# Allowed package dependency graph\n',
     };
@@ -313,6 +315,7 @@ describe('CLAUDE.md failure modes', () => {
       'docs/architecture/FEATURE_LIST.md': '# F\n',
       'docs/labels.md': '# Labels\n',
       'docs/runbooks/code-owners.md': '# Code owners\n',
+      'docs/runbooks/renovate.md': '# Renovate\n',
       'design/README.md': '# Design\n',
     };
     assertError(checkClaudeMd(makeRoot(files)).errors, /dependency-graph\.md/);
