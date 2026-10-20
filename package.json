@@ -16,7 +16,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "check-env": "node scripts/check-env.mjs",
-    "dev:deps":"node scripts/dev-deps.mjs up",
+    "dev:deps": "node scripts/dev-deps.mjs up",
     "dev:deps:config": "node scripts/dev-deps.mjs config",
     "dev:deps:reset": "node scripts/dev-deps.mjs reset",
     "dev:deps:smoke": "node scripts/compose-smoke.mjs",
