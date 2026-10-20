@@ -167,3 +167,24 @@ describe('migration apply', () => {
     assert.match(errors[0] ?? '', /0000_init\.sql failed to apply: boom/);
   });
 });
+
+describe('drift workflow contract', () => {
+  const repo = path.resolve(import.meta.dirname, '..');
+  const workflow = readFileSync(path.join(repo, '.github/workflows/drift.yml'), 'utf8');
+
+  it('pins timezone and locale, and only reads the repository', () => {
+    assert.match(workflow, /^ {2}TZ: UTC$/m);
+    assert.match(workflow, /^ {2}LANG: C\.UTF-8$/m);
+    assert.match(workflow, /^permissions:\n {2}contents: read$/m);
+  });
+
+  it('formats generated files with Prettier and tolerates artifacts that do not exist yet', () => {
+    assert.match(workflow, /prettier --write --ignore-unknown --no-error-on-unmatched-pattern/);
+  });
+
+  it('exempts squashes only through the catalogued migration-squash label', () => {
+    assert.match(workflow, /'migration-squash'/);
+    const labels = readFileSync(path.join(repo, '.github/labels.yml'), 'utf8');
+    assert.match(labels, /name: 'migration-squash'/);
+  });
+});

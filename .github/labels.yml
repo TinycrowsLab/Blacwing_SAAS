@@ -515,6 +515,9 @@ groups:
       - name: 'offline-stub'
         color: 'FBCA04'
         description: 'A code path using an offline/local substitute for a cloud/online dependency'
+      - name: 'migration-squash'
+        color: 'B60205'
+        description: 'Deliberate baseline migration squash: exempts the PR from the forward-only drift check'
 
   - id: github
     title: 'GitHub defaults'

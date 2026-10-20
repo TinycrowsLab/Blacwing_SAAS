@@ -71,7 +71,7 @@ already. Re-running continues from there, because the diff is recomputed each ti
 
 <!-- BEGIN GENERATED LABEL CATALOGUE: node scripts/sync-labels.mjs --write-docs -->
 
-_Generated from `.github/labels.yml`: 157 labels in 9 groups. Do not edit by hand._
+_Generated from `.github/labels.yml`: 158 labels in 9 groups. Do not edit by hand._
 
 ### Type (`type`, 3)
 
@@ -265,7 +265,7 @@ Feature IDs from docs/architecture/FEATURE_LIST.md the issue implements; apply e
 | `F43` | `#EDEDED` | F43 Diff-driven continuous assessment (Later) |
 | `F44` | `#EDEDED` | F44 Auto-release lane in triage (Later) |
 
-### Workflow (`workflow`, 5)
+### Workflow (`workflow`, 6)
 
 Build-process markers used by the issue workflow and the release plan.
 
@@ -276,6 +276,7 @@ Build-process markers used by the issue workflow and the release plan.
 | `discovered` | `#FBCA04` | Raised by the build agents while implementing another issue |
 | `online-porting` | `#1D76DB` | Work stubbed while building offline; port to the online/cloud equivalent before go-live |
 | `offline-stub` | `#FBCA04` | A code path using an offline/local substitute for a cloud/online dependency |
+| `migration-squash` | `#B60205` | Deliberate baseline migration squash: exempts the PR from the forward-only drift check |
 
 ### GitHub defaults (`github`, 9)
 
