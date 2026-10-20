@@ -19,8 +19,8 @@ part of the JS workspace.
 | Item | Value |
 |---|---|
 | Module path | `github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway` (matches the repository, so it resolves with `go get`) |
-| Minimum Go (`go` line) | `1.23.0` |
-| Toolchain pin (`toolchain` line) | `go1.23.12` |
+| Minimum Go (`go` line) | `1.26.0` |
+| Toolchain pin (`toolchain` line) | `go1.26.10` |
 | Core libraries (pinned, direct) | `elazarl/goproxy`, `things-go/go-socks5`, `miekg/dns`, `cedar-policy/cedar-go` |
 | Test libraries | Go `testing` + `stretchr/testify` |
 
@@ -56,9 +56,11 @@ Run from this directory; `make help` lists everything.
 | `make vet` | `go vet ./...` with and without `egressdeps`. |
 | `make lint` | `gofmt -l` check, `golangci-lint config verify` and `golangci-lint run` (govet, staticcheck, errcheck, gosec, revive, ineffassign, unused; gofmt and goimports formatters). |
 | `make gosec` | the standalone `gosec` scanner over sources, tests and tagged files. |
+| `make govulncheck` | `govulncheck` (pinned `GOVULNCHECK_VERSION`) over the module and the pinned standard library; fails on reachable vulnerabilities. Part of `make verify`. |
+| `make check-dockerfile` | fails if the Dockerfile `GO_VERSION` differs from the `go.mod` toolchain pin. Part of `make verify`. |
 | `make tidy` / `make tidy-check` | `go mod tidy`, or fail if it would change anything (plus `go mod verify`). |
 | `make run` | builds and runs `egress-gateway run` with `BW_ENV=dev LOG_LEVEL=debug` (dev-only Makefile defaults). |
-| `make tools` | installs the pinned `golangci-lint` (`GOLANGCI_LINT_VERSION`) and `gosec` (`GOSEC_VERSION`) into `bin/tools/`. Lint targets install them on first use. |
+| `make tools` | installs the pinned `golangci-lint` (`GOLANGCI_LINT_VERSION`) and `gosec` (`GOSEC_VERSION`) and `govulncheck` into `bin/tools/`. Lint targets install them on first use. |
 | `make verify` | everything CI runs, in order. |
 
 ### Toolchain pin

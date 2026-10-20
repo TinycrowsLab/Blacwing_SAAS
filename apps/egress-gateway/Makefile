@@ -44,16 +44,23 @@ RACE ?= -race
 # service pin to build, so they are built with TOOLS_GOTOOLCHAIN (auto-select).
 GOLANGCI_LINT_VERSION ?= v2.15.0
 GOSEC_VERSION         ?= v2.29.0
+GOVULNCHECK_VERSION   ?= v1.9.0
 TOOLS_GOTOOLCHAIN     ?= auto
 TOOLS_DIR := $(abspath $(BIN_DIR)/tools)
 GOLANGCI_LINT_BIN := $(TOOLS_DIR)/golangci-lint/$(GOLANGCI_LINT_VERSION)/golangci-lint
 GOSEC_BIN         := $(TOOLS_DIR)/gosec/$(GOSEC_VERSION)/gosec
+GOVULNCHECK_BIN   := $(TOOLS_DIR)/govulncheck/$(GOVULNCHECK_VERSION)/govulncheck
 # Override with an already-installed binary, e.g. GOLANGCI_LINT=golangci-lint; the
 # pinned copy is then not installed.
 GOLANGCI_LINT ?= $(GOLANGCI_LINT_BIN)
 GOSEC         ?= $(GOSEC_BIN)
+GOVULNCHECK   ?= $(GOVULNCHECK_BIN)
 golangci_lint_dep := $(filter $(GOLANGCI_LINT_BIN),$(GOLANGCI_LINT))
 gosec_dep         := $(filter $(GOSEC_BIN),$(GOSEC))
+govulncheck_dep   := $(filter $(GOVULNCHECK_BIN),$(GOVULNCHECK))
+
+# The Dockerfile GO_VERSION build argument must equal the go.mod toolchain pin.
+DOCKERFILE_GO_VERSION := $(shell sed -n 's/^ARG GO_VERSION=//p' Dockerfile)
 
 # Dev-only defaults for `make run`; the binary itself has no BW_ENV default.
 BW_ENV    ?= dev
@@ -86,6 +93,13 @@ check-go: ## Verify the running Go toolchain matches the go.mod pin
 	*) echo "check-go: GO_VERSION_CHECK must be 'exact' or 'minimum'" >&2; exit 1 ;; \
 	esac; \
 	echo "check-go: $$actual ok ($(GO_VERSION_CHECK); pin $(GO_TOOLCHAIN), min go$(GO_MIN))"
+
+.PHONY: check-dockerfile
+check-dockerfile: ## Verify the Dockerfile GO_VERSION equals the go.mod toolchain pin
+	@if [ "go$(DOCKERFILE_GO_VERSION)" != "$(GO_TOOLCHAIN)" ]; then \
+		echo "check-dockerfile: Dockerfile GO_VERSION=$(DOCKERFILE_GO_VERSION) but go.mod pins $(GO_TOOLCHAIN)" >&2; exit 1; \
+	fi; \
+	echo "check-dockerfile: ok ($(GO_TOOLCHAIN))"
 
 .PHONY: build
 build: check-go ## Build the binary for GOOS/GOARCH into bin/<os>_<arch>/ and compile every package
@@ -132,6 +146,10 @@ lint: check-go fmt-check $(golangci_lint_dep) ## Run golangci-lint (govet, stati
 gosec: check-go $(gosec_dep) ## Run the standalone gosec scanner (including tests and tagged files)
 	$(GOSEC) -quiet -tests -tags $(DEPS_TAGS) ./...
 
+.PHONY: govulncheck
+govulncheck: check-go $(govulncheck_dep) ## Fail on reachable vulnerabilities in the module or the pinned standard library
+	$(GOVULNCHECK) -tags $(DEPS_TAGS) ./...
+
 .PHONY: tidy
 tidy: check-go ## go mod tidy
 	$(GO) mod tidy
@@ -146,7 +164,7 @@ run: build ## Build and run the gateway locally (BW_ENV defaults to dev here onl
 	BW_ENV="$(BW_ENV)" LOG_LEVEL="$(LOG_LEVEL)" ./$(BINARY) run
 
 .PHONY: tools
-tools: $(GOLANGCI_LINT_BIN) $(GOSEC_BIN) ## Install the pinned golangci-lint and gosec into bin/tools
+tools: $(GOLANGCI_LINT_BIN) $(GOSEC_BIN) $(GOVULNCHECK_BIN) ## Install the pinned golangci-lint, gosec and govulncheck into bin/tools
 
 $(GOLANGCI_LINT_BIN):
 	GOTOOLCHAIN=$(TOOLS_GOTOOLCHAIN) GOBIN="$(dir $@)" \
@@ -156,8 +174,12 @@ $(GOSEC_BIN):
 	GOTOOLCHAIN=$(TOOLS_GOTOOLCHAIN) GOBIN="$(dir $@)" \
 		$(GO) install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION)
 
+$(GOVULNCHECK_BIN):
+	GOTOOLCHAIN=$(TOOLS_GOTOOLCHAIN) GOBIN="$(dir $@)" \
+		$(GO) install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
+
 .PHONY: verify
-verify: tidy-check fmt-check vet lint gosec test build build-cross ## Everything CI runs, in order
+verify: check-dockerfile tidy-check fmt-check vet lint gosec test govulncheck build build-cross ## Everything CI runs, in order
 
 .PHONY: clean
 clean: ## Remove build output (keeps installed tools)

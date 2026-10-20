@@ -8,7 +8,7 @@
 # images are pinned by tag here; CI-007 pins them by digest and signs the result.
 
 # Keep in sync with the `toolchain` line in go.mod.
-ARG GO_VERSION=1.23.12
+ARG GO_VERSION=1.26.10
 
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-bookworm AS build
 ARG TARGETOS
