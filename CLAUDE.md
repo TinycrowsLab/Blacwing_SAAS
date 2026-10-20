@@ -31,6 +31,7 @@ runtime. See [§1](docs/architecture/CONTEXT_PACK.md#1-product-in-one-paragraph)
 | Allowed package dependency graph | [`docs/architecture/dependency-graph.md`](docs/architecture/dependency-graph.md) (FOUND-005, #7) |
 | Epics and features | [`EPICS.md`](docs/architecture/EPICS.md), [`FEATURE_LIST.md`](docs/architecture/FEATURE_LIST.md) |
 | Vulnerability reporting | [`SECURITY.md`](SECURITY.md) |
+| Labels, issue/PR templates and code owners | [`docs/labels.md`](docs/labels.md), [`docs/runbooks/code-owners.md`](docs/runbooks/code-owners.md) |
 
 ## Repository map
 
@@ -62,6 +63,7 @@ Pack §6 is the full layout. Adding or removing an app, package or fixed directo
 | `pnpm build` | Builds every package in topological order (Turborepo). |
 | `pnpm db:seed` | Seeds the demo tenant `acme`, users per role, a verified lab asset and an active SA. |
 | `pnpm check:layout` / `pnpm check:claude-md` / `pnpm check:tsconfig` / `pnpm check:turbo` | Repo-layout, CLAUDE.md, tsconfig and Turborepo pipeline drift checks. |
+| `pnpm check:github` / `pnpm labels:check` | Issue/PR templates, CODEOWNERS and label-catalogue checks. `pnpm labels:sync --dry-run` lists the catalogue. |
 
 Root scripts run through Turborepo (`turbo.json`, local cache only; see the README). Each script arrives with the
 issue that owns it: lint in FOUND-004 (#6), the dev stack in DEVENV-010 (#164), seed data in DEVENV-011 (#165).

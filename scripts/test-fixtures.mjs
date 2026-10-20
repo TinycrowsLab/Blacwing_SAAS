@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import {
   EXPECTED_APPS,
   EXPECTED_DIRS,
+  EXPECTED_DIR_FILES,
   EXPECTED_PACKAGES,
   GITHUB_LAYOUT,
   NODE_ENGINE,
@@ -72,7 +73,11 @@ export function makeValidFixture() {
       writeFileSync(path.join(root, dir, child, ".gitkeep"), "");
     }
   }
-  for (const child of GITHUB_LAYOUT.required) mkdirSync(path.join(root, ".github", child), { recursive: true });
+  for (const [dir, files] of Object.entries(EXPECTED_DIR_FILES)) {
+    for (const file of files) writeFileSync(path.join(root, dir, file), "placeholder\n");
+  }
+  for (const child of GITHUB_LAYOUT.dirs) mkdirSync(path.join(root, ".github", child), { recursive: true });
+  for (const file of GITHUB_LAYOUT.files) writeFileSync(path.join(root, ".github", file), "placeholder\n");
   mkdirSync(path.join(root, "scripts"), { recursive: true });
   for (const script of ["check-layout.mjs", "preinstall.mjs"]) {
     copyFileSync(path.join(SCRIPTS_DIR, script), path.join(root, "scripts", script));

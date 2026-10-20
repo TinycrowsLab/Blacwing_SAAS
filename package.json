@@ -23,10 +23,14 @@
     "check:layout": "node scripts/check-layout.mjs",
     "check:claude-md": "node scripts/check-claude-md.mjs",
     "check:tsconfig": "node scripts/check-tsconfig.mjs",
-    "check:turbo": "node scripts/check-turbo.mjs"
+    "check:turbo": "node scripts/check-turbo.mjs",
+    "check:github": "node scripts/check-github.mjs --quiet",
+    "labels:check": "node scripts/sync-labels.mjs --check-docs",
+    "labels:sync": "node scripts/sync-labels.mjs"
   },
   "devDependencies": {
     "turbo": "2.11.7",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "yaml": "2.9.1"
   }
 }

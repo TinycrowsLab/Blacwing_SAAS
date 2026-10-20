@@ -231,7 +231,15 @@ describe("CLAUDE.md failure modes", () => {
       "docs/architecture/dependency-graph.md",
     ]);
     const text = `${REAL_TEXT}\n[adr](docs/adr/README.md#index)\n`;
-    const base = { [CONTEXT_PACK]: REAL_PACK, "SECURITY.md": "x\n", "docs/architecture/EPICS.md": "# E\n", "docs/architecture/FEATURE_LIST.md": "# F\n", "design/README.md": "# Design\n" };
+    const base = {
+      [CONTEXT_PACK]: REAL_PACK,
+      "SECURITY.md": "x\n",
+      "docs/architecture/EPICS.md": "# E\n",
+      "docs/architecture/FEATURE_LIST.md": "# F\n",
+      "docs/labels.md": "# Labels\n",
+      "docs/runbooks/code-owners.md": "# Code owners\n",
+      "design/README.md": "# Design\n",
+    };
 
     const pending = makeRoot({ ...base, [CLAUDE_MD]: text });
     assert.deepEqual(checkClaudeMd(pending).errors, []);

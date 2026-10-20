@@ -1,0 +1,290 @@
+# Task issue form (FOUND-016, #18). Mirrors the issue-writing standard in
+# docs/architecture/CONTEXT_PACK.md §11: metadata fields first, then the body sections in order.
+# Dropdown values must stay in sync with .github/labels.yml (checked by
+# scripts/check-github.mjs); the label meanings are documented in docs/labels.md.
+name: Task
+description: One PR-sized unit of work (about 0.5-2 days), written to the CONTEXT_PACK §11 standard.
+labels: ["type:task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One issue is one PR-sized change. Be concrete and decisive: pick one option per
+        [CONTEXT_PACK](https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/docs/architecture/CONTEXT_PACK.md) and never contradict §5 (stack) or §8 (security invariants).
+        After filing, apply the matching `priority:*`, `size:*`, `area:*`, `epic:*`, functional and `F*` labels
+        ([label catalogue](https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/docs/labels.md)). **Never paste secrets, tokens, customer data or exploit payloads.**
+
+  - type: input
+    id: key
+    attributes:
+      label: Key
+      description: >-
+        Epic key plus a three-digit sequence, unique across the backlog. Title the issue imperatively and
+        specifically, e.g. "Enforce per-test-case request budgets in the egress gateway".
+      placeholder: EGRESS-004
+    validations:
+      required: true
+
+  - type: dropdown
+    id: epic
+    attributes:
+      label: Epic
+      description: The epic this task belongs to (docs/architecture/EPICS.md). Applied as the `epic:<KEY>` label.
+      options:
+        - FOUND
+        - DEVENV
+        - CI
+        - INFRA
+        - TENANT
+        - IAM
+        - RBAC
+        - API
+        - DB
+        - GRAPH
+        - WORKFLOW
+        - AUDIT
+        - SECRETS
+        - NOTIFY
+        - ASSET
+        - SCOPE
+        - AUTHZ
+        - POLICY
+        - PLAN
+        - SANDBOX
+        - IMAGE
+        - EGRESS
+        - SESSION
+        - BROWSER
+        - OOB
+        - KILL
+        - GATEWAY
+        - RUNTIME
+        - ORCH
+        - REGISTRY
+        - MCP
+        - MEMORY
+        - GATE2
+        - MENTOR
+        - RECON
+        - INTEL
+        - INGEST
+        - PLANNER
+        - WEBAPI
+        - AUTHLOGIC
+        - INFRASPEC
+        - CODESPEC
+        - EXPLOIT
+        - VALIDATE
+        - EVIDENCE
+        - FINDING
+        - COVERAGE
+        - REVERSAL
+        - REPRO
+        - TRIAGE
+        - REPORT
+        - CONNECT
+        - REMEDIATE
+        - BASELINE
+        - CONSOLE
+        - LIVERUN
+        - DASH
+        - ADMIN
+        - SOCUI
+        - OBS
+        - COST
+        - SCHED
+        - RETAIN
+        - EVAL
+        - SECREVIEW
+        - PERF
+        - DOCS
+        - LAUNCH
+        - LATER
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Architecture area (Area column of docs/architecture/EPICS.md). Applied as the `area:*` label.
+      options:
+        - Foundations
+        - Infrastructure
+        - Tenancy
+        - Access Layer
+        - Platform Services
+        - Authorisation & Policy
+        - Execution Sandbox
+        - Agent Runtime
+        - Model & Memory
+        - Recon & Specialists
+        - Validation & Findings
+        - Triage & Delivery
+        - Console
+        - Production Readiness
+        - Backlog
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: >-
+        P0 = needed for the first end-to-end grey-box run; P1 = v1 must-have; P2 = v1 should-have;
+        P3 = nice-to-have or Later. Applied as the `priority:*` label.
+      options:
+        - P0
+        - P1
+        - P2
+        - P3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: size
+    attributes:
+      label: Size
+      description: >-
+        XS < 2h, S <= 0.5d, M <= 1d, L <= 2d. There is no XL: split the issue instead.
+        Applied as the `size:*` label.
+      options:
+        - XS
+        - S
+        - M
+        - L
+    validations:
+      required: true
+
+  - type: input
+    id: features
+    attributes:
+      label: Features
+      description: >-
+        Feature IDs from docs/architecture/FEATURE_LIST.md, comma-separated, or `none`.
+        Each is applied as an `F<n>` label.
+      placeholder: F11, F13
+    validations:
+      required: true
+
+  - type: input
+    id: depends_on
+    attributes:
+      label: Depends on
+      description: >-
+        Blocking issues as keys or numbers, comma-separated, or `none`. Repeat them as the
+        `Blocked by:` line in the Dependencies section below.
+      placeholder: DB-003, #42
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: 2-4 sentences on what and why.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: >-
+        Where it sits in the architecture, related features (F-ids) and personas, and the exact
+        decisions copied from CONTEXT_PACK (stack, paths, names) so the issue stands alone.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: In-scope bullets, and out-of-scope bullets that point to the issue keys owning them.
+      value: |
+        **In scope**
+        -
+
+        **Out of scope**
+        -
+    validations:
+      required: true
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Detailed requirements
+      description: >-
+        Numbered, testable statements with exact names: file paths, modules/functions, DB tables and
+        columns with types, API routes and shapes, event names, config keys with defaults, error codes, UI routes.
+      value: |
+        1.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: >-
+        Checklist; every item objectively verifiable (command, test name or observable behaviour).
+        The PR copies this list into its template.
+      value: |
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: edge_cases
+    attributes:
+      label: Edge cases & failure modes
+      description: >-
+        Exhaustive list with the required behaviour for each: empty/oversized/unicode input, timezones,
+        concurrency and retries, partial failure, timeouts, permission denied, cross-tenant access,
+        expired authorisation, kill switch mid-operation, downstream outage, malformed upstream data.
+    validations:
+      required: true
+
+  - type: textarea
+    id: security
+    attributes:
+      label: Security, privacy & audit
+      description: Threats, authz rules, audit events emitted, redaction, and the §8 invariants touched.
+    validations:
+      required: true
+
+  - type: textarea
+    id: observability
+    attributes:
+      label: Observability
+      description: Logs, metrics (names) and traces/spans, or `None` with a reason.
+    validations:
+      required: true
+
+  - type: textarea
+    id: test_plan
+    attributes:
+      label: Test plan
+      description: Named unit, integration and e2e cases.
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: A `Blocked by:` line (keys or `#N`) and a `Related:` line.
+      value: |
+        - Blocked by:
+        - Related:
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation_notes
+    attributes:
+      label: Implementation notes
+      description: Suggested steps, commands to run, pitfalls and files to read first.
+    validations:
+      required: false

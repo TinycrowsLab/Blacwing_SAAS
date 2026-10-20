@@ -29,6 +29,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+      yaml:
+        specifier: 2.9.1
+        version: 2.9.1
 
   apps/agent-runtime:
     devDependencies:
@@ -40,7 +43,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   apps/api:
     devDependencies:
@@ -52,7 +55,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   apps/cli:
     devDependencies:
@@ -64,7 +67,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   apps/egress-gateway:
     devDependencies:
@@ -76,7 +79,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   apps/model-gateway:
     devDependencies:
@@ -88,7 +91,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   apps/sandbox-controller:
     devDependencies:
@@ -100,7 +103,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   apps/session-manager:
     devDependencies:
@@ -112,7 +115,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   apps/web:
     devDependencies:
@@ -124,7 +127,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   apps/worker:
     devDependencies:
@@ -136,7 +139,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/agents:
     devDependencies:
@@ -148,7 +151,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/audit:
     devDependencies:
@@ -160,7 +163,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/config:
     devDependencies:
@@ -172,7 +175,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/connectors:
     devDependencies:
@@ -184,7 +187,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/contracts:
     devDependencies:
@@ -196,7 +199,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/cost:
     devDependencies:
@@ -208,7 +211,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/crypto:
     devDependencies:
@@ -220,7 +223,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/db:
     devDependencies:
@@ -232,7 +235,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/domain:
     devDependencies:
@@ -244,7 +247,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/evidence:
     devDependencies:
@@ -256,7 +259,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/ids:
     devDependencies:
@@ -271,7 +274,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/logger:
     devDependencies:
@@ -283,7 +286,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/mcp-tools:
     devDependencies:
@@ -295,7 +298,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/memory:
     devDependencies:
@@ -307,7 +310,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/notify:
     devDependencies:
@@ -319,7 +322,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/oob:
     devDependencies:
@@ -331,7 +334,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/policy:
     devDependencies:
@@ -343,7 +346,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/replay:
     devDependencies:
@@ -355,7 +358,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/reporting:
     devDependencies:
@@ -367,7 +370,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/secrets:
     devDependencies:
@@ -379,7 +382,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/telemetry:
     devDependencies:
@@ -391,7 +394,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/testing:
     devDependencies:
@@ -403,7 +406,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/ui:
     devDependencies:
@@ -415,7 +418,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.20.5)
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
 packages:
 
@@ -1016,6 +1019,11 @@ packages:
     engines: {node: '>=8'}
     hasBin: true
 
+  yaml@2.9.1:
+    resolution: {integrity: sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
 snapshots:
 
   '@esbuild/aix-ppc64@0.28.2':
@@ -1215,13 +1223,13 @@ snapshots:
       chai: 5.3.3
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.2.4(vite@7.3.7(@types/node@22.20.5))':
+  '@vitest/mocker@3.2.4(vite@7.3.7(@types/node@22.20.5)(yaml@2.9.1))':
     dependencies:
       '@vitest/spy': 3.2.4
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.3.7(@types/node@22.20.5)
+      vite: 7.3.7(@types/node@22.20.5)(yaml@2.9.1)
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -1421,13 +1429,13 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  vite-node@3.2.4(@types/node@22.20.5):
+  vite-node@3.2.4(@types/node@22.20.5)(yaml@2.9.1):
     dependencies:
       cac: 6.7.14
       debug: 4.4.3
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 7.3.7(@types/node@22.20.5)
+      vite: 7.3.7(@types/node@22.20.5)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -1442,7 +1450,7 @@ snapshots:
       - tsx
       - yaml
 
-  vite@7.3.7(@types/node@22.20.5):
+  vite@7.3.7(@types/node@22.20.5)(yaml@2.9.1):
     dependencies:
       esbuild: 0.28.2
       fdir: 6.5.0(picomatch@4.0.7)
@@ -1453,12 +1461,13 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.5
       fsevents: 2.3.3
+      yaml: 2.9.1
 
-  vitest@3.2.4(@types/node@22.20.5):
+  vitest@3.2.4(@types/node@22.20.5)(yaml@2.9.1):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.3.7(@types/node@22.20.5))
+      '@vitest/mocker': 3.2.4(vite@7.3.7(@types/node@22.20.5)(yaml@2.9.1))
       '@vitest/pretty-format': 3.2.7
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -1476,8 +1485,8 @@ snapshots:
       tinyglobby: 0.2.17
       tinypool: 1.1.1
       tinyrainbow: 2.0.0
-      vite: 7.3.7(@types/node@22.20.5)
-      vite-node: 3.2.4(@types/node@22.20.5)
+      vite: 7.3.7(@types/node@22.20.5)(yaml@2.9.1)
+      vite-node: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.20.5
@@ -1499,3 +1508,5 @@ snapshots:
     dependencies:
       siginfo: 2.0.0
       stackback: 0.0.2
+
+  yaml@2.9.1: {}

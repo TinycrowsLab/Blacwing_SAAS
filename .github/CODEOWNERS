@@ -1,0 +1,32 @@
+# Code owners for Blackwing (FOUND-016, #18). The owner registry, the meaning of each team
+# and how to change this file are in docs/runbooks/code-owners.md.
+#
+# OFFLINE-STUB(online-porting #842): both teams below are PLACEHOLDERS. They do not exist in the
+# TinycrowsLab organisation yet, so GitHub reports them as unknown owners and cannot request
+# reviews from them. Branch protection must not enable "Require review from Code Owners" (CI-015, #153)
+# until #842 creates the teams with write access and the registry marks them `active`.
+#
+# Syntax: gitignore-style patterns, the LAST matching line wins. GitHub does not support `!`
+# negation, `[ ]` ranges or `\#` escapes here (scripts/check-github.mjs rejects them).
+
+# Default owner for everything not matched below.
+*                         @TinycrowsLab/blackwing-maintainers
+
+# Security-owned paths: mandatory security review (CONTEXT_PACK §4, §8).
+# Egress is the only route to targets and fails closed (§8.1, §8.2).
+apps/egress-gateway/**    @TinycrowsLab/blackwing-security-owners
+# Cedar policy decision point and shared policy schema (§8.1, §8.3, §8.4, §8.11).
+packages/policy/**        @TinycrowsLab/blackwing-security-owners
+# Signing, envelope verification and key handling (§8.1, §8.7).
+packages/crypto/**        @TinycrowsLab/blackwing-security-owners
+# Secrets service and envelope encryption (§8.7).
+packages/secrets/**       @TinycrowsLab/blackwing-security-owners
+# Append-only, tamper-evident audit ledger (§8.8).
+packages/audit/**         @TinycrowsLab/blackwing-security-owners
+
+# The review rules themselves, CI workflows and the security tooling configuration.
+/.github/CODEOWNERS       @TinycrowsLab/blackwing-security-owners
+/.github/workflows/**     @TinycrowsLab/blackwing-security-owners
+/SECURITY.md              @TinycrowsLab/blackwing-security-owners
+/.gitleaks.toml           @TinycrowsLab/blackwing-security-owners
+/.trivyignore             @TinycrowsLab/blackwing-security-owners

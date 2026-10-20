@@ -69,13 +69,20 @@ export const EXPECTED_DIRS = Object.freeze({
   docs: Object.freeze(["adr", "architecture", "runbooks", "api", "user"]),
 });
 
+/** Files that must exist directly inside a fixed directory (label catalogue doc: FOUND-016, #18). */
+export const EXPECTED_DIR_FILES = Object.freeze({
+  docs: Object.freeze(["labels.md"]),
+});
+
 /**
- * `.github/` entries. Required entries must exist; optional ones are delivered by
- * later issues (templates and CODEOWNERS: #18) and are allowed but not yet required.
+ * `.github/` entries (CONTEXT_PACK §6). `dirs` and `files` must exist with that kind;
+ * `optional` entries are allowed but not required. The templates, CODEOWNERS and the
+ * label catalogue (`labels.yml`) arrived with FOUND-016 (#18).
  */
 export const GITHUB_LAYOUT = Object.freeze({
-  required: Object.freeze(["workflows", "ISSUE_TEMPLATE"]),
-  optional: Object.freeze(["PULL_REQUEST_TEMPLATE.md", "CODEOWNERS"]),
+  dirs: Object.freeze(["workflows", "ISSUE_TEMPLATE"]),
+  files: Object.freeze(["PULL_REQUEST_TEMPLATE.md", "CODEOWNERS", "labels.yml"]),
+  optional: Object.freeze([]),
 });
 
 export const ROOT_FILES = Object.freeze([
@@ -166,7 +173,7 @@ function checkDirectory(root, rel, required, optional, opts, errors) {
     if (!allowed.has(entry)) {
       errors.push(`${rel}/${entry}: unexpected entry (layout drift from CONTEXT_PACK §6)`);
     }
-    if (opts.kebab && !KEBAB_CASE.test(entry)) {
+    if (opts.kebab && !KEBAB_CASE.test(entry) && isDirectory(path.join(abs, entry))) {
       errors.push(`${rel}/${entry}: directory names must be lowercase kebab-case`);
     }
     if (opts.requireDirs && required.includes(entry) && !isDirectory(path.join(abs, entry))) {
@@ -324,6 +331,26 @@ function checkDuplicateNames(members, errors) {
 }
 
 /**
+ * Checks `.github/`: the fixed directories and files exist with the right kind, and
+ * nothing else is there.
+ * @param {string} root
+ * @param {string[]} errors
+ */
+function checkGithubDirectory(root, errors) {
+  const required = [...GITHUB_LAYOUT.dirs, ...GITHUB_LAYOUT.files];
+  const entries = checkDirectory(root, ".github", required, GITHUB_LAYOUT.optional, { requireDirs: false, kebab: false }, errors);
+  for (const entry of entries) {
+    const abs = path.join(root, ".github", entry);
+    if (GITHUB_LAYOUT.dirs.includes(entry) && !isDirectory(abs)) {
+      errors.push(`.github/${entry}: must be a directory`);
+    }
+    if (GITHUB_LAYOUT.files.includes(entry) && isDirectory(abs)) {
+      errors.push(`.github/${entry}: must be a file`);
+    }
+  }
+}
+
+/**
  * Runs every layout check against `root`.
  * @param {string} root
  * @returns {{ ok: boolean, root: string, counts: { apps: number, packages: number }, members: Member[], errors: string[] }}
@@ -354,9 +381,14 @@ export function checkLayout(root) {
   checkDuplicateNames(members, errors);
 
   for (const [rel, expected] of Object.entries(EXPECTED_DIRS)) {
-    checkDirectory(root, rel, expected, [], { requireDirs: true, kebab: true }, errors);
+    const files = EXPECTED_DIR_FILES[/** @type {keyof typeof EXPECTED_DIR_FILES} */ (rel)] ?? [];
+    const entries = checkDirectory(root, rel, expected, files, { requireDirs: true, kebab: true }, errors);
+    for (const file of files) {
+      if (!entries.includes(file)) errors.push(`${rel}/${file}: missing (required by CONTEXT_PACK §6)`);
+      else if (isDirectory(path.join(root, rel, file))) errors.push(`${rel}/${file}: must be a file`);
+    }
   }
-  checkDirectory(root, ".github", GITHUB_LAYOUT.required, GITHUB_LAYOUT.optional, { requireDirs: true, kebab: false }, errors);
+  checkGithubDirectory(root, errors);
 
   return {
     ok: errors.length === 0,

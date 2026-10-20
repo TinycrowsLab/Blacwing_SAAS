@@ -141,15 +141,38 @@ describe("check-layout on fixtures", () => {
     assertError(errors, /docs\/users: unexpected entry/);
   });
 
-  it("allows the optional .github files but rejects unknown entries", () => {
-    writeFileSync(path.join(fixture.root, ".github/CODEOWNERS"), "* @owner\n");
-    writeFileSync(path.join(fixture.root, ".github/PULL_REQUEST_TEMPLATE.md"), "template\n");
+  it("requires the .github templates, CODEOWNERS and labels.yml and rejects unknown entries", () => {
     assert.deepEqual(checkLayout(fixture.root).errors, []);
     writeFileSync(path.join(fixture.root, ".github/random.txt"), "x\n");
     rmSync(path.join(fixture.root, ".github/workflows"), { recursive: true });
+    rmSync(path.join(fixture.root, ".github/CODEOWNERS"));
+    rmSync(path.join(fixture.root, ".github/labels.yml"));
     const { errors } = checkLayout(fixture.root);
     assertError(errors, /\.github\/random\.txt: unexpected entry/);
     assertError(errors, /\.github\/workflows: missing/);
+    assertError(errors, /\.github\/CODEOWNERS: missing/);
+    assertError(errors, /\.github\/labels\.yml: missing/);
+  });
+
+  it("requires docs/labels.md as a file and still rejects other files in fixed directories", () => {
+    rmSync(path.join(fixture.root, "docs/labels.md"));
+    writeFileSync(path.join(fixture.root, "docs/notes.md"), "x\n");
+    let { errors } = checkLayout(fixture.root);
+    assertError(errors, /docs\/labels\.md: missing/);
+    assertError(errors, /docs\/notes\.md: unexpected entry/);
+    mkdirSync(path.join(fixture.root, "docs/labels.md"));
+    ({ errors } = checkLayout(fixture.root));
+    assertError(errors, /docs\/labels\.md: must be a file/);
+  });
+
+  it("rejects .github entries of the wrong kind (file vs directory)", () => {
+    rmSync(path.join(fixture.root, ".github/ISSUE_TEMPLATE"), { recursive: true });
+    writeFileSync(path.join(fixture.root, ".github/ISSUE_TEMPLATE"), "x\n");
+    rmSync(path.join(fixture.root, ".github/PULL_REQUEST_TEMPLATE.md"));
+    mkdirSync(path.join(fixture.root, ".github/PULL_REQUEST_TEMPLATE.md"));
+    const { errors } = checkLayout(fixture.root);
+    assertError(errors, /\.github\/ISSUE_TEMPLATE: must be a directory/);
+    assertError(errors, /\.github\/PULL_REQUEST_TEMPLATE\.md: must be a file/);
   });
 
   it("rejects non-lowercase directory names (case-insensitive filesystems)", () => {

@@ -1,0 +1,174 @@
+# Bug report issue form (FOUND-016, #18). Security vulnerabilities never go here: config.yml
+# routes them to private vulnerability reporting (SECURITY.md). Dropdown values must stay in
+# sync with .github/labels.yml (checked by scripts/check-github.mjs).
+name: Bug report
+description: Something that has already landed does not behave as specified. Not for security vulnerabilities.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Suspected security vulnerability?** Do not file it here. Report it privately as described in
+        [SECURITY.md](https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/SECURITY.md).
+        **Never paste secrets, tokens, session cookies, customer data or exploit payloads**, including in logs.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you file
+      options:
+        - label: This is not a security vulnerability (those go through private vulnerability reporting, see SECURITY.md).
+          required: true
+        - label: I removed secrets, tokens, personal data and customer data from everything below.
+          required: true
+
+  - type: input
+    id: key
+    attributes:
+      label: Key
+      description: >-
+        Key of the issue that introduced or owns the broken behaviour, if known (e.g. EGRESS-004).
+        Triage assigns the bug its own key.
+      placeholder: EGRESS-004
+    validations:
+      required: false
+
+  - type: input
+    id: component
+    attributes:
+      label: Affected component
+      description: App or package path, e.g. `apps/egress-gateway` or `packages/policy`.
+      placeholder: apps/api
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Release version or the commit SHA you reproduced on.
+      placeholder: 0f3c2a1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Local dev stack (pnpm dev:deps)
+        - CI
+        - Staging
+        - Production
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is wrong, in one or two sentences.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps against the local dev stack or a local lab target in `eval/targets`.
+      value: |
+        1.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What should happen, citing the issue or CONTEXT_PACK section that specifies it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and trace IDs
+      description: Redacted structured log lines and the `traceId` from the problem+json error, if any.
+      render: text
+    validations:
+      required: false
+
+  - type: dropdown
+    id: invariants
+    attributes:
+      label: Security invariant affected
+      description: Does the bug weaken a CONTEXT_PACK §8 invariant? If so, triage adds the `security` label and P0.
+      options:
+        - No invariant affected
+        - "§8.1 Signed, unexpired envelope before target traffic"
+        - "§8.2 Egress fails closed"
+        - "§8.3 Destructive class never allowed"
+        - "§8.4 Separation of duties"
+        - "§8.5 Kill switch"
+        - "§8.6 Tenant isolation"
+        - "§8.7 Secrets never reach model, logs or sandbox"
+        - "§8.8 Append-only audit ledger"
+        - "§8.9 Pinned versions"
+        - "§8.10 Ownership verification"
+        - "§8.11 No model-dependent safety"
+      multiple: true
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: >-
+        Suggested priority; triage confirms it and applies the `priority:*` label.
+        P0 = blocks the first end-to-end grey-box run or weakens a §8 invariant.
+      options:
+        - P0
+        - P1
+        - P2
+        - P3
+    validations:
+      required: false
+
+  - type: dropdown
+    id: size
+    attributes:
+      label: Size
+      description: Fix estimate if known (XS < 2h, S <= 0.5d, M <= 1d, L <= 2d). Applied as the `size:*` label.
+      options:
+        - XS
+        - S
+        - M
+        - L
+    validations:
+      required: false
+
+  - type: input
+    id: features
+    attributes:
+      label: Features
+      description: Affected feature IDs from docs/architecture/FEATURE_LIST.md, comma-separated, or `none`.
+      placeholder: F11
+    validations:
+      required: false
+
+  - type: input
+    id: depends_on
+    attributes:
+      label: Depends on
+      description: Issues that must land before this can be fixed, as keys or numbers, comma-separated, or `none`.
+      placeholder: "#42"
+    validations:
+      required: false

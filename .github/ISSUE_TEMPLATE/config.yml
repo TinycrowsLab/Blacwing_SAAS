@@ -1,0 +1,13 @@
+# Issue chooser configuration (FOUND-016, #18). Blank issues are disabled so every issue
+# carries the metadata the backlog tooling relies on (task.yml, bug.yml).
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/TinycrowsLab/Blacwing_SAAS/security/advisories/new
+    about: Report suspected vulnerabilities privately (SECURITY.md). Never in a public issue, discussion or PR.
+  - name: Architecture and conventions
+    url: https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/docs/architecture/CONTEXT_PACK.md
+    about: Read the Context Pack (stack, layout, security invariants, Definition of Done) before proposing work.
+  - name: Label catalogue
+    url: https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/docs/labels.md
+    about: What each label means and when to apply it.
