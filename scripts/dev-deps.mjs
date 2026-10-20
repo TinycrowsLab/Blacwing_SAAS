@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Local dependency stack driver (DEVENV-002, #156).
 //
-//   node scripts/dev-deps.mjs up              # `pnpm dev:deps`: create .env if missing, start + wait healthy
-//   node scripts/dev-deps.mjs reset --yes     # `pnpm dev:deps:reset`: drop the stack AND its volumes
+//   node scripts/dev-deps.mjs up              # `pnpm dev:deps`: create .env if missing, start, wait healthy,
+//                                             #   run the bootstraps in order (DEVENV-010, dev-orchestrate.mjs)
+//   node scripts/dev-deps.mjs reset --yes     # `pnpm dev:deps:reset`: drop the stack AND its volumes, recreate
 //   node scripts/dev-deps.mjs obs             # `pnpm dev:deps:obs`: core stack + the opt-in `obs` profile (DEVENV-009)
 //   node scripts/dev-deps.mjs tls             # `pnpm dev:tls`: mkcert certs + Traefik HTTPS proxy (DEVENV-013)
 //   node scripts/dev-deps.mjs config          # validate/render the compose file
@@ -13,9 +14,18 @@
 
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import {
+  DEFAULT_LOCK_FILE,
+  DevDepsError,
+  acquireLock,
+  orchestrateUp,
+  realDeps,
+} from './dev-orchestrate.mjs';
+import { composeRunner, envSecrets } from './wait-for-health.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const COMPOSE_FILE = path.join(ROOT, 'infra/compose/docker-compose.dev.yml');
@@ -142,31 +152,50 @@ function compose(args, envFile) {
   );
 }
 
+/**
+ * `.env` values with the shell environment on top (compose precedence), for ports and log scrubbing.
+ * @param {string} envFile
+ * @returns {Record<string, string | undefined>}
+ */
+function stackEnv(envFile) {
+  const fileEnv = existsSync(envFile) ? parseEnv(readFileSync(envFile, 'utf8')) : {};
+  return { ...fileEnv, ...process.env };
+}
+
+/**
+ * @param {string} envFile
+ * @param {{ profiles?: string[], extraServices?: string[] }} [opts]
+ */
+async function orchestrate(envFile, opts = {}) {
+  const added = ensureEnv(envFile);
+  if (added.length > 0) process.stdout.write(`.env: added ${String(added.length)} keys\n`);
+  const deps = realDeps(
+    composeRunner(envFile),
+    waitForHttp,
+    envSecrets(envFile),
+    stackEnv(envFile),
+  );
+  await orchestrateUp(deps, opts);
+}
+
 /** @param {string[]} argv */
 export async function main(argv) {
   const [cmd = 'up', ...rest] = argv;
   const envFile = path.join(ROOT, '.env');
   if (cmd === 'up') {
-    const added = ensureEnv(envFile);
-    if (added.length > 0) process.stdout.write(`.env: added ${String(added.length)} keys\n`);
-    compose(['up', '-d', '--wait', '--wait-timeout', '300', ...rest], envFile);
+    // DEVENV-010: core services -> wait healthy -> ordered bootstraps (scripts/dev-orchestrate.mjs).
+    await orchestrate(envFile);
     return 0;
   }
   if (cmd === 'obs') {
-    // DEVENV-009: opt-in observability profile. Compose has no healthcheck for the collector (scratch image)
-    // or Tempo (no shell), so readiness is polled over their published loopback ports.
-    const added = ensureEnv(envFile);
-    if (added.length > 0) process.stdout.write(`.env: added ${String(added.length)} keys\n`);
-    compose(['--profile', 'obs', 'up', '-d', '--wait', '--wait-timeout', '300', ...rest], envFile);
-    // Port overrides live in .env (read by compose), so honour them here too; the shell env wins.
-    /** @type {Record<string, string>} */
-    const fileEnv = {};
-    for (const line of readFileSync(envFile, 'utf8').split('\n')) {
-      const m = /^([A-Z0-9_]+)=(.*)$/.exec(line);
-      if (m?.[1] && m[2]) fileEnv[m[1]] = m[2];
-    }
-    const port = (/** @type {string} */ key, /** @type {string} */ dflt) =>
-      process.env[key] ?? fileEnv[key] ?? dflt;
+    // DEVENV-009: the core bring-up plus the opt-in observability profile. Compose has no healthcheck for
+    // the collector (scratch image) or Tempo (no shell), so readiness is polled over their loopback ports.
+    await orchestrate(envFile, { profiles: ['obs'], extraServices: [...OBS_SERVICES] });
+    const env = stackEnv(envFile);
+    const port = (/** @type {string} */ key, /** @type {string} */ dflt) => {
+      const v = env[key];
+      return v === undefined || v === '' ? dflt : v;
+    };
     await waitForHttp(`http://127.0.0.1:${port('BW_DEV_OTEL_HEALTH_PORT', '13133')}/`);
     await waitForHttp(`http://127.0.0.1:${port('BW_DEV_TEMPO_PORT', '13200')}/ready`);
     process.stdout.write(
@@ -193,12 +222,22 @@ export async function main(argv) {
   if (cmd === 'reset') {
     if (!rest.includes('--yes')) {
       process.stderr.write(
-        'dev:deps:reset drops the shared bwdev stack AND its volumes (pgdata incl. Keycloak, valkeydata, neo4jdata, miniodata, openbaodata).\n' +
+        'dev:deps:reset drops the shared bwdev stack AND its volumes (pgdata incl. Keycloak, valkeydata, neo4jdata, miniodata, openbaodata),\n' +
+          'then recreates it from scratch with every bootstrap.\n' +
           'Re-run with --yes: pnpm dev:deps:reset --yes\n',
       );
       return 2;
     }
-    compose(['--profile', 'obs', 'down', '-v', '--remove-orphans'], envFile);
+    // Under the same lock as `up`, so a reset never races a running bring-up.
+    const release = acquireLock(DEFAULT_LOCK_FILE);
+    try {
+      compose(['--profile', 'obs', 'down', '-v', '--remove-orphans'], envFile);
+      // OpenBao's app token / init state live outside the volumes; a fresh OpenBao must issue new ones.
+      rmSync(path.join(ROOT, '.bw-dev/openbao'), { recursive: true, force: true });
+    } finally {
+      release();
+    }
+    await orchestrate(envFile);
     return 0;
   }
   process.stderr.write(`unknown command: ${cmd} (expected up | obs | tls | config | reset)\n`);
@@ -209,8 +248,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   try {
     process.exitCode = await main(process.argv.slice(2));
   } catch (error) {
-    const status = /** @type {{ status?: number }} */ (error).status;
-    process.stderr.write(`dev-deps: docker compose failed (exit ${String(status ?? 1)})\n`);
+    if (error instanceof DevDepsError) {
+      process.stderr.write(
+        `dev-deps: ${error.message}\n${error.hint ? `hint: ${error.hint}\n` : ''}`,
+      );
+    } else {
+      const status = /** @type {{ status?: number }} */ (error).status;
+      process.stderr.write(`dev-deps: docker compose failed (exit ${String(status ?? 1)})\n`);
+    }
     process.exitCode = 1;
   }
 }

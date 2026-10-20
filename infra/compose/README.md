@@ -402,6 +402,43 @@ trail. The bootstrap fails if no audit device is enabled.
 Small values (tokens, connector credentials) can use `transit/encrypt` / `transit/decrypt` directly. Plaintext
 secrets never go into logs, the model or a sandbox (§8.7).
 
+## Orchestration: `pnpm dev:deps`, `pnpm dev:doctor`, `pnpm dev` (DEVENV-010)
+
+`pnpm dev:deps` (`scripts/dev-deps.mjs` → `scripts/dev-orchestrate.mjs`) brings the stack up in a fixed order and
+exits 0 only when everything is ready:
+
+1. **Preflight**: `docker info` must answer (otherwise: start Docker, see
+   [`docs/runbooks/dev-host-bootstrap.md`](../../docs/runbooks/dev-host-bootstrap.md)); it warns when Docker has
+   less than 6 GiB memory or 2 CPUs.
+2. **Lock**: a host-wide lockfile (`$TMPDIR/bwdev-dev-deps.lock`, holding the pid) stops two runs (from any
+   worktree) from overlapping. A lock left by a killed run (dead pid) is taken over.
+3. **Core services**: `docker compose up -d` of postgres, valkey, neo4j, minio, openbao, mailpit, interactsh,
+   temporal and temporal-ui, then `scripts/wait-for-health.mjs` polls `docker compose ps` until each is healthy,
+   printing a per-service table.
+4. **Bootstraps, strictly in order**, each gated on its own service: Neo4j tenant guard + indexes (re-applied
+   and re-verified) → OpenBao transit (`infra/compose/openbao/bootstrap.sh`) → MinIO buckets (`minio-init`) →
+   Temporal namespace (`temporal-bootstrap`) → Keycloak (`keycloak-db`, then realm import; the run checks that
+   `/realms/blackwing-dev` is served).
+
+A service that turns `unhealthy`, a job that exits non-zero, or a timeout (300 s per gate) fails fast. The error
+names the service, prints its last 30 log lines (credential-looking lines and `.env` secret values are redacted),
+and suggests `pnpm dev:deps:reset --yes` for volumes left over from an older schema. Every step is idempotent, so
+re-running `pnpm dev:deps` is safe, including after it was killed mid-bootstrap.
+
+| Command | Does |
+|---|---|
+| `pnpm dev:deps` | Ordered bring-up above. |
+| `pnpm dev:deps:obs` | The same, plus `--profile obs` (DEVENV-009). |
+| `pnpm dev:deps:reset --yes` | `down -v` (drops every volume of the shared stack and `.bw-dev/openbao`), then the full bring-up. |
+| `pnpm dev:doctor` | `.env` keys missing or empty versus `.env.example`, the health of every service and bootstrap job, and the loopback endpoints. Names and URLs only, never values. Exit 0 healthy, 1 problems, 2 Docker unreachable. |
+| `pnpm dev` | `pnpm dev:doctor`, then `turbo run dev --parallel` (apps with hot reload). |
+| `node scripts/wait-for-health.mjs [--timeout s] [--one-shot job] svc…` | The health waiter on its own. |
+
+Integration check (manual, on a host with no other user of the `bwdev` stack, because reset drops shared
+volumes): `pnpm dev:deps && pnpm dev:doctor && pnpm dev:deps && pnpm dev:deps:reset --yes && pnpm dev:doctor`.
+The unit tests (`scripts/dev-orchestrate.test.mjs`) cover the ordering, waiting, lock and failure paths against
+a mocked compose.
+
 ## Troubleshooting
 
 - **Token validation fails with `iat`/`exp`/`nbf` errors (clock skew):** containers share the host kernel clock, so

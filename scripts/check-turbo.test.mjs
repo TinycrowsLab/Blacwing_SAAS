@@ -199,7 +199,7 @@ describe('check-turbo against this repository', () => {
       test: 'turbo run test',
       'test:int': 'turbo run test:int',
       'test:e2e': 'turbo run test:e2e',
-      dev: 'turbo run dev --parallel',
+      dev: 'node scripts/dev-doctor.mjs && turbo run dev --parallel',
     });
     for (const [name, command] of Object.entries(ROOT_TURBO_SCRIPTS))
       assert.equal(scripts[name], command);
@@ -405,7 +405,10 @@ describe('checkRootScripts / checkGitignore / checkPackageConfigs', () => {
     delete (/** @type {Record<string, string>} */ (manifest.scripts).dev);
     const errors = checkRootScripts(manifest);
     assertError(errors, /"scripts\.test" must be "turbo run test"/);
-    assertError(errors, /"scripts\.dev" must be "turbo run dev --parallel"/);
+    assertError(
+      errors,
+      /"scripts\.dev" must be "node scripts\/dev-doctor\.mjs && turbo run dev --parallel"/,
+    );
   });
 
   it('requires an exact turbo 2.x pin', () => {

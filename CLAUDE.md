@@ -53,8 +53,8 @@ Pack §6 is the full layout. Adding or removing an app, package or fixed directo
 | Command | Does |
 |---|---|
 | `pnpm install` | Installs the workspace. The preinstall hook checks the repo layout; `prepare` installs the git hooks (Husky: lint-staged, commitlint, pre-push typecheck; `HUSKY=0` skips them). |
-| `pnpm dev:deps` | Starts the local dependency stack (`infra/compose/docker-compose.dev.yml`, compose project `bwdev`). |
-| `pnpm dev` | Runs the apps with hot reload against that stack. |
+| `pnpm dev:deps` | Starts the local dependency stack (`infra/compose/docker-compose.dev.yml`, compose project `bwdev`), waits until it is healthy and runs every bootstrap in order. `pnpm dev:deps:reset --yes` drops its volumes and recreates it. |
+| `pnpm dev` | Runs the apps with hot reload against that stack, after `pnpm dev:doctor` (health, endpoints, missing `.env` keys) passes. |
 | `pnpm test` | Unit tests (Vitest) and the `scripts/` self-tests. |
 | `pnpm test:int` | Integration tests (Testcontainers, random ports). |
 | `pnpm test:e2e` | Playwright e2e tests against the compose stack and a local Juice Shop. |

@@ -37,7 +37,8 @@ export const ROOT_TURBO_SCRIPTS = Object.freeze({
   test: 'turbo run test',
   'test:int': 'turbo run test:int',
   'test:e2e': 'turbo run test:e2e',
-  dev: 'turbo run dev --parallel',
+  // DEVENV-010: `pnpm dev` asserts the dependency stack is healthy (dev:doctor) before starting apps.
+  dev: 'node scripts/dev-doctor.mjs && turbo run dev --parallel',
 });
 
 export const REQUIRED_TASKS = Object.freeze(Object.keys(ROOT_TURBO_SCRIPTS));
