@@ -1,0 +1,60 @@
+# OpenTelemetry Collector for the dev `obs` profile (DEVENV-009): the single OTLP ingest point.
+# It only TRANSPORTS telemetry. Secrets/PII are redacted upstream in packages/logger (CONTEXT_PACK 8.7);
+# the redaction processor below is defence in depth for traces and must never be relied on instead.
+# Dev only: no external egress; every exporter targets a service on the bw-dev network.
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 400
+    spike_limit_mib: 100
+  redaction:
+    allow_all_keys: true
+    blocked_values:
+      - 'Bearer [A-Za-z0-9._~+/=-]{8,}'
+      - 'sk-ant-[A-Za-z0-9_-]{8,}'
+      - 'AKIA[0-9A-Z]{16}'
+  batch:
+    timeout: 1s
+
+exporters:
+  # Metrics: Prometheus scrapes this endpoint (job `otel-collector`).
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true
+  # Logs: Loki's native OTLP ingest.
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+  # Traces: Tempo OTLP gRPC.
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+service:
+  extensions: [health_check]
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/loki]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, redaction, batch]
+      exporters: [otlp/tempo]

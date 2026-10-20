@@ -1,0 +1,71 @@
+{
+  "uid": "bw-overview",
+  "title": "Blackwing overview (starter)",
+  "tags": ["blackwing", "starter"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Scrape targets up",
+      "gridPos": { "h": 5, "w": 8, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "bw-prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(up)" }]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Service health (up by job)",
+      "gridPos": { "h": 5, "w": 16, "x": 8, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "bw-prometheus" },
+      "targets": [{ "refId": "A", "expr": "up", "legendFormat": "{{job}}" }]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Runs started (placeholder: bw_runs_started_total)",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "bw-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service_name) (rate(bw_runs_started_total[5m]))",
+          "legendFormat": "{{service_name}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Agent sessions (placeholder: bw_agent_sessions_total)",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "bw-prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service_name) (rate(bw_agent_sessions_total[5m]))",
+          "legendFormat": "{{service_name}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "logs",
+      "title": "Recent logs (all services)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "loki", "uid": "bw-loki" },
+      "targets": [{ "refId": "A", "expr": "{service_name=~\".+\"}" }]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Recent traces",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "tempo", "uid": "bw-tempo" },
+      "targets": [{ "refId": "A", "queryType": "traceql", "query": "{}" }]
+    }
+  ]
+}

@@ -20,6 +20,7 @@ const DUMMY_ENV = {
   BW_DEV_MINIO_ROOT_PASSWORD: 'x-minio-root',
   BW_DEV_MINIO_APP_PASSWORD: 'x-minio-app-secret',
   BW_DEV_INTERACTSH_TOKEN: 'x-interactsh-token',
+  BW_DEV_GRAFANA_ADMIN_PASSWORD: 'x-grafana-admin',
 };
 
 /**
@@ -359,12 +360,12 @@ describe('.env handling', () => {
 });
 
 describe('dev-deps CLI', () => {
-  it('edge case: volume from an older schema -> reset needs explicit --yes', () => {
-    assert.equal(main(['reset']), 2);
+  it('edge case: volume from an older schema -> reset needs explicit --yes', async () => {
+    assert.equal(await main(['reset']), 2);
   });
 
-  it('rejects unknown commands', () => {
-    assert.equal(main(['explode']), 2);
+  it('rejects unknown commands', async () => {
+    assert.equal(await main(['explode']), 2);
   });
 
   it('compose-smoke parses its arguments', () => {

@@ -3,6 +3,7 @@
 //
 //   node scripts/dev-deps.mjs up              # `pnpm dev:deps`: create .env if missing, start + wait healthy
 //   node scripts/dev-deps.mjs reset --yes     # `pnpm dev:deps:reset`: drop the stack AND its volumes
+//   node scripts/dev-deps.mjs obs             # `pnpm dev:deps:obs`: core stack + the opt-in `obs` profile (DEVENV-009)
 //   node scripts/dev-deps.mjs tls             # `pnpm dev:tls`: mkcert certs + Traefik HTTPS proxy (DEVENV-013)
 //   node scripts/dev-deps.mjs config          # validate/render the compose file
 //
@@ -20,6 +21,15 @@ export const COMPOSE_FILE = path.join(ROOT, 'infra/compose/docker-compose.dev.ym
 export const PROJECT = 'bwdev';
 export const SETUP_TLS = path.join(ROOT, 'infra/compose/tls/setup-tls.sh');
 const PASSWORD_BYTES = 16;
+const POLL_INTERVAL_MS = 1000;
+/** Services of the opt-in `obs` compose profile (DEVENV-009). `pnpm dev:deps` never starts them. */
+export const OBS_SERVICES = Object.freeze([
+  'otel-collector',
+  'prometheus',
+  'loki',
+  'tempo',
+  'grafana',
+]);
 
 /**
  * Fills empty password and token entries of an env template with random hex values.
@@ -81,6 +91,24 @@ export function ensureEnv(envFile = path.join(ROOT, '.env')) {
 }
 
 /**
+ * Polls `url` until it answers 2xx (for services whose image has no shell to run a healthcheck in).
+ * @param {string} url
+ * @param {number} timeoutMs
+ */
+export async function waitForHttp(url, timeoutMs = 120_000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    try {
+      if ((await fetch(url)).ok) return;
+    } catch {
+      // not up yet
+    }
+    if (Date.now() > deadline) throw new Error(`timed out waiting for ${url}`);
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+  }
+}
+
+/**
  * @param {string[]} args
  * @param {string} envFile
  */
@@ -95,13 +123,28 @@ function compose(args, envFile) {
 }
 
 /** @param {string[]} argv */
-export function main(argv) {
+export async function main(argv) {
   const [cmd = 'up', ...rest] = argv;
   const envFile = path.join(ROOT, '.env');
   if (cmd === 'up') {
     const added = ensureEnv(envFile);
     if (added.length > 0) process.stdout.write(`.env: added ${String(added.length)} keys\n`);
     compose(['up', '-d', '--wait', '--wait-timeout', '300', ...rest], envFile);
+    return 0;
+  }
+  if (cmd === 'obs') {
+    // DEVENV-009: opt-in observability profile. Compose has no healthcheck for the collector (scratch image)
+    // or Tempo (no shell), so readiness is polled over their published loopback ports.
+    const added = ensureEnv(envFile);
+    if (added.length > 0) process.stdout.write(`.env: added ${String(added.length)} keys\n`);
+    compose(['--profile', 'obs', 'up', '-d', '--wait', '--wait-timeout', '300', ...rest], envFile);
+    const port = (/** @type {string} */ key, /** @type {string} */ dflt) =>
+      process.env[key] ?? dflt;
+    await waitForHttp(`http://127.0.0.1:${port('BW_DEV_OTEL_HEALTH_PORT', '13133')}/`);
+    await waitForHttp(`http://127.0.0.1:${port('BW_DEV_TEMPO_PORT', '13200')}/ready`);
+    process.stdout.write(
+      'obs profile ready: Grafana http://127.0.0.1:13001, OTLP http://127.0.0.1:14318\n',
+    );
     return 0;
   }
   if (cmd === 'tls') {
@@ -127,16 +170,16 @@ export function main(argv) {
       );
       return 2;
     }
-    compose(['down', '-v', '--remove-orphans'], envFile);
+    compose(['--profile', 'obs', 'down', '-v', '--remove-orphans'], envFile);
     return 0;
   }
-  process.stderr.write(`unknown command: ${cmd} (expected up | tls | config | reset)\n`);
+  process.stderr.write(`unknown command: ${cmd} (expected up | obs | tls | config | reset)\n`);
   return 2;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    process.exitCode = main(process.argv.slice(2));
+    process.exitCode = await main(process.argv.slice(2));
   } catch (error) {
     const status = /** @type {{ status?: number }} */ (error).status;
     process.stderr.write(`dev-deps: docker compose failed (exit ${String(status ?? 1)})\n`);

@@ -274,6 +274,8 @@ services:
       # The blackwing-dev namespace is created by `temporal-bootstrap`, not here.
       SKIP_DEFAULT_NAMESPACE_CREATION: 'true'
       LOG_LEVEL: ${BW_DEV_TEMPORAL_LOG_LEVEL:-info}
+      # Server metrics for the `obs` profile's Prometheus (not published to the host).
+      PROMETHEUS_ENDPOINT: 0.0.0.0:8000
     ports:
       - '127.0.0.1:${BW_DEV_TEMPORAL_PORT:-17233}:7233'
     healthcheck:
@@ -593,6 +595,121 @@ services:
       retries: 12
       start_period: 30s
 
+  # --- Observability profile `obs` (DEVENV-009): opt-in, `pnpm dev:deps:obs`. Not started by `pnpm dev:deps`.
+  # The collector is the single OTLP ingest point (grpc 14317 / http 14318); it fans out to Prometheus
+  # (scrape), Loki (OTLP logs) and Tempo (OTLP traces). Dev only, loopback ports, no external egress.
+  # RAM: about 1.5 GB for the five services together (limits below).
+  otel-collector:
+    <<: *defaults
+    image: otel/opentelemetry-collector-contrib:0.116.1@sha256:d0ebf65280da2e1b1491d1b93648281afd353d4b9ea19160090303cec9a233bd
+    profiles: [obs]
+    # The config is validated at startup: a bad config exits non-zero and the container restarts loudly.
+    command: ['--config=/etc/otelcol/config.yaml']
+    depends_on:
+      loki: { condition: service_healthy }
+      tempo: { condition: service_started }
+    ports:
+      - '127.0.0.1:${BW_DEV_OTEL_GRPC_PORT:-14317}:4317'
+      - '127.0.0.1:${BW_DEV_OTEL_HTTP_PORT:-14318}:4318'
+      - '127.0.0.1:${BW_DEV_OTEL_HEALTH_PORT:-13133}:13133'
+    volumes:
+      - ./obs/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    # The image is scratch (no shell/wget): readiness is the health_check extension on :13133, polled by
+    # `pnpm dev:deps:obs` and the obs smoke test.
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 512m }
+
+  prometheus:
+    <<: *defaults
+    image: prom/prometheus:v3.1.0@sha256:6559acbd5d770b15bb3c954629ce190ac3cbbdb2b7f1c30f0385c4e05104e218
+    profiles: [obs]
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=3d'
+    ports:
+      - '127.0.0.1:${BW_DEV_PROMETHEUS_PORT:-19090}:9090'
+    volumes:
+      - ./obs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:9090/-/ready']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    deploy:
+      resources:
+        limits: { cpus: '1', memory: 384m }
+
+  loki:
+    <<: *defaults
+    image: grafana/loki:3.3.2@sha256:8af2de1abbdd7aa92b27c9bcc96f0f4140c9096b507c77921ffddf1c6ad6c48f
+    profiles: [obs]
+    command: ['-config.file=/etc/loki/loki.yaml']
+    ports:
+      - '127.0.0.1:${BW_DEV_LOKI_PORT:-13100}:3100'
+    volumes:
+      - ./obs/loki.yaml:/etc/loki/loki.yaml:ro
+      - lokidata:/loki
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:3100/ready']
+      interval: 5s
+      timeout: 3s
+      retries: 18
+      start_period: 15s
+    deploy:
+      resources:
+        limits: { cpus: '1', memory: 384m }
+
+  tempo:
+    <<: *defaults
+    image: grafana/tempo:2.7.1@sha256:4443be217c396b065ee34845534199c36fdba4dc619cb96550e228d73fba6e69
+    profiles: [obs]
+    command: ['-config.file=/etc/tempo/tempo.yaml']
+    ports:
+      - '127.0.0.1:${BW_DEV_TEMPO_PORT:-13200}:3200'
+    volumes:
+      - ./obs/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempodata:/var/tempo
+    # Tempo's image has no shell/wget: its readiness (/ready) is probed by the obs smoke test over the
+    # published port.
+    deploy:
+      resources:
+        limits: { cpus: '1', memory: 384m }
+
+  grafana:
+    <<: *defaults
+    image: grafana/grafana:11.4.0@sha256:d8ea37798ccc41061a62ab080f2676dda6bf7815558499f901bdb0f533a456fb
+    profiles: [obs]
+    depends_on:
+      prometheus: { condition: service_healthy }
+      loki: { condition: service_healthy }
+    environment:
+      GF_SECURITY_ADMIN_USER: ${BW_DEV_GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${BW_DEV_GRAFANA_ADMIN_PASSWORD:?set BW_DEV_GRAFANA_ADMIN_PASSWORD in .env (pnpm dev:deps creates it)}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: 'false'
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/blackwing-overview.json
+    ports:
+      - '127.0.0.1:${BW_DEV_GRAFANA_PORT:-13001}:3000'
+    volumes:
+      - ./obs/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./obs/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:3000/api/health']
+      interval: 5s
+      timeout: 3s
+      retries: 18
+      start_period: 15s
+    deploy:
+      resources:
+        limits: { cpus: '1', memory: 384m }
+
 networks:
   bw-dev:
     name: bw-dev
@@ -608,3 +725,7 @@ volumes:
   valkeydata:
   neo4jdata:
   miniodata:
+  promdata:
+  lokidata:
+  tempodata:
+  grafanadata:

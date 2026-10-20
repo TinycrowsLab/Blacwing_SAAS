@@ -1,0 +1,10 @@
+# Intentionally invalid: pipeline references an exporter that is not defined.
+receivers:
+  otlp:
+    protocols:
+      grpc: {}
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [does-not-exist]

@@ -1,7 +1,7 @@
 # Local dependency stack (`docker-compose.dev.yml`)
 
 The dev stack every app and integration test talks to. DEVENV-002 (#156) adds the skeleton and the core data
-services. Keycloak, OpenBao, Temporal and the `obs` profile arrive with their own
+services. Keycloak and OpenBao arrive with their own
 issues and join the same file, network and project.
 
 ```bash
@@ -228,6 +228,47 @@ Override a host port with `BW_TARGET_<NAME>_PORT` in `.env` if it collides. The 
 to loopback in browsers; TLS for them arrives with DEVENV-013. The crAPI sidecars use the upstream public demo
 defaults (throwaway training values, not Blackwing secrets). Targeting stays gated by a verified asset and an
 active standing authorisation even in dev (§8.1, §8.10).
+
+### Observability profile `obs` (DEVENV-009)
+
+Opt-in: `pnpm dev:deps:obs` starts the core stack plus the OTel Collector, Prometheus, Loki, Tempo and Grafana
+(compose profile `obs`). `pnpm dev:deps` never starts them. `pnpm dev:deps:reset --yes` drops their volumes too,
+and `pnpm dev:deps:obs:smoke` proves the pipeline end to end.
+
+| Service | Host port (env) | Role |
+|---|---|---|
+| OTel Collector | 14317 gRPC / 14318 HTTP (`BW_DEV_OTEL_GRPC_PORT`, `BW_DEV_OTEL_HTTP_PORT`), 13133 health | Single OTLP ingest point |
+| Prometheus | 19090 (`BW_DEV_PROMETHEUS_PORT`) | Metrics. Scrapes the collector, MinIO, Temporal, Loki, Tempo |
+| Loki | 13100 (`BW_DEV_LOKI_PORT`) | Logs, via the collector's OTLP exporter |
+| Tempo | 13200 (`BW_DEV_TEMPO_PORT`) | Traces, via the collector's OTLP exporter |
+| Grafana | http://127.0.0.1:13001 (`BW_DEV_GRAFANA_PORT`) | `admin` / `BW_DEV_GRAFANA_ADMIN_PASSWORD` from `.env` |
+
+- **Send telemetry from an app:** `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318` (OTLP/HTTP, already in
+  `.env.example`); for gRPC use `http://127.0.0.1:14317` with `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`. Apps go through
+  `packages/telemetry` and `packages/logger`; set `OTEL_SERVICE_NAME` so panels can group by `service_name`.
+- **Claude Code telemetry** (agent-runtime, or a dev session): `CLAUDE_CODE_ENABLE_TELEMETRY=1`,
+  `OTEL_METRICS_EXPORTER=otlp`, `OTEL_LOGS_EXPORTER=otlp`, `OTEL_EXPORTER_OTLP_PROTOCOL=http/json` (or
+  `http/protobuf`) and the same `OTEL_EXPORTER_OTLP_ENDPOINT`.
+- **Grafana** opens on the provisioned "Blackwing overview (starter)" dashboard (folder Blackwing) with Prometheus,
+  Loki and Tempo datasources. To add a panel, edit
+  `infra/compose/obs/grafana/dashboards/blackwing-overview.json` (or build it in the UI, export the JSON, and commit
+  it; provisioned dashboards are read-only in the UI). The run and agent-session panels are placeholders for
+  `bw_runs_started_total` and `bw_agent_sessions_total` until the apps emit them. To scrape a new target, add a job to
+  `infra/compose/obs/prometheus.yml`.
+- **RAM:** about 1.5 GB of limits across the five services (collector 512 MB, the rest 384 MB each). Skip the
+  profile on a tight host. Container logs: `docker compose -p bwdev -f infra/compose/docker-compose.dev.yml --profile obs logs -f otel-collector`.
+- **Health:** Prometheus, Loki and Grafana have compose healthchecks. The collector and Tempo images have no shell,
+  so `pnpm dev:deps:obs` polls `http://127.0.0.1:13133/` (collector `health_check`) and Tempo `/ready` after
+  `up --wait`. A collector config error makes the container exit and restart; validate before starting with
+  `docker run --rm -v "$PWD/infra/compose/obs:/o:ro" <collector image> validate --config=/o/otel-collector.yaml`
+  (the unit tests do this).
+- **No secrets or PII in telemetry:** redaction happens upstream in `packages/logger` before export (pack section 8.7).
+  The collector only transports; its `redaction` processor on traces is defence in depth, never a substitute. Do not
+  add collector processors or exporters that copy attributes elsewhere.
+- **Time:** OTLP timestamps are UTC (`packages/time`); a skewed host clock shifts spans and can make Loki reject
+  old samples, so keep WSL time synced.
+- **Dev only:** all ports bind 127.0.0.1, Grafana sign-up and usage reporting are off, and no exporter leaves the
+  `bw-dev` network. Production monitoring and Alertmanager routing belong to INFRA.
 
 ## Troubleshooting
 
