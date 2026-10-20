@@ -165,6 +165,7 @@ services:
     profiles: [tls]
     command: ['--configFile=/etc/traefik/traefik.yml']
     environment:
+      BW_TLS_PUBLIC_HTTPS_PORT: ${BW_DEV_TRAEFIK_HTTPS_PORT:-18443}
       BW_TLS_UPSTREAM_WEB: ${BW_TLS_UPSTREAM_WEB:-http://host.docker.internal:3000}
       BW_TLS_UPSTREAM_API: ${BW_TLS_UPSTREAM_API:-http://host.docker.internal:13400}
       BW_TLS_UPSTREAM_KEYCLOAK: ${BW_TLS_UPSTREAM_KEYCLOAK:-http://keycloak:8080}

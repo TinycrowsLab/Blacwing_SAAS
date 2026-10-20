@@ -1,13 +1,7 @@
 # Traefik static config for the dev TLS proxy (DEVENV-013, #167). Dev only: never use in production.
 entryPoints:
   web:
-    address: ':80'
-    http:
-      redirections:
-        entryPoint:
-          to: websecure
-          scheme: https
-          permanent: false # 302: browsers must not cache a dev redirect
+    address: ':80' # every request is redirected to HTTPS by the `http-to-https` router in dynamic.yml
   websecure:
     address: ':443'
   traefik:

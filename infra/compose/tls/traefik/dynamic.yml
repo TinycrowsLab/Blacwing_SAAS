@@ -11,6 +11,12 @@ tls:
 
 http:
   middlewares:
+    # Redirect to the PUBLISHED HTTPS port (18443 by default), not the container's :443.
+    to-https:
+      redirectScheme:
+        scheme: https
+        port: '{{ env "BW_TLS_PUBLIC_HTTPS_PORT" | default "18443" }}'
+        permanent: false # 302: browsers must not cache a dev redirect
     # No HSTS on purpose: it would pin *.localhost to HTTPS in the developer's browser for every project.
     dev-headers:
       headers:
@@ -19,6 +25,11 @@ http:
         customRequestHeaders:
           X-Forwarded-Proto: https
   routers:
+    http-to-https:
+      rule: PathPrefix(`/`)
+      entryPoints: [web]
+      service: noop@internal
+      middlewares: [to-https]
     app:
       rule: Host(`app.bw.localhost`)
       entryPoints: [websecure]

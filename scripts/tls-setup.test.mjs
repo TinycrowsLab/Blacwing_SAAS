@@ -348,6 +348,8 @@ describe(
           '-p',
           '127.0.0.1::80',
           '-e',
+          'BW_TLS_PUBLIC_HTTPS_PORT=18443',
+          '-e',
           `BW_TLS_UPSTREAM_WEB=${up('web')}`,
           '-e',
           `BW_TLS_UPSTREAM_API=${up('api')}`,
@@ -423,7 +425,7 @@ describe(
       assert.equal(/** @type {{ status: number }} */ (status).status, 302);
       assert.match(
         String(/** @type {{ location: string }} */ (status).location),
-        /^https:\/\/app\.bw\.localhost/,
+        /^https:\/\/app\.bw\.localhost:18443\//,
       );
     });
   },
