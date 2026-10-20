@@ -19,8 +19,12 @@ export type IntrusivenessClassId = (typeof INTRUSIVENESS_CLASS_IDS)[number];
 export interface DecisionContext {
   readonly envelope: Envelope;
   readonly intrusiveness: Intrusiveness;
+  readonly isMetadata: boolean;
+  readonly isPrivateRange: boolean;
   readonly nowUtc: CedarDatetime;
+  readonly pinnedScopeHash: string;
   readonly reversalJournalPresent: boolean;
+  readonly saIncludesRange: boolean;
   readonly tenantId: string;
   readonly windowOpen: boolean;
 }
@@ -39,9 +43,13 @@ export interface GateDecideContext {
   readonly envelope: Envelope;
   readonly gate: string;
   readonly intrusiveness: Intrusiveness;
+  readonly isMetadata: boolean;
+  readonly isPrivateRange: boolean;
   readonly nowUtc: CedarDatetime;
+  readonly pinnedScopeHash: string;
   readonly requestedBy: string;
   readonly reversalJournalPresent: boolean;
+  readonly saIncludesRange: boolean;
   readonly tenantId: string;
   readonly windowOpen: boolean;
 }
@@ -52,12 +60,32 @@ export interface Intrusiveness {
   readonly rank: number;
 }
 
+/** Cedar common type `Blackwing::ScopeExceptionContext`. */
+export interface ScopeExceptionContext {
+  readonly approverId: string;
+  readonly envelope: Envelope;
+  readonly intrusiveness: Intrusiveness;
+  readonly isMetadata: boolean;
+  readonly isPrivateRange: boolean;
+  readonly nowUtc: CedarDatetime;
+  readonly pinnedScopeHash: string;
+  readonly requestedBy: string;
+  readonly reversalJournalPresent: boolean;
+  readonly saIncludesRange: boolean;
+  readonly tenantId: string;
+  readonly windowOpen: boolean;
+}
+
 /** Cedar common type `Blackwing::ToolInvokeContext`. */
 export interface ToolInvokeContext {
   readonly envelope: Envelope;
   readonly intrusiveness: Intrusiveness;
+  readonly isMetadata: boolean;
+  readonly isPrivateRange: boolean;
   readonly nowUtc: CedarDatetime;
+  readonly pinnedScopeHash: string;
   readonly reversalJournalPresent: boolean;
+  readonly saIncludesRange: boolean;
   readonly tenantId: string;
   readonly toolName: string;
   readonly windowOpen: boolean;
@@ -166,7 +194,7 @@ export interface ActionSignatures {
   'Scope::Action::"requestException"': {
     principal: 'Blackwing::AgentSession';
     resource: 'Blackwing::Target';
-    context: DecisionContext;
+    context: ScopeExceptionContext;
   };
   'Tool::Action::"invoke"': {
     principal: 'Blackwing::AgentSession';
@@ -208,7 +236,7 @@ export const ACTIONS = {
   'Scope::Action::"requestException"': {
     principalTypes: ['Blackwing::AgentSession'],
     resourceTypes: ['Blackwing::Target'],
-    context: 'DecisionContext',
+    context: 'ScopeExceptionContext',
   },
   'Tool::Action::"invoke"': {
     principalTypes: ['Blackwing::AgentSession'],
@@ -219,11 +247,12 @@ export const ACTIONS = {
 
 /** Attribute names of every entity type and record common type (sorted). */
 export const SCHEMA_ATTRIBUTES = {
-  DecisionContext: ['envelope', 'intrusiveness', 'nowUtc', 'reversalJournalPresent', 'tenantId', 'windowOpen'],
+  DecisionContext: ['envelope', 'intrusiveness', 'isMetadata', 'isPrivateRange', 'nowUtc', 'pinnedScopeHash', 'reversalJournalPresent', 'saIncludesRange', 'tenantId', 'windowOpen'],
   Envelope: ['expiresAt', 'maxIntrusiveness', 'saId', 'scopeHash', 'validFrom'],
-  GateDecideContext: ['envelope', 'gate', 'intrusiveness', 'nowUtc', 'requestedBy', 'reversalJournalPresent', 'tenantId', 'windowOpen'],
+  GateDecideContext: ['envelope', 'gate', 'intrusiveness', 'isMetadata', 'isPrivateRange', 'nowUtc', 'pinnedScopeHash', 'requestedBy', 'reversalJournalPresent', 'saIncludesRange', 'tenantId', 'windowOpen'],
   Intrusiveness: ['level', 'rank'],
-  ToolInvokeContext: ['envelope', 'intrusiveness', 'nowUtc', 'reversalJournalPresent', 'tenantId', 'toolName', 'windowOpen'],
+  ScopeExceptionContext: ['approverId', 'envelope', 'intrusiveness', 'isMetadata', 'isPrivateRange', 'nowUtc', 'pinnedScopeHash', 'requestedBy', 'reversalJournalPresent', 'saIncludesRange', 'tenantId', 'windowOpen'],
+  ToolInvokeContext: ['envelope', 'intrusiveness', 'isMetadata', 'isPrivateRange', 'nowUtc', 'pinnedScopeHash', 'reversalJournalPresent', 'saIncludesRange', 'tenantId', 'toolName', 'windowOpen'],
   AgentSessionAttrs: ['egressIdentity', 'intrusivenessCeiling', 'persona', 'runId', 'sessionId', 'tenantId'],
   AssetAttrs: ['assetId', 'tenantId', 'verified'],
   RunAttrs: ['mode', 'runId', 'saId', 'state', 'tenantId'],

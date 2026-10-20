@@ -20,3 +20,22 @@ export {
   type ValidationResult,
 } from './schema.js';
 export * from './schema.types.js';
+export {
+  BASELINE_DIR,
+  BASELINE_ID_PREFIX,
+  BASELINE_SHA256,
+  BASELINE_VERSION,
+  BaselineIntegrityError,
+  loadBaseline,
+  baselineDigest,
+  baselinePin,
+  compilePolicySet,
+  isBaselinePolicyId,
+  loadBaselinePolicies,
+  type Baseline,
+  type BaselineFile,
+  type BaselinePin,
+  type BaselinePolicy,
+  type CompiledPolicySet,
+  type RejectedPolicySet,
+} from './baseline.js';

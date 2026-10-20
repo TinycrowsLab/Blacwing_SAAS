@@ -1,4 +1,4 @@
-// Blackwing Cedar schema (POLICY-001). SCHEMA_VERSION 1.0.0 — keep in sync with
+// Blackwing Cedar schema (POLICY-001). SCHEMA_VERSION 2.0.0 — keep in sync with
 // packages/policy/src/schema-version.ts; any change here must bump that version (see
 // packages/policy/schema/README.md for the evolution rules).
 //
@@ -32,7 +32,12 @@ namespace Blackwing {
     scopeHash: String,
   };
 
-  // Facts available to every decision.
+  // Facts available to every decision. The destination facts are computed in code, never in
+  // Cedar: `isPrivateRange` (RFC 1918 / loopback / link-local / ULA / CGNAT) and `isMetadata`
+  // (cloud instance-metadata endpoints) describe the pinned destination address;
+  // `saIncludesRange` is true only when the signed SA lists that private/metadata range
+  // explicitly; `pinnedScopeHash` is the scope hash pinned on the run (§8.9), which the
+  // baseline compares with `envelope.scopeHash` (anti-tamper).
   type DecisionContext = {
     nowUtc: datetime,
     envelope: Envelope,
@@ -40,6 +45,10 @@ namespace Blackwing {
     reversalJournalPresent: Bool,
     windowOpen: Bool,
     tenantId: String,
+    isPrivateRange: Bool,
+    isMetadata: Bool,
+    saIncludesRange: Bool,
+    pinnedScopeHash: String,
   };
 
   // DecisionContext plus the tool being invoked (Tool::Action::"invoke").
@@ -50,6 +59,10 @@ namespace Blackwing {
     reversalJournalPresent: Bool,
     windowOpen: Bool,
     tenantId: String,
+    isPrivateRange: Bool,
+    isMetadata: Bool,
+    saIncludesRange: Bool,
+    pinnedScopeHash: String,
     toolName: String,
   };
 
@@ -62,8 +75,29 @@ namespace Blackwing {
     reversalJournalPresent: Bool,
     windowOpen: Bool,
     tenantId: String,
+    isPrivateRange: Bool,
+    isMetadata: Bool,
+    saIncludesRange: Bool,
+    pinnedScopeHash: String,
     gate: String,
     requestedBy: String,
+  };
+
+  // DecisionContext plus the two parties of a scope-exception request, so the baseline can
+  // require that the human named to decide it is not the one who raised it (§8.4).
+  type ScopeExceptionContext = {
+    nowUtc: datetime,
+    envelope: Envelope,
+    intrusiveness: Intrusiveness,
+    reversalJournalPresent: Bool,
+    windowOpen: Bool,
+    tenantId: String,
+    isPrivateRange: Bool,
+    isMetadata: Bool,
+    saIncludesRange: Bool,
+    pinnedScopeHash: String,
+    requestedBy: String,
+    approverId: String,
   };
 
   // ---- Principals -------------------------------------------------------------------
@@ -160,7 +194,7 @@ namespace Scope {
   action "requestException" appliesTo {
     principal: [Blackwing::AgentSession],
     resource: [Blackwing::Target],
-    context: Blackwing::DecisionContext,
+    context: Blackwing::ScopeExceptionContext,
   };
 }
 

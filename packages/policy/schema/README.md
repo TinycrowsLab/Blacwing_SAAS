@@ -13,7 +13,7 @@ vectors (POLICY-001, CONTEXT_PACK §3.1 / §5).
 | Resources | `Blackwing::Target`, `Blackwing::TestCase`, `Blackwing::Run`, `Blackwing::Asset` |
 | Enum | `Blackwing::IntrusivenessClass` = `passive`, `active_safe`, `state_changing`, `destructive` (SCOPE-003 order) |
 | Actions | `Egress::Action::"httpRequest"`, `"tcpConnect"`, `"dnsResolve"`; `Tool::Action::"invoke"`; `Scope::Action::"requestException"`; `Policy::Action::"edit"`; `Gate::Action::"decide"` |
-| Context | `Blackwing::DecisionContext` `{ nowUtc, envelope { saId, validFrom, expiresAt, maxIntrusiveness, scopeHash }, intrusiveness, reversalJournalPresent, windowOpen, tenantId }`; `ToolInvokeContext` adds `toolName`; `GateDecideContext` adds `gate`, `requestedBy` |
+| Context | `Blackwing::DecisionContext` `{ nowUtc, envelope { saId, validFrom, expiresAt, maxIntrusiveness, scopeHash }, intrusiveness, reversalJournalPresent, windowOpen, tenantId, isPrivateRange, isMetadata, saIncludesRange, pinnedScopeHash }`; `ToolInvokeContext` adds `toolName`; `GateDecideContext` adds `gate`, `requestedBy`; `ScopeExceptionContext` (for `Scope::Action::"requestException"`) adds `requestedBy`, `approverId` |
 
 Cedar has no subtyping, so "principal" and "resource" are groups of separate entity types; each
 action's `appliesTo` lists the ones it accepts. Every entity also carries `tenantId` so the
@@ -23,6 +23,12 @@ Intrusiveness is a record `{ level: IntrusivenessClass, rank: Long }`. `level` n
 `rank` is its position in the SCOPE-003 order, so the baseline compares ceilings with
 `context.intrusiveness.rank <= context.envelope.maxIntrusiveness.rank`. Build values only with
 `intrusivenessValue()` from `@blackwing/policy`, which derives the rank from the class.
+
+Schema 2.0.0 (POLICY-002) added the destination facts the platform baseline needs:
+`isPrivateRange`, `isMetadata` and `saIncludesRange` (computed in code from the pinned destination
+address and the signed SA) and `pinnedScopeHash` (the run's pinned scope hash, compared with
+`envelope.scopeHash`), plus `ScopeExceptionContext` for separation of duties on scope exceptions.
+The baseline policies live in [`../policies/baseline/`](../policies/baseline/README.md).
 
 ## What Cedar does not do
 

@@ -18,13 +18,13 @@ import type { CedarDatetime, Intrusiveness } from './schema.types.js';
  * type, attribute or action is a minor bump; removing or renaming one, or changing a type, is a
  * major bump that requires a snapshot/version migration. `SCHEMA_SHA256` must change with it.
  */
-export const SCHEMA_VERSION = '1.0.0';
+export const SCHEMA_VERSION = '2.0.0';
 
 /**
  * SHA-256 (hex) of the schema file bytes for `SCHEMA_VERSION`. A contract test recomputes it, so
  * editing the schema without bumping the version (and this digest) fails review-visibly.
  */
-export const SCHEMA_SHA256 = 'ff8726fc978be0da10acc2391b6b325f9158aea3b27fdcc0ef4617abd0722daa';
+export const SCHEMA_SHA256 = '6cc43de6cdc80c1151f35ee1f0c30ffc6bef53a4a53849d52d5c6ee62c1b4d75';
 
 /** Absolute path of the shared Cedar schema (also read by the Go egress gateway's tests). */
 export const BLACKWING_SCHEMA_PATH = fileURLToPath(
@@ -70,19 +70,20 @@ export function validateSchema(schemaText: string = loadBlackwingSchema()): Vali
 }
 
 /**
- * Strictly validates Cedar policy text against the schema. Any parse error, unknown entity type,
+ * Strictly validates Cedar policy text (one policy-set text, or a map of policy id to the text of
+ * exactly one policy, so errors name the ids) against the schema. Any parse error, unknown entity type,
  * action or attribute, or type error makes the result `ok: false`; callers must treat that as a
  * rejected policy (never load it). Validator warnings (e.g. a policy that can never apply because
  * its scope matches no declared action signature) are rejected too: a `forbid` that silently
  * never fires would weaken the baseline.
  */
 export function validatePolicies(
-  policyText: string,
+  policyText: string | Readonly<Record<string, string>>,
   schemaText: string = loadBlackwingSchema(),
 ): ValidationResult {
   const answer = validate({
     schema: schemaText,
-    policies: { staticPolicies: policyText },
+    policies: { staticPolicies: typeof policyText === 'string' ? policyText : { ...policyText } },
     validationSettings: { mode: 'strict' },
   });
   if (answer.type === 'failure') {

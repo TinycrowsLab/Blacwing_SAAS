@@ -44,8 +44,12 @@ const schema = loadBlackwingSchema();
 const BASE_CONTEXT_KEYS = [
   'envelope',
   'intrusiveness',
+  'isMetadata',
+  'isPrivateRange',
   'nowUtc',
+  'pinnedScopeHash',
   'reversalJournalPresent',
+  'saIncludesRange',
   'tenantId',
   'windowOpen',
 ] as const;
@@ -103,6 +107,10 @@ function httpContext(): DecisionContext {
     reversalJournalPresent: false,
     windowOpen: true,
     tenantId: 'ten_a',
+    isPrivateRange: false,
+    isMetadata: false,
+    saIncludesRange: false,
+    pinnedScopeHash: 'sha256:00',
   };
 }
 
