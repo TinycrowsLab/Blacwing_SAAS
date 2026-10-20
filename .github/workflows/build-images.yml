@@ -3,7 +3,8 @@ name: build-images
 # Container image matrix (CI-007, #141): one image per long-running Blackwing service, pushed to
 # GHCR as ghcr.io/tinycrowslab/bw-<service> and recorded by immutable sha256 digest in the
 # images.json artifact that SBOM (CI-008), scan (CI-009), signing (CI-010) and deploy (CI-017,
-# INFRA-009) consume. The per-run bw-sandbox image is NOT part of this matrix: IMAGE-012 owns it.
+# INFRA-009) consume. The `sbom` job (CI-008, #142) scans each digest with Syft, validates the
+# CycloneDX 1.5 output and attaches it to the image in GHCR. The per-run bw-sandbox image is NOT part of this matrix: IMAGE-012 owns it.
 # scripts/check-images.mjs (job `guard`) fails the workflow if it ever appears here.
 
 on:
@@ -18,6 +19,7 @@ on:
       - .dockerignore
       - scripts/check-images.mjs
       - scripts/build-images-json.mjs
+      - scripts/check-sbom.mjs
   push:
     branches: [main]
     tags: ['v*']
@@ -186,4 +188,71 @@ jobs:
         with:
           name: images.json
           path: images.json
+          if-no-files-found: error
+
+  sbom:
+    # CycloneDX 1.5 SBOM per image, scanned by immutable digest from images.json (never by tag),
+    # validated (empty/invalid fails the job), attached to the image in GHCR and uploaded as an
+    # artifact. Online-only and never on forks or pull requests, so the packages:write token is
+    # not reachable from untrusted code. Signing the SBOM is CI-010; scanning is CI-009.
+    # OFFLINE-STUB(online-porting #874): attach needs GHCR, so the job stays off until BW_ONLINE is set.
+    needs: images-json
+    if: vars.BW_ONLINE == 'true' && github.event_name != 'pull_request' && github.event.repository.fork == false && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30 # large images: bounds the Syft scan
+    permissions:
+      contents: read
+      packages: write # least privilege: attach the SBOM to the image, nothing else
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - api
+          - web
+          - worker
+          - agent-runtime
+          - model-gateway
+          - egress-gateway
+          - session-manager
+          - sandbox-controller
+          - cli
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          checkout: 'false'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: images.json
+      - uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate and validate SBOM
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: |
+          set -euo pipefail
+          ref="$(jq -er --arg s "$SERVICE" '.[$s]' images.json)"
+          case "$ref" in *@sha256:*) ;; *) echo "::error::${SERVICE} is not pinned by digest"; exit 1 ;; esac
+          mkdir -p sboms
+          # Scan the digest, not a tag; linux/amd64 picks one manifest from multi-arch indexes.
+          syft scan "registry:${ref}" --platform linux/amd64 -o "cyclonedx-json@1.5=sboms/${SERVICE}.cdx.json"
+          node scripts/check-sbom.mjs --service "$SERVICE" --sbom "sboms/${SERVICE}.cdx.json" --image "$ref" --summary "$GITHUB_STEP_SUMMARY"
+      - name: Attach SBOM to the image in GHCR
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: |
+          set -euo pipefail
+          ref="$(jq -er --arg s "$SERVICE" '.[$s]' images.json)"
+          cosign attach sbom --sbom "sboms/${SERVICE}.cdx.json" --type cyclonedx "$ref"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom-${{ matrix.service }}
+          path: sboms/${{ matrix.service }}.cdx.json
           if-no-files-found: error
