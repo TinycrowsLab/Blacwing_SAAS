@@ -1,0 +1,8 @@
+# Shared image manifest (CI-004, #138): one digest per data service, consumed by the Testcontainers
+# helpers (packages/testing/src/containers/images.ts), the dev compose stack and the integration CI
+# job, so CI == dev. `node scripts/check-integration.mjs` fails when any of them drifts.
+# Bump a digest here and in those files in the same change. Format: <name>=<image>@sha256:<digest>
+postgres=pgvector/pgvector:0.8.1-pg16@sha256:33198da2828a14c30348d2ccb4750833d5ed9a44c88d840a0e523d7417120337
+valkey=valkey/valkey:8.1.4-alpine@sha256:e706d1213aaba6896c162bb6a3a9e1894e1a435f28f8f856d14fab2e10aa098b
+neo4j=neo4j:5.26.12-community@sha256:9f75e8df4325a24f00fdd7a8c0bcce650a58375049b1058e496e8b43d6c36b37
+minio=cgr.dev/chainguard/minio:latest@sha256:cff197fef764642223ef9f4444c903d51aee9b544a7be8bc007fef6b7b00d136

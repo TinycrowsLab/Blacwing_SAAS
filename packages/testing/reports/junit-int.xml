@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="16" failures="0" errors="0" time="36.963219089">
+    <testsuite name="src/containers/postgres.int.test.ts" timestamp="2026-10-20T17:47:25.841Z" hostname="DESKTOP-L2RF0NB" tests="16" failures="0" errors="0" skipped="0" time="36.963219089">
+        <testcase classname="src/containers/postgres.int.test.ts" name="withPostgres boot &gt; runs Postgres 16 with pgvector and pgcrypto" time="0.093855095">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="withPostgres boot &gt; creates the app role without SUPERUSER or BYPASSRLS (and not a member of the owner role)" time="0.022491099">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="withPostgres boot &gt; ran the migrations as the owner role, in file-name order" time="0.042983197">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="withPostgres boot &gt; does not let the app role create objects" time="0.092559495">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="withPostgres boot &gt; gives each call its own database (safe to share a reused container)" time="0.113146194">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="row-level security through withTenant &gt; tenant B cannot read tenant A&apos;s row, and tenant A can (crossTenantDenied)" time="0.061555097">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="row-level security through withTenant &gt; each tenant sees only its own rows in an unfiltered scan" time="0.030077098">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="row-level security through withTenant &gt; tenant B cannot write a row into tenant A (WITH CHECK)" time="0.064070897">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="row-level security through withTenant &gt; tenant B cannot update or delete tenant A&apos;s row" time="0.069542196">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="row-level security through withTenant &gt; a query without a tenant context fails closed" time="0.158128191">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="row-level security through withTenant &gt; an empty tenant context fails closed too" time="0.026917298">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="row-level security through withTenant &gt; withTenant refuses a missing or malformed tenant id before touching the database" time="0.0102447">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="row-level security through withTenant &gt; SET LOCAL does not leak to the next transaction on the same connection" time="0.037456398">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="row-level security through withTenant &gt; rolls back the whole transaction when fn throws" time="0.043655497">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="row-level security through withTenant &gt; accepts the public ten_ id as well as the UUID" time="0.035041198">
+        </testcase>
+        <testcase classname="src/containers/postgres.int.test.ts" name="migration failures &gt; reports a missing migrations directory and a failing migration runner" time="20.619376456">
+        </testcase>
+    </testsuite>
+</testsuites>
