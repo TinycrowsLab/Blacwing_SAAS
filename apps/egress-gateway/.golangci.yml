@@ -1,0 +1,83 @@
+# golangci-lint v2 configuration for the egress gateway.
+# The same file is used locally (`make lint`) and in CI (CI-005); do not fork it.
+# The golangci-lint version is pinned in the Makefile (GOLANGCI_LINT_VERSION).
+version: "2"
+
+run:
+  # Lint the build-tagged dependency pins too (see internal/*/deps.go).
+  build-tags:
+    - egressdeps
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  # Start from nothing so an upgrade never silently changes the enabled set.
+  default: none
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - gosec # security linter: the egress gateway is the most security-critical service
+    - revive
+    - ineffassign
+    - unused
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        # Struct field ordering for memory layout is noise for this service.
+        - fieldalignment
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+    gosec:
+      # Every rule is enabled; suppressions must be inline `#nosec <rule> -- <reason>`
+      # and are reviewed by the security owners (CI-005 edge cases).
+      severity: low
+      confidence: low
+    revive:
+      enable-all-rules: false
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: increment-decrement
+        - name: var-naming
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: redefines-builtin-id
+  exclusions:
+    # Never hide findings through generated-code heuristics or presets: every
+    # exclusion in this service is explicit.
+    generated: strict
+    presets: []
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - github.com/TinycrowsLab/Blacwing_SAAS
+
+issues:
+  # Report everything; a clean run means zero findings.
+  max-issues-per-linter: 0
+  max-same-issues: 0

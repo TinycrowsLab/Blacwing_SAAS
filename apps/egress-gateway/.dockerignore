@@ -1,0 +1,11 @@
+# Only Go sources and module files belong in the image build context.
+bin/
+node_modules/
+src/
+package.json
+*.md
+.golangci.yml
+Makefile
+Dockerfile
+.dockerignore
+**/*_test.go
