@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2023"],
+    "rootDir": ".",
+    "outDir": "../dist/e2e",
+    "tsBuildInfoFile": "../dist/e2e/.tsbuildinfo"
+  },
+  "include": ["**/*.ts"],
+  "references": []
+}

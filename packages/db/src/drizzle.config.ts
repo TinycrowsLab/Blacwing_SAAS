@@ -9,6 +9,6 @@ export default defineConfig({
   out: './migrations',
   strict: true,
   verbose: true,
-  dbCredentials: { url: process.env.BW_DB_OWNER_URL ?? '' },
+  dbCredentials: { url: process.env.BW_DB_OWNER_URL ?? process.env.MIGRATION_DATABASE_URL ?? '' },
   migrations: { table: '__drizzle_migrations', schema: 'drizzle' },
 });

@@ -1,0 +1,99 @@
+name: e2e
+
+# End-to-end job (CI-006, #140): boots the dev compose stack without the `obs` profile, plus the local
+# Juice Shop lab target (profile `targets`), waits for health, applies the migrations, seeds the demo
+# tenant (twice: the seed must be idempotent), starts the apps and runs the Playwright suite
+# (apps/web/e2e) in headless Chromium. Pull requests run only when labelled `run-e2e`; pushes to main and the nightly schedule
+# always run. Reports, traces, videos and screenshots are uploaded when the suite fails.
+# Policy is checked by scripts/check-e2e.mjs (`pnpm check:e2e`); see docs/runbooks/e2e.md.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 2 * * *' # nightly, 02:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    # Label gate: on pull requests only a `run-e2e` label starts the (expensive) job.
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-e2e') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      TZ: UTC
+      CI: 'true'
+      BW_ENV: test
+    steps:
+      # A local composite action is only readable after a checkout; fetch just its directory.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(pnpm --filter @blackwing/web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      # Restore-only: no pull-request run ever writes a cache that main would read.
+      - name: Restore Playwright browsers
+        id: pw-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-v1-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - name: Install Chromium
+        run: pnpm --filter @blackwing/web exec playwright install --with-deps chromium
+
+      # Core stack only (`pnpm dev:deps` never starts the `obs` profile); every port binds 127.0.0.1.
+      - name: Start dependency stack
+        run: pnpm dev:deps
+      - name: Start Juice Shop lab target
+        run: pnpm targets:up
+      - name: Wait for health
+        run: node scripts/wait-for-health.mjs --timeout 300 postgres valkey keycloak juice-shop
+      - name: Apply migrations
+        run: pnpm db:migrate
+      - name: Seed demo tenant
+        run: pnpm db:seed
+      - name: Re-seed (idempotency check)
+        run: pnpm db:seed
+      - name: Start apps
+        run: |
+          nohup pnpm dev > dev-apps.log 2>&1 &
+          echo "started apps (pid $!)"
+
+      - name: Playwright
+        run: pnpm test:e2e
+
+      - name: Save Playwright browsers
+        if: ${{ success() && github.event_name != 'pull_request' && steps.pw-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-v1-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - name: Upload Playwright report, traces and videos
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-playwright
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+            dev-apps.log
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Step summary
+        if: ${{ always() }}
+        env:
+          OUTCOME: ${{ job.status }}
+        run: node scripts/e2e-summary.mjs apps/web/test-results/results.json >> "$GITHUB_STEP_SUMMARY"

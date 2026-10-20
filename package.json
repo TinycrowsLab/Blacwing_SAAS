@@ -54,6 +54,7 @@
     "check:turbo": "node scripts/check-turbo.mjs",
     "check:renovate": "node scripts/check-renovate.mjs",
     "check:actions": "node scripts/check-actions.mjs",
+    "check:e2e": "node scripts/check-e2e.mjs",
     "check:dependency-review": "node scripts/check-dependency-review.mjs",
     "openapi:generate": "pnpm -r --if-present run openapi:generate",
     "graphql:generate": "pnpm -r --if-present run graphql:generate",

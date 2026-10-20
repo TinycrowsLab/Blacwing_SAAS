@@ -48,3 +48,8 @@ Thumbs.db
 # mkcert output for the dev TLS proxy (DEVENV-013): certs and keys are never committed
 infra/compose/tls/certs/
 **/reports/junit-int.xml
+
+# Playwright e2e output (CI-006)
+playwright-report/
+test-results/
+dev-apps.log
