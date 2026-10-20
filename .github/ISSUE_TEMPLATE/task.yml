@@ -4,7 +4,7 @@
 # scripts/check-github.mjs); the label meanings are documented in docs/labels.md.
 name: Task
 description: One PR-sized unit of work (about 0.5-2 days), written to the CONTEXT_PACK §11 standard.
-labels: ["type:task"]
+labels: ['type:task']
 body:
   - type: markdown
     attributes:

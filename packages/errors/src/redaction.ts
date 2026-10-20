@@ -13,7 +13,7 @@
 export type Redactor = (text: string) => string;
 
 /** Marker that replaces a redacted value. Matches the logger's marker. */
-export const REDACTED = "[REDACTED]";
+export const REDACTED = '[REDACTED]';
 
 interface Rule {
   readonly pattern: RegExp;
@@ -26,7 +26,11 @@ interface Rule {
  * URL userinfo and PEM private keys.
  */
 const BUILTIN_RULES: readonly Rule[] = Object.freeze([
-  { pattern: /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z0-9 ]*PRIVATE KEY-----|$)/g, replacement: REDACTED },
+  {
+    pattern:
+      /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z0-9 ]*PRIVATE KEY-----|$)/g,
+    replacement: REDACTED,
+  },
   { pattern: /\b(?:bwk|bw_pat|bw_ci)_[A-Za-z0-9_-]+/g, replacement: REDACTED },
   { pattern: /\b(Bearer|Basic|Token)\s+[A-Za-z0-9._~+/=-]{8,}/gi, replacement: `$1 ${REDACTED}` },
   { pattern: /([a-z][a-z0-9+.-]*:\/\/)[^\s/?#@]+@/gi, replacement: `$1${REDACTED}@` },
@@ -44,7 +48,9 @@ export function redactBuiltinSecrets(text: string): string {
  * then the built-in patterns. If the injected redactor throws or returns a non-string, the result is
  * `undefined` and the caller must drop the text (fail closed).
  */
-export function composeRedactor(registry: Redactor | undefined): (text: string) => string | undefined {
+export function composeRedactor(
+  registry: Redactor | undefined,
+): (text: string) => string | undefined {
   return (text) => {
     let result: unknown = text;
     if (registry !== undefined) {
@@ -53,7 +59,7 @@ export function composeRedactor(registry: Redactor | undefined): (text: string) 
       } catch {
         return undefined;
       }
-      if (typeof result !== "string") return undefined;
+      if (typeof result !== 'string') return undefined;
     }
     return redactBuiltinSecrets(result as string);
   };
@@ -72,8 +78,8 @@ export function containsStackTrace(text: string): boolean {
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim();
     if (!FRAME_LOCATION.test(line)) continue;
-    if (line.startsWith("at ")) return true;
-    const at = line.indexOf("@");
+    if (line.startsWith('at ')) return true;
+    const at = line.indexOf('@');
     if (at >= 0 && !/\s/.test(line.slice(at))) return true;
   }
   return false;

@@ -23,8 +23,9 @@ coverage/
 *.p12
 *.pfx
 
-# Logs
+# Logs and reports
 *.log
+eslint-report.json
 npm-debug.log*
 pnpm-debug.log*
 

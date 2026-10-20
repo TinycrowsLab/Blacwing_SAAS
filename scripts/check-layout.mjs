@@ -18,61 +18,61 @@
 // When an issue legitimately adds or removes an app/package/directory, update the
 // constants below and CONTEXT_PACK §6 in the same commit.
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-export const SCOPE = "@blackwing";
+export const SCOPE = '@blackwing';
 
 export const EXPECTED_APPS = Object.freeze([
-  "web",
-  "api",
-  "worker",
-  "agent-runtime",
-  "sandbox-controller",
-  "model-gateway",
-  "egress-gateway",
-  "session-manager",
-  "cli",
+  'web',
+  'api',
+  'worker',
+  'agent-runtime',
+  'sandbox-controller',
+  'model-gateway',
+  'egress-gateway',
+  'session-manager',
+  'cli',
 ]);
 
 export const EXPECTED_PACKAGES = Object.freeze([
-  "contracts",
-  "db",
-  "domain",
-  "policy",
-  "agents",
-  "mcp-tools",
-  "memory",
-  "replay",
-  "oob",
-  "evidence",
-  "crypto",
-  "secrets",
-  "audit",
-  "notify",
-  "connectors",
-  "reporting",
-  "cost",
-  "config",
-  "logger",
-  "ids",
-  "errors",
-  "telemetry",
-  "ui",
-  "testing",
+  'contracts',
+  'db',
+  'domain',
+  'policy',
+  'agents',
+  'mcp-tools',
+  'memory',
+  'replay',
+  'oob',
+  'evidence',
+  'crypto',
+  'secrets',
+  'audit',
+  'notify',
+  'connectors',
+  'reporting',
+  'cost',
+  'config',
+  'logger',
+  'ids',
+  'errors',
+  'telemetry',
+  'ui',
+  'testing',
 ]);
 
 /** Fixed directories whose immediate children must match exactly. */
 export const EXPECTED_DIRS = Object.freeze({
-  infra: Object.freeze(["tofu", "helm", "k3s", "docker", "compose"]),
-  eval: Object.freeze(["targets", "ground-truth", "harness"]),
-  docs: Object.freeze(["adr", "architecture", "runbooks", "api", "user"]),
+  infra: Object.freeze(['tofu', 'helm', 'k3s', 'docker', 'compose']),
+  eval: Object.freeze(['targets', 'ground-truth', 'harness']),
+  docs: Object.freeze(['adr', 'architecture', 'runbooks', 'api', 'user']),
 });
 
 /** Files that must exist directly inside a fixed directory (label catalogue doc: FOUND-016, #18). */
 export const EXPECTED_DIR_FILES = Object.freeze({
-  docs: Object.freeze(["labels.md"]),
+  docs: Object.freeze(['labels.md']),
 });
 
 /**
@@ -81,31 +81,31 @@ export const EXPECTED_DIR_FILES = Object.freeze({
  * label catalogue (`labels.yml`) arrived with FOUND-016 (#18).
  */
 export const GITHUB_LAYOUT = Object.freeze({
-  dirs: Object.freeze(["workflows", "ISSUE_TEMPLATE"]),
-  files: Object.freeze(["PULL_REQUEST_TEMPLATE.md", "CODEOWNERS", "labels.yml"]),
+  dirs: Object.freeze(['workflows', 'ISSUE_TEMPLATE']),
+  files: Object.freeze(['PULL_REQUEST_TEMPLATE.md', 'CODEOWNERS', 'labels.yml']),
   optional: Object.freeze([]),
 });
 
 export const ROOT_FILES = Object.freeze([
-  "CLAUDE.md",
-  "README.md",
-  "SECURITY.md",
-  "LICENSE",
-  "package.json",
-  "pnpm-workspace.yaml",
-  "turbo.json",
-  ".gitignore",
-  ".editorconfig",
-  ".nvmrc",
-  ".node-version",
+  'CLAUDE.md',
+  'README.md',
+  'SECURITY.md',
+  'LICENSE',
+  'package.json',
+  'pnpm-workspace.yaml',
+  'turbo.json',
+  '.gitignore',
+  '.editorconfig',
+  '.nvmrc',
+  '.node-version',
 ]);
 
-export const WORKSPACE_GLOBS = Object.freeze(["apps/*", "packages/*"]);
-export const NODE_ENGINE = ">=22 <23";
+export const WORKSPACE_GLOBS = Object.freeze(['apps/*', 'packages/*']);
+export const NODE_ENGINE = '>=22 <23';
 export const PNPM_PACKAGE_MANAGER = /^pnpm@9\.\d+\.\d+(\+[\w.-]+)?$/;
 
 /** Entries ignored when comparing directory listings. */
-const IGNORED_ENTRIES = new Set([".gitkeep", ".DS_Store"]);
+const IGNORED_ENTRIES = new Set(['.gitkeep', '.DS_Store']);
 const KEBAB_CASE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 /**
@@ -200,7 +200,7 @@ export function parseWorkspaceGlobs(text) {
     if (/^\s*(#.*)?$/.test(line)) continue;
     const match = /^\s+-\s+(?:"([^"]*)"|'([^']*)'|([^\s#]+))\s*(#.*)?$/.exec(line);
     if (!match) break;
-    globs.push(match[1] ?? match[2] ?? match[3] ?? "");
+    globs.push(match[1] ?? match[2] ?? match[3] ?? '');
   }
   return globs;
 }
@@ -217,12 +217,13 @@ function readJson(file, rel, errors) {
     return null;
   }
   try {
-    const value = JSON.parse(readFileSync(file, "utf8"));
-    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    /** @type {unknown} */
+    const value = JSON.parse(readFileSync(file, 'utf8'));
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
       errors.push(`${rel}: must contain a JSON object`);
       return null;
     }
-    return value;
+    return /** @type {Record<string, unknown>} */ (value);
   } catch (error) {
     errors.push(`${rel}: invalid JSON (${error instanceof Error ? error.message : String(error)})`);
     return null;
@@ -234,10 +235,13 @@ function readJson(file, rel, errors) {
  * @param {string[]} errors
  */
 function checkRootManifest(root, errors) {
-  const manifest = readJson(path.join(root, "package.json"), "package.json", errors);
+  const manifest = readJson(path.join(root, 'package.json'), 'package.json', errors);
   if (manifest === null) return;
   if (manifest.private !== true) errors.push(`package.json: "private" must be true`);
-  if (typeof manifest.packageManager !== "string" || !PNPM_PACKAGE_MANAGER.test(manifest.packageManager)) {
+  if (
+    typeof manifest.packageManager !== 'string' ||
+    !PNPM_PACKAGE_MANAGER.test(manifest.packageManager)
+  ) {
     errors.push(`package.json: "packageManager" must pin a pnpm 9.x version (e.g. "pnpm@9.15.0")`);
   }
   const engines = /** @type {Record<string, unknown> | undefined} */ (manifest.engines);
@@ -245,7 +249,10 @@ function checkRootManifest(root, errors) {
     errors.push(`package.json: "engines.node" must be "${NODE_ENGINE}"`);
   }
   const scripts = /** @type {Record<string, unknown> | undefined} */ (manifest.scripts);
-  if (typeof scripts?.preinstall !== "string" || !scripts.preinstall.includes("scripts/preinstall.mjs")) {
+  if (
+    typeof scripts?.preinstall !== 'string' ||
+    !scripts.preinstall.includes('scripts/preinstall.mjs')
+  ) {
     errors.push(`package.json: "scripts.preinstall" must run scripts/preinstall.mjs`);
   }
 }
@@ -255,15 +262,15 @@ function checkRootManifest(root, errors) {
  * @param {string[]} errors
  */
 function checkWorkspaceFile(root, errors) {
-  const file = path.join(root, "pnpm-workspace.yaml");
+  const file = path.join(root, 'pnpm-workspace.yaml');
   if (!existsSync(file)) return; // reported by the root-file check
-  const globs = parseWorkspaceGlobs(readFileSync(file, "utf8"));
+  const globs = parseWorkspaceGlobs(readFileSync(file, 'utf8'));
   if (globs === null) {
     errors.push(`pnpm-workspace.yaml: no "packages:" list found`);
     return;
   }
-  const expected = [...WORKSPACE_GLOBS].sort().join(", ");
-  const actual = [...globs].sort().join(", ");
+  const expected = [...WORKSPACE_GLOBS].sort().join(', ');
+  const actual = [...globs].sort().join(', ');
   if (expected !== actual) {
     errors.push(`pnpm-workspace.yaml: packages must be exactly [${expected}], found [${actual}]`);
   }
@@ -272,6 +279,20 @@ function checkWorkspaceFile(root, errors) {
 /**
  * @typedef {{ kind: "app" | "package", dir: string, name: string | null, version: string | null, private: boolean }} Member
  */
+
+/**
+ * Whether a module's source declares `export const <binding> = '<value>';`. Either quote style is
+ * accepted: Prettier writes single quotes, generated stubs may use double quotes.
+ * @param {string} source
+ * @param {string} binding
+ * @param {string} value
+ * @returns {boolean}
+ */
+export function exportsConst(source, binding, value) {
+  return ["'", '"'].some((quote) =>
+    source.includes(`export const ${binding} = ${quote}${value}${quote};`),
+  );
+}
 
 /**
  * @param {string} root
@@ -285,28 +306,30 @@ function checkMember(root, kind, dir, errors) {
   const expectedName = `${SCOPE}/${base}`;
   /** @type {Member} */
   const member = { kind, dir, name: null, version: null, private: false };
-  const manifest = readJson(path.join(root, dir, "package.json"), `${dir}/package.json`, errors);
+  const manifest = readJson(path.join(root, dir, 'package.json'), `${dir}/package.json`, errors);
   if (manifest !== null) {
-    if (typeof manifest.name !== "string" || manifest.name.length === 0) {
+    if (typeof manifest.name !== 'string' || manifest.name.length === 0) {
       errors.push(`${dir}/package.json: "name" is missing (expected "${expectedName}")`);
     } else {
       member.name = manifest.name;
       if (manifest.name !== expectedName) {
-        errors.push(`${dir}/package.json: "name" is "${manifest.name}", expected "${expectedName}"`);
+        errors.push(
+          `${dir}/package.json: "name" is "${manifest.name}", expected "${expectedName}"`,
+        );
       }
     }
-    if (typeof manifest.version === "string") member.version = manifest.version;
+    if (typeof manifest.version === 'string') member.version = manifest.version;
     else errors.push(`${dir}/package.json: "version" is missing`);
     member.private = manifest.private === true;
     if (!member.private) {
       errors.push(`${dir}/package.json: "private" must be true (proprietary; never published)`);
     }
   }
-  const index = path.join(root, dir, "src", "index.ts");
+  const index = path.join(root, dir, 'src', 'index.ts');
   if (!existsSync(index)) {
     errors.push(`${dir}/src/index.ts: missing`);
-  } else if (!readFileSync(index, "utf8").includes(`export const name = "${expectedName}";`)) {
-    errors.push(`${dir}/src/index.ts: must export \`export const name = "${expectedName}";\``);
+  } else if (!exportsConst(readFileSync(index, 'utf8'), 'name', expectedName)) {
+    errors.push(`${dir}/src/index.ts: must export \`export const name = '${expectedName}';\``);
   }
   return member;
 }
@@ -326,7 +349,7 @@ function checkDuplicateNames(members, errors) {
   }
   for (const [name, dirs] of byName) {
     if (dirs.length > 1) {
-      errors.push(`duplicate package name "${name}" in: ${dirs.join(", ")}`);
+      errors.push(`duplicate package name "${name}" in: ${dirs.join(', ')}`);
     }
   }
 }
@@ -339,9 +362,16 @@ function checkDuplicateNames(members, errors) {
  */
 function checkGithubDirectory(root, errors) {
   const required = [...GITHUB_LAYOUT.dirs, ...GITHUB_LAYOUT.files];
-  const entries = checkDirectory(root, ".github", required, GITHUB_LAYOUT.optional, { requireDirs: false, kebab: false }, errors);
+  const entries = checkDirectory(
+    root,
+    '.github',
+    required,
+    GITHUB_LAYOUT.optional,
+    { requireDirs: false, kebab: false },
+    errors,
+  );
   for (const entry of entries) {
-    const abs = path.join(root, ".github", entry);
+    const abs = path.join(root, '.github', entry);
     if (GITHUB_LAYOUT.dirs.includes(entry) && !isDirectory(abs)) {
       errors.push(`.github/${entry}: must be a directory`);
     }
@@ -369,10 +399,17 @@ export function checkLayout(root) {
   /** @type {Member[]} */
   const members = [];
   for (const [rel, kind, expected] of /** @type {const} */ ([
-    ["apps", "app", EXPECTED_APPS],
-    ["packages", "package", EXPECTED_PACKAGES],
+    ['apps', 'app', EXPECTED_APPS],
+    ['packages', 'package', EXPECTED_PACKAGES],
   ])) {
-    const entries = checkDirectory(root, rel, expected, [], { requireDirs: true, kebab: true }, errors);
+    const entries = checkDirectory(
+      root,
+      rel,
+      expected,
+      [],
+      { requireDirs: true, kebab: true },
+      errors,
+    );
     for (const entry of entries) {
       if (isDirectory(path.join(root, rel, entry))) {
         members.push(checkMember(root, kind, `${rel}/${entry}`, errors));
@@ -381,12 +418,23 @@ export function checkLayout(root) {
   }
   checkDuplicateNames(members, errors);
 
+  /** @type {Readonly<Record<string, readonly string[]>>} */
+  const dirFiles = EXPECTED_DIR_FILES;
   for (const [rel, expected] of Object.entries(EXPECTED_DIRS)) {
-    const files = EXPECTED_DIR_FILES[/** @type {keyof typeof EXPECTED_DIR_FILES} */ (rel)] ?? [];
-    const entries = checkDirectory(root, rel, expected, files, { requireDirs: true, kebab: true }, errors);
+    const files = dirFiles[rel] ?? [];
+    const entries = checkDirectory(
+      root,
+      rel,
+      expected,
+      files,
+      { requireDirs: true, kebab: true },
+      errors,
+    );
     for (const file of files) {
-      if (!entries.includes(file)) errors.push(`${rel}/${file}: missing (required by CONTEXT_PACK §6)`);
-      else if (isDirectory(path.join(root, rel, file))) errors.push(`${rel}/${file}: must be a file`);
+      if (!entries.includes(file))
+        errors.push(`${rel}/${file}: missing (required by CONTEXT_PACK §6)`);
+      else if (isDirectory(path.join(root, rel, file)))
+        errors.push(`${rel}/${file}: must be a file`);
     }
   }
   checkGithubDirectory(root, errors);
@@ -395,8 +443,8 @@ export function checkLayout(root) {
     ok: errors.length === 0,
     root,
     counts: {
-      apps: members.filter((m) => m.kind === "app").length,
-      packages: members.filter((m) => m.kind === "package").length,
+      apps: members.filter((m) => m.kind === 'app').length,
+      packages: members.filter((m) => m.kind === 'package').length,
     },
     members,
     errors,
@@ -408,14 +456,14 @@ export function checkLayout(root) {
  * @returns {{ root: string, quiet: boolean }}
  */
 function parseArgs(argv) {
-  let root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  let root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   let quiet = false;
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === "--quiet") quiet = true;
-    else if (arg === "--root") {
+    if (arg === '--quiet') quiet = true;
+    else if (arg === '--root') {
       const value = argv[i + 1];
-      if (value === undefined) throw new Error("--root requires a directory argument");
+      if (value === undefined) throw new Error('--root requires a directory argument');
       root = path.resolve(value);
       i += 1;
     } else {
@@ -435,7 +483,9 @@ export function main(argv) {
   try {
     args = parseArgs(argv);
   } catch (error) {
-    process.stderr.write(`check-layout: ${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write(
+      `check-layout: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
     return 2;
   }
   const result = checkLayout(args.root);
@@ -443,14 +493,17 @@ export function main(argv) {
   if (!result.ok) {
     process.stderr.write(
       `check-layout: ${result.errors.length} problem(s) found (see CONTEXT_PACK §6):\n` +
-        result.errors.map((e) => `  - ${e}`).join("\n") +
-        "\n",
+        result.errors.map((e) => `  - ${e}`).join('\n') +
+        '\n',
     );
     return 1;
   }
   return 0;
 }
 
-if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (
+  process.argv[1] !== undefined &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
   process.exitCode = main(process.argv.slice(2));
 }

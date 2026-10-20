@@ -9,11 +9,12 @@
 //
 // Uses only Node built-ins: it runs before any dependency is installed.
 
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { checkLayout } from "./check-layout.mjs";
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-export const REQUIRED_PACKAGE_MANAGER = "pnpm";
+import { checkLayout } from './check-layout.mjs';
+
+export const REQUIRED_PACKAGE_MANAGER = 'pnpm';
 export const REQUIRED_NODE_MAJOR = 22;
 
 /**
@@ -24,8 +25,8 @@ export const REQUIRED_NODE_MAJOR = 22;
  * @returns {string | null} an error message, or null when allowed
  */
 export function checkPackageManager(userAgent) {
-  if (userAgent === undefined || userAgent.trim() === "") return null;
-  const used = userAgent.trim().split(" ")[0]?.split("/")[0] ?? "";
+  if (userAgent === undefined || userAgent.trim() === '') return null;
+  const used = userAgent.trim().split(' ')[0]?.split('/')[0] ?? '';
   if (used === REQUIRED_PACKAGE_MANAGER) return null;
   return (
     `This repository must be installed with ${REQUIRED_PACKAGE_MANAGER}, not "${used}". ` +
@@ -39,7 +40,8 @@ export function checkPackageManager(userAgent) {
  */
 export function checkNodeVersion(version) {
   const match = /^v?(\d+)\.(\d+)\.(\d+)/.exec(version);
-  if (!match) return `Unrecognised Node.js version "${version}"; Node.js ${REQUIRED_NODE_MAJOR} LTS is required.`;
+  if (!match)
+    return `Unrecognised Node.js version "${version}"; Node.js ${REQUIRED_NODE_MAJOR} LTS is required.`;
   const major = Number(match[1]);
   if (major === REQUIRED_NODE_MAJOR) return null;
   return (
@@ -64,17 +66,20 @@ export function runPreinstallChecks({ userAgent, nodeVersion, root }) {
   return problems;
 }
 
-if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (
+  process.argv[1] !== undefined &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
   const problems = runPreinstallChecks({
     userAgent: process.env.npm_config_user_agent,
     nodeVersion: process.version,
-    root: path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."),
+    root: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
   });
   if (problems.length > 0) {
     process.stderr.write(
       `\npreinstall: refusing to install (${problems.length} problem(s)):\n` +
-        problems.map((p) => `  - ${p}`).join("\n") +
-        "\n\n",
+        problems.map((p) => `  - ${p}`).join('\n') +
+        '\n\n',
     );
     process.exitCode = 1;
   }

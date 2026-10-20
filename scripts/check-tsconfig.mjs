@@ -16,24 +16,24 @@
 // Usage: node scripts/check-tsconfig.mjs [--root <dir>] [--quiet]
 // Prints a JSON summary on stdout; exits non-zero when any check fails.
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import ts from "typescript";
+import ts from 'typescript';
 
-export const BASE_CONFIG = "tsconfig.base.json";
-export const SOLUTION_CONFIG = "tsconfig.json";
-export const TYPECHECK_SCRIPT = "tsc -b --pretty false";
-export const MEMBER_GROUPS = Object.freeze(["apps", "packages"]);
-export const SCOPE = "@blackwing/";
+export const BASE_CONFIG = 'tsconfig.base.json';
+export const SOLUTION_CONFIG = 'tsconfig.json';
+export const TYPECHECK_SCRIPT = 'tsc -b --pretty false';
+export const MEMBER_GROUPS = Object.freeze(['apps', 'packages']);
+export const SCOPE = '@blackwing/';
 
 /** Raw values tsconfig.base.json must set (compared case-insensitively for strings). */
 export const REQUIRED_BASE_OPTIONS = Object.freeze({
-  target: "ES2023",
-  lib: Object.freeze(["ES2023"]),
-  module: "NodeNext",
-  moduleResolution: "NodeNext",
+  target: 'ES2023',
+  lib: Object.freeze(['ES2023']),
+  module: 'NodeNext',
+  moduleResolution: 'NodeNext',
   strict: true,
   noUncheckedIndexedAccess: true,
   exactOptionalPropertyTypes: true,
@@ -55,36 +55,41 @@ export const REQUIRED_BASE_OPTIONS = Object.freeze({
 
 /** Effective options that must be `true` for every project. */
 export const MUST_BE_TRUE = Object.freeze([
-  "strict",
-  "noUncheckedIndexedAccess",
-  "exactOptionalPropertyTypes",
-  "noImplicitOverride",
-  "noImplicitReturns",
-  "noFallthroughCasesInSwitch",
-  "forceConsistentCasingInFileNames",
-  "verbatimModuleSyntax",
-  "isolatedModules",
-  "composite",
-  "declaration",
-  "declarationMap",
-  "sourceMap",
+  'strict',
+  'noUncheckedIndexedAccess',
+  'exactOptionalPropertyTypes',
+  'noImplicitOverride',
+  'noImplicitReturns',
+  'noFallthroughCasesInSwitch',
+  'forceConsistentCasingInFileNames',
+  'verbatimModuleSyntax',
+  'isolatedModules',
+  'composite',
+  'declaration',
+  'declarationMap',
+  'sourceMap',
 ]);
 
 /** Members of the `strict` family: implied by `strict`, so they may only be absent or `true`. */
 export const STRICT_FAMILY = Object.freeze([
-  "noImplicitAny",
-  "noImplicitThis",
-  "strictNullChecks",
-  "strictFunctionTypes",
-  "strictBindCallApply",
-  "strictPropertyInitialization",
-  "strictBuiltinIteratorReturn",
-  "useUnknownInCatchVariables",
-  "alwaysStrict",
+  'noImplicitAny',
+  'noImplicitThis',
+  'strictNullChecks',
+  'strictFunctionTypes',
+  'strictBindCallApply',
+  'strictPropertyInitialization',
+  'strictBuiltinIteratorReturn',
+  'useUnknownInCatchVariables',
+  'alwaysStrict',
 ]);
 
 /** Effective options that must be `false` (or absent) for every project. */
-export const MUST_NOT_BE_TRUE = Object.freeze(["allowJs", "checkJs", "allowUnreachableCode", "allowUnusedLabels"]);
+export const MUST_NOT_BE_TRUE = Object.freeze([
+  'allowJs',
+  'checkJs',
+  'allowUnreachableCode',
+  'allowUnusedLabels',
+]);
 
 /**
  * The only sanctioned deviations from the base module/lib settings (documented in
@@ -92,10 +97,10 @@ export const MUST_NOT_BE_TRUE = Object.freeze(["allowJs", "checkJs", "allowUnrea
  * console uses bundler resolution, DOM libraries and preserved JSX; strictness is unchanged.
  */
 export const EXCEPTIONS = Object.freeze({
-  "apps/web": Object.freeze({
+  'apps/web': Object.freeze({
     module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.Bundler,
-    lib: Object.freeze(["lib.es2023.d.ts", "lib.dom.d.ts", "lib.dom.iterable.d.ts"]),
+    lib: Object.freeze(['lib.es2023.d.ts', 'lib.dom.d.ts', 'lib.dom.iterable.d.ts']),
     jsx: ts.JsxEmit.Preserve,
   }),
 });
@@ -103,26 +108,32 @@ export const EXCEPTIONS = Object.freeze({
 const DEFAULT_SETTINGS = Object.freeze({
   module: ts.ModuleKind.NodeNext,
   moduleResolution: ts.ModuleResolutionKind.NodeNext,
-  lib: Object.freeze(["lib.es2023.d.ts"]),
+  lib: Object.freeze(['lib.es2023.d.ts']),
   jsx: undefined,
 });
 
-const DEPENDENCY_FIELDS = Object.freeze(["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"]);
+const DEPENDENCY_FIELDS = Object.freeze([
+  'dependencies',
+  'devDependencies',
+  'peerDependencies',
+  'optionalDependencies',
+]);
 
 /**
  * @param {string} file
  * @returns {{ value: Record<string, unknown> | null, error: string | null }}
  */
 function readTsconfigJson(file) {
-  const result = ts.readConfigFile(file, ts.sys.readFile);
+  const result = ts.readConfigFile(file, (name) => ts.sys.readFile(name));
   if (result.error !== undefined) {
-    return { value: null, error: ts.flattenDiagnosticMessageText(result.error.messageText, " ") };
+    return { value: null, error: ts.flattenDiagnosticMessageText(result.error.messageText, ' ') };
   }
+  /** @type {unknown} */
   const value = result.config;
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return { value: null, error: "must contain a JSON object" };
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return { value: null, error: 'must contain a JSON object' };
   }
-  return { value, error: null };
+  return { value: /** @type {Record<string, unknown>} */ (value), error: null };
 }
 
 /**
@@ -131,8 +142,11 @@ function readTsconfigJson(file) {
  */
 function readJsonObject(file) {
   try {
-    const value = JSON.parse(readFileSync(file, "utf8"));
-    return value !== null && typeof value === "object" && !Array.isArray(value) ? value : null;
+    /** @type {unknown} */
+    const value = JSON.parse(readFileSync(file, 'utf8'));
+    return value !== null && typeof value === 'object' && !Array.isArray(value)
+      ? /** @type {Record<string, unknown>} */ (value)
+      : null;
   } catch {
     return null;
   }
@@ -151,7 +165,8 @@ function sameRawValue(actual, expected) {
       expected.every((item, index) => sameRawValue(actual[index], item))
     );
   }
-  if (typeof expected === "string") return typeof actual === "string" && actual.toLowerCase() === expected.toLowerCase();
+  if (typeof expected === 'string')
+    return typeof actual === 'string' && actual.toLowerCase() === expected.toLowerCase();
   return actual === expected;
 }
 
@@ -167,12 +182,13 @@ function checkBase(root, errors) {
   }
   const { value, error } = readTsconfigJson(file);
   if (value === null) {
-    errors.push(`${BASE_CONFIG}: ${error ?? "unreadable"}`);
+    errors.push(`${BASE_CONFIG}: ${error ?? 'unreadable'}`);
     return;
   }
-  if ("extends" in value) errors.push(`${BASE_CONFIG}: must not extend another config`);
-  for (const key of ["files", "include", "references"]) {
-    if (key in value) errors.push(`${BASE_CONFIG}: must not declare "${key}" (it only holds compilerOptions)`);
+  if ('extends' in value) errors.push(`${BASE_CONFIG}: must not extend another config`);
+  for (const key of ['files', 'include', 'references']) {
+    if (key in value)
+      errors.push(`${BASE_CONFIG}: must not declare "${key}" (it only holds compilerOptions)`);
   }
   const options = /** @type {Record<string, unknown>} */ (value.compilerOptions ?? {});
   for (const [key, expected] of Object.entries(REQUIRED_BASE_OPTIONS)) {
@@ -183,9 +199,11 @@ function checkBase(root, errors) {
     }
   }
   for (const key of STRICT_FAMILY) {
-    if (options[key] === false) errors.push(`${BASE_CONFIG}: compilerOptions.${key} must not be false (relaxes strict)`);
+    if (options[key] === false)
+      errors.push(`${BASE_CONFIG}: compilerOptions.${key} must not be false (relaxes strict)`);
   }
-  if (options.checkJs === true) errors.push(`${BASE_CONFIG}: compilerOptions.checkJs must not be enabled`);
+  if (options.checkJs === true)
+    errors.push(`${BASE_CONFIG}: compilerOptions.checkJs must not be enabled`);
 }
 
 /**
@@ -201,10 +219,10 @@ function discoverMembers(root) {
     for (const entry of readdirSync(abs).sort()) {
       const dir = `${group}/${entry}`;
       if (!statSync(path.join(root, dir)).isDirectory()) continue;
-      const manifestFile = path.join(root, dir, "package.json");
+      const manifestFile = path.join(root, dir, 'package.json');
       if (!existsSync(manifestFile)) continue; // reported by check-layout
       const manifest = readJsonObject(manifestFile);
-      const name = typeof manifest?.name === "string" ? manifest.name : null;
+      const name = typeof manifest?.name === 'string' ? manifest.name : null;
       members.push({ dir, name, manifest });
     }
   }
@@ -222,12 +240,13 @@ function parseProject(configFile) {
   const host = {
     ...ts.sys,
     onUnRecoverableConfigFileDiagnostic: (diagnostic) => {
-      errors.push(ts.flattenDiagnosticMessageText(diagnostic.messageText, " "));
+      errors.push(ts.flattenDiagnosticMessageText(diagnostic.messageText, ' '));
     },
   };
   const parsed = ts.getParsedCommandLineOfConfigFile(configFile, undefined, host) ?? null;
   if (parsed !== null) {
-    for (const diagnostic of parsed.errors) errors.push(ts.flattenDiagnosticMessageText(diagnostic.messageText, " "));
+    for (const diagnostic of parsed.errors)
+      errors.push(ts.flattenDiagnosticMessageText(diagnostic.messageText, ' '));
   }
   return { parsed, errors };
 }
@@ -241,20 +260,31 @@ function parseProject(configFile) {
  */
 function checkEffectiveOptions(label, options, exceptionKey, errors) {
   for (const key of MUST_BE_TRUE) {
-    if (options[key] !== true) errors.push(`${label}: effective compilerOptions.${key} must be true`);
+    if (options[key] !== true)
+      errors.push(`${label}: effective compilerOptions.${key} must be true`);
   }
   for (const key of STRICT_FAMILY) {
-    if (options[key] === false) errors.push(`${label}: compilerOptions.${key} must not be false (relaxes strict)`);
+    if (options[key] === false)
+      errors.push(`${label}: compilerOptions.${key} must not be false (relaxes strict)`);
   }
   for (const key of MUST_NOT_BE_TRUE) {
     if (options[key] === true) errors.push(`${label}: compilerOptions.${key} must not be true`);
   }
   // skipLibCheck may be turned off per project (stricter); it only ever skips .d.ts checking.
-  if (options.target !== ts.ScriptTarget.ES2023) errors.push(`${label}: compilerOptions.target must be ES2023`);
-  const expected = exceptionKey === null ? DEFAULT_SETTINGS : EXCEPTIONS[/** @type {keyof typeof EXCEPTIONS} */ (exceptionKey)];
-  const suffix = exceptionKey === null ? "(only the documented apps/web exception may differ)" : "(documented exception)";
+  if (options.target !== ts.ScriptTarget.ES2023)
+    errors.push(`${label}: compilerOptions.target must be ES2023`);
+  const expected =
+    exceptionKey === null
+      ? DEFAULT_SETTINGS
+      : EXCEPTIONS[/** @type {keyof typeof EXCEPTIONS} */ (exceptionKey)];
+  const suffix =
+    exceptionKey === null
+      ? '(only the documented apps/web exception may differ)'
+      : '(documented exception)';
   if (options.module !== expected.module) {
-    errors.push(`${label}: compilerOptions.module must be ${ts.ModuleKind[expected.module]} ${suffix}`);
+    errors.push(
+      `${label}: compilerOptions.module must be ${ts.ModuleKind[expected.module]} ${suffix}`,
+    );
   }
   if (options.moduleResolution !== expected.moduleResolution) {
     errors.push(
@@ -263,10 +293,14 @@ function checkEffectiveOptions(label, options, exceptionKey, errors) {
   }
   const lib = options.lib ?? [];
   if (lib.length !== expected.lib.length || !expected.lib.every((entry) => lib.includes(entry))) {
-    errors.push(`${label}: compilerOptions.lib must be [${expected.lib.join(", ")}] ${suffix}, found [${lib.join(", ")}]`);
+    errors.push(
+      `${label}: compilerOptions.lib must be [${expected.lib.join(', ')}] ${suffix}, found [${lib.join(', ')}]`,
+    );
   }
   if (options.jsx !== expected.jsx) {
-    errors.push(`${label}: compilerOptions.jsx must be ${expected.jsx === undefined ? "unset" : ts.JsxEmit[expected.jsx]} ${suffix}`);
+    errors.push(
+      `${label}: compilerOptions.jsx must be ${expected.jsx === undefined ? 'unset' : ts.JsxEmit[expected.jsx]} ${suffix}`,
+    );
   }
 }
 
@@ -276,7 +310,7 @@ function checkEffectiveOptions(label, options, exceptionKey, errors) {
  * @returns {string}
  */
 function rel(root, file) {
-  return path.relative(root, file).split(path.sep).join("/");
+  return path.relative(root, file).split(path.sep).join('/');
 }
 
 /**
@@ -310,9 +344,13 @@ export function checkTsconfig(root) {
     if (scripts?.typecheck !== TYPECHECK_SCRIPT) {
       errors.push(`${member.dir}/package.json: "scripts.typecheck" must be "${TYPECHECK_SCRIPT}"`);
     }
-    const devDependencies = /** @type {Record<string, unknown> | undefined} */ (member.manifest?.devDependencies);
-    if (typeof devDependencies?.typescript !== "string") {
-      errors.push(`${member.dir}/package.json: "devDependencies.typescript" is required (use "catalog:")`);
+    const devDependencies = /** @type {Record<string, unknown> | undefined} */ (
+      member.manifest?.devDependencies
+    );
+    if (typeof devDependencies?.typescript !== 'string') {
+      errors.push(
+        `${member.dir}/package.json: "devDependencies.typescript" is required (use "catalog:")`,
+      );
     }
 
     if (!existsSync(configFile)) {
@@ -321,7 +359,7 @@ export function checkTsconfig(root) {
     }
     const raw = readTsconfigJson(configFile);
     if (raw.value === null) {
-      errors.push(`${label}: ${raw.error ?? "unreadable"}`);
+      errors.push(`${label}: ${raw.error ?? 'unreadable'}`);
       continue;
     }
     if (raw.value.extends !== `../../${BASE_CONFIG}`) {
@@ -337,16 +375,24 @@ export function checkTsconfig(root) {
     checkEffectiveOptions(label, parsed.options, exceptionKey, errors);
 
     const memberRoot = path.join(root, member.dir);
+    /**
+     * @param {string} option
+     * @param {string} expected
+     */
     const expectPath = (option, expected) => {
       const actual = parsed.options[option];
-      if (typeof actual !== "string" || path.resolve(actual) !== path.resolve(memberRoot, expected)) {
+      if (
+        typeof actual !== 'string' ||
+        path.resolve(actual) !== path.resolve(memberRoot, expected)
+      ) {
         errors.push(`${label}: compilerOptions.${option} must be "${expected}"`);
       }
     };
-    expectPath("rootDir", "src");
-    expectPath("outDir", "dist");
-    expectPath("tsBuildInfoFile", "dist/.tsbuildinfo");
-    if (parsed.fileNames.length === 0) errors.push(`${label}: includes no source files (expected src/**)`);
+    expectPath('rootDir', 'src');
+    expectPath('outDir', 'dist');
+    expectPath('tsBuildInfoFile', 'dist/.tsbuildinfo');
+    if (parsed.fileNames.length === 0)
+      errors.push(`${label}: includes no source files (expected src/**)`);
 
     /** @type {Set<string>} */
     const declaredDeps = new Set();
@@ -358,8 +404,10 @@ export function checkTsconfig(root) {
     const expectedRefs = new Set();
     for (const dep of declaredDeps) {
       const depDir = dirByName.get(dep);
-      if (depDir === undefined) errors.push(`${member.dir}/package.json: depends on unknown workspace package "${dep}"`);
-      else if (depDir === member.dir) errors.push(`${member.dir}/package.json: must not depend on itself`);
+      if (depDir === undefined)
+        errors.push(`${member.dir}/package.json: depends on unknown workspace package "${dep}"`);
+      else if (depDir === member.dir)
+        errors.push(`${member.dir}/package.json: must not depend on itself`);
       else expectedRefs.add(depDir);
     }
 
@@ -369,24 +417,32 @@ export function checkTsconfig(root) {
       const refConfig = ts.resolveProjectReferencePath(reference);
       const refDir = rel(root, path.dirname(refConfig));
       if (!existsSync(refConfig)) {
-        errors.push(`${label}: reference "${rel(memberRoot, reference.path)}" has no tsconfig.json`);
+        errors.push(
+          `${label}: reference "${rel(memberRoot, reference.path)}" has no tsconfig.json`,
+        );
       } else if (memberDirs.has(refDir)) {
         memberRefs.push(refDir);
         if (!expectedRefs.has(refDir)) {
           const refName = members.find((m) => m.dir === refDir)?.name ?? refDir;
-          errors.push(`${label}: references ${refDir} but package.json does not depend on "${refName}"`);
+          errors.push(
+            `${label}: references ${refDir} but package.json does not depend on "${refName}"`,
+          );
         }
       } else if (refDir.startsWith(`${member.dir}/`)) {
         projects += 1;
         checkNestedProject(root, refConfig, baseFile, errors);
       } else {
-        errors.push(`${label}: reference "${refDir}" is neither a workspace dependency nor a project nested in ${member.dir}`);
+        errors.push(
+          `${label}: reference "${refDir}" is neither a workspace dependency nor a project nested in ${member.dir}`,
+        );
       }
     }
     for (const depDir of expectedRefs) {
       if (!memberRefs.includes(depDir)) {
         const depName = members.find((m) => m.dir === depDir)?.name ?? depDir;
-        errors.push(`${label}: depends on "${depName}" but has no { "path": "../../${depDir}" } reference`);
+        errors.push(
+          `${label}: depends on "${depName}" but has no { "path": "../../${depDir}" } reference`,
+        );
       }
     }
     graph.set(member.dir, memberRefs);
@@ -394,7 +450,8 @@ export function checkTsconfig(root) {
   }
 
   checkSolution(root, memberDirs, errors);
-  for (const cycle of findCycles(graph)) errors.push(`circular project references: ${cycle.join(" -> ")}`);
+  for (const cycle of findCycles(graph))
+    errors.push(`circular project references: ${cycle.join(' -> ')}`);
 
   return { ok: errors.length === 0, root, projects, members: summary, errors };
 }
@@ -411,10 +468,13 @@ function checkNestedProject(root, configFile, baseFile, errors) {
   const label = rel(root, configFile);
   const raw = readTsconfigJson(configFile);
   if (raw.value === null) {
-    errors.push(`${label}: ${raw.error ?? "unreadable"}`);
+    errors.push(`${label}: ${raw.error ?? 'unreadable'}`);
     return;
   }
-  if (typeof raw.value.extends !== "string" || path.resolve(path.dirname(configFile), raw.value.extends) !== baseFile) {
+  if (
+    typeof raw.value.extends !== 'string' ||
+    path.resolve(path.dirname(configFile), raw.value.extends) !== baseFile
+  ) {
     errors.push(`${label}: "extends" must point at ${BASE_CONFIG}`);
   }
   const { parsed, errors: parseErrors } = parseProject(configFile);
@@ -422,10 +482,11 @@ function checkNestedProject(root, configFile, baseFile, errors) {
   if (parsed === null) return;
   checkEffectiveOptions(label, parsed.options, null, errors);
   const outDir = parsed.options.outDir;
-  if (typeof outDir !== "string" || !rel(root, outDir).split("/").includes("dist")) {
+  if (typeof outDir !== 'string' || !rel(root, outDir).split('/').includes('dist')) {
     errors.push(`${label}: compilerOptions.outDir must be inside a dist/ directory (gitignored)`);
   }
-  if ((parsed.projectReferences ?? []).length > 0) errors.push(`${label}: nested projects must not declare references`);
+  if ((parsed.projectReferences ?? []).length > 0)
+    errors.push(`${label}: nested projects must not declare references`);
 }
 
 /**
@@ -441,25 +502,34 @@ function checkSolution(root, memberDirs, errors) {
   }
   const { value, error } = readTsconfigJson(file);
   if (value === null) {
-    errors.push(`${SOLUTION_CONFIG}: ${error ?? "unreadable"}`);
+    errors.push(`${SOLUTION_CONFIG}: ${error ?? 'unreadable'}`);
     return;
   }
   if (!Array.isArray(value.files) || value.files.length !== 0) {
-    errors.push(`${SOLUTION_CONFIG}: must declare "files": [] (a solution file compiles nothing itself)`);
+    errors.push(
+      `${SOLUTION_CONFIG}: must declare "files": [] (a solution file compiles nothing itself)`,
+    );
   }
-  if ("include" in value) errors.push(`${SOLUTION_CONFIG}: must not declare "include"`);
+  if ('include' in value) errors.push(`${SOLUTION_CONFIG}: must not declare "include"`);
+  /** @type {unknown[]} */
   const references = Array.isArray(value.references) ? value.references : [];
   /** @type {Set<string>} */
   const referenced = new Set();
   for (const reference of references) {
-    const refPath = typeof reference?.path === "string" ? reference.path : "";
-    const refDir = rel(root, path.resolve(root, refPath.replace(/\/tsconfig\.json$/, "")));
+    const refValue =
+      reference !== null && typeof reference === 'object' && 'path' in reference
+        ? reference.path
+        : undefined;
+    const refPath = typeof refValue === 'string' ? refValue : '';
+    const refDir = rel(root, path.resolve(root, refPath.replace(/\/tsconfig\.json$/, '')));
     if (referenced.has(refDir)) errors.push(`${SOLUTION_CONFIG}: duplicate reference "${refDir}"`);
     referenced.add(refDir);
-    if (!memberDirs.has(refDir)) errors.push(`${SOLUTION_CONFIG}: reference "${refPath}" is not a workspace member`);
+    if (!memberDirs.has(refDir))
+      errors.push(`${SOLUTION_CONFIG}: reference "${refPath}" is not a workspace member`);
   }
   for (const dir of memberDirs) {
-    if (!referenced.has(dir)) errors.push(`${SOLUTION_CONFIG}: missing reference { "path": "${dir}" }`);
+    if (!referenced.has(dir))
+      errors.push(`${SOLUTION_CONFIG}: missing reference { "path": "${dir}" }`);
   }
 }
 
@@ -483,7 +553,7 @@ export function findCycles(graph) {
       const cycle = stack.slice(at);
       const start = cycle.indexOf([...cycle].sort()[0] ?? node);
       const rotated = [...cycle.slice(start), ...cycle.slice(0, start)];
-      found.set(rotated.join(" "), [...rotated, rotated[0] ?? node]);
+      found.set(rotated.join(' '), [...rotated, rotated[0] ?? node]);
       return;
     }
     if (done.has(node)) return;
@@ -499,14 +569,14 @@ export function findCycles(graph) {
  * @returns {{ root: string, quiet: boolean }}
  */
 function parseArgs(argv) {
-  let root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  let root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   let quiet = false;
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === "--quiet") quiet = true;
-    else if (arg === "--root") {
+    if (arg === '--quiet') quiet = true;
+    else if (arg === '--root') {
       const value = argv[i + 1];
-      if (value === undefined) throw new Error("--root requires a directory argument");
+      if (value === undefined) throw new Error('--root requires a directory argument');
       root = path.resolve(value);
       i += 1;
     } else {
@@ -526,7 +596,9 @@ export function main(argv) {
   try {
     args = parseArgs(argv);
   } catch (error) {
-    process.stderr.write(`check-tsconfig: ${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write(
+      `check-tsconfig: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
     return 2;
   }
   const result = checkTsconfig(args.root);
@@ -538,6 +610,9 @@ export function main(argv) {
   return result.ok ? 0 : 1;
 }
 
-if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (
+  process.argv[1] !== undefined &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
   process.exitCode = main(process.argv.slice(2));
 }

@@ -6,55 +6,58 @@
 // `zod` resolves exactly as it does for the package and each child starts without loading a compiler.
 // Workspace dependencies (`@blackwing/errors`) export TypeScript sources, so they are transpiled too,
 // into the scratch directory's own `node_modules`, where the child resolves them first.
-import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import { dirname, join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import ts from "typescript";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import ts from 'typescript';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { CONFIG_EXIT_CODE } from "./env.js";
+import { CONFIG_EXIT_CODE } from './env.js';
 
 const srcDir = dirname(fileURLToPath(import.meta.url));
-const cacheDir = join(srcDir, "..", "node_modules", ".cache");
+const cacheDir = join(srcDir, '..', 'node_modules', '.cache');
 /** Generous: the full workspace suite runs many packages in parallel on a shared machine. */
 const CHILD_TIMEOUT_MS = 30_000;
 
-let buildDir = "";
+let buildDir = '';
 
 /** Workspace dependencies whose TypeScript sources the child needs as JavaScript. */
-const WORKSPACE_DEPENDENCIES = ["@blackwing/errors"] as const;
+const WORKSPACE_DEPENDENCIES = ['@blackwing/errors'] as const;
 
 /** Non-test `.ts` files directly inside `dir`. */
 function productSources(dir: string): string[] {
   return readdirSync(dir)
-    .filter((file) => file.endsWith(".ts") && !file.endsWith(".test.ts"))
+    .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
     .map((file) => join(dir, file));
 }
 
 /** Product sources plus the bootstrap fixture; tests are not needed by the child. */
 function sourcesToBuild(): string[] {
-  return [...productSources(srcDir), join(srcDir, "testdata", "bootstrap-app.ts")];
+  return [...productSources(srcDir), join(srcDir, 'testdata', 'bootstrap-app.ts')];
 }
 
 function transpileSources(outDir: string): void {
   transpileTree(srcDir, sourcesToBuild(), outDir);
   // Mark the scratch tree as ESM, like the package itself.
-  writeFileSync(join(outDir, "package.json"), '{ "type": "module" }\n');
+  writeFileSync(join(outDir, 'package.json'), '{ "type": "module" }\n');
   const require = createRequire(import.meta.url);
   for (const dependency of WORKSPACE_DEPENDENCIES) {
     const entryDir = dirname(require.resolve(dependency));
-    const depDir = join(outDir, "node_modules", ...dependency.split("/"));
+    const depDir = join(outDir, 'node_modules', ...dependency.split('/'));
     transpileTree(entryDir, productSources(entryDir), depDir);
-    writeFileSync(join(depDir, "package.json"), `${JSON.stringify({ name: dependency, type: "module", exports: "./index.js" })}\n`);
+    writeFileSync(
+      join(depDir, 'package.json'),
+      `${JSON.stringify({ name: dependency, type: 'module', exports: './index.js' })}\n`,
+    );
   }
 }
 
 function transpileTree(rootDir: string, files: readonly string[], outDir: string): void {
   for (const fileName of files) {
-    const { outputText } = ts.transpileModule(readFileSync(fileName, "utf8"), {
+    const { outputText } = ts.transpileModule(readFileSync(fileName, 'utf8'), {
       fileName,
       compilerOptions: {
         module: ts.ModuleKind.ESNext,
@@ -63,7 +66,7 @@ function transpileTree(rootDir: string, files: readonly string[], outDir: string
         sourceMap: false,
       },
     });
-    const target = join(outDir, relative(rootDir, fileName)).replace(/\.ts$/, ".js");
+    const target = join(outDir, relative(rootDir, fileName)).replace(/\.ts$/, '.js');
     mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, outputText);
   }
@@ -71,21 +74,25 @@ function transpileTree(rootDir: string, files: readonly string[], outDir: string
 
 beforeAll(() => {
   mkdirSync(cacheDir, { recursive: true });
-  buildDir = mkdtempSync(join(cacheDir, "config-bootstrap-"));
+  buildDir = mkdtempSync(join(cacheDir, 'config-bootstrap-'));
   transpileSources(buildDir);
 }, 60_000);
 
 afterAll(() => {
-  if (buildDir !== "") {
+  if (buildDir !== '') {
     rmSync(buildDir, { recursive: true, force: true });
   }
 });
 
-function runApp(env: Record<string, string>): { status: number | null; stdout: string; stderr: string } {
-  const result = spawnSync(process.execPath, [join(buildDir, "testdata", "bootstrap-app.js")], {
+function runApp(env: Record<string, string>): {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+} {
+  const result = spawnSync(process.execPath, [join(buildDir, 'testdata', 'bootstrap-app.js')], {
     // Only what the child needs: never inherit the parent's environment wholesale.
-    env: { PATH: process.env["PATH"] ?? "", ...env },
-    encoding: "utf8",
+    env: { PATH: process.env.PATH ?? '', ...env },
+    encoding: 'utf8',
     timeout: CHILD_TIMEOUT_MS,
   });
   if (result.error !== undefined) {
@@ -94,44 +101,57 @@ function runApp(env: Record<string, string>): { status: number | null; stdout: s
   return { status: result.status, stdout: result.stdout, stderr: result.stderr };
 }
 
-describe("app bootstrap (child process)", { timeout: CHILD_TIMEOUT_MS + 5_000 }, () => {
-  it("starts with a valid environment", () => {
+describe('app bootstrap (child process)', { timeout: CHILD_TIMEOUT_MS + 5_000 }, () => {
+  it('starts with a valid environment', () => {
     const { status, stdout, stderr } = runApp({
-      NODE_ENV: "production",
-      PORT: "13400",
-      API_TOKEN: "tok-child-ok-0009",
-      DATABASE_URL: "postgres://bw:pw-child-ok-0009@localhost:15432/bw",
+      NODE_ENV: 'production',
+      PORT: '13400',
+      API_TOKEN: 'tok-child-ok-0009',
+      DATABASE_URL: 'postgres://bw:pw-child-ok-0009@localhost:15432/bw',
     });
-    expect(stderr).toBe("");
+    expect(stderr).toBe('');
     expect(status).toBe(0);
     expect(JSON.parse(stdout)).toEqual({
       started: true,
-      keys: ["API_TOKEN", "DATABASE_URL", "LOG_LEVEL", "NODE_ENV", "PORT", "TLS_VERIFY"],
+      keys: ['API_TOKEN', 'DATABASE_URL', 'LOG_LEVEL', 'NODE_ENV', 'PORT', 'TLS_VERIFY'],
     });
-    expect(stdout).not.toContain("tok-child-ok-0009");
+    expect(stdout).not.toContain('tok-child-ok-0009');
   });
 
-  it("exits non-zero on bad env, naming every bad key and leaking no value", () => {
-    const leaks = ["tok-child-bad-LEAK", "pw-child-bad-LEAK", "port-LEAK"];
+  it('exits non-zero on bad env, naming every bad key and leaking no value', () => {
+    const leaks = ['tok-child-bad-LEAK', 'pw-child-bad-LEAK', 'port-LEAK'];
     const { status, stdout, stderr } = runApp({
-      NODE_ENV: "production",
-      PORT: "port-LEAK",
-      API_TOKEN: "",
-      DATABASE_URL: "mysql://bw:pw-child-bad-LEAK@localhost/bw",
-      UNRELATED_SECRET: "tok-child-bad-LEAK",
+      NODE_ENV: 'production',
+      PORT: 'port-LEAK',
+      API_TOKEN: '',
+      DATABASE_URL: 'mysql://bw:pw-child-bad-LEAK@localhost/bw',
+      UNRELATED_SECRET: 'tok-child-bad-LEAK',
     });
     expect(status).toBe(CONFIG_EXIT_CODE);
-    expect(stdout).toBe("");
-    const report = JSON.parse(stderr.trim()) as { level: string; msg: string; code: string; issues: unknown };
+    expect(stdout).toBe('');
+    const report = JSON.parse(stderr.trim()) as {
+      level: string;
+      msg: string;
+      code: string;
+      issues: unknown;
+    };
     expect(report).toEqual({
-      level: "fatal",
-      name: "@blackwing/config",
-      msg: "config.invalid",
-      code: "CONFIG_INVALID",
+      level: 'fatal',
+      name: '@blackwing/config',
+      msg: 'config.invalid',
+      code: 'CONFIG_INVALID',
       issues: [
-        { key: "DATABASE_URL", reason: "invalid", message: "must use one of the schemes: postgres:, postgresql:" },
-        { key: "PORT", reason: "invalid", message: "must be an integer port between 1 and 65535 (digits only)" },
-        { key: "API_TOKEN", reason: "empty", message: "required but empty" },
+        {
+          key: 'DATABASE_URL',
+          reason: 'invalid',
+          message: 'must use one of the schemes: postgres:, postgresql:',
+        },
+        {
+          key: 'PORT',
+          reason: 'invalid',
+          message: 'must be an integer port between 1 and 65535 (digits only)',
+        },
+        { key: 'API_TOKEN', reason: 'empty', message: 'required but empty' },
       ],
     });
     for (const leak of leaks) {
@@ -139,8 +159,12 @@ describe("app bootstrap (child process)", { timeout: CHILD_TIMEOUT_MS + 5_000 },
     }
   });
 
-  it("exits non-zero when NODE_ENV itself is missing", () => {
-    const { status, stderr } = runApp({ PORT: "1", API_TOKEN: "t", DATABASE_URL: "postgres://localhost/bw" });
+  it('exits non-zero when NODE_ENV itself is missing', () => {
+    const { status, stderr } = runApp({
+      PORT: '1',
+      API_TOKEN: 't',
+      DATABASE_URL: 'postgres://localhost/bw',
+    });
     expect(status).toBe(CONFIG_EXIT_CODE);
     expect(stderr).toContain('"key":"NODE_ENV","reason":"missing"');
   });

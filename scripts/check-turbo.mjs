@@ -23,45 +23,49 @@
 //                                [--tasks build,test] [--quiet]
 // Prints a structured JSON result on stdout; exits non-zero when any check fails.
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { parseWorkspaceGlobs } from "./check-layout.mjs";
+import { parseWorkspaceGlobs } from './check-layout.mjs';
 
 /** Root package.json scripts that must delegate to Turborepo, verbatim. */
 export const ROOT_TURBO_SCRIPTS = Object.freeze({
-  build: "turbo run build",
-  lint: "turbo run lint",
-  typecheck: "turbo run typecheck",
-  test: "turbo run test",
-  "test:int": "turbo run test:int",
-  "test:e2e": "turbo run test:e2e",
-  dev: "turbo run dev --parallel",
+  build: 'turbo run build',
+  lint: 'turbo run lint',
+  typecheck: 'turbo run typecheck',
+  test: 'turbo run test',
+  'test:int': 'turbo run test:int',
+  'test:e2e': 'turbo run test:e2e',
+  dev: 'turbo run dev --parallel',
 });
 
 export const REQUIRED_TASKS = Object.freeze(Object.keys(ROOT_TURBO_SCRIPTS));
 
 /** Tasks whose results are reusable and therefore must be cached. */
-export const CACHED_TASKS = Object.freeze(["build", "typecheck", "lint", "test"]);
+export const CACHED_TASKS = Object.freeze(['build', 'typecheck', 'lint', 'test']);
 
 /** Tasks that touch external services or never exit: caching them would be wrong. */
-export const UNCACHED_TASKS = Object.freeze(["test:int", "test:e2e", "dev"]);
+export const UNCACHED_TASKS = Object.freeze(['test:int', 'test:e2e', 'dev']);
 
 /** Inputs every cached task must hash. */
-export const REQUIRED_INPUTS = Object.freeze(["src/**", "tsconfig*.json", "package.json"]);
+export const REQUIRED_INPUTS = Object.freeze(['src/**', 'tsconfig*.json', 'package.json']);
 
 /** Files that must bust every task's cache when they change. */
-export const REQUIRED_GLOBAL_DEPENDENCIES = Object.freeze(["tsconfig.base.json"]);
+export const REQUIRED_GLOBAL_DEPENDENCIES = Object.freeze(['tsconfig.base.json']);
 
 /** At least one of these ESLint (flat or legacy) config globs must be a global dependency. */
-export const ESLINT_GLOBAL_DEPENDENCIES = Object.freeze(["eslint.config.*", "eslint.config.mjs", ".eslintrc*"]);
+export const ESLINT_GLOBAL_DEPENDENCIES = Object.freeze([
+  'eslint.config.*',
+  'eslint.config.mjs',
+  '.eslintrc*',
+]);
 
 /** Tasks whose declared outputs must be produced on every run (checked against run summaries). */
-export const DEFAULT_OUTPUT_TASKS = Object.freeze(["build"]);
+export const DEFAULT_OUTPUT_TASKS = Object.freeze(['build']);
 
 /** Placeholder turbo uses for packages that do not define the task's script. */
-const NONEXISTENT_COMMAND = "<NONEXISTENT>";
+const NONEXISTENT_COMMAND = '<NONEXISTENT>';
 
 /** Task log files are always part of a cached artifact; they do not count as outputs. */
 const TASK_LOG = /(^|\/)\.turbo\/turbo-[^/]+\.log$/;
@@ -71,7 +75,7 @@ const TASK_LOG = /(^|\/)\.turbo\/turbo-[^/]+\.log$/;
  * @returns {value is Record<string, unknown>}
  */
 function isObject(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 /**
@@ -79,7 +83,7 @@ function isObject(value) {
  * @returns {string[]}
  */
 function stringArray(value) {
-  return Array.isArray(value) ? value.filter((v) => typeof v === "string") : [];
+  return Array.isArray(value) ? value.filter((v) => typeof v === 'string') : [];
 }
 
 /**
@@ -94,7 +98,8 @@ function readJsonObject(file, rel, errors) {
     return null;
   }
   try {
-    const value = JSON.parse(readFileSync(file, "utf8"));
+    /** @type {unknown} */
+    const value = JSON.parse(readFileSync(file, 'utf8'));
     if (!isObject(value)) {
       errors.push(`${rel}: must contain a JSON object`);
       return null;
@@ -114,34 +119,42 @@ function readJsonObject(file, rel, errors) {
 export function checkTurboConfig(config) {
   /** @type {string[]} */
   const errors = [];
-  if ("pipeline" in config) {
+  if ('pipeline' in config) {
     errors.push(`turbo.json: uses the Turborepo v1 "pipeline" key; Turborepo v2 requires "tasks"`);
   }
-  if ("extends" in config) {
+  if ('extends' in config) {
     errors.push(`turbo.json: "extends" is only valid in package-level turbo.json files`);
   }
 
   if (config.agentGuidance !== false) {
-    errors.push(`turbo.json: "agentGuidance" must be false (turbo must not write files such as AGENTS.md into the repository)`);
+    errors.push(
+      `turbo.json: "agentGuidance" must be false (turbo must not write files such as AGENTS.md into the repository)`,
+    );
   }
-  if (config.envMode !== undefined && config.envMode !== "strict") {
-    errors.push(`turbo.json: "envMode" must be "strict" so undeclared environment variables never reach tasks`);
+  if (config.envMode !== undefined && config.envMode !== 'strict') {
+    errors.push(
+      `turbo.json: "envMode" must be "strict" so undeclared environment variables never reach tasks`,
+    );
   }
 
   const remote = config.remoteCache;
   if (!isObject(remote) || remote.enabled !== false) {
-    errors.push(`turbo.json: "remoteCache.enabled" must be false (local filesystem cache only in v1)`);
+    errors.push(
+      `turbo.json: "remoteCache.enabled" must be false (local filesystem cache only in v1)`,
+    );
   }
 
   const globalDeps = stringArray(config.globalDependencies);
   for (const dep of REQUIRED_GLOBAL_DEPENDENCIES) {
     if (!globalDeps.includes(dep)) {
-      errors.push(`turbo.json: "globalDependencies" must include "${dep}" so a base config change busts the cache`);
+      errors.push(
+        `turbo.json: "globalDependencies" must include "${dep}" so a base config change busts the cache`,
+      );
     }
   }
   if (!ESLINT_GLOBAL_DEPENDENCIES.some((dep) => globalDeps.includes(dep))) {
     errors.push(
-      `turbo.json: "globalDependencies" must include the ESLint config (one of ${ESLINT_GLOBAL_DEPENDENCIES.map((d) => `"${d}"`).join(", ")})`,
+      `turbo.json: "globalDependencies" must include the ESLint config (one of ${ESLINT_GLOBAL_DEPENDENCIES.map((d) => `"${d}"`).join(', ')})`,
     );
   }
 
@@ -163,13 +176,15 @@ export function checkTurboConfig(config) {
     const cached = raw.cache !== false;
     const outputs = stringArray(raw.outputs);
     if (!cached && outputs.length > 0) {
-      errors.push(`turbo.json: task "${name}" has "cache": false but declares outputs (they would never be restored)`);
+      errors.push(
+        `turbo.json: task "${name}" has "cache": false but declares outputs (they would never be restored)`,
+      );
     }
     if (raw.persistent === true && cached) {
       errors.push(`turbo.json: persistent task "${name}" must set "cache": false`);
     }
     for (const dep of stringArray(raw.dependsOn)) {
-      if (!dep.startsWith("//#")) continue;
+      if (!dep.startsWith('//#')) continue;
       const rootTask = tasks[dep];
       if (!isObject(rootTask)) {
         errors.push(`turbo.json: task "${name}" depends on undefined root task "${dep}"`);
@@ -178,8 +193,10 @@ export function checkTurboConfig(config) {
       // A root task's hash feeds every dependent's hash: with the default inputs (every
       // root file) an unrelated edit such as README.md would bust every package's cache.
       const rootInputs = stringArray(rootTask.inputs);
-      if (rootInputs.length === 0 || rootInputs.includes("$TURBO_DEFAULT$")) {
-        errors.push(`turbo.json: root task "${dep}" (a dependency of "${name}") must declare explicit "inputs" without $TURBO_DEFAULT$`);
+      if (rootInputs.length === 0 || rootInputs.includes('$TURBO_DEFAULT$')) {
+        errors.push(
+          `turbo.json: root task "${dep}" (a dependency of "${name}") must declare explicit "inputs" without $TURBO_DEFAULT$`,
+        );
       }
     }
   }
@@ -189,11 +206,14 @@ export function checkTurboConfig(config) {
     if (!isObject(task)) continue;
     if (task.cache === false) errors.push(`turbo.json: task "${name}" must be cacheable`);
     if (!Array.isArray(task.outputs)) {
-      errors.push(`turbo.json: task "${name}" must declare "outputs" explicitly (use [] when it produces none)`);
+      errors.push(
+        `turbo.json: task "${name}" must declare "outputs" explicitly (use [] when it produces none)`,
+      );
     }
     const inputs = stringArray(task.inputs);
     for (const input of REQUIRED_INPUTS) {
-      if (!inputs.includes(input)) errors.push(`turbo.json: task "${name}" inputs must include "${input}"`);
+      if (!inputs.includes(input))
+        errors.push(`turbo.json: task "${name}" inputs must include "${input}"`);
     }
   }
 
@@ -206,10 +226,10 @@ export function checkTurboConfig(config) {
 
   const build = tasks.build;
   if (isObject(build)) {
-    if (!stringArray(build.dependsOn).includes("^build")) {
+    if (!stringArray(build.dependsOn).includes('^build')) {
       errors.push(`turbo.json: task "build" must depend on "^build" (topological order)`);
     }
-    if (!stringArray(build.outputs).includes("dist/**")) {
+    if (!stringArray(build.outputs).includes('dist/**')) {
       errors.push(`turbo.json: task "build" must declare "dist/**" as its output`);
     }
   }
@@ -217,13 +237,15 @@ export function checkTurboConfig(config) {
   const typecheck = tasks.typecheck;
   if (isObject(typecheck)) {
     const typecheckDeps = stringArray(typecheck.dependsOn);
-    if (!typecheckDeps.includes("^build")) {
+    if (!typecheckDeps.includes('^build')) {
       errors.push(`turbo.json: task "typecheck" must depend on "^build"`);
     }
-    if (!typecheckDeps.includes("^typecheck")) {
+    if (!typecheckDeps.includes('^typecheck')) {
       // `tsc -b` also builds referenced projects; without this edge a package and its
       // dependent could write the same dist/ concurrently.
-      errors.push(`turbo.json: task "typecheck" must depend on "^typecheck" (tsc -b builds project references)`);
+      errors.push(
+        `turbo.json: task "typecheck" must depend on "^typecheck" (tsc -b builds project references)`,
+      );
     }
     if (stringArray(typecheck.outputs).length > 0) {
       errors.push(`turbo.json: task "typecheck" must declare no outputs`);
@@ -231,7 +253,7 @@ export function checkTurboConfig(config) {
   }
 
   const test = tasks.test;
-  if (isObject(test) && !stringArray(test.outputs).includes("coverage/**")) {
+  if (isObject(test) && !stringArray(test.outputs).includes('coverage/**')) {
     errors.push(`turbo.json: task "test" must declare "coverage/**" as its output`);
   }
 
@@ -254,13 +276,17 @@ export function checkRootScripts(manifest) {
   const scripts = isObject(manifest.scripts) ? manifest.scripts : {};
   for (const [name, command] of Object.entries(ROOT_TURBO_SCRIPTS)) {
     if (scripts[name] !== command) {
-      errors.push(`package.json: "scripts.${name}" must be "${command}" (found ${JSON.stringify(scripts[name] ?? null)})`);
+      errors.push(
+        `package.json: "scripts.${name}" must be "${command}" (found ${JSON.stringify(scripts[name] ?? null)})`,
+      );
     }
   }
   const devDeps = isObject(manifest.devDependencies) ? manifest.devDependencies : {};
   const turbo = devDeps.turbo;
-  if (typeof turbo !== "string" || !/^2\.\d+\.\d+$/.test(turbo)) {
-    errors.push(`package.json: "devDependencies.turbo" must pin an exact Turborepo 2.x version (found ${JSON.stringify(turbo ?? null)})`);
+  if (typeof turbo !== 'string' || !/^2\.\d+\.\d+$/.test(turbo)) {
+    errors.push(
+      `package.json: "devDependencies.turbo" must pin an exact Turborepo 2.x version (found ${JSON.stringify(turbo ?? null)})`,
+    );
   }
   return errors;
 }
@@ -283,17 +309,17 @@ export function checkGitignore(text) {
  * @returns {string[]}
  */
 export function listMembers(root) {
-  const file = path.join(root, "pnpm-workspace.yaml");
+  const file = path.join(root, 'pnpm-workspace.yaml');
   if (!existsSync(file)) return [];
   /** @type {string[]} */
   const members = [];
-  for (const glob of parseWorkspaceGlobs(readFileSync(file, "utf8")) ?? []) {
+  for (const glob of parseWorkspaceGlobs(readFileSync(file, 'utf8')) ?? []) {
     const match = /^([\w.-]+)\/\*$/.exec(glob);
     if (!match?.[1]) continue;
     const base = path.join(root, match[1]);
     if (!existsSync(base) || !statSync(base).isDirectory()) continue;
     for (const entry of readdirSync(base).sort()) {
-      if (existsSync(path.join(base, entry, "package.json"))) members.push(`${match[1]}/${entry}`);
+      if (existsSync(path.join(base, entry, 'package.json'))) members.push(`${match[1]}/${entry}`);
     }
   }
   return members;
@@ -308,15 +334,16 @@ export function checkPackageConfigs(root) {
   /** @type {string[]} */
   const errors = [];
   for (const dir of listMembers(root)) {
-    const file = path.join(root, dir, "turbo.json");
+    const file = path.join(root, dir, 'turbo.json');
     if (!existsSync(file)) continue;
     const config = readJsonObject(file, `${dir}/turbo.json`, errors);
     if (config === null) continue;
     const ext = stringArray(config.extends);
-    if (ext.length !== 1 || ext[0] !== "//") {
+    if (ext.length !== 1 || ext[0] !== '//') {
       errors.push(`${dir}/turbo.json: must contain "extends": ["//"]`);
     }
-    if ("pipeline" in config) errors.push(`${dir}/turbo.json: uses the v1 "pipeline" key; use "tasks"`);
+    if ('pipeline' in config)
+      errors.push(`${dir}/turbo.json: uses the v1 "pipeline" key; use "tasks"`);
   }
   return errors;
 }
@@ -331,10 +358,10 @@ export function checkPackageConfigs(root) {
 export function checkRunSummary(summary, taskNames = DEFAULT_OUTPUT_TASKS) {
   /** @type {string[]} */
   const errors = [];
-  if (!Array.isArray(summary.tasks)) return ["run summary: missing \"tasks\" array"];
+  if (!Array.isArray(summary.tasks)) return ['run summary: missing "tasks" array'];
   for (const raw of summary.tasks) {
     if (!isObject(raw)) continue;
-    const task = typeof raw.task === "string" ? raw.task : "";
+    const task = typeof raw.task === 'string' ? raw.task : '';
     if (!taskNames.includes(task)) continue;
     if (raw.command === NONEXISTENT_COMMAND) continue;
     const execution = isObject(raw.execution) ? raw.execution : null;
@@ -342,15 +369,17 @@ export function checkRunSummary(summary, taskNames = DEFAULT_OUTPUT_TASKS) {
     const cache = isObject(raw.cache) ? raw.cache : {};
     const definition = isObject(raw.resolvedTaskDefinition) ? raw.resolvedTaskDefinition : {};
     if (definition.cache === false) continue;
-    const declared = stringArray(raw.outputs ?? definition.outputs).filter((o) => !o.startsWith("!"));
+    const declared = stringArray(raw.outputs ?? definition.outputs).filter(
+      (o) => !o.startsWith('!'),
+    );
     if (declared.length === 0) continue;
     const produced = stringArray(raw.expandedOutputs).filter((file) => !TASK_LOG.test(file));
     if (produced.length === 0) {
-      const taskId = typeof raw.taskId === "string" ? raw.taskId : task;
-      const dir = typeof raw.directory === "string" ? raw.directory : "<package>";
+      const taskId = typeof raw.taskId === 'string' ? raw.taskId : task;
+      const dir = typeof raw.directory === 'string' ? raw.directory : '<package>';
       errors.push(
-        `${taskId}: declares outputs [${declared.join(", ")}] but produced no matching files ` +
-          `(cache status ${String(cache.status ?? "unknown")}); a cache hit would restore nothing. ` +
+        `${taskId}: declares outputs [${declared.join(', ')}] but produced no matching files ` +
+          `(cache status ${typeof cache.status === 'string' ? cache.status : 'unknown'}); a cache hit would restore nothing. ` +
           `Fix the outputs or declare "outputs": [] for "${task}" in ${dir}/turbo.json`,
       );
     }
@@ -364,10 +393,10 @@ export function checkRunSummary(summary, taskNames = DEFAULT_OUTPUT_TASKS) {
  * @returns {string | null}
  */
 export function latestSummary(root) {
-  const dir = path.join(root, ".turbo", "runs");
+  const dir = path.join(root, '.turbo', 'runs');
   if (!existsSync(dir)) return null;
   const files = readdirSync(dir)
-    .filter((f) => f.endsWith(".json"))
+    .filter((f) => f.endsWith('.json'))
     .map((f) => ({ file: path.join(dir, f), mtime: statSync(path.join(dir, f)).mtimeMs }))
     .sort((a, b) => b.mtime - a.mtime);
   return files[0]?.file ?? null;
@@ -382,19 +411,24 @@ export function latestSummary(root) {
 export function checkTurbo(root, options = {}) {
   /** @type {string[]} */
   const errors = [];
-  const config = readJsonObject(path.join(root, "turbo.json"), "turbo.json", errors);
+  const config = readJsonObject(path.join(root, 'turbo.json'), 'turbo.json', errors);
   if (config !== null) errors.push(...checkTurboConfig(config));
-  const manifest = readJsonObject(path.join(root, "package.json"), "package.json", errors);
+  const manifest = readJsonObject(path.join(root, 'package.json'), 'package.json', errors);
   if (manifest !== null) errors.push(...checkRootScripts(manifest));
-  const gitignore = path.join(root, ".gitignore");
-  if (existsSync(gitignore)) errors.push(...checkGitignore(readFileSync(gitignore, "utf8")));
-  else errors.push(".gitignore: missing");
+  const gitignore = path.join(root, '.gitignore');
+  if (existsSync(gitignore)) errors.push(...checkGitignore(readFileSync(gitignore, 'utf8')));
+  else errors.push('.gitignore: missing');
   errors.push(...checkPackageConfigs(root));
 
   const summaryFile = options.summary ?? null;
   if (summaryFile !== null) {
-    const summary = readJsonObject(summaryFile, path.relative(root, summaryFile) || summaryFile, errors);
-    if (summary !== null) errors.push(...checkRunSummary(summary, options.tasks ?? DEFAULT_OUTPUT_TASKS));
+    const summary = readJsonObject(
+      summaryFile,
+      path.relative(root, summaryFile) || summaryFile,
+      errors,
+    );
+    if (summary !== null)
+      errors.push(...checkRunSummary(summary, options.tasks ?? DEFAULT_OUTPUT_TASKS));
   }
   return { ok: errors.length === 0, root, summary: summaryFile, errors };
 }
@@ -404,7 +438,7 @@ export function checkTurbo(root, options = {}) {
  * @returns {{ root: string, quiet: boolean, summary: string | null, latest: boolean, tasks: string[] }}
  */
 function parseArgs(argv) {
-  let root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  let root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   let quiet = false;
   /** @type {string | null} */
   let summary = null;
@@ -416,22 +450,22 @@ function parseArgs(argv) {
    */
   const value = (i, flag) => {
     const v = argv[i + 1];
-    if (v === undefined || v.startsWith("--")) throw new Error(`${flag} requires a value`);
+    if (v === undefined || v.startsWith('--')) throw new Error(`${flag} requires a value`);
     return v;
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === "--quiet") quiet = true;
-    else if (arg === "--latest-summary") latest = true;
-    else if (arg === "--root") {
+    if (arg === '--quiet') quiet = true;
+    else if (arg === '--latest-summary') latest = true;
+    else if (arg === '--root') {
       root = path.resolve(value(i, arg));
       i += 1;
-    } else if (arg === "--summary") {
+    } else if (arg === '--summary') {
       summary = path.resolve(value(i, arg));
       i += 1;
-    } else if (arg === "--tasks") {
+    } else if (arg === '--tasks') {
       tasks = value(i, arg)
-        .split(",")
+        .split(',')
         .map((t) => t.trim())
         .filter((t) => t.length > 0);
       i += 1;
@@ -439,7 +473,8 @@ function parseArgs(argv) {
       throw new Error(`unknown argument: ${arg}`);
     }
   }
-  if (summary !== null && latest) throw new Error("--summary and --latest-summary are mutually exclusive");
+  if (summary !== null && latest)
+    throw new Error('--summary and --latest-summary are mutually exclusive');
   return { root, quiet, summary, latest, tasks };
 }
 
@@ -453,14 +488,18 @@ export function main(argv) {
   try {
     args = parseArgs(argv);
   } catch (error) {
-    process.stderr.write(`check-turbo: ${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write(
+      `check-turbo: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
     return 2;
   }
   let summary = args.summary;
   if (args.latest) {
     summary = latestSummary(args.root);
     if (summary === null) {
-      process.stderr.write(`check-turbo: no run summary under ${path.join(args.root, ".turbo", "runs")} (run turbo with --summarize)\n`);
+      process.stderr.write(
+        `check-turbo: no run summary under ${path.join(args.root, '.turbo', 'runs')} (run turbo with --summarize)\n`,
+      );
       return 2;
     }
   }
@@ -468,13 +507,18 @@ export function main(argv) {
   if (!args.quiet) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   if (!result.ok) {
     process.stderr.write(
-      `check-turbo: ${result.errors.length} problem(s) found:\n` + result.errors.map((e) => `  - ${e}`).join("\n") + "\n",
+      `check-turbo: ${result.errors.length} problem(s) found:\n` +
+        result.errors.map((e) => `  - ${e}`).join('\n') +
+        '\n',
     );
     return 1;
   }
   return 0;
 }
 
-if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (
+  process.argv[1] !== undefined &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
   process.exitCode = main(process.argv.slice(2));
 }

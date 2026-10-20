@@ -3,7 +3,7 @@
 # sync with .github/labels.yml (checked by scripts/check-github.mjs).
 name: Bug report
 description: Something that has already landed does not behave as specified. Not for security vulnerabilities.
-labels: ["bug"]
+labels: ['bug']
 body:
   - type: markdown
     attributes:
@@ -112,17 +112,17 @@ body:
       description: Does the bug weaken a CONTEXT_PACK §8 invariant? If so, triage adds the `security` label and P0.
       options:
         - No invariant affected
-        - "§8.1 Signed, unexpired envelope before target traffic"
-        - "§8.2 Egress fails closed"
-        - "§8.3 Destructive class never allowed"
-        - "§8.4 Separation of duties"
-        - "§8.5 Kill switch"
-        - "§8.6 Tenant isolation"
-        - "§8.7 Secrets never reach model, logs or sandbox"
-        - "§8.8 Append-only audit ledger"
-        - "§8.9 Pinned versions"
-        - "§8.10 Ownership verification"
-        - "§8.11 No model-dependent safety"
+        - '§8.1 Signed, unexpired envelope before target traffic'
+        - '§8.2 Egress fails closed'
+        - '§8.3 Destructive class never allowed'
+        - '§8.4 Separation of duties'
+        - '§8.5 Kill switch'
+        - '§8.6 Tenant isolation'
+        - '§8.7 Secrets never reach model, logs or sandbox'
+        - '§8.8 Append-only audit ledger'
+        - '§8.9 Pinned versions'
+        - '§8.10 Ownership verification'
+        - '§8.11 No model-dependent safety'
       multiple: true
     validations:
       required: true
@@ -169,6 +169,6 @@ body:
     attributes:
       label: Depends on
       description: Issues that must land before this can be fixed, as keys or numbers, comma-separated, or `none`.
-      placeholder: "#42"
+      placeholder: '#42'
     validations:
       required: false

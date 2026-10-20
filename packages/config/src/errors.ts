@@ -1,4 +1,4 @@
-import { AppError } from "@blackwing/errors";
+import { AppError } from '@blackwing/errors';
 
 /**
  * Why a configuration key was rejected. Stable machine keys: match on these, never on the message.
@@ -6,7 +6,7 @@ import { AppError } from "@blackwing/errors";
  * - `empty`: the key is required and set to the empty string, which counts as unset.
  * - `invalid`: the key is set but its value does not satisfy the schema.
  */
-export type ConfigIssueReason = "missing" | "empty" | "invalid";
+export type ConfigIssueReason = 'missing' | 'empty' | 'invalid';
 
 /** One problem with one key. Carries the key name and a schema-derived description, never the value. */
 export interface ConfigIssue {
@@ -20,20 +20,25 @@ export interface ConfigIssue {
 function formatMessage(issues: readonly ConfigIssue[]): string {
   const lines = issues.map((issue) => {
     switch (issue.reason) {
-      case "missing":
+      case 'missing':
         return `  - ${issue.key}: required but not set`;
-      case "empty":
+      case 'empty':
         return `  - ${issue.key}: required but empty (an empty value counts as unset)`;
-      case "invalid":
+      case 'invalid':
         return `  - ${issue.key}: ${issue.message}`;
     }
   });
   const count = issues.length;
-  return `Invalid configuration: ${String(count)} problem${count === 1 ? "" : "s"}\n${lines.join("\n")}`;
+  return `Invalid configuration: ${String(count)} problem${count === 1 ? '' : 's'}\n${lines.join('\n')}`;
 }
 
-function uniqueKeys(issues: readonly ConfigIssue[], match: (issue: ConfigIssue) => boolean): readonly string[] {
-  return Object.freeze([...new Set(issues.filter(match).map((issue) => issue.key))]);
+function uniqueKeys(
+  issues: readonly ConfigIssue[],
+  match: (issue: ConfigIssue) => boolean,
+): readonly string[] {
+  return Object.freeze([
+    ...new Set(issues.filter((issue) => match(issue)).map((issue) => issue.key)),
+  ]);
 }
 
 /**
@@ -47,7 +52,7 @@ function uniqueKeys(issues: readonly ConfigIssue[], match: (issue: ConfigIssue) 
  */
 export class ConfigValidationError extends AppError {
   /** Stable error code. */
-  declare readonly code: "CONFIG_INVALID";
+  declare readonly code: 'CONFIG_INVALID';
   /** Every problem, in schema order. */
   readonly issues: readonly ConfigIssue[];
   /** Keys that are required but unset or empty. */
@@ -56,10 +61,10 @@ export class ConfigValidationError extends AppError {
   readonly invalidKeys: readonly string[];
 
   constructor(issues: readonly ConfigIssue[]) {
-    super("CONFIG_INVALID", formatMessage(issues));
+    super('CONFIG_INVALID', formatMessage(issues));
     this.issues = Object.freeze(issues.map((issue) => Object.freeze({ ...issue })));
-    this.missingKeys = uniqueKeys(this.issues, (issue) => issue.reason !== "invalid");
-    this.invalidKeys = uniqueKeys(this.issues, (issue) => issue.reason === "invalid");
+    this.missingKeys = uniqueKeys(this.issues, (issue) => issue.reason !== 'invalid');
+    this.invalidKeys = uniqueKeys(this.issues, (issue) => issue.reason === 'invalid');
   }
 }
 

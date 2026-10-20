@@ -8,8 +8,8 @@ export interface ConfigLoadedFields {
 
 /** A buffered `config.loaded` event. */
 export interface ConfigLoadedEvent extends ConfigLoadedFields {
-  readonly level: "debug";
-  readonly msg: "config.loaded";
+  readonly level: 'debug';
+  readonly msg: 'config.loaded';
 }
 
 /**
@@ -17,7 +17,7 @@ export interface ConfigLoadedEvent extends ConfigLoadedFields {
  * `logger.debug(obj, msg)`, so a `@blackwing/logger` instance can be passed directly.
  */
 export interface ConfigLogSink {
-  debug(fields: ConfigLoadedFields, msg: "config.loaded"): void;
+  debug(fields: ConfigLoadedFields, msg: 'config.loaded'): void;
 }
 
 /** Bound on buffered events, so a process that never creates a logger cannot grow without limit. */
@@ -30,15 +30,18 @@ const buffered: ConfigLoadedEvent[] = [];
  * `LOG_LEVEL` and the redaction registry from config), so without a sink the event is buffered until
  * the logger drains it with {@link drainConfigLoadEvents}.
  */
-export function emitConfigLoaded(fields: ConfigLoadedFields, sink: ConfigLogSink | undefined): void {
+export function emitConfigLoaded(
+  fields: ConfigLoadedFields,
+  sink: ConfigLogSink | undefined,
+): void {
   if (sink !== undefined) {
-    sink.debug(fields, "config.loaded");
+    sink.debug(fields, 'config.loaded');
     return;
   }
   if (buffered.length >= MAX_BUFFERED_CONFIG_EVENTS) {
     buffered.shift();
   }
-  buffered.push(Object.freeze({ level: "debug", msg: "config.loaded", ...fields }));
+  buffered.push(Object.freeze({ level: 'debug', msg: 'config.loaded', ...fields }));
 }
 
 /** Returns and clears the buffered `config.loaded` events, oldest first. */

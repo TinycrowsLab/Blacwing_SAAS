@@ -1,13 +1,13 @@
-import { type AppError, isAppError } from "./app-error.js";
-import { ERROR_CODES, type ErrorCode, problemTypeFor } from "./codes.js";
-import { composeRedactor, containsStackTrace, type Redactor } from "./redaction.js";
-import { type SerializedError, serializeWithRedactor } from "./serialize.js";
+import { type AppError, isAppError } from './app-error.js';
+import { ERROR_CODES, type ErrorCode, problemTypeFor } from './codes.js';
+import { composeRedactor, containsStackTrace, type Redactor } from './redaction.js';
+import { type SerializedError, serializeWithRedactor } from './serialize.js';
 
 /** Media type of every error response (RFC 9457 §3). */
-export const PROBLEM_JSON_CONTENT_TYPE = "application/problem+json";
+export const PROBLEM_JSON_CONTENT_TYPE = 'application/problem+json';
 
 /** Deployment environments, as in `@blackwing/config` `NODE_ENV`. */
-export type ErrorEnvironment = "development" | "test" | "staging" | "production";
+export type ErrorEnvironment = 'development' | 'test' | 'staging' | 'production';
 
 /**
  * The problem+json body every API error returns (RFC 9457; CONTEXT_PACK §9). It never contains a
@@ -31,7 +31,7 @@ export interface ProblemDetails {
 /** What the boundary logs, exactly once per mapped error. */
 export interface ErrorLogEntry {
   /** `error` for 5xx (a server fault), `warn` for 4xx (a client or policy outcome). */
-  readonly level: "error" | "warn";
+  readonly level: 'error' | 'warn';
   readonly code: ErrorCode;
   readonly status: number;
   readonly traceId: string;
@@ -66,18 +66,23 @@ export interface ProblemDetailsOptions {
 export const DEFAULT_MAX_DETAIL_LENGTH = 1024;
 
 /** Used when the caller has no usable trace id, so the field is always present. */
-export const UNKNOWN_TRACE_ID = "unknown";
+export const UNKNOWN_TRACE_ID = 'unknown';
 
 /** Trace ids are W3C hex ids in practice; anything outside this charset/length is not echoed. */
 const TRACE_ID = /^[A-Za-z0-9._:-]{1,128}$/;
+/** Statuses from here up are server errors (5xx). */
+const SERVER_ERROR_STATUS = 500;
+/** UTF-16 high (leading) surrogates. */
+const HIGH_SURROGATE_MIN = 0xd800;
+const HIGH_SURROGATE_MAX = 0xdbff;
 
 /** Headers the boundary sets on an error response. */
 export interface ProblemResponseHeaders {
-  readonly "content-type": typeof PROBLEM_JSON_CONTENT_TYPE;
+  readonly 'content-type': typeof PROBLEM_JSON_CONTENT_TYPE;
   /** Errors are per-request outcomes and may mention the caller's resources: never cache them. */
-  readonly "cache-control": "no-store";
+  readonly 'cache-control': 'no-store';
   /** Whole seconds, for `RATE_LIMITED` when the limiter knows the wait (§9). */
-  readonly "retry-after"?: string;
+  readonly 'retry-after'?: string;
 }
 
 /** Everything an HTTP boundary needs to answer with problem+json. */
@@ -94,7 +99,7 @@ export interface ProblemDetailsMapper {
 }
 
 function exposesServerDetail(environment: ErrorEnvironment | undefined): boolean {
-  return environment === "development" || environment === "test";
+  return environment === 'development' || environment === 'test';
 }
 
 /**
@@ -107,11 +112,11 @@ function exposesServerDetail(environment: ErrorEnvironment | undefined): boolean
  */
 function mayExposeDetail(status: number, options: ProblemDetailsOptions): boolean {
   if (exposesServerDetail(options.environment)) return true;
-  return status < 500 && options.redact !== undefined;
+  return status < SERVER_ERROR_STATUS && options.redact !== undefined;
 }
 
 function normaliseTraceId(traceId: unknown): string {
-  return typeof traceId === "string" && TRACE_ID.test(traceId) ? traceId : UNKNOWN_TRACE_ID;
+  return typeof traceId === 'string' && TRACE_ID.test(traceId) ? traceId : UNKNOWN_TRACE_ID;
 }
 
 function truncate(text: string, max: number): string {
@@ -119,7 +124,7 @@ function truncate(text: string, max: number): string {
   // Never split a surrogate pair: a lone surrogate is not valid UTF-8 on the wire.
   let end = Math.max(0, max - 1);
   const last = text.charCodeAt(end - 1);
-  if (last >= 0xd800 && last <= 0xdbff) end -= 1;
+  if (last >= HIGH_SURROGATE_MIN && last <= HIGH_SURROGATE_MAX) end -= 1;
   return `${text.slice(0, end)}…`;
 }
 
@@ -129,9 +134,9 @@ function detailLimit(max: number | undefined): number {
 
 /** `Retry-After` seconds of a `RATE_LIMITED` error (works across package copies), if valid. */
 function retryAfterOf(error: AppError): number | undefined {
-  if (error.code !== "RATE_LIMITED") return undefined;
+  if (error.code !== 'RATE_LIMITED') return undefined;
   const value: unknown = (error as { retryAfterSeconds?: unknown }).retryAfterSeconds;
-  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : undefined;
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined;
 }
 
 interface Mapped {
@@ -142,7 +147,13 @@ interface Mapped {
 /** Generic body used when mapping itself fails: no input is trusted. */
 function fallbackBody(traceId: string): ProblemDetails {
   const spec = ERROR_CODES.INTERNAL;
-  return { type: problemTypeFor("INTERNAL"), title: spec.title, status: spec.status, code: "INTERNAL", traceId };
+  return {
+    type: problemTypeFor('INTERNAL'),
+    title: spec.title,
+    status: spec.status,
+    code: 'INTERNAL',
+    traceId,
+  };
 }
 
 function mapError(err: unknown, rawTraceId: unknown, options: ProblemDetailsOptions): Mapped {
@@ -154,16 +165,16 @@ function mapError(err: unknown, rawTraceId: unknown, options: ProblemDetailsOpti
     const appError = isAppError(err) ? err : undefined;
     // Status and title always come from the registry by code, never from the thrown object, so a
     // forged or inconsistent `httpStatus` cannot change what the client sees.
-    const code: ErrorCode = appError?.code ?? "INTERNAL";
+    const code: ErrorCode = appError?.code ?? 'INTERNAL';
     const spec = ERROR_CODES[code];
     retryable = appError?.retryable ?? false;
 
     let detail: string | undefined;
     // A non-AppError is never described to the client: its message is internal by definition.
     const rawDetail = appError?.detail;
-    if (typeof rawDetail === "string" && mayExposeDetail(spec.status, options)) {
+    if (typeof rawDetail === 'string' && mayExposeDetail(spec.status, options)) {
       const redacted = redact(rawDetail);
-      if (redacted !== undefined && redacted.trim() !== "" && !containsStackTrace(redacted)) {
+      if (redacted !== undefined && redacted.trim() !== '' && !containsStackTrace(redacted)) {
         detail = truncate(redacted, detailLimit(options.maxDetailLength));
       }
     }
@@ -185,7 +196,7 @@ function mapError(err: unknown, rawTraceId: unknown, options: ProblemDetailsOpti
   if (options.log !== undefined) {
     try {
       options.log({
-        level: mapped.body.status >= 500 ? "error" : "warn",
+        level: mapped.body.status >= SERVER_ERROR_STATUS ? 'error' : 'warn',
         code: mapped.body.code,
         status: mapped.body.status,
         traceId,
@@ -209,17 +220,29 @@ function mapError(err: unknown, rawTraceId: unknown, options: ProblemDetailsOpti
  *   title and no detail. The real cause reaches only the log sink, redacted.
  * - The `cause` chain and every stack stay server-side.
  */
-export function toProblemDetails(err: unknown, traceId: string, options: ProblemDetailsOptions = {}): ProblemDetails {
+export function toProblemDetails(
+  err: unknown,
+  traceId: string,
+  options: ProblemDetailsOptions = {},
+): ProblemDetails {
   return mapError(err, traceId, options).body;
 }
 
 /** {@link toProblemDetails} plus the status and headers (`application/problem+json`, `Retry-After`). */
-export function toProblemResponse(err: unknown, traceId: string, options: ProblemDetailsOptions = {}): ProblemResponse {
+export function toProblemResponse(
+  err: unknown,
+  traceId: string,
+  options: ProblemDetailsOptions = {},
+): ProblemResponse {
   const { body, retryAfterSeconds } = mapError(err, traceId, options);
   const headers: ProblemResponseHeaders =
     retryAfterSeconds === undefined
-      ? { "content-type": PROBLEM_JSON_CONTENT_TYPE, "cache-control": "no-store" }
-      : { "content-type": PROBLEM_JSON_CONTENT_TYPE, "cache-control": "no-store", "retry-after": String(retryAfterSeconds) };
+      ? { 'content-type': PROBLEM_JSON_CONTENT_TYPE, 'cache-control': 'no-store' }
+      : {
+          'content-type': PROBLEM_JSON_CONTENT_TYPE,
+          'cache-control': 'no-store',
+          'retry-after': String(retryAfterSeconds),
+        };
   return { status: body.status, headers, body };
 }
 
@@ -227,7 +250,9 @@ export function toProblemResponse(err: unknown, traceId: string, options: Proble
  * Binds the options once at bootstrap: the API exception filter (API epic) builds one mapper from
  * config (`environment`), the logger's redactor and its log sink, then calls it per error.
  */
-export function createProblemDetailsMapper(options: ProblemDetailsOptions = {}): ProblemDetailsMapper {
+export function createProblemDetailsMapper(
+  options: ProblemDetailsOptions = {},
+): ProblemDetailsMapper {
   const bound = Object.freeze({ ...options });
   return Object.freeze({
     toProblemDetails: (err: unknown, traceId: string) => toProblemDetails(err, traceId, bound),

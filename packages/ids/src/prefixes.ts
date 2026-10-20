@@ -8,33 +8,33 @@
  */
 export const ID_PREFIXES = Object.freeze({
   /** Runs (`runs`, §7). */
-  run: "RunId",
+  run: 'RunId',
   /** Findings (`findings`). */
-  fnd: "FindingId",
+  fnd: 'FindingId',
   /** Assets (`assets`). */
-  asset: "AssetId",
+  asset: 'AssetId',
   /** Standing authorisations (`standing_authorisations`). */
-  sa: "StandingAuthorisationId",
+  sa: 'StandingAuthorisationId',
   /** Test plans (`test_plans`). */
-  tp: "TestPlanId",
+  tp: 'TestPlanId',
   /** Test cases (`test_cases`). */
-  tc: "TestCaseId",
+  tc: 'TestCaseId',
   /** Subtasks (`subtasks`). */
-  sub: "SubtaskId",
+  sub: 'SubtaskId',
   /** Agent sessions (`agent_sessions`). */
-  sess: "SessionId",
+  sess: 'SessionId',
   /** Evidence items (`evidence_items`). */
-  evd: "EvidenceId",
+  evd: 'EvidenceId',
   /** API token records (`api_tokens`). The row id, never the `bw_pat_`/`bw_ci_` secret itself. */
-  tok: "ApiTokenId",
+  tok: 'ApiTokenId',
   /** Tenants (`tenants`). */
-  ten: "TenantId",
+  ten: 'TenantId',
   /** Users (`users`). */
-  usr: "UserId",
+  usr: 'UserId',
   /** OOB correlations (`oob_correlations`). */
-  oob: "OobId",
+  oob: 'OobId',
   /** Kill events (`kill_events`). */
-  kill: "KillEventId",
+  kill: 'KillEventId',
 } as const);
 
 /** A registered public-id prefix. */
@@ -44,9 +44,11 @@ export type IdPrefix = keyof typeof ID_PREFIXES;
 export type BrandOf<P extends IdPrefix> = (typeof ID_PREFIXES)[P];
 
 /** Every registered prefix, in registry order. */
-export const ID_PREFIX_LIST: readonly IdPrefix[] = Object.freeze(Object.keys(ID_PREFIXES) as IdPrefix[]);
+export const ID_PREFIX_LIST: readonly IdPrefix[] = Object.freeze(
+  Object.keys(ID_PREFIXES) as IdPrefix[],
+);
 
 /** True when `value` is a registered prefix. */
 export function isIdPrefix(value: unknown): value is IdPrefix {
-  return typeof value === "string" && Object.hasOwn(ID_PREFIXES, value);
+  return typeof value === 'string' && Object.hasOwn(ID_PREFIXES, value);
 }

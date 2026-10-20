@@ -8,4 +8,6 @@ export const lastEven = [1, 2, 3, 4].findLast((value) => value % 2 === 0);
 export const title: string = document.title;
 
 // @ts-expect-error TS2550 lib: ES2024 library additions are not part of the ES2023 baseline
-export const grouped = Object.groupBy([1, 2, 3], (value: number) => (value % 2 === 0 ? "even" : "odd"));
+export const grouped = Object.groupBy([1, 2, 3], (value: number) =>
+  value % 2 === 0 ? 'even' : 'odd',
+);

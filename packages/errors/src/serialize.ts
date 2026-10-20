@@ -1,6 +1,7 @@
-import { isAppError } from "./app-error.js";
-import type { ErrorCode } from "./codes.js";
-import { composeRedactor, REDACTED, type Redactor } from "./redaction.js";
+import { isAppError } from './app-error.js';
+import { composeRedactor, REDACTED, type Redactor } from './redaction.js';
+
+import type { ErrorCode } from './codes.js';
 
 /**
  * Server-side form of a thrown value, for the structured log written at the boundary. It keeps the
@@ -21,7 +22,7 @@ export interface SerializedError {
   /** The next link of the cause chain. */
   readonly cause?: SerializedError;
   /** Set when the chain was cut: `"cycle"` (a cause refers back up the chain) or `"depth"`. */
-  readonly truncated?: "cycle" | "depth";
+  readonly truncated?: 'cycle' | 'depth';
 }
 
 /** Longest cause chain kept in a log entry. */
@@ -37,11 +38,13 @@ function safeRedact(redact: Redact, text: string): string {
 }
 
 function renderValue(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (value === null || value === undefined || typeof value !== "object") return String(value);
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined || typeof value !== 'object') return String(value);
   try {
     const json = JSON.stringify(value);
-    return typeof json === "string" ? json.slice(0, MAX_VALUE_LENGTH) : Object.prototype.toString.call(value);
+    return typeof json === 'string'
+      ? json.slice(0, MAX_VALUE_LENGTH)
+      : Object.prototype.toString.call(value);
   } catch {
     // Circular structures, throwing getters, BigInt members: fall back to the tag.
     return Object.prototype.toString.call(value);
@@ -56,16 +59,24 @@ function readProperty(target: object, key: string): unknown {
   }
 }
 
-function serializeLink(value: unknown, redact: Redact, seen: Set<unknown>, depth: number): SerializedError {
+function serializeLink(
+  value: unknown,
+  redact: Redact,
+  seen: Set<unknown>,
+  depth: number,
+): SerializedError {
   if (!(value instanceof Error)) {
-    return { name: value === null ? "null" : typeof value, message: safeRedact(redact, renderValue(value)) };
+    return {
+      name: value === null ? 'null' : typeof value,
+      message: safeRedact(redact, renderValue(value)),
+    };
   }
   seen.add(value);
-  const nameValue = readProperty(value, "name");
-  const messageValue = readProperty(value, "message");
-  const stackValue = readProperty(value, "stack");
-  const causeValue = readProperty(value, "cause");
-  const hasCause = Object.hasOwn(value, "cause");
+  const nameValue = readProperty(value, 'name');
+  const messageValue = readProperty(value, 'message');
+  const stackValue = readProperty(value, 'stack');
+  const causeValue = readProperty(value, 'cause');
+  const hasCause = Object.hasOwn(value, 'cause');
 
   const entry: {
     name: string;
@@ -74,19 +85,22 @@ function serializeLink(value: unknown, redact: Redact, seen: Set<unknown>, depth
     detail?: string;
     stack?: string;
     cause?: SerializedError;
-    truncated?: "cycle" | "depth";
+    truncated?: 'cycle' | 'depth';
   } = {
-    name: typeof nameValue === "string" ? nameValue : "Error",
-    message: safeRedact(redact, typeof messageValue === "string" ? messageValue : renderValue(messageValue)),
+    name: typeof nameValue === 'string' ? nameValue : 'Error',
+    message: safeRedact(
+      redact,
+      typeof messageValue === 'string' ? messageValue : renderValue(messageValue),
+    ),
   };
   if (isAppError(value)) {
     entry.code = value.code;
     if (value.detail !== undefined) entry.detail = safeRedact(redact, value.detail);
   }
-  if (typeof stackValue === "string") entry.stack = safeRedact(redact, stackValue);
+  if (typeof stackValue === 'string') entry.stack = safeRedact(redact, stackValue);
   if (hasCause) {
-    if (seen.has(causeValue)) entry.truncated = "cycle";
-    else if (depth + 1 >= MAX_CAUSE_DEPTH) entry.truncated = "depth";
+    if (seen.has(causeValue)) entry.truncated = 'cycle';
+    else if (depth + 1 >= MAX_CAUSE_DEPTH) entry.truncated = 'depth';
     else entry.cause = serializeLink(causeValue, redact, seen, depth + 1);
   }
   return entry;
@@ -97,7 +111,7 @@ export function serializeWithRedactor(value: unknown, redact: Redact): Serialize
   try {
     return serializeLink(value, redact, new Set(), 0);
   } catch {
-    return { name: "Error", message: REDACTED };
+    return { name: 'Error', message: REDACTED };
   }
 }
 

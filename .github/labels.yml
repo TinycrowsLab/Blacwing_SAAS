@@ -19,532 +19,532 @@ version: 1
 
 groups:
   - id: type
-    title: "Type"
+    title: 'Type'
     description: >-
       What kind of planned work an issue is. Every planned issue carries exactly one; bug reports carry `bug` instead.
-    prefix: "type:"
+    prefix: 'type:'
     labels:
-      - name: "type:epic"
-        color: "5319E7"
-        description: "Epic: parent issue that groups the task issues of one epic (docs/architecture/EPICS.md)"
-      - name: "type:task"
-        color: "1D76DB"
-        description: "Task: one PR-sized unit of work written to the CONTEXT_PACK §11 standard"
-      - name: "type:spike"
-        color: "C5DEF5"
-        description: "Spike: time-boxed investigation that ends in a decision or an ADR"
+      - name: 'type:epic'
+        color: '5319E7'
+        description: 'Epic: parent issue that groups the task issues of one epic (docs/architecture/EPICS.md)'
+      - name: 'type:task'
+        color: '1D76DB'
+        description: 'Task: one PR-sized unit of work written to the CONTEXT_PACK §11 standard'
+      - name: 'type:spike'
+        color: 'C5DEF5'
+        description: 'Spike: time-boxed investigation that ends in a decision or an ADR'
 
   - id: priority
-    title: "Priority"
+    title: 'Priority'
     description: >-
       Delivery priority (CONTEXT_PACK §11). Every planned task and epic carries exactly one.
-    prefix: "priority:"
+    prefix: 'priority:'
     labels:
-      - name: "priority:P0"
-        color: "B60205"
-        description: "P0: needed for the first end-to-end grey-box run"
-      - name: "priority:P1"
-        color: "D93F0B"
-        description: "P1: v1 must-have"
-      - name: "priority:P2"
-        color: "FBCA04"
-        description: "P2: v1 should-have"
-      - name: "priority:P3"
-        color: "0E8A16"
-        description: "P3: nice-to-have or Later"
+      - name: 'priority:P0'
+        color: 'B60205'
+        description: 'P0: needed for the first end-to-end grey-box run'
+      - name: 'priority:P1'
+        color: 'D93F0B'
+        description: 'P1: v1 must-have'
+      - name: 'priority:P2'
+        color: 'FBCA04'
+        description: 'P2: v1 should-have'
+      - name: 'priority:P3'
+        color: '0E8A16'
+        description: 'P3: nice-to-have or Later'
 
   - id: size
-    title: "Size"
+    title: 'Size'
     description: >-
       Effort estimate (CONTEXT_PACK §11). Every planned task carries exactly one; there is no XL, split the issue instead.
-    prefix: "size:"
+    prefix: 'size:'
     labels:
-      - name: "size:XS"
-        color: "C2E0C6"
-        description: "Size XS: under 2 hours"
-      - name: "size:S"
-        color: "BFDADC"
-        description: "Size S: up to half a day"
-      - name: "size:M"
-        color: "BFD4F2"
-        description: "Size M: up to one day"
-      - name: "size:L"
-        color: "D4C5F9"
-        description: "Size L: up to two days (anything larger must be split)"
+      - name: 'size:XS'
+        color: 'C2E0C6'
+        description: 'Size XS: under 2 hours'
+      - name: 'size:S'
+        color: 'BFDADC'
+        description: 'Size S: up to half a day'
+      - name: 'size:M'
+        color: 'BFD4F2'
+        description: 'Size M: up to one day'
+      - name: 'size:L'
+        color: 'D4C5F9'
+        description: 'Size L: up to two days (anything larger must be split)'
 
   - id: area
-    title: "Area"
+    title: 'Area'
     description: >-
       Architecture area the work belongs to, as listed in the Area column of docs/architecture/EPICS.md. Every planned task and epic carries exactly one.
-    prefix: "area:"
+    prefix: 'area:'
     labels:
-      - name: "area:foundations"
-        color: "D93F0B"
-        description: "Architecture area: Foundations"
-      - name: "area:infrastructure"
-        color: "5B2C6F"
-        description: "Architecture area: Infrastructure"
-      - name: "area:tenancy"
-        color: "4527A0"
-        description: "Architecture area: Tenancy"
-      - name: "area:access-layer"
-        color: "0366D6"
-        description: "Architecture area: Access Layer"
-      - name: "area:platform-services"
-        color: "00838F"
-        description: "Architecture area: Platform Services"
-      - name: "area:authorisation-policy"
-        color: "006B75"
-        description: "Architecture area: Authorisation & Policy"
-      - name: "area:execution-sandbox"
-        color: "0E8A16"
-        description: "Architecture area: Execution Sandbox"
-      - name: "area:validation-findings"
-        color: "BF360C"
-        description: "Architecture area: Validation & Findings"
-      - name: "area:model-memory"
-        color: "795548"
-        description: "Architecture area: Model & Memory"
-      - name: "area:agent-runtime"
-        color: "5319E7"
-        description: "Architecture area: Agent Runtime"
-      - name: "area:recon-specialists"
-        color: "2E7D32"
-        description: "Architecture area: Recon & Specialists"
-      - name: "area:triage-delivery"
-        color: "37474F"
-        description: "Architecture area: Triage & Delivery"
-      - name: "area:console"
-        color: "B60205"
-        description: "Architecture area: Console"
-      - name: "area:production-readiness"
-        color: "AD1457"
-        description: "Architecture area: Production Readiness"
-      - name: "area:backlog"
-        color: "1D76DB"
-        description: "Architecture area: Backlog"
+      - name: 'area:foundations'
+        color: 'D93F0B'
+        description: 'Architecture area: Foundations'
+      - name: 'area:infrastructure'
+        color: '5B2C6F'
+        description: 'Architecture area: Infrastructure'
+      - name: 'area:tenancy'
+        color: '4527A0'
+        description: 'Architecture area: Tenancy'
+      - name: 'area:access-layer'
+        color: '0366D6'
+        description: 'Architecture area: Access Layer'
+      - name: 'area:platform-services'
+        color: '00838F'
+        description: 'Architecture area: Platform Services'
+      - name: 'area:authorisation-policy'
+        color: '006B75'
+        description: 'Architecture area: Authorisation & Policy'
+      - name: 'area:execution-sandbox'
+        color: '0E8A16'
+        description: 'Architecture area: Execution Sandbox'
+      - name: 'area:validation-findings'
+        color: 'BF360C'
+        description: 'Architecture area: Validation & Findings'
+      - name: 'area:model-memory'
+        color: '795548'
+        description: 'Architecture area: Model & Memory'
+      - name: 'area:agent-runtime'
+        color: '5319E7'
+        description: 'Architecture area: Agent Runtime'
+      - name: 'area:recon-specialists'
+        color: '2E7D32'
+        description: 'Architecture area: Recon & Specialists'
+      - name: 'area:triage-delivery'
+        color: '37474F'
+        description: 'Architecture area: Triage & Delivery'
+      - name: 'area:console'
+        color: 'B60205'
+        description: 'Architecture area: Console'
+      - name: 'area:production-readiness'
+        color: 'AD1457'
+        description: 'Architecture area: Production Readiness'
+      - name: 'area:backlog'
+        color: '1D76DB'
+        description: 'Architecture area: Backlog'
 
   - id: epic
-    title: "Epic"
+    title: 'Epic'
     description: >-
       Epic the issue belongs to, keyed by the epic key in docs/architecture/EPICS.md. Every planned task and epic carries exactly one.
-    prefix: "epic:"
+    prefix: 'epic:'
     labels:
-      - name: "epic:FOUND"
-        color: "0E4429"
-        description: "FOUND - Monorepo, shared libraries & engineering conventions"
-      - name: "epic:DEVENV"
-        color: "0E4429"
-        description: "DEVENV - Developer environment on AWS EC2 and local dependency stack"
-      - name: "epic:CI"
-        color: "0E4429"
-        description: "CI - CI/CD pipelines, supply-chain security & release engineering"
-      - name: "epic:INFRA"
-        color: "0E4429"
-        description: "INFRA - AWS infrastructure (OpenTofu), k3s cluster, networking, DNS & TLS"
-      - name: "epic:TENANT"
-        color: "0E4429"
-        description: "TENANT - Multi-tenant SaaS core: organisations, onboarding & isolation"
-      - name: "epic:IAM"
-        color: "0E4429"
-        description: "IAM - Identity, SSO (Keycloak) & session management"
-      - name: "epic:RBAC"
-        color: "0E4429"
-        description: "RBAC - Roles, permissions, service accounts & scoped CI tokens"
-      - name: "epic:API"
-        color: "0E4429"
-        description: "API - API platform: REST & GraphQL conventions"
-      - name: "epic:DB"
-        color: "0E4429"
-        description: "DB - PostgreSQL schema, migrations, RLS & data-access layer"
-      - name: "epic:GRAPH"
-        color: "0E4429"
-        description: "GRAPH - Asset & surface graph (Neo4j)"
-      - name: "epic:WORKFLOW"
-        color: "0E4429"
-        description: "WORKFLOW - Durable workflow & job infrastructure (Temporal, queues, events)"
-      - name: "epic:AUDIT"
-        color: "0E4429"
-        description: "AUDIT - Audit ledger & SIEM export"
-      - name: "epic:SECRETS"
-        color: "0E4429"
-        description: "SECRETS - Secrets service, envelope encryption & customer key stores"
-      - name: "epic:NOTIFY"
-        color: "0E4429"
-        description: "NOTIFY - Notification service: email, chat, webhooks & paging"
-      - name: "epic:ASSET"
-        color: "0E4429"
-        description: "ASSET - Asset inventory, ownership verification & environment attestation"
-      - name: "epic:SCOPE"
-        color: "0E4429"
-        description: "SCOPE - Scoping form, mode & input manifest, intrusiveness & request budgets"
-      - name: "epic:AUTHZ"
-        color: "0E4429"
-        description: "AUTHZ - Standing authorisation register & separation of duties"
-      - name: "epic:POLICY"
-        color: "0E4429"
-        description: "POLICY - Policy decision point & customer-owned policy layer (Cedar)"
-      - name: "epic:PLAN"
-        color: "0E4429"
-        description: "PLAN - Test-plan model, editable plan & Gate 1 approval"
-      - name: "epic:SANDBOX"
-        color: "0E4429"
-        description: "SANDBOX - Sandbox controller & disposable run sandboxes"
-      - name: "epic:IMAGE"
-        color: "0E4429"
-        description: "IMAGE - Sandbox image & security toolchain"
-      - name: "epic:EGRESS"
-        color: "0E4429"
-        description: "EGRESS - Scoped egress gateway (Go): allowlist, budgets, capture, fail-closed"
-      - name: "epic:SESSION"
-        color: "0E4429"
-        description: "SESSION - Session & credential manager: multi-role logins, keep-alive, lockout guard"
-      - name: "epic:BROWSER"
-        color: "0E4429"
-        description: "BROWSER - Browser automation runtime (Playwright)"
-      - name: "epic:OOB"
-        color: "0E4429"
-        description: "OOB - Out-of-band listener (interactsh) & correlation"
-      - name: "epic:KILL"
-        color: "0E4429"
-        description: "KILL - Kill switch, test-window notices & Customer SOC access"
-      - name: "epic:GATEWAY"
-        color: "0E4429"
-        description: "GATEWAY - Model gateway: Claude routing, virtual keys, redaction, cost caps & pinning"
-      - name: "epic:RUNTIME"
-        color: "0E4429"
-        description: "RUNTIME - Agent runtime host on the Claude Agent SDK"
-      - name: "epic:ORCH"
-        color: "0E4429"
-        description: "ORCH - Run orchestration: Temporal run workflow & orchestrator agent"
-      - name: "epic:REGISTRY"
-        color: "0E4429"
-        description: "REGISTRY - Agent registry, personas, prompt versioning & model tiers"
-      - name: "epic:MCP"
-        color: "0E4429"
-        description: "MCP - Blackwing MCP tool layer for agents"
-      - name: "epic:MEMORY"
-        color: "0E4429"
-        description: "MEMORY - Context manager, engagement journal & memory/knowledge"
-      - name: "epic:GATE2"
-        color: "0E4429"
-        description: "GATE2 - Runtime exception gate (Gate 2) & on-call paging"
-      - name: "epic:MENTOR"
-        color: "0E4429"
-        description: "MENTOR - Mentor & Reflector (stall detection & recovery)"
-      - name: "epic:RECON"
-        color: "0E4429"
-        description: "RECON - Recon agents: passive recon, OSINT, active recon & session setup"
-      - name: "epic:INTEL"
-        color: "0E4429"
-        description: "INTEL - Threat intelligence & enrichment"
-      - name: "epic:INGEST"
-        color: "0E4429"
-        description: "INGEST - Source & spec ingestion (grey/white box)"
-      - name: "epic:PLANNER"
-        color: "0E4429"
-        description: "PLANNER - Planner & sub-planner agents"
-      - name: "epic:WEBAPI"
-        color: "0E4429"
-        description: "WEBAPI - Web & API assessment specialist"
-      - name: "epic:AUTHLOGIC"
-        color: "0E4429"
-        description: "AUTHLOGIC - Authorisation, access-control & business-logic specialist"
-      - name: "epic:INFRASPEC"
-        color: "0E4429"
-        description: "INFRASPEC - Infrastructure & configuration specialist"
-      - name: "epic:CODESPEC"
-        color: "0E4429"
-        description: "CODESPEC - Code (white-box) specialist"
-      - name: "epic:EXPLOIT"
-        color: "0E4429"
-        description: "EXPLOIT - Exploit developer & tooling support (sandbox-only, non-destructive)"
-      - name: "epic:VALIDATE"
-        color: "0E4429"
-        description: "VALIDATE - Validator: deterministic replay, negative controls & confirmed/suspected"
-      - name: "epic:EVIDENCE"
-        color: "0E4429"
-        description: "EVIDENCE - Evidence store (write-once, hashed) & chain of custody"
-      - name: "epic:FINDING"
-        color: "0E4429"
-        description: "FINDING - Findings model, dedup & fingerprinting, severity & mapping"
-      - name: "epic:COVERAGE"
-        color: "0E4429"
-        description: "COVERAGE - Coverage manifest & export gate"
-      - name: "epic:REVERSAL"
-        color: "0E4429"
-        description: "REVERSAL - Reversal journal (undo of state changes)"
-      - name: "epic:REPRO"
-        color: "0E4429"
-        description: "REPRO - Standalone repro artifacts"
-      - name: "epic:TRIAGE"
-        color: "0E4429"
-        description: "TRIAGE - Triage & release (Gate 3) & auto-release lanes"
-      - name: "epic:REPORT"
-        color: "0E4429"
-        description: "REPORT - Report generation & export (PDF/JSON/SARIF)"
-      - name: "epic:CONNECT"
-        color: "0E4429"
-        description: "CONNECT - Issue-tracker & SCM integrations (Jira, GitHub/GitLab)"
-      - name: "epic:REMEDIATE"
-        color: "0E4429"
-        description: "REMEDIATE - Remediation guidance & one-click retest"
-      - name: "epic:BASELINE"
-        color: "0E4429"
-        description: "BASELINE - Baseline runs & diff (new/open/fixed/returned)"
-      - name: "epic:CONSOLE"
-        color: "0E4429"
-        description: "CONSOLE - Web console shell, navigation & design system"
-      - name: "epic:LIVERUN"
-        color: "0E4429"
-        description: "LIVERUN - Live run view & run management"
-      - name: "epic:DASH"
-        color: "0E4429"
-        description: "DASH - Vulnerability dashboard & reporting views"
-      - name: "epic:ADMIN"
-        color: "0E4429"
-        description: "ADMIN - Organisation administration & platform-operator console"
-      - name: "epic:SOCUI"
-        color: "0E4429"
-        description: "SOCUI - Customer SOC portal"
-      - name: "epic:OBS"
-        color: "0E4429"
-        description: "OBS - Observability: telemetry, metrics, logs, traces & alerting"
-      - name: "epic:COST"
-        color: "0E4429"
-        description: "COST - Token & cost tracking, budgets & spend caps"
-      - name: "epic:SCHED"
-        color: "0E4429"
-        description: "SCHED - Scheduler: recurring runs & blackout windows"
-      - name: "epic:RETAIN"
-        color: "0E4429"
-        description: "RETAIN - Retention, data lifecycle & deletion"
-      - name: "epic:EVAL"
-        color: "0E4429"
-        description: "EVAL - Evaluation harness & regression gate"
-      - name: "epic:SECREVIEW"
-        color: "0E4429"
-        description: "SECREVIEW - Security hardening, threat model & pre-launch review"
-      - name: "epic:PERF"
-        color: "0E4429"
-        description: "PERF - Performance, load & resilience testing"
-      - name: "epic:DOCS"
-        color: "0E4429"
-        description: "DOCS - Documentation, runbooks & onboarding"
-      - name: "epic:LAUNCH"
-        color: "0E4429"
-        description: "LAUNCH - End-to-end integration, UAT & launch readiness"
-      - name: "epic:LATER"
-        color: "0E4429"
-        description: "LATER - Post-v1 backlog (tracked, not built in v1)"
+      - name: 'epic:FOUND'
+        color: '0E4429'
+        description: 'FOUND - Monorepo, shared libraries & engineering conventions'
+      - name: 'epic:DEVENV'
+        color: '0E4429'
+        description: 'DEVENV - Developer environment on AWS EC2 and local dependency stack'
+      - name: 'epic:CI'
+        color: '0E4429'
+        description: 'CI - CI/CD pipelines, supply-chain security & release engineering'
+      - name: 'epic:INFRA'
+        color: '0E4429'
+        description: 'INFRA - AWS infrastructure (OpenTofu), k3s cluster, networking, DNS & TLS'
+      - name: 'epic:TENANT'
+        color: '0E4429'
+        description: 'TENANT - Multi-tenant SaaS core: organisations, onboarding & isolation'
+      - name: 'epic:IAM'
+        color: '0E4429'
+        description: 'IAM - Identity, SSO (Keycloak) & session management'
+      - name: 'epic:RBAC'
+        color: '0E4429'
+        description: 'RBAC - Roles, permissions, service accounts & scoped CI tokens'
+      - name: 'epic:API'
+        color: '0E4429'
+        description: 'API - API platform: REST & GraphQL conventions'
+      - name: 'epic:DB'
+        color: '0E4429'
+        description: 'DB - PostgreSQL schema, migrations, RLS & data-access layer'
+      - name: 'epic:GRAPH'
+        color: '0E4429'
+        description: 'GRAPH - Asset & surface graph (Neo4j)'
+      - name: 'epic:WORKFLOW'
+        color: '0E4429'
+        description: 'WORKFLOW - Durable workflow & job infrastructure (Temporal, queues, events)'
+      - name: 'epic:AUDIT'
+        color: '0E4429'
+        description: 'AUDIT - Audit ledger & SIEM export'
+      - name: 'epic:SECRETS'
+        color: '0E4429'
+        description: 'SECRETS - Secrets service, envelope encryption & customer key stores'
+      - name: 'epic:NOTIFY'
+        color: '0E4429'
+        description: 'NOTIFY - Notification service: email, chat, webhooks & paging'
+      - name: 'epic:ASSET'
+        color: '0E4429'
+        description: 'ASSET - Asset inventory, ownership verification & environment attestation'
+      - name: 'epic:SCOPE'
+        color: '0E4429'
+        description: 'SCOPE - Scoping form, mode & input manifest, intrusiveness & request budgets'
+      - name: 'epic:AUTHZ'
+        color: '0E4429'
+        description: 'AUTHZ - Standing authorisation register & separation of duties'
+      - name: 'epic:POLICY'
+        color: '0E4429'
+        description: 'POLICY - Policy decision point & customer-owned policy layer (Cedar)'
+      - name: 'epic:PLAN'
+        color: '0E4429'
+        description: 'PLAN - Test-plan model, editable plan & Gate 1 approval'
+      - name: 'epic:SANDBOX'
+        color: '0E4429'
+        description: 'SANDBOX - Sandbox controller & disposable run sandboxes'
+      - name: 'epic:IMAGE'
+        color: '0E4429'
+        description: 'IMAGE - Sandbox image & security toolchain'
+      - name: 'epic:EGRESS'
+        color: '0E4429'
+        description: 'EGRESS - Scoped egress gateway (Go): allowlist, budgets, capture, fail-closed'
+      - name: 'epic:SESSION'
+        color: '0E4429'
+        description: 'SESSION - Session & credential manager: multi-role logins, keep-alive, lockout guard'
+      - name: 'epic:BROWSER'
+        color: '0E4429'
+        description: 'BROWSER - Browser automation runtime (Playwright)'
+      - name: 'epic:OOB'
+        color: '0E4429'
+        description: 'OOB - Out-of-band listener (interactsh) & correlation'
+      - name: 'epic:KILL'
+        color: '0E4429'
+        description: 'KILL - Kill switch, test-window notices & Customer SOC access'
+      - name: 'epic:GATEWAY'
+        color: '0E4429'
+        description: 'GATEWAY - Model gateway: Claude routing, virtual keys, redaction, cost caps & pinning'
+      - name: 'epic:RUNTIME'
+        color: '0E4429'
+        description: 'RUNTIME - Agent runtime host on the Claude Agent SDK'
+      - name: 'epic:ORCH'
+        color: '0E4429'
+        description: 'ORCH - Run orchestration: Temporal run workflow & orchestrator agent'
+      - name: 'epic:REGISTRY'
+        color: '0E4429'
+        description: 'REGISTRY - Agent registry, personas, prompt versioning & model tiers'
+      - name: 'epic:MCP'
+        color: '0E4429'
+        description: 'MCP - Blackwing MCP tool layer for agents'
+      - name: 'epic:MEMORY'
+        color: '0E4429'
+        description: 'MEMORY - Context manager, engagement journal & memory/knowledge'
+      - name: 'epic:GATE2'
+        color: '0E4429'
+        description: 'GATE2 - Runtime exception gate (Gate 2) & on-call paging'
+      - name: 'epic:MENTOR'
+        color: '0E4429'
+        description: 'MENTOR - Mentor & Reflector (stall detection & recovery)'
+      - name: 'epic:RECON'
+        color: '0E4429'
+        description: 'RECON - Recon agents: passive recon, OSINT, active recon & session setup'
+      - name: 'epic:INTEL'
+        color: '0E4429'
+        description: 'INTEL - Threat intelligence & enrichment'
+      - name: 'epic:INGEST'
+        color: '0E4429'
+        description: 'INGEST - Source & spec ingestion (grey/white box)'
+      - name: 'epic:PLANNER'
+        color: '0E4429'
+        description: 'PLANNER - Planner & sub-planner agents'
+      - name: 'epic:WEBAPI'
+        color: '0E4429'
+        description: 'WEBAPI - Web & API assessment specialist'
+      - name: 'epic:AUTHLOGIC'
+        color: '0E4429'
+        description: 'AUTHLOGIC - Authorisation, access-control & business-logic specialist'
+      - name: 'epic:INFRASPEC'
+        color: '0E4429'
+        description: 'INFRASPEC - Infrastructure & configuration specialist'
+      - name: 'epic:CODESPEC'
+        color: '0E4429'
+        description: 'CODESPEC - Code (white-box) specialist'
+      - name: 'epic:EXPLOIT'
+        color: '0E4429'
+        description: 'EXPLOIT - Exploit developer & tooling support (sandbox-only, non-destructive)'
+      - name: 'epic:VALIDATE'
+        color: '0E4429'
+        description: 'VALIDATE - Validator: deterministic replay, negative controls & confirmed/suspected'
+      - name: 'epic:EVIDENCE'
+        color: '0E4429'
+        description: 'EVIDENCE - Evidence store (write-once, hashed) & chain of custody'
+      - name: 'epic:FINDING'
+        color: '0E4429'
+        description: 'FINDING - Findings model, dedup & fingerprinting, severity & mapping'
+      - name: 'epic:COVERAGE'
+        color: '0E4429'
+        description: 'COVERAGE - Coverage manifest & export gate'
+      - name: 'epic:REVERSAL'
+        color: '0E4429'
+        description: 'REVERSAL - Reversal journal (undo of state changes)'
+      - name: 'epic:REPRO'
+        color: '0E4429'
+        description: 'REPRO - Standalone repro artifacts'
+      - name: 'epic:TRIAGE'
+        color: '0E4429'
+        description: 'TRIAGE - Triage & release (Gate 3) & auto-release lanes'
+      - name: 'epic:REPORT'
+        color: '0E4429'
+        description: 'REPORT - Report generation & export (PDF/JSON/SARIF)'
+      - name: 'epic:CONNECT'
+        color: '0E4429'
+        description: 'CONNECT - Issue-tracker & SCM integrations (Jira, GitHub/GitLab)'
+      - name: 'epic:REMEDIATE'
+        color: '0E4429'
+        description: 'REMEDIATE - Remediation guidance & one-click retest'
+      - name: 'epic:BASELINE'
+        color: '0E4429'
+        description: 'BASELINE - Baseline runs & diff (new/open/fixed/returned)'
+      - name: 'epic:CONSOLE'
+        color: '0E4429'
+        description: 'CONSOLE - Web console shell, navigation & design system'
+      - name: 'epic:LIVERUN'
+        color: '0E4429'
+        description: 'LIVERUN - Live run view & run management'
+      - name: 'epic:DASH'
+        color: '0E4429'
+        description: 'DASH - Vulnerability dashboard & reporting views'
+      - name: 'epic:ADMIN'
+        color: '0E4429'
+        description: 'ADMIN - Organisation administration & platform-operator console'
+      - name: 'epic:SOCUI'
+        color: '0E4429'
+        description: 'SOCUI - Customer SOC portal'
+      - name: 'epic:OBS'
+        color: '0E4429'
+        description: 'OBS - Observability: telemetry, metrics, logs, traces & alerting'
+      - name: 'epic:COST'
+        color: '0E4429'
+        description: 'COST - Token & cost tracking, budgets & spend caps'
+      - name: 'epic:SCHED'
+        color: '0E4429'
+        description: 'SCHED - Scheduler: recurring runs & blackout windows'
+      - name: 'epic:RETAIN'
+        color: '0E4429'
+        description: 'RETAIN - Retention, data lifecycle & deletion'
+      - name: 'epic:EVAL'
+        color: '0E4429'
+        description: 'EVAL - Evaluation harness & regression gate'
+      - name: 'epic:SECREVIEW'
+        color: '0E4429'
+        description: 'SECREVIEW - Security hardening, threat model & pre-launch review'
+      - name: 'epic:PERF'
+        color: '0E4429'
+        description: 'PERF - Performance, load & resilience testing'
+      - name: 'epic:DOCS'
+        color: '0E4429'
+        description: 'DOCS - Documentation, runbooks & onboarding'
+      - name: 'epic:LAUNCH'
+        color: '0E4429'
+        description: 'LAUNCH - End-to-end integration, UAT & launch readiness'
+      - name: 'epic:LATER'
+        color: '0E4429'
+        description: 'LATER - Post-v1 backlog (tracked, not built in v1)'
 
   - id: functional
-    title: "Functional"
+    title: 'Functional'
     description: >-
       Cross-cutting concerns the issue touches; apply every one that fits (zero or more).
     labels:
-      - name: "security"
-        color: "B60205"
-        description: "Touches a CONTEXT_PACK §8 security invariant or a security-owned path; needs security review"
-      - name: "gate"
-        color: "0052CC"
-        description: "Touches a human approval gate (scope, Gate 1, Gate 2 or Gate 3) or separation of duties"
-      - name: "agent"
-        color: "6F42C1"
-        description: "Touches the agent runtime, personas, prompts or the Blackwing MCP tools"
-      - name: "infra"
-        color: "455A64"
-        description: "Touches infrastructure, CI/CD, the dev stack or repository tooling"
+      - name: 'security'
+        color: 'B60205'
+        description: 'Touches a CONTEXT_PACK §8 security invariant or a security-owned path; needs security review'
+      - name: 'gate'
+        color: '0052CC'
+        description: 'Touches a human approval gate (scope, Gate 1, Gate 2 or Gate 3) or separation of duties'
+      - name: 'agent'
+        color: '6F42C1'
+        description: 'Touches the agent runtime, personas, prompts or the Blackwing MCP tools'
+      - name: 'infra'
+        color: '455A64'
+        description: 'Touches infrastructure, CI/CD, the dev stack or repository tooling'
 
   - id: feature
-    title: "Feature"
+    title: 'Feature'
     description: >-
       Feature IDs from docs/architecture/FEATURE_LIST.md the issue implements; apply every one that fits (zero or more).
-    prefix: "F"
+    prefix: 'F'
     labels:
-      - name: "F1"
-        color: "EDEDED"
-        description: "F1 Scoping form"
-      - name: "F2"
-        color: "EDEDED"
-        description: "F2 Editable test plan"
-      - name: "F3"
-        color: "EDEDED"
-        description: "F3 Standing authorisation"
-      - name: "F4"
-        color: "EDEDED"
-        description: "F4 Intrusiveness class"
-      - name: "F5"
-        color: "EDEDED"
-        description: "F5 Request budget per test case"
-      - name: "F6"
-        color: "EDEDED"
-        description: "F6 Environment attestation"
-      - name: "F7"
-        color: "EDEDED"
-        description: "F7 Three assessment modes"
-      - name: "F8"
-        color: "EDEDED"
-        description: "F8 Grey-box web and API testing"
-      - name: "F9"
-        color: "EDEDED"
-        description: "F9 Multi-role authorisation matrix"
-      - name: "F10"
-        color: "EDEDED"
-        description: "F10 Session manager"
-      - name: "F11"
-        color: "EDEDED"
-        description: "F11 Scoped egress proxy"
-      - name: "F12"
-        color: "EDEDED"
-        description: "F12 Agent team"
-      - name: "F13"
-        color: "EDEDED"
-        description: "F13 Runtime exception gate (Gate 2)"
-      - name: "F14"
-        color: "EDEDED"
-        description: "F14 Validator agent"
-      - name: "F15"
-        color: "EDEDED"
-        description: "F15 Out-of-band listener"
-      - name: "F16"
-        color: "EDEDED"
-        description: "F16 Negative controls"
-      - name: "F17"
-        color: "EDEDED"
-        description: "F17 Confirmed and Suspected lists"
-      - name: "F18"
-        color: "EDEDED"
-        description: "F18 Standalone repro artifact"
-      - name: "F19"
-        color: "EDEDED"
-        description: "F19 Coverage manifest"
-      - name: "F20"
-        color: "EDEDED"
-        description: "F20 Reversal journal"
-      - name: "F21"
-        color: "EDEDED"
-        description: "F21 Triage gate (Gate 3)"
-      - name: "F22"
-        color: "EDEDED"
-        description: "F22 Dedup and fingerprinting"
-      - name: "F23"
-        color: "EDEDED"
-        description: "F23 Baseline run"
-      - name: "F24"
-        color: "EDEDED"
-        description: "F24 One-click retest"
-      - name: "F25"
-        color: "EDEDED"
-        description: "F25 Report export"
-      - name: "F26"
-        color: "EDEDED"
-        description: "F26 OWASP and CWE mapping"
-      - name: "F27"
-        color: "EDEDED"
-        description: "F27 Jira and GitHub or GitLab push"
-      - name: "F28"
-        color: "EDEDED"
-        description: "F28 Vulnerability dashboard"
-      - name: "F29"
-        color: "EDEDED"
-        description: "F29 One web console"
-      - name: "F30"
-        color: "EDEDED"
-        description: "F30 SSO"
-      - name: "F31"
-        color: "EDEDED"
-        description: "F31 Separation of duties"
-      - name: "F32"
-        color: "EDEDED"
-        description: "F32 Customer-owned policy layer"
-      - name: "F33"
-        color: "EDEDED"
-        description: "F33 Kill switch"
-      - name: "F34"
-        color: "EDEDED"
-        description: "F34 Audit ledger"
-      - name: "F35"
-        color: "EDEDED"
-        description: "F35 Secrets on customer key store"
-      - name: "F36"
-        color: "EDEDED"
-        description: "F36 Bring your own model"
-      - name: "F37"
-        color: "EDEDED"
-        description: "F37 Pinned versions"
-      - name: "F38"
-        color: "EDEDED"
-        description: "F38 Cost cap"
-      - name: "F39"
-        color: "EDEDED"
-        description: "F39 Retention"
-      - name: "F40"
-        color: "EDEDED"
-        description: "F40 Evaluation harness"
-      - name: "F41"
-        color: "EDEDED"
-        description: "F41 Single-node deployment"
-      - name: "F42"
-        color: "EDEDED"
-        description: "F42 Bitbucket, Azure DevOps and ServiceNow integrations (Later)"
-      - name: "F43"
-        color: "EDEDED"
-        description: "F43 Diff-driven continuous assessment (Later)"
-      - name: "F44"
-        color: "EDEDED"
-        description: "F44 Auto-release lane in triage (Later)"
+      - name: 'F1'
+        color: 'EDEDED'
+        description: 'F1 Scoping form'
+      - name: 'F2'
+        color: 'EDEDED'
+        description: 'F2 Editable test plan'
+      - name: 'F3'
+        color: 'EDEDED'
+        description: 'F3 Standing authorisation'
+      - name: 'F4'
+        color: 'EDEDED'
+        description: 'F4 Intrusiveness class'
+      - name: 'F5'
+        color: 'EDEDED'
+        description: 'F5 Request budget per test case'
+      - name: 'F6'
+        color: 'EDEDED'
+        description: 'F6 Environment attestation'
+      - name: 'F7'
+        color: 'EDEDED'
+        description: 'F7 Three assessment modes'
+      - name: 'F8'
+        color: 'EDEDED'
+        description: 'F8 Grey-box web and API testing'
+      - name: 'F9'
+        color: 'EDEDED'
+        description: 'F9 Multi-role authorisation matrix'
+      - name: 'F10'
+        color: 'EDEDED'
+        description: 'F10 Session manager'
+      - name: 'F11'
+        color: 'EDEDED'
+        description: 'F11 Scoped egress proxy'
+      - name: 'F12'
+        color: 'EDEDED'
+        description: 'F12 Agent team'
+      - name: 'F13'
+        color: 'EDEDED'
+        description: 'F13 Runtime exception gate (Gate 2)'
+      - name: 'F14'
+        color: 'EDEDED'
+        description: 'F14 Validator agent'
+      - name: 'F15'
+        color: 'EDEDED'
+        description: 'F15 Out-of-band listener'
+      - name: 'F16'
+        color: 'EDEDED'
+        description: 'F16 Negative controls'
+      - name: 'F17'
+        color: 'EDEDED'
+        description: 'F17 Confirmed and Suspected lists'
+      - name: 'F18'
+        color: 'EDEDED'
+        description: 'F18 Standalone repro artifact'
+      - name: 'F19'
+        color: 'EDEDED'
+        description: 'F19 Coverage manifest'
+      - name: 'F20'
+        color: 'EDEDED'
+        description: 'F20 Reversal journal'
+      - name: 'F21'
+        color: 'EDEDED'
+        description: 'F21 Triage gate (Gate 3)'
+      - name: 'F22'
+        color: 'EDEDED'
+        description: 'F22 Dedup and fingerprinting'
+      - name: 'F23'
+        color: 'EDEDED'
+        description: 'F23 Baseline run'
+      - name: 'F24'
+        color: 'EDEDED'
+        description: 'F24 One-click retest'
+      - name: 'F25'
+        color: 'EDEDED'
+        description: 'F25 Report export'
+      - name: 'F26'
+        color: 'EDEDED'
+        description: 'F26 OWASP and CWE mapping'
+      - name: 'F27'
+        color: 'EDEDED'
+        description: 'F27 Jira and GitHub or GitLab push'
+      - name: 'F28'
+        color: 'EDEDED'
+        description: 'F28 Vulnerability dashboard'
+      - name: 'F29'
+        color: 'EDEDED'
+        description: 'F29 One web console'
+      - name: 'F30'
+        color: 'EDEDED'
+        description: 'F30 SSO'
+      - name: 'F31'
+        color: 'EDEDED'
+        description: 'F31 Separation of duties'
+      - name: 'F32'
+        color: 'EDEDED'
+        description: 'F32 Customer-owned policy layer'
+      - name: 'F33'
+        color: 'EDEDED'
+        description: 'F33 Kill switch'
+      - name: 'F34'
+        color: 'EDEDED'
+        description: 'F34 Audit ledger'
+      - name: 'F35'
+        color: 'EDEDED'
+        description: 'F35 Secrets on customer key store'
+      - name: 'F36'
+        color: 'EDEDED'
+        description: 'F36 Bring your own model'
+      - name: 'F37'
+        color: 'EDEDED'
+        description: 'F37 Pinned versions'
+      - name: 'F38'
+        color: 'EDEDED'
+        description: 'F38 Cost cap'
+      - name: 'F39'
+        color: 'EDEDED'
+        description: 'F39 Retention'
+      - name: 'F40'
+        color: 'EDEDED'
+        description: 'F40 Evaluation harness'
+      - name: 'F41'
+        color: 'EDEDED'
+        description: 'F41 Single-node deployment'
+      - name: 'F42'
+        color: 'EDEDED'
+        description: 'F42 Bitbucket, Azure DevOps and ServiceNow integrations (Later)'
+      - name: 'F43'
+        color: 'EDEDED'
+        description: 'F43 Diff-driven continuous assessment (Later)'
+      - name: 'F44'
+        color: 'EDEDED'
+        description: 'F44 Auto-release lane in triage (Later)'
 
   - id: workflow
-    title: "Workflow"
+    title: 'Workflow'
     description: >-
       Build-process markers used by the issue workflow and the release plan.
     labels:
-      - name: "v1"
-        color: "0E8A16"
-        description: "In the v1 release scope"
-      - name: "later"
-        color: "CFD3D7"
-        description: "Post-v1 backlog: tracked, not built in v1"
-      - name: "discovered"
-        color: "FBCA04"
-        description: "Raised by the build agents while implementing another issue"
-      - name: "online-porting"
-        color: "1D76DB"
-        description: "Work stubbed while building offline; port to the online/cloud equivalent before go-live"
-      - name: "offline-stub"
-        color: "FBCA04"
-        description: "A code path using an offline/local substitute for a cloud/online dependency"
+      - name: 'v1'
+        color: '0E8A16'
+        description: 'In the v1 release scope'
+      - name: 'later'
+        color: 'CFD3D7'
+        description: 'Post-v1 backlog: tracked, not built in v1'
+      - name: 'discovered'
+        color: 'FBCA04'
+        description: 'Raised by the build agents while implementing another issue'
+      - name: 'online-porting'
+        color: '1D76DB'
+        description: 'Work stubbed while building offline; port to the online/cloud equivalent before go-live'
+      - name: 'offline-stub'
+        color: 'FBCA04'
+        description: 'A code path using an offline/local substitute for a cloud/online dependency'
 
   - id: github
-    title: "GitHub defaults"
+    title: 'GitHub defaults'
     description: >-
       GitHub default labels, kept so external reports and the bug template have stable labels.
     labels:
-      - name: "bug"
-        color: "D73A4A"
+      - name: 'bug'
+        color: 'D73A4A'
         description: "Something isn't working: a defect in behaviour that has already landed"
-      - name: "documentation"
-        color: "0075CA"
-        description: "Improvements or additions to documentation"
-      - name: "duplicate"
-        color: "CFD3D7"
-        description: "This issue or pull request already exists"
-      - name: "enhancement"
-        color: "A2EEEF"
-        description: "New feature or request (triage into a type:task before building)"
-      - name: "good first issue"
-        color: "7057FF"
-        description: "Good for newcomers"
-      - name: "help wanted"
-        color: "008672"
-        description: "Extra attention is needed"
-      - name: "invalid"
-        color: "E4E669"
+      - name: 'documentation'
+        color: '0075CA'
+        description: 'Improvements or additions to documentation'
+      - name: 'duplicate'
+        color: 'CFD3D7'
+        description: 'This issue or pull request already exists'
+      - name: 'enhancement'
+        color: 'A2EEEF'
+        description: 'New feature or request (triage into a type:task before building)'
+      - name: 'good first issue'
+        color: '7057FF'
+        description: 'Good for newcomers'
+      - name: 'help wanted'
+        color: '008672'
+        description: 'Extra attention is needed'
+      - name: 'invalid'
+        color: 'E4E669'
         description: "This doesn't seem right"
-      - name: "question"
-        color: "D876E3"
-        description: "Further information is requested"
-      - name: "wontfix"
-        color: "FFFFFF"
-        description: "This will not be worked on"
+      - name: 'question'
+        color: 'D876E3'
+        description: 'Further information is requested'
+      - name: 'wontfix'
+        color: 'FFFFFF'
+        description: 'This will not be worked on'

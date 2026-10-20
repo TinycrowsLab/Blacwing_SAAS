@@ -1,11 +1,11 @@
-import type { z } from "zod";
+import type { z } from 'zod';
 
 /**
  * A configuration value that must never appear in logs, errors, model prompts or sandboxes
  * (CONTEXT_PACK §8.7). The brand is type-only; the runtime guarantee comes from the redaction
  * registry below, which every `zSecret()`/`zSecretUrl()` value is added to when it is parsed.
  */
-export type Secret = string & z.$brand<"Secret">;
+export type Secret = string & z.$brand<'Secret'>;
 
 /** Read-only view of the redaction registry. `@blackwing/logger` (FOUND-008) reads it. */
 export interface RedactionRegistry {

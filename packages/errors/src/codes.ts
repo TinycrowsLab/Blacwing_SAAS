@@ -19,29 +19,29 @@ export interface ErrorCodeSpec {
 }
 
 const DEFINITIONS = {
-  VALIDATION_FAILED: { status: 422, title: "Validation failed", retryable: false },
-  UNAUTHENTICATED: { status: 401, title: "Authentication required", retryable: false },
-  FORBIDDEN: { status: 403, title: "Forbidden", retryable: false },
-  NOT_FOUND: { status: 404, title: "Resource not found", retryable: false },
-  CONFLICT: { status: 409, title: "Conflict", retryable: false },
-  PRECONDITION_FAILED: { status: 412, title: "Precondition failed", retryable: false },
-  RATE_LIMITED: { status: 429, title: "Too many requests", retryable: true },
-  ILLEGAL_RUN_TRANSITION: { status: 409, title: "Illegal run state transition", retryable: false },
+  VALIDATION_FAILED: { status: 422, title: 'Validation failed', retryable: false },
+  UNAUTHENTICATED: { status: 401, title: 'Authentication required', retryable: false },
+  FORBIDDEN: { status: 403, title: 'Forbidden', retryable: false },
+  NOT_FOUND: { status: 404, title: 'Resource not found', retryable: false },
+  CONFLICT: { status: 409, title: 'Conflict', retryable: false },
+  PRECONDITION_FAILED: { status: 412, title: 'Precondition failed', retryable: false },
+  RATE_LIMITED: { status: 429, title: 'Too many requests', retryable: true },
+  ILLEGAL_RUN_TRANSITION: { status: 409, title: 'Illegal run state transition', retryable: false },
   // A request that reaches a tenant-scoped path without tenant context is a server defect, and it is
   // refused outright (§7/§8.6 fail closed): 500, never retried, never served without isolation.
-  TENANT_CONTEXT_MISSING: { status: 500, title: "Tenant context missing", retryable: false },
-  KILL_SWITCH_ACTIVE: { status: 423, title: "Kill switch active", retryable: false },
-  SCOPE_VIOLATION: { status: 403, title: "Out of authorised scope", retryable: false },
+  TENANT_CONTEXT_MISSING: { status: 500, title: 'Tenant context missing', retryable: false },
+  KILL_SWITCH_ACTIVE: { status: 423, title: 'Kill switch active', retryable: false },
+  SCOPE_VIOLATION: { status: 403, title: 'Out of authorised scope', retryable: false },
   // `@blackwing/config` (FOUND-007) refuses to start on an invalid environment: a server fault.
-  CONFIG_INVALID: { status: 500, title: "Invalid configuration", retryable: false },
-  INTERNAL: { status: 500, title: "Internal server error", retryable: false },
+  CONFIG_INVALID: { status: 500, title: 'Invalid configuration', retryable: false },
+  INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 
 /** Every stable machine-readable error code. */
 export type ErrorCode = keyof typeof DEFINITIONS;
 
 /** HTTP status for a given code, as a literal type (`HttpStatusOf<"NOT_FOUND">` is `404`). */
-export type HttpStatusOf<C extends ErrorCode> = (typeof DEFINITIONS)[C]["status"];
+export type HttpStatusOf<C extends ErrorCode> = (typeof DEFINITIONS)[C]['status'];
 
 function freezeRegistry<T extends Record<string, ErrorCodeSpec>>(registry: T): Readonly<T> {
   for (const spec of Object.values(registry)) Object.freeze(spec);
@@ -52,14 +52,16 @@ function freezeRegistry<T extends Record<string, ErrorCodeSpec>>(registry: T): R
 export const ERROR_CODES: Readonly<typeof DEFINITIONS> = freezeRegistry(DEFINITIONS);
 
 /** Every code, in registry order. */
-export const ERROR_CODE_LIST: readonly ErrorCode[] = Object.freeze(Object.keys(ERROR_CODES) as ErrorCode[]);
+export const ERROR_CODE_LIST: readonly ErrorCode[] = Object.freeze(
+  Object.keys(ERROR_CODES) as ErrorCode[],
+);
 
 /** Base of every problem `type` URI. The code is appended verbatim. */
-export const PROBLEM_TYPE_BASE = "https://errors.blackwing.dev/";
+export const PROBLEM_TYPE_BASE = 'https://errors.blackwing.dev/';
 
 /** Type guard: is `value` a registered code? Uses own properties only (never the prototype chain). */
 export function isErrorCode(value: unknown): value is ErrorCode {
-  return typeof value === "string" && Object.hasOwn(ERROR_CODES, value);
+  return typeof value === 'string' && Object.hasOwn(ERROR_CODES, value);
 }
 
 /** The HTTP status mapped to `code`. */

@@ -51,8 +51,8 @@ unchanged members are skipped on the next run.
 | `noEmitOnError` | `true` | A broken member never leaves stale `.d.ts` files for its dependents. |
 | `skipLibCheck` | `true` | Skips checking `.d.ts` files only (mostly `node_modules`). Some third-party typings break under `exactOptionalPropertyTypes`. App code is never relaxed to work around that. |
 
-Two rules sit beyond the compiler, in ESLint (FOUND-004): no `any`, explicit or implicit, and no
-non-null assertions (`value!`). The base config does nothing that weakens them: no `allowJs`, no
+Two rules sit beyond the compiler, in ESLint (FOUND-004, [`eslint.config.mjs`](../../eslint.config.mjs)): no `any`,
+explicit or implicit, and no non-null assertions (`value!`). The base config does nothing that weakens them: no `allowJs`, no
 loose libraries, no relaxed strict flags.
 
 ### Sanctioned exception: `apps/web`

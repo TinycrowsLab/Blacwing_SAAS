@@ -1,4 +1,4 @@
-import { ValidationError } from "@blackwing/errors";
+import { ValidationError } from '@blackwing/errors';
 
 /**
  * Why an identifier was rejected. Stable machine keys: callers and tests match on these,
@@ -6,23 +6,23 @@ import { ValidationError } from "@blackwing/errors";
  */
 export type IdValidationReason =
   /** The value is not a string. */
-  | "not_a_string"
+  | 'not_a_string'
   /** No `_` separator, empty prefix or empty body, or the prefix is not lowercase `a-z`. */
-  | "malformed"
+  | 'malformed'
   /** The prefix is well-formed but not in the registry (`ID_PREFIXES`). */
-  | "unknown_prefix"
+  | 'unknown_prefix'
   /** The prefix is registered but is not the one the caller asked for. */
-  | "prefix_mismatch"
+  | 'prefix_mismatch'
   /** The body is not exactly 26 characters long. */
-  | "invalid_length"
+  | 'invalid_length'
   /** The body contains a character outside lowercase Crockford base32 (uppercase, `i`, `l`, `o`, `u`, ...). */
-  | "invalid_base32"
+  | 'invalid_base32'
   /** The first body character is above `7`: the value would not fit in 128 bits. */
-  | "non_canonical"
+  | 'non_canonical'
   /** The value is not a canonical 8-4-4-4-12 hex UUID. */
-  | "invalid_uuid"
+  | 'invalid_uuid'
   /** The UUID is well-formed but is not version 7 with the RFC 9562 variant. */
-  | "not_uuidv7";
+  | 'not_uuidv7';
 
 /**
  * Raised for every malformed identifier.
@@ -40,7 +40,7 @@ export class IdValidationError extends ValidationError {
 
   constructor(reason: IdValidationReason, message: string) {
     super(message, { detail: message });
-    this.name = "ValidationError";
+    this.name = 'ValidationError';
     this.reason = reason;
   }
 }

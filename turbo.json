@@ -34,8 +34,8 @@
       "outputs": []
     },
     "lint": {
-      "description": "Lint a package. Cacheable, declares no outputs; upstream packages build first so type-aware rules see their declarations.",
-      "dependsOn": ["^build"],
+      "description": "ESLint (eslint . --max-warnings=0) per package. Cacheable, declares no outputs; upstream packages build first so type-aware rules see their declarations, and the root files are linted once by //#lint:root.",
+      "dependsOn": ["^build", "//#lint:root"],
       "inputs": ["$TURBO_DEFAULT$", "src/**", "tsconfig*.json", "package.json"],
       "outputs": []
     },
@@ -77,6 +77,17 @@
         "packages/**/tsconfig*.json",
         "!**/node_modules/**",
         "!**/dist/**"
+      ],
+      "outputs": []
+    },
+    "//#lint:root": {
+      "description": "Typecheck and lint the files outside the workspace members (scripts/, root tool configs). Cacheable; hashes exactly the files it lints.",
+      "inputs": [
+        "**/*.{js,mjs,cjs,ts,mts,cts,tsx}",
+        "!apps/**",
+        "!packages/**",
+        "scripts/tsconfig.json",
+        "package.json"
       ],
       "outputs": []
     },

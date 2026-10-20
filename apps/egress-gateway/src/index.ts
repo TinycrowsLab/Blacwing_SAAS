@@ -3,7 +3,7 @@
 // can address it as @blackwing/egress-gateway; it contains no gateway logic.
 
 /** Workspace package name of this app. */
-export const name = "@blackwing/egress-gateway";
+export const name = '@blackwing/egress-gateway';
 
 /** Package version; kept in sync with package.json. */
-export const version = "0.0.0";
+export const version = '0.0.0';

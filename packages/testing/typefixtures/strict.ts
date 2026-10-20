@@ -15,7 +15,7 @@ export class Unset {
 
 export function unknownCatch(): string {
   try {
-    return "ok";
+    return 'ok';
   } catch (error) {
     // @ts-expect-error TS18046 useUnknownInCatchVariables: catch variables are `unknown`
     return error.message;
@@ -38,4 +38,4 @@ function add(left: number, right: number): number {
   return left + right;
 }
 // @ts-expect-error TS2345 strictBindCallApply: call arguments are type-checked
-export const sum = add.call(undefined, 1, "2");
+export const sum = add.call(undefined, 1, '2');

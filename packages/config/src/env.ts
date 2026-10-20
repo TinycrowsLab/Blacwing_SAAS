@@ -1,10 +1,10 @@
-import { writeSync } from "node:fs";
+import { writeSync } from 'node:fs';
 
-import type { z } from "zod";
+import { type ConfigIssue, ConfigValidationError } from './errors.js';
+import { type ConfigLogSink, emitConfigLoaded } from './events.js';
+import { describeIssue, describeSubPath } from './issues.js';
 
-import { type ConfigIssue, ConfigValidationError } from "./errors.js";
-import { type ConfigLogSink, emitConfigLoaded } from "./events.js";
-import { describeIssue, describeSubPath } from "./issues.js";
+import type { z } from 'zod';
 
 /** A raw environment: `process.env` or a plain record of strings. */
 export type EnvSource = Readonly<Record<string, string | undefined>>;
@@ -19,7 +19,7 @@ export interface LoadConfigOptions {
 }
 
 /** What {@link defineConfig} does when the environment is invalid. */
-export type InvalidConfigAction = "throw" | "exit";
+export type InvalidConfigAction = 'throw' | 'exit';
 
 /** Options for {@link defineConfig}. */
 export interface DefineConfigOptions extends LoadConfigOptions {
@@ -37,7 +37,7 @@ export interface DefineConfigOptions extends LoadConfigOptions {
 export const CONFIG_EXIT_CODE = 78;
 
 /** Key used for issues that are not attached to a single environment key (schema-level refinements). */
-const ROOT_KEY = "(root)";
+const ROOT_KEY = '(root)';
 
 interface NormalisedEnv {
   readonly input: Record<string, string>;
@@ -54,10 +54,10 @@ function normalise(source: EnvSource): NormalisedEnv {
   const entries: [string, string][] = [];
   const emptyKeys = new Set<string>();
   for (const [key, value] of Object.entries(source)) {
-    if (typeof value !== "string") {
+    if (typeof value !== 'string') {
       continue;
     }
-    if (value === "") {
+    if (value === '') {
       emptyKeys.add(key);
     } else {
       entries.push([key, value]);
@@ -69,21 +69,25 @@ function normalise(source: EnvSource): NormalisedEnv {
 function toConfigIssue(issue: z.core.$ZodIssue, env: NormalisedEnv): ConfigIssue {
   const [head, ...rest] = issue.path;
   if (head === undefined) {
-    return { key: ROOT_KEY, reason: "invalid", message: describeIssue(issue) };
+    return { key: ROOT_KEY, reason: 'invalid', message: describeIssue(issue) };
   }
   const key = `${String(head)}${describeSubPath(rest)}`;
   const topKey = String(head);
   // Any issue on a key that is not set means "required but not set" (or set to ""). Zod reports
   // this as invalid_type for most schemas but as invalid_value for enums, so match on presence.
   if (rest.length === 0 && !Object.hasOwn(env.input, topKey)) {
-    const reason = env.emptyKeys.has(topKey) ? "empty" : "missing";
-    return { key, reason, message: reason === "empty" ? "required but empty" : "required but not set" };
+    const reason = env.emptyKeys.has(topKey) ? 'empty' : 'missing';
+    return {
+      key,
+      reason,
+      message: reason === 'empty' ? 'required but empty' : 'required but not set',
+    };
   }
-  return { key, reason: "invalid", message: describeIssue(issue) };
+  return { key, reason: 'invalid', message: describeIssue(issue) };
 }
 
 function deepFreeze<T>(value: T): T {
-  if (typeof value === "object" && value !== null && !Object.isFrozen(value)) {
+  if (typeof value === 'object' && value !== null && !Object.isFrozen(value)) {
     Object.freeze(value);
     for (const child of Object.values(value)) {
       deepFreeze(child);
@@ -93,12 +97,12 @@ function deepFreeze<T>(value: T): T {
 }
 
 function describeLoaded(config: unknown): { nodeEnv: string | undefined; keys: readonly string[] } {
-  if (typeof config !== "object" || config === null || Array.isArray(config)) {
+  if (typeof config !== 'object' || config === null || Array.isArray(config)) {
     return { nodeEnv: undefined, keys: Object.freeze([]) };
   }
-  const nodeEnv: unknown = (config as Record<string, unknown>)["NODE_ENV"];
+  const nodeEnv: unknown = (config as Record<string, unknown>).NODE_ENV;
   return {
-    nodeEnv: typeof nodeEnv === "string" ? nodeEnv : undefined,
+    nodeEnv: typeof nodeEnv === 'string' ? nodeEnv : undefined,
     keys: Object.freeze(Object.keys(config).sort()),
   };
 }
@@ -129,9 +133,9 @@ export function loadConfig<T>(
 
 function reportAndExit(error: ConfigValidationError): never {
   const line = JSON.stringify({
-    level: "fatal",
-    name: "@blackwing/config",
-    msg: "config.invalid",
+    level: 'fatal',
+    name: '@blackwing/config',
+    msg: 'config.invalid',
     code: error.code,
     issues: error.issues,
   });
@@ -152,7 +156,10 @@ function reportAndExit(error: ConfigValidationError): never {
  * Fails closed: on invalid configuration the process exits non-zero ({@link CONFIG_EXIT_CODE}) after
  * writing the problems (key names only) to stderr. Under `NODE_ENV=test` it throws instead.
  */
-export function defineConfig<T>(schema: z.ZodType<T>, options: DefineConfigOptions = {}): Readonly<T> {
+export function defineConfig<T>(
+  schema: z.ZodType<T>,
+  options: DefineConfigOptions = {},
+): Readonly<T> {
   const source = options.source ?? process.env;
   try {
     return loadConfig(schema, source, options);
@@ -160,8 +167,8 @@ export function defineConfig<T>(schema: z.ZodType<T>, options: DefineConfigOptio
     if (!(error instanceof ConfigValidationError)) {
       throw error;
     }
-    const action = options.onInvalid ?? (source["NODE_ENV"] === "test" ? "throw" : "exit");
-    if (action === "throw") {
+    const action = options.onInvalid ?? (source.NODE_ENV === 'test' ? 'throw' : 'exit');
+    if (action === 'throw') {
       throw error;
     }
     return reportAndExit(error);

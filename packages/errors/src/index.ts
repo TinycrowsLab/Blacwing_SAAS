@@ -1,8 +1,8 @@
 /** Workspace package name of this package. */
-export const name = "@blackwing/errors";
+export const name = '@blackwing/errors';
 
 /** Package version; kept in sync with package.json. */
-export const version = "0.0.0";
+export const version = '0.0.0';
 
 export {
   AppError,
@@ -24,7 +24,7 @@ export {
   ScopeViolationError,
   TenantContextMissingError,
   ValidationError,
-} from "./app-error.js";
+} from './app-error.js';
 export {
   ERROR_CODE_LIST,
   ERROR_CODES,
@@ -35,7 +35,7 @@ export {
   isErrorCode,
   PROBLEM_TYPE_BASE,
   problemTypeFor,
-} from "./codes.js";
+} from './codes.js';
 export {
   createProblemDetailsMapper,
   DEFAULT_MAX_DETAIL_LENGTH,
@@ -51,6 +51,6 @@ export {
   toProblemDetails,
   toProblemResponse,
   UNKNOWN_TRACE_ID,
-} from "./problem.js";
-export { containsStackTrace, REDACTED, redactBuiltinSecrets, type Redactor } from "./redaction.js";
-export { MAX_CAUSE_DEPTH, type SerializedError, serializeErrorForLog } from "./serialize.js";
+} from './problem.js';
+export { containsStackTrace, REDACTED, redactBuiltinSecrets, type Redactor } from './redaction.js';
+export { MAX_CAUSE_DEPTH, type SerializedError, serializeErrorForLog } from './serialize.js';

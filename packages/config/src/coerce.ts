@@ -1,7 +1,7 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-import { safeMessage } from "./issues.js";
-import { markSecret, type Secret } from "./redaction.js";
+import { safeMessage } from './issues.js';
+import { markSecret, type Secret } from './redaction.js';
 
 /**
  * Coercion helpers for environment values. Environment values are always strings; these parse them
@@ -13,15 +13,17 @@ import { markSecret, type Secret } from "./redaction.js";
  * verbatim.
  */
 
-const ISSUE_BOOL = safeMessage("must be one of: true, false, 1, 0");
-const ISSUE_PORT = safeMessage("must be an integer port between 1 and 65535 (digits only)");
+const ISSUE_BOOL = safeMessage('must be one of: true, false, 1, 0');
+const ISSUE_PORT = safeMessage('must be an integer port between 1 and 65535 (digits only)');
 const ISSUE_DURATION = safeMessage(
-  "must be a non-negative integer duration: plain milliseconds or a number with unit ms, s, m, h or d",
+  'must be a non-negative integer duration: plain milliseconds or a number with unit ms, s, m, h or d',
 );
-const ISSUE_DURATION_RANGE = safeMessage("is too large to represent as a safe integer number of milliseconds");
-const ISSUE_URL = safeMessage("must be an absolute URL");
-const ISSUE_URL_WHITESPACE = safeMessage("must not have leading or trailing whitespace");
-const ISSUE_BLANK = safeMessage("must not be blank");
+const ISSUE_DURATION_RANGE = safeMessage(
+  'is too large to represent as a safe integer number of milliseconds',
+);
+const ISSUE_URL = safeMessage('must be an absolute URL');
+const ISSUE_URL_WHITESPACE = safeMessage('must not have leading or trailing whitespace');
+const ISSUE_BLANK = safeMessage('must not be blank');
 
 /** Options for {@link zString}. */
 export interface StringOptions {
@@ -47,29 +49,32 @@ export function zString(options: StringOptions = {}): z.ZodType<string, string> 
 export function zBool(): z.ZodType<boolean, string> {
   return z.string().transform((raw, ctx): boolean => {
     switch (raw.toLowerCase()) {
-      case "true":
-      case "1":
+      case 'true':
+      case '1':
         return true;
-      case "false":
-      case "0":
+      case 'false':
+      case '0':
         return false;
       default:
-        ctx.addIssue({ code: "custom", ...ISSUE_BOOL });
+        ctx.addIssue({ code: 'custom', ...ISSUE_BOOL });
         return z.NEVER;
     }
   });
 }
+
+/** Highest TCP/UDP port number. */
+const MAX_PORT = 65_535;
 
 /** TCP/UDP port: decimal digits only, no sign, no leading zero, 1..65535. */
 export function zPort(): z.ZodType<number, string> {
   return z.string().transform((raw, ctx): number => {
     if (/^[1-9][0-9]{0,4}$/.test(raw)) {
       const port = Number(raw);
-      if (port <= 65_535) {
+      if (port <= MAX_PORT) {
         return port;
       }
     }
-    ctx.addIssue({ code: "custom", ...ISSUE_PORT });
+    ctx.addIssue({ code: 'custom', ...ISSUE_PORT });
     return z.NEVER;
   });
 }
@@ -90,14 +95,14 @@ export function zDurationMs(): z.ZodType<number, string> {
     const match = /^([0-9]+)(ms|s|m|h|d)?$/.exec(raw);
     const digits = match?.[1];
     if (digits === undefined) {
-      ctx.addIssue({ code: "custom", ...ISSUE_DURATION });
+      ctx.addIssue({ code: 'custom', ...ISSUE_DURATION });
       return z.NEVER;
     }
-    const unit = match?.[2] ?? "ms";
+    const unit = match?.[2] ?? 'ms';
     const factor = isDurationUnit(unit) ? DURATION_UNITS_MS[unit] : Number.NaN;
     const ms = Number(digits) * factor;
     if (!Number.isSafeInteger(ms)) {
-      ctx.addIssue({ code: "custom", ...ISSUE_DURATION_RANGE });
+      ctx.addIssue({ code: 'custom', ...ISSUE_DURATION_RANGE });
       return z.NEVER;
     }
     return ms;
@@ -111,7 +116,7 @@ export interface UrlOptions {
 }
 
 function urlIssue(protocols: readonly string[]): ReturnType<typeof safeMessage> {
-  return safeMessage(`must use one of the schemes: ${protocols.join(", ")}`);
+  return safeMessage(`must use one of the schemes: ${protocols.join(', ')}`);
 }
 
 function registerUrlPassword(url: URL): void {
@@ -131,19 +136,19 @@ function urlSchema(options: UrlOptions): z.ZodType<string, string> {
   const { protocols } = options;
   return z.string().transform((raw, ctx): string => {
     if (raw !== raw.trim()) {
-      ctx.addIssue({ code: "custom", ...ISSUE_URL_WHITESPACE });
+      ctx.addIssue({ code: 'custom', ...ISSUE_URL_WHITESPACE });
       return z.NEVER;
     }
     let url: URL;
     try {
       url = new URL(raw);
     } catch {
-      ctx.addIssue({ code: "custom", ...ISSUE_URL });
+      ctx.addIssue({ code: 'custom', ...ISSUE_URL });
       return z.NEVER;
     }
     registerUrlPassword(url);
     if (protocols !== undefined && !protocols.includes(url.protocol)) {
-      ctx.addIssue({ code: "custom", ...urlIssue(protocols) });
+      ctx.addIssue({ code: 'custom', ...urlIssue(protocols) });
       return z.NEVER;
     }
     return raw;
@@ -163,7 +168,7 @@ export function zUrl(options: UrlOptions = {}): z.ZodType<string, string> {
 export function zSecretUrl(options: UrlOptions = {}): z.ZodType<Secret, string> {
   return urlSchema(options)
     .transform((value) => markSecret(value))
-    .brand("Secret");
+    .brand('Secret');
 }
 
 /**
@@ -175,7 +180,7 @@ export function zSecret(): z.ZodType<Secret, string> {
     .string()
     .min(1)
     .transform((value) => markSecret(value))
-    .brand("Secret");
+    .brand('Secret');
 }
 
 /**
@@ -188,6 +193,6 @@ export function zCsv<T>(item?: z.ZodType<T, string>): z.ZodType<readonly (T | st
   const element: z.ZodType<T | string, string> = item ?? z.string();
   return z
     .string()
-    .transform((raw): readonly string[] => raw.split(",").map((part) => part.trim()))
+    .transform((raw): readonly string[] => raw.split(',').map((part) => part.trim()))
     .pipe(z.array(z.string().min(1).pipe(element)).readonly());
 }

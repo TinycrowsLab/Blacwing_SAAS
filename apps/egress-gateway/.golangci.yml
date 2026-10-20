@@ -1,7 +1,7 @@
 # golangci-lint v2 configuration for the egress gateway.
 # The same file is used locally (`make lint`) and in CI (CI-005); do not fork it.
 # The golangci-lint version is pinned in the Makefile (GOLANGCI_LINT_VERSION).
-version: "2"
+version: '2'
 
 run:
   # Lint the build-tagged dependency pins too (see internal/*/deps.go).

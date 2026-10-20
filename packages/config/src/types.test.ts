@@ -1,12 +1,19 @@
 // Type tests: checked by `tsc -b` (pnpm typecheck), which fails on any wrong expectation below;
 // Vitest also runs the file (expectTypeOf is a no-op at runtime).
-import { describe, expect, expectTypeOf, it } from "vitest";
-import { z } from "zod";
+import { describe, expect, expectTypeOf, it } from 'vitest';
+import { z } from 'zod';
 
-import { zBool, zCsv, zDurationMs, zPort, zSecret, zSecretUrl, zString, zUrl } from "./coerce.js";
-import { defineConfig, loadConfig } from "./env.js";
-import type { Secret } from "./redaction.js";
-import { type BaseEnv, baseEnvSchema, databaseEnvShape, type LogLevel, type NodeEnv } from "./schema.js";
+import { zBool, zCsv, zDurationMs, zPort, zSecret, zSecretUrl, zString, zUrl } from './coerce.js';
+import { defineConfig, loadConfig } from './env.js';
+import {
+  type BaseEnv,
+  baseEnvSchema,
+  databaseEnvShape,
+  type LogLevel,
+  type NodeEnv,
+} from './schema.js';
+
+import type { Secret } from './redaction.js';
 
 const schema = baseEnvSchema.extend({
   ...databaseEnvShape,
@@ -15,7 +22,7 @@ const schema = baseEnvSchema.extend({
   TIMEOUT: zDurationMs().optional(),
   HOSTS: zCsv(),
   PORTS: zCsv(zPort()),
-  ROLES: zCsv(z.enum(["read", "write"])),
+  ROLES: zCsv(z.enum(['read', 'write'])),
   API_TOKEN: zSecret(),
   WEBHOOK: zSecretUrl(),
   PUBLIC_URL: zUrl(),
@@ -23,20 +30,20 @@ const schema = baseEnvSchema.extend({
 });
 
 const source = {
-  NODE_ENV: "test",
-  DATABASE_URL: "postgres://localhost/bw",
-  PORT: "1",
-  HOSTS: "a",
-  PORTS: "1",
-  ROLES: "read",
-  API_TOKEN: "tok-types-0010",
-  WEBHOOK: "https://hooks.test/x",
-  PUBLIC_URL: "https://app.test",
-  NAME: "n",
+  NODE_ENV: 'test',
+  DATABASE_URL: 'postgres://localhost/bw',
+  PORT: '1',
+  HOSTS: 'a',
+  PORTS: '1',
+  ROLES: 'read',
+  API_TOKEN: 'tok-types-0010',
+  WEBHOOK: 'https://hooks.test/x',
+  PUBLIC_URL: 'https://app.test',
+  NAME: 'n',
 };
 
-describe("type inference", () => {
-  it("infers every field of the loaded config exactly, with no any", () => {
+describe('type inference', () => {
+  it('infers every field of the loaded config exactly, with no any', () => {
     const config = loadConfig(schema, source);
     expectTypeOf(config).not.toBeAny();
     expectTypeOf(config).toEqualTypeOf<
@@ -51,40 +58,43 @@ describe("type inference", () => {
         TIMEOUT?: number | undefined;
         HOSTS: readonly string[];
         PORTS: readonly number[];
-        ROLES: readonly ("read" | "write")[];
+        ROLES: readonly ('read' | 'write')[];
         API_TOKEN: Secret;
         WEBHOOK: Secret;
         PUBLIC_URL: string;
         NAME: string;
       }>
     >();
-    expectTypeOf(config.NODE_ENV).toEqualTypeOf<"development" | "test" | "staging" | "production">();
+    expectTypeOf(config.NODE_ENV).toEqualTypeOf<
+      'development' | 'test' | 'staging' | 'production'
+    >();
     expectTypeOf(config.PORT).toEqualTypeOf<number>();
     expectTypeOf(config.API_TOKEN).not.toBeAny();
   });
 
-  it("defineConfig infers the same type as loadConfig", () => {
+  it('defineConfig infers the same type as loadConfig', () => {
     const config = defineConfig(schema, { source });
     expectTypeOf(config).toEqualTypeOf<ReturnType<typeof loadConfig<z.output<typeof schema>>>>();
     expectTypeOf(defineConfig(baseEnvSchema, { source })).toEqualTypeOf<Readonly<BaseEnv>>();
   });
 
-  it("brands secrets so a plain string cannot pose as one", () => {
+  it('brands secrets so a plain string cannot pose as one', () => {
     const config = loadConfig(schema, source);
     expectTypeOf(config.API_TOKEN).toExtend<string>();
     expectTypeOf<string>().not.toExtend<Secret>();
     expectTypeOf(config.PUBLIC_URL).not.toExtend<Secret>();
   });
 
-  it("returns a readonly object", () => {
+  it('returns a readonly object', () => {
     const config = loadConfig(schema, source);
     expect(() => {
       // @ts-expect-error: config is Readonly
       config.PORT = 2;
     }).toThrow(TypeError);
+    // List values are readonly arrays, in the type and at runtime.
+    expectTypeOf(config.HOSTS).not.toHaveProperty('push');
     expect(() => {
-      // @ts-expect-error: list values are readonly arrays
-      config.HOSTS.push("b");
+      (config.HOSTS as string[]).push('b');
     }).toThrow(TypeError);
   });
 });

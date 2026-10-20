@@ -15,6 +15,10 @@
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
+    "lint:root": "tsc -p scripts/tsconfig.json --pretty false && eslint . --max-warnings=0 --ignore-pattern \"apps/**\" --ignore-pattern \"packages/**\"",
+    "lint:report": "eslint . --max-warnings=0 --format json --output-file eslint-report.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:int": "turbo run test:int",
@@ -29,8 +33,18 @@
     "labels:sync": "node scripts/sync-labels.mjs"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@types/node": "catalog:",
+    "@vitest/eslint-plugin": "1.6.27",
+    "eslint": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-unicorn": "65.0.1",
+    "globals": "17.12.0",
+    "prettier": "3.9.9",
     "turbo": "2.11.7",
     "typescript": "catalog:",
+    "typescript-eslint": "8.71.1",
     "yaml": "2.9.1"
   }
 }

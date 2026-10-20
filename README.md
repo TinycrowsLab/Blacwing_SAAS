@@ -175,6 +175,8 @@ pnpm install --frozen-lockfile   # preinstall refuses npm/yarn, Node != 22, and 
 pnpm check:layout                # JSON summary of workspace members; non-zero exit on drift
 pnpm typecheck                   # turbo: tsconfig check, then strict tsc -b per member (cached)
 pnpm test                        # scripts/ self-tests + every workspace member's tests
+pnpm lint                        # turbo: ESLint (type-aware, zero warnings) per member + scripts/
+pnpm format:check                # Prettier check of the whole repository (pnpm format writes)
 ```
 
 ### Task pipeline (Turborepo)
@@ -185,7 +187,7 @@ Root scripts delegate to [Turborepo](https://turborepo.com) (`turbo.json`, pinne
 |---|---|---|---|---|
 | `pnpm build` | `build` | `^build` (workspace deps build first) | yes | `dist/**` |
 | `pnpm typecheck` | `typecheck` (+ root `check:tsconfig`) | `^build`, `^typecheck`, `//#check:tsconfig` | yes | none |
-| `pnpm lint` | `lint` | `^build` | yes | none |
+| `pnpm lint` | `lint` (+ root `lint:root`) | `^build`, `//#lint:root` | yes | none |
 | `pnpm test` | `test` (+ root `test:scripts`) | `^build`, `//#test:scripts` | yes (`test:scripts`: no) | `coverage/**` |
 | `pnpm test:int` | `test:int` | `^build` | **no** (external services) | — |
 | `pnpm test:e2e` | `test:e2e` | `^build` | **no** (external services) | — |
@@ -198,7 +200,7 @@ Root scripts delegate to [Turborepo](https://turborepo.com) (`turbo.json`, pinne
   { "extends": ["//"], "tasks": { "build": { "outputs": [] } } }
   ```
 - `test` declares `coverage/**` so coverage reports (`pnpm test -- --coverage`) are cached and restored. Until coverage is on by default (CI-002, #137), plain `pnpm test` prints turbo's "no output files found" warning for each package; it is expected and harmless (the arguments are part of the hash, so a run without coverage never restores one with it).
-- Root tasks (`//#check:tsconfig`, `//#test:scripts`) feed the hash of every package task that depends on them, so they declare narrow explicit `inputs`.
+- Root tasks (`//#check:tsconfig`, `//#lint:root`, `//#test:scripts`) feed the hash of every package task that depends on them, so they declare narrow explicit `inputs`.
 - `pnpm check:turbo` validates the pipeline contract. Add `--summarize` to any task (`pnpm build --summarize`) to write a run summary to `.turbo/runs/` (the CI artifact), then `pnpm check:turbo --latest-summary` fails if a task declared outputs it did not produce.
 - Inspect the graph without running anything: `pnpm exec turbo run build --dry=json`.
 - Turbo's anonymous telemetry can be switched off per machine with `pnpm exec turbo telemetry disable` (or `TURBO_TELEMETRY_DISABLED=1`).
@@ -207,6 +209,16 @@ Root scripts delegate to [Turborepo](https://turborepo.com) (`turbo.json`, pinne
 The workspace (`pnpm-workspace.yaml`: `apps/*`, `packages/*`) holds 9 apps and 24 packages, each named `@blackwing/<dir>`, exactly as laid out in [`CONTEXT_PACK.md` §6](docs/architecture/CONTEXT_PACK.md). `scripts/check-layout.mjs` enforces that layout; when an issue adds or removes an app, package or fixed directory, update its expected lists and §6 in the same commit.
 
 Every member extends the strict root `tsconfig.base.json` and is wired into one incremental `tsc -b` build through project references; `scripts/check-tsconfig.mjs` guards that setup. See [`docs/architecture/typescript.md`](docs/architecture/typescript.md) for the options, the `apps/web` exception, the `import type` pattern and how to add a workspace dependency.
+
+### Lint and format
+
+ESLint 9 (flat config, [`eslint.config.mjs`](eslint.config.mjs)) and Prettier ([`prettier.config.mjs`](prettier.config.mjs), [`.prettierignore`](.prettierignore)) are the main automated quality gate.
+
+- Every member runs `eslint . --max-warnings=0` (its `lint` script); `//#lint:root` typechecks and lints `scripts/` and the root config files. `pnpm lint:report` writes the whole-repository result as `eslint-report.json` (`--format json`) for CI annotations.
+- Linting is type-aware everywhere (typescript-eslint `strictTypeChecked` + `stylisticTypeChecked` through `projectService`). `any` (explicit or leaked, the `no-unsafe-*` rules), non-null assertions, floating promises, `eval`/`new Function` and `console.*` outside `apps/cli` and `scripts/` are errors. Test files may use magic numbers; `*.config.*` files and Next.js route files may default-export. Vitest files may not skip, focus or leave `todo` tests.
+- A file that no `tsconfig.json` includes fails lint with "was not found by the project service": add it to the nearest `tsconfig.json`; never switch type-aware linting off for it.
+- Generated code (`generated/`, `__generated__/`, `*.generated.*`, `*.gen.*`) is ignored by both tools; keep the two ignore lists in sync. `eslint-config-prettier` is the last config entry, so ESLint never reports formatting.
+- `scripts/lint-config.test.mjs` lints the failing fixtures in `scripts/fixtures/eslint/` and proves each rule fires.
 
 ---
 

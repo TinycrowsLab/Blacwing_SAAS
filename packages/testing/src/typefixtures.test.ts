@@ -9,17 +9,17 @@
 //   3. with the named option relaxed: the directive becomes unused (TS2578), i.e. relaxing the
 //      option breaks `tsc -b` instead of passing silently.
 
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import ts from "typescript";
-import { describe, expect, it } from "vitest";
+import ts from 'typescript';
+import { describe, expect, it } from 'vitest';
 
-const FIXTURES_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../typefixtures");
-const CONFIG_PATH = path.join(FIXTURES_DIR, "tsconfig.json");
+const FIXTURES_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../typefixtures');
+const CONFIG_PATH = path.join(FIXTURES_DIR, 'tsconfig.json');
 const DIRECTIVE = /^\s*\/\/ @ts-expect-error TS(\d+) ([A-Za-z]+): \S.*$/;
-const ANY_DIRECTIVE = /@ts-expect-error/;
+const ANY_DIRECTIVE = '@ts-expect-error';
 const UNUSED_DIRECTIVE = 2578;
 const COMPILE_TIMEOUT_MS = 120_000;
 
@@ -45,7 +45,7 @@ const RELAXED: Readonly<Record<string, ts.CompilerOptions>> = {
   allowUnusedLabels: { allowUnusedLabels: true },
   verbatimModuleSyntax: { verbatimModuleSyntax: false },
   isolatedModules: { verbatimModuleSyntax: false, isolatedModules: false },
-  lib: { lib: ["lib.es2024.d.ts", "lib.dom.d.ts"] },
+  lib: { lib: ['lib.es2024.d.ts', 'lib.dom.d.ts'] },
 };
 
 interface Directive {
@@ -60,7 +60,7 @@ function loadProject(): ts.ParsedCommandLine {
   const host: ts.ParseConfigFileHost = {
     ...ts.sys,
     onUnRecoverableConfigFileDiagnostic: (diagnostic) => {
-      throw new Error(ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
+      throw new Error(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
     },
   };
   const parsed = ts.getParsedCommandLineOfConfigFile(CONFIG_PATH, undefined, host);
@@ -77,23 +77,27 @@ function format(diagnostics: readonly ts.Diagnostic[]): string {
           ? `${path.relative(FIXTURES_DIR, diagnostic.file.fileName)}:${String(
               diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start).line + 1,
             )} `
-          : "";
-      return `${where}TS${String(diagnostic.code)} ${ts.flattenDiagnosticMessageText(diagnostic.messageText, " ")}`;
+          : '';
+      return `${where}TS${String(diagnostic.code)} ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`;
     })
-    .join("\n");
+    .join('\n');
 }
 
 const project = loadProject();
-const sources = new Map(project.fileNames.map((file) => [path.normalize(file), readFileSync(file, "utf8")]));
+const sources = new Map(
+  project.fileNames.map((file) => [path.normalize(file), readFileSync(file, 'utf8')]),
+);
 
 function collectDirectives(): Directive[] {
   const directives: Directive[] = [];
   for (const [file, text] of sources) {
-    text.split("\n").forEach((content, line) => {
+    text.split('\n').forEach((content, line) => {
       const match = DIRECTIVE.exec(content);
       if (match === null) {
-        if (ANY_DIRECTIVE.test(content)) {
-          throw new Error(`${file}:${String(line + 1)}: @ts-expect-error must name "TS<code> <option>: <reason>"`);
+        if (content.includes(ANY_DIRECTIVE)) {
+          throw new Error(
+            `${file}:${String(line + 1)}: @ts-expect-error must name "TS<code> <option>: <reason>"`,
+          );
         }
         return;
       }
@@ -110,7 +114,10 @@ const directives = collectDirectives();
 /** Shares parsed lib / @types files across the programs built by this suite. */
 const sharedSourceFiles = new Map<string, ts.SourceFile>();
 
-function compile(overrides: ts.CompilerOptions, rewrite?: (file: string, text: string) => string): ts.Diagnostic[] {
+function compile(
+  overrides: ts.CompilerOptions,
+  rewrite?: (file: string, text: string) => string,
+): ts.Diagnostic[] {
   const options: ts.CompilerOptions = {
     ...project.options,
     ...overrides,
@@ -126,7 +133,9 @@ function compile(overrides: ts.CompilerOptions, rewrite?: (file: string, text: s
   const getSourceFile = host.getSourceFile.bind(host);
   const fixtureText = (fileName: string): string | undefined => {
     const text = sources.get(path.normalize(fileName));
-    return text === undefined || rewrite === undefined ? text : rewrite(path.normalize(fileName), text);
+    return text === undefined || rewrite === undefined
+      ? text
+      : rewrite(path.normalize(fileName), text);
   };
   host.readFile = (fileName) => fixtureText(fileName) ?? readFile(fileName);
   host.getSourceFile = (fileName, languageVersion, onError, shouldCreate) => {
@@ -150,51 +159,76 @@ function lineOf(diagnostic: ts.Diagnostic): number | undefined {
 
 function stripDirectives(_file: string, text: string): string {
   return text
-    .split("\n")
-    .map((content) => (DIRECTIVE.test(content) ? content.replace("@ts-expect-error", "(directive removed)") : content))
-    .join("\n");
+    .split('\n')
+    .map((content) =>
+      DIRECTIVE.test(content)
+        ? content.replace('@ts-expect-error', '(directive removed)')
+        : content,
+    )
+    .join('\n');
 }
 
-describe("strict typefixtures (packages/testing/typefixtures)", () => {
-  it("covers every strict option relaxed by this suite", () => {
+describe('strict typefixtures (packages/testing/typefixtures)', () => {
+  it('covers every strict option relaxed by this suite', () => {
     const covered = new Set(directives.map((directive) => directive.option));
     expect([...covered].sort()).toEqual(Object.keys(RELAXED).sort());
   });
 
-  it("compiles cleanly as written: every @ts-expect-error is used", { timeout: COMPILE_TIMEOUT_MS }, () => {
-    const diagnostics = compile({});
-    expect(format(diagnostics)).toBe("");
-  });
+  it(
+    'compiles cleanly as written: every @ts-expect-error is used',
+    { timeout: COMPILE_TIMEOUT_MS },
+    () => {
+      const diagnostics = compile({});
+      expect(format(diagnostics)).toBe('');
+    },
+  );
 
-  it("reports exactly the declared error on each marked line once the directive is removed", { timeout: COMPILE_TIMEOUT_MS }, () => {
-    const diagnostics = compile({}, stripDirectives);
-    const found = diagnostics.map((diagnostic) => ({
-      file: diagnostic.file === undefined ? "" : path.normalize(diagnostic.file.fileName),
-      line: lineOf(diagnostic),
-      code: diagnostic.code,
-    }));
-    const expected = directives.map((directive) => ({ file: directive.file, line: directive.line + 1, code: directive.code }));
-    const key = (entry: { file: string; line: number | undefined; code: number }): string =>
-      `${path.relative(FIXTURES_DIR, entry.file)}:${String((entry.line ?? -1) + 1)} TS${String(entry.code)}`;
-    expect(found.map(key).sort()).toEqual(expected.map(key).sort());
-  });
-
-  describe.each(Object.keys(RELAXED))("relaxing %s", (option) => {
-    it("turns its fixture directives into unused-directive errors (TS2578)", { timeout: COMPILE_TIMEOUT_MS }, () => {
-      const overrides = RELAXED[option];
-      if (overrides === undefined) throw new Error(`no relaxation for ${option}`);
-      const unused = new Set(
-        compile(overrides)
-          .filter((diagnostic) => diagnostic.code === UNUSED_DIRECTIVE)
-          .map((diagnostic) => `${diagnostic.file?.fileName ?? ""}:${String(lineOf(diagnostic))}`),
+  it(
+    'reports exactly the declared error on each marked line once the directive is removed',
+    { timeout: COMPILE_TIMEOUT_MS },
+    () => {
+      const diagnostics = compile({}, stripDirectives);
+      const found = diagnostics.map((diagnostic) => ({
+        file: diagnostic.file === undefined ? '' : path.normalize(diagnostic.file.fileName),
+        line: lineOf(diagnostic),
+        code: diagnostic.code,
+      }));
+      const expected = directives.map((directive) => ({
+        file: directive.file,
+        line: directive.line + 1,
+        code: directive.code,
+      }));
+      const key = (entry: { file: string; line: number | undefined; code: number }): string =>
+        `${path.relative(FIXTURES_DIR, entry.file)}:${String((entry.line ?? -1) + 1)} TS${String(entry.code)}`;
+      expect(found.map((entry) => key(entry)).sort()).toEqual(
+        expected.map((entry) => key(entry)).sort(),
       );
-      const mine = directives.filter((directive) => directive.option === option);
-      expect(mine.length).toBeGreaterThan(0);
-      for (const directive of mine) {
-        expect(unused, `${path.relative(FIXTURES_DIR, directive.file)}:${String(directive.line + 1)}`).toContain(
-          `${directive.file}:${String(directive.line)}`,
+    },
+  );
+
+  describe.each(Object.keys(RELAXED))('relaxing %s', (option) => {
+    it(
+      'turns its fixture directives into unused-directive errors (TS2578)',
+      { timeout: COMPILE_TIMEOUT_MS },
+      () => {
+        const overrides = RELAXED[option];
+        if (overrides === undefined) throw new Error(`no relaxation for ${option}`);
+        const unused = new Set(
+          compile(overrides)
+            .filter((diagnostic) => diagnostic.code === UNUSED_DIRECTIVE)
+            .map(
+              (diagnostic) => `${diagnostic.file?.fileName ?? ''}:${String(lineOf(diagnostic))}`,
+            ),
         );
-      }
-    });
+        const mine = directives.filter((directive) => directive.option === option);
+        expect(mine.length).toBeGreaterThan(0);
+        for (const directive of mine) {
+          expect(
+            unused,
+            `${path.relative(FIXTURES_DIR, directive.file)}:${String(directive.line + 1)}`,
+          ).toContain(`${directive.file}:${String(directive.line)}`);
+        }
+      },
+    );
   });
 });

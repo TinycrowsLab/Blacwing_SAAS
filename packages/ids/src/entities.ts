@@ -1,6 +1,14 @@
-import type { BrandOf, IdPrefix } from "./prefixes.js";
-import { isPublicId, newPublicId, parsePublicId, type PublicId, toPublicId, toUuid } from "./public-id.js";
-import type { Uuid } from "./uuid.js";
+import {
+  isPublicId,
+  newPublicId,
+  parsePublicId,
+  type PublicId,
+  toPublicId,
+  toUuid,
+} from './public-id.js';
+
+import type { BrandOf, IdPrefix } from './prefixes.js';
+import type { Uuid } from './uuid.js';
 
 /** Runtime constructor for one entity's branded public id. Every method validates; none trusts its input. */
 export interface IdType<P extends IdPrefix> {
@@ -39,47 +47,47 @@ export function defineIdType<P extends IdPrefix>(prefix: P, brand: BrandOf<P>): 
 // share a name (`RunId` the type, `RunId.parse(...)` the constructor), so call sites read naturally.
 
 /** `run_…` */
-export type RunId = PublicId<"run">;
-export const RunId = defineIdType("run", "RunId");
+export type RunId = PublicId<'run'>;
+export const RunId = defineIdType('run', 'RunId');
 /** `fnd_…` */
-export type FindingId = PublicId<"fnd">;
-export const FindingId = defineIdType("fnd", "FindingId");
+export type FindingId = PublicId<'fnd'>;
+export const FindingId = defineIdType('fnd', 'FindingId');
 /** `asset_…` */
-export type AssetId = PublicId<"asset">;
-export const AssetId = defineIdType("asset", "AssetId");
+export type AssetId = PublicId<'asset'>;
+export const AssetId = defineIdType('asset', 'AssetId');
 /** `sa_…` */
-export type StandingAuthorisationId = PublicId<"sa">;
-export const StandingAuthorisationId = defineIdType("sa", "StandingAuthorisationId");
+export type StandingAuthorisationId = PublicId<'sa'>;
+export const StandingAuthorisationId = defineIdType('sa', 'StandingAuthorisationId');
 /** `tp_…` */
-export type TestPlanId = PublicId<"tp">;
-export const TestPlanId = defineIdType("tp", "TestPlanId");
+export type TestPlanId = PublicId<'tp'>;
+export const TestPlanId = defineIdType('tp', 'TestPlanId');
 /** `tc_…` */
-export type TestCaseId = PublicId<"tc">;
-export const TestCaseId = defineIdType("tc", "TestCaseId");
+export type TestCaseId = PublicId<'tc'>;
+export const TestCaseId = defineIdType('tc', 'TestCaseId');
 /** `sub_…` */
-export type SubtaskId = PublicId<"sub">;
-export const SubtaskId = defineIdType("sub", "SubtaskId");
+export type SubtaskId = PublicId<'sub'>;
+export const SubtaskId = defineIdType('sub', 'SubtaskId');
 /** `sess_…` */
-export type SessionId = PublicId<"sess">;
-export const SessionId = defineIdType("sess", "SessionId");
+export type SessionId = PublicId<'sess'>;
+export const SessionId = defineIdType('sess', 'SessionId');
 /** `evd_…` */
-export type EvidenceId = PublicId<"evd">;
-export const EvidenceId = defineIdType("evd", "EvidenceId");
+export type EvidenceId = PublicId<'evd'>;
+export const EvidenceId = defineIdType('evd', 'EvidenceId');
 /** `tok_…` */
-export type ApiTokenId = PublicId<"tok">;
-export const ApiTokenId = defineIdType("tok", "ApiTokenId");
+export type ApiTokenId = PublicId<'tok'>;
+export const ApiTokenId = defineIdType('tok', 'ApiTokenId');
 /** `ten_…` */
-export type TenantId = PublicId<"ten">;
-export const TenantId = defineIdType("ten", "TenantId");
+export type TenantId = PublicId<'ten'>;
+export const TenantId = defineIdType('ten', 'TenantId');
 /** `usr_…` */
-export type UserId = PublicId<"usr">;
-export const UserId = defineIdType("usr", "UserId");
+export type UserId = PublicId<'usr'>;
+export const UserId = defineIdType('usr', 'UserId');
 /** `oob_…` */
-export type OobId = PublicId<"oob">;
-export const OobId = defineIdType("oob", "OobId");
+export type OobId = PublicId<'oob'>;
+export const OobId = defineIdType('oob', 'OobId');
 /** `kill_…` */
-export type KillEventId = PublicId<"kill">;
-export const KillEventId = defineIdType("kill", "KillEventId");
+export type KillEventId = PublicId<'kill'>;
+export const KillEventId = defineIdType('kill', 'KillEventId');
 
 /** Every entity constructor keyed by prefix, for code that picks the entity at runtime (e.g. the DB layer). */
 export const ID_TYPES: { readonly [P in IdPrefix]: IdType<P> } = Object.freeze({

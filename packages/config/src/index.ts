@@ -1,8 +1,8 @@
 /** Workspace package name of this package. */
-export const name = "@blackwing/config";
+export const name = '@blackwing/config';
 
 /** Package version; kept in sync with package.json. */
-export const version = "0.0.0";
+export const version = '0.0.0';
 
 export {
   type StringOptions,
@@ -15,7 +15,7 @@ export {
   zSecretUrl,
   zString,
   zUrl,
-} from "./coerce.js";
+} from './coerce.js';
 export {
   CONFIG_EXIT_CODE,
   type DefineConfigOptions,
@@ -24,16 +24,21 @@ export {
   type InvalidConfigAction,
   type LoadConfigOptions,
   loadConfig,
-} from "./env.js";
-export { type ConfigIssue, type ConfigIssueReason, ConfigValidationError, isConfigValidationError } from "./errors.js";
+} from './env.js';
+export {
+  type ConfigIssue,
+  type ConfigIssueReason,
+  ConfigValidationError,
+  isConfigValidationError,
+} from './errors.js';
 export {
   type ConfigLoadedEvent,
   type ConfigLoadedFields,
   type ConfigLogSink,
   drainConfigLoadEvents,
   MAX_BUFFERED_CONFIG_EVENTS,
-} from "./events.js";
-export { safeMessage } from "./issues.js";
+} from './events.js';
+export { safeMessage } from './issues.js';
 export {
   isMarkedSecret,
   markSecret,
@@ -41,7 +46,7 @@ export {
   redactionRegistry,
   type Secret,
   unmarkSecret,
-} from "./redaction.js";
+} from './redaction.js';
 export {
   type BaseEnv,
   baseEnvSchema,
@@ -56,4 +61,4 @@ export {
   type ValkeyEnv,
   valkeyEnvSchema,
   valkeyEnvShape,
-} from "./schema.js";
+} from './schema.js';
