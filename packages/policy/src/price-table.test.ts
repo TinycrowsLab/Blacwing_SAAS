@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CURRENT_PRICE_TABLE_VERSION,
   PRICE_TABLE_2026_10_01,
+  PRICE_TABLE_2026_10_21,
   PriceTableError,
   computeCost,
   currentVersion,
@@ -14,15 +15,17 @@ import {
   type PriceTableResolver,
 } from './price-table.js';
 
-// Recorded digest of released version 2026-10-01. If this fails, you edited a released table:
+// Recorded digests of released versions. If this fails, you edited a released table:
 // cut a NEW version instead of changing this one.
 const RELEASED_DIGESTS: Record<string, string> = {
   '2026-10-01': '7f0d5295cf6c90a0f9862eb746732ec7229d66146b0c9d4728f4714bbd9fd667',
+  '2026-10-21': '03e3fcbceabd6f0059ee480e8847c2ea258968acc02ac02c66fe22909481d7bb',
 };
 
 describe('price table', () => {
   it('released content is immutable (digest matches recorded value)', () => {
     expect(priceTableDigest(PRICE_TABLE_2026_10_01)).toBe(RELEASED_DIGESTS['2026-10-01']);
+    expect(priceTableDigest(PRICE_TABLE_2026_10_21)).toBe(RELEASED_DIGESTS['2026-10-21']);
     for (const v of Object.keys(RELEASED_DIGESTS)) {
       expect(priceTableDigest(getPriceTable(v))).toBe(RELEASED_DIGESTS[v]);
     }
@@ -64,8 +67,28 @@ describe('price table', () => {
     });
     expect(r).toMatchObject({
       ok: true,
-      costMicroUsd: 3_000_000 + 7_500_000 + 600_000 + 3_750_000,
+      costMicroUsd: 2_000_000 + 5_000_000 + 400_000 + 2_500_000,
     });
+  });
+
+  it('current version is 2026-10-21 and a pin to 2026-10-01 still resolves to the old table', () => {
+    expect(CURRENT_PRICE_TABLE_VERSION).toBe('2026-10-21');
+    const pin = priceTablePin('2026-10-01');
+    expect(pin.priceTableSha256).toBe(RELEASED_DIGESTS['2026-10-01']);
+    expect(resolvePinnedTable(pin)).toBe(PRICE_TABLE_2026_10_01);
+    const r = computeCost(pin, 'anthropic/claude-sonnet-5-5', { input: 1_000_000 });
+    expect(r).toMatchObject({ ok: true, costMicroUsd: 3_000_000 });
+  });
+
+  it('corrected 5.5 rates apply to the current version', () => {
+    const cost = (m: string): unknown =>
+      computeCost(priceTablePin(), m, {
+        input: 1_000_000,
+        output: 1_000_000,
+        cacheRead: 1_000_000,
+      });
+    expect(cost('anthropic/claude-opus-5-5')).toMatchObject({ costMicroUsd: 24_200_000 });
+    expect(cost('anthropic/claude-haiku-5-5')).toMatchObject({ costMicroUsd: 610_000 });
   });
 
   it('unknown model denies (not zero) and fires the deny hook', () => {

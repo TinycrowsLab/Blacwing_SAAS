@@ -53,9 +53,10 @@ export class PriceTableError extends Error {
  * Tiered pricing approximation: long-context tiers are NOT modelled. Every request is costed at the
  * standard (base) tier rate, which is the cheapest tier, so budgets may under-estimate long-context
  * calls; the model gateway hard caps remain the enforcement point. Cache writes use the 5-minute
- * TTL rate (1.25x input); cache reads are 0.1x input.
+ * TTL rate (1.25x input); cache reads are 0.1x input (Opus 5.5 is 0.05x).
  *
- * Values must be re-checked against current published provider pricing whenever a version is cut.
+ * SUPERSEDED by 2026-10-21: the 5.5-generation rates here were older-generation values. This
+ * version stays frozen (its digest is recorded) so any run pinned to it replays identically.
  */
 export const PRICE_TABLE_2026_10_01: PriceTable = {
   version: '2026-10-01',
@@ -94,9 +95,57 @@ export const PRICE_TABLE_2026_10_01: PriceTable = {
   },
 };
 
+/**
+ * Tiered pricing approximation: long-context tiers are NOT modelled. Every request is costed at the
+ * standard (base) tier rate. Known edge case: Haiku 5.5 prompts over 100K tokens bill at
+ * $0.50 / $2.50 per MTok (5x the base tier), so base-tier costing UNDER-estimates them; the model
+ * gateway hard caps remain the enforcement point. Cache writes use the 5-minute TTL rate (1.25x
+ * input); cache reads are 0.05x input for Opus 5.5 and 0.1x input for the other models (the Haiku
+ * 5.5 cache-read multiplier is assumed). These are first-party Anthropic API rates; Bedrock/Vertex
+ * partner pricing is not modelled.
+ *
+ * Values must be re-checked against current published provider pricing whenever a version is cut.
+ */
+export const PRICE_TABLE_2026_10_21: PriceTable = {
+  version: '2026-10-21',
+  effectiveFrom: '2026-10-21',
+  entries: {
+    'anthropic/claude-opus-5-5': {
+      input: 4_000_000,
+      output: 20_000_000,
+      cacheRead: 200_000,
+      cacheWrite: 5_000_000,
+    },
+    'anthropic/claude-sonnet-5-5': {
+      input: 2_000_000,
+      output: 10_000_000,
+      cacheRead: 200_000,
+      cacheWrite: 2_500_000,
+    },
+    'anthropic/claude-haiku-5-5': {
+      input: 100_000,
+      output: 500_000,
+      cacheRead: 10_000,
+      cacheWrite: 125_000,
+    },
+    'anthropic/claude-sonnet-4-5': {
+      input: 3_000_000,
+      output: 15_000_000,
+      cacheRead: 300_000,
+      cacheWrite: 3_750_000,
+    },
+    'anthropic/claude-opus-4-1': {
+      input: 15_000_000,
+      output: 75_000_000,
+      cacheRead: 1_500_000,
+      cacheWrite: 18_750_000,
+    },
+  },
+};
+
 /** Canonical JSON: keys sorted at every level so the digest is stable. */
 function canonical(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+  if (Array.isArray(value)) return `[${value.map((v) => canonical(v)).join(',')}]`;
   if (value !== null && typeof value === 'object') {
     const obj = value as Record<string, unknown>;
     return `{${Object.keys(obj)
@@ -113,7 +162,7 @@ export function priceTableDigest(table: PriceTable): string {
 
 function deepFreeze<T>(t: T): T {
   if (t !== null && typeof t === 'object') {
-    Object.values(t).forEach(deepFreeze);
+    for (const v of Object.values(t)) deepFreeze(v);
     Object.freeze(t);
   }
   return t;
@@ -131,9 +180,16 @@ const RELEASED: ReadonlyMap<string, { table: PriceTable; sha256: string }> = new
       sha256: '7f0d5295cf6c90a0f9862eb746732ec7229d66146b0c9d4728f4714bbd9fd667',
     },
   ],
+  [
+    PRICE_TABLE_2026_10_21.version,
+    {
+      table: deepFreeze(PRICE_TABLE_2026_10_21),
+      sha256: '03e3fcbceabd6f0059ee480e8847c2ea258968acc02ac02c66fe22909481d7bb',
+    },
+  ],
 ]);
 
-export const CURRENT_PRICE_TABLE_VERSION = PRICE_TABLE_2026_10_01.version;
+export const CURRENT_PRICE_TABLE_VERSION = PRICE_TABLE_2026_10_21.version;
 
 export function currentVersion(): string {
   return CURRENT_PRICE_TABLE_VERSION;
@@ -184,15 +240,17 @@ export function resolvePinnedTable(
   return table;
 }
 
+const ZERO = 0n;
+const ONE = 1n;
 const MTOK = 1_000_000n;
 
 function component(tokens: number | undefined, pricePerMTok: number): bigint {
-  if (tokens === undefined || tokens === 0) return 0n;
+  if (tokens === undefined || tokens === 0) return ZERO;
   if (!Number.isSafeInteger(tokens) || tokens < 0) {
     throw new RangeError('token counts must be non-negative safe integers');
   }
   // Round UP each component to the next micro-USD: never under-report cost.
-  return (BigInt(tokens) * BigInt(pricePerMTok) + MTOK - 1n) / MTOK;
+  return (BigInt(tokens) * BigInt(pricePerMTok) + MTOK - ONE) / MTOK;
 }
 
 export type CostResult =

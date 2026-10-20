@@ -42,6 +42,7 @@ export {
 export {
   CURRENT_PRICE_TABLE_VERSION,
   PRICE_TABLE_2026_10_01,
+  PRICE_TABLE_2026_10_21,
   PriceTableError,
   computeCost,
   currentVersion,
