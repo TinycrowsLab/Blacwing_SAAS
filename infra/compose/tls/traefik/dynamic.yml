@@ -1,6 +1,8 @@
 # Traefik dynamic config (DEVENV-013, #167): *.bw.localhost routing over HTTPS.
 # Go-template file: upstream URLs come from BW_TLS_UPSTREAM_* env vars set in docker-compose.dev.yml.
 # Keep the hostnames in sync with the Keycloak redirect URIs (DEVENV-004) and the target apps (DEVENV-012).
+# juice.bw.localhost is NOT routed here: this proxy sits on bw-dev only. It is served by the bw-targets-only
+# edge (dynamic-targets.yml, service traefik-targets).
 tls:
   certificates:
     - certFile: /certs/bw-localhost.pem
@@ -48,11 +50,6 @@ http:
       service: keycloak
       tls: {}
       middlewares: [dev-headers]
-    juice:
-      rule: Host(`juice.bw.localhost`)
-      entryPoints: [websecure]
-      service: juice
-      tls: {}
   services:
     web:
       loadBalancer:
@@ -63,6 +60,3 @@ http:
     keycloak:
       loadBalancer:
         servers: [{ url: '{{ env "BW_TLS_UPSTREAM_KEYCLOAK" }}' }]
-    juice:
-      loadBalancer:
-        servers: [{ url: '{{ env "BW_TLS_UPSTREAM_JUICE" }}' }]

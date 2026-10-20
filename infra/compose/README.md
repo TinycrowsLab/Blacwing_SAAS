@@ -137,7 +137,6 @@ proxy family as the k3s default ingress). It makes dev behave like production fo
 | `app.bw.localhost` | web console | `BW_TLS_UPSTREAM_WEB` (host `:3000`) |
 | `api.bw.localhost` | api | `BW_TLS_UPSTREAM_API` (host `:13400`) |
 | `auth.bw.localhost` | Keycloak | `BW_TLS_UPSTREAM_KEYCLOAK` (`keycloak:8080`) |
-| `juice.bw.localhost` | Juice Shop (DEVENV-012) | `BW_TLS_UPSTREAM_JUICE` (`juice-shop:3000`) |
 
 - **Ports.** Binding 443 needs privileges, so the default is `https://app.bw.localhost:18443` (HTTP `18000`
   redirects to HTTPS, dashboard `http://127.0.0.1:18082`, dev only). For plain `https://app.bw.localhost`, set
@@ -224,7 +223,21 @@ to `127.0.0.1` only, so nothing is exposed publicly; no `container_name`. Do not
 | `dvwa` | `web_app` | `http://127.0.0.1:13040` | `dvwa.bw.localhost` | Needs a one-time DB setup: open `/setup.php` and press "Create / Reset Database". `pnpm targets:reset dvwa` restores a clean state. |
 | `webgoat` | `web_app` | `http://127.0.0.1:13050/WebGoat` | `webgoat.bw.localhost` | Slow start (up to ~2 min). ~1 GB RAM. |
 
-Override a host port with `BW_TARGET_<NAME>_PORT` in `.env` if it collides. The `*.bw.localhost` names resolve
+**TLS for `juice.bw.localhost`.** The bw-dev proxy above deliberately does NOT route to Juice Shop: it is on
+`bw-dev` only and no bw-dev service may join `bw-targets` (asserted in `scripts/targets.test.mjs`). Instead a
+second Traefik, `traefik-targets` (profile `targets-tls`), lives only on `bw-targets` and is published on
+`127.0.0.1:13443` (HTTP `13080` redirects). Start it with `pnpm targets:up --tls` (needs the mkcert certs from
+`pnpm dev:tls` setup) and browse `https://juice.bw.localhost:13443`. There is no bw-dev <-> bw-targets bridge.
+
+**E2E / seed contract.** `BW_TARGET_JUICE_SHOP_URL` (default `http://127.0.0.1:13000`) is the URL `pnpm test:e2e`
+and the DEVENV-011 seeded verified asset must use for Juice Shop. `pnpm targets:smoke` brings Juice Shop up,
+asserts it answers on that URL and, via `docker inspect`, that its networks are exactly `[bw-targets]`.
+
+**crAPI.** Its gateway template also needs a chatbot upstream. The real `crapi-chatbot` needs an online LLM key,
+so `crapi-chatbot` here is an inert offline stub (alpine busybox `httpd`, 404s, no egress) on alias `chatbot`;
+chatbot features are unavailable locally.
+
+Override a host port with `BW_TARGET_<NAME>_PORT` in `.env` (or the shell; the driver reads both, like compose) if it collides. The `*.bw.localhost` names resolve
 to loopback in browsers; TLS for them arrives with DEVENV-013. The crAPI sidecars use the upstream public demo
 defaults (throwaway training values, not Blackwing secrets). Targeting stays gated by a verified asset and an
 active standing authorisation even in dev (§8.1, §8.10).

@@ -58,6 +58,7 @@ function composeConfig(env = {}, args = /** @type {string[]} */ ([])) {
         BW_DEV_NEO4J_PASSWORD: 'x-neo4j-pass',
         BW_DEV_MINIO_ROOT_PASSWORD: 'x-minio-root',
         BW_DEV_MINIO_APP_PASSWORD: 'x-minio-app-secret',
+        BW_DEV_INTERACTSH_TOKEN: 'x-interactsh-token',
         ...env,
       },
     },
@@ -228,7 +229,6 @@ describe('DEVENV-013 compose + routing config', () => {
       app: 'web',
       api: 'api',
       auth: 'keycloak',
-      juice: 'juice',
     };
     for (const [host, svc] of Object.entries(routes)) {
       const m = new RegExp(
@@ -329,7 +329,7 @@ describe(
 
       /** @type {Record<string, number>} */
       const ports = {};
-      for (const n of ['web', 'api', 'keycloak', 'juice']) {
+      for (const n of ['web', 'api', 'keycloak']) {
         const u = /** @type {{ server: http.Server, port: number }} */ (await upstream(n));
         servers.push(u.server);
         ports[n] = u.port;
@@ -355,8 +355,6 @@ describe(
           `BW_TLS_UPSTREAM_API=${up('api')}`,
           '-e',
           `BW_TLS_UPSTREAM_KEYCLOAK=${up('keycloak')}`,
-          '-e',
-          `BW_TLS_UPSTREAM_JUICE=${up('juice')}`,
           '-v',
           `${path.join(TLS_DIR, 'traefik/traefik.yml')}:/etc/traefik/traefik.yml:ro`,
           '-v',
@@ -397,7 +395,6 @@ describe(
       ['app', 'web'],
       ['api', 'api'],
       ['auth', 'keycloak'],
-      ['juice', 'juice'],
     ]) {
       it(`serves ${host}.bw.localhost from ${svc} over trusted HTTPS with forwarded proto https`, async () => {
         const r = /** @type {{ status: number, body: string }} */ (

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 
@@ -10,6 +11,10 @@ import {
   DEFAULT_SERVICES,
   TARGETS,
   TARGETS_NETWORK,
+  TLS_EDGE_SERVICE,
+  assertIsolated,
+  networksOf,
+  resolveEnv,
   selectTargets,
   targetUrl,
 } from './targets.mjs';
@@ -141,6 +146,26 @@ describe('targets profile (DEVENV-012)', () => {
     }
   });
 
+  it('lets only bw-targets members (targets and the TLS edge) on bw-targets: no bw-dev service bridges', () => {
+    const full = render(['targets', 'targets-tls', 'tls', 'default']);
+    const allowed = new Set([...ALL_SERVICES, TLS_EDGE_SERVICE]);
+    for (const [name, svc] of Object.entries(full.services)) {
+      const nets = Object.keys(svc.networks ?? { 'bw-dev': {} });
+      if (nets.includes(TARGETS_NETWORK)) {
+        assert.ok(allowed.has(name), `${name} joins bw-targets`);
+        assert.deepEqual(nets, [TARGETS_NETWORK], `${name} must be on bw-targets only`);
+      } else {
+        assert.ok(!allowed.has(name), name);
+      }
+    }
+    const edge = full.services[TLS_EDGE_SERVICE];
+    assert.equal(
+      edge.ports?.every((p) => p.host_ip === '127.0.0.1'),
+      true,
+    );
+    assert.match(edge.image, /@sha256:[0-9a-f]{64}$/);
+  });
+
   it('declares no container_name, privileged mode or docker socket', () => {
     for (const [name, svc] of targetServices) {
       assert.equal(svc.container_name, undefined, name);
@@ -158,6 +183,48 @@ describe('targets profile (DEVENV-012)', () => {
       dvga: 'graphql',
       dvwa: 'web_app',
       webgoat: 'web_app',
+    });
+  });
+});
+
+describe('port override from .env (compose parity)', () => {
+  it('reads BW_TARGET_<NAME>_PORT from the .env file, shell wins', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'bw-targets-'));
+    try {
+      const file = path.join(dir, '.env');
+      writeFileSync(file, 'BW_TARGET_JUICE_SHOP_PORT=23456\n# c\nBW_TARGET_DVWA_PORT="23457"\n');
+      assert.equal(targetUrl('juice-shop', resolveEnv(file, {})), 'http://127.0.0.1:23456');
+      assert.equal(targetUrl('dvwa', resolveEnv(file, {})), 'http://127.0.0.1:23457');
+      const shell = { BW_TARGET_JUICE_SHOP_PORT: '24000' };
+      assert.equal(targetUrl('juice-shop', resolveEnv(file, shell)), 'http://127.0.0.1:24000');
+      assert.equal(targetUrl('vampi', resolveEnv(file, {})), 'http://127.0.0.1:13020');
+      assert.equal(
+        targetUrl('juice-shop', resolveEnv(path.join(dir, 'none'), {})),
+        'http://127.0.0.1:13000',
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('network isolation helpers', () => {
+  const doc = (/** @type {string[]} */ nets) => [
+    { NetworkSettings: { Networks: Object.fromEntries(nets.map((n) => [n, {}])) } },
+  ];
+  it('accepts exactly [bw-targets]', () => {
+    assert.deepEqual(networksOf(doc(['bw-targets'])), ['bw-targets']);
+    assertIsolated(networksOf(doc(['bw-targets'])));
+  });
+  it('rejects bw-dev membership or extra networks', () => {
+    assert.throws(() => {
+      assertIsolated(networksOf(doc(['bw-targets', 'bw-dev'])));
+    });
+    assert.throws(() => {
+      assertIsolated(networksOf(doc(['bw-dev'])));
+    });
+    assert.throws(() => {
+      assertIsolated(networksOf(doc([])));
     });
   });
 });

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Local vulnerable-target driver (DEVENV-012, #166).
 //
-//   node scripts/targets.mjs up [service...|--all]   # `pnpm targets:up`: default juice-shop only
+//   node scripts/targets.mjs up [service...|--all] [--tls]  # `pnpm targets:up`: default juice-shop only
+//   node scripts/targets.mjs smoke                   # `pnpm targets:smoke`: live up + reachability + isolation check
 //   node scripts/targets.mjs down                    # `pnpm targets:down`: stops/removes targets only
 //   node scripts/targets.mjs reset <service>         # recreate one target with fresh state
 //   node scripts/targets.mjs wait [service...]       # wait until the targets answer on loopback
@@ -12,10 +13,11 @@
 // dependency stack (postgres, valkey, neo4j) and other worktrees, so only target containers are touched.
 
 import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { COMPOSE_FILE, PROJECT, ensureEnv } from './dev-deps.mjs';
+import { COMPOSE_FILE, PROJECT, ensureEnv, parseEnv } from './dev-deps.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const TARGETS_NETWORK = 'bw-targets';
@@ -24,6 +26,9 @@ const PROBE_INTERVAL_MS = 2000;
 const UP_WAIT_MS = 60_000;
 const HTTP_SERVER_ERROR = 500;
 export const DEFAULT_SERVICES = Object.freeze(['juice-shop']);
+export const DEV_NETWORK = 'bw-dev';
+/** Service of the bw-targets-only TLS edge (profile `targets-tls`): serves https://juice.bw.localhost. */
+export const TLS_EDGE_SERVICE = 'traefik-targets';
 
 /**
  * Per target: compose service, the asset type it represents, host port (overridable) and the
@@ -55,6 +60,7 @@ export const TARGETS = Object.freeze([
       'crapi-identity',
       'crapi-community',
       'crapi-workshop',
+      'crapi-chatbot',
     ],
   },
   {
@@ -116,7 +122,19 @@ export function selectTargets(names) {
 }
 
 /**
- * Loopback URL of a target, honouring the port override.
+ * The environment compose resolves `${BW_TARGET_*}` from: the `.env` file, overridden by the shell
+ * (compose precedence). Reading it the same way keeps probes on the port compose published.
+ * @param {string} envFile
+ * @param {Record<string, string | undefined>} [shell]
+ * @returns {Record<string, string | undefined>}
+ */
+export function resolveEnv(envFile, shell = process.env) {
+  const file = existsSync(envFile) ? parseEnv(readFileSync(envFile, 'utf8')) : {};
+  return { ...file, ...shell };
+}
+
+/**
+ * Loopback URL of a target, honouring the port override (pass `resolveEnv(...)` so `.env` counts).
  * @param {string} service
  * @param {Record<string, string | undefined>} [env]
  */
@@ -128,9 +146,10 @@ export function targetUrl(service, env = process.env) {
 
 /**
  * @param {string[]} args
- * @param {{ envFile: string, capture?: boolean }} opts
+ * @param {{ envFile: string, capture?: boolean, tls?: boolean }} opts
  */
 function compose(args, opts) {
+  const extra = opts.tls ? ['--profile', 'targets-tls'] : [];
   return execFileSync(
     'docker',
     [
@@ -143,6 +162,7 @@ function compose(args, opts) {
       COMPOSE_FILE,
       '--profile',
       'targets',
+      ...extra,
       ...args,
     ],
     { stdio: opts.capture ? ['ignore', 'pipe', 'inherit'] : 'inherit', encoding: 'utf8' },
@@ -150,16 +170,41 @@ function compose(args, opts) {
 }
 
 /**
+ * The networks of a `docker inspect` document (sorted names).
+ * @param {unknown} inspected parsed `docker inspect` JSON (array of one container)
+ * @returns {string[]}
+ */
+export function networksOf(inspected) {
+  const doc = /** @type {Array<{ NetworkSettings?: { Networks?: Record<string, unknown> } }>} */ (
+    inspected
+  );
+  return Object.keys(doc[0]?.NetworkSettings?.Networks ?? {}).sort();
+}
+
+/**
+ * Throws unless the container is on exactly the bw-targets network (and not bw-dev).
+ * @param {string[]} networks
+ */
+export function assertIsolated(networks) {
+  if (networks.includes(DEV_NETWORK) || networks.join() !== TARGETS_NETWORK) {
+    throw new Error(
+      `juice-shop networks must be exactly [${TARGETS_NETWORK}], got [${networks.join(', ')}]`,
+    );
+  }
+}
+
+/**
  * Polls the loopback URL of each target until it answers (any HTTP status below 500).
  * @param {string[]} services
  * @param {number} [timeoutMs]
+ * @param {Record<string, string | undefined>} [env] resolved env (`.env` + shell)
  */
-export async function waitReachable(services, timeoutMs = 300_000) {
+export async function waitReachable(services, timeoutMs = 300_000, env = process.env) {
   const deadline = Date.now() + timeoutMs;
   for (const svc of services) {
     const t = TARGETS.find((x) => x.service === svc);
     if (!t) throw new Error(`unknown target: ${svc}`);
-    const url = `${targetUrl(svc)}${t.probe}`;
+    const url = `${targetUrl(svc, env)}${t.probe}`;
     for (;;) {
       try {
         const res = await fetch(url, {
@@ -173,8 +218,33 @@ export async function waitReachable(services, timeoutMs = 300_000) {
       if (Date.now() > deadline) throw new Error(`${svc} not reachable at ${url}`);
       await new Promise((r) => setTimeout(r, PROBE_INTERVAL_MS));
     }
-    process.stdout.write(`${svc}: reachable at ${targetUrl(svc)}\n`);
+    process.stdout.write(`${svc}: reachable at ${targetUrl(svc, env)}\n`);
   }
+}
+
+/**
+ * Live smoke: brings Juice Shop up, asserts it answers on BW_TARGET_JUICE_SHOP_URL (the e2e and seed
+ * contract) and that its container is on exactly [bw-targets], not bw-dev.
+ * @param {string} envFile
+ * @param {Record<string, string | undefined>} env
+ */
+async function smoke(envFile, env) {
+  compose(['up', '-d', '--wait', '--wait-timeout', '600', 'juice-shop'], { envFile });
+  await waitReachable(['juice-shop'], UP_WAIT_MS, env);
+  const url = env.BW_TARGET_JUICE_SHOP_URL ?? targetUrl('juice-shop', env);
+  const res = await fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+  if (res.status >= HTTP_SERVER_ERROR)
+    throw new Error(`juice-shop answered ${res.status} at ${url}`);
+  const id = compose(['ps', '-q', 'juice-shop'], { envFile, capture: true }).trim();
+  if (id === '') throw new Error('juice-shop container not found');
+  /** @type {unknown} */
+  const inspected = JSON.parse(execFileSync('docker', ['inspect', id], { encoding: 'utf8' }));
+  const networks = networksOf(inspected);
+  assertIsolated(networks);
+  process.stdout.write(
+    `smoke ok: juice-shop answers ${String(res.status)} at ${url}; networks=[${networks.join(', ')}]\n`,
+  );
+  return 0;
 }
 
 /** @param {string[]} argv */
@@ -186,19 +256,23 @@ export async function main(argv) {
     compose(['config', '--quiet'], { envFile });
     return 0;
   }
+  const env = resolveEnv(envFile);
   if (cmd === 'up') {
-    const services = selectTargets(rest);
-    compose(['up', '-d', '--wait', '--wait-timeout', '600', ...services], { envFile });
-    await waitReachable(services, UP_WAIT_MS);
+    const tls = rest.includes('--tls');
+    const services = selectTargets(rest.filter((a) => a !== '--tls'));
+    const all = tls ? [...services, TLS_EDGE_SERVICE] : services;
+    compose(['up', '-d', '--wait', '--wait-timeout', '600', ...all], { envFile, tls });
+    await waitReachable(services, UP_WAIT_MS, env);
     return 0;
   }
   if (cmd === 'wait') {
-    await waitReachable(selectTargets(rest));
+    await waitReachable(selectTargets(rest), undefined, env);
     return 0;
   }
+  if (cmd === 'smoke') return smoke(envFile, env);
   if (cmd === 'down') {
     // Only the profile's services: never `compose down` on the shared bwdev project.
-    compose(['rm', '-sfv', ...ALL_SERVICES], { envFile });
+    compose(['rm', '-sfv', ...ALL_SERVICES, TLS_EDGE_SERVICE], { envFile, tls: true });
     try {
       execFileSync('docker', ['network', 'rm', TARGETS_NETWORK], { stdio: 'ignore' });
     } catch {
@@ -217,7 +291,9 @@ export async function main(argv) {
     compose(['up', '-d', '--wait', '--wait-timeout', '600', ...services], { envFile });
     return 0;
   }
-  process.stderr.write(`unknown command: ${cmd} (expected up | down | reset | wait | config)\n`);
+  process.stderr.write(
+    `unknown command: ${cmd} (expected up | down | reset | wait | smoke | config)\n`,
+  );
   return 2;
 }
 

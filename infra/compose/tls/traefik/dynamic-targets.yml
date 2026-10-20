@@ -1,0 +1,42 @@
+# Traefik dynamic config for the bw-targets-only TLS edge (DEVENV-012, #166): juice.bw.localhost over HTTPS.
+# Go-template file: upstream URLs come from BW_TLS_UPSTREAM_* env vars set in docker-compose.dev.yml.
+# Keep the hostnames in sync with the Keycloak redirect URIs (DEVENV-004) and the target apps (DEVENV-012).
+tls:
+  certificates:
+    - certFile: /certs/bw-localhost.pem
+      keyFile: /certs/bw-localhost-key.pem
+  options:
+    default:
+      minVersion: VersionTLS12
+
+http:
+  middlewares:
+    # Redirect to the PUBLISHED HTTPS port (18443 by default), not the container's :443.
+    to-https:
+      redirectScheme:
+        scheme: https
+        port: '{{ env "BW_TLS_PUBLIC_HTTPS_PORT" | default "18443" }}'
+        permanent: false # 302: browsers must not cache a dev redirect
+    # No HSTS on purpose: it would pin *.localhost to HTTPS in the developer's browser for every project.
+    dev-headers:
+      headers:
+        customResponseHeaders:
+          X-Content-Type-Options: nosniff
+        customRequestHeaders:
+          X-Forwarded-Proto: https
+  routers:
+    http-to-https:
+      rule: PathPrefix(`/`)
+      entryPoints: [web]
+      service: noop@internal
+      middlewares: [to-https]
+    juice:
+      rule: Host(`juice.bw.localhost`)
+      entryPoints: [websecure]
+      service: juice
+      tls: {}
+      middlewares: [dev-headers]
+  services:
+    juice:
+      loadBalancer:
+        servers: [{ url: '{{ env "BW_TLS_UPSTREAM_JUICE" }}' }]

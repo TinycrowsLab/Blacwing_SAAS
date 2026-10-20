@@ -178,7 +178,6 @@ services:
       BW_TLS_UPSTREAM_WEB: ${BW_TLS_UPSTREAM_WEB:-http://host.docker.internal:3000}
       BW_TLS_UPSTREAM_API: ${BW_TLS_UPSTREAM_API:-http://host.docker.internal:13400}
       BW_TLS_UPSTREAM_KEYCLOAK: ${BW_TLS_UPSTREAM_KEYCLOAK:-http://keycloak:8080}
-      BW_TLS_UPSTREAM_JUICE: ${BW_TLS_UPSTREAM_JUICE:-http://juice-shop:3000}
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     ports:
@@ -190,6 +189,38 @@ services:
       - ./tls/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./tls/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
       - ./tls/certs:/certs:ro
+    healthcheck:
+      test: ['CMD', 'traefik', 'healthcheck', '--ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 128m }
+
+  # TLS edge for the targets (DEVENV-012/013). A SECOND Traefik that lives ONLY on bw-targets, so the
+  # bw-dev proxy above never joins the target network and no service bridges bw-dev <-> bw-targets.
+  # Opt-in profile `targets-tls` (`pnpm targets:up --tls`); serves https://juice.bw.localhost, published
+  # on 127.0.0.1 only. Needs the mkcert certs from `pnpm dev:tls` setup.
+  traefik-targets:
+    <<: *defaults
+    image: traefik:v3.2@sha256:e561a37f8710d9cf41c78bdf421d822b2c0b48267ec0552e644565fb55466ea9
+    profiles: [targets-tls]
+    networks: [bw-targets]
+    command: ['--configFile=/etc/traefik/traefik.yml']
+    environment:
+      BW_TLS_PUBLIC_HTTPS_PORT: ${BW_TARGET_TLS_HTTPS_PORT:-13443}
+      BW_TLS_UPSTREAM_JUICE: ${BW_TLS_UPSTREAM_JUICE:-http://juice-shop:3000}
+    ports:
+      - '127.0.0.1:${BW_TARGET_TLS_HTTPS_PORT:-13443}:443'
+      - '127.0.0.1:${BW_TARGET_TLS_HTTP_PORT:-13080}:80'
+    volumes:
+      - ./tls/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./tls/traefik/dynamic-targets.yml:/etc/traefik/dynamic.yml:ro
+      - ./tls/certs:/certs:ro
+    depends_on:
+      juice-shop: { condition: service_healthy }
     healthcheck:
       test: ['CMD', 'traefik', 'healthcheck', '--ping']
       interval: 5s
@@ -487,6 +518,25 @@ services:
       bw-targets:
         aliases: [mailhog]
 
+  # Offline stand-in for crAPI's LLM chatbot: the gateway template needs a resolvable CHATBOT_SERVICE
+  # upstream. This inert busybox nc responder (404 for everything) needs no LLM key and makes no egress.
+  # The real crapi-chatbot needs an online LLM key, so it is deliberately not run (see README).
+  crapi-chatbot:
+    <<: *target
+    image: alpine:latest@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
+    command:
+      - sh
+      - -c
+      - 'while true; do printf "HTTP/1.1 404 Not Found\\r\\nContent-Length: 0\\r\\nConnection: close\\r\\n\\r\\n" | nc -l -p 5002; done'
+    networks:
+      bw-targets:
+        aliases: [chatbot]
+    healthcheck:
+      test: ['CMD', 'nc', '-z', '127.0.0.1', '5002']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
   crapi-identity:
     <<: *target
     image: crapi/crapi-identity:latest@sha256:5d1db5b3ba8e02bc68711ec6fc4e35ed7cd8b87e63785ece9e7ff5b5e36c5260
@@ -540,7 +590,7 @@ services:
       crapi-mongo: { condition: service_healthy }
       crapi-identity: { condition: service_healthy }
     healthcheck:
-      test: ['CMD-SHELL', 'bash -c "exec 3<>/dev/tcp/127.0.0.1/8087"']
+      test: ['CMD', 'nc', '-z', '127.0.0.1', '8087']
       interval: 10s
       timeout: 5s
       retries: 24
@@ -564,7 +614,7 @@ services:
       crapi-mongo: { condition: service_healthy }
       crapi-identity: { condition: service_healthy }
     healthcheck:
-      test: ['CMD-SHELL', 'bash -c "exec 3<>/dev/tcp/127.0.0.1/8000"']
+      test: ['CMD', 'nc', '-z', '127.0.0.1', '8000']
       interval: 10s
       timeout: 5s
       retries: 24
@@ -578,6 +628,8 @@ services:
       IDENTITY_SERVICE: crapi-identity:8080
       WORKSHOP_SERVICE: crapi-workshop:8000
       MAILHOG_SERVICE: mailhog:8025
+      MAILHOG_WEB_SERVICE: mailhog:8025
+      CHATBOT_SERVICE: chatbot:5002
       TLS_ENABLED: 'false'
     ports:
       - '127.0.0.1:${BW_TARGET_CRAPI_PORT:-13010}:80'
@@ -588,8 +640,9 @@ services:
       crapi-identity: { condition: service_healthy }
       crapi-community: { condition: service_healthy }
       crapi-workshop: { condition: service_healthy }
+      crapi-chatbot: { condition: service_healthy }
     healthcheck:
-      test: ['CMD-SHELL', 'bash -c "exec 3<>/dev/tcp/127.0.0.1/80"']
+      test: ['CMD', 'nc', '-z', '127.0.0.1', '80']
       interval: 10s
       timeout: 5s
       retries: 12

@@ -81,6 +81,21 @@ export function renderEnv(
   return { text: `${base}${header}${lines.join('\n')}\n`, added };
 }
 
+/**
+ * Parses KEY=VALUE lines of an env file the way compose reads them (no export/quoting extras).
+ * @param {string} text
+ * @returns {Record<string, string>}
+ */
+export function parseEnv(text) {
+  /** @type {Record<string, string>} */
+  const out = {};
+  for (const line of text.split('\n')) {
+    const m = /^([A-Za-z0-9_]+)=(.*)$/.exec(line.trim());
+    if (m?.[1]) out[m[1]] = (m[2] ?? '').replace(/^(['"])(.*)\1$/, '$2');
+  }
+  return out;
+}
+
 /** @param {string} envFile */
 export function ensureEnv(envFile = path.join(ROOT, '.env')) {
   const template = readFileSync(path.join(ROOT, '.env.example'), 'utf8');
