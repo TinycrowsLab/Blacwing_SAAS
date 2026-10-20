@@ -55,9 +55,13 @@ function registryRedactor(secrets: readonly string[]): Redactor {
   return (text) => secrets.reduce((acc, secret) => (secret === "" ? acc : acc.split(secret).join(REDACTED)), text);
 }
 
+/** Options of a boundary wired the way the API filter wires it: the registry redactor is injected. */
+const WIRED = { redact: registryRedactor([]) } as const;
+
 describe("toProblemDetails", () => {
   it("maps a NotFoundError to a valid RFC 9457 body with status 404 (acceptance criterion 1)", () => {
-    const body = toProblemDetails(new NotFoundError("asset 42 not in tenant", { detail: "No asset with that id." }), TRACE_ID);
+    const error = new NotFoundError("asset 42 not in tenant", { detail: "No asset with that id." });
+    const body = toProblemDetails(error, TRACE_ID, { environment: "production", ...WIRED });
     expect(body).toEqual({
       type: "https://errors.blackwing.dev/NOT_FOUND",
       title: "Resource not found",
@@ -69,6 +73,11 @@ describe("toProblemDetails", () => {
     expectRfc9457(body, 404);
     // Field order follows §9: type, title, status, detail, code, traceId.
     expect(Object.keys(body)).toEqual(["type", "title", "status", "detail", "code", "traceId"]);
+
+    // Called exactly as the criterion reads (no options): still a valid 404 body, minus the detail.
+    const bare = toProblemDetails(error, TRACE_ID);
+    expectRfc9457(bare, 404);
+    expect(bare).toEqual({ type: body.type, title: body.title, status: 404, code: "NOT_FOUND", traceId: TRACE_ID });
   });
 
   it.each(ERROR_CODE_LIST)("maps %s to its registry status, type and title in every environment", (code) => {
@@ -110,7 +119,7 @@ describe("toProblemDetails", () => {
   });
 
   it("maps IllegalRunTransitionError to 409 with its safe state detail", () => {
-    const body = toProblemDetails(new IllegalRunTransitionError("completed", "running"), TRACE_ID);
+    const body = toProblemDetails(new IllegalRunTransitionError("completed", "running"), TRACE_ID, WIRED);
     expect(body.status).toBe(409);
     expect(body.code).toBe("ILLEGAL_RUN_TRANSITION");
     expect(body.detail).toBe('A run cannot move from "completed" to "running".');
@@ -176,14 +185,34 @@ describe("production redaction (acceptance criterion 3)", () => {
     );
   });
 
-  it("redacts Blackwing credential formats even without an injected registry redactor", () => {
+  it("redacts Blackwing credential formats the registry redactor does not know, and without one in development", () => {
     const detail = "Key bwk_live_AbC123 and bw_pat_xyz789 and bw_ci_q1 rejected; header Bearer abcdefgh12345678; url https://user:pw@host/x";
-    const body = toProblemDetails(new ValidationError("x", { detail }), TRACE_ID, { environment: "production" });
-    for (const leaked of ["bwk_live_AbC123", "bw_pat_xyz789", "bw_ci_q1", "abcdefgh12345678", "user:pw"]) {
-      expect(body.detail).not.toContain(leaked);
+    const options = [{ environment: "production", ...WIRED }, { environment: "development" }] as const;
+    for (const option of options) {
+      const body = toProblemDetails(new ValidationError("x", { detail }), TRACE_ID, option);
+      for (const leaked of ["bwk_live_AbC123", "bw_pat_xyz789", "bw_ci_q1", "abcdefgh12345678", "user:pw"]) {
+        expect(body.detail).not.toContain(leaked);
+      }
+      expect(body.detail).toContain(REDACTED);
     }
-    expect(body.detail).toContain(REDACTED);
   });
+
+  it.each(PROD_ENVIRONMENTS)(
+    "environment %s: fails closed when no registry redactor is injected (4xx detail dropped)",
+    (environment) => {
+      const secret = "registered-but-unknown-here-0042";
+      const error = new ValidationError("bad", { detail: `Field "token" was ${secret}.` });
+      const body = toProblemDetails(error, TRACE_ID, environment === undefined ? {} : { environment });
+      expect(body).toEqual({
+        type: "https://errors.blackwing.dev/VALIDATION_FAILED",
+        title: "Validation failed",
+        status: 422,
+        code: "VALIDATION_FAILED",
+        traceId: TRACE_ID,
+      });
+      expect(JSON.stringify(body)).not.toContain(secret);
+    },
+  );
 
   it("withholds 5xx detail outside development/test, shows it (redacted) in development/test", () => {
     const error = new TenantContextMissingError("missing", { detail: "withTenant was not called for findings.list" });
@@ -214,17 +243,17 @@ describe("production redaction (acceptance criterion 3)", () => {
   });
 
   it("caps detail length after redaction without splitting a surrogate pair", () => {
-    const long = toProblemDetails(new ValidationError("x", { detail: "a".repeat(5000) }), TRACE_ID);
+    const long = toProblemDetails(new ValidationError("x", { detail: "a".repeat(5000) }), TRACE_ID, WIRED);
     expect(long.detail).toHaveLength(DEFAULT_MAX_DETAIL_LENGTH);
     expect(long.detail?.endsWith("…")).toBe(true);
 
-    const emoji = toProblemDetails(new ValidationError("x", { detail: `ab${"😀".repeat(10)}` }), TRACE_ID, { maxDetailLength: 4 });
+    const emoji = toProblemDetails(new ValidationError("x", { detail: `ab${"😀".repeat(10)}` }), TRACE_ID, { ...WIRED, maxDetailLength: 4 });
     expect(emoji.detail).toBe("ab…");
     // No lone surrogate left behind by the cut.
     expect(emoji.detail).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/);
 
     for (const bad of [0, -5, 1.5, Number.NaN]) {
-      expect(toProblemDetails(new ValidationError("x", { detail: "short" }), TRACE_ID, { maxDetailLength: bad }).detail).toBe("short");
+      expect(toProblemDetails(new ValidationError("x", { detail: "short" }), TRACE_ID, { ...WIRED, maxDetailLength: bad }).detail).toBe("short");
     }
   });
 });

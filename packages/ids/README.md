@@ -54,7 +54,7 @@ Parsing is strict, so every id has exactly one textual form:
 Errors are `IdValidationError`, a subclass of `ValidationError` from `@blackwing/errors`
 (`name: "ValidationError"`, `code: "VALIDATION_FAILED"`, HTTP 422, `retryable: false`, plus a
 machine-readable `reason`), so `toProblemDetails` maps them to a 422 problem+json body with the
-message as `detail`. Messages never echo the rejected input.
+message as `detail` (outside development/test, only when the boundary injects the registry redactor). Messages never echo the rejected input.
 
 ## Prefix registry
 

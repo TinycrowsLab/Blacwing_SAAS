@@ -50,7 +50,11 @@ export interface ProblemDetailsOptions {
    * absent value, behaves as production. Pass `config.NODE_ENV`; this package never reads the env.
    */
   readonly environment?: ErrorEnvironment;
-  /** Value redactor from the logger's secret registry. The built-in credential patterns always run too. */
+  /**
+   * Value redactor from the logger's secret registry. The built-in credential patterns always run too.
+   * Outside development/test it is required for any `detail` to be shown: without it every `detail`
+   * is dropped (fail closed).
+   */
   readonly redact?: Redactor;
   /** Boundary log sink, called once per mapped error. Its failures are swallowed. */
   readonly log?: ErrorLogSink;
@@ -91,6 +95,19 @@ export interface ProblemDetailsMapper {
 
 function exposesServerDetail(environment: ErrorEnvironment | undefined): boolean {
   return environment === "development" || environment === "test";
+}
+
+/**
+ * Whether an `AppError`'s `detail` may reach the client at all (it is still redacted afterwards).
+ *
+ * - development/test: always (the built-in credential pass still runs).
+ * - anywhere else (production, staging, or no environment): never for 5xx, and for 4xx only when the
+ *   registry redactor was injected. Without it this package cannot know the registered secret values,
+ *   so it fails closed (§8.7) instead of trusting the built-in patterns alone.
+ */
+function mayExposeDetail(status: number, options: ProblemDetailsOptions): boolean {
+  if (exposesServerDetail(options.environment)) return true;
+  return status < 500 && options.redact !== undefined;
 }
 
 function normaliseTraceId(traceId: unknown): string {
@@ -144,7 +161,7 @@ function mapError(err: unknown, rawTraceId: unknown, options: ProblemDetailsOpti
     let detail: string | undefined;
     // A non-AppError is never described to the client: its message is internal by definition.
     const rawDetail = appError?.detail;
-    if (typeof rawDetail === "string" && (spec.status < 500 || exposesServerDetail(options.environment))) {
+    if (typeof rawDetail === "string" && mayExposeDetail(spec.status, options)) {
       const redacted = redact(rawDetail);
       if (redacted !== undefined && redacted.trim() !== "" && !containsStackTrace(redacted)) {
         detail = truncate(redacted, detailLimit(options.maxDetailLength));
@@ -186,7 +203,8 @@ function mapError(err: unknown, rawTraceId: unknown, options: ProblemDetailsOpti
  * Maps anything thrown to an RFC 9457 problem+json body. Never throws.
  *
  * - `AppError`: `code`, `status` and `title` from the registry; `detail` from the error, redacted,
- *   dropped if it contains a stack trace, and withheld for 5xx outside development/test.
+ *   dropped if it contains a stack trace, and withheld for 5xx outside development/test. Outside
+ *   development/test a 4xx `detail` is shown only when `options.redact` (the registry redactor) is set.
  * - Anything else (a plain `Error`, a string, `undefined`, ...): `INTERNAL` (500) with the generic
  *   title and no detail. The real cause reaches only the log sink, redacted.
  * - The `cause` chain and every stack stay server-side.

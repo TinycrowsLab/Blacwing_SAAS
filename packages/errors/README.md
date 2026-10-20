@@ -75,6 +75,9 @@ class AppError extends Error {
   generic title and no `detail`. The real failure goes only to the log sink, redacted.
 - **5xx detail** is withheld unless `environment` is `development` or `test`. A missing `environment`
   behaves as production. This package never reads `process.env`; pass `config.NODE_ENV`.
+- **4xx detail outside development/test** is shown only when `options.redact` (the registry redactor)
+  is injected. Without it the mapper cannot know the registered secret values, so it drops every
+  `detail` (fails closed, §8.7) rather than relying on the built-in patterns alone.
 - **traceId** is echoed when it is 1-128 characters of `[A-Za-z0-9._:-]`, and is `"unknown"` otherwise.
 - **Logging**: `options.log` is called exactly once per mapped error with `{ level, code, status,
   traceId, retryable, err }`, where `err` is `serializeErrorForLog(err)`: the cause chain (cut at depth 8

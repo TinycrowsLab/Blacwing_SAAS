@@ -200,7 +200,8 @@ describe("parsePublicId validation", () => {
     expect(caught).toBeInstanceOf(ValidationError);
     expect(caught).toBeInstanceOf(AppError);
     expect(isAppError(caught)).toBe(true);
-    const body = toProblemDetails(caught, "trace-1", { environment: "production" });
+    // Wired as the API boundary wires it: production, with the registry redactor injected.
+    const body = toProblemDetails(caught, "trace-1", { environment: "production", redact: (text) => text });
     expect(body).toMatchObject({ status: 422, code: "VALIDATION_FAILED", type: "https://errors.blackwing.dev/VALIDATION_FAILED" });
     expect(body.detail).toBe(caught instanceof IdValidationError ? caught.message : undefined);
     expect(JSON.stringify(body)).not.toContain("SUPERSECRET");

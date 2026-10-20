@@ -5,12 +5,13 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { NotFoundError, RateLimitedError } from "./app-error.js";
 import { createProblemDetailsMapper, PROBLEM_JSON_CONTENT_TYPE } from "./problem.js";
+import { REDACTED } from "./redaction.js";
 
 /**
  * A minimal HTTP boundary on loopback, standing in for the API exception filter (API epic): it throws
  * per route, maps the error once and writes the problem response. Proves the wire format end to end.
  */
-const mapper = createProblemDetailsMapper({ environment: "production" });
+const mapper = createProblemDetailsMapper({ environment: "production", redact: (text) => text.split("hunter2").join(REDACTED) });
 
 function route(path: string | undefined): never {
   if (path === "/missing") throw new NotFoundError("asset lookup failed", { detail: "No asset with that id." });
