@@ -1,0 +1,30 @@
+{
+  "name": "@blackwing/events",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Redis Streams (Valkey) event bus for live run events: publish, resumable subscribe, consumer groups, trimming",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings=0",
+    "test": "vitest run --configLoader runner --config src/vitest.config.ts",
+    "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@blackwing/contracts": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/logger": "workspace:*",
+    "@opentelemetry/api": "catalog:",
+    "ioredis": "5.11.1"
+  },
+  "devDependencies": {
+    "@blackwing/testing": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

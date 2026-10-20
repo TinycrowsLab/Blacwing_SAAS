@@ -26,6 +26,7 @@ export {
   SELECTABLE_INTRUSIVENESS_CLASSES,
 } from './intrusiveness.js';
 export { LIMITS } from './limits.js';
+export { type RunEvent, runEventSchema, runEventTypeSchema } from './entities/run-event.js';
 export {
   checkTimestamps,
   cweIdSchema,

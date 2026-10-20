@@ -51,6 +51,7 @@ export const EXPECTED_PACKAGES = Object.freeze([
   'secrets',
   'audit',
   'notify',
+  'events',
   'connectors',
   'reporting',
   'cost',

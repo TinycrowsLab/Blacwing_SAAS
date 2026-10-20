@@ -88,6 +88,7 @@ export const ELEMENT_TYPES = Object.freeze([
       'packages/connectors',
       'packages/cost',
       'packages/db',
+      'packages/events',
       'packages/evidence',
       'packages/mcp-tools',
       'packages/memory',
@@ -149,7 +150,7 @@ export const SERVER_ONLY_MEMBERS = Object.freeze([
  * paths.
  */
 export const TEST_CODE_PATTERN =
-  '(^|/)(test|tests|__tests__|__fixtures__|e2e|testdata|typefixtures)/|\\.(test|spec)\\.[cm]?[jt]sx?$|(^|/)(vitest|playwright)\\.config\\.[cm]?[jt]s$';
+  '(^|/)(test|tests|__tests__|__fixtures__|e2e|testdata|typefixtures)/|\\.(test|spec)\\.[cm]?[jt]sx?$|(^|/)(vitest|playwright)(\\.int)?\\.config\\.[cm]?[jt]s$';
 
 const TEST_CODE = new RegExp(TEST_CODE_PATTERN);
 
@@ -1103,7 +1104,7 @@ export function renderDependencyGraphDoc() {
     '',
     '## Additional rules',
     '',
-    '- **Test code may also import `@blackwing/testing`, and only test code may.** Test code is any `*.test.*` or `*.spec.*` file, anything under a `test/`, `tests/`, `__tests__/`, `__fixtures__/`, `e2e/`, `testdata/` or `typefixtures/` directory, and `vitest.config.*` / `playwright.config.*` (`TEST_CODE_PATTERN`). In `package.json`, `@blackwing/testing` belongs in `devDependencies`. Test code gets no other exemption.',
+    '- **Test code may also import `@blackwing/testing`, and only test code may.** Test code is any `*.test.*` or `*.spec.*` file, anything under a `test/`, `tests/`, `__tests__/`, `__fixtures__/`, `e2e/`, `testdata/` or `typefixtures/` directory, and `vitest.config.*` / `vitest.int.config.*` / `playwright.config.*` (`TEST_CODE_PATTERN`). In `package.json`, `@blackwing/testing` belongs in `devDependencies`. Test code gets no other exemption.',
     '- **No deep imports.** Import another member only through its public entry points (the targets of its `package.json` `exports`): `@blackwing/config`, never `@blackwing/config/src/...` and never a relative path into another member. An `exports` map must not expose a `./src/...` subpath.',
     `- **Sandbox code stays away from server-only packages.** ${SANDBOX_MEMBERS.map((m) => `\`${m}\``).join(' and ')} run inside agent sandboxes, which reach only the egress gateway, the model gateway and the Run Broker API (CONTEXT_PACK §4.1). Their production code must not reach ${SERVER_ONLY_MEMBERS.map((m) => `\`${m}\``).join(', ')}, directly or through another package (§8.6, §8.7).`,
     '- **The Go service stays self-contained.** `apps/egress-gateway/go.mod` must not `replace` a module with a path outside the module, and its Go code must not import other paths of this repository.',

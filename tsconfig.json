@@ -59,6 +59,9 @@
       "path": "packages/errors"
     },
     {
+      "path": "packages/events"
+    },
+    {
       "path": "packages/evidence"
     },
     {
