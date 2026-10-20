@@ -188,6 +188,36 @@ run "rejects_oob_label_colliding_with_an_ingress_host" {
   expect_failures = [aws_route53_record.oob_delegation]
 }
 
+run "rejects_ingress_host_inside_the_oob_subtree" {
+  command = plan
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  variables {
+    ingress_hostnames = ["app", "x.oob"]
+  }
+
+  expect_failures = [var.ingress_hostnames]
+}
+
+run "rejects_ingress_host_overwriting_ns_glue" {
+  command = plan
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  variables {
+    ingress_hostnames = ["ns1"]
+  }
+
+  expect_failures = [var.ingress_hostnames]
+}
+
 run "query_logging_and_volume_metrics_are_enabled" {
   command = plan
 

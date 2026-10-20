@@ -1,6 +1,6 @@
 # Runbook: application DNS zone and OOB delegation (INFRA-007)
 
-Code: `infra/tofu/modules/dns`, called from each `infra/tofu/environments/<env>/main.tf`.
+Code: `infra/tofu/modules/dns`, called from each `infra/tofu/environments/<env>/dns.tf`.
 
 ## What exists
 

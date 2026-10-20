@@ -64,6 +64,16 @@ variable "ingress_hostnames" {
   type        = list(string)
   default     = ["", "app", "api"]
   nullable    = false
+
+  # Single labels only: a dotted label such as "x.oob" would sit inside the delegated OOB subtree,
+  # and ns1/ns2 are the interactsh glue hosts.
+  validation {
+    condition = alltrue([
+      for host in var.ingress_hostnames :
+      (host == "" || can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", host))) && !contains(["ns1", "ns2"], host)
+    ])
+    error_message = "Each ingress_hostnames entry must be empty (apex) or one lower-case DNS label, and must not be ns1 or ns2."
+  }
 }
 
 variable "query_log_retention_days" {
