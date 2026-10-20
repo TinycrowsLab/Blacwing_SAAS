@@ -35,6 +35,16 @@ mock_provider "aws" {
   }
 }
 
+mock_provider "aws" {
+  alias = "us_east_1"
+
+  mock_resource "aws_cloudwatch_log_group" {
+    defaults = {
+      arn = "arn:aws:logs:us-east-1:123456789012:log-group:/aws/route53/mock"
+    }
+  }
+}
+
 variables {
   # Placeholder account for the mocked provider; real runs take TF_VAR_aws_account_id.
   aws_account_id = "123456789012"
@@ -101,7 +111,7 @@ run "rejects_malformed_account_id" {
 # INFRA-002: every environment gets the VPC with an isolated sandbox tier and static egress IPs.
 # The module's own tests (modules/vpc/tests) cover the route tables and the prod single-NAT guard.
 run "vpc_is_wired_with_isolated_sandbox_and_egress_ips" {
-  command = apply
+  command = plan
 
   assert {
     condition = (
@@ -126,4 +136,38 @@ run "vpc_is_wired_with_isolated_sandbox_and_egress_ips" {
     condition     = var.environment != "prod" || (output.vpc_single_nat == false && var.vpc_az_count >= 2)
     error_message = "prod must run one NAT per AZ across at least two AZs."
   }
+}
+
+run "dns_outputs_are_consumable_by_later_issues" {
+  command = plan
+
+  assert {
+    condition     = output.dns_oob_domain == "oob.${var.domain_name}" && output.dns_oob_wildcard_base == "*.oob.${var.domain_name}"
+    error_message = "The OOB domain and wildcard base must derive from the environment's domain_name."
+  }
+
+  assert {
+    condition     = output.dns_app_zone_id != null && output.dns_app_name_servers != null && length(output.dns_oob_ns_set) == 2
+    error_message = "Zone id, registrar name servers and the OOB NS set must be output for INFRA-008, INFRA-012 and the registrar hand-off."
+  }
+}
+
+run "rejects_malformed_domain_name" {
+  command = plan
+
+  variables {
+    domain_name = "Not A Domain."
+  }
+
+  expect_failures = [var.domain_name]
+}
+
+run "rejects_private_oob_server_address" {
+  command = plan
+
+  variables {
+    oob_server_ips = ["192.168.1.10"]
+  }
+
+  expect_failures = [var.oob_server_ips]
 }

@@ -24,3 +24,15 @@ provider "aws" {
     tags = local.common_tags
   }
 }
+
+# Second configuration of the same account for the few services that only exist in us-east-1
+# (Route53 query-log delivery, INFRA-007). Modules receive it as aws.us_east_1.
+provider "aws" {
+  alias               = "us_east_1"
+  region              = "us-east-1"
+  allowed_account_ids = [var.aws_account_id]
+
+  default_tags {
+    tags = local.common_tags
+  }
+}

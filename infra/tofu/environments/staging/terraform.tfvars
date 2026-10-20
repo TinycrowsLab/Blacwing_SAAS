@@ -6,3 +6,7 @@ aws_region  = "eu-central-1"
 vpc_cidr_block = "10.41.0.0/16"
 vpc_az_count   = 2
 vpc_single_nat = true
+
+# DNS (INFRA-007). Placeholder domain: replace with the registered domain of this environment
+# before the first apply. Every environment needs its own domain.
+domain_name = "staging.blackwing.example"

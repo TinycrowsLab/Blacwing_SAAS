@@ -55,6 +55,13 @@ for res in 'aws_kms_key" "state' 'aws_s3_bucket" "state' 'aws_s3_bucket" "logs' 
   fi
 done
 
+echo "==> every environment uses its own domain_name (no OOB env cross-talk)"
+dup="$(grep -hE '^domain_name\s*=' "$TOFU_DIR"/environments/*/terraform.tfvars | sort | uniq -d)"
+if [[ -n "$dup" ]]; then
+  echo "check.sh: environments share a domain_name: $dup" >&2
+  exit 1
+fi
+
 echo "==> tofu fmt -check -recursive"
 "$TOFU" -chdir="$TOFU_DIR" fmt -check -recursive -diff
 
@@ -66,7 +73,11 @@ for root in "${roots[@]}"; do
     cat "$WORK/init.log" >&2
     exit 1
   }
-  "$TOFU" -chdir="$dir" validate -no-color
+  # A module with provider aliases cannot be validated as a root; the environment roots that call
+  # it validate it. Its own tests still run below.
+  if [[ "$root" != modules/* ]]; then
+    "$TOFU" -chdir="$dir" validate -no-color
+  fi
   if command -v "$TFLINT" >/dev/null 2>&1; then
     "$TFLINT" --chdir="$dir" --config="$TOFU_DIR/.tflint.hcl" --no-color
   else
