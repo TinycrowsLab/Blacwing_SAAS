@@ -1,5 +1,8 @@
 import { Counter, exponentialBuckets, Gauge, Histogram, Registry } from 'prom-client';
 
+/** `provider` label of requests that never reach a provider (health, metrics, unmatched routes). */
+export const NO_PROVIDER_LABEL = 'none';
+
 /** Duration buckets: 5 ms doubling up to about 5.5 minutes (long streamed responses). */
 const FIRST_BUCKET_MS = 5;
 const BUCKET_FACTOR = 2;
@@ -7,8 +10,8 @@ const BUCKET_COUNT = 17;
 
 export interface GatewayMetrics {
   readonly registry: Registry;
-  readonly requests: Counter<'route' | 'status'>;
-  readonly duration: Histogram<'route' | 'status'>;
+  readonly requests: Counter<'route' | 'status' | 'provider'>;
+  readonly duration: Histogram<'route' | 'status' | 'provider'>;
   readonly inflight: Gauge;
   readonly providerRequests: Counter<'provider' | 'status'>;
   readonly providerLatency: Histogram<'provider'>;
@@ -21,14 +24,14 @@ export function createGatewayMetrics(): GatewayMetrics {
     registry,
     requests: new Counter({
       name: 'bw_gw_requests_total',
-      help: 'Model gateway requests by matched route and response status.',
-      labelNames: ['route', 'status'],
+      help: 'Model gateway requests by matched route, response status and provider (`none` off the model route).',
+      labelNames: ['route', 'status', 'provider'],
       registers: [registry],
     }),
     duration: new Histogram({
       name: 'bw_gw_request_duration_ms',
       help: 'Model gateway request duration in milliseconds, until the last streamed byte.',
-      labelNames: ['route', 'status'],
+      labelNames: ['route', 'status', 'provider'],
       buckets: exponentialBuckets(FIRST_BUCKET_MS, BUCKET_FACTOR, BUCKET_COUNT),
       registers: [registry],
     }),

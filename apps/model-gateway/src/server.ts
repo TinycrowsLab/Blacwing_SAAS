@@ -21,11 +21,13 @@ import {
 } from '@blackwing/contracts';
 
 import { anthropicError, errorTypeForStatus } from './anthropic-error.js';
+import { extractClientKey, type ClientKeyVerifier, type ClientPrincipal } from './auth.js';
 import { forwardRequestHeaders, forwardResponseHeaders } from './headers.js';
 import { HTTP_STATUS } from './http-status.js';
-import { createGatewayMetrics, type GatewayMetrics } from './metrics.js';
+import { createGatewayMetrics, type GatewayMetrics, NO_PROVIDER_LABEL } from './metrics.js';
 import { ProviderError } from './providers/errors.js';
 
+import type { GatewayAuditSink } from './audit.js';
 import type { GatewayConfig } from './config.js';
 import type { ProviderAdapter, ProviderResponse } from './provider.js';
 import type { Logger } from '@blackwing/logger';
@@ -50,6 +52,13 @@ export interface GatewayOptions {
   readonly metrics?: GatewayMetrics;
   /** Defaults to the global OTel tracer (a no-op until an SDK is registered). */
   readonly tracer?: Tracer;
+  /**
+   * Authenticates the sandbox's virtual key on `/v1/messages`. When set, a missing or unknown key gets an
+   * Anthropic-shaped 401 and never reaches the provider. GATEWAY-002 (#405) supplies the real verifier.
+   */
+  readonly verifier?: ClientKeyVerifier;
+  /** Receives one `gateway.request` audit event per model request, with the provider id. */
+  readonly audit?: GatewayAuditSink;
 }
 
 type FinalStatus = number | 'client_closed';
@@ -166,8 +175,9 @@ export function buildGateway(options: GatewayOptions): FastifyInstance {
       const route = request.routeOptions.url ?? UNMATCHED_ROUTE;
       const status = String(reply.statusCode);
       const durationMs = Math.round(reply.elapsedTime);
-      metrics.requests.inc({ route, status });
-      metrics.duration.observe({ route, status }, durationMs);
+      const labels = { route, status, provider: NO_PROVIDER_LABEL };
+      metrics.requests.inc(labels);
+      metrics.duration.observe(labels, durationMs);
       logger.debug({ route, status: reply.statusCode, durationMs }, 'gw.request');
     }
     done();
@@ -204,21 +214,46 @@ export function buildGateway(options: GatewayOptions): FastifyInstance {
     );
     const spanContext = span.spanContext();
     const traceId = isSpanContextValid(spanContext) ? spanContext.traceId : newTraceId();
-    const log = logger.child({ traceId, route: MESSAGES_ROUTE });
+    const log = logger.child({ traceId, route: MESSAGES_ROUTE, provider: adapter.name });
+    let principal: ClientPrincipal | undefined;
 
     let finished = false;
     const finish = (status: FinalStatus, failure?: string): void => {
       if (finished) return;
       finished = true;
       const durationMs = Math.round(performance.now() - started);
-      const label = String(status);
-      metrics.requests.inc({ route: MESSAGES_ROUTE, status: label });
-      metrics.duration.observe({ route: MESSAGES_ROUTE, status: label }, durationMs);
+      const labels = { route: MESSAGES_ROUTE, status: String(status), provider: adapter.name };
+      metrics.requests.inc(labels);
+      metrics.duration.observe(labels, durationMs);
       if (typeof status === 'number') span.setAttribute('http.response.status_code', status);
       if (failure !== undefined) span.setStatus({ code: SpanStatusCode.ERROR, message: failure });
       span.end();
-      log.info({ status, durationMs }, 'gw.request');
+      log.info({ status, durationMs, tenantId: principal?.tenantId }, 'gw.request');
+      options.audit?.record({
+        type: 'gateway.request',
+        provider: adapter.name,
+        status,
+        traceId,
+        tenantId: principal?.tenantId,
+        keyId: principal?.keyId,
+      });
     };
+
+    if (options.verifier !== undefined) {
+      const key = extractClientKey(request.headers);
+      principal = key === undefined ? undefined : await options.verifier.verify(key);
+      if (principal === undefined) {
+        finish(HTTP_STATUS.unauthorized, 'invalid virtual key');
+        log.warn('gw.auth_failed');
+        return sendError(
+          reply,
+          HTTP_STATUS.unauthorized,
+          'authentication_error',
+          'Invalid or missing virtual key.',
+        );
+      }
+      span.setAttribute('gw.tenant_id', principal.tenantId);
+    }
 
     const parsed = messagesRequestSchema.safeParse(request.body.json);
     if (!parsed.success) {
@@ -269,8 +304,10 @@ export function buildGateway(options: GatewayOptions): FastifyInstance {
     let upstream: ProviderResponse;
     try {
       upstream = await adapter.send(
-        { pathAndQuery, headers, body: request.body.raw, model: parsed.data.model },
-        { signal: controller.signal },
+        { pathAndQuery, headers, body: request.body.raw, model: parsed.data.model, principal },
+        principal === undefined
+          ? { signal: controller.signal }
+          : { signal: controller.signal, tenantId: principal.tenantId },
       );
     } catch (error) {
       release();

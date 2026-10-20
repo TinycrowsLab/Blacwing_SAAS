@@ -1,3 +1,4 @@
+import type { ClientPrincipal } from './auth.js';
 import type { ProviderId } from './config.js';
 
 /** One upstream call. `body` is the raw JSON bytes the client sent, forwarded verbatim unless a model alias is resolved. */
@@ -9,6 +10,8 @@ export interface ProviderRequest {
   readonly body: Uint8Array;
   /** The `model` of the parsed request (alias or exact id). */
   readonly model: string;
+  /** Set when the gateway authenticated the client's virtual key; adapters may require it. */
+  readonly principal?: ClientPrincipal | undefined;
 }
 
 /** Per-call context. */

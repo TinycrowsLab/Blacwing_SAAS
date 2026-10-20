@@ -519,8 +519,12 @@ describe('health, readiness, metrics, traces and logs', () => {
     const response = await fetch(`${h.url}/metrics`);
     expect(response.headers.get('content-type')).toContain('text/plain');
     const text = await response.text();
-    expect(text).toContain('bw_gw_requests_total{route="/v1/messages",status="200"} 1');
-    expect(text).toContain('bw_gw_request_duration_ms_count{route="/v1/messages",status="200"} 1');
+    expect(text).toContain(
+      'bw_gw_requests_total{route="/v1/messages",status="200",provider="anthropic"} 1',
+    );
+    expect(text).toContain(
+      'bw_gw_request_duration_ms_count{route="/v1/messages",status="200",provider="anthropic"} 1',
+    );
     expect(text).toContain('bw_gw_upstream_inflight 0');
   });
 
