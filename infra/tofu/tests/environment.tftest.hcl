@@ -2,7 +2,26 @@
 # environments/<env>/tests/. Run with `tofu init -backend=false && tofu test` (infra/tofu/scripts/check.sh).
 # The AWS provider is mocked: nothing here talks to AWS.
 
-mock_provider "aws" {}
+mock_provider "aws" {
+  mock_data "aws_availability_zones" {
+    defaults = {
+      names = ["eu-central-1a", "eu-central-1b", "eu-central-1c"]
+    }
+  }
+
+  # The provider validates ARN syntax, so mocked ARNs must look like ARNs.
+  mock_resource "aws_cloudwatch_log_group" {
+    defaults = {
+      arn = "arn:aws:logs:eu-central-1:123456789012:log-group:/blackwing/mock/vpc-flow-logs"
+    }
+  }
+
+  mock_resource "aws_iam_role" {
+    defaults = {
+      arn = "arn:aws:iam::123456789012:role/mock-vpc-flow-logs"
+    }
+  }
+}
 
 variables {
   # Placeholder account for the mocked provider; real runs take TF_VAR_aws_account_id.
@@ -65,4 +84,34 @@ run "rejects_malformed_account_id" {
   }
 
   expect_failures = [var.aws_account_id]
+}
+
+# INFRA-002: every environment gets the VPC with an isolated sandbox tier and static egress IPs.
+# The module's own tests (modules/vpc/tests) cover the route tables and the prod single-NAT guard.
+run "vpc_is_wired_with_isolated_sandbox_and_egress_ips" {
+  command = apply
+
+  assert {
+    condition = (
+      length(output.subnet_ids["sandbox"]) == var.vpc_az_count &&
+      length(output.subnet_ids["private-app"]) == var.vpc_az_count &&
+      length(output.subnet_ids["public"]) == var.vpc_az_count
+    )
+    error_message = "Every tier needs one subnet per AZ."
+  }
+
+  assert {
+    condition     = length(output.route_table_ids["sandbox"]) == 1
+    error_message = "Sandbox subnets share one route table without a default route."
+  }
+
+  assert {
+    condition     = length(output.egress_ips) == (output.vpc_single_nat ? 1 : var.vpc_az_count)
+    error_message = "egress_ips must hold one EIP per NAT gateway."
+  }
+
+  assert {
+    condition     = var.environment != "prod" || (output.vpc_single_nat == false && var.vpc_az_count >= 2)
+    error_message = "prod must run one NAT per AZ across at least two AZs."
+  }
 }

@@ -15,7 +15,7 @@ infra/tofu/
   bootstrap/               one-time state bucket, log bucket, KMS key, lock table, CloudTrail
   environments/{dev,staging,prod}/
                            main.tf, variables.tf, terraform.tfvars, outputs.tf, .terraform.lock.hcl
-  modules/                 reusable modules (see modules/README.md)
+  modules/                 reusable modules (see modules/README.md): vpc (INFRA-002)
   scripts/check.sh         offline fmt/validate/tflint/test for every root
   tests/                   shared tofu tests and the backend-lock integration test
 ```

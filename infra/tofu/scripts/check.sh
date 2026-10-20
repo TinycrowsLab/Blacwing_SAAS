@@ -40,6 +40,10 @@ if [[ $# -gt 0 ]]; then
   roots=("$@")
 else
   roots=(bootstrap environments/dev environments/staging environments/prod)
+  # Modules that ship their own tests/ are checked like roots.
+  for mod in "$TOFU_DIR"/modules/*/; do
+    [[ -d "$mod/tests" ]] && roots+=("modules/$(basename "$mod")")
+  done
 fi
 
 echo "==> bootstrap stateful resources carry prevent_destroy (idempotent re-run)"
