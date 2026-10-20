@@ -279,7 +279,7 @@ apps/
   cli/                 `blackwing` CLI (CI usage)
 packages/
   contracts/  db/  domain/  policy/  agents/  mcp-tools/  memory/  replay/  oob/  evidence/  crypto/
-  secrets/  audit/  notify/  connectors/  reporting/  cost/  config/  logger/  ids/  errors/  telemetry/  ui/  testing/
+  secrets/  audit/  notify/  connectors/  reporting/  cost/  config/  logger/  ids/  time/  errors/  telemetry/  ui/  testing/
 infra/
   tofu/  helm/  k3s/  docker/ (Dockerfiles; sandbox image)  compose/ (docker-compose.dev.yml)
 eval/

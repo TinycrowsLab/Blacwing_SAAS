@@ -1,0 +1,27 @@
+{
+  "name": "@blackwing/time",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ISO-8601 UTC timestamps, duration parsing, an injectable Clock and DST-safe time-zone window helpers",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings=0",
+    "test": "vitest run",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@blackwing/errors": "workspace:*",
+    "luxon": "3.7.2"
+  },
+  "devDependencies": {
+    "@types/luxon": "3.7.1",
+    "@types/node": "catalog:",
+    "fast-check": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -98,6 +98,9 @@
       "path": "packages/testing"
     },
     {
+      "path": "packages/time"
+    },
+    {
       "path": "packages/ui"
     }
   ]

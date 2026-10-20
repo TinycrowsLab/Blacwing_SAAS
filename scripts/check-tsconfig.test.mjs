@@ -149,9 +149,9 @@ describe('check-tsconfig against this repository', () => {
     const result = checkTsconfig(REPO_ROOT);
     assert.deepEqual(result.errors, []);
     assert.equal(result.ok, true);
-    assert.equal(result.members.length, 33);
-    // 33 members + packages/testing/typefixtures.
-    assert.equal(result.projects, 34);
+    assert.equal(result.members.length, 34);
+    // 34 members + packages/testing/typefixtures.
+    assert.equal(result.projects, 35);
   });
 
   it('pins the mandated base options (FOUND-003 detailed requirements 1-2)', () => {
