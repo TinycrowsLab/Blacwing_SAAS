@@ -154,7 +154,7 @@ describe('checkPrWorkflow (CI-002, #136)', () => {
   });
 
   it('keeps the required check names stable', () => {
-    assert.deepEqual([...REQUIRED_CHECKS], ['lint', 'typecheck', 'commitlint']);
+    assert.deepEqual([...REQUIRED_CHECKS], ['lint', 'typecheck', 'commitlint', 'boundaries']);
     const renamed = realPr().replace('    name: typecheck\n', '    name: Type check\n');
     assert.match(checkPrWorkflow(renamed).join(), /'typecheck' must be named 'typecheck'/);
     const dropped = realPr().replace(
@@ -162,6 +162,21 @@ describe('checkPrWorkflow (CI-002, #136)', () => {
       '  cl:\n    name: cl\n',
     );
     assert.match(checkPrWorkflow(dropped).join(), /'commitlint' is missing/);
+  });
+
+  it('requires an unskippable boundaries job running pnpm boundaries:report (#870)', () => {
+    const skipped = realPr().replace(
+      '  boundaries:\n    name: boundaries\n',
+      "  boundaries:\n    name: boundaries\n    needs: changes\n    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}\n",
+    );
+    assert.match(checkPrWorkflow(skipped).join(), /boundaries must never be skipped/);
+    const wrongCmd = realPr().replaceAll('pnpm boundaries:report', 'pnpm boundaries:docs');
+    assert.match(checkPrWorkflow(wrongCmd).join(), /boundaries must run 'pnpm boundaries:report'/);
+    const dropped = realPr().replace(
+      '  boundaries:\n    name: boundaries\n',
+      '  bd:\n    name: bd\n',
+    );
+    assert.match(checkPrWorkflow(dropped).join(), /'boundaries' is missing/);
   });
 
   it('rejects a Node matrix (it would rename the check to "lint (22)")', () => {

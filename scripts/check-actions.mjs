@@ -7,7 +7,7 @@
 //   keys the Turborepo cache on pnpm-lock.yaml + turbo.json with a branch fallback, keeps
 //   caches restore-only on forked pull requests, and references no secrets;
 // - the pull-request workflow (.github/workflows/pr.yml, CI-002 #136) keeps the stable required
-//   check names `lint`, `typecheck` and `commitlint` (no matrix), runs on pull_request and push to
+//   check names `lint`, `typecheck`, `commitlint` and `boundaries` (no matrix), runs on pull_request and push to
 //   main with read-only permissions and cancel-in-progress concurrency, uses the setup action and
 //   the problem matchers, gates docs-only skips fail-closed, and references no secrets; every
 //   ESLint script enforces zero warnings.
@@ -24,7 +24,7 @@ import { parse } from 'yaml';
 export const SETUP_ACTION = '.github/actions/setup/action.yml';
 export const PR_WORKFLOW = '.github/workflows/pr.yml';
 /** Required status checks referenced by branch protection (CI-019); job id = check name. */
-export const REQUIRED_CHECKS = Object.freeze(['lint', 'typecheck', 'commitlint']);
+export const REQUIRED_CHECKS = Object.freeze(['lint', 'typecheck', 'commitlint', 'boundaries']);
 const SHA_PIN = /^[^@\s]+@[0-9a-f]{40}$/;
 const VERSION_COMMENT = /#\s*v\d+(\.\d+){0,2}\b/;
 
@@ -223,6 +223,14 @@ export function checkPrWorkflow(text) {
         errors.push(
           `${W}: job '${id}' must 'set -o pipefail' so the annotator keeps the exit code`,
         );
+      }
+    }
+    if (id === 'boundaries') {
+      if (!runs.includes('pnpm boundaries:report')) {
+        errors.push(`${W}: boundaries must run 'pnpm boundaries:report'`);
+      }
+      if ('needs' in job || 'if' in job) {
+        errors.push(`${W}: boundaries must never be skipped (docs-only edits must fail it)`);
       }
     }
     if (id === 'commitlint') {

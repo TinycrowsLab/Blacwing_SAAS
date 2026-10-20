@@ -10,6 +10,7 @@ the check name).
 | `lint` | `pnpm lint` (ESLint 9, `--max-warnings=0` in every member and in `lint:root`), then `pnpm format:check` | any ESLint error or warning (for example an `any`), or a file Prettier would rewrite |
 | `typecheck` | `pnpm typecheck` (`tsc -b` per member through Turborepo, cached) | any type error |
 | `commitlint` | `node scripts/ci-pr.mjs commitlint` | any commit in the range is not a Conventional Commit |
+| `boundaries` | `pnpm boundaries:report` (dependency-cruiser, FOUND-005) | a forbidden import, a cycle or a stale `docs/architecture/dependency-graph.md`; never skipped, even for docs-only changes; uploads `boundaries-report.json` |
 
 ## Behaviour
 

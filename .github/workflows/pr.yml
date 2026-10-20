@@ -2,9 +2,12 @@ name: pr
 
 # Pull-request gate (CI-002, #136): ESLint with zero warnings plus the Prettier check, commit
 # messages (Conventional Commits) and the project-wide typecheck, on every pull request and every
-# push to main. The job names `lint`, `typecheck` and `commitlint` are the required status checks
+# push to main. The job names `lint`, `typecheck`, `commitlint` and `boundaries` are the required status checks
 # that branch protection references (CI-019): never rename them, and never give them a matrix
 # (a matrix appends its values to the check name). Node 22 is the single supported version.
+#
+# `boundaries` (#870) runs the architectural dependency check and is never skipped, so a docs-only
+# edit of docs/architecture/dependency-graph.md still fails it when the file is stale.
 #
 # Unit, integration, e2e and Go jobs live in their own workflows (CI-003, CI-004, CI-006, CI-005).
 # No job needs a secret; forked pull requests get read-only caches from the setup action.
@@ -128,3 +131,47 @@ jobs:
           BEFORE_SHA: ${{ github.event.before }}
           AFTER_SHA: ${{ github.sha }}
         run: node scripts/ci-pr.mjs commitlint
+
+  # Architectural boundaries (FOUND-005, #7): `pnpm boundaries:report` fails on a forbidden import,
+  # a cycle or a stale docs/architecture/dependency-graph.md. Never skipped (no `needs`/`if`): the
+  # check takes seconds and a docs-only hand edit of the graph doc must fail it.
+  boundaries:
+    name: boundaries
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - id: setup
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          fetch-depth: '1'
+      - uses: ./.github/actions/problem-matchers
+      # The script prints one `::error` annotation per violation when GITHUB_ACTIONS=true and
+      # writes boundaries-report.json; exit 1 fails the job.
+      - name: Check architectural boundaries
+        run: |
+          set -o pipefail
+          pnpm boundaries:report
+      - name: Job summary
+        if: ${{ !cancelled() && hashFiles('boundaries-report.json') != '' }}
+        run: |
+          {
+            echo '### Architectural boundaries'
+            echo
+            echo '```json'
+            head -c 20000 boundaries-report.json
+            echo
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload boundaries report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: boundaries-report
+          path: boundaries-report.json
+          if-no-files-found: warn
+          retention-days: 14
