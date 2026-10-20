@@ -115,7 +115,9 @@ first edges are `packages/ids -> packages/errors` (`IdValidationError` extends `
 `packages/config -> packages/errors` (`ConfigValidationError` extends `AppError`), then
 `packages/logger -> packages/config` (the logger reads the secret-redaction registry and `LOG_LEVEL`
 types, FOUND-008) and `packages/logger -> packages/errors` (built-in credential patterns and error
-serialisation).
+serialisation), and
+`packages/testing -> packages/contracts, packages/ids, packages/time` (factories validated by the
+entity contracts, FOUND-012).
 
 Edges must follow the allowed layering. `pnpm boundaries:check` (FOUND-005, #7) enforces it on every
 import and every declared workspace dependency; the generated

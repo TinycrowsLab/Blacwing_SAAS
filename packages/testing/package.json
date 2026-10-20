@@ -6,16 +6,34 @@
   "license": "UNLICENSED",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./containers": "./src/containers/index.ts",
+    "./vitest": "./src/vitest/index.ts",
+    "./vitest-config": "./src/vitest/config.ts",
+    "./sql/*": "./sql/*"
   },
   "scripts": {
     "lint": "eslint . --max-warnings=0",
-    "test": "vitest run",
+    "test": "vitest run --config src/vitest.config.ts",
+    "test:int": "vitest run --config src/vitest.int.config.ts",
     "typecheck": "tsc -b --pretty false"
   },
   "devDependencies": {
     "@types/node": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "@types/pg": "8.23.1",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1146.0",
+    "@blackwing/contracts": "workspace:*",
+    "@blackwing/ids": "workspace:*",
+    "@blackwing/time": "workspace:*",
+    "fast-check": "catalog:",
+    "ioredis": "5.11.1",
+    "neo4j-driver": "6.2.0",
+    "pg": "8.23.1",
+    "testcontainers": "12.2.0",
+    "vitest": "catalog:",
+    "zod": "catalog:"
   }
 }
