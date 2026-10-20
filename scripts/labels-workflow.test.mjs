@@ -48,3 +48,12 @@ test('labels-sync is gated by BW_ONLINE, serialised, and the only writer', () =>
   assert.notEqual(jobOf('labels-check').permissions.issues, 'write');
   assert.ok(wf.on.workflow_dispatch !== undefined);
 });
+
+test('each job checks out before using the local setup action', () => {
+  for (const name of ['labels-check', 'labels-sync']) {
+    const uses = jobOf(name).steps.map((s) => s.uses ?? '');
+    const checkout = uses.findIndex((u) => /^actions\/checkout@[0-9a-f]{40}$/.test(u));
+    assert.ok(checkout >= 0, `${name} pins actions/checkout by SHA`);
+    assert.ok(checkout < uses.indexOf('./.github/actions/setup'), `${name} checks out first`);
+  }
+});

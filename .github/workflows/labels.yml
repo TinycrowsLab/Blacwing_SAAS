@@ -31,6 +31,11 @@ jobs:
       contents: read
       issues: read
     steps:
+      # A local composite action is only readable after a checkout; fetch just its directory.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
       - uses: ./.github/actions/setup
         with:
           fetch-depth: '1'
@@ -74,6 +79,11 @@ jobs:
       contents: read
       issues: write
     steps:
+      # A local composite action is only readable after a checkout; fetch just its directory.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
       - uses: ./.github/actions/setup
         with:
           fetch-depth: '1'
@@ -83,8 +93,10 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           # The script re-reads the labels after applying and exits 1 if changes are still pending.
-          set -o pipefail
-          node scripts/sync-labels.mjs --repo "$REPO" | tee sync.txt
+          # The summary is written even when the sync fails, then the job fails visibly.
+          status=0
+          node scripts/sync-labels.mjs --repo "$REPO" > sync.txt 2>&1 || status=$?
+          cat sync.txt
           {
             echo '## Label sync'
             echo
@@ -92,3 +104,4 @@ jobs:
             cat sync.txt
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
