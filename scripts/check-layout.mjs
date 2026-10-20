@@ -84,6 +84,7 @@ export const ROOT_FILES = Object.freeze([
   "LICENSE",
   "package.json",
   "pnpm-workspace.yaml",
+  "turbo.json",
   ".gitignore",
   ".editorconfig",
   ".nvmrc",

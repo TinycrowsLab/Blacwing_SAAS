@@ -57,15 +57,16 @@ Pack §6 is the full layout. Adding or removing an app, package or fixed directo
 | `pnpm test:int` | Integration tests (Testcontainers, random ports). |
 | `pnpm test:e2e` | Playwright e2e tests against the compose stack and a local Juice Shop. |
 | `pnpm lint` | ESLint 9 (strict typescript-eslint) and Prettier checks. |
-| `pnpm typecheck` | `tsc -b` across the workspace: one strict base config, project references (see `docs/architecture/typescript.md`). |
+| `pnpm typecheck` | `tsc -b` per member via Turborepo (cached): one strict base config, project references (see `docs/architecture/typescript.md`). |
 | `pnpm build` | Builds every package in topological order (Turborepo). |
 | `pnpm db:seed` | Seeds the demo tenant `acme`, users per role, a verified lab asset and an active SA. |
-| `pnpm check:layout` / `pnpm check:claude-md` / `pnpm check:tsconfig` | Repo-layout, CLAUDE.md and tsconfig drift checks. |
+| `pnpm check:layout` / `pnpm check:claude-md` / `pnpm check:tsconfig` / `pnpm check:turbo` | Repo-layout, CLAUDE.md, tsconfig and Turborepo pipeline drift checks. |
 
-Each script arrives with the issue that owns it: Turborepo tasks in FOUND-002 (#4), lint in FOUND-004 (#6), the
-dev stack in DEVENV-010 (#164), seed data in DEVENV-011 (#165). If a script is missing, that issue has not landed
-yet. Do not improvise a substitute in another issue. Go code under `apps/egress-gateway` uses its `Makefile`
-(`make build test lint`, `make verify` for everything CI runs; see `apps/egress-gateway/README.md`).
+Root scripts run through Turborepo (`turbo.json`, local cache only; see the README). Each script arrives with the
+issue that owns it: lint in FOUND-004 (#6), the dev stack in DEVENV-010 (#164), seed data in DEVENV-011 (#165).
+If a script is missing, that issue has not landed yet. Do not improvise a substitute in another issue. Go code
+under `apps/egress-gateway` uses its `Makefile` (`make build test lint`, `make verify` for everything CI runs; see
+`apps/egress-gateway/README.md`).
 
 ## Coding conventions
 

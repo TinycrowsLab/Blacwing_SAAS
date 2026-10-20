@@ -1,0 +1,88 @@
+[
+  {
+    "taskId": "a#build",
+    "command": "node ../../tools/task.mjs build --emit",
+    "dependencies": [],
+    "dependents": [
+      "b#build"
+    ],
+    "dependsOn": [
+      "^build"
+    ],
+    "inputs": [
+      "package.json",
+      "src/**",
+      "tsconfig*.json"
+    ],
+    "outputs": [
+      "dist/**"
+    ],
+    "cache": true,
+    "persistent": false,
+    "remoteCache": false
+  },
+  {
+    "taskId": "b#build",
+    "command": "node ../../tools/task.mjs build --emit",
+    "dependencies": [
+      "a#build"
+    ],
+    "dependents": [
+      "c#build"
+    ],
+    "dependsOn": [
+      "^build"
+    ],
+    "inputs": [
+      "package.json",
+      "src/**",
+      "tsconfig*.json"
+    ],
+    "outputs": [
+      "dist/**"
+    ],
+    "cache": true,
+    "persistent": false,
+    "remoteCache": false
+  },
+  {
+    "taskId": "c#build",
+    "command": "node ../../tools/task.mjs build --emit",
+    "dependencies": [
+      "b#build"
+    ],
+    "dependents": [],
+    "dependsOn": [
+      "^build"
+    ],
+    "inputs": [
+      "package.json",
+      "src/**",
+      "tsconfig*.json"
+    ],
+    "outputs": [
+      "dist/**"
+    ],
+    "cache": true,
+    "persistent": false,
+    "remoteCache": false
+  },
+  {
+    "taskId": "d#build",
+    "command": "node ../../tools/task.mjs build",
+    "dependencies": [],
+    "dependents": [],
+    "dependsOn": [
+      "^build"
+    ],
+    "inputs": [
+      "package.json",
+      "src/**",
+      "tsconfig*.json"
+    ],
+    "outputs": [],
+    "cache": true,
+    "persistent": false,
+    "remoteCache": false
+  }
+]

@@ -161,9 +161,36 @@ Requirements: **Node.js 22 LTS** (pinned in `.nvmrc` / `.node-version`) and **pn
 ```bash
 pnpm install --frozen-lockfile   # preinstall refuses npm/yarn, Node != 22, and layout drift
 pnpm check:layout                # JSON summary of workspace members; non-zero exit on drift
-pnpm typecheck                   # strict tsc -b over every member (project references)
+pnpm typecheck                   # turbo: tsconfig check, then strict tsc -b per member (cached)
 pnpm test                        # scripts/ self-tests + every workspace member's tests
 ```
+
+### Task pipeline (Turborepo)
+
+Root scripts delegate to [Turborepo](https://turborepo.com) (`turbo.json`, pinned `turbo` devDependency); each package declares its own scripts and turbo runs them in dependency order with a **local filesystem cache** (`.turbo/cache`, gitignored). The remote cache is disabled in v1 (`remoteCache.enabled: false`), even if `TURBO_TOKEN` is set.
+
+| Command | Turbo task | Depends on | Cached | Outputs |
+|---|---|---|---|---|
+| `pnpm build` | `build` | `^build` (workspace deps build first) | yes | `dist/**` |
+| `pnpm typecheck` | `typecheck` (+ root `check:tsconfig`) | `^build`, `^typecheck`, `//#check:tsconfig` | yes | none |
+| `pnpm lint` | `lint` | `^build` | yes | none |
+| `pnpm test` | `test` (+ root `test:scripts`) | `^build`, `//#test:scripts` | yes (`test:scripts`: no) | `coverage/**` |
+| `pnpm test:int` | `test:int` | `^build` | **no** (external services) | — |
+| `pnpm test:e2e` | `test:e2e` | `^build` | **no** (external services) | — |
+| `pnpm dev` | `dev` (`--parallel`) | — | **no**, persistent | — |
+
+- Cached tasks hash every git-tracked file of the package (`$TURBO_DEFAULT$`, so nested projects such as `packages/testing/typefixtures` count) plus `src/**`, `tsconfig*.json` and `package.json`; gitignored `dist/` and `.turbo/` never count. Changing `tsconfig.base.json`, the root `tsconfig.json`, the ESLint/Prettier config or `.nvmrc` busts every cache (`globalDependencies`). `typecheck` also waits for `^typecheck` because `tsc -b` builds referenced projects, which must not run concurrently.
+- `envMode` is strict: a task only sees the environment variables its definition lists. Add new ones to `turbo.json` (`env` if they change the output, `passThroughEnv` otherwise).
+- A package whose `build` writes no `dist/` must declare it in its own `turbo.json`, otherwise a cache hit restores nothing:
+  ```json
+  { "extends": ["//"], "tasks": { "build": { "outputs": [] } } }
+  ```
+- `test` declares `coverage/**` so coverage reports (`pnpm test -- --coverage`) are cached and restored. Until coverage is on by default (CI-002, #137), plain `pnpm test` prints turbo's "no output files found" warning for each package; it is expected and harmless (the arguments are part of the hash, so a run without coverage never restores one with it).
+- Root tasks (`//#check:tsconfig`, `//#test:scripts`) feed the hash of every package task that depends on them, so they declare narrow explicit `inputs`.
+- `pnpm check:turbo` validates the pipeline contract. Add `--summarize` to any task (`pnpm build --summarize`) to write a run summary to `.turbo/runs/` (the CI artifact), then `pnpm check:turbo --latest-summary` fails if a task declared outputs it did not produce.
+- Inspect the graph without running anything: `pnpm exec turbo run build --dry=json`.
+- Turbo's anonymous telemetry can be switched off per machine with `pnpm exec turbo telemetry disable` (or `TURBO_TELEMETRY_DISABLED=1`).
+- After changing `turbo.json`, refresh the dry-run snapshot used by the self-tests: `BW_UPDATE_SNAPSHOTS=1 pnpm test:scripts`.
 
 The workspace (`pnpm-workspace.yaml`: `apps/*`, `packages/*`) holds 9 apps and 22 packages, each named `@blackwing/<dir>`, exactly as laid out in [`CONTEXT_PACK.md` §6](docs/architecture/CONTEXT_PACK.md). `scripts/check-layout.mjs` enforces that layout; when an issue adds or removes an app, package or fixed directory, update its expected lists and §6 in the same commit.
 

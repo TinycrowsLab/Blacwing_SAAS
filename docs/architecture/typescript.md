@@ -12,7 +12,7 @@ reference for that setup (FOUND-003); CONTEXT_PACK §5 sets the conventions it e
 | `tsconfig.json` (root) | Solution file: `"files": []` plus a reference to every member, so `tsc -b` builds the whole workspace in dependency order. |
 | `<member>/tsconfig.json` | `extends: "../../tsconfig.base.json"`, `rootDir: src`, `outDir: dist`, `tsBuildInfoFile: dist/.tsbuildinfo`, `include: ["src"]`, `references` to its workspace dependencies. |
 | `packages/testing/typefixtures/tsconfig.json` | Nested project with the compile-fail fixtures (see [Proving the flags](#proving-the-flags)), referenced from `packages/testing/tsconfig.json`. |
-| `scripts/check-tsconfig.mjs` | Structural guard, run by `pnpm typecheck` before `tsc -b` and by `pnpm check:tsconfig`. |
+| `scripts/check-tsconfig.mjs` | Structural guard, run by `pnpm typecheck` (the Turborepo root task `//#check:tsconfig`, which every member's `typecheck` waits for) and by `pnpm check:tsconfig`. |
 
 `outDir`, `rootDir` and `tsBuildInfoFile` are set in each member, not in the base: relative paths in
 an extended config resolve against the file that declares them.
@@ -20,7 +20,7 @@ an extended config resolve against the file that declares them.
 ## Commands
 
 ```bash
-pnpm typecheck                              # check-tsconfig + tsc -b over the whole workspace
+pnpm typecheck                              # turbo: check-tsconfig, then tsc -b per member in dependency order (cached)
 pnpm --filter @blackwing/<name> typecheck   # tsc -b --pretty false for one member (+ its references)
 pnpm check:tsconfig                         # structural check only, JSON summary on stdout
 pnpm exec tsc -b --verbose                  # explain build order and up-to-date decisions

@@ -1,0 +1,89 @@
+{
+  "$schema": "./node_modules/turbo/schema.json",
+  "ui": "stream",
+  "noUpdateNotifier": true,
+  "agentGuidance": false,
+  "cacheDir": ".turbo/cache",
+  "remoteCache": {
+    "enabled": false
+  },
+  "envMode": "strict",
+  "globalDependencies": [
+    "tsconfig.base.json",
+    "tsconfig.json",
+    "eslint.config.*",
+    ".eslintrc*",
+    "prettier.config.*",
+    ".prettierrc*",
+    ".nvmrc",
+    ".node-version"
+  ],
+  "globalEnv": ["NODE_ENV"],
+  "globalPassThroughEnv": ["CI", "FORCE_COLOR", "NO_COLOR"],
+  "tasks": {
+    "build": {
+      "description": "Compile a package to dist/. Upstream workspace dependencies build first.",
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "tsconfig*.json", "package.json"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "description": "tsc -b per package. Cacheable, declares no outputs. Waits for upstream builds and typechecks (tsc -b also builds referenced projects, so they must not run concurrently) and for the tsconfig structure check.",
+      "dependsOn": ["^build", "^typecheck", "//#check:tsconfig"],
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "tsconfig*.json", "package.json"],
+      "outputs": []
+    },
+    "lint": {
+      "description": "Lint a package. Cacheable, declares no outputs; upstream packages build first so type-aware rules see their declarations.",
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "tsconfig*.json", "package.json"],
+      "outputs": []
+    },
+    "test": {
+      "description": "Unit tests (Vitest). Cacheable; coverage reports are the only outputs. Also runs the scripts/ self-tests.",
+      "dependsOn": ["^build", "//#test:scripts"],
+      "inputs": ["$TURBO_DEFAULT$", "src/**", "tsconfig*.json", "package.json"],
+      "outputs": ["coverage/**"]
+    },
+    "test:int": {
+      "description": "Integration tests against real services (Testcontainers). Never cached: results depend on external state.",
+      "dependsOn": ["^build"],
+      "cache": false,
+      "passThroughEnv": ["DOCKER_*", "TESTCONTAINERS_*", "BW_*"]
+    },
+    "test:e2e": {
+      "description": "End-to-end tests (Playwright) against the compose stack. Never cached: results depend on external state.",
+      "dependsOn": ["^build"],
+      "cache": false,
+      "passThroughEnv": ["PLAYWRIGHT_*", "DOCKER_*", "BW_*"]
+    },
+    "dev": {
+      "description": "Long-running dev servers with hot reload. Never cached.",
+      "cache": false,
+      "persistent": true,
+      "passThroughEnv": ["BW_*", "OTEL_*", "PORT", "HOSTNAME"]
+    },
+    "//#check:tsconfig": {
+      "description": "Structural tsconfig/project-reference check (scripts/check-tsconfig.mjs) over every member. Cacheable; hashes every file it reads.",
+      "inputs": [
+        "scripts/check-tsconfig.mjs",
+        "package.json",
+        "pnpm-workspace.yaml",
+        "tsconfig.base.json",
+        "tsconfig.json",
+        "apps/*/package.json",
+        "packages/*/package.json",
+        "apps/**/tsconfig*.json",
+        "packages/**/tsconfig*.json",
+        "!**/node_modules/**",
+        "!**/dist/**"
+      ],
+      "outputs": []
+    },
+    "//#test:scripts": {
+      "description": "Self-tests for the repository scripts under scripts/. Never cached: they inspect the live workspace.",
+      "cache": false,
+      "inputs": ["scripts/**", "package.json", "pnpm-workspace.yaml"]
+    }
+  }
+}

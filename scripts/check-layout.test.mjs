@@ -165,9 +165,11 @@ describe("check-layout on fixtures", () => {
   it("detects missing root files", () => {
     rmSync(path.join(fixture.root, "SECURITY.md"));
     rmSync(path.join(fixture.root, "LICENSE"));
+    rmSync(path.join(fixture.root, "turbo.json"));
     const { errors } = checkLayout(fixture.root);
     assertError(errors, /^SECURITY\.md: missing at repository root$/);
     assertError(errors, /^LICENSE: missing at repository root$/);
+    assertError(errors, /^turbo\.json: missing at repository root$/);
   });
 
   it("enforces the root package.json contract (engines, packageManager, preinstall, private)", () => {
