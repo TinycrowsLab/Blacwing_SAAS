@@ -33,7 +33,12 @@ const BUILTIN_RULES: readonly Rule[] = Object.freeze([
   },
   { pattern: /\b(?:bwk|bw_pat|bw_ci)_[A-Za-z0-9_-]+/g, replacement: REDACTED },
   { pattern: /\b(Bearer|Basic|Token)\s+[A-Za-z0-9._~+/=-]{8,}/gi, replacement: `$1 ${REDACTED}` },
-  { pattern: /([a-z][a-z0-9+.-]*:\/\/)[^\s/?#@]+@/gi, replacement: `$1${REDACTED}@` },
+  // The lookbehind anchors the scheme at its first character. Without it, every position inside a long
+  // run of scheme characters re-scans the rest of the run, which is quadratic (seconds for a few KB).
+  {
+    pattern: /(?<![a-z0-9+.-])([a-z][a-z0-9+.-]*:\/\/)[^\s/?#@]+@/gi,
+    replacement: `$1${REDACTED}@`,
+  },
 ]);
 
 /** Applies the built-in credential patterns only. */

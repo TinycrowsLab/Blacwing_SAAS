@@ -23,6 +23,13 @@ describe('redactBuiltinSecrets', () => {
       'proxy http://bwk:pass@egress:13128/x',
       'proxy http://[REDACTED]@egress:13128/x',
     ],
+    ['URL userinfo after a word character', 'x_https://u:p@h', 'x_https://[REDACTED]@h'],
+    [
+      'URL userinfo with a long scheme',
+      `${'s'.repeat(40)}://u:p@h`,
+      `${'s'.repeat(40)}://[REDACTED]@h`,
+    ],
+    ['URL userinfo in parentheses', '(redis://:pw@cache)', '(redis://[REDACTED]@cache)'],
     [
       'a PEM private key',
       'k=-----BEGIN RSA PRIVATE KEY-----\nMIIE\n-----END RSA PRIVATE KEY----- done',
@@ -50,6 +57,19 @@ describe('redactBuiltinSecrets', () => {
       `${'-----BEGIN PRIVATE KEY-----'.repeat(2000)}${'a://'.repeat(20000)}${'Bearer '.repeat(20000)}`,
     );
     expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it('stays linear on long runs of URL-scheme characters', () => {
+    // Before the scheme was anchored, a 9 KB alphanumeric string took over a second.
+    for (const text of [
+      'b'.repeat(200_000),
+      `http://${'a'.repeat(200_000)}`,
+      'a.b'.repeat(70_000),
+    ]) {
+      const started = performance.now();
+      expect(redactBuiltinSecrets(text)).toBe(text);
+      expect(performance.now() - started).toBeLessThan(250);
+    }
   });
 });
 
