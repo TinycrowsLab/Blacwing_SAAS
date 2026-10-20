@@ -57,7 +57,8 @@ Notes:
   example the Google SSO client) are issued externally and filled by hand.
 - Run `pnpm dev:doctor` at any time. It lists missing `.env` keys, the health of every service and the endpoints.
   It prints key names and URLs, never values.
-- `pnpm test:e2e` runs the `test:e2e` script of every workspace that defines one. Unit tests are `pnpm test`;
+- `pnpm test:e2e` runs the `test:e2e` script of every workspace that defines one. Until the Playwright suites land
+  (CI-002, #140) no workspace defines it, so the command runs zero tasks and exits 0. Unit tests are `pnpm test`;
   integration tests (`pnpm test:int`) use Testcontainers on random ports and need no running stack.
 - Optional pieces: `pnpm dev:tls` (HTTPS on `*.bw.localhost`), `pnpm dev:deps:obs` (Grafana stack),
   `pnpm targets:up --all` (every training target), the k3s/gVisor sandbox runtime ([dev-k3s.md](../runbooks/dev-k3s.md)).
@@ -134,6 +135,7 @@ Start with `pnpm dev:doctor`. It names the unhealthy service and the fix. For se
 | Keycloak `Invalid parameter: redirect_uri` | The console must run on an origin registered for client `bw-console-bff`: `http://localhost:3000`, `https://app.bw.localhost` or `https://app.bw.localhost:18443`. Do not use `127.0.0.1:3000`. Verify with `pnpm dev:keycloak:check`; restore the realm with `pnpm dev:keycloak:reset`. |
 | Login fails for a seeded user | The password is `BW_DEV_KEYCLOAK_TEST_USER_PASSWORD` from `.env`. If you changed it after the first start, run `pnpm dev:keycloak:reset`. |
 | Stale volumes or a half-initialised stack (bootstrap loops, wrong passwords after editing `.env`) | `pnpm dev:deps:reset --yes` drops the shared `bwdev` stack and its volumes and recreates it. Then `pnpm db:migrate && pnpm db:seed`. It affects every worktree that uses the stack. |
+| `temporal` or `keycloak` unhealthy with `password authentication failed` in a second checkout or worktree | Every checkout shares the one `bwdev` stack and its volumes, but `pnpm dev:deps` generates new passwords for a fresh `.env`. Copy `.env` from the checkout that first created the stack (`cp ../<first-checkout>/.env .env`), then rerun `pnpm dev:deps`. Use `pnpm dev:deps:reset --yes` only if nobody else is using the stack. |
 | `pnpm db:seed` fails with a missing-schema message | Migrations are not applied. Run `pnpm db:migrate`, then `pnpm db:seed`. See [dev-seed.md](../runbooks/dev-seed.md#safety-notes). `pnpm db:seed:reset` re-creates the seeded rows. |
 | Browser warns about the certificate, or Node says `unable to verify the first certificate` | The mkcert CA is not trusted. Rerun `pnpm dev:tls` (it runs `mkcert -install`). Firefox and Java keep their own stores: restart them. For Node clients: `export NODE_EXTRA_CA_CERTS=infra/compose/tls/certs/rootCA.pem`. |
 | `app.bw.localhost` does not resolve | Run `infra/compose/tls/setup-tls.sh --print-hosts` and add the line to `/etc/hosts`. |
@@ -161,6 +163,13 @@ summarises them for agents.
    - Security invariants (§8) preserved, with threat considerations noted in the PR.
 
 Before you push: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format:check`.
+
+## Walkthrough record
+
+2026-10-20, WSL2 dev host (not a bare Ubuntu host): `pnpm install`, `pnpm dev:doctor` (reports the stopped stack and
+names the fix) and `pnpm dev:deps` (creates `.env`) behave as described. Starting a second worktree against
+existing `bwdev` volumes failed with the Temporal password error now listed under troubleshooting. The full
+bare-Ubuntu run to `pnpm test:e2e` (bootstrap needs `sudo`) is still a manual check; record it here when it is done.
 
 ## Keeping this guide honest
 
