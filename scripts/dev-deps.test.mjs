@@ -19,6 +19,7 @@ const DUMMY_ENV = {
   BW_DEV_NEO4J_PASSWORD: 'x-neo4j-pass',
   BW_DEV_MINIO_ROOT_PASSWORD: 'x-minio-root',
   BW_DEV_MINIO_APP_PASSWORD: 'x-minio-app-secret',
+  BW_DEV_INTERACTSH_TOKEN: 'x-interactsh-token',
 };
 
 /**
@@ -103,6 +104,7 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
       valkey: { 6379: '16379' },
       minio: { 9000: '19000', 9001: '19001' },
       neo4j: { 7474: '17474', 7687: '17687' },
+      mailpit: { 1025: '11025', 8025: '18025' },
     };
     for (const [svc, map] of Object.entries(expected)) {
       const ports = c.services[svc]?.ports ?? [];
@@ -122,11 +124,30 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
       BW_DEV_NEO4J_BOLT_PORT: '27687',
       BW_DEV_MINIO_PORT: '29000',
       BW_DEV_MINIO_CONSOLE_PORT: '29001',
+      BW_DEV_MAILPIT_SMTP_PORT: '21025',
+      BW_DEV_MAILPIT_UI_PORT: '28025',
+      BW_DEV_INTERACTSH_HTTP_PORT: '28081',
+      BW_DEV_INTERACTSH_DNS_PORT: '25353',
     });
     const published = Object.values(o.services).flatMap((s) =>
       (s.ports ?? []).map((p) => p.published),
     );
-    assert.deepEqual(published.sort(), ['25432', '26379', '27474', '27687', '29000', '29001']);
+    assert.deepEqual(
+      published.sort(),
+      [
+        '21025',
+        '25353',
+        '25353',
+        '25432',
+        '26379',
+        '27474',
+        '27687',
+        '28025',
+        '28081',
+        '29000',
+        '29001',
+      ].sort(),
+    );
   });
 
   it('has healthchecks with generous start_period (slow hosts)', () => {
@@ -201,6 +222,75 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
     assert.match(start, /cs -d neo4j 'RETURN 1'/);
     assert.doesNotMatch(start, /cs -d system 'RETURN/);
     assert.match(start, /BW_TENANT_REQUIRED/);
+  });
+});
+
+describe('Mailpit and interactsh dev services (DEVENV-008)', () => {
+  const c = config();
+  const mailpit = c.services.mailpit;
+  const interactsh = c.services.interactsh;
+
+  it('defines both services, pinned by tag and digest, loopback-only', () => {
+    assert.ok(mailpit && interactsh);
+    for (const s of [mailpit, interactsh]) {
+      assert.match(s.image, /:[\w.-]+@sha256:[0-9a-f]{64}$/);
+      for (const p of s.ports ?? []) assert.equal(p.host_ip, '127.0.0.1');
+    }
+  });
+
+  it('maps interactsh HTTP to 18081 and DNS (udp+tcp) to 15353', () => {
+    const ports = (interactsh?.ports ?? []).map(
+      (p) => `${String(p.published)}->${String(p.target)}`,
+    );
+    assert.deepEqual(ports.sort(), ['15353->53', '15353->53', '18081->80']);
+  });
+
+  it('healthchecks probe the Mailpit UI and the interactsh HTTP listener', () => {
+    assert.match((mailpit?.healthcheck?.test ?? []).join(' '), /mailpit readyz/);
+    assert.match((interactsh?.healthcheck?.test ?? []).join(' '), /wget.*127\.0\.0\.1:80/);
+  });
+
+  it('interactsh runs token-authenticated, local-only (no ACME) on a documented dev domain', () => {
+    const cmd = /** @type {string[]} */ (
+      /** @type {{ command?: string[] }} */ (/** @type {unknown} */ (interactsh)).command ?? []
+    );
+    assert.ok(cmd.includes('-skip-acme'));
+    assert.equal(cmd[cmd.indexOf('-token') + 1], 'x-interactsh-token');
+    assert.equal(cmd[cmd.indexOf('-domain') + 1], 'oob.bw.localhost');
+  });
+
+  it('edge case: interactsh refuses to start without a token (never unauthenticated)', () => {
+    const { BW_DEV_INTERACTSH_TOKEN: _omit, ...rest } = DUMMY_ENV;
+    const res = renderCompose(rest);
+    assert.notEqual(res.status, 0);
+    assert.match(res.stderr, /BW_DEV_INTERACTSH_TOKEN/);
+  });
+
+  it('edge case: Mailpit storage growth -> in-memory store capped by MP_MAX_MESSAGES, no volume', () => {
+    assert.equal(mailpit?.environment?.MP_MAX_MESSAGES, '500');
+    assert.equal(mailpit?.environment?.MP_DATABASE, undefined);
+    assert.equal(
+      config({ BW_DEV_MAILPIT_MAX_MESSAGES: '50' }).services.mailpit?.environment?.MP_MAX_MESSAGES,
+      '50',
+    );
+    assert.ok(!('mailpitdata' in c.volumes));
+  });
+
+  it('.env.example documents SMTP_URL, INTERACTSH_URL and a generated interactsh token', () => {
+    const example = readFileSync(path.join(ROOT, '.env.example'), 'utf8');
+    assert.match(example, /^SMTP_URL=smtp:\/\/127\.0\.0\.1:11025$/m);
+    assert.match(example, /^INTERACTSH_URL=http:\/\/127\.0\.0\.1:18081$/m);
+    assert.match(example, /^BW_DEV_INTERACTSH_TOKEN=$/m);
+    const { text } = renderEnv(example);
+    assert.match(text, /^BW_DEV_INTERACTSH_TOKEN=[0-9a-f]{32}$/m);
+    assert.match(text, /^INTERACTSH_TOKEN=[0-9a-f]{32}$/m);
+  });
+
+  it('README documents UI URLs, reset, and the dev-vs-prod OOB limitations', () => {
+    const readme = readFileSync(path.join(COMPOSE_DIR, 'README.md'), 'utf8');
+    assert.match(readme, /http:\/\/127\.0\.0\.1:18025/);
+    assert.match(readme, /Dev vs prod OOB/i);
+    assert.match(readme, /tenant-scoped/i);
   });
 });
 

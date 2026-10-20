@@ -1,7 +1,7 @@
 # Local dependency stack (`docker-compose.dev.yml`)
 
 The dev stack every app and integration test talks to. DEVENV-002 (#156) adds the skeleton and the core data
-services. Keycloak, OpenBao, MinIO, Temporal, Mailpit, interactsh and the `obs` profile arrive with their own
+services. Keycloak, OpenBao, Temporal and the `obs` profile arrive with their own
 issues and join the same file, network and project.
 
 ```bash
@@ -33,6 +33,8 @@ docker compose -p bwdev --env-file .env -f infra/compose/docker-compose.dev.yml 
 | valkey | `valkey/valkey:8.1-alpine` | 16379 (`BW_DEV_VALKEY_PORT`) | `redis://:<pw>@127.0.0.1:16379/0` |
 | neo4j | `neo4j:5.26-community` | 17474 http (`BW_DEV_NEO4J_HTTP_PORT`), 17687 bolt (`BW_DEV_NEO4J_BOLT_PORT`) | `bolt://127.0.0.1:17687`, user `neo4j` |
 | minio | `cgr.dev/chainguard/minio` | 19000 api (`BW_DEV_MINIO_PORT`), 19001 console (`BW_DEV_MINIO_CONSOLE_PORT`) | `http://127.0.0.1:19000`, path-style, region `us-east-1` |
+| mailpit | `axllent/mailpit` | 11025 smtp (`BW_DEV_MAILPIT_SMTP_PORT`), 18025 ui (`BW_DEV_MAILPIT_UI_PORT`) | `smtp://127.0.0.1:11025`, UI `http://127.0.0.1:18025` |
+| interactsh | `projectdiscovery/interactsh-server` | 18081 http (`BW_DEV_INTERACTSH_HTTP_PORT`), 15353 dns udp+tcp (`BW_DEV_INTERACTSH_DNS_PORT`) | `http://127.0.0.1:18081`, token `INTERACTSH_TOKEN` |
 
 **Port already in use:** set the override in `.env` (for example `BW_DEV_POSTGRES_PORT=25432`) and update the matching
 URL. The container-side ports never change.
@@ -150,6 +152,29 @@ proxy family as the k3s default ingress). It makes dev behave like production fo
 - **Cookies.** The proxy sets `X-Forwarded-Proto: https`, so the BFF issues `Secure; HttpOnly; SameSite=Lax`
   cookies scoped to the exact host (`app.bw.localhost`). No HSTS is sent in dev.
 - **Scope.** Production cert-manager/Let's Encrypt (INFRA) and the k3s ingress (DEVENV-014) are separate.
+
+### Mailpit and interactsh (DEVENV-008)
+
+`pnpm dev:deps mailpit interactsh` (both are also part of the default `pnpm dev:deps`).
+
+- **Mailpit:** SMTP on `smtp://127.0.0.1:11025` (`SMTP_URL`), web UI and API at http://127.0.0.1:18025
+  (`MAILPIT_UI_URL`). Mail is never relayed, so dev cannot contact real recipients. Storage is in memory and
+  capped by `BW_DEV_MAILPIT_MAX_MESSAGES` (500); restart (`docker compose -p bwdev restart mailpit`) or use
+  "Delete all" in the UI to reset. Healthcheck probes the UI `/readyz`.
+- **interactsh:** local-only mode (`-skip-acme`, plain HTTP, no TLS; use mkcert from DEVENV-013 if TLS is needed).
+  `INTERACTSH_URL=http://127.0.0.1:18081`; clients authenticate with `INTERACTSH_TOKEN`, which `pnpm dev:deps`
+  generates into `.env` (the stack refuses to start without a token). Domain: `BW_DEV_INTERACTSH_DOMAIN`
+  (`oob.bw.localhost`). Logs: `docker compose -p bwdev logs interactsh`.
+- **Dev vs prod OOB:** the dev domain has no public DNS delegation, so only HTTP callbacks that reach
+  `127.0.0.1:18081` (with the correlation id in the Host or path) and DNS queries sent directly to
+  `127.0.0.1:15353` are observed. Blind-DNS callbacks from third-party resolvers, SMTP/LDAP listeners and
+  wildcard TLS certificates need the production self-hosted domain (INFRA). Correlation tokens map to local
+  interactions only.
+- **Tenancy expectation:** in the real system OOB interactions become evidence (section 7) and must be
+  tenant-scoped (section 8.6); the local server is a single shared instance, so `packages/oob` must scope
+  correlation ids per tenant and run.
+- **Checks:** `pnpm dev:deps:smoke` sends an SMTP message and reads it from the Mailpit API, and asserts
+  interactsh rejects unauthenticated registration.
 
 ## Troubleshooting
 

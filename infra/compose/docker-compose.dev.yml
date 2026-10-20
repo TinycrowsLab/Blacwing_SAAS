@@ -190,6 +190,61 @@ services:
       resources:
         limits: { cpus: '0.5', memory: 128m }
 
+  # Local SMTP sink + web UI (DEVENV-008). Nothing is ever relayed: mail stays in Mailpit's in-memory store,
+  # so dev cannot contact real recipients. Messages vanish on restart (see README for reset).
+  mailpit:
+    <<: *defaults
+    image: axllent/mailpit:v1.21@sha256:81370195cd4a0eab9604d17c2617a7525b0486f9365555253b6c5376c6350f1a
+    environment:
+      MP_MAX_MESSAGES: ${BW_DEV_MAILPIT_MAX_MESSAGES:-500}
+      MP_SMTP_AUTH_ACCEPT_ANY: 'true'
+      MP_SMTP_AUTH_ALLOW_INSECURE: 'true'
+    ports:
+      - '127.0.0.1:${BW_DEV_MAILPIT_SMTP_PORT:-11025}:1025'
+      - '127.0.0.1:${BW_DEV_MAILPIT_UI_PORT:-18025}:8025'
+    healthcheck:
+      # Probes the web UI's /readyz.
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 256m }
+
+  # Self-hosted out-of-band (OOB) callback server for the validator's OOB oracle (DEVENV-008). Local-only
+  # mode: authenticated with a token, no ACME/TLS, interactions held in memory. Only the HTTP collaborator
+  # API/callbacks and DNS are published; there is no public DNS delegation for the dev domain.
+  interactsh:
+    <<: *defaults
+    image: projectdiscovery/interactsh-server:v1.2.4@sha256:ffde50de2cdc9113b9bb024d9dbe63a7a4826de213be1cc63a7ffd5fd3b14481
+    command:
+      - -domain
+      - ${BW_DEV_INTERACTSH_DOMAIN:-oob.bw.localhost}
+      - -ip
+      - 127.0.0.1
+      - -token
+      - ${BW_DEV_INTERACTSH_TOKEN:?set BW_DEV_INTERACTSH_TOKEN in .env (pnpm dev:deps creates it)}
+      - -skip-acme
+      - -disable-update-check
+      - -eviction
+      - '1'
+    ports:
+      - '127.0.0.1:${BW_DEV_INTERACTSH_HTTP_PORT:-18081}:80'
+      - '127.0.0.1:${BW_DEV_INTERACTSH_DNS_PORT:-15353}:53/udp'
+      - '127.0.0.1:${BW_DEV_INTERACTSH_DNS_PORT:-15353}:53/tcp'
+    healthcheck:
+      # The server answers GET / with its index page once the HTTP listener is up.
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:80/']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+    deploy:
+      resources:
+        limits: { cpus: '1', memory: 512m }
+
 networks:
   bw-dev:
     name: bw-dev

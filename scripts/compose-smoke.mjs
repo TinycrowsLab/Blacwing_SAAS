@@ -21,6 +21,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const COMPOSE_FILE = path.join(ROOT, 'infra/compose/docker-compose.dev.yml');
 export const CORE_SERVICES = Object.freeze(['postgres', 'valkey', 'neo4j']);
 export const OBJECT_STORE_SERVICES = Object.freeze(['minio', 'minio-init']);
+export const OOB_MAIL_SERVICES = Object.freeze(['mailpit', 'interactsh']);
 
 /**
  * @param {string[]} argv
@@ -101,9 +102,10 @@ export function smoke(opts) {
       '300',
       ...CORE_SERVICES,
       ...OBJECT_STORE_SERVICES,
+      ...OOB_MAIL_SERVICES,
     ]);
 
-  for (const svc of [...CORE_SERVICES, ...OBJECT_STORE_SERVICES]) {
+  for (const svc of [...CORE_SERVICES, ...OBJECT_STORE_SERVICES, ...OOB_MAIL_SERVICES]) {
     const id = compose(opts, ['ps', '-q', svc]);
     const health = execFileSync('docker', ['inspect', '-f', '{{.State.Health.Status}}', id], {
       encoding: 'utf8',
@@ -185,6 +187,51 @@ export function smoke(opts) {
 
   const verify = compose(opts, ['exec', '-T', 'minio-init', '/bin/bash', '/bw/minio/verify.sh']);
   check('minio WORM, versioning and scoped-key checks pass', verify.includes('all checks passed'));
+
+  // DEVENV-008: mail sent over SMTP shows up in the Mailpit API; interactsh accepts a token-authenticated
+  // registration from a client. Both run inside the containers, so no host tools are needed.
+  const subject = `bw-smoke-${String(Date.now())}`;
+  // The Mailpit image is scratch (no shell): feed `mailpit sendmail` over stdin, read the API from the host.
+  execFileSync(
+    'docker',
+    [
+      'compose',
+      '-p',
+      opts.project,
+      '--env-file',
+      opts.envFile,
+      '-f',
+      COMPOSE_FILE,
+      'exec',
+      '-T',
+      'mailpit',
+      '/mailpit',
+      'sendmail',
+      '-S',
+      '127.0.0.1:1025',
+      '-f',
+      'a@bw.test',
+      'b@bw.test',
+    ],
+    {
+      input: `From: a@bw.test\r\nTo: b@bw.test\r\nSubject: ${subject}\r\n\r\nhi\r\n`,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    },
+  );
+  const uiPort = compose(opts, ['port', 'mailpit', '8025']).split(':').at(-1);
+  const mails = execFileSync(
+    'curl',
+    ['-fsS', `http://127.0.0.1:${String(uiPort)}/api/v1/messages`],
+    { encoding: 'utf8' },
+  );
+  check('mailpit receives an SMTP message and lists it via its API', mails.includes(subject));
+
+  const unauth = exec(
+    opts,
+    'interactsh',
+    `wget -S -qO- --post-data '{}' http://127.0.0.1:80/register 2>&1 | head -1 || true`,
+  );
+  check('interactsh rejects an unauthenticated registration', /401|403/.test(unauth));
 
   return passed;
 }

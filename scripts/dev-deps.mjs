@@ -22,7 +22,7 @@ export const SETUP_TLS = path.join(ROOT, 'infra/compose/tls/setup-tls.sh');
 const PASSWORD_BYTES = 16;
 
 /**
- * Fills empty password entries of an env template with random hex values.
+ * Fills empty password and token entries of an env template with random hex values.
  * Keys already present in `existing` keep their value; missing keys are appended.
  * @param {string} template contents of .env.example
  * @param {string} [existing] contents of the current .env, if any
@@ -53,7 +53,8 @@ export function renderEnv(
     const m = /^([A-Z0-9_]+)=(.*)$/.exec(line);
     if (!m?.[1] || have.has(m[1])) continue;
     const key = m[1];
-    const raw = m[2] === '' && key.endsWith('_PASSWORD') ? gen() : (m[2] ?? '');
+    const raw =
+      m[2] === '' && (key.endsWith('_PASSWORD') || key.endsWith('_TOKEN')) ? gen() : (m[2] ?? '');
     // `${KEY}` expands to an earlier key's value (e.g. a URL embedding a generated password).
     const value = raw.replace(
       /\$\{([A-Z0-9_]+)\}/g,
