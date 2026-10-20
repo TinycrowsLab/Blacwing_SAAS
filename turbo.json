@@ -43,7 +43,8 @@
       "description": "Unit tests (Vitest). Cacheable; coverage reports are the only outputs. Also runs the scripts/ self-tests.",
       "dependsOn": ["^build", "//#test:scripts"],
       "inputs": ["$TURBO_DEFAULT$", "src/**", "tsconfig*.json", "package.json"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**"],
+      "passThroughEnv": ["TZ", "BW_FC_SEED", "NODE_OPTIONS"]
     },
     "test:int": {
       "description": "Integration tests against real services (Testcontainers). Never cached: results depend on external state.",

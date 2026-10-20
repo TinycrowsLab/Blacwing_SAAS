@@ -63,6 +63,7 @@ describe('package wiring', () => {
       './containers',
       './vitest',
       './vitest-config',
+      './ci-preload',
       './sql/*',
     ]);
   });

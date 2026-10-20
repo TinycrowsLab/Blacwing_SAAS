@@ -88,7 +88,7 @@ export default defineConfig(
         projectService: {
           // Root-level tool configs (eslint.config.mjs, prettier.config.mjs) sit outside every
           // member; they are typechecked with the scripts/ settings.
-          allowDefaultProject: ['*.config.mjs'],
+          allowDefaultProject: ['*.config.mjs', 'packages/testing/src/vitest/ci-preload.mjs'],
           defaultProject: 'scripts/tsconfig.json',
         },
         tsconfigRootDir: import.meta.dirname,

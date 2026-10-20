@@ -10,6 +10,7 @@
     "./containers": "./src/containers/index.ts",
     "./vitest": "./src/vitest/index.ts",
     "./vitest-config": "./src/vitest/config.ts",
+    "./ci-preload": "./src/vitest/ci-preload.mjs",
     "./sql/*": "./sql/*"
   },
   "scripts": {
