@@ -34,9 +34,14 @@ export function renderEnv(
 ) {
   /** @type {Set<string>} */
   const have = new Set();
+  /** @type {Map<string, string>} resolved values, used to expand `${KEY}` references */
+  const values = new Map();
   for (const line of existing.split('\n')) {
-    const m = /^([A-Z0-9_]+)=/.exec(line);
-    if (m?.[1]) have.add(m[1]);
+    const m = /^([A-Z0-9_]+)=(.*)$/.exec(line);
+    if (m?.[1]) {
+      have.add(m[1]);
+      values.set(m[1], m[2] ?? '');
+    }
   }
   /** @type {string[]} */
   const added = [];
@@ -46,7 +51,13 @@ export function renderEnv(
     const m = /^([A-Z0-9_]+)=(.*)$/.exec(line);
     if (!m?.[1] || have.has(m[1])) continue;
     const key = m[1];
-    const value = m[2] === '' && key.endsWith('_PASSWORD') ? gen() : (m[2] ?? '');
+    const raw = m[2] === '' && key.endsWith('_PASSWORD') ? gen() : (m[2] ?? '');
+    // `${KEY}` expands to an earlier key's value (e.g. a URL embedding a generated password).
+    const value = raw.replace(
+      /\$\{([A-Z0-9_]+)\}/g,
+      (/** @type {string} */ ref, /** @type {string} */ k) => values.get(k) ?? ref,
+    );
+    values.set(key, value);
     lines.push(`${key}=${value}`);
     added.push(key);
   }

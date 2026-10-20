@@ -234,7 +234,7 @@ describe('.env handling', () => {
     const compose = readFileSync(COMPOSE_FILE, 'utf8');
     const used = new Set([...compose.matchAll(/\$\{(BW_DEV_[A-Z0-9_]+)/g)].map((m) => m[1]));
     for (const v of used) assert.match(example, new RegExp(`^${String(v)}=`, 'm'), String(v));
-    for (const m of example.matchAll(/^(\w+_PASSWORD)=(.*)$/gm))
+    for (const m of example.matchAll(/^(BW_DEV_\w+_PASSWORD)=(.*)$/gm))
       assert.equal(m[2], '', `${String(m[1])} must be empty`);
   });
 
