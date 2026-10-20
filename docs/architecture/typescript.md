@@ -125,7 +125,7 @@ import and every declared workspace dependency; the generated
 
 ```
 contracts            -> (nothing internal)
-shared libs          -> contracts, other shared libs   (config, errors, ids, logger, time, telemetry, crypto, testing)
+shared libs          -> contracts, other shared libs   (config, errors, ids, logger, time, telemetry, crypto, testing, workflow-shared)
 domain, policy       -> contracts, shared libs
 service libs         -> contracts, shared libs, domain, policy, other service libs   (db, audit, agents, ...)
 apps/*               -> any package, never another app

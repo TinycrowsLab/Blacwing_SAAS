@@ -56,6 +56,12 @@ const DEFINITIONS = {
   },
   // `@blackwing/config` (FOUND-007) refuses to start on an invalid environment: a server fault.
   CONFIG_INVALID: { status: 500, title: 'Invalid configuration', retryable: false },
+  // Temporal connection (WORKFLOW-001). Misconfiguration is a server fault (500, never retried);
+  // an unreachable server is a dependency outage (503, retryable).
+  TEMPORAL_CONFIG_INVALID: { status: 500, title: 'Invalid Temporal configuration', retryable: false },
+  TEMPORAL_TLS_MISCONFIGURED: { status: 500, title: 'Temporal TLS misconfigured', retryable: false },
+  TEMPORAL_NAMESPACE_NOT_FOUND: { status: 500, title: 'Temporal namespace not found', retryable: false },
+  TEMPORAL_UNAVAILABLE: { status: 503, title: 'Temporal unavailable', retryable: true },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

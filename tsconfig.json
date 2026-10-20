@@ -101,6 +101,9 @@
       "path": "packages/testing"
     },
     {
+      "path": "packages/workflow-shared"
+    },
+    {
       "path": "packages/time"
     },
     {

@@ -61,6 +61,7 @@ export const EXPECTED_PACKAGES = Object.freeze([
   'time',
   'errors',
   'telemetry',
+  'workflow-shared',
   'ui',
   'testing',
 ]);

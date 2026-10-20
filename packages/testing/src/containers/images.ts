@@ -22,6 +22,9 @@ export const TEST_IMAGES = Object.freeze({
   /** Neo4j 5 Community (LTS line). §5 graph. */
   neo4j:
     'neo4j:5.26.12-community@sha256:9f75e8df4325a24f00fdd7a8c0bcce650a58375049b1058e496e8b43d6c36b37',
+  /** Temporal CLI dev server (single node, in-memory). §5 durable workflows. */
+  temporal:
+    'temporalio/temporal:1.5.1@sha256:597a5dbbcc6e7716b326dde4a51622d5ea0879eb0cf06ff8a94381361d0a987d',
 });
 
 export type TestImageName = keyof typeof TEST_IMAGES;

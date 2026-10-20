@@ -26,4 +26,5 @@ export {
   UnsafeTestEnvironmentError,
 } from './runtime.js';
 export { type Queryable, TenantContextError, tenantUuid, withTenant } from './tenant.js';
+export { type TemporalHandle, withTemporal, type WithTemporalOptions } from './temporal.js';
 export { type ValkeyHandle, withValkey, type WithValkeyOptions } from './valkey.js';

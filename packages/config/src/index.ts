@@ -62,3 +62,12 @@ export {
   valkeyEnvSchema,
   valkeyEnvShape,
 } from './schema.js';
+export {
+  DEFAULT_TEMPORAL_ADDRESS,
+  DEFAULT_TEMPORAL_NAMESPACE,
+  parseTemporalConfig,
+  type TemporalConfig,
+  type TemporalEnv,
+  temporalConfigSchema,
+  temporalEnvShape,
+} from './temporal.js';

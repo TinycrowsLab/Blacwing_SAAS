@@ -85,6 +85,7 @@ describe('check-layout against this repository', () => {
       'reporting',
       'secrets',
       'telemetry',
+      'workflow-shared',
       'testing',
       'time',
       'ui',

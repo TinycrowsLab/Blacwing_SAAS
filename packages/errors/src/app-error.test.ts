@@ -88,6 +88,11 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   // BudgetError, @blackwing/contracts (SCOPE-004), for the same reason.
   'SCOPE_INVALID_BUDGET',
   'SCOPE_BUDGET_EXCEEDS_SA',
+  // Raised by @blackwing/workflow-shared as plain AppErrors (WORKFLOW-001).
+  'TEMPORAL_CONFIG_INVALID',
+  'TEMPORAL_TLS_MISCONFIGURED',
+  'TEMPORAL_NAMESPACE_NOT_FOUND',
+  'TEMPORAL_UNAVAILABLE',
 ];
 
 describe('AppError subclasses', () => {

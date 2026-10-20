@@ -63,6 +63,7 @@ export const ELEMENT_TYPES = Object.freeze([
       'packages/telemetry',
       'packages/testing',
       'packages/time',
+      'packages/workflow-shared',
     ],
     mayImport: ['contracts', 'shared-lib'],
   },

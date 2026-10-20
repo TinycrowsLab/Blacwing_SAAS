@@ -1,0 +1,31 @@
+{
+  "name": "@blackwing/workflow-shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared Temporal plumbing: connection config, typed client factory and the payload data converter",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings=0",
+    "test": "vitest run --config src/vitest.config.ts --configLoader runner",
+    "test:int": "vitest run --config src/vitest.int.config.ts --configLoader runner",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@blackwing/config": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/logger": "workspace:*",
+    "@opentelemetry/api": "catalog:",
+    "@temporalio/client": "catalog:",
+    "@temporalio/common": "catalog:"
+  },
+  "devDependencies": {
+    "@blackwing/testing": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

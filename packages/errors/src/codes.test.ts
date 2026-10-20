@@ -33,6 +33,10 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   SCOPE_INVALID_BUDGET: 422,
   SCOPE_BUDGET_EXCEEDS_SA: 403,
   CONFIG_INVALID: 500,
+  TEMPORAL_CONFIG_INVALID: 500,
+  TEMPORAL_TLS_MISCONFIGURED: 500,
+  TEMPORAL_NAMESPACE_NOT_FOUND: 500,
+  TEMPORAL_UNAVAILABLE: 503,
   INTERNAL: 500,
 };
 
@@ -46,7 +50,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(18);
+    expect(ERROR_CODE_LIST).toHaveLength(22);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -71,8 +75,11 @@ describe('error-code registry', () => {
     );
   });
 
-  it('marks only RATE_LIMITED as retryable by default', () => {
-    expect(ERROR_CODE_LIST.filter((code) => ERROR_CODES[code].retryable)).toEqual(['RATE_LIMITED']);
+  it('marks only RATE_LIMITED and TEMPORAL_UNAVAILABLE as retryable', () => {
+    expect(ERROR_CODE_LIST.filter((code) => ERROR_CODES[code].retryable)).toEqual([
+      'RATE_LIMITED',
+      'TEMPORAL_UNAVAILABLE',
+    ]);
   });
 
   it('fails closed on a missing tenant context: 500 and not retryable', () => {
@@ -146,6 +153,10 @@ describe('error-code registry', () => {
       | 'SCOPE_INVALID_BUDGET'
       | 'SCOPE_BUDGET_EXCEEDS_SA'
       | 'CONFIG_INVALID'
+      | 'TEMPORAL_CONFIG_INVALID'
+      | 'TEMPORAL_TLS_MISCONFIGURED'
+      | 'TEMPORAL_NAMESPACE_NOT_FOUND'
+      | 'TEMPORAL_UNAVAILABLE'
       | 'INTERNAL'
     >();
     expectTypeOf<HttpStatusOf<'NOT_FOUND'>>().toEqualTypeOf<404>();
