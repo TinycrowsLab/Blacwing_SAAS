@@ -205,6 +205,30 @@ digest to a known-good server: bumping it bumps the schema, so change image and 
   references. The worker epic enforces this with a payload codec; dev Temporal holds no secrets beyond the DB
   credentials from `.env`.
 
+## Vulnerable targets (profile `targets`, DEVENV-012)
+
+Deliberately-vulnerable **training** apps used as authorised, local-only e2e assessment targets. They are not
+part of `pnpm dev:deps`. Start them with `pnpm targets:up` (Juice Shop only, the common case) or
+`pnpm targets:up --all`; stop them with `pnpm targets:down` (removes only target containers, never the shared
+`bwdev` dependency stack); `pnpm targets:reset <target>` recreates one target with fresh state.
+
+Rules: images pinned by digest (no drift, §8.9); own network `bw-targets` (never `bw-dev`); host ports bound
+to `127.0.0.1` only, so nothing is exposed publicly; no `container_name`. Do not add exploit content here.
+
+| Target | Asset `type` | Host URL (loopback) | Hostname on `bw-targets` | Notes |
+|---|---|---|---|---|
+| `juice-shop` | `web_app` | `http://127.0.0.1:13000` | `juice.bw.localhost` | Backs the DEVENV-011 seeded verified asset; used by `pnpm test:e2e`. ~0.8 GB RAM, ~60 s to healthy. |
+| `crapi` | `api` | `http://127.0.0.1:13010` | `crapi.bw.localhost` | Multi-service (web, identity, community, workshop, postgres, mongo, mailhog); only the web gateway is published. ~2 GB RAM. |
+| `vampi` | `api` | `http://127.0.0.1:13020` | `vampi.bw.localhost` | Small REST API. |
+| `dvga` | `graphql` | `http://127.0.0.1:13030` | `dvga.bw.localhost` | GraphQL target. |
+| `dvwa` | `web_app` | `http://127.0.0.1:13040` | `dvwa.bw.localhost` | Needs a one-time DB setup: open `/setup.php` and press "Create / Reset Database". `pnpm targets:reset dvwa` restores a clean state. |
+| `webgoat` | `web_app` | `http://127.0.0.1:13050/WebGoat` | `webgoat.bw.localhost` | Slow start (up to ~2 min). ~1 GB RAM. |
+
+Override a host port with `BW_TARGET_<NAME>_PORT` in `.env` if it collides. The `*.bw.localhost` names resolve
+to loopback in browsers; TLS for them arrives with DEVENV-013. The crAPI sidecars use the upstream public demo
+defaults (throwaway training values, not Blackwing secrets). Targeting stays gated by a verified asset and an
+active standing authorisation even in dev (§8.1, §8.10).
+
 ## Troubleshooting
 
 - **Volume from an older schema** (init scripts only run on an empty volume, so role or extension changes need a

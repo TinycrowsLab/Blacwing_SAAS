@@ -14,6 +14,15 @@ x-defaults: &defaults
     driver: json-file
     options: { max-size: 10m, max-file: '3' }
 
+# Shared by every `targets` service: opt-in profile, own network, loopback-only ports (set per service).
+x-target: &target
+  profiles: [targets]
+  restart: unless-stopped
+  networks: [bw-targets]
+  logging:
+    driver: json-file
+    options: { max-size: 10m, max-file: '3' }
+
 services:
   postgres:
     <<: *defaults
@@ -314,9 +323,284 @@ services:
     volumes:
       - ./temporal/bootstrap.sh:/bw/bootstrap.sh:ro
 
+  # ---------------------------------------------------------------------------------------------
+  # Local vulnerable targets (DEVENV-012, profile `targets`). Deliberately-vulnerable TRAINING apps
+  # used as authorised, local-only e2e assessment targets. Never part of `pnpm dev:deps`; start with
+  # `pnpm targets:up`. They sit on the dedicated `bw-targets` network (NOT bw-dev) and publish to
+  # 127.0.0.1 only. Images are pinned by digest so a target cannot drift (§8.9). See
+  # infra/compose/README.md "Vulnerable targets".
+  # ---------------------------------------------------------------------------------------------
+  juice-shop:
+    <<: *target
+    image: bkimminich/juice-shop:v17.1.1@sha256:9e437b456e444ff001d1663e4f6f05c796fe02f1058dd2651d6791a15b43dfeb
+    ports:
+      - '127.0.0.1:${BW_TARGET_JUICE_SHOP_PORT:-13000}:3000'
+    networks:
+      bw-targets:
+        aliases: [juice.bw.localhost]
+    healthcheck:
+      test:
+        - CMD
+        - /nodejs/bin/node
+        - -e
+        - "fetch('http://127.0.0.1:3000/rest/admin/application-version').then((r)=>process.exit(r.ok?0:1),()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    deploy:
+      resources:
+        limits: { cpus: '1', memory: 768m }
+
+  vampi:
+    <<: *target
+    image: erev0s/vampi:latest@sha256:0a5a224b6e14ae7da6a6ea265178ff71286ff903aec74adee98f660bb0e4ca12
+    environment:
+      vulnerable: '1'
+      tokentimetolive: '3600'
+    ports:
+      - '127.0.0.1:${BW_TARGET_VAMPI_PORT:-13020}:5000'
+    networks:
+      bw-targets:
+        aliases: [vampi.bw.localhost]
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5000/').status==200 else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 256m }
+
+  dvga:
+    <<: *target
+    image: dolevf/dvga:latest@sha256:040aa33c199d99f3380c9ff9a1ee5d725e9abca7b189c63a35a2a73bda79c957
+    environment:
+      WEB_HOST: 0.0.0.0
+    ports:
+      - '127.0.0.1:${BW_TARGET_DVGA_PORT:-13030}:5013'
+    networks:
+      bw-targets:
+        aliases: [dvga.bw.localhost]
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5013/').status==200 else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 384m }
+
+  dvwa:
+    <<: *target
+    # Needs a one-time DB setup after first start: open http://dvwa.bw.localhost:13040/setup.php and press
+    # "Create / Reset Database". `pnpm targets:reset dvwa` restores a clean state.
+    image: vulnerables/web-dvwa:latest@sha256:dae203fe11646a86937bf04db0079adef295f426da68a92b40e3b181f337daa7
+    ports:
+      - '127.0.0.1:${BW_TARGET_DVWA_PORT:-13040}:80'
+    networks:
+      bw-targets:
+        aliases: [dvwa.bw.localhost]
+    healthcheck:
+      test: ['CMD-SHELL', 'bash -c "exec 3<>/dev/tcp/127.0.0.1/80"']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    deploy:
+      resources:
+        limits: { cpus: '1', memory: 512m }
+
+  webgoat:
+    <<: *target
+    image: webgoat/webgoat:v2023.8@sha256:01672eb9aeba60d042ae1131d6de683b98fa64e9da60fa5d3daad2642a6795dd
+    environment:
+      WEBGOAT_PORT: '8080'
+      WEBGOAT_SSLENABLED: 'false'
+      WEBGOAT_HOST: 0.0.0.0
+    ports:
+      - '127.0.0.1:${BW_TARGET_WEBGOAT_PORT:-13050}:8080'
+    networks:
+      bw-targets:
+        aliases: [webgoat.bw.localhost]
+    healthcheck:
+      test: ['CMD-SHELL', 'bash -c "exec 3<>/dev/tcp/127.0.0.1/8080"']
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+    deploy:
+      resources:
+        limits: { cpus: '1.5', memory: 1g }
+
+  # crAPI is a multi-service app; only crapi (the web gateway) is published. The sidecars use the
+  # upstream demo defaults (public, throwaway training values; none is a Blackwing secret).
+  crapi-postgres:
+    <<: *target
+    image: postgres:14-alpine@sha256:4ea9e5ed06591da7ea23eb65465e8d3187fe79f4d5ec3ae976d29a33b013e77a
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: crapisecretpassword
+      POSTGRES_DB: crapi
+    networks:
+      bw-targets:
+        aliases: [postgresdb]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U admin -d crapi']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  crapi-mongo:
+    <<: *target
+    image: mongo:4.4@sha256:4be76f674fc4b27859816811b8baa3c51830eb1dbf4ca81a51e26b79edd662ef
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: crapisecretpassword
+    networks:
+      bw-targets:
+        aliases: [mongodb]
+    healthcheck:
+      test: ['CMD-SHELL', 'mongo --quiet --eval "db.runCommand({ping:1}).ok" | grep -q 1']
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+
+  crapi-mailhog:
+    <<: *target
+    image: mailhog/mailhog:v1.0.1@sha256:8d76a3d4ffa32a3661311944007a415332c4bb855657f4f6c57996405c009bea
+    networks:
+      bw-targets:
+        aliases: [mailhog]
+
+  crapi-identity:
+    <<: *target
+    image: crapi/crapi-identity:latest@sha256:5d1db5b3ba8e02bc68711ec6fc4e35ed7cd8b87e63785ece9e7ff5b5e36c5260
+    environment: &crapi-env
+      LOG_LEVEL: INFO
+      DB_NAME: crapi
+      DB_USER: admin
+      DB_PASSWORD: crapisecretpassword
+      DB_HOST: postgresdb
+      DB_PORT: '5432'
+      SERVER_PORT: '8080'
+      ENABLE_SHELL_INJECTION: 'false'
+      JWT_SECRET: crapi
+      JWT_EXPIRATION: '604800000'
+      MAILHOG_HOST: mailhog
+      MAILHOG_PORT: '1025'
+      MAILHOG_DOMAIN: example.com
+      SMTP_HOST: mailhog
+      SMTP_PORT: '1025'
+      SMTP_EMAIL: user@example.com
+      SMTP_PASS: xxxxxxxxxxxxxx
+      SMTP_FROM: no-reply@example.com
+      SMTP_AUTH: 'true'
+      SMTP_STARTTLS: 'true'
+      API_GATEWAY_URL: https://api.mypremiumdealership.com
+      TLS_ENABLED: 'false'
+    depends_on:
+      crapi-postgres: { condition: service_healthy }
+      crapi-mailhog: { condition: service_started }
+    healthcheck:
+      test: ['CMD-SHELL', 'bash -c "exec 3<>/dev/tcp/127.0.0.1/8080"']
+      interval: 10s
+      timeout: 5s
+      retries: 24
+      start_period: 90s
+
+  crapi-community:
+    <<: *target
+    image: crapi/crapi-community:latest@sha256:8ba0c7eda86ae065a673f1fa554d0109a24f25c5a8d65097ae024e5ee715c54e
+    environment:
+      <<: *crapi-env
+      SERVER_PORT: '8087'
+      IDENTITY_SERVICE: crapi-identity:8080
+      MONGO_DB_HOST: mongodb
+      MONGO_DB_PORT: '27017'
+      MONGO_DB_USER: admin
+      MONGO_DB_PASSWORD: crapisecretpassword
+      MONGO_DB_NAME: crapi
+    depends_on:
+      crapi-postgres: { condition: service_healthy }
+      crapi-mongo: { condition: service_healthy }
+      crapi-identity: { condition: service_healthy }
+    healthcheck:
+      test: ['CMD-SHELL', 'bash -c "exec 3<>/dev/tcp/127.0.0.1/8087"']
+      interval: 10s
+      timeout: 5s
+      retries: 24
+      start_period: 60s
+
+  crapi-workshop:
+    <<: *target
+    image: crapi/crapi-workshop:latest@sha256:d4d2d94d35a31e211b04d5a771881f5ae13e358e8fa0804463ae3bace05dd815
+    environment:
+      <<: *crapi-env
+      SERVER_PORT: '8000'
+      IDENTITY_SERVICE: crapi-identity:8080
+      MONGO_DB_HOST: mongodb
+      MONGO_DB_PORT: '27017'
+      MONGO_DB_USER: admin
+      MONGO_DB_PASSWORD: crapisecretpassword
+      MONGO_DB_NAME: crapi
+      SECRET_KEY: crapi
+    depends_on:
+      crapi-postgres: { condition: service_healthy }
+      crapi-mongo: { condition: service_healthy }
+      crapi-identity: { condition: service_healthy }
+    healthcheck:
+      test: ['CMD-SHELL', 'bash -c "exec 3<>/dev/tcp/127.0.0.1/8000"']
+      interval: 10s
+      timeout: 5s
+      retries: 24
+      start_period: 60s
+
+  crapi:
+    <<: *target
+    image: crapi/crapi-web:latest@sha256:b27d246c646bd33898e7d1d2095b6e7576c0993a7b81a73aa7386929493d7151
+    environment:
+      COMMUNITY_SERVICE: crapi-community:8087
+      IDENTITY_SERVICE: crapi-identity:8080
+      WORKSHOP_SERVICE: crapi-workshop:8000
+      MAILHOG_SERVICE: mailhog:8025
+      TLS_ENABLED: 'false'
+    ports:
+      - '127.0.0.1:${BW_TARGET_CRAPI_PORT:-13010}:80'
+    networks:
+      bw-targets:
+        aliases: [crapi.bw.localhost]
+    depends_on:
+      crapi-identity: { condition: service_healthy }
+      crapi-community: { condition: service_healthy }
+      crapi-workshop: { condition: service_healthy }
+    healthcheck:
+      test: ['CMD-SHELL', 'bash -c "exec 3<>/dev/tcp/127.0.0.1/80"']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
 networks:
   bw-dev:
     name: bw-dev
+    driver: bridge
+
+  # Dedicated network for the vulnerable targets; deliberately separate from bw-dev (DEVENV-012).
+  bw-targets:
+    name: bw-targets
     driver: bridge
 
 volumes:
