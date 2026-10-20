@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/replay",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Recording and deterministic replay of model and tool interactions",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

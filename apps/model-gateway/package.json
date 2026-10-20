@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/model-gateway",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Anthropic-Messages-compatible model gateway: virtual keys, routing, redaction, cost metering and caps, pinning",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

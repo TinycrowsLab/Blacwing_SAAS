@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/logger",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Structured logging with secret redaction",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

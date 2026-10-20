@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/connectors",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Ticketing, SCM and chat connector integrations",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

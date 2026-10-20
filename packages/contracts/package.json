@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared Zod schemas and API contracts used by api, web, worker, agent-runtime and cli",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

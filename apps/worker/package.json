@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/worker",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Temporal workers: run orchestration, validation, scheduling, retention, exports, connectors, notifications",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

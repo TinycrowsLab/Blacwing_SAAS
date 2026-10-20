@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Typed, fail-fast environment configuration loader",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

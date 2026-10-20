@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/agent-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "description": "In-sandbox Claude Agent SDK host with in-process Blackwing MCP tool servers",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

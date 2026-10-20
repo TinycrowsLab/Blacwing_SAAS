@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/mcp-tools",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Blackwing MCP tool servers exposed to agents",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

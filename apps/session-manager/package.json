@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/session-manager",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Multi-role login, keep-alive, validity and lockout guard; injects sessions at the egress gateway",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

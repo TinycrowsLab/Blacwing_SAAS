@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output and caches
+dist/
+build/
+out/
+.next/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Go build output (apps/egress-gateway)
+/apps/egress-gateway/bin/
+
+# Secrets and key material: never commit (CONTEXT_PACK §8.7)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local Claude Code worktrees and personal settings
+.claude/worktrees/
+.claude/settings.local.json

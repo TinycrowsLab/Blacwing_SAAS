@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/oob",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Out-of-band interaction (interactsh) client and correlation",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

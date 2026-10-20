@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/cost",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Model cost metering, versioned price tables and budget caps",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

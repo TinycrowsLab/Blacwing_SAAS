@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/agents",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Agent personas, prompt versions and Claude Agent SDK orchestration helpers",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

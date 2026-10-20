@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Next.js console with BFF route handlers for authentication",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

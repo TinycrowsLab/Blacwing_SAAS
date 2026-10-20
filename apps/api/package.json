@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "NestJS control-plane API (REST /v1, GraphQL /graphql, internal Run Broker API)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

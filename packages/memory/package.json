@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/memory",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Per-tenant agent memory and embedding retrieval (pgvector)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/testing",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Test data factories and Testcontainers helpers",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

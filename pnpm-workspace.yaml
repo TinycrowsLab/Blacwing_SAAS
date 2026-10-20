@@ -1,0 +1,12 @@
+# pnpm workspace members. Every member directory holds a package.json named
+# `@blackwing/<dir>`. apps/egress-gateway is a member only through its package.json;
+# its Go module (FOUND-013) is built by Go tooling and is not part of the JS workspace.
+# Layout is enforced by scripts/check-layout.mjs (also run by the root preinstall hook).
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Single pinned version for shared tooling, referenced from members as "catalog:".
+# Vitest is the unit-test runner fixed in CONTEXT_PACK §5; its shared preset lands with FOUND-012.
+catalog:
+  vitest: 3.2.4

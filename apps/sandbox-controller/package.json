@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/sandbox-controller",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Creates and destroys per-run sandboxes (KubernetesDriver, DockerDriver), run networks and CA material",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

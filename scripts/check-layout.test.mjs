@@ -1,0 +1,247 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { afterEach, beforeEach, describe, it } from "node:test";
+
+import {
+  EXPECTED_APPS,
+  EXPECTED_PACKAGES,
+  checkLayout,
+  parseWorkspaceGlobs,
+} from "./check-layout.mjs";
+import { REPO_ROOT, SCRIPTS_DIR, cleanEnv, makeValidFixture, writeJson, writeMember } from "./test-fixtures.mjs";
+
+const CHECK_LAYOUT = path.join(SCRIPTS_DIR, "check-layout.mjs");
+
+/**
+ * @param {string[]} errors
+ * @param {RegExp} pattern
+ */
+function assertError(errors, pattern) {
+  assert.ok(
+    errors.some((e) => pattern.test(e)),
+    `expected an error matching ${pattern}, got:\n${errors.join("\n") || "(none)"}`,
+  );
+}
+
+describe("check-layout against this repository", () => {
+  it("passes and reports exactly the CONTEXT_PACK §6 member set (9 apps + 22 packages)", () => {
+    const result = checkLayout(REPO_ROOT);
+    assert.deepEqual(result.errors, []);
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.counts, { apps: 9, packages: 22 });
+    const names = result.members.map((m) => m.name).sort();
+    const expected = [...EXPECTED_APPS, ...EXPECTED_PACKAGES].map((d) => `@blackwing/${d}`).sort();
+    assert.deepEqual(names, expected);
+    assert.ok(result.members.every((m) => m.private));
+  });
+
+  it("pins the expected member lists themselves (guards against silent edits)", () => {
+    assert.deepEqual(
+      [...EXPECTED_APPS].sort(),
+      ["agent-runtime", "api", "cli", "egress-gateway", "model-gateway", "sandbox-controller", "session-manager", "web", "worker"],
+    );
+    assert.deepEqual(
+      [...EXPECTED_PACKAGES].sort(),
+      [
+        "agents", "audit", "config", "connectors", "contracts", "cost", "crypto", "db", "domain", "evidence", "logger",
+        "mcp-tools", "memory", "notify", "oob", "policy", "replay", "reporting", "secrets", "telemetry", "testing", "ui",
+      ],
+    );
+  });
+
+  it("has a committed pnpm-lock.yaml", () => {
+    assert.ok(existsSync(path.join(REPO_ROOT, "pnpm-lock.yaml")));
+  });
+
+  it("every member exports `name` matching its package.json from src/index.ts", () => {
+    for (const dir of [...EXPECTED_APPS.map((a) => `apps/${a}`), ...EXPECTED_PACKAGES.map((p) => `packages/${p}`)]) {
+      const manifest = JSON.parse(readFileSync(path.join(REPO_ROOT, dir, "package.json"), "utf8"));
+      const index = readFileSync(path.join(REPO_ROOT, dir, "src", "index.ts"), "utf8");
+      assert.ok(index.includes(`export const name = "${manifest.name}";`), dir);
+      assert.ok(index.includes(`export const version = "${manifest.version}";`), dir);
+    }
+  });
+});
+
+describe("check-layout on fixtures", () => {
+  /** @type {{ root: string, cleanup: () => void }} */
+  let fixture;
+  beforeEach(() => {
+    fixture = makeValidFixture();
+  });
+  afterEach(() => {
+    fixture.cleanup();
+  });
+
+  it("accepts a valid layout", () => {
+    const result = checkLayout(fixture.root);
+    assert.deepEqual(result.errors, []);
+    assert.deepEqual(result.counts, { apps: 9, packages: 22 });
+  });
+
+  it("detects a duplicate package name across members", () => {
+    writeMember(fixture.root, "packages/logger", { name: "@blackwing/config" });
+    const { errors } = checkLayout(fixture.root);
+    assertError(errors, /duplicate package name "@blackwing\/config" in: packages\/config, packages\/logger/);
+  });
+
+  it("detects a member without a package.json", () => {
+    rmSync(path.join(fixture.root, "packages/audit/package.json"));
+    assertError(checkLayout(fixture.root).errors, /^packages\/audit\/package\.json: missing$/);
+  });
+
+  it("detects a package.json without a name", () => {
+    writeJson(path.join(fixture.root, "apps/cli/package.json"), { version: "0.0.0", private: true });
+    assertError(checkLayout(fixture.root).errors, /apps\/cli\/package\.json: "name" is missing/);
+  });
+
+  it("detects an unparsable package.json", () => {
+    writeFileSync(path.join(fixture.root, "apps/cli/package.json"), "{ not json");
+    assertError(checkLayout(fixture.root).errors, /apps\/cli\/package\.json: invalid JSON/);
+  });
+
+  it("detects a name that does not match @blackwing/<dir>", () => {
+    writeMember(fixture.root, "packages/db", { name: "db" });
+    assertError(checkLayout(fixture.root).errors, /packages\/db\/package\.json: "name" is "db", expected "@blackwing\/db"/);
+  });
+
+  it("requires apps to be private", () => {
+    writeMember(fixture.root, "apps/web", { private: false });
+    assertError(checkLayout(fixture.root).errors, /apps\/web\/package\.json: "private" must be true/);
+  });
+
+  it("detects a missing src/index.ts or a missing name export", () => {
+    rmSync(path.join(fixture.root, "packages/ui/src/index.ts"));
+    writeFileSync(path.join(fixture.root, "packages/oob/src/index.ts"), "export const nom = 1;\n");
+    const { errors } = checkLayout(fixture.root);
+    assertError(errors, /packages\/ui\/src\/index\.ts: missing/);
+    assertError(errors, /packages\/oob\/src\/index\.ts: must export/);
+  });
+
+  it("detects a missing app directory", () => {
+    rmSync(path.join(fixture.root, "apps/session-manager"), { recursive: true });
+    assertError(checkLayout(fixture.root).errors, /apps\/session-manager: missing/);
+  });
+
+  it("detects drift: an unexpected package directory", () => {
+    writeMember(fixture.root, "packages/extra");
+    assertError(checkLayout(fixture.root).errors, /packages\/extra: unexpected entry/);
+  });
+
+  it("detects drift in fixed directories (infra, eval, docs)", () => {
+    rmSync(path.join(fixture.root, "infra/k3s"), { recursive: true });
+    mkdirSync(path.join(fixture.root, "eval/scratch"));
+    renameSync(path.join(fixture.root, "docs/user"), path.join(fixture.root, "docs/users"));
+    const { errors } = checkLayout(fixture.root);
+    assertError(errors, /infra\/k3s: missing/);
+    assertError(errors, /eval\/scratch: unexpected entry/);
+    assertError(errors, /docs\/user: missing/);
+    assertError(errors, /docs\/users: unexpected entry/);
+  });
+
+  it("allows the optional .github files but rejects unknown entries", () => {
+    writeFileSync(path.join(fixture.root, ".github/CODEOWNERS"), "* @owner\n");
+    writeFileSync(path.join(fixture.root, ".github/PULL_REQUEST_TEMPLATE.md"), "template\n");
+    assert.deepEqual(checkLayout(fixture.root).errors, []);
+    writeFileSync(path.join(fixture.root, ".github/random.txt"), "x\n");
+    rmSync(path.join(fixture.root, ".github/workflows"), { recursive: true });
+    const { errors } = checkLayout(fixture.root);
+    assertError(errors, /\.github\/random\.txt: unexpected entry/);
+    assertError(errors, /\.github\/workflows: missing/);
+  });
+
+  it("rejects non-lowercase directory names (case-insensitive filesystems)", () => {
+    writeMember(fixture.root, "packages/Logger");
+    const { errors } = checkLayout(fixture.root);
+    assertError(errors, /packages\/Logger: directory names must be lowercase kebab-case/);
+    // On a case-sensitive filesystem both entries exist and must be reported as a collision.
+    if (existsSync(path.join(fixture.root, "packages/logger")) && existsSync(path.join(fixture.root, "packages/Logger"))) {
+      assertError(errors, /packages: "Logger" and "logger" collide on case-insensitive filesystems/);
+    }
+  });
+
+  it("detects missing root files", () => {
+    rmSync(path.join(fixture.root, "SECURITY.md"));
+    rmSync(path.join(fixture.root, "LICENSE"));
+    const { errors } = checkLayout(fixture.root);
+    assertError(errors, /^SECURITY\.md: missing at repository root$/);
+    assertError(errors, /^LICENSE: missing at repository root$/);
+  });
+
+  it("enforces the root package.json contract (engines, packageManager, preinstall, private)", () => {
+    writeJson(path.join(fixture.root, "package.json"), {
+      private: false,
+      packageManager: "pnpm@8.15.0",
+      engines: { node: ">=20" },
+      scripts: {},
+    });
+    const { errors } = checkLayout(fixture.root);
+    assertError(errors, /"private" must be true/);
+    assertError(errors, /"packageManager" must pin a pnpm 9\.x version/);
+    assertError(errors, /"engines\.node" must be ">=22 <23"/);
+    assertError(errors, /"scripts\.preinstall" must run scripts\/preinstall\.mjs/);
+  });
+
+  it("rejects workspace globs other than apps/* and packages/*", () => {
+    writeFileSync(
+      path.join(fixture.root, "pnpm-workspace.yaml"),
+      'packages:\n  - "apps/*"\n  - "packages/*"\n  - "apps/egress-gateway/**"\n',
+    );
+    assertError(checkLayout(fixture.root).errors, /pnpm-workspace\.yaml: packages must be exactly/);
+  });
+});
+
+describe("parseWorkspaceGlobs", () => {
+  it("parses quoted, unquoted and commented entries and stops at the next key", () => {
+    const text = '# header\npackages:\n  - "apps/*"\n  # comment\n  - packages/*  # trailing\n\ncatalog:\n  vitest: 1.0.0\n';
+    assert.deepEqual(parseWorkspaceGlobs(text), ["apps/*", "packages/*"]);
+  });
+
+  it("returns null when there is no packages key", () => {
+    assert.equal(parseWorkspaceGlobs("catalog:\n  x: 1\n"), null);
+  });
+
+  it("parses this repository's pnpm-workspace.yaml", () => {
+    const text = readFileSync(path.join(REPO_ROOT, "pnpm-workspace.yaml"), "utf8");
+    assert.deepEqual(parseWorkspaceGlobs(text), ["apps/*", "packages/*"]);
+  });
+});
+
+describe("check-layout CLI", () => {
+  /** @type {{ root: string, cleanup: () => void }} */
+  let fixture;
+  beforeEach(() => {
+    fixture = makeValidFixture();
+  });
+  afterEach(() => {
+    fixture.cleanup();
+  });
+
+  it("prints a structured JSON summary and exits 0 on a valid layout", () => {
+    const run = spawnSync(process.execPath, [CHECK_LAYOUT, "--root", fixture.root], { encoding: "utf8", env: cleanEnv() });
+    assert.equal(run.status, 0, run.stderr);
+    const summary = JSON.parse(run.stdout);
+    assert.equal(summary.ok, true);
+    assert.deepEqual(summary.counts, { apps: 9, packages: 22 });
+    assert.equal(summary.members.length, 31);
+    assert.deepEqual(Object.keys(summary.members[0]).sort(), ["dir", "kind", "name", "private", "version"]);
+  });
+
+  it("exits non-zero with errors in the summary and on stderr when the layout drifts", () => {
+    writeMember(fixture.root, "packages/logger", { name: "@blackwing/config" });
+    const run = spawnSync(process.execPath, [CHECK_LAYOUT, "--root", fixture.root], { encoding: "utf8", env: cleanEnv() });
+    assert.equal(run.status, 1);
+    const summary = JSON.parse(run.stdout);
+    assert.equal(summary.ok, false);
+    assert.ok(summary.errors.length > 0);
+    assert.match(run.stderr, /duplicate package name "@blackwing\/config"/);
+  });
+
+  it("exits 2 on an unknown argument", () => {
+    const run = spawnSync(process.execPath, [CHECK_LAYOUT, "--bogus"], { encoding: "utf8", env: cleanEnv() });
+    assert.equal(run.status, 2);
+    assert.match(run.stderr, /unknown argument: --bogus/);
+  });
+});

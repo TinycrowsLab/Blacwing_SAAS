@@ -1,0 +1,17 @@
+{
+  "name": "@blackwing/db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Drizzle ORM schema, SQL migrations and tenant-scoped (RLS) data access",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

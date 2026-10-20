@@ -154,6 +154,20 @@ The repo is **greenfield**: the code is built by the GitHub issues themselves, i
 
 ---
 
+## Local setup
+
+Requirements: **Node.js 22 LTS** (pinned in `.nvmrc` / `.node-version`) and **pnpm 9** (pinned via `packageManager`; run `corepack enable`).
+
+```bash
+pnpm install --frozen-lockfile   # preinstall refuses npm/yarn, Node != 22, and layout drift
+pnpm check:layout                # JSON summary of workspace members; non-zero exit on drift
+pnpm test                        # scripts/ self-tests + every workspace member's tests
+```
+
+The workspace (`pnpm-workspace.yaml`: `apps/*`, `packages/*`) holds 9 apps and 22 packages, each named `@blackwing/<dir>`, exactly as laid out in [`CONTEXT_PACK.md` §6](docs/architecture/CONTEXT_PACK.md). `scripts/check-layout.mjs` enforces that layout; when an issue adds or removes an app, package or fixed directory, update its expected lists and §6 in the same commit.
+
+---
+
 ## Repository map
 
 | Path / resource | What it is |
