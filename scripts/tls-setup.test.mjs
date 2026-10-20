@@ -25,8 +25,8 @@ const read = (/** @type {string} */ f) => readFileSync(f, 'utf8');
 const hasDocker = spawnSync('docker', ['info'], { stdio: 'ignore' }).status === 0;
 
 /**
- * @param {string} dir
  * @param {Record<string, string>} [env]
+ * @param {string[]} [args]
  */
 function composeConfig(env = {}, args = /** @type {string[]} */ ([])) {
   const clean = Object.fromEntries(
@@ -56,16 +56,25 @@ function composeConfig(env = {}, args = /** @type {string[]} */ ([])) {
         BW_DEV_POSTGRES_MIGRATOR_PASSWORD: 'x',
         BW_DEV_VALKEY_PASSWORD: 'x',
         BW_DEV_NEO4J_PASSWORD: 'x-neo4j-pass',
+        BW_DEV_INTERACTSH_TOKEN: 'x-interactsh-token',
+        BW_DEV_KEYCLOAK_ADMIN_PASSWORD: 'x-kc-admin',
+        BW_DEV_KEYCLOAK_DB_PASSWORD: 'x-kc-db',
+        BW_DEV_KEYCLOAK_TEST_USER_PASSWORD: 'x-kc-users',
+        BW_DEV_KEYCLOAK_BFF_SECRET: 'x-kc-bff',
+        BW_DEV_KEYCLOAK_API_SECRET: 'x-kc-api',
+        BW_DEV_KEYCLOAK_CI_SECRET: 'x-kc-ci',
         BW_DEV_MINIO_ROOT_PASSWORD: 'x-minio-root',
         BW_DEV_MINIO_APP_PASSWORD: 'x-minio-app-secret',
-        BW_DEV_INTERACTSH_TOKEN: 'x-interactsh-token',
+        BW_DEV_GRAFANA_ADMIN_PASSWORD: 'x-grafana-admin',
         ...env,
       },
     },
   );
   assert.equal(res.status, 0, res.stderr);
+  /** @type {unknown} */
+  const parsed = JSON.parse(res.stdout);
   return /** @type {{ services: Record<string, { image: string, ports?: { host_ip?: string, published?: string, target: number }[] }> }} */ (
-    JSON.parse(res.stdout)
+    parsed
   ).services;
 }
 
@@ -136,7 +145,8 @@ describe('DEVENV-013 setup-tls.sh', () => {
     assert.equal(res.status, 0, res.stderr);
     assert.match(read(log), /^-install$/m);
     const [call] = certCalls();
-    assert.ok(call?.includes('*.bw.localhost'));
+    assert.ok(call !== undefined, 'mkcert cert call');
+    assert.ok(call.includes('*.bw.localhost'));
     assert.ok(call.includes('127.0.0.1'));
     assert.ok(existsSync(path.join(out, 'bw-localhost.pem')));
     assert.equal(statSync(path.join(out, 'bw-localhost-key.pem')).mode & 0o777, 0o600);
@@ -247,7 +257,7 @@ describe('DEVENV-013 compose + routing config', () => {
 });
 
 /** Starts a tiny upstream that reports which service answered and the forwarded proto. */
-/** @param {string} name */
+/** @param {string} name @returns {Promise<{ server: http.Server, port: number }>} */
 function upstream(name) {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
@@ -267,6 +277,7 @@ function upstream(name) {
  * @param {number} port
  * @param {string} host
  * @param {string} ca
+ * @returns {Promise<{ status: number, body: string }>}
  */
 function get(port, host, ca) {
   return new Promise((resolve, reject) => {
@@ -276,7 +287,7 @@ function get(port, host, ca) {
         let body = '';
         res.on('data', (c) => (body += String(c)));
         res.on('end', () => {
-          resolve({ status: res.statusCode, body });
+          resolve({ status: res.statusCode ?? 0, body });
         });
       },
     );
@@ -330,7 +341,7 @@ describe(
       /** @type {Record<string, number>} */
       const ports = {};
       for (const n of ['web', 'api', 'keycloak']) {
-        const u = /** @type {{ server: http.Server, port: number }} */ (await upstream(n));
+        const u = await upstream(n);
         servers.push(u.server);
         ports[n] = u.port;
       }
@@ -397,17 +408,16 @@ describe(
       ['auth', 'keycloak'],
     ]) {
       it(`serves ${host}.bw.localhost from ${svc} over trusted HTTPS with forwarded proto https`, async () => {
-        const r = /** @type {{ status: number, body: string }} */ (
-          await get(httpsPort, `${host}.bw.localhost`, ca)
-        );
+        const r = await get(httpsPort, `${host}.bw.localhost`, ca);
         assert.equal(r.status, 200);
         assert.deepEqual(JSON.parse(r.body), { name: svc, proto: 'https' });
       });
     }
 
     it('answers 404 for an unrouted hostname and redirects plain HTTP to HTTPS', async () => {
-      const r = /** @type {{ status: number }} */ (await get(httpsPort, 'nope.bw.localhost', ca));
+      const r = await get(httpsPort, 'nope.bw.localhost', ca);
       assert.equal(r.status, 404);
+      /** @type {{ status: number | undefined, location: string | undefined }} */
       const status = await new Promise((resolve, reject) => {
         http
           .get(
@@ -419,11 +429,8 @@ describe(
           )
           .on('error', reject);
       });
-      assert.equal(/** @type {{ status: number }} */ (status).status, 302);
-      assert.match(
-        String(/** @type {{ location: string }} */ (status).location),
-        /^https:\/\/app\.bw\.localhost:18443\//,
-      );
+      assert.equal(status.status, 302);
+      assert.match(status.location ?? '', /^https:\/\/app\.bw\.localhost:18443\//);
     });
   },
 );

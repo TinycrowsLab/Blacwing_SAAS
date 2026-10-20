@@ -355,6 +355,73 @@ services:
       BW_TEMPORAL_RETENTION: ${BW_DEV_TEMPORAL_RETENTION:-72h}
     volumes:
       - ./temporal/bootstrap.sh:/bw/bootstrap.sh:ro
+  # One-shot (DEVENV-004): idempotently creates Keycloak's role + database in the shared Postgres,
+  # also on a pgdata volume that predates Keycloak. Exits 0; keycloak waits for it.
+  keycloak-db:
+    <<: *defaults
+    image: pgvector/pgvector:0.8.0-pg16@sha256:a132765ec351c65111b5b675928a3a0515a466a40f97277329db8b8209ad8bc9
+    restart: 'no'
+    depends_on:
+      postgres: { condition: service_healthy }
+    entrypoint: ['bash', '/bw/keycloak/db-init.sh']
+    environment:
+      PGHOST: postgres
+      PGUSER: ${BW_DEV_POSTGRES_SUPERUSER:-bw_admin}
+      PGPASSWORD: ${BW_DEV_POSTGRES_SUPERUSER_PASSWORD:?set BW_DEV_POSTGRES_SUPERUSER_PASSWORD in .env}
+      BW_KEYCLOAK_DB: ${BW_DEV_KEYCLOAK_DB:-keycloak}
+      BW_KEYCLOAK_DB_USER: ${BW_DEV_KEYCLOAK_DB_USER:-bw_keycloak}
+      BW_KEYCLOAK_DB_PASSWORD: ${BW_DEV_KEYCLOAK_DB_PASSWORD:?set BW_DEV_KEYCLOAK_DB_PASSWORD in .env}
+    volumes:
+      - ./keycloak/db-init.sh:/bw/keycloak/db-init.sh:ro
+
+  # Keycloak 26, realm `blackwing-dev` (DEVENV-004). DEV ONLY: password login, no mandatory MFA,
+  # `start-dev`. `--import-realm` imports keycloak/realm-export.json on first start and SKIPS it when
+  # the realm already exists in the DB (idempotent); `pnpm dev:keycloak:reset --yes` re-imports.
+  # The BW_DEV_KEYCLOAK_* placeholders in the export are resolved from this container env.
+  keycloak:
+    <<: *defaults
+    image: quay.io/keycloak/keycloak:26.4.2@sha256:3617b09bb4b7510a8d8d9b9fc5707399e2d70688dbcc2f8fb013a144829be1b9
+    command: ['start-dev', '--import-realm']
+    depends_on:
+      keycloak-db: { condition: service_completed_successfully }
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${BW_DEV_KEYCLOAK_DB:-keycloak}
+      KC_DB_USERNAME: ${BW_DEV_KEYCLOAK_DB_USER:-bw_keycloak}
+      KC_DB_PASSWORD: ${BW_DEV_KEYCLOAK_DB_PASSWORD:?set BW_DEV_KEYCLOAK_DB_PASSWORD in .env}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${BW_DEV_KEYCLOAK_ADMIN_USER:-bw_kc_admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${BW_DEV_KEYCLOAK_ADMIN_PASSWORD:?set BW_DEV_KEYCLOAK_ADMIN_PASSWORD in .env}
+      # Browser-facing issuer; containers may use http://keycloak:8080 (dynamic backchannel).
+      KC_HOSTNAME: ${BW_DEV_KEYCLOAK_PUBLIC_URL:-http://localhost:18080}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: 'true'
+      KC_HTTP_ENABLED: 'true'
+      KC_HEALTH_ENABLED: 'true'
+      KC_METRICS_ENABLED: 'true'
+      KC_LOG_CONSOLE_OUTPUT: json
+      JAVA_OPTS_KC_HEAP: -XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=25
+      # Resolved into realm-export.json at import; never committed.
+      BW_DEV_KEYCLOAK_TEST_USER_PASSWORD: ${BW_DEV_KEYCLOAK_TEST_USER_PASSWORD:?set BW_DEV_KEYCLOAK_TEST_USER_PASSWORD in .env}
+      BW_DEV_KEYCLOAK_BFF_SECRET: ${BW_DEV_KEYCLOAK_BFF_SECRET:?set BW_DEV_KEYCLOAK_BFF_SECRET in .env}
+      BW_DEV_KEYCLOAK_API_SECRET: ${BW_DEV_KEYCLOAK_API_SECRET:?set BW_DEV_KEYCLOAK_API_SECRET in .env}
+      BW_DEV_KEYCLOAK_CI_SECRET: ${BW_DEV_KEYCLOAK_CI_SECRET:?set BW_DEV_KEYCLOAK_CI_SECRET in .env}
+    ports:
+      - '127.0.0.1:${BW_DEV_KEYCLOAK_PORT:-18080}:8080'
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    healthcheck:
+      # No curl in the image: plain HTTP over bash /dev/tcp against the management port (9000).
+      test:
+        [
+          'CMD-SHELL',
+          "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"status\": \"UP\"' <&3",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 180s
+    deploy:
+      resources:
+        limits: { cpus: '2', memory: 1536m }
 
   # ---------------------------------------------------------------------------------------------
   # Local vulnerable targets (DEVENV-012, profile `targets`). Deliberately-vulnerable TRAINING apps

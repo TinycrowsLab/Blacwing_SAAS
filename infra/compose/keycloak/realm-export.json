@@ -1,0 +1,443 @@
+{
+  "accessTokenLifespan": 300,
+  "attributes": {
+    "bw.environment": "dev"
+  },
+  "bruteForceProtected": true,
+  "clients": [
+    {
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "post.logout.redirect.uris": "+"
+      },
+      "clientAuthenticatorType": "client-secret",
+      "clientId": "bw-api",
+      "consentRequired": false,
+      "description": "Resource server: audience of console and CI tokens; no login flows",
+      "directAccessGrantsEnabled": false,
+      "enabled": true,
+      "frontchannelLogout": false,
+      "fullScopeAllowed": false,
+      "implicitFlowEnabled": false,
+      "name": "Blackwing API",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${BW_DEV_KEYCLOAK_API_SECRET}",
+      "serviceAccountsEnabled": false,
+      "standardFlowEnabled": false
+    },
+    {
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "post.logout.redirect.uris": "+"
+      },
+      "clientAuthenticatorType": "client-secret",
+      "clientId": "bw-ci",
+      "consentRequired": false,
+      "description": "Service account for CI/CD pipeline tokens (client credentials only)",
+      "directAccessGrantsEnabled": false,
+      "enabled": true,
+      "frontchannelLogout": false,
+      "fullScopeAllowed": true,
+      "implicitFlowEnabled": false,
+      "name": "Blackwing CI token issuer",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "included.client.audience": "bw-api",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "false"
+          },
+          "name": "bw-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper"
+        },
+        {
+          "config": {
+            "access.token.claim": "true",
+            "claim.name": "tenant",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "jsonType.label": "String",
+            "multivalued": "false",
+            "user.attribute": "tenant",
+            "userinfo.token.claim": "true"
+          },
+          "name": "tenant",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper"
+        }
+      ],
+      "publicClient": false,
+      "secret": "${BW_DEV_KEYCLOAK_CI_SECRET}",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false
+    },
+    {
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://app.bw.localhost/##https://app.bw.localhost:18443/##http://localhost:3000/"
+      },
+      "clientAuthenticatorType": "client-secret",
+      "clientId": "bw-console-bff",
+      "consentRequired": false,
+      "description": "Next.js BFF: OIDC Auth Code + PKCE, httpOnly session cookie",
+      "directAccessGrantsEnabled": false,
+      "enabled": true,
+      "frontchannelLogout": true,
+      "fullScopeAllowed": true,
+      "implicitFlowEnabled": false,
+      "name": "Blackwing console BFF",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "included.client.audience": "bw-api",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "false"
+          },
+          "name": "bw-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper"
+        },
+        {
+          "config": {
+            "access.token.claim": "true",
+            "claim.name": "tenant",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "jsonType.label": "String",
+            "multivalued": "false",
+            "user.attribute": "tenant",
+            "userinfo.token.claim": "true"
+          },
+          "name": "tenant",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper"
+        }
+      ],
+      "publicClient": false,
+      "redirectUris": [
+        "http://localhost:3000/auth/callback",
+        "https://app.bw.localhost/auth/callback",
+        "https://app.bw.localhost:18443/auth/callback"
+      ],
+      "secret": "${BW_DEV_KEYCLOAK_BFF_SECRET}",
+      "serviceAccountsEnabled": false,
+      "standardFlowEnabled": true,
+      "webOrigins": [
+        "http://localhost:3000",
+        "https://app.bw.localhost",
+        "https://app.bw.localhost:18443"
+      ]
+    }
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"displayName\":\"Username\",\"multivalued\":false,\"name\":\"username\",\"permissions\":{\"edit\":[\"admin\",\"user\"],\"view\":[\"admin\",\"user\"]},\"validations\":{\"length\":{\"max\":255,\"min\":3},\"up-username-not-idn-homograph\":{},\"username-prohibited-characters\":{}}},{\"displayName\":\"Email\",\"multivalued\":false,\"name\":\"email\",\"permissions\":{\"edit\":[\"admin\",\"user\"],\"view\":[\"admin\",\"user\"]},\"required\":{\"roles\":[\"user\"]},\"validations\":{\"email\":{},\"length\":{\"max\":255}}},{\"displayName\":\"First name\",\"multivalued\":false,\"name\":\"firstName\",\"permissions\":{\"edit\":[\"admin\",\"user\"],\"view\":[\"admin\",\"user\"]},\"required\":{\"roles\":[\"user\"]},\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}}},{\"displayName\":\"Last name\",\"multivalued\":false,\"name\":\"lastName\",\"permissions\":{\"edit\":[\"admin\",\"user\"],\"view\":[\"admin\",\"user\"]},\"required\":{\"roles\":[\"user\"]},\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}}},{\"displayName\":\"Tenant\",\"multivalued\":false,\"name\":\"tenant\",\"permissions\":{\"edit\":[\"admin\"],\"view\":[\"admin\"]},\"validations\":{\"pattern\":{\"error-message\":\"invalid tenant slug\",\"pattern\":\"^[a-z0-9][a-z0-9-]{1,62}$\"}}}],\"groups\":[{\"displayDescription\":\"Attributes, which refer to user metadata\",\"displayHeader\":\"User metadata\",\"name\":\"user-metadata\"}]}"
+          ]
+        },
+        "providerId": "declarative-user-profile"
+      }
+    ]
+  },
+  "displayName": "Blackwing (DEV ONLY)",
+  "duplicateEmailsAllowed": false,
+  "editUsernameAllowed": false,
+  "enabled": true,
+  "failureFactor": 10,
+  "groups": [
+    {
+      "attributes": {
+        "tenant": [
+          "acme"
+        ]
+      },
+      "name": "acme",
+      "path": "/acme",
+      "subGroups": [
+        {
+          "name": "appsec-engineers",
+          "path": "/acme/appsec-engineers",
+          "realmRoles": [
+            "appsec-engineer"
+          ]
+        },
+        {
+          "name": "asset-owners",
+          "path": "/acme/asset-owners",
+          "realmRoles": [
+            "asset-owner"
+          ]
+        },
+        {
+          "name": "auditors",
+          "path": "/acme/auditors",
+          "realmRoles": [
+            "auditor"
+          ]
+        },
+        {
+          "name": "developers",
+          "path": "/acme/developers",
+          "realmRoles": [
+            "developer"
+          ]
+        },
+        {
+          "name": "org-admins",
+          "path": "/acme/org-admins",
+          "realmRoles": [
+            "org-admin"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "platform-operators",
+      "path": "/platform-operators",
+      "realmRoles": [
+        "platform-operator"
+      ]
+    }
+  ],
+  "loginWithEmailAllowed": true,
+  "otpPolicyType": "totp",
+  "permanentLockout": false,
+  "realm": "blackwing-dev",
+  "registrationAllowed": false,
+  "rememberMe": false,
+  "resetPasswordAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "attributes": {
+          "bw.scope": [
+            "tenant"
+          ]
+        },
+        "description": "AppSec Engineer: operates runs, edits test plans, triages findings (Gate 3), manages assets",
+        "name": "appsec-engineer"
+      },
+      {
+        "attributes": {
+          "bw.scope": [
+            "tenant"
+          ]
+        },
+        "description": "Asset Owner: signs standing authorisations, approves Gate 1/Gate 2 for owned assets",
+        "name": "asset-owner"
+      },
+      {
+        "attributes": {
+          "bw.scope": [
+            "tenant"
+          ]
+        },
+        "description": "Auditor: read-only access to the audit ledger, reports and coverage",
+        "name": "auditor"
+      },
+      {
+        "attributes": {
+          "bw.scope": [
+            "tenant"
+          ]
+        },
+        "description": "CI/CD pipeline: unattended runs inside a standing authorisation (scoped CI tokens)",
+        "name": "ci-pipeline"
+      },
+      {
+        "attributes": {
+          "bw.scope": [
+            "tenant"
+          ]
+        },
+        "description": "Developer: triggers pre-prod runs on assigned assets, consumes released findings, retests",
+        "name": "developer"
+      },
+      {
+        "attributes": {
+          "bw.scope": [
+            "tenant"
+          ]
+        },
+        "description": "Org Owner/Admin: SSO, roles, policies, connectors, secrets, retention, model settings",
+        "name": "org-admin"
+      },
+      {
+        "attributes": {
+          "bw.scope": [
+            "platform"
+          ]
+        },
+        "description": "Blackwing Platform Operator (Tinycrows staff): separate from every tenant role",
+        "name": "platform-operator"
+      }
+    ]
+  },
+  "sslRequired": "external",
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "users": [
+    {
+      "attributes": {
+        "tenant": [
+          "acme"
+        ]
+      },
+      "credentials": [
+        {
+          "temporary": false,
+          "type": "password",
+          "value": "${BW_DEV_KEYCLOAK_TEST_USER_PASSWORD}"
+        }
+      ],
+      "email": "admin@acme.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Adrian",
+      "groups": [
+        "/acme/org-admins"
+      ],
+      "lastName": "Admin",
+      "username": "admin@acme.test"
+    },
+    {
+      "attributes": {
+        "tenant": [
+          "acme"
+        ]
+      },
+      "credentials": [
+        {
+          "temporary": false,
+          "type": "password",
+          "value": "${BW_DEV_KEYCLOAK_TEST_USER_PASSWORD}"
+        }
+      ],
+      "email": "appsec@acme.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Avery",
+      "groups": [
+        "/acme/appsec-engineers"
+      ],
+      "lastName": "Appsec",
+      "username": "appsec@acme.test"
+    },
+    {
+      "attributes": {
+        "tenant": [
+          "acme"
+        ]
+      },
+      "credentials": [
+        {
+          "temporary": false,
+          "type": "password",
+          "value": "${BW_DEV_KEYCLOAK_TEST_USER_PASSWORD}"
+        }
+      ],
+      "email": "auditor@acme.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Audrey",
+      "groups": [
+        "/acme/auditors"
+      ],
+      "lastName": "Auditor",
+      "username": "auditor@acme.test"
+    },
+    {
+      "attributes": {
+        "tenant": [
+          "acme"
+        ]
+      },
+      "credentials": [
+        {
+          "temporary": false,
+          "type": "password",
+          "value": "${BW_DEV_KEYCLOAK_TEST_USER_PASSWORD}"
+        }
+      ],
+      "email": "dev@acme.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Devon",
+      "groups": [
+        "/acme/developers"
+      ],
+      "lastName": "Developer",
+      "username": "dev@acme.test"
+    },
+    {
+      "credentials": [
+        {
+          "temporary": false,
+          "type": "password",
+          "value": "${BW_DEV_KEYCLOAK_TEST_USER_PASSWORD}"
+        }
+      ],
+      "email": "operator@blackwing.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Oscar",
+      "groups": [
+        "/platform-operators"
+      ],
+      "lastName": "Operator",
+      "username": "operator@blackwing.test"
+    },
+    {
+      "attributes": {
+        "tenant": [
+          "acme"
+        ]
+      },
+      "credentials": [
+        {
+          "temporary": false,
+          "type": "password",
+          "value": "${BW_DEV_KEYCLOAK_TEST_USER_PASSWORD}"
+        }
+      ],
+      "email": "owner@acme.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Olive",
+      "groups": [
+        "/acme/asset-owners"
+      ],
+      "lastName": "Owner",
+      "username": "owner@acme.test"
+    },
+    {
+      "attributes": {
+        "tenant": [
+          "acme"
+        ]
+      },
+      "emailVerified": false,
+      "enabled": true,
+      "realmRoles": [
+        "ci-pipeline"
+      ],
+      "serviceAccountClientId": "bw-ci",
+      "username": "service-account-bw-ci"
+    }
+  ],
+  "verifyEmail": false
+}

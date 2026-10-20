@@ -24,6 +24,8 @@ pnpm-lock.yaml
 scripts/fixtures/turbo-build-dry.snapshot.json
 eslint-report.json
 boundaries-report.json
+# Keycloak realm: canonical form is `JSON.stringify(_, null, 2)` from scripts/keycloak-realm.mjs (re-export)
+infra/compose/keycloak/realm-export.json
 
 # Deliberately failing lint fixtures (scripts/lint-config.test.mjs lints them as they are)
 scripts/fixtures/eslint/

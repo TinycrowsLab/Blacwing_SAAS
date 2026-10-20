@@ -21,7 +21,15 @@ const DUMMY_ENV = {
   BW_DEV_MINIO_APP_PASSWORD: 'x-minio-app-secret',
   BW_DEV_INTERACTSH_TOKEN: 'x-interactsh-token',
   BW_DEV_GRAFANA_ADMIN_PASSWORD: 'x-grafana-admin',
+  BW_DEV_KEYCLOAK_ADMIN_PASSWORD: 'x-kc-admin',
+  BW_DEV_KEYCLOAK_DB_PASSWORD: 'x-kc-db',
+  BW_DEV_KEYCLOAK_TEST_USER_PASSWORD: 'x-kc-users',
+  BW_DEV_KEYCLOAK_BFF_SECRET: 'x-kc-bff',
+  BW_DEV_KEYCLOAK_API_SECRET: 'x-kc-api',
+  BW_DEV_KEYCLOAK_CI_SECRET: 'x-kc-ci',
 };
+/** One-shot init services: they exit 0 and must not restart. */
+const ONE_SHOT = new Set(['keycloak-db', 'minio-init', 'temporal-bootstrap']);
 
 /**
  * Renders the compose file with `docker compose config` (the canonical lint).
@@ -92,11 +100,7 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
   it('pins every image by tag and digest, restarts unless-stopped, no container_name', () => {
     for (const [name, s] of Object.entries(c.services)) {
       assert.match(s.image, /^[\w./-]+:[\w.-]+@sha256:[0-9a-f]{64}$/, `${name} image not pinned`);
-      assert.equal(
-        s.restart,
-        name === 'minio-init' || name === 'temporal-bootstrap' ? 'no' : 'unless-stopped',
-        name,
-      );
+      assert.equal(s.restart, ONE_SHOT.has(name) ? 'no' : 'unless-stopped', name);
       assert.equal(s.container_name, undefined, `${name} must not set container_name`);
       assert.ok(s.networks && 'bw-dev' in s.networks, `${name} not on bw-dev`);
     }
@@ -112,6 +116,8 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
       mailpit: { 1025: '11025', 8025: '18025' },
       temporal: { 7233: '17233' },
       'temporal-ui': { 8080: '18233' },
+      keycloak: { 8080: '18080' },
+      'keycloak-db': {},
     };
     for (const [svc, map] of Object.entries(expected)) {
       const ports = c.services[svc]?.ports ?? [];
@@ -135,6 +141,7 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
       BW_DEV_MAILPIT_UI_PORT: '28025',
       BW_DEV_INTERACTSH_HTTP_PORT: '28081',
       BW_DEV_INTERACTSH_DNS_PORT: '25353',
+      BW_DEV_KEYCLOAK_PORT: '28180',
       BW_DEV_TEMPORAL_PORT: '27233',
       BW_DEV_TEMPORAL_UI_PORT: '28233',
     });
@@ -154,6 +161,7 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
         '27233',
         '28025',
         '28081',
+        '28180',
         '28233',
         '29000',
         '29001',
@@ -271,8 +279,9 @@ describe('Mailpit and interactsh dev services (DEVENV-008)', () => {
   });
 
   it('edge case: interactsh refuses to start without a token (never unauthenticated)', () => {
-    const rest = { ...DUMMY_ENV };
-    delete rest.BW_DEV_INTERACTSH_TOKEN;
+    const rest = Object.fromEntries(
+      Object.entries(DUMMY_ENV).filter(([k]) => k !== 'BW_DEV_INTERACTSH_TOKEN'),
+    );
     const res = renderCompose(rest);
     assert.notEqual(res.status, 0);
     assert.match(res.stderr, /BW_DEV_INTERACTSH_TOKEN/);
@@ -281,10 +290,10 @@ describe('Mailpit and interactsh dev services (DEVENV-008)', () => {
   it('edge case: Mailpit storage growth -> in-memory store capped by MP_MAX_MESSAGES, no volume', () => {
     assert.equal(mailpit?.environment?.MP_MAX_MESSAGES, '500');
     assert.equal(mailpit.environment.MP_DATABASE, undefined);
-    assert.equal(
-      config({ BW_DEV_MAILPIT_MAX_MESSAGES: '50' }).services.mailpit?.environment?.MP_MAX_MESSAGES,
-      '50',
+    const capped = /** @type {{ environment?: Record<string, string> } | undefined} */ (
+      config({ BW_DEV_MAILPIT_MAX_MESSAGES: '50' }).services.mailpit
     );
+    assert.equal(capped?.environment?.MP_MAX_MESSAGES, '50');
     assert.ok(!('mailpitdata' in c.volumes));
   });
 
@@ -328,6 +337,13 @@ describe('.env handling', () => {
     assert.deepEqual(renderEnv('A=1\n', 'A=2\n').added, []);
   });
 
+  it('generates *_SECRET values too, but never externally issued *_CLIENT_SECRET ones', () => {
+    const { text } = renderEnv('A_SECRET=\nB_CLIENT_SECRET=\nC_SECRETS=\n', '', () => 'gen');
+    assert.match(text, /^A_SECRET=gen$/m);
+    assert.match(text, /^B_CLIENT_SECRET=$/m);
+    assert.match(text, /^C_SECRETS=$/m);
+  });
+
   it('generates distinct 32-hex passwords', () => {
     const { text } = renderEnv('X_PASSWORD=\nY_PASSWORD=\n');
     const vals = [...text.matchAll(/_PASSWORD=([0-9a-f]+)$/gm)].map((m) => m[1]);
@@ -341,7 +357,7 @@ describe('.env handling', () => {
     const compose = readFileSync(COMPOSE_FILE, 'utf8');
     const used = new Set([...compose.matchAll(/\$\{(BW_DEV_[A-Z0-9_]+)/g)].map((m) => m[1]));
     for (const v of used) assert.match(example, new RegExp(`^${String(v)}=`, 'm'), String(v));
-    for (const m of example.matchAll(/^(BW_DEV_\w+_PASSWORD)=(.*)$/gm))
+    for (const m of example.matchAll(/^(BW_DEV_\w+_(?:PASSWORD|SECRET))=(.*)$/gm))
       assert.equal(m[2], '', `${String(m[1])} must be empty`);
   });
 

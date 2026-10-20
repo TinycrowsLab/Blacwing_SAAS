@@ -1,7 +1,7 @@
 # Local dependency stack (`docker-compose.dev.yml`)
 
 The dev stack every app and integration test talks to. DEVENV-002 (#156) adds the skeleton and the core data
-services. Keycloak and OpenBao arrive with their own
+services; DEVENV-004 (#158) adds Keycloak. OpenBao arrives with its own
 issues and join the same file, network and project.
 
 ```bash
@@ -37,6 +37,7 @@ docker compose -p bwdev --env-file .env -f infra/compose/docker-compose.dev.yml 
 | interactsh | `projectdiscovery/interactsh-server` | 18081 http (`BW_DEV_INTERACTSH_HTTP_PORT`), 15353 dns udp+tcp (`BW_DEV_INTERACTSH_DNS_PORT`) | `http://127.0.0.1:18081`, token `INTERACTSH_TOKEN` |
 | temporal | `temporalio/auto-setup:1.29.7` (digest-pinned) | 17233 gRPC (`BW_DEV_TEMPORAL_PORT`) | `TEMPORAL_ADDRESS=127.0.0.1:17233`, namespace `blackwing-dev` |
 | temporal-ui | `temporalio/ui:2.49.0` (digest-pinned) | 18233 (`BW_DEV_TEMPORAL_UI_PORT`) | http://127.0.0.1:18233 |
+| keycloak | `quay.io/keycloak/keycloak:26.4.2` | 18080 (`BW_DEV_KEYCLOAK_PORT`) | issuer `http://localhost:18080/realms/blackwing-dev` |
 
 **Port already in use:** set the override in `.env` (for example `BW_DEV_POSTGRES_PORT=25432`) and update the matching
 URL. The container-side ports never change.
@@ -283,7 +284,70 @@ and `pnpm dev:deps:obs:smoke` proves the pipeline end to end.
 - **Dev only:** all ports bind 127.0.0.1, Grafana sign-up and usage reporting are off, and no exporter leaves the
   `bw-dev` network. Production monitoring and Alertmanager routing belong to INFRA.
 
+### Keycloak 26 (realm `blackwing-dev`, DEVENV-004)
+
+**Dev only.** The realm allows password login and has no mandatory MFA. Staging and production require MFA and
+real IdP brokering (production Keycloak/IdP config belongs to the infra epic); never reuse this realm or its
+users there.
+
+- `keycloak-db` (one-shot) creates Keycloak's own role `bw_keycloak` and database `keycloak` in the dev Postgres,
+  idempotently, so it also works on an older `pgdata` volume. Keycloak never touches the RLS-protected app DB.
+- `keycloak` runs `start-dev --import-realm` with `keycloak/realm-export.json`. The first start imports the
+  realm. Later starts log `Realm 'blackwing-dev' already exists. Import skipped` (Keycloak's `IGNORE_EXISTING`
+  strategy), so changes made in the admin console survive restarts until you re-import.
+- `${BW_DEV_KEYCLOAK_*}` placeholders in the export (client secrets, the test-user password) are resolved from the
+  container env at import. `.env` gets random values for them, so nothing secret is committed.
+- Health: `/health/ready` on the management port 9000 (in-network only). Metrics: `http://keycloak:9000/metrics`
+  for the `obs` profile (DEVENV-009). Logs are JSON on stdout. The first boot can take 1-2 minutes
+  (`start_period: 180s`).
+- Admin console: `http://localhost:18080/admin`, user `BW_DEV_KEYCLOAK_ADMIN_USER` / `BW_DEV_KEYCLOAK_ADMIN_PASSWORD`.
+
+| Client | Type | Use |
+|---|---|---|
+| `bw-console-bff` | confidential, Auth Code + PKCE (S256 required), no password/implicit grant | The Next.js BFF. Redirect URIs exactly `https://app.bw.localhost/auth/callback`, `https://app.bw.localhost:18443/auth/callback` (the TLS proxy's default port) and `http://localhost:3000/auth/callback`. |
+| `bw-api` | confidential, no login flows | Resource server: the `aud` of console and CI tokens. |
+| `bw-ci` | confidential, client credentials only | CI/CD service account (`ci-pipeline`, tenant `acme`). |
+
+Realm roles map the §1.2 personas: `appsec-engineer`, `asset-owner`, `developer`, `org-admin`, `auditor` and
+`ci-pipeline` (attribute `bw.scope=tenant`), and `platform-operator` (`bw.scope=platform`). Groups wire them:
+`/acme/<role>s` for the demo tenant and `/platform-operators`. Tokens carry `realm_access.roles` and a `tenant`
+claim (user attribute, editable by admins only). The Platform Operator holds no tenant role and no tenant claim.
+
+| Test user (password `BW_DEV_KEYCLOAK_TEST_USER_PASSWORD`) | Role | Tenant |
+|---|---|---|
+| `appsec@acme.test` | `appsec-engineer` | `acme` |
+| `owner@acme.test` | `asset-owner` | `acme` |
+| `dev@acme.test` | `developer` | `acme` |
+| `admin@acme.test` | `org-admin` | `acme` |
+| `auditor@acme.test` | `auditor` | `acme` |
+| `operator@blackwing.test` | `platform-operator` | none |
+
+```bash
+pnpm dev:keycloak:check         # validate realm-export.json (roles, users, clients, no secrets, canonical form)
+pnpm dev:keycloak:smoke         # Auth Code + PKCE login as every test user via the BFF redirect URI; token claims
+pnpm dev:keycloak:smoke --restart  # also proves a restart skips the import of the existing realm
+pnpm dev:keycloak:export        # re-export the running realm into realm-export.json (sanitised)
+pnpm dev:keycloak:reset --yes   # drop the Keycloak DB and re-import realm-export.json
+```
+
+**Re-export workflow.** Change the realm in the admin console, run `pnpm dev:keycloak:export`, review the diff of
+`infra/compose/keycloak/realm-export.json`, then commit. The export runs `kc.sh export` inside the container and
+keeps only the managed sections (realm settings, realm roles, groups, test users, `bw-*` clients and the user
+profile). It strips ids, timestamps and password hashes, and puts the placeholders back for secrets, so the result
+is stable and committable. To manage a new section or setting, add it to the keep-lists in
+`scripts/keycloak-realm.mjs`. `pnpm dev:keycloak:check` fails if the file is not in canonical form.
+
+**Keep in sync.** The redirect URIs and web origins (`CONSOLE_ORIGINS`, `BFF_CALLBACK_PATH` in
+`scripts/keycloak-realm.mjs`) must match the BFF route and the `*.bw.localhost` proxy (DEVENV-013). The issuer host
+is `BW_DEV_KEYCLOAK_PUBLIC_URL`; containers can reach Keycloak at `http://keycloak:8080` (dynamic backchannel).
+
 ## Troubleshooting
+
+- **Token validation fails with `iat`/`exp`/`nbf` errors (clock skew):** containers share the host kernel clock, so
+  the host clock is wrong. On WSL2 it drifts after sleep: run `sudo hwclock -s` (or restart WSL), and keep NTP on
+  (`timedatectl set-ntp true`). `pnpm dev:keycloak:smoke` fails if a fresh token's `iat` is more than 60 s off.
+- **Keycloak realm out of date** (it is imported only once per DB): `pnpm dev:keycloak:reset --yes`. This drops
+  only the Keycloak database (all realm changes, sessions and users), not the app data.
 
 - **Volume from an older schema** (init scripts only run on an empty volume, so role or extension changes need a
   fresh one): `pnpm dev:deps:reset --yes`, then `pnpm dev:deps`. This deletes all local data in the stack, and the
