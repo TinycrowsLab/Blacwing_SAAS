@@ -1,3 +1,5 @@
+import { AppError } from "@blackwing/errors";
+
 /**
  * Why a configuration key was rejected. Stable machine keys: match on these, never on the message.
  * - `missing`: the key is required and not set.
@@ -39,17 +41,13 @@ function uniqueKeys(issues: readonly ConfigIssue[], match: (issue: ConfigIssue) 
  * once. The message, `issues` and every other property hold key names and schema-derived text only:
  * no environment value, and no `cause` (a `ZodError` could carry input).
  *
- * It carries code `CONFIG_INVALID`, HTTP status 500 and `retryable: false` so a boundary can map it
- * today. TODO(#11): extend `AppError` from `@blackwing/errors` and register `CONFIG_INVALID` in its
- * code registry once that package lands.
+ * An `AppError` with registry code `CONFIG_INVALID`: HTTP status 500 (a misconfigured service is a
+ * server fault, never the client's) and `retryable: false` (the environment does not change by
+ * retrying). It sets no client `detail`, so the problem+json mapper answers with the generic title.
  */
-export class ConfigValidationError extends Error {
+export class ConfigValidationError extends AppError {
   /** Stable error code. */
-  readonly code = "CONFIG_INVALID" as const;
-  /** A misconfigured service is a server fault, never the client's. */
-  readonly httpStatus = 500 as const;
-  /** The environment does not change by retrying. */
-  readonly retryable = false as const;
+  declare readonly code: "CONFIG_INVALID";
   /** Every problem, in schema order. */
   readonly issues: readonly ConfigIssue[];
   /** Keys that are required but unset or empty. */
@@ -58,8 +56,7 @@ export class ConfigValidationError extends Error {
   readonly invalidKeys: readonly string[];
 
   constructor(issues: readonly ConfigIssue[]) {
-    super(formatMessage(issues));
-    this.name = "ConfigValidationError";
+    super("CONFIG_INVALID", formatMessage(issues));
     this.issues = Object.freeze(issues.map((issue) => Object.freeze({ ...issue })));
     this.missingKeys = uniqueKeys(this.issues, (issue) => issue.reason !== "invalid");
     this.invalidKeys = uniqueKeys(this.issues, (issue) => issue.reason === "invalid");

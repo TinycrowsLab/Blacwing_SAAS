@@ -1,0 +1,21 @@
+{
+  "name": "@blackwing/errors",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AppError hierarchy, stable error-code registry and RFC 9457 problem+json mapper",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "fast-check": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

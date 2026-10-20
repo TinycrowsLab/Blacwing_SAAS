@@ -1,6 +1,6 @@
 # TypeScript configuration and project references
 
-Every TypeScript workspace member (9 apps, 23 packages) compiles under one strict base config and
+Every TypeScript workspace member (9 apps, 24 packages) compiles under one strict base config and
 is wired into a single incremental `tsc -b` build through project references. This page is the
 reference for that setup (FOUND-003); CONTEXT_PACK §5 sets the conventions it enforces.
 
@@ -110,15 +110,17 @@ A member declares a workspace dependency in two places, and both must agree:
 
 `check-tsconfig` fails when a dependency has no reference, or when a reference has no dependency.
 `tsc -b` fails as well (TS6307) if source from an unreferenced package is pulled into a project.
-That way every edge in the build graph is declared. The stubs have no workspace dependencies yet, so
-every member's `references` is `[]`. Each epic adds edges as it adds real imports.
+That way every edge in the build graph is declared. Each epic adds edges as it adds real imports. The
+first edges are `packages/ids -> packages/errors` (`IdValidationError` extends `ValidationError`) and
+`packages/config -> packages/errors` (`ConfigValidationError` extends `AppError`).
 
 Edges must follow the allowed layering, which FOUND-005 (#7) enforces with a boundaries check and
 documents in `docs/architecture/dependency-graph.md`:
 
 ```
-contracts            -> (nothing internal)
-shared libs          -> contracts            (config, logger, telemetry, testing, crypto, ...)
+errors               -> (nothing internal)   (AppError hierarchy; config, logger and everything else throw it)
+contracts            -> errors
+shared libs          -> contracts, errors    (config, logger, ids, telemetry, testing, crypto, ...)
 domain, policy       -> contracts, shared libs
 other packages       -> contracts, shared libs, domain, policy
 apps/*               -> any package, never another app

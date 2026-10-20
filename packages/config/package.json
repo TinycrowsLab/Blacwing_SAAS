@@ -13,6 +13,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "@blackwing/errors": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

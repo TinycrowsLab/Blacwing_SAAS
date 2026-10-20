@@ -1,3 +1,4 @@
+import { AppError, isAppError, toProblemDetails, ValidationError } from "@blackwing/errors";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
@@ -187,6 +188,22 @@ describe("parsePublicId validation", () => {
     expect(caught).toBeInstanceOf(IdValidationError);
     expect(caught).toBeInstanceOf(Error);
     expect(caught).toMatchObject({ name: "ValidationError", code: "VALIDATION_FAILED", httpStatus: 422, retryable: false });
+  });
+
+  it("is a ValidationError from @blackwing/errors, so the problem+json mapper answers 422", () => {
+    let caught: unknown;
+    try {
+      parsePublicId("bw_pat_SUPERSECRETVALUE1234567890");
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(ValidationError);
+    expect(caught).toBeInstanceOf(AppError);
+    expect(isAppError(caught)).toBe(true);
+    const body = toProblemDetails(caught, "trace-1", { environment: "production" });
+    expect(body).toMatchObject({ status: 422, code: "VALIDATION_FAILED", type: "https://errors.blackwing.dev/VALIDATION_FAILED" });
+    expect(body.detail).toBe(caught instanceof IdValidationError ? caught.message : undefined);
+    expect(JSON.stringify(body)).not.toContain("SUPERSECRET");
   });
 
   it("never echoes the rejected input in the error message", () => {

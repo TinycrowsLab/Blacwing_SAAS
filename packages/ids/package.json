@@ -12,6 +12,9 @@
     "test": "vitest run",
     "typecheck": "tsc -b --pretty false"
   },
+  "dependencies": {
+    "@blackwing/errors": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "catalog:",
     "fast-check": "catalog:",

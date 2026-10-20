@@ -204,7 +204,7 @@ Root scripts delegate to [Turborepo](https://turborepo.com) (`turbo.json`, pinne
 - Turbo's anonymous telemetry can be switched off per machine with `pnpm exec turbo telemetry disable` (or `TURBO_TELEMETRY_DISABLED=1`).
 - After changing `turbo.json`, refresh the dry-run snapshot used by the self-tests: `BW_UPDATE_SNAPSHOTS=1 pnpm test:scripts`.
 
-The workspace (`pnpm-workspace.yaml`: `apps/*`, `packages/*`) holds 9 apps and 23 packages, each named `@blackwing/<dir>`, exactly as laid out in [`CONTEXT_PACK.md` §6](docs/architecture/CONTEXT_PACK.md). `scripts/check-layout.mjs` enforces that layout; when an issue adds or removes an app, package or fixed directory, update its expected lists and §6 in the same commit.
+The workspace (`pnpm-workspace.yaml`: `apps/*`, `packages/*`) holds 9 apps and 24 packages, each named `@blackwing/<dir>`, exactly as laid out in [`CONTEXT_PACK.md` §6](docs/architecture/CONTEXT_PACK.md). `scripts/check-layout.mjs` enforces that layout; when an issue adds or removes an app, package or fixed directory, update its expected lists and §6 in the same commit.
 
 Every member extends the strict root `tsconfig.base.json` and is wired into one incremental `tsc -b` build through project references; `scripts/check-tsconfig.mjs` guards that setup. See [`docs/architecture/typescript.md`](docs/architecture/typescript.md) for the options, the `apps/web` exception, the `import type` pattern and how to add a workspace dependency.
 

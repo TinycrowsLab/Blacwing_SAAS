@@ -4,8 +4,11 @@
 // The child runs plain JavaScript: `beforeAll` transpiles this package's sources once (no type
 // checking; `pnpm typecheck` does that) into a scratch directory under the package's node_modules, so
 // `zod` resolves exactly as it does for the package and each child starts without loading a compiler.
+// Workspace dependencies (`@blackwing/errors`) export TypeScript sources, so they are transpiled too,
+// into the scratch directory's own `node_modules`, where the child resolves them first.
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,14 +24,36 @@ const CHILD_TIMEOUT_MS = 30_000;
 
 let buildDir = "";
 
+/** Workspace dependencies whose TypeScript sources the child needs as JavaScript. */
+const WORKSPACE_DEPENDENCIES = ["@blackwing/errors"] as const;
+
+/** Non-test `.ts` files directly inside `dir`. */
+function productSources(dir: string): string[] {
+  return readdirSync(dir)
+    .filter((file) => file.endsWith(".ts") && !file.endsWith(".test.ts"))
+    .map((file) => join(dir, file));
+}
+
 /** Product sources plus the bootstrap fixture; tests are not needed by the child. */
 function sourcesToBuild(): string[] {
-  const product = readdirSync(srcDir).filter((file) => file.endsWith(".ts") && !file.endsWith(".test.ts"));
-  return [...product.map((file) => join(srcDir, file)), join(srcDir, "testdata", "bootstrap-app.ts")];
+  return [...productSources(srcDir), join(srcDir, "testdata", "bootstrap-app.ts")];
 }
 
 function transpileSources(outDir: string): void {
-  for (const fileName of sourcesToBuild()) {
+  transpileTree(srcDir, sourcesToBuild(), outDir);
+  // Mark the scratch tree as ESM, like the package itself.
+  writeFileSync(join(outDir, "package.json"), '{ "type": "module" }\n');
+  const require = createRequire(import.meta.url);
+  for (const dependency of WORKSPACE_DEPENDENCIES) {
+    const entryDir = dirname(require.resolve(dependency));
+    const depDir = join(outDir, "node_modules", ...dependency.split("/"));
+    transpileTree(entryDir, productSources(entryDir), depDir);
+    writeFileSync(join(depDir, "package.json"), `${JSON.stringify({ name: dependency, type: "module", exports: "./index.js" })}\n`);
+  }
+}
+
+function transpileTree(rootDir: string, files: readonly string[], outDir: string): void {
+  for (const fileName of files) {
     const { outputText } = ts.transpileModule(readFileSync(fileName, "utf8"), {
       fileName,
       compilerOptions: {
@@ -38,12 +63,10 @@ function transpileSources(outDir: string): void {
         sourceMap: false,
       },
     });
-    const target = join(outDir, relative(srcDir, fileName)).replace(/\.ts$/, ".js");
+    const target = join(outDir, relative(rootDir, fileName)).replace(/\.ts$/, ".js");
     mkdirSync(dirname(target), { recursive: true });
     writeFileSync(target, outputText);
   }
-  // Mark the scratch tree as ESM, like the package itself.
-  writeFileSync(join(outDir, "package.json"), '{ "type": "module" }\n');
 }
 
 beforeAll(() => {

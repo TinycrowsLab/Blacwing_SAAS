@@ -170,6 +170,9 @@ importers:
 
   packages/config:
     dependencies:
+      '@blackwing/errors':
+        specifier: workspace:*
+        version: link:../errors
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -256,6 +259,21 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
+  packages/errors:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+      fast-check:
+        specifier: 'catalog:'
+        version: 4.10.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
+
   packages/evidence:
     devDependencies:
       '@types/node':
@@ -269,6 +287,10 @@ importers:
         version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/ids:
+    dependencies:
+      '@blackwing/errors':
+        specifier: workspace:*
+        version: link:../errors
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

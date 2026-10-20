@@ -28,7 +28,7 @@ Import the app's `config.ts` first in its entry point, before creating the logge
 |---|---|
 | `defineConfig(schema, { source?, onInvalid?, log? })` | Bootstrap entry point. Parses `process.env` (or `source`) and returns the deeply frozen, fully typed config. On invalid config it **fails closed**: writes one JSON line (`msg: "config.invalid"`, key names only) to stderr and exits with `CONFIG_EXIT_CODE` (78, sysexits `EX_CONFIG`). Under `NODE_ENV=test`, or with `onInvalid: "throw"`, it throws instead. |
 | `loadConfig(schema, source = process.env, { log? })` | The parser underneath. Always throws `ConfigValidationError` on failure. |
-| `ConfigValidationError` | `code: "CONFIG_INVALID"`, `httpStatus: 500`, `retryable: false`, `issues` (`{ key, reason: "missing" \| "empty" \| "invalid", message }`), `missingKeys`, `invalidKeys`. Reports **every** failing key at once. It extends `AppError` once `@blackwing/errors` (#11) lands. |
+| `ConfigValidationError` | `code: "CONFIG_INVALID"`, `httpStatus: 500`, `retryable: false`, `issues` (`{ key, reason: "missing" \| "empty" \| "invalid", message }`), `missingKeys`, `invalidKeys`. Reports **every** failing key at once. It is an `AppError` from `@blackwing/errors`, so the problem+json mapper answers 500 with no detail. |
 | `baseEnvSchema` / `baseEnvShape` | Keys every process reads: `NODE_ENV` (required, no default), `LOG_LEVEL` (default `info`), `OTEL_EXPORTER_OTLP_ENDPOINT` (optional, http/https), `TLS_VERIFY` (default `true`). |
 | `databaseEnvSchema` / `databaseEnvShape` | `DATABASE_URL` (`postgres:`/`postgresql:`, secret). |
 | `valkeyEnvSchema` / `valkeyEnvShape` | `REDIS_URL` (`redis:`/`rediss:`, secret). |

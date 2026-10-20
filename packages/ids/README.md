@@ -51,9 +51,10 @@ Parsing is strict, so every id has exactly one textual form:
 | first body character above `7` (more than 128 bits) | `non_canonical` |
 | decodes to something other than a version-7, RFC-variant UUID | `not_uuidv7` |
 
-Errors are `IdValidationError` (`name: "ValidationError"`, `code: "VALIDATION_FAILED"`, HTTP 422,
-`retryable: false`, plus a machine-readable `reason`). Once `@blackwing/errors` lands (#11) the class
-will extend its `ValidationError`. Messages never echo the rejected input.
+Errors are `IdValidationError`, a subclass of `ValidationError` from `@blackwing/errors`
+(`name: "ValidationError"`, `code: "VALIDATION_FAILED"`, HTTP 422, `retryable: false`, plus a
+machine-readable `reason`), so `toProblemDetails` maps them to a 422 problem+json body with the
+message as `detail`. Messages never echo the rejected input.
 
 ## Prefix registry
 

@@ -26,11 +26,11 @@ function assertError(errors, pattern) {
 }
 
 describe("check-layout against this repository", () => {
-  it("passes and reports exactly the CONTEXT_PACK §6 member set (9 apps + 23 packages)", () => {
+  it("passes and reports exactly the CONTEXT_PACK §6 member set (9 apps + 24 packages)", () => {
     const result = checkLayout(REPO_ROOT);
     assert.deepEqual(result.errors, []);
     assert.equal(result.ok, true);
-    assert.deepEqual(result.counts, { apps: 9, packages: 23 });
+    assert.deepEqual(result.counts, { apps: 9, packages: 24 });
     const names = result.members.map((m) => m.name).sort();
     const expected = [...EXPECTED_APPS, ...EXPECTED_PACKAGES].map((d) => `@blackwing/${d}`).sort();
     assert.deepEqual(names, expected);
@@ -45,8 +45,8 @@ describe("check-layout against this repository", () => {
     assert.deepEqual(
       [...EXPECTED_PACKAGES].sort(),
       [
-        "agents", "audit", "config", "connectors", "contracts", "cost", "crypto", "db", "domain", "evidence", "ids", "logger",
-        "mcp-tools", "memory", "notify", "oob", "policy", "replay", "reporting", "secrets", "telemetry", "testing", "ui",
+        "agents", "audit", "config", "connectors", "contracts", "cost", "crypto", "db", "domain", "errors", "evidence", "ids",
+        "logger", "mcp-tools", "memory", "notify", "oob", "policy", "replay", "reporting", "secrets", "telemetry", "testing", "ui",
       ],
     );
   });
@@ -78,7 +78,7 @@ describe("check-layout on fixtures", () => {
   it("accepts a valid layout", () => {
     const result = checkLayout(fixture.root);
     assert.deepEqual(result.errors, []);
-    assert.deepEqual(result.counts, { apps: 9, packages: 23 });
+    assert.deepEqual(result.counts, { apps: 9, packages: 24 });
   });
 
   it("detects a duplicate package name across members", () => {
@@ -249,8 +249,8 @@ describe("check-layout CLI", () => {
     assert.equal(run.status, 0, run.stderr);
     const summary = JSON.parse(run.stdout);
     assert.equal(summary.ok, true);
-    assert.deepEqual(summary.counts, { apps: 9, packages: 23 });
-    assert.equal(summary.members.length, 32);
+    assert.deepEqual(summary.counts, { apps: 9, packages: 24 });
+    assert.equal(summary.members.length, 33);
     assert.deepEqual(Object.keys(summary.members[0]).sort(), ["dir", "kind", "name", "private", "version"]);
   });
 
