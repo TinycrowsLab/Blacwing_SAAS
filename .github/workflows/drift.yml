@@ -1,0 +1,68 @@
+name: drift
+
+# Contract and migration drift (CI-015, #149): generated OpenAPI/GraphQL and Drizzle migrations
+# must match the code, applied migrations are immutable, and all migrations apply to a fresh
+# Postgres. Documented in docs/runbooks/drift-checks.md.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: drift-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned so generated output cannot depend on the runner's timezone or locale.
+  TZ: UTC
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+
+jobs:
+  drift:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        # Throwaway database for the migration apply check; pgvector is required by the schema.
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: drift
+          POSTGRES_PASSWORD: drift
+          POSTGRES_DB: drift
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U drift" --health-interval 5s --health-timeout 5s
+          --health-retries 10
+    steps:
+      # A local composite action is only readable after a checkout; fetch just its directory.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          fetch-depth: '0'
+      - name: Regenerate OpenAPI, GraphQL SDL and Drizzle migrations
+        run: |
+          pnpm openapi:generate
+          pnpm graphql:generate
+          pnpm db:generate
+      - name: Normalise generated files
+        run: pnpm exec prettier --write --ignore-unknown apps/api/openapi apps/api/graphql packages/db/migrations
+      - name: Fail when a generated artifact is stale
+        run: node scripts/check-drift.mjs stale
+      - name: Fail when an applied migration was edited (forward-only)
+        if: github.event_name == 'pull_request'
+        env:
+          BW_MIGRATION_SQUASH: ${{ contains(github.event.pull_request.labels.*.name, 'migration-squash') }}
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/check-drift.mjs immutable "origin/${BASE_REF}"
+      - name: Apply all migrations to a fresh Postgres
+        env:
+          DATABASE_URL: postgres://drift:drift@127.0.0.1:5432/drift
+        run: node scripts/check-drift.mjs apply
