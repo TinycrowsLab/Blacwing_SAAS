@@ -146,6 +146,10 @@ export default defineConfig(
       '@typescript-eslint/consistent-type-exports': 'error',
       '@typescript-eslint/no-import-type-side-effects': 'error',
 
+      // NestJS (§5, apps/api) declares modules as decorated classes with no members of their own; the
+      // rule still rejects undecorated static-only or empty classes.
+      '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }],
+
       '@typescript-eslint/no-magic-numbers': [
         'error',
         {

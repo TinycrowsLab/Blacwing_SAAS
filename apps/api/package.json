@@ -9,12 +9,36 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "build": "tsc -b --pretty false",
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "typecheck": "tsc -b --pretty false"
   },
+  "dependencies": {
+    "@blackwing/config": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/ids": "workspace:*",
+    "@blackwing/logger": "workspace:*",
+    "@fastify/cors": "catalog:",
+    "@fastify/helmet": "catalog:",
+    "@fastify/request-context": "catalog:",
+    "@nestjs/common": "catalog:",
+    "@nestjs/core": "catalog:",
+    "@nestjs/platform-fastify": "catalog:",
+    "@opentelemetry/api": "catalog:",
+    "@opentelemetry/core": "catalog:",
+    "fastify": "catalog:",
+    "prom-client": "catalog:",
+    "reflect-metadata": "catalog:",
+    "rxjs": "catalog:",
+    "zod": "catalog:"
+  },
   "devDependencies": {
+    "@opentelemetry/sdk-trace-base": "catalog:",
     "@types/node": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

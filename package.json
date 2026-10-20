@@ -108,5 +108,10 @@
     "typescript": "catalog:",
     "typescript-eslint": "8.71.1",
     "yaml": "2.9.1"
+  },
+  "pnpm": {
+    "overrides": {
+      "@nestjs/platform-fastify>fastify": "catalog:"
+    }
   }
 }
