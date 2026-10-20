@@ -1,0 +1,158 @@
+name: Blackwing setup
+description: >-
+  Check out the repository, install Node.js and the pnpm version pinned in package.json
+  "packageManager" (via Corepack), restore the pnpm store and Turborepo caches, and run
+  `pnpm install --frozen-lockfile`. Holds no secrets so forked pull requests can use it.
+  Caches are restore-only on forked pull requests, so a fork never writes a cache that a
+  base-branch run would restore.
+
+inputs:
+  node-version:
+    description: Node.js version to install.
+    required: false
+    default: '22'
+  fetch-depth:
+    description: Number of commits to fetch (0 = full history, needed by release tooling).
+    required: false
+    default: '0'
+  checkout:
+    description: >-
+      'false' skips the checkout step for jobs that already checked out (or prepared) the
+      working tree themselves.
+    required: false
+    default: 'true'
+
+outputs:
+  node-version:
+    description: Resolved Node.js version.
+    value: ${{ steps.versions.outputs.node }}
+  pnpm-version:
+    description: Resolved pnpm version.
+    value: ${{ steps.versions.outputs.pnpm }}
+  pnpm-cache-hit:
+    description: "'true' when the pnpm store cache was restored with an exact key match."
+    value: ${{ steps.pnpm-cache-trusted.outputs.cache-hit || steps.pnpm-cache-fork.outputs.cache-hit || 'false' }}
+  turbo-cache-hit:
+    description: "'true' when the Turborepo cache was restored with an exact key match."
+    value: ${{ steps.turbo-cache-trusted.outputs.cache-hit || steps.turbo-cache-fork.outputs.cache-hit || 'false' }}
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      if: inputs.checkout != 'false'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: ${{ inputs.fetch-depth }}
+        persist-credentials: false
+
+    - name: Set up Node.js
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    # pnpm comes only from package.json "packageManager" through Corepack. No pnpm version is
+    # pinned anywhere else, so CI and local installs cannot drift apart.
+    - name: Enable Corepack pnpm (from packageManager)
+      id: versions
+      shell: bash
+      env:
+        COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+      run: |
+        set -euo pipefail
+        pm="$(node -p "require('./package.json').packageManager || ''")"
+        case "$pm" in
+          pnpm@*) ;;
+          *) echo "::error file=package.json::packageManager must pin pnpm (found '${pm}')"; exit 1 ;;
+        esac
+        corepack enable
+        corepack install
+        node_v="$(node --version)"
+        pnpm_v="$(pnpm --version)"
+        if [ "pnpm@${pnpm_v}" != "${pm%%+*}" ]; then
+          echo "::error::pnpm ${pnpm_v} does not match packageManager ${pm}"
+          exit 1
+        fi
+        {
+          echo "node=${node_v}"
+          echo "pnpm=${pnpm_v}"
+          echo "store=$(pnpm store path --silent)"
+        } >> "$GITHUB_OUTPUT"
+        echo "Resolved Node.js ${node_v}, pnpm ${pnpm_v}"
+
+    - name: Classify cache trust
+      id: trust
+      shell: bash
+      env:
+        HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        BASE_REPO: ${{ github.repository }}
+      run: |
+        if [ -n "${HEAD_REPO}" ] && [ "${HEAD_REPO}" != "${BASE_REPO}" ]; then
+          echo "fork=true" >> "$GITHUB_OUTPUT"
+          echo "Forked pull request: caches are restore-only"
+        else
+          echo "fork=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    # Trusted runs restore and save (post step). actions/cache scopes entries to the ref, so a
+    # PR branch can read base-branch caches but never overwrite them.
+    - name: pnpm store cache
+      id: pnpm-cache-trusted
+      if: steps.trust.outputs.fork != 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.versions.outputs.store }}
+        key: pnpm-store-v1-${{ runner.os }}-node${{ inputs.node-version }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          pnpm-store-v1-${{ runner.os }}-node${{ inputs.node-version }}-
+
+    - name: pnpm store cache (restore only, fork)
+      id: pnpm-cache-fork
+      if: steps.trust.outputs.fork == 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.versions.outputs.store }}
+        key: pnpm-store-v1-${{ runner.os }}-node${{ inputs.node-version }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          pnpm-store-v1-${{ runner.os }}-node${{ inputs.node-version }}-
+
+    # Turborepo cache: keyed by lockfile + turbo.json, then branch and commit so each run saves
+    # a fresh entry. Restore falls back to the same branch, then to any readable branch (the
+    # default branch's caches are always readable). A partial or stale restore only costs
+    # speed: Turbo re-hashes every task's inputs, so a stale entry is a miss, never a wrong
+    # result.
+    - name: Turborepo cache
+      id: turbo-cache-trusted
+      if: steps.trust.outputs.fork != 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .turbo
+        key: turbo-v1-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'turbo.json') }}-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+        restore-keys: |
+          turbo-v1-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'turbo.json') }}-${{ github.head_ref || github.ref_name }}-
+          turbo-v1-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'turbo.json') }}-
+
+    - name: Turborepo cache (restore only, fork)
+      id: turbo-cache-fork
+      if: steps.trust.outputs.fork == 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .turbo
+        key: turbo-v1-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'turbo.json') }}-${{ github.head_ref || github.ref_name }}-${{ github.sha }}
+        restore-keys: |
+          turbo-v1-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'turbo.json') }}-${{ github.head_ref || github.ref_name }}-
+          turbo-v1-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'turbo.json') }}-
+
+    - name: Cache status
+      shell: bash
+      env:
+        PNPM_HIT: ${{ steps.pnpm-cache-trusted.outputs.cache-hit || steps.pnpm-cache-fork.outputs.cache-hit || 'false' }}
+        TURBO_HIT: ${{ steps.turbo-cache-trusted.outputs.cache-hit || steps.turbo-cache-fork.outputs.cache-hit || 'false' }}
+      run: |
+        if [ "${PNPM_HIT}" = 'true' ]; then echo "pnpm store cache: hit"; else echo "pnpm store cache: miss"; fi
+        if [ "${TURBO_HIT}" = 'true' ]; then echo "turbo cache: hit"; else echo "turbo cache: miss"; fi
+
+    # --frozen-lockfile fails when package.json and pnpm-lock.yaml disagree (lockfile drift).
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

@@ -287,7 +287,7 @@ eval/
 docs/
   adr/  architecture/  runbooks/  api/  user/  labels.md (label catalogue)
 design/               Claude Design export: UI source of truth for every GUI (design system, screens, tokens.json); see design/README.md
-.github/ (workflows, ISSUE_TEMPLATE, PULL_REQUEST_TEMPLATE.md, CODEOWNERS, labels.yml)
+.github/ (workflows, actions (reusable composite actions, e.g. setup), ISSUE_TEMPLATE, PULL_REQUEST_TEMPLATE.md, CODEOWNERS, labels.yml)
 CLAUDE.md  README.md  SECURITY.md  LICENSE (proprietary notice)
 ```
 

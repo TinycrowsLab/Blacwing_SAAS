@@ -1,0 +1,100 @@
+name: ci-setup-smoke
+
+# Smoke test for the reusable setup composite action (.github/actions/setup, CI-001 #135):
+# a clean install, a re-run that must hit the warm pnpm store cache, and a job that proves
+# lockfile drift fails the install.
+
+on:
+  pull_request:
+    paths:
+      - .github/actions/setup/**
+      - .github/workflows/ci-setup-smoke.yml
+      - package.json
+      - pnpm-lock.yaml
+      - turbo.json
+  push:
+    branches: [main]
+    paths:
+      - .github/actions/setup/**
+      - .github/workflows/ci-setup-smoke.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-setup-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # A local composite action is only readable after a checkout; fetch just its directory.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - id: setup
+        uses: ./.github/actions/setup
+      - name: Assert install
+        env:
+          NODE_V: ${{ steps.setup.outputs.node-version }}
+          PNPM_V: ${{ steps.setup.outputs.pnpm-version }}
+        run: |
+          set -euo pipefail
+          case "$NODE_V" in v22.*) ;; *) echo "::error::expected Node 22, got $NODE_V"; exit 1 ;; esac
+          want="$(node -p "require('./package.json').packageManager.split('+')[0]")"
+          [ "pnpm@${PNPM_V}" = "$want" ] || { echo "::error::pnpm $PNPM_V != $want"; exit 1; }
+          test -d node_modules/.pnpm
+          pnpm exec turbo --version
+      - name: Actions policy (SHA pins, frozen lockfile, fork-safe caches)
+        run: pnpm check:actions
+
+  reinstall-warm-cache:
+    needs: install
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - id: setup
+        uses: ./.github/actions/setup
+      - name: Assert warm pnpm store cache hit
+        # Forked pull requests never save caches, so a hit is only guaranteed for trusted runs.
+        if: github.event.pull_request.head.repo.full_name == '' || github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          HIT: ${{ steps.setup.outputs.pnpm-cache-hit }}
+        run: |
+          [ "$HIT" = 'true' ] || { echo "::error::expected a pnpm store cache hit on re-run"; exit 1; }
+
+  lockfile-drift-fails:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Introduce lockfile drift
+        run: |
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.devDependencies={...p.devDependencies,'is-number':'7.0.0'};fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n')"
+      - id: setup
+        continue-on-error: true
+        uses: ./.github/actions/setup
+        with:
+          checkout: 'false'
+      - name: Assert install failed
+        env:
+          OUTCOME: ${{ steps.setup.outcome }}
+        run: |
+          set -uo pipefail
+          [ "$OUTCOME" = 'failure' ] || { echo "::error::lockfile drift did not fail the install"; exit 1; }
+          # The failure must come from the frozen-lockfile check, not from an earlier step.
+          pnpm --version
+          if pnpm install --frozen-lockfile > drift.log 2>&1; then
+            echo "::error::frozen install unexpectedly succeeded"; exit 1
+          fi
+          grep -q 'ERR_PNPM_OUTDATED_LOCKFILE' drift.log || { cat drift.log; exit 1; }
