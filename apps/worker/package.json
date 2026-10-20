@@ -15,7 +15,6 @@
     "typecheck": "tsc -b --pretty false"
   },
   "devDependencies": {
-    "@temporalio/activity": "catalog:",
     "@temporalio/client": "catalog:",
     "@temporalio/worker": "catalog:",
     "@temporalio/workflow": "catalog:",

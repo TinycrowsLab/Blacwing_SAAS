@@ -12,9 +12,6 @@ catalogs:
     '@opentelemetry/context-async-hooks':
       specifier: 2.11.0
       version: 2.11.0
-    '@temporalio/activity':
-      specifier: 1.13.2
-      version: 1.13.2
     '@temporalio/client':
       specifier: 1.13.2
       version: 1.13.2
@@ -224,9 +221,6 @@ importers:
 
   apps/worker:
     devDependencies:
-      '@temporalio/activity':
-        specifier: 'catalog:'
-        version: 1.13.2
       '@temporalio/client':
         specifier: 'catalog:'
         version: 1.13.2

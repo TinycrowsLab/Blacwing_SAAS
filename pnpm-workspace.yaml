@@ -20,7 +20,6 @@ packages:
 catalog:
   '@opentelemetry/api': 1.9.1
   '@opentelemetry/context-async-hooks': 2.11.0
-  '@temporalio/activity': 1.13.2
   '@temporalio/client': 1.13.2
   '@temporalio/common': 1.13.2
   '@temporalio/worker': 1.13.2
