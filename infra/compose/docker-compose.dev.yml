@@ -157,6 +157,39 @@ services:
     volumes:
       - ./minio:/bw/minio:ro
 
+  # Dev TLS reverse proxy (DEVENV-013): terminates mkcert HTTPS for *.bw.localhost. Opt-in profile `tls`;
+  # `pnpm dev:tls` runs infra/compose/tls/setup-tls.sh first. Apps on the host are reached via host-gateway.
+  traefik:
+    <<: *defaults
+    image: traefik:v3.2@sha256:e561a37f8710d9cf41c78bdf421d822b2c0b48267ec0552e644565fb55466ea9
+    profiles: [tls]
+    command: ['--configFile=/etc/traefik/traefik.yml']
+    environment:
+      BW_TLS_UPSTREAM_WEB: ${BW_TLS_UPSTREAM_WEB:-http://host.docker.internal:3000}
+      BW_TLS_UPSTREAM_API: ${BW_TLS_UPSTREAM_API:-http://host.docker.internal:13400}
+      BW_TLS_UPSTREAM_KEYCLOAK: ${BW_TLS_UPSTREAM_KEYCLOAK:-http://keycloak:8080}
+      BW_TLS_UPSTREAM_JUICE: ${BW_TLS_UPSTREAM_JUICE:-http://juice-shop:3000}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      # 443 needs privileges: default to high ports (set BW_DEV_TRAEFIK_HTTPS_PORT=443 where allowed).
+      - '127.0.0.1:${BW_DEV_TRAEFIK_HTTPS_PORT:-18443}:443'
+      - '127.0.0.1:${BW_DEV_TRAEFIK_HTTP_PORT:-18000}:80'
+      - '127.0.0.1:${BW_DEV_TRAEFIK_DASHBOARD_PORT:-18082}:8080'
+    volumes:
+      - ./tls/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./tls/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./tls/certs:/certs:ro
+    healthcheck:
+      test: ['CMD', 'traefik', 'healthcheck', '--ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 128m }
+
 networks:
   bw-dev:
     name: bw-dev

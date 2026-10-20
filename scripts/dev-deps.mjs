@@ -3,6 +3,7 @@
 //
 //   node scripts/dev-deps.mjs up              # `pnpm dev:deps`: create .env if missing, start + wait healthy
 //   node scripts/dev-deps.mjs reset --yes     # `pnpm dev:deps:reset`: drop the stack AND its volumes
+//   node scripts/dev-deps.mjs tls             # `pnpm dev:tls`: mkcert certs + Traefik HTTPS proxy (DEVENV-013)
 //   node scripts/dev-deps.mjs config          # validate/render the compose file
 //
 // `.env` is created from `.env.example`; every empty `*_PASSWORD=` gets a random dev value.
@@ -17,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const COMPOSE_FILE = path.join(ROOT, 'infra/compose/docker-compose.dev.yml');
 export const PROJECT = 'bwdev';
+export const SETUP_TLS = path.join(ROOT, 'infra/compose/tls/setup-tls.sh');
 const PASSWORD_BYTES = 16;
 
 /**
@@ -101,6 +103,16 @@ export function main(argv) {
     compose(['up', '-d', '--wait', '--wait-timeout', '300', ...rest], envFile);
     return 0;
   }
+  if (cmd === 'tls') {
+    // DEVENV-013: mkcert certs for *.bw.localhost, then the Traefik TLS proxy (compose profile `tls`).
+    ensureEnv(envFile);
+    execFileSync('bash', [SETUP_TLS], { stdio: 'inherit' });
+    compose(
+      ['--profile', 'tls', 'up', '-d', '--wait', '--wait-timeout', '120', 'traefik'],
+      envFile,
+    );
+    return 0;
+  }
   if (cmd === 'config') {
     ensureEnv(envFile);
     compose(['config', '--quiet'], envFile);
@@ -117,7 +129,7 @@ export function main(argv) {
     compose(['down', '-v', '--remove-orphans'], envFile);
     return 0;
   }
-  process.stderr.write(`unknown command: ${cmd} (expected up | config | reset)\n`);
+  process.stderr.write(`unknown command: ${cmd} (expected up | tls | config | reset)\n`);
   return 2;
 }
 

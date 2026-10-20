@@ -122,6 +122,35 @@ trigger is the backstop.
 - **Checks:** `pnpm dev:deps:smoke` runs `minio/verify.sh` (WORM overwrite/delete rejected, legal hold, scoped
   key cannot do admin or version deletes). Re-running the bootstrap is a no-op.
 
+## Local TLS and `*.bw.localhost` (DEVENV-013)
+
+`pnpm dev:tls` runs `infra/compose/tls/setup-tls.sh` (mkcert) and starts Traefik (compose profile `tls`, the same
+proxy family as the k3s default ingress). It makes dev behave like production for the console session: HTTPS,
+`Secure` + `HttpOnly` cookies and stable OIDC redirect URIs, with no browser warning.
+
+| Hostname | Routes to | Upstream (override in `.env`) |
+|---|---|---|
+| `app.bw.localhost` | web console | `BW_TLS_UPSTREAM_WEB` (host `:3000`) |
+| `api.bw.localhost` | api | `BW_TLS_UPSTREAM_API` (host `:13400`) |
+| `auth.bw.localhost` | Keycloak | `BW_TLS_UPSTREAM_KEYCLOAK` (`keycloak:8080`) |
+| `juice.bw.localhost` | Juice Shop (DEVENV-012) | `BW_TLS_UPSTREAM_JUICE` (`juice-shop:3000`) |
+
+- **Ports.** Binding 443 needs privileges, so the default is `https://app.bw.localhost:18443` (HTTP `18000`
+  redirects to HTTPS, dashboard `http://127.0.0.1:18082`, dev only). For plain `https://app.bw.localhost`, set
+  `BW_DEV_TRAEFIK_HTTPS_PORT=443` where unprivileged low ports are allowed
+  (`sysctl net.ipv4.ip_unprivileged_port_start=443`). Keycloak redirect URIs (DEVENV-004) must use the same port.
+- **Certificates.** `setup-tls.sh` runs `mkcert -install` and writes a `*.bw.localhost` wildcard (plus the apex,
+  `127.0.0.1`, `::1`) to `infra/compose/tls/certs/` (git-ignored; verified by `scripts/tls-setup.test.mjs`).
+  The mkcert CA key stays in `mkcert -CAROOT` and is never copied or committed. Only the public CA cert is exported
+  as `certs/rootCA.pem`. Re-run the script to renew: it is a no-op until 30 days before expiry, `--force` regenerates.
+- **Name resolution.** `*.localhost` resolves to loopback on most systems (systemd-resolved, macOS, browsers). If it
+  does not (some Linux resolvers, WSL, Node/curl): `setup-tls.sh --print-hosts` prints the `/etc/hosts` line to add.
+- **CI / headless.** `mkcert -install` may be unable to update browser stores. Trust the CA in the runner, or run
+  Node clients and Playwright with `NODE_EXTRA_CA_CERTS=infra/compose/tls/certs/rootCA.pem`.
+- **Cookies.** The proxy sets `X-Forwarded-Proto: https`, so the BFF issues `Secure; HttpOnly; SameSite=Lax`
+  cookies scoped to the exact host (`app.bw.localhost`). No HSTS is sent in dev.
+- **Scope.** Production cert-manager/Let's Encrypt (INFRA) and the k3s ingress (DEVENV-014) are separate.
+
 ## Troubleshooting
 
 - **Volume from an older schema** (init scripts only run on an empty volume, so role or extension changes need a

@@ -1,0 +1,31 @@
+# Traefik static config for the dev TLS proxy (DEVENV-013, #167). Dev only: never use in production.
+entryPoints:
+  web:
+    address: ':80'
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: false # 302: browsers must not cache a dev redirect
+  websecure:
+    address: ':443'
+  traefik:
+    address: ':8080'
+
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+api:
+  dashboard: true
+  insecure: true # dashboard is published on 127.0.0.1 only (see docker-compose.dev.yml)
+
+ping:
+  entryPoint: traefik
+
+accessLog: {}
+
+log:
+  level: INFO

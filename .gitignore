@@ -41,3 +41,6 @@ Thumbs.db
 # Local Claude Code worktrees and personal settings
 .claude/worktrees/
 .claude/settings.local.json
+
+# mkcert output for the dev TLS proxy (DEVENV-013): certs and keys are never committed
+infra/compose/tls/certs/
