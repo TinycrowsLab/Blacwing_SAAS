@@ -363,6 +363,10 @@ importers:
         version: 3.2.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
 
   packages/domain:
+    dependencies:
+      '@blackwing/contracts':
+        specifier: workspace:*
+        version: link:../contracts
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

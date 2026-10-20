@@ -3,3 +3,12 @@ export const name = '@blackwing/domain';
 
 /** Package version; kept in sync with package.json. */
 export const version = '0.0.0';
+
+export {
+  hasPermission,
+  knownRoles,
+  permissionsForRoles,
+  type RbacOptions,
+  type RbacWarnSink,
+  UNKNOWN_ROLE_WARNING,
+} from './rbac/permissions.js';

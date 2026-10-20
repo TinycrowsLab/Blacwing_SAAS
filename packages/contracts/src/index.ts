@@ -202,3 +202,23 @@ export {
   isWellFormedString,
   utf8ByteLength,
 } from './audit/jcs.js';
+export {
+  CATALOGUE_VERSION,
+  isPermission,
+  isReadPermission,
+  isRole,
+  type Permission,
+  PERMISSION_PATTERN,
+  permissionSchema,
+  PERMISSIONS,
+  PLATFORM_OPERATOR,
+  PLATFORM_OPERATOR_PERMISSIONS,
+  PLATFORM_PERMISSIONS,
+  type PlatformOperator,
+  type PlatformPermission,
+  platformPermissionSchema,
+  type Role,
+  ROLE_PERMISSIONS,
+  roleSchema,
+  ROLES,
+} from './rbac/index.js';
