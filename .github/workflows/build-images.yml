@@ -18,6 +18,7 @@ on:
       - pnpm-lock.yaml
       - .dockerignore
       - scripts/check-images.mjs
+      - scripts/check-sandbox-image*.mjs
       - scripts/build-images-json.mjs
       - scripts/check-sbom.mjs
       - scripts/signing.mjs
@@ -56,6 +57,20 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Matrix, registry and base-image guard
         run: node scripts/check-images.mjs
+
+  # bw-sandbox base (IMAGE-001, #599): static guard (digest pin, final USER bw, uid 10001) plus a
+  # local build-and-run test. Never pushed here; publishing and signing belong to IMAGE-012.
+  sandbox-image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Sandbox Dockerfile guard
+        run: node scripts/check-sandbox-image.mjs
+      - name: Sandbox image build and runtime test
+        run: node --test scripts/check-sandbox-image.int.mjs
 
   build:
     needs: guard
