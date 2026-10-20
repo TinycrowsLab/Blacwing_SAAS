@@ -13,6 +13,7 @@
   "scripts": {
     "preinstall": "node scripts/preinstall.mjs",
     "check:layout": "node scripts/check-layout.mjs",
+    "check:claude-md": "node scripts/check-claude-md.mjs",
     "test:scripts": "node --test \"scripts/**/*.test.mjs\"",
     "test": "pnpm run test:scripts && pnpm -r test"
   }
