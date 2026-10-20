@@ -444,10 +444,16 @@ importers:
       '@blackwing/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@blackwing/errors':
+        specifier: workspace:*
+        version: link:../errors
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+      fast-check:
+        specifier: 'catalog:'
+        version: 4.10.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

@@ -12,3 +12,20 @@ export {
   type RbacWarnSink,
   UNKNOWN_ROLE_WARNING,
 } from './rbac/permissions.js';
+
+export {
+  emptyKillTargetSet,
+  isKillableRunState,
+  KILL_RESOLVE_REASONS,
+  KILL_RESOLVE_SPAN,
+  type KillResolveContext,
+  KillResolveError,
+  type KillResolveReason,
+  type KillRunQuery,
+  type KillRunRow,
+  type KillSessionRow,
+  type KillSubtaskRow,
+  type KillTargetReader,
+  proxyPrincipal,
+  resolveKillTargets,
+} from './kill/resolve.js';

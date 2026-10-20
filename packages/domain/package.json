@@ -14,10 +14,12 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@blackwing/contracts": "workspace:*"
+    "@blackwing/contracts": "workspace:*",
+    "@blackwing/errors": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "fast-check": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

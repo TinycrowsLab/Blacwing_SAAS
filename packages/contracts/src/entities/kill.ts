@@ -221,3 +221,39 @@ export const socKillTokenSchema = z
     }
   });
 export type SocKillToken = z.infer<typeof socKillTokenSchema>;
+
+/** An opaque id from another system (SDK session, sandbox, virtual key, Temporal workflow). */
+const killTargetRefSchema = z.string().min(1).max(LIMITS.subjectMax);
+
+/** A per-session egress proxy principal, `tc_<testCaseId>.role_<roleId>` (§4.1). */
+export const KILL_PROXY_PRINCIPAL_PATTERN = /^tc_[0-9a-z-]{1,64}\.role_[0-9a-z-]{1,64}$/;
+
+/**
+ * An identity the egress gateway blocks on a kill (KILL-002, §4.1): the run-keyed gateway identity,
+ * or one session's proxy principal inside that run.
+ */
+export const killEgressIdentitySchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('run'), runId: uuidV7Schema }),
+  z.strictObject({
+    kind: z.literal('proxy_principal'),
+    runId: uuidV7Schema,
+    sessionId: killTargetRefSchema,
+    principal: z.string().regex(KILL_PROXY_PRINCIPAL_PATTERN, 'must be tc_<id>.role_<id>'),
+  }),
+]);
+export type KillEgressIdentity = z.infer<typeof killEgressIdentitySchema>;
+
+/**
+ * Everything one kill must stop (KILL-002, §8.5): produced by `resolveKillTargets` in
+ * `@blackwing/domain` and consumed by the propagation coordinator (KILL-004/005/006). Ids only; every
+ * list is de-duplicated and sorted so the same database state always yields the same set.
+ */
+export const killTargetSetSchema = z.strictObject({
+  runIds: z.array(uuidV7Schema),
+  sessionIds: z.array(killTargetRefSchema),
+  sandboxIds: z.array(killTargetRefSchema),
+  virtualKeyIds: z.array(killTargetRefSchema),
+  egressIdentities: z.array(killEgressIdentitySchema),
+  workflowIds: z.array(killTargetRefSchema),
+});
+export type KillTargetSet = z.infer<typeof killTargetSetSchema>;
