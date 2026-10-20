@@ -18,6 +18,9 @@ catalogs:
     vitest:
       specifier: 3.2.4
       version: 3.2.4
+    zod:
+      specifier: 4.6.7
+      version: 4.6.7
 
 importers:
 
@@ -166,6 +169,10 @@ importers:
         version: 3.2.4(@types/node@22.20.5)(yaml@2.9.1)
 
   packages/config:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -1024,6 +1031,9 @@ packages:
     engines: {node: '>= 14.6'}
     hasBin: true
 
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
+
 snapshots:
 
   '@esbuild/aix-ppc64@0.28.2':
@@ -1510,3 +1520,5 @@ snapshots:
       stackback: 0.0.2
 
   yaml@2.9.1: {}
+
+  zod@4.6.7: {}

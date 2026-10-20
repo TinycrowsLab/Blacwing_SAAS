@@ -12,6 +12,9 @@
     "test": "vitest run",
     "typecheck": "tsc -b --pretty false"
   },
+  "dependencies": {
+    "zod": "catalog:"
+  },
   "devDependencies": {
     "@types/node": "catalog:",
     "typescript": "catalog:",
