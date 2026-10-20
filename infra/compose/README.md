@@ -32,6 +32,7 @@ docker compose -p bwdev --env-file .env -f infra/compose/docker-compose.dev.yml 
 | postgres | `pgvector/pgvector:0.8.0-pg16` | 15432 (`BW_DEV_POSTGRES_PORT`) | `postgres://bw_app:<pw>@127.0.0.1:15432/blackwing` |
 | valkey | `valkey/valkey:8.1-alpine` | 16379 (`BW_DEV_VALKEY_PORT`) | `redis://:<pw>@127.0.0.1:16379/0` |
 | neo4j | `neo4j:5.26-community` | 17474 http (`BW_DEV_NEO4J_HTTP_PORT`), 17687 bolt (`BW_DEV_NEO4J_BOLT_PORT`) | `bolt://127.0.0.1:17687`, user `neo4j` |
+| minio | `cgr.dev/chainguard/minio` | 19000 api (`BW_DEV_MINIO_PORT`), 19001 console (`BW_DEV_MINIO_CONSOLE_PORT`) | `http://127.0.0.1:19000`, path-style, region `us-east-1` |
 
 **Port already in use:** set the override in `.env` (for example `BW_DEV_POSTGRES_PORT=25432`) and update the matching
 URL. The container-side ports never change.
@@ -84,6 +85,42 @@ It also creates `tenantId` indexes per surface label and a per-tenant uniqueness
 `tenantId`, and only then writes the marker the healthcheck requires. If the guard cannot be verified, Neo4j stays
 unhealthy (fails closed). The repository layer (`packages/memory`) still scopes every query by `tenantId`; the
 trigger is the backstop.
+
+### MinIO (S3 with Object Lock)
+
+`pnpm dev:deps minio minio-init` (also part of the default `pnpm dev:deps`). The `minio-init` job runs
+`minio/bootstrap.sh` with the `mc` image, so no host `mc` is needed (on many hosts `mc` is Midnight Commander).
+`up --wait` returns only after the buckets exist.
+
+- **Buckets:** `bw-evidence`, `bw-reports`, `bw-transcripts`, created with `mc mb --with-lock` (Object Lock can
+  only be enabled at creation) and versioning on. A bucket that exists without lock fails the bootstrap, loudly.
+  Fix: empty and delete that bucket, re-run.
+- **Default retention:** GOVERNANCE, 1 day (`BW_DEV_MINIO_RETENTION_MODE`/`_DAYS`). Production S3 uses
+  COMPLIANCE. Dev uses GOVERNANCE so an admin (root, with an explicit bypass) can reclaim disk; the app key can
+  never bypass. Do not use COMPLIANCE locally unless you accept that nothing can free the space for the period.
+- **UTC:** retention-until timestamps are UTC (`packages/time`); `retention_until` in `evidence_items` is stored
+  and compared in UTC.
+- **Legal hold vs retention:** independent. Retention expires with time; a legal hold never does, and it blocks
+  deleting a version even for root with a governance bypass. Only an explicit `legalhold clear` releases it.
+  `verify.sh` proves both.
+- **Scoped app key** (`BW_DEV_MINIO_APP_ACCESS_KEY` / `_SECRET_KEY`, policy `bw-app` in
+  `minio/policy-app.json`): object get/put/delete (delete adds a delete marker), list, retention and legal-hold
+  on the three buckets. Explicitly denied: `s3:DeleteObjectVersion`, `s3:BypassGovernanceRetention`, bucket
+  deletion, versioning and lock configuration. No `admin:*`. Root credentials are for the bootstrap job and the
+  console only.
+- **Access path:** the AWS SDK v3 S3 client only (CONTEXT_PACK §5): `endpoint: http://127.0.0.1:19000`,
+  `forcePathStyle: true`, `region: us-east-1`, the scoped key. Never the root key, never another client.
+- **Per-tenant convention (§8.6):** every key is `<bucket>/<tenantId>/<module>/...`, with `<tenantId>` the tenant
+  UUID. The evidence store derives the prefix from the request context, never from caller input, and in
+  staging/prod binds the tenant into the KMS encryption context (`tenantId=<uuid>`) so a key from another
+  tenant's prefix cannot decrypt it. MinIO dev has no KMS: only the prefix applies locally.
+- **Console (dev only):** http://127.0.0.1:19001 with the root credentials from `.env`. Metrics:
+  `/minio/v2/metrics/cluster` on the API port (public in dev so the `obs` profile can scrape it).
+- **Disk:** locked objects cannot be removed until retention ends. To reclaim space: wait for expiry, or as root
+  `mc rm --recursive --force --versions --bypass` (GOVERNANCE only, and never on held versions). Never delete
+  the `miniodata` volume while other worktrees depend on the shared stack.
+- **Checks:** `pnpm dev:deps:smoke` runs `minio/verify.sh` (WORM overwrite/delete rejected, legal hold, scoped
+  key cannot do admin or version deletes). Re-running the bootstrap is a no-op.
 
 ## Troubleshooting
 

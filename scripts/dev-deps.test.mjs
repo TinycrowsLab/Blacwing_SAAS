@@ -17,6 +17,8 @@ const DUMMY_ENV = {
   BW_DEV_POSTGRES_MIGRATOR_PASSWORD: 'x-migrator',
   BW_DEV_VALKEY_PASSWORD: 'x-valkey',
   BW_DEV_NEO4J_PASSWORD: 'x-neo4j-pass',
+  BW_DEV_MINIO_ROOT_PASSWORD: 'x-minio-root',
+  BW_DEV_MINIO_APP_PASSWORD: 'x-minio-app-secret',
 };
 
 /**
@@ -88,7 +90,7 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
   it('pins every image by tag and digest, restarts unless-stopped, no container_name', () => {
     for (const [name, s] of Object.entries(c.services)) {
       assert.match(s.image, /^[\w./-]+:[\w.-]+@sha256:[0-9a-f]{64}$/, `${name} image not pinned`);
-      assert.equal(s.restart, 'unless-stopped', name);
+      assert.equal(s.restart, name === 'minio-init' ? 'no' : 'unless-stopped', name);
       assert.equal(s.container_name, undefined, `${name} must not set container_name`);
       assert.ok(s.networks && 'bw-dev' in s.networks, `${name} not on bw-dev`);
     }
@@ -99,6 +101,7 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
     const expected = {
       postgres: { 5432: '15432' },
       valkey: { 6379: '16379' },
+      minio: { 9000: '19000', 9001: '19001' },
       neo4j: { 7474: '17474', 7687: '17687' },
     };
     for (const [svc, map] of Object.entries(expected)) {
@@ -117,11 +120,13 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
       BW_DEV_VALKEY_PORT: '26379',
       BW_DEV_NEO4J_HTTP_PORT: '27474',
       BW_DEV_NEO4J_BOLT_PORT: '27687',
+      BW_DEV_MINIO_PORT: '29000',
+      BW_DEV_MINIO_CONSOLE_PORT: '29001',
     });
     const published = Object.values(o.services).flatMap((s) =>
       (s.ports ?? []).map((p) => p.published),
     );
-    assert.deepEqual(published.sort(), ['25432', '26379', '27474', '27687']);
+    assert.deepEqual(published.sort(), ['25432', '26379', '27474', '27687', '29000', '29001']);
   });
 
   it('has healthchecks with generous start_period (slow hosts)', () => {

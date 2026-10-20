@@ -8,7 +8,9 @@
 //   2. the `vector` (pgvector) and `pgcrypto` extensions are installed;
 //   3. the app role cannot BYPASSRLS (and is not a superuser); the migration owner is separate;
 //   4. Neo4j rejects a node without tenantId, and rejects removing or changing a tenantId;
-//   5. `valkey-cli ping` returns PONG.
+//   5. `valkey-cli ping` returns PONG;
+//   6. MinIO is healthy, the buckets exist with object lock + versioning, the WORM and scoped-key
+//      properties hold (infra/compose/minio/verify.sh, DEVENV-006).
 // Exits non-zero on the first failed check. Never prints credentials.
 
 import { execFileSync } from 'node:child_process';
@@ -18,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const COMPOSE_FILE = path.join(ROOT, 'infra/compose/docker-compose.dev.yml');
 export const CORE_SERVICES = Object.freeze(['postgres', 'valkey', 'neo4j']);
+export const OBJECT_STORE_SERVICES = Object.freeze(['minio', 'minio-init']);
 
 /**
  * @param {string[]} argv
@@ -89,9 +92,18 @@ export function smoke(opts) {
     process.stdout.write(`ok - ${name}\n`);
   };
 
-  if (opts.up) compose(opts, ['up', '-d', '--wait', '--wait-timeout', '300', ...CORE_SERVICES]);
+  if (opts.up)
+    compose(opts, [
+      'up',
+      '-d',
+      '--wait',
+      '--wait-timeout',
+      '300',
+      ...CORE_SERVICES,
+      ...OBJECT_STORE_SERVICES,
+    ]);
 
-  for (const svc of CORE_SERVICES) {
+  for (const svc of [...CORE_SERVICES, ...OBJECT_STORE_SERVICES]) {
     const id = compose(opts, ['ps', '-q', svc]);
     const health = execFileSync('docker', ['inspect', '-f', '{{.State.Health.Status}}', id], {
       encoding: 'utf8',
@@ -170,6 +182,9 @@ export function smoke(opts) {
   check('valkey appendonly persistence is on', aof.split('\n').at(-1) === 'yes');
   const anon = exec(opts, 'valkey', 'valkey-cli ping 2>&1 || true');
   check('valkey requires a password', anon.includes('NOAUTH'));
+
+  const verify = compose(opts, ['exec', '-T', 'minio-init', '/bin/bash', '/bw/minio/verify.sh']);
+  check('minio WORM, versioning and scoped-key checks pass', verify.includes('all checks passed'));
 
   return passed;
 }

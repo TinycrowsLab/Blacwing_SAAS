@@ -102,6 +102,61 @@ services:
       resources:
         limits: { cpus: '2', memory: 2560m }
 
+  # S3-compatible evidence/report/transcript store with Object Lock (DEVENV-006). Upstream MinIO no
+  # longer publishes Docker Hub images, so this is Chainguard's unmodified source build (AGPLv3, used as a
+  # separate dev service only), same image as packages/testing.
+  minio:
+    <<: *defaults
+    image: cgr.dev/chainguard/minio:latest@sha256:cff197fef764642223ef9f4444c903d51aee9b544a7be8bc007fef6b7b00d136
+    command: ['server', '/data', '--address', ':9000', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: ${BW_DEV_MINIO_ROOT_USER:-bw_minio_root}
+      MINIO_ROOT_PASSWORD: ${BW_DEV_MINIO_ROOT_PASSWORD:?set BW_DEV_MINIO_ROOT_PASSWORD in .env (min 8 chars)}
+      MINIO_PROMETHEUS_AUTH_TYPE: public
+    ports:
+      - '127.0.0.1:${BW_DEV_MINIO_PORT:-19000}:9000'
+      - '127.0.0.1:${BW_DEV_MINIO_CONSOLE_PORT:-19001}:9001'
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      # The image has no curl/wget; `mc ready` polls GET /minio/health/ready (cluster readiness).
+      test: ['CMD', '/usr/bin/mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    deploy:
+      resources:
+        limits: { cpus: '1', memory: 768m }
+
+  # Idempotent bootstrap job: buckets with object lock + versioning, default retention, scoped app key.
+  minio-init:
+    image: cgr.dev/chainguard/minio-client:latest@sha256:0d96f662c23c9823874b47b6598cd7352edd9037891cba302d8fd3323dad295b
+    restart: 'no'
+    networks: [bw-dev]
+    depends_on:
+      minio: { condition: service_healthy }
+    # Stays up after a successful bootstrap so `up --wait` can gate on the healthcheck below; a failed
+    # bootstrap exits non-zero and fails `up`.
+    entrypoint: ['/bin/bash', '-c', '/bw/minio/bootstrap.sh && exec sleep infinity']
+    healthcheck:
+      # So that `up --wait` blocks until the buckets exist (the script writes the marker last).
+      test: ['CMD', '/bin/bash', '-c', 'test -f /tmp/bw-minio-bootstrap.ok']
+      interval: 2s
+      timeout: 3s
+      retries: 90
+      start_period: 5s
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${BW_DEV_MINIO_ROOT_USER:-bw_minio_root}
+      MINIO_ROOT_PASSWORD: ${BW_DEV_MINIO_ROOT_PASSWORD:?set BW_DEV_MINIO_ROOT_PASSWORD in .env}
+      BW_APP_ACCESS_KEY: ${BW_DEV_MINIO_APP_ACCESS_KEY:-bw_app_s3}
+      BW_APP_SECRET_KEY: ${BW_DEV_MINIO_APP_PASSWORD:?set BW_DEV_MINIO_APP_PASSWORD in .env (min 8 chars)}
+      BW_RETENTION_MODE: ${BW_DEV_MINIO_RETENTION_MODE:-GOVERNANCE}
+      BW_RETENTION_DAYS: ${BW_DEV_MINIO_RETENTION_DAYS:-1}
+    volumes:
+      - ./minio:/bw/minio:ro
+
 networks:
   bw-dev:
     name: bw-dev
@@ -111,3 +166,4 @@ volumes:
   pgdata:
   valkeydata:
   neo4jdata:
+  miniodata:
