@@ -158,12 +158,20 @@ export async function main(argv) {
     const added = ensureEnv(envFile);
     if (added.length > 0) process.stdout.write(`.env: added ${String(added.length)} keys\n`);
     compose(['--profile', 'obs', 'up', '-d', '--wait', '--wait-timeout', '300', ...rest], envFile);
+    // Port overrides live in .env (read by compose), so honour them here too; the shell env wins.
+    /** @type {Record<string, string>} */
+    const fileEnv = {};
+    for (const line of readFileSync(envFile, 'utf8').split('\n')) {
+      const m = /^([A-Z0-9_]+)=(.*)$/.exec(line);
+      if (m?.[1] && m[2]) fileEnv[m[1]] = m[2];
+    }
     const port = (/** @type {string} */ key, /** @type {string} */ dflt) =>
-      process.env[key] ?? dflt;
+      process.env[key] ?? fileEnv[key] ?? dflt;
     await waitForHttp(`http://127.0.0.1:${port('BW_DEV_OTEL_HEALTH_PORT', '13133')}/`);
     await waitForHttp(`http://127.0.0.1:${port('BW_DEV_TEMPO_PORT', '13200')}/ready`);
     process.stdout.write(
-      'obs profile ready: Grafana http://127.0.0.1:13001, OTLP http://127.0.0.1:14318\n',
+      `obs profile ready: Grafana http://127.0.0.1:${port('BW_DEV_GRAFANA_PORT', '13001')}, ` +
+        `OTLP http://127.0.0.1:${port('BW_DEV_OTEL_HTTP_PORT', '14318')}\n`,
     );
     return 0;
   }
