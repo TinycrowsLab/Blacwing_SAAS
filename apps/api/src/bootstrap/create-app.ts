@@ -18,6 +18,7 @@ import type { SecurityEventSink } from '../errors/problem-filter.js';
 import type { HealthProbe } from '../health/health.types.js';
 import type { Logger } from '@blackwing/logger';
 import type { Tracer } from '@opentelemetry/api';
+import type { FastifyInstance } from 'fastify';
 import type { IncomingMessage } from 'node:http';
 
 /** Global REST prefix (§9). */
@@ -52,6 +53,11 @@ export interface CreateApiAppOptions {
    * the handlers call `process.exit`.
    */
   readonly shutdownHooks?: boolean;
+  /**
+   * Fastify route modules to mount on the adapter's instance before the app initialises (for example
+   * `registerKillRoutes`, KILL-003). They register their full `/v1/...` paths themselves.
+   */
+  readonly routes?: readonly ((instance: FastifyInstance) => void | Promise<void>)[];
 }
 
 export interface ApiApp {
@@ -104,6 +110,10 @@ export async function createApiApp(options: CreateApiAppOptions): Promise<ApiApp
     metrics,
     ...(options.tracer === undefined ? {} : { tracer: options.tracer }),
   });
+
+  for (const mount of options.routes ?? []) {
+    await mount(app.getHttpAdapter().getInstance());
+  }
 
   if (options.shutdownHooks === true) {
     app.enableShutdownHooks([...SHUTDOWN_SIGNALS], { useProcessExit: true });

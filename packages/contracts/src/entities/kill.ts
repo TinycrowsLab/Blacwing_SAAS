@@ -67,14 +67,14 @@ export const killAffectedSchema = z.strictObject({
 export type KillAffected = z.infer<typeof killAffectedSchema>;
 
 /**
- * The counter contract for kill events: `bw_kill_events_total{scope,status}`. Defined here, incremented
+ * The counter contract for kill events: `bw_kill_events_total{scope,source,status}`. Defined here, incremented
  * by the kill service (KILL-003 onwards) whenever a kill event is created or changes status.
  */
 export const KILL_EVENTS_TOTAL_METRIC = Object.freeze({
   name: 'bw_kill_events_total',
   type: 'counter',
   help: 'Kill-switch events by scope and status',
-  labels: Object.freeze(['scope', 'status'] as const),
+  labels: Object.freeze(['scope', 'source', 'status'] as const),
 } as const);
 
 type RefinementContext = z.RefinementCtx;
@@ -257,3 +257,51 @@ export const killTargetSetSchema = z.strictObject({
   workflowIds: z.array(killTargetRefSchema),
 });
 export type KillTargetSet = z.infer<typeof killTargetSetSchema>;
+
+/**
+ * Scopes the tenant kill endpoint `POST /v1/kill` accepts (KILL-003). `global` is a platform-operator
+ * action with its own path (KILL-013) and is refused there with `KILL_GLOBAL_NOT_ALLOWED_HERE`.
+ */
+export const KILL_API_SCOPES = ['run', 'asset', 'tenant'] as const satisfies readonly KillScope[];
+export const killApiScopeSchema = z.enum(KILL_API_SCOPES);
+export type KillApiScope = z.infer<typeof killApiScopeSchema>;
+
+/** Shortest accepted kill reason, in characters after trimming. */
+export const KILL_REASON_MIN = 3;
+
+/**
+ * Body of `POST /v1/kill`. `scopeRefId` names the run or asset for `run`/`asset` scopes and must be
+ * absent for `tenant` (the tenant is the caller's own). The API maps each failure to its stable code.
+ */
+export const killTriggerRequestSchema = z.strictObject({
+  scope: killApiScopeSchema,
+  scopeRefId: uuidV7Schema.optional(),
+  reason: z
+    .string()
+    .max(LIMITS.reasonMax)
+    .refine((value) => value.trim().length >= KILL_REASON_MIN, {
+      message: `must be at least ${String(KILL_REASON_MIN)} characters`,
+    }),
+});
+export type KillTriggerRequest = z.infer<typeof killTriggerRequestSchema>;
+
+/** `202 Accepted` body of `POST /v1/kill`. `status` is `halted` when there was nothing to stop. */
+export const killTriggerResponseSchema = z.strictObject({
+  killEventId: uuidV7Schema,
+  status: killEventStatusSchema,
+  triggeredAt: isoDateTimeSchema,
+});
+export type KillTriggerResponse = z.infer<typeof killTriggerResponseSchema>;
+
+/** Shortest accepted `Idempotency-Key`, so clients cannot collide by accident. */
+export const IDEMPOTENCY_KEY_MIN = 8;
+
+/**
+ * An `Idempotency-Key` header value (§9): 8 to 255 visible ASCII characters. Long enough that a
+ * client cannot collide by accident, short enough to index.
+ */
+export const idempotencyKeySchema = z
+  .string()
+  .min(IDEMPOTENCY_KEY_MIN)
+  .max(LIMITS.subjectMax)
+  .regex(/^[\x21-\x7e]+$/, 'must be visible ASCII');

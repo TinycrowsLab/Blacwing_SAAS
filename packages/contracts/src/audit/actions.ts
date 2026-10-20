@@ -253,6 +253,21 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'config_change',
     description: 'An integration connector was added, changed or removed.',
   },
+  // kill trigger API (KILL-003, F33/§8.5): appended, so the released order above is untouched
+  {
+    action: 'kill.triggered',
+    defaultSeverity: 'critical',
+    isAlwaysAudited: true,
+    actionClass: 'kill',
+    description: 'A tenant user triggered the kill switch for a run, asset or tenant.',
+  },
+  {
+    action: 'kill.forbidden',
+    defaultSeverity: 'warning',
+    isAlwaysAudited: true,
+    actionClass: 'kill',
+    description: 'A kill request was refused by the RBAC or Cedar check (outcome denied).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

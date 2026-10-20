@@ -199,11 +199,11 @@ describe('SocKillToken refinements', () => {
 });
 
 describe('bw_kill_events_total metric contract', () => {
-  it('is a counter labelled by scope and status', () => {
+  it('is a counter labelled by scope, source and status', () => {
     expect(KILL_EVENTS_TOTAL_METRIC).toMatchObject({
       name: 'bw_kill_events_total',
       type: 'counter',
-      labels: ['scope', 'status'],
+      labels: ['scope', 'source', 'status'],
     });
     expect(KILL_SCOPES).toEqual(['run', 'asset', 'tenant', 'global']);
   });

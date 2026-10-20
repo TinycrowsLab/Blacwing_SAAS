@@ -20,9 +20,12 @@
   "dependencies": {
     "@blackwing/config": "workspace:*",
     "@blackwing/contracts": "workspace:*",
+    "@blackwing/domain": "workspace:*",
     "@blackwing/errors": "workspace:*",
     "@blackwing/ids": "workspace:*",
     "@blackwing/logger": "workspace:*",
+    "@blackwing/time": "workspace:*",
+    "@cedar-policy/cedar-wasm": "catalog:",
     "@fastify/cors": "catalog:",
     "@fastify/helmet": "catalog:",
     "@fastify/request-context": "catalog:",
@@ -40,6 +43,7 @@
   },
   "devDependencies": {
     "@blackwing/testing": "workspace:*",
+    "@opentelemetry/context-async-hooks": "catalog:",
     "@opentelemetry/sdk-trace-base": "catalog:",
     "@types/pg": "8.23.1",
     "@types/node": "catalog:",

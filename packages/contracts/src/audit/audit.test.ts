@@ -56,6 +56,8 @@ const RELEASED_ACTIONS = [
   'secret.resolved',
   'config.changed',
   'connector.configured',
+  'kill.triggered',
+  'kill.forbidden',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */
@@ -66,7 +68,7 @@ const SECTION_8_8: Readonly<Record<(typeof AUDIT_ACTION_CLASSES)[number], readon
   tool_action: ['tool.invoked', 'egress.blocked'],
   finding_release: ['finding.released'],
   export: ['export.generated'],
-  kill: ['kill.fired'],
+  kill: ['kill.fired', 'kill.triggered', 'kill.forbidden'],
   config_change: ['config.changed', 'connector.configured'],
 };
 

@@ -45,7 +45,9 @@
         "export.generated",
         "secret.resolved",
         "config.changed",
-        "connector.configured"
+        "connector.configured",
+        "kill.triggered",
+        "kill.forbidden"
       ]
     },
     "severity": {

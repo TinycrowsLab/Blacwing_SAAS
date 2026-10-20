@@ -221,6 +221,9 @@ importers:
       '@blackwing/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@blackwing/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../../packages/errors
@@ -230,6 +233,12 @@ importers:
       '@blackwing/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@blackwing/time':
+        specifier: workspace:*
+        version: link:../../packages/time
+      '@cedar-policy/cedar-wasm':
+        specifier: 'catalog:'
+        version: 4.13.0
       '@fastify/cors':
         specifier: 'catalog:'
         version: 11.3.0
@@ -276,6 +285,9 @@ importers:
       '@blackwing/testing':
         specifier: workspace:*
         version: link:../../packages/testing
+      '@opentelemetry/context-async-hooks':
+        specifier: 'catalog:'
+        version: 2.11.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/sdk-trace-base':
         specifier: 'catalog:'
         version: 2.11.0(@opentelemetry/api@1.9.1)

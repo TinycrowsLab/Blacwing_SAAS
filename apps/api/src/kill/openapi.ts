@@ -1,0 +1,264 @@
+import { z } from 'zod';
+
+import {
+  idempotencyKeySchema,
+  killEventSchema,
+  killTriggerRequestSchema,
+  killTriggerResponseSchema,
+} from '@blackwing/contracts';
+import {
+  ERROR_CODES,
+  type ErrorCode,
+  PROBLEM_JSON_CONTENT_TYPE,
+  problemTypeFor,
+} from '@blackwing/errors';
+
+import { KILL_ROUTE } from './routes.js';
+
+type JsonObject = Record<string, unknown>;
+
+/** Error codes `POST /v1/kill` can answer with, by status. */
+export const KILL_TRIGGER_ERROR_CODES = [
+  'IDEMPOTENCY_KEY_REQUIRED',
+  'UNAUTHENTICATED',
+  'KILL_FORBIDDEN',
+  'KILL_GLOBAL_NOT_ALLOWED_HERE',
+  'NOT_FOUND',
+  'KILL_SCOPE_INVALID',
+  'KILL_REF_REQUIRED',
+  'VALIDATION_FAILED',
+  'IDEMPOTENCY_KEY_MISMATCH',
+  'INTERNAL',
+] as const satisfies readonly ErrorCode[];
+
+/** Error codes `GET /v1/kill/{id}` can answer with. */
+export const KILL_GET_ERROR_CODES = [
+  'UNAUTHENTICATED',
+  'KILL_FORBIDDEN',
+  'NOT_FOUND',
+  'INTERNAL',
+] as const satisfies readonly ErrorCode[];
+
+const EXAMPLE_ID = '01890a5d-ac96-774b-bcce-b302099a8057';
+const EXAMPLE_RUN = '01890a5d-ac96-774b-bcce-b302099a8058';
+const EXAMPLE_AT = '2026-10-20T10:00:00.000Z';
+
+const jsonSchema = (schema: z.ZodType): JsonObject => {
+  const generated = z.toJSONSchema(schema, {
+    target: 'draft-2020-12',
+    unrepresentable: 'any',
+    io: 'output',
+  }) as JsonObject;
+  const rest = { ...generated };
+  delete rest.$schema;
+  return rest;
+};
+
+function killEventViewSchema(): JsonObject {
+  const base = jsonSchema(killEventSchema);
+  const properties = { ...(base.properties as JsonObject) };
+  const { id, ...others } = properties;
+  const required = (base.required as string[]).map((name) =>
+    name === 'id' ? 'killEventId' : name,
+  );
+  return { ...base, properties: { killEventId: id, ...others }, required };
+}
+
+function problemExamples(codes: readonly ErrorCode[]): JsonObject {
+  return Object.fromEntries(
+    codes.map((code) => [
+      code,
+      {
+        summary: ERROR_CODES[code].title,
+        value: {
+          type: problemTypeFor(code),
+          title: ERROR_CODES[code].title,
+          status: ERROR_CODES[code].status,
+          code,
+          traceId: '4bf92f3577b34da6a3ce929d0e0e4736',
+        },
+      },
+    ]),
+  );
+}
+
+function errorResponses(codes: readonly ErrorCode[]): JsonObject {
+  const byStatus = new Map<number, ErrorCode[]>();
+  for (const code of codes) {
+    const status = ERROR_CODES[code].status;
+    byStatus.set(status, [...(byStatus.get(status) ?? []), code]);
+  }
+  return Object.fromEntries(
+    [...byStatus.entries()].map(([status, list]) => [
+      String(status),
+      {
+        description: `Problem details; code is one of ${list.join(', ')}.`,
+        content: {
+          [PROBLEM_JSON_CONTENT_TYPE]: {
+            schema: { $ref: '#/components/schemas/Problem' },
+            examples: problemExamples(list),
+          },
+        },
+      },
+    ]),
+  );
+}
+
+/** The OpenAPI 3.1 document for the kill trigger API, generated from the Zod contracts. */
+export function killOpenApiDocument(): JsonObject {
+  return {
+    openapi: '3.1.0',
+    info: {
+      title: 'Blackwing control-plane API: kill switch',
+      version: '1.0.0',
+      description:
+        'Tenant kill trigger (F33, §8.5). Global kills are platform-operator only and use another path.',
+    },
+    paths: {
+      [KILL_ROUTE]: {
+        post: {
+          operationId: 'triggerKill',
+          summary: 'Trigger the kill switch for a run, asset or the whole tenant',
+          description:
+            'Requires kill:trigger and the Cedar Kill::trigger resource check. An asset_owner may kill only assets they own; only org_admin may kill the tenant. Propagation is asynchronous: poll the Location.',
+          security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+          parameters: [
+            {
+              name: 'Idempotency-Key',
+              in: 'header',
+              required: true,
+              schema: jsonSchema(idempotencyKeySchema),
+              example: 'kill-7f3c2a9e-1',
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/KillTriggerRequest' },
+                examples: {
+                  run: {
+                    summary: 'Kill one run',
+                    value: {
+                      scope: 'run',
+                      scopeRefId: EXAMPLE_RUN,
+                      reason: 'unexpected 5xx spike',
+                    },
+                  },
+                  asset: {
+                    summary: 'Kill every run on an asset',
+                    value: { scope: 'asset', scopeRefId: EXAMPLE_RUN, reason: 'change freeze' },
+                  },
+                  tenant: {
+                    summary: 'Kill every run in the tenant',
+                    value: { scope: 'tenant', reason: 'incident declared' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            '202': {
+              description: 'Kill accepted. status is halted when nothing in scope was running.',
+              headers: {
+                Location: {
+                  description: 'URL of the kill event, /v1/kill/{killEventId}.',
+                  schema: { type: 'string' },
+                },
+              },
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/KillTriggerResponse' },
+                  examples: {
+                    initiated: {
+                      value: {
+                        killEventId: EXAMPLE_ID,
+                        status: 'initiated',
+                        triggeredAt: EXAMPLE_AT,
+                      },
+                    },
+                    nothingRunning: {
+                      value: { killEventId: EXAMPLE_ID, status: 'halted', triggeredAt: EXAMPLE_AT },
+                    },
+                  },
+                },
+              },
+            },
+            ...errorResponses(KILL_TRIGGER_ERROR_CODES),
+          },
+        },
+      },
+      [`${KILL_ROUTE}/{id}`]: {
+        get: {
+          operationId: 'getKillEvent',
+          summary: 'A kill event with its halt timings',
+          security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          ],
+          responses: {
+            '200': {
+              description: 'The kill event.',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/KillEvent' },
+                  examples: {
+                    halted: {
+                      value: {
+                        killEventId: EXAMPLE_ID,
+                        tenantId: EXAMPLE_RUN,
+                        scope: 'run',
+                        scopeRefId: EXAMPLE_RUN,
+                        source: 'api',
+                        actorType: 'user',
+                        actorRef: EXAMPLE_RUN,
+                        reason: 'unexpected 5xx spike',
+                        status: 'halted',
+                        triggeredAt: EXAMPLE_AT,
+                        egressBlockedAt: '2026-10-20T10:00:00.400Z',
+                        sandboxesTerminatedAt: '2026-10-20T10:00:03.100Z',
+                        keysRevokedAt: '2026-10-20T10:00:03.200Z',
+                        workflowsCancelledAt: '2026-10-20T10:00:03.300Z',
+                        completedAt: '2026-10-20T10:00:03.300Z',
+                        haltMs: 3300,
+                        affected: { runs: 1, sessions: 2, sandboxes: 2, keys: 2, workflows: 3 },
+                        reenabledAt: null,
+                        reenabledBy: null,
+                        createdAt: EXAMPLE_AT,
+                        updatedAt: '2026-10-20T10:00:03.300Z',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            ...errorResponses(KILL_GET_ERROR_CODES),
+          },
+        },
+      },
+    },
+    components: {
+      securitySchemes: {
+        bearerAuth: { type: 'http', scheme: 'bearer', description: 'bw_pat_ or bw_ci_ token' },
+        sessionCookie: { type: 'apiKey', in: 'cookie', name: 'bw_session' },
+      },
+      schemas: {
+        KillTriggerRequest: jsonSchema(killTriggerRequestSchema),
+        KillTriggerResponse: jsonSchema(killTriggerResponseSchema),
+        KillEvent: killEventViewSchema(),
+        Problem: {
+          type: 'object',
+          required: ['type', 'title', 'status', 'code', 'traceId'],
+          properties: {
+            type: { type: 'string', format: 'uri' },
+            title: { type: 'string' },
+            status: { type: 'integer' },
+            detail: { type: 'string' },
+            code: { type: 'string' },
+            traceId: { type: 'string' },
+          },
+        },
+      },
+    },
+  };
+}

@@ -92,6 +92,24 @@ const DEFINITIONS = {
     retryable: false,
   },
   SBX_DRIVER_UNAVAILABLE: { status: 503, title: 'Sandbox driver unavailable', retryable: true },
+  // Kill trigger API (KILL-003, F33/§8.5). Malformed scope input is 422; refusing the caller is 403;
+  // `global` is an operator-only path (KILL-013), so the tenant endpoint refuses it with its own code.
+  KILL_SCOPE_INVALID: { status: 422, title: 'Invalid kill scope', retryable: false },
+  KILL_REF_REQUIRED: { status: 422, title: 'Kill scope reference required', retryable: false },
+  KILL_FORBIDDEN: { status: 403, title: 'Kill not permitted', retryable: false },
+  KILL_GLOBAL_NOT_ALLOWED_HERE: {
+    status: 403,
+    title: 'Global kill is not allowed on this endpoint',
+    retryable: false,
+  },
+  // Idempotency-Key handling (§9): a missing key on a creating POST is a malformed request (400);
+  // reusing a key with a different body is refused (422) instead of replaying the wrong result.
+  IDEMPOTENCY_KEY_REQUIRED: { status: 400, title: 'Idempotency key required', retryable: false },
+  IDEMPOTENCY_KEY_MISMATCH: {
+    status: 422,
+    title: 'Idempotency key reused with a different request',
+    retryable: false,
+  },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

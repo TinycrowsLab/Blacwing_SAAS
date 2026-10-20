@@ -254,7 +254,16 @@ export {
 } from './rbac/index.js';
 export {
   KILL_EVENT_STATUSES,
+  idempotencyKeySchema,
+  KILL_API_SCOPES,
   KILL_EVENTS_TOTAL_METRIC,
+  KILL_REASON_MIN,
+  killApiScopeSchema,
+  type KillApiScope,
+  killTriggerRequestSchema,
+  type KillTriggerRequest,
+  killTriggerResponseSchema,
+  type KillTriggerResponse,
   KILL_PROXY_PRINCIPAL_PATTERN,
   KILL_SCOPES,
   KILL_SCOPES_WITH_REF,
