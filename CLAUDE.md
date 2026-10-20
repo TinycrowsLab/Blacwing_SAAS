@@ -65,7 +65,7 @@ Pack §6 is the full layout. Adding or removing an app, package or fixed directo
 Each script arrives with the issue that owns it: Turborepo tasks in FOUND-002 (#4), lint in FOUND-004 (#6), the
 dev stack in DEVENV-010 (#164), seed data in DEVENV-011 (#165). If a script is missing, that issue has not landed
 yet. Do not improvise a substitute in another issue. Go code under `apps/egress-gateway` uses its `Makefile`
-(`make build test lint`), which arrives with the Go module in FOUND-013 (#15).
+(`make build test lint`, `make verify` for everything CI runs; see `apps/egress-gateway/README.md`).
 
 ## Coding conventions
 
