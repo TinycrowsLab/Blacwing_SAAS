@@ -21,14 +21,19 @@ function assertError(errors, pattern) {
   );
 }
 
-/** @param {string} file @returns {any} */
+/**
+ * A parsed JSON document (package.json / tsconfig.json) that a test reads or edits in place.
+ * @typedef {null | boolean | number | string | Json[] | { [key: string]: Json }} Json
+ */
+
+/** @param {string} file @returns {Json} */
 function readJson(file) {
   return JSON.parse(readFileSync(file, "utf8"));
 }
 
 /**
  * @param {string} file
- * @param {(value: any) => void} mutate
+ * @param {(value: Json) => void} mutate
  */
 function editJson(file, mutate) {
   const value = readJson(file);
