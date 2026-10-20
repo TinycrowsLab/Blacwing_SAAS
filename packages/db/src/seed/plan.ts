@@ -12,6 +12,8 @@ import {
   standingAuthorisationSchema,
   tenantSchema,
   userSchema,
+  normaliseIp,
+  parseScopeRules,
 } from '@blackwing/contracts';
 import { ValidationError } from '@blackwing/errors';
 import { isUuidV7, type Uuid } from '@blackwing/ids';
@@ -323,6 +325,25 @@ export function devSign(body: unknown): { signature: string; signingKeyId: strin
   return { signature: `${header}.${payload}.${b64url(sig)}`, signingKeyId };
 }
 
+/**
+ * The seeded SA's scope rules (SCOPE-002 model): the Juice Shop origin on its port, minus one admin
+ * path. An IP-literal target (e.g. `127.0.0.1`) is addressed by `cidr`, a hostname by `host`.
+ */
+function seedScopeRules(target: {
+  host: string;
+  port: number;
+}): StandingAuthorisation['scopeRules'] {
+  const bare = target.host.replace(/^\[(.*)\]$/, '$1');
+  const ip = normaliseIp(bare);
+  const address = ip === null ? { host: target.host } : { cidr: ip };
+  return parseScopeRules({
+    rules: [
+      { effect: 'include', ...address, ports: [target.port] },
+      { effect: 'exclude', ...address, paths: ['/rest/admin/application-version'] },
+    ],
+  });
+}
+
 function juiceShopTarget(rawUrl: string): { url: string; host: string; port: number } {
   let parsed: URL;
   try {
@@ -443,10 +464,7 @@ export function buildTenantSeedPlan(input: TenantSeedInput): TenantSeedPlan {
     id: seedUuid(`${tenantId}:sa:juice-shop`),
     tenantId,
     assetIds: [asset.id],
-    scopeRules: {
-      include: [{ host: target.host, ports: [target.port] }],
-      exclude: [{ host: target.host, paths: ['/rest/admin/application-version'] }],
-    },
+    scopeRules: seedScopeRules(target),
     maxIntrusiveness: 'active_safe' as const,
     preApprovedTestClasses: ['passive', 'active_safe'],
     defaultBudgets: { costCapUsd: 5, maxRequests: 5_000, maxDurationMs: 3_600_000 },

@@ -88,6 +88,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   // BudgetError, @blackwing/contracts (SCOPE-004), for the same reason.
   'SCOPE_INVALID_BUDGET',
   'SCOPE_BUDGET_EXCEEDS_SA',
+  // ScopeRuleError, @blackwing/contracts (SCOPE-002), for the same reason.
+  'SCOPE_INVALID_RULE',
   // Raised by @blackwing/workflow-shared as plain AppErrors (WORKFLOW-001).
   'TEMPORAL_CONFIG_INVALID',
   'TEMPORAL_TLS_MISCONFIGURED',

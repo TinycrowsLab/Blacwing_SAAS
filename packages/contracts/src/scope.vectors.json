@@ -1,0 +1,2088 @@
+{
+  "$comment": "SCOPE-002 (#566) shared scope-matcher vectors. Consumed by the @blackwing/domain matchScope tests and the Go egress matcher (EGRESS-004). `rules` is the input to parseScopeRules; `expect.matchedRuleIndex` is the winning rule when one matched. Every `invalidRules[].rule` must be rejected with SCOPE_INVALID_RULE.",
+  "version": 1,
+  "vectors": [
+    {
+      "name": "exact host in scope",
+      "category": "in-scope",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "port": 443,
+        "path": "/",
+        "method": "GET"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "host is case-insensitive",
+      "category": "in-scope",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "APP.Example.TEST"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "trailing-dot FQDN normalised",
+      "category": "in-scope",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test."
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "other host default-deny",
+      "category": "default-deny",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "api.example.test"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "empty rule set denies everything",
+      "category": "default-deny",
+      "rules": {
+        "rules": []
+      },
+      "target": {
+        "host": "app.example.test"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "target without host or ip denied",
+      "category": "default-deny",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "target": {
+        "path": "/",
+        "port": 443
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "exclude-only rule set denies",
+      "category": "default-deny",
+      "rules": {
+        "rules": [
+          {
+            "effect": "exclude",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test"
+      },
+      "expect": {
+        "inScope": false,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "ip literal as host is not a hostname",
+      "category": "default-deny",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "10.0.0.0/8"
+          }
+        ]
+      },
+      "target": {
+        "host": "10.0.0.1"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "invalid target port 0 denied",
+      "category": "default-deny",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "port": 0
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "invalid target port 65536 denied",
+      "category": "default-deny",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "port": 65536
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "include then identical exclude is out",
+      "category": "excluded",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          },
+          {
+            "effect": "exclude",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test"
+      },
+      "expect": {
+        "inScope": false,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "exclude before include still wins on tie",
+      "category": "excluded",
+      "rules": {
+        "rules": [
+          {
+            "effect": "exclude",
+            "host": "app.example.test"
+          },
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test"
+      },
+      "expect": {
+        "inScope": false,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "exclude admin path overrides host include",
+      "category": "excluded",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          },
+          {
+            "effect": "exclude",
+            "host": "app.example.test",
+            "paths": ["/admin/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/admin/users"
+      },
+      "expect": {
+        "inScope": false,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "non-admin path stays in scope",
+      "category": "excluded",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          },
+          {
+            "effect": "exclude",
+            "host": "app.example.test",
+            "paths": ["/admin/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/shop"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "more specific path include beats host-only exclude",
+      "category": "excluded",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          },
+          {
+            "effect": "exclude",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api/x"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "exclude with missing target path fails closed",
+      "category": "excluded",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          },
+          {
+            "effect": "exclude",
+            "host": "app.example.test",
+            "paths": ["/admin"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test"
+      },
+      "expect": {
+        "inScope": false,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "more specific include carves out of wildcard exclude",
+      "category": "excluded",
+      "rules": {
+        "rules": [
+          {
+            "effect": "exclude",
+            "host": "*.example.test"
+          },
+          {
+            "effect": "include",
+            "host": "www.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "www.example.test"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "wildcard exclude still applies to siblings",
+      "category": "excluded",
+      "rules": {
+        "rules": [
+          {
+            "effect": "exclude",
+            "host": "*.example.test"
+          },
+          {
+            "effect": "include",
+            "host": "www.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "api.example.test"
+      },
+      "expect": {
+        "inScope": false,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "wildcard matches one subdomain label",
+      "category": "wildcard",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "*.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "api.example.test"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "wildcard does not match apex",
+      "category": "wildcard",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "*.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "example.test"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "wildcard does not match two labels",
+      "category": "wildcard",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "*.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "a.b.example.test"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "wildcard does not match suffix lookalike",
+      "category": "wildcard",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "*.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "evilexample.test"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "apex needs its own rule",
+      "category": "wildcard",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "*.example.test"
+          },
+          {
+            "effect": "include",
+            "host": "example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "example.test"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "exact host beats wildcard exclude",
+      "category": "wildcard",
+      "rules": {
+        "rules": [
+          {
+            "effect": "exclude",
+            "host": "*.example.test"
+          },
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "IDN rule matches unicode target",
+      "category": "idn",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "bücher.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "BÜCHER.example.test"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "IDN rule matches punycode target",
+      "category": "idn",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "bücher.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "xn--bcher-kva.example.test"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "punycode rule matches unicode target",
+      "category": "idn",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "xn--bcher-kva.example.test"
+          }
+        ]
+      },
+      "target": {
+        "host": "bücher.example.test"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "ipv4 inside cidr",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "10.0.0.0/8"
+          }
+        ]
+      },
+      "target": {
+        "ip": "10.1.2.3"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "ipv4 outside cidr",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "10.0.0.0/8"
+          }
+        ]
+      },
+      "target": {
+        "ip": "11.0.0.1"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "ipv4 cidr does not match hostname target",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "10.0.0.0/8"
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "host rule does not authorise ip target",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "target": {
+        "ip": "10.0.0.1"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "ipv4-mapped ipv6 target matches ipv4 cidr",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "10.0.0.0/8"
+          }
+        ]
+      },
+      "target": {
+        "ip": "::ffff:10.0.0.9"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "ipv4-mapped ipv6 hex form matches ipv4 cidr",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "10.0.0.0/8"
+          }
+        ]
+      },
+      "target": {
+        "ip": "::ffff:a00:9"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "mapped ipv6 cidr matches ipv4 target",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "::ffff:192.168.0.0/112"
+          }
+        ]
+      },
+      "target": {
+        "ip": "192.168.4.5"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "single-address cidr",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "192.0.2.10"
+          }
+        ]
+      },
+      "target": {
+        "ip": "192.0.2.10"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "leading-zero ipv4 target is invalid",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "10.0.0.0/8"
+          }
+        ]
+      },
+      "target": {
+        "ip": "010.0.0.1"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "longer exclude prefix beats include",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "10.0.0.0/8"
+          },
+          {
+            "effect": "exclude",
+            "cidr": "10.9.0.0/16"
+          }
+        ]
+      },
+      "target": {
+        "ip": "10.9.1.1"
+      },
+      "expect": {
+        "inScope": false,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "longer include prefix beats exclude",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "exclude",
+            "cidr": "10.0.0.0/8"
+          },
+          {
+            "effect": "include",
+            "cidr": "10.9.0.0/16"
+          }
+        ]
+      },
+      "target": {
+        "ip": "10.9.1.1"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "host and ip given: cidr include matches the ip",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "10.0.0.0/8"
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "ip": "10.0.0.1"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "host and ip given: exact host include outranks cidr exclude",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          },
+          {
+            "effect": "exclude",
+            "cidr": "10.0.0.0/8"
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "ip": "10.0.0.1"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "rule with host and cidr needs both",
+      "category": "cidr-v4",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "cidr": "10.0.0.0/8"
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "ip": "11.0.0.1"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "ipv6 compressed target",
+      "category": "cidr-v6",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "2001:db8::/32"
+          }
+        ]
+      },
+      "target": {
+        "ip": "2001:db8::1"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "ipv6 expanded target",
+      "category": "cidr-v6",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "2001:db8::/32"
+          }
+        ]
+      },
+      "target": {
+        "ip": "2001:0db8:0000:0000:0000:0000:0000:0001"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "ipv6 uppercase target",
+      "category": "cidr-v6",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "2001:db8::/32"
+          }
+        ]
+      },
+      "target": {
+        "ip": "2001:DB8:ABCD::1"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "ipv6 outside",
+      "category": "cidr-v6",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "2001:db8::/32"
+          }
+        ]
+      },
+      "target": {
+        "ip": "2001:db9::1"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "expanded cidr rule",
+      "category": "cidr-v6",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "2001:0db8:0000:0000:0000:0000:0000:0000/32"
+          }
+        ]
+      },
+      "target": {
+        "ip": "2001:db8:ffff::1"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "ipv6 zone id rejected",
+      "category": "cidr-v6",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "2001:db8::/32"
+          }
+        ]
+      },
+      "target": {
+        "ip": "2001:db8::1%eth0"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "ipv6 /128",
+      "category": "cidr-v6",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "cidr": "2001:db8::5/128"
+          }
+        ]
+      },
+      "target": {
+        "ip": "2001:db8:0:0:0:0:0:5"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "explicit port",
+      "category": "port",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "ports": [
+              443,
+              {
+                "from": 8000,
+                "to": 8100
+              }
+            ]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "port": 443
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "port inside range",
+      "category": "port",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "ports": [
+              443,
+              {
+                "from": 8000,
+                "to": 8100
+              }
+            ]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "port": 8050
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "port range lower bound",
+      "category": "port",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "ports": [
+              443,
+              {
+                "from": 8000,
+                "to": 8100
+              }
+            ]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "port": 8000
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "port range upper bound",
+      "category": "port",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "ports": [
+              443,
+              {
+                "from": 8000,
+                "to": 8100
+              }
+            ]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "port": 8100
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "port outside range",
+      "category": "port",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "ports": [
+              443,
+              {
+                "from": 8000,
+                "to": 8100
+              }
+            ]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "port": 8101
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "missing port cannot satisfy port rule",
+      "category": "port",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "ports": [
+              443,
+              {
+                "from": 8000,
+                "to": 8100
+              }
+            ]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "explicit port exclude beats range include",
+      "category": "port",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "ports": [
+              {
+                "from": 8000,
+                "to": 8100
+              }
+            ]
+          },
+          {
+            "effect": "exclude",
+            "host": "app.example.test",
+            "ports": [8080]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "port": 8080
+      },
+      "expect": {
+        "inScope": false,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "explicit port include beats range exclude",
+      "category": "port",
+      "rules": {
+        "rules": [
+          {
+            "effect": "exclude",
+            "host": "app.example.test",
+            "ports": [
+              {
+                "from": 8000,
+                "to": 8100
+              }
+            ]
+          },
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "ports": [8080]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "port": 8080
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "method allowed",
+      "category": "method",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "methods": ["GET", "head"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "method": "GET"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "method case-insensitive",
+      "category": "method",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "methods": ["GET", "head"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "method": "head"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "method not listed",
+      "category": "method",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "methods": ["GET", "head"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "method": "POST"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "missing method cannot satisfy method rule",
+      "category": "method",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "methods": ["GET", "head"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "exclude DELETE on host",
+      "category": "method",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          },
+          {
+            "effect": "exclude",
+            "host": "app.example.test",
+            "methods": ["DELETE"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "method": "delete"
+      },
+      "expect": {
+        "inScope": false,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "exclude with missing method fails closed",
+      "category": "method",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          },
+          {
+            "effect": "exclude",
+            "host": "app.example.test",
+            "methods": ["DELETE"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test"
+      },
+      "expect": {
+        "inScope": false,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "address-less exclude is less specific than a host include",
+      "category": "method",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          },
+          {
+            "effect": "exclude",
+            "methods": ["DELETE"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "method": "DELETE"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "path glob prefix",
+      "category": "path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api/v1/users"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "double-star matches zero segments",
+      "category": "path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "path outside glob",
+      "category": "path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/apix"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "query string ignored",
+      "category": "path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api/a?redirect=/admin"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "single star stays in one segment",
+      "category": "path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/files/*.txt"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/files/a/b.txt"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "single star segment match",
+      "category": "path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/files/*.txt"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/files/b.txt"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "trailing slash normalised",
+      "category": "path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/shop"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/shop/"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "duplicate slashes collapsed",
+      "category": "path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          },
+          {
+            "effect": "exclude",
+            "host": "app.example.test",
+            "paths": ["/admin"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "//admin"
+      },
+      "expect": {
+        "inScope": false,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "exact path exclude beats glob include",
+      "category": "path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          },
+          {
+            "effect": "exclude",
+            "host": "app.example.test",
+            "paths": ["/api/admin"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api/admin"
+      },
+      "expect": {
+        "inScope": false,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "exact path include beats glob exclude",
+      "category": "path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "exclude",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          },
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/public"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api/public"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "missing path cannot satisfy path include",
+      "category": "path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "traversal cannot widen scope",
+      "category": "traversal",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api/../admin"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "traversal clamps at root",
+      "category": "traversal",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api/../../../etc/passwd"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "traversal resolved before exclude",
+      "category": "traversal",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          },
+          {
+            "effect": "exclude",
+            "host": "app.example.test",
+            "paths": ["/admin/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/public/../admin/x"
+      },
+      "expect": {
+        "inScope": false,
+        "matchedRuleIndex": 1
+      }
+    },
+    {
+      "name": "encoded traversal decoded once",
+      "category": "traversal",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api/%2e%2e/admin"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "encoded slash traversal",
+      "category": "traversal",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api%2f..%2fadmin"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "backslash traversal",
+      "category": "traversal",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api\\..\\admin"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "traversal staying inside scope",
+      "category": "traversal",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api/a/../b"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "double-encoded dots are not decoded twice",
+      "category": "traversal",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api/%252e%252e/x"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "double-encoded segment is not decoded twice",
+      "category": "traversal",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          },
+          {
+            "effect": "exclude",
+            "host": "app.example.test",
+            "paths": ["/admin/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/%2561dmin/x"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "encoded NUL rejected",
+      "category": "traversal",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api/a%00b"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "malformed percent rejected",
+      "category": "traversal",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/api/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/api/%zz"
+      },
+      "expect": {
+        "inScope": false
+      }
+    },
+    {
+      "name": "unicode path decoded once matches rule",
+      "category": "unicode-path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/café"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/caf%C3%A9"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "encoded unicode rule matches raw unicode",
+      "category": "unicode-path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/caf%C3%A9"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/café"
+      },
+      "expect": {
+        "inScope": true,
+        "matchedRuleIndex": 0
+      }
+    },
+    {
+      "name": "invalid utf-8 percent sequence rejected",
+      "category": "unicode-path",
+      "rules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test",
+            "paths": ["/**"]
+          }
+        ]
+      },
+      "target": {
+        "host": "app.example.test",
+        "path": "/%C3"
+      },
+      "expect": {
+        "inScope": false
+      }
+    }
+  ],
+  "invalidRules": [
+    {
+      "name": "unknown effect",
+      "rule": {
+        "effect": "allow",
+        "host": "a.example.test"
+      }
+    },
+    {
+      "name": "include without address",
+      "rule": {
+        "effect": "include",
+        "paths": ["/x"]
+      }
+    },
+    {
+      "name": "rule with no constraint",
+      "rule": {
+        "effect": "exclude"
+      }
+    },
+    {
+      "name": "port 0",
+      "rule": {
+        "effect": "include",
+        "host": "a.example.test",
+        "ports": [0]
+      }
+    },
+    {
+      "name": "port 65536",
+      "rule": {
+        "effect": "include",
+        "host": "a.example.test",
+        "ports": [65536]
+      }
+    },
+    {
+      "name": "non-numeric port",
+      "rule": {
+        "effect": "include",
+        "host": "a.example.test",
+        "ports": ["443"]
+      }
+    },
+    {
+      "name": "fractional port",
+      "rule": {
+        "effect": "include",
+        "host": "a.example.test",
+        "ports": [443.5]
+      }
+    },
+    {
+      "name": "reversed range",
+      "rule": {
+        "effect": "include",
+        "host": "a.example.test",
+        "ports": [
+          {
+            "from": 9000,
+            "to": 8000
+          }
+        ]
+      }
+    },
+    {
+      "name": "empty ports list",
+      "rule": {
+        "effect": "include",
+        "host": "a.example.test",
+        "ports": []
+      }
+    },
+    {
+      "name": "ipv4 prefix 33",
+      "rule": {
+        "effect": "include",
+        "cidr": "10.0.0.0/33"
+      }
+    },
+    {
+      "name": "cidr host bits set",
+      "rule": {
+        "effect": "include",
+        "cidr": "10.0.0.1/8"
+      }
+    },
+    {
+      "name": "cidr leading-zero octet",
+      "rule": {
+        "effect": "include",
+        "cidr": "10.00.0.0/16"
+      }
+    },
+    {
+      "name": "cidr leading-zero prefix",
+      "rule": {
+        "effect": "include",
+        "cidr": "10.0.0.0/08"
+      }
+    },
+    {
+      "name": "ipv6 prefix 129",
+      "rule": {
+        "effect": "include",
+        "cidr": "2001:db8::/129"
+      }
+    },
+    {
+      "name": "ipv6 zone",
+      "rule": {
+        "effect": "include",
+        "cidr": "fe80::1%eth0"
+      }
+    },
+    {
+      "name": "ipv6 two double-colons",
+      "rule": {
+        "effect": "include",
+        "cidr": "2001::db8::1"
+      }
+    },
+    {
+      "name": "mid-label wildcard",
+      "rule": {
+        "effect": "include",
+        "host": "a*.example.test"
+      }
+    },
+    {
+      "name": "bare wildcard",
+      "rule": {
+        "effect": "include",
+        "host": "*"
+      }
+    },
+    {
+      "name": "wildcard over tld",
+      "rule": {
+        "effect": "include",
+        "host": "*.test"
+      }
+    },
+    {
+      "name": "double wildcard",
+      "rule": {
+        "effect": "include",
+        "host": "*.*.example.test"
+      }
+    },
+    {
+      "name": "ip literal host",
+      "rule": {
+        "effect": "include",
+        "host": "10.0.0.1"
+      }
+    },
+    {
+      "name": "host with port",
+      "rule": {
+        "effect": "include",
+        "host": "a.example.test:443"
+      }
+    },
+    {
+      "name": "host with space",
+      "rule": {
+        "effect": "include",
+        "host": "a example.test"
+      }
+    },
+    {
+      "name": "label over 63 chars",
+      "rule": {
+        "effect": "include",
+        "host": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.example.test"
+      }
+    },
+    {
+      "name": "rule path with dot-dot",
+      "rule": {
+        "effect": "include",
+        "host": "a.example.test",
+        "paths": ["/a/../b"]
+      }
+    },
+    {
+      "name": "relative rule path",
+      "rule": {
+        "effect": "include",
+        "host": "a.example.test",
+        "paths": ["api"]
+      }
+    },
+    {
+      "name": "unknown method",
+      "rule": {
+        "effect": "include",
+        "host": "a.example.test",
+        "methods": ["BREW"]
+      }
+    },
+    {
+      "name": "unknown field",
+      "rule": {
+        "effect": "include",
+        "host": "a.example.test",
+        "scheme": "https"
+      }
+    }
+  ]
+}

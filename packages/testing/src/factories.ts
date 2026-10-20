@@ -157,7 +157,7 @@ export function createFactories(options: FactoryOptions = {}): Factories {
         id: newId(),
         tenantId: newId(),
         assetIds: [newId()],
-        scopeRules: { include: [{ host: `asset-${n}.example.test` }], exclude: [] },
+        scopeRules: { rules: [{ effect: 'include', host: `asset-${n}.example.test` }] },
         maxIntrusiveness: 'active_safe',
         preApprovedTestClasses: [],
         defaultBudgets: { costCapUsd: 50, maxRequests: 10_000, maxDurationMs: SA_MAX_DURATION_MS },

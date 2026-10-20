@@ -10,6 +10,7 @@ import {
   timestampsShape,
   uuidV7Schema,
 } from '../primitives.js';
+import { scopeRulesSchema } from '../scope.js';
 
 /**
  * Intrusiveness classes, §3.5 (F4), ordered from least to most intrusive. Defined once in
@@ -35,25 +36,14 @@ export const standingAuthorisationStatusSchema = z.enum([
 ]);
 export type StandingAuthorisationStatus = z.infer<typeof standingAuthorisationStatusSchema>;
 
-const HTTP_METHODS = ['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
-
 /**
- * One include/exclude scope rule (hosts, paths, ports, methods; §7 `scope_rules`). The matcher and its
- * precedence rules belong to the scope-rule model (#566); this is only the stored shape.
+ * `scope_rules` of an SA (§7): the canonical ordered include/exclude model from `../scope.ts`
+ * (SCOPE-002, #566). An SA must include something, so it needs at least one `include` rule.
  */
-export const scopeRuleSchema = z.strictObject({
-  host: z.string().min(1).max(LIMITS.hostnameMax),
-  paths: z.array(z.string().startsWith('/')).optional(),
-  ports: z.array(z.int().min(1).max(LIMITS.portMax)).optional(),
-  methods: z.array(z.enum(HTTP_METHODS)).optional(),
-});
-export type ScopeRule = z.infer<typeof scopeRuleSchema>;
-
-export const scopeRulesSchema = z.strictObject({
-  include: z.array(scopeRuleSchema).min(1),
-  exclude: z.array(scopeRuleSchema),
-});
-export type ScopeRules = z.infer<typeof scopeRulesSchema>;
+export const standingScopeRulesSchema = scopeRulesSchema.refine(
+  (set) => set.rules.some((rule) => rule.effect === 'include'),
+  { message: 'SCOPE_INVALID_RULE', path: ['rules'] },
+);
 
 /**
  * Run budgets (§7 `runs.budgets`): cost cap in USD, request cap and wall-clock cap. Defined once in
@@ -85,7 +75,7 @@ export const standingAuthorisationSchema = z
     id: uuidV7Schema,
     tenantId: uuidV7Schema,
     assetIds: z.array(uuidV7Schema).min(1),
-    scopeRules: scopeRulesSchema,
+    scopeRules: standingScopeRulesSchema,
     maxIntrusiveness: authorisableIntrusivenessSchema,
     preApprovedTestClasses: z.array(z.string().min(1).max(LIMITS.shortTextMax)),
     defaultBudgets: runBudgetsSchema,

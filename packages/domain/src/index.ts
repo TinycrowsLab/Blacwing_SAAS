@@ -29,3 +29,5 @@ export {
   proxyPrincipal,
   resolveKillTargets,
 } from './kill/resolve.js';
+
+export { matchScope, ruleSpecificity } from './scope/matcher.js';

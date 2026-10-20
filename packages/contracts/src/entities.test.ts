@@ -55,7 +55,7 @@ const sa = {
   id: ID(4),
   tenantId: ID(1),
   assetIds: [ID(3)],
-  scopeRules: { include: [{ host: 'app.example.test' }], exclude: [] },
+  scopeRules: { rules: [{ effect: 'include', host: 'app.example.test' }] },
   maxIntrusiveness: 'active_safe',
   preApprovedTestClasses: [],
   defaultBudgets: budgets,
@@ -263,10 +263,12 @@ describe('standing authorisation (§8.3, §8.4)', () => {
 
   it('needs at least one include rule and valid ports', () => {
     expect(
-      standingAuthorisationSchema.safeParse({ ...sa, scopeRules: { include: [], exclude: [] } })
-        .success,
+      standingAuthorisationSchema.safeParse({
+        ...sa,
+        scopeRules: { rules: [{ effect: 'exclude', host: 'app.example.test' }] },
+      }).success,
     ).toBe(false);
-    const badPort = { include: [{ host: 'a.example.test', ports: [70000] }], exclude: [] };
+    const badPort = { rules: [{ effect: 'include', host: 'a.example.test', ports: [70000] }] };
     expect(standingAuthorisationSchema.safeParse({ ...sa, scopeRules: badPort }).success).toBe(
       false,
     );

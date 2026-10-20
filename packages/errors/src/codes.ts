@@ -49,6 +49,8 @@ const DEFINITIONS = {
   // Request-budget validation (SCOPE-004, F5). A malformed or absurd budget is invalid input (422);
   // a budget above the standing authorisation's defaults is an authorised-scope refusal (403).
   SCOPE_INVALID_BUDGET: { status: 422, title: 'Invalid request budget', retryable: false },
+  // Malformed scope rule (SCOPE-002, #566): invalid input, rejected at parse time.
+  SCOPE_INVALID_RULE: { status: 422, title: 'Invalid scope rule', retryable: false },
   SCOPE_BUDGET_EXCEEDS_SA: {
     status: 403,
     title: 'Budget exceeds the standing authorisation',

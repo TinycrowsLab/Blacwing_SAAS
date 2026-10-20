@@ -24,6 +24,32 @@ and its scope rules in #373 and #566, runs in #564 (state machine #225), test ca
 public ids (`@blackwing/ids`) at its boundary. `@blackwing/testing` factories produce valid instances of every
 schema.
 
+## Scope rules (SCOPE-002)
+
+`src/scope.ts` is the only definition of the scope-rule model (§7 `scope_rules`, §8.2). The SA entity's
+`scopeRules` uses it (`standingScopeRulesSchema` adds "at least one `include`"). The matcher is
+`matchScope(target, rules)` in `@blackwing/domain`; the Go egress matcher (EGRESS-004) mirrors it.
+
+- `ScopeRules = { rules: ScopeRule[] }`, each rule `{ effect: 'include' | 'exclude', host?, cidr?, ports?, paths?, methods? }`.
+  Every dimension a rule sets must match; an `include` must set `host` or `cidr`.
+- `parseScopeRules(input)` canonicalises and throws `ScopeRuleError('SCOPE_INVALID_RULE')` on malformed rules
+  (port 0, out of range or non-numeric; bad CIDR or host bits set; mid-label wildcards; `..` in a rule path; unknown fields).
+- Default-deny. The most specific matching rule wins, compared as `[address, cidrPrefix, path, port, method]`:
+  exact host > wildcard host > cidr (longer prefix wins); exact path > glob; single ports > range; methods listed > none.
+  On a tie `exclude` wins, then the earlier rule.
+- `*.example.com` matches exactly one label: not `example.com` (the apex needs its own rule), not `a.b.example.com`.
+- Hosts are lowercased and IDNA-normalised (unicode and punycode match the same rule). IPv4 is held as
+  IPv4-mapped IPv6, so `::ffff:10.0.0.1` and `10.0.0.1` are one address; IPv6 accepts compressed and expanded forms.
+- Paths are percent-decoded exactly once, then dot segments are resolved (clamped at the root), so `..` cannot
+  widen scope; double encoding is never decoded twice.
+- Missing target fields are conservative: an `include` constraining a missing port/path/method does not
+  match; an `exclude` constraining one still does. Host rules never match IP-only targets, and cidr rules never
+  match hostname-only targets.
+
+`src/scope.vectors.json` (export `@blackwing/contracts/scope.vectors.json`) holds the labelled
+`{ rules, target, expect }` vectors and the `invalidRules` list. Both the TS tests and the Go parity tests run it;
+change semantics only by changing the vectors first.
+
 ## Intrusiveness classes (SCOPE-003)
 
 `src/intrusiveness.ts` is the only definition of the §3.5 taxonomy and its order. Import it; never
