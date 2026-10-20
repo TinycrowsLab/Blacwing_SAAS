@@ -10,7 +10,7 @@ This repository is the **SaaS edition** (multi-tenant, Blackwing-operated on AWS
 
 ## Architecture at a glance
 
-The diagram below renders on GitHub and is the quick map. The **full, interactive** diagrams (System Context, Components, Agent Org & Data Flow, Assessment Modes, Deployment) are in [`docs/architecture/blackwing-architecture.html`](docs/architecture/blackwing-architecture.html); the authoritative prose is [`CONTEXT_PACK.md`](docs/architecture/CONTEXT_PACK.md) §3.
+The diagram below renders on GitHub and is the quick map. The **full diagram set** — Overview plus System Context, Components, Agent Org & Data Flow, Assessment Modes and Deployment — is available two ways: an editable **draw.io / diagrams.net** file [`docs/architecture/blackwing-architecture.drawio`](docs/architecture/blackwing-architecture.drawio) (6 pages/tabs) and a static [`docs/architecture/blackwing-architecture.html`](docs/architecture/blackwing-architecture.html). The authoritative prose is [`CONTEXT_PACK.md`](docs/architecture/CONTEXT_PACK.md) §3.
 
 ```mermaid
 flowchart TB
@@ -159,7 +159,8 @@ The repo is **greenfield**: the code is built by the GitHub issues themselves, i
 | Path / resource | What it is |
 |---|---|
 | [`docs/architecture/CONTEXT_PACK.md`](docs/architecture/CONTEXT_PACK.md) | **Source of truth** — product, architecture, run state machine, Claude runtime & personas, stack, paths, domain model, security invariants (§8), Definition of Done (§10). |
-| [`docs/architecture/blackwing-architecture.html`](docs/architecture/blackwing-architecture.html) | Full interactive diagrams. |
+| [`docs/architecture/blackwing-architecture.drawio`](docs/architecture/blackwing-architecture.drawio) | Editable draw.io diagram set — 6 pages (Overview + 5 views). |
+| [`docs/architecture/blackwing-architecture.html`](docs/architecture/blackwing-architecture.html) | Static interactive diagrams. |
 | [`docs/architecture/FEATURE_LIST.md`](docs/architecture/FEATURE_LIST.md) | The complete feature list. |
 | [`docs/architecture/EPICS.md`](docs/architecture/EPICS.md) | Epic catalogue. |
 | [`docs/architecture/REFERENCES.md`](docs/architecture/REFERENCES.md) | Prior-art, OSS tooling, orchestration patterns, persona template, standards IDs. |
