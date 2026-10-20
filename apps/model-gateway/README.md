@@ -51,7 +51,7 @@ upstream request is aborted at once, and the inflight gauge and socket are relea
 | `GATEWAY_PORT` | `8081` | The dev map uses `13500` (`.env.example`). |
 | `GATEWAY_UPSTREAM_TIMEOUT_MS` | `120000` | Accepts `ms` or a unit (`30s`, `2m`). Must be greater than 0. |
 | `GATEWAY_MAX_BODY_BYTES` | `10485760` | |
-| `GATEWAY_DEFAULT_PROVIDER` | `anthropic` | The only adapter so far (`AnthropicStubAdapter`). |
+| `GATEWAY_DEFAULT_PROVIDER` | `anthropic` | The only adapter so far (`AnthropicAdapter`, official `@anthropic-ai/sdk`). |
 | `GATEWAY_ANTHROPIC_BASE_URL` | required | There is no default, so the gateway never reaches a real provider by accident. Dev and tests use a local mock. |
 | `GATEWAY_ANTHROPIC_API_KEY` | unset | A static dev credential. `OFFLINE-STUB(online-porting #884)`: production credentials come from OpenBao. |
 

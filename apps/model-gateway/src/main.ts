@@ -2,7 +2,9 @@ import { defineConfig } from '@blackwing/config';
 import { createLogger } from '@blackwing/logger';
 
 import { gatewayEnvSchema } from './config.js';
-import { AnthropicStubAdapter, staticAnthropicCredentials } from './provider.js';
+import { createGatewayMetrics } from './metrics.js';
+import { AnthropicAdapter } from './providers/anthropic.js';
+import { staticApiKeyResolver } from './providers/credentials.js';
 import { buildGateway } from './server.js';
 
 /** Process entry point: load config (fail fast), build the gateway, listen, drain on SIGTERM/SIGINT. */
@@ -12,11 +14,17 @@ async function main(): Promise<void> {
     level: config.LOG_LEVEL,
     nodeEnv: config.NODE_ENV,
   });
-  const adapter = new AnthropicStubAdapter({
+  const metrics = createGatewayMetrics();
+  const adapter = new AnthropicAdapter({
     baseUrl: config.GATEWAY_ANTHROPIC_BASE_URL,
-    credentials: staticAnthropicCredentials(config.GATEWAY_ANTHROPIC_API_KEY),
+    resolveCredential: staticApiKeyResolver(config.GATEWAY_ANTHROPIC_API_KEY),
+    logger,
+    metrics,
+    audit: (event) => {
+      logger.info(event, 'audit.provider.call');
+    },
   });
-  const app = buildGateway({ config, adapter, logger });
+  const app = buildGateway({ config, adapter, logger, metrics });
 
   const shutdown = (signal: string): void => {
     logger.info({ signal }, 'gw.shutdown');

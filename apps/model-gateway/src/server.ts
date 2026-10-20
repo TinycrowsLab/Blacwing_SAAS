@@ -24,6 +24,7 @@ import { anthropicError, errorTypeForStatus } from './anthropic-error.js';
 import { forwardRequestHeaders, forwardResponseHeaders } from './headers.js';
 import { HTTP_STATUS } from './http-status.js';
 import { createGatewayMetrics, type GatewayMetrics } from './metrics.js';
+import { ProviderError } from './providers/errors.js';
 
 import type { GatewayConfig } from './config.js';
 import type { ProviderAdapter, ProviderResponse } from './provider.js';
@@ -197,7 +198,7 @@ export function buildGateway(options: GatewayOptions): FastifyInstance {
       'gw.messages',
       {
         kind: SpanKind.SERVER,
-        attributes: { 'http.route': MESSAGES_ROUTE, 'gw.provider': adapter.id },
+        attributes: { 'http.route': MESSAGES_ROUTE, 'gw.provider': adapter.name },
       },
       parent,
     );
@@ -268,7 +269,7 @@ export function buildGateway(options: GatewayOptions): FastifyInstance {
     let upstream: ProviderResponse;
     try {
       upstream = await adapter.send(
-        { pathAndQuery, headers, body: request.body.raw },
+        { pathAndQuery, headers, body: request.body.raw, model: parsed.data.model },
         { signal: controller.signal },
       );
     } catch (error) {
@@ -289,6 +290,11 @@ export function buildGateway(options: GatewayOptions): FastifyInstance {
           'timeout_error',
           'Upstream provider did not respond in time.',
         );
+      }
+      if (error instanceof ProviderError) {
+        finish(error.httpStatus, error.code);
+        log.warn({ code: error.code }, 'gw.provider_error');
+        return await sendError(reply, error.httpStatus, error.errorType, error.message);
       }
       finish(HTTP_STATUS.badGateway, 'upstream unreachable');
       log.error({ err: error instanceof Error ? error.name : 'unknown' }, 'gw.upstream_error');

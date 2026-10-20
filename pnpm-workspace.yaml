@@ -21,6 +21,7 @@ packages:
 # @opentelemetry/core its W3C trace-context propagator and @opentelemetry/sdk-trace-base the
 # in-memory span exporter its tests assert spans with.
 catalog:
+  '@anthropic-ai/sdk': 0.135.0
   '@opentelemetry/api': 1.9.1
   '@opentelemetry/context-async-hooks': 2.11.0
   '@opentelemetry/core': 2.11.0

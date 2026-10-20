@@ -23,13 +23,22 @@ export {
 } from './headers.js';
 export { createGatewayMetrics, type GatewayMetrics } from './metrics.js';
 export {
-  AnthropicStubAdapter,
-  type AnthropicStubAdapterOptions,
   type ProviderAdapter,
-  type ProviderCredentials,
+  type ProviderHealth,
   type ProviderRequest,
   type ProviderResponse,
   type SendOptions,
-  staticAnthropicCredentials,
 } from './provider.js';
+export {
+  AnthropicAdapter,
+  type AnthropicAdapterOptions,
+  type ProviderCallAuditEvent,
+} from './providers/anthropic.js';
+export {
+  type ProviderCredential,
+  requireApiKey,
+  type ResolveProviderCredential,
+  staticApiKeyResolver,
+} from './providers/credentials.js';
+export { ProviderError, type ProviderErrorCode } from './providers/errors.js';
 export { buildGateway, type GatewayOptions, MESSAGES_ROUTE } from './server.js';

@@ -14,11 +14,8 @@ import { anthropicErrorBodySchema, DEFAULT_ANTHROPIC_VERSION } from '@blackwing/
 import { createLogger } from '@blackwing/logger';
 
 import { createGatewayMetrics, type GatewayMetrics } from './metrics.js';
-import {
-  AnthropicStubAdapter,
-  type ProviderAdapter,
-  staticAnthropicCredentials,
-} from './provider.js';
+import { AnthropicAdapter } from './providers/anthropic.js';
+import { staticApiKeyResolver } from './providers/credentials.js';
 import { buildGateway } from './server.js';
 import {
   type MockAnthropic,
@@ -27,6 +24,7 @@ import {
   startMockAnthropic,
 } from './testing/mock-anthropic.js';
 
+import type { ProviderAdapter } from './provider.js';
 import type { FastifyInstance } from 'fastify';
 import type { AddressInfo } from 'node:net';
 
@@ -69,9 +67,10 @@ async function setup(
     },
     adapter:
       options.adapter ??
-      new AnthropicStubAdapter({
+      new AnthropicAdapter({
         baseUrl: mock.url,
-        credentials: staticAnthropicCredentials(PROVIDER_KEY),
+        resolveCredential: staticApiKeyResolver(PROVIDER_KEY),
+        metrics,
       }),
     logger,
     metrics,
@@ -445,11 +444,32 @@ describe('request guards (Anthropic-shaped errors)', () => {
     expect(await metricValue(h.metrics, 'bw_gw_upstream_inflight')).toBe(0);
   });
 
+  it('gw.anthropic.noSubscription: answers a subscription-style credential with 403 and never calls upstream', async () => {
+    const h = await setup({
+      adapter: new AnthropicAdapter({
+        baseUrl: 'http://127.0.0.1:1',
+        resolveCredential: () =>
+          Promise.resolve({ kind: 'subscription_session', token: 'session-secret-value' }),
+      }),
+    });
+    const response = await fetch(`${h.url}/v1/messages`, {
+      method: 'POST',
+      headers: clientHeaders,
+      body: messagesBody(false),
+    });
+    const text = await response.text();
+    expect(response.status).toBe(403);
+    expect(JSON.parse(text)).toMatchObject({ error: { type: 'permission_error' } });
+    expect(text).toContain('PROVIDER_CRED_UNSUPPORTED');
+    expect(text).not.toContain('session-secret-value');
+    expect(await metricValue(h.metrics, 'bw_gw_upstream_inflight')).toBe(0);
+  });
+
   it('maps an unreachable upstream to 502 api_error', async () => {
     const h = await setup({
-      adapter: new AnthropicStubAdapter({
+      adapter: new AnthropicAdapter({
         baseUrl: 'http://127.0.0.1:1',
-        credentials: staticAnthropicCredentials(undefined),
+        resolveCredential: staticApiKeyResolver(PROVIDER_KEY),
       }),
     });
     const response = await fetch(`${h.url}/v1/messages`, {
@@ -471,8 +491,10 @@ describe('health, readiness, metrics, traces and logs', () => {
 
     const notReady = await setup({
       adapter: {
-        id: 'anthropic',
+        name: 'anthropic',
         ready: () => false,
+        healthCheck: () => Promise.resolve({ healthy: false, reachable: false }),
+        resolveModelId: (model) => model,
         send: () => Promise.reject(new Error('unused')),
       },
     });

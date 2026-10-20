@@ -10,6 +10,8 @@ export interface GatewayMetrics {
   readonly requests: Counter<'route' | 'status'>;
   readonly duration: Histogram<'route' | 'status'>;
   readonly inflight: Gauge;
+  readonly providerRequests: Counter<'provider' | 'status'>;
+  readonly providerLatency: Histogram<'provider'>;
 }
 
 /** A private registry per gateway instance, so tests and multiple instances never share counters. */
@@ -33,6 +35,19 @@ export function createGatewayMetrics(): GatewayMetrics {
     inflight: new Gauge({
       name: 'bw_gw_upstream_inflight',
       help: 'Upstream provider requests currently open.',
+      registers: [registry],
+    }),
+    providerRequests: new Counter({
+      name: 'bw_gw_provider_requests_total',
+      help: 'Upstream provider calls by provider and outcome status (HTTP status, or an error class).',
+      labelNames: ['provider', 'status'],
+      registers: [registry],
+    }),
+    providerLatency: new Histogram({
+      name: 'bw_gw_provider_latency_ms',
+      help: 'Time until the upstream provider answered with response headers, in milliseconds.',
+      labelNames: ['provider'],
+      buckets: exponentialBuckets(FIRST_BUCKET_MS, BUCKET_FACTOR, BUCKET_COUNT),
       registers: [registry],
     }),
   };

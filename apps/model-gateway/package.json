@@ -14,6 +14,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "catalog:",
     "@blackwing/config": "workspace:*",
     "@blackwing/contracts": "workspace:*",
     "@blackwing/logger": "workspace:*",
