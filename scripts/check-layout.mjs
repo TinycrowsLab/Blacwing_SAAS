@@ -71,9 +71,13 @@ export const EXPECTED_DIRS = Object.freeze({
   docs: Object.freeze(['adr', 'architecture', 'runbooks', 'api', 'user']),
 });
 
-/** Files that must exist directly inside a fixed directory (label catalogue doc: FOUND-016, #18). */
+/**
+ * Files that must exist directly inside a fixed directory (label catalogue doc: FOUND-016, #18;
+ * dev-host bootstrap and its pinned-version manifest: DEVENV-001, #155).
+ */
 export const EXPECTED_DIR_FILES = Object.freeze({
   docs: Object.freeze(['labels.md']),
+  infra: Object.freeze(['bootstrap.sh', 'versions.env']),
 });
 
 /**
@@ -113,7 +117,7 @@ export const NODE_ENGINE = '>=22 <23';
 export const PNPM_PACKAGE_MANAGER = /^pnpm@9\.\d+\.\d+(\+[\w.-]+)?$/;
 
 /** Entries ignored when comparing directory listings. */
-const IGNORED_ENTRIES = new Set(['.gitkeep', '.DS_Store']);
+const IGNORED_ENTRIES = new Set(['.gitkeep', '.DS_Store', '.bootstrap-report.json']);
 const KEBAB_CASE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 /**

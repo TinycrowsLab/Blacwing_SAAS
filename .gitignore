@@ -27,6 +27,7 @@ coverage/
 *.log
 eslint-report.json
 boundaries-report.json
+infra/.bootstrap-report.json
 npm-debug.log*
 pnpm-debug.log*
 

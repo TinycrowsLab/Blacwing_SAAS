@@ -282,6 +282,7 @@ packages/
   secrets/  audit/  notify/  connectors/  reporting/  cost/  config/  logger/  ids/  time/  errors/  telemetry/  ui/  testing/
 infra/
   tofu/  helm/  k3s/  docker/ (Dockerfiles; sandbox image)  compose/ (docker-compose.dev.yml)
+  bootstrap.sh  versions.env (idempotent dev-host bootstrap and its pinned toolchain versions)
 eval/
   targets/  ground-truth/  harness/
 docs/
