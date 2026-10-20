@@ -28,7 +28,7 @@ export interface ContainerOptions {
 /** Default wait-for-ready budget per container. Image pulls on a cold cache dominate it. */
 export const DEFAULT_STARTUP_TIMEOUT_MS = 120_000;
 /** How many recent container log lines are kept for failure reports. */
-export const LOG_TAIL_LINES = 200;
+const LOG_TAIL_LINES = 200;
 
 /** Docker (or another container runtime) cannot be reached. */
 export class DockerUnavailableError extends Error {

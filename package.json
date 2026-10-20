@@ -36,7 +36,9 @@
     "boundaries:check": "node scripts/check-boundaries.mjs",
     "boundaries:report": "node scripts/check-boundaries.mjs --json boundaries-report.json",
     "boundaries:docs": "node scripts/check-boundaries.mjs --write-docs",
-    "commit:scopes": "node scripts/commit-scopes.mjs"
+    "commit:scopes": "node scripts/commit-scopes.mjs",
+    "knip": "knip --max-issues=0",
+    "knip:report": "knip --reporter json"
   },
   "devDependencies": {
     "@commitlint/cli": "20.5.3",
@@ -54,6 +56,7 @@
     "eslint-plugin-unicorn": "65.0.1",
     "globals": "17.12.0",
     "husky": "9.1.7",
+    "knip": "6.42.1",
     "lint-staged": "16.4.0",
     "prettier": "3.9.9",
     "turbo": "2.11.7",

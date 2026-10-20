@@ -1,7 +1,7 @@
 // Test helper: a pino destination that keeps every written line in memory.
 import type { DestinationStream } from 'pino';
 
-export type LogRecord = Readonly<Record<string, unknown>>;
+type LogRecord = Readonly<Record<string, unknown>>;
 
 export interface Capture {
   /** Pass as `createLogger(name, { destination })`. */

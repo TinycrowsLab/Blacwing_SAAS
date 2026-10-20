@@ -1,0 +1,31 @@
+{
+  // FOUND-018 (#20). Dead-code, unused-export and unused-dependency gate: `pnpm knip` (CI: `pnpm knip --max-issues=0`).
+  // Entry points come from each package.json (`exports`, `bin`, `scripts`) plus the Vitest/Next/Nest plugins,
+  // so only exceptions are listed here. Each one says why it is needed.
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignore": ["**/dist/**", "**/generated/**", "**/*.generated.*", "scripts/fixtures/**"],
+  "ignoreFiles": ["**/*.config.*"],
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.mjs"],
+      "project": ["scripts/**/*.mjs"],
+    },
+    "apps/*": {
+      "entry": ["src/main.ts", "src/main.tsx", "src/instrumentation.ts"],
+      "project": ["src/**/*.{ts,tsx}"],
+    },
+    "packages/*": {
+      "project": ["src/**/*.{ts,tsx}"],
+    },
+    "packages/config": {
+      // Spawned as a child process by bootstrap.test.ts (never imported), so it has no static importer.
+      "entry": ["src/testdata/bootstrap-app.ts"],
+    },
+    "packages/logger": {
+      // Spawned as a child process by logger.process.test.ts (never imported).
+      "entry": ["src/testdata/child-app.ts"],
+      // Loaded by name as a pino transport target (worker thread), so no import statement exists.
+      "ignoreDependencies": ["pino-pretty"],
+    },
+  },
+}

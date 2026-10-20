@@ -190,7 +190,7 @@ function fallbackLine(name: string): string {
 /**
  * Builds the pino options for a logger. Exported for tests; use {@link createLogger}.
  */
-export function buildPinoOptions(name: string, settings: ResolvedSettings): pino.LoggerOptions {
+function buildPinoOptions(name: string, settings: ResolvedSettings): pino.LoggerOptions {
   const { limits } = settings;
   return {
     name,

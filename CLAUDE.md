@@ -61,6 +61,7 @@ Pack §6 is the full layout. Adding or removing an app, package or fixed directo
 | `pnpm lint` | ESLint 9 (flat config, type-aware strict typescript-eslint), zero warnings, per member via Turborepo. `pnpm lint:report` writes JSON for CI. |
 | `pnpm format` / `pnpm format:check` | Prettier: rewrite, or check, the whole repository. |
 | `pnpm boundaries:check` | Architectural import and dependency boundaries (dependency-cruiser): the allowed DAG in [`dependency-graph.md`](docs/architecture/dependency-graph.md), no app-to-app or deep imports, no cycles. `pnpm boundaries:report` writes JSON for CI. |
+| `pnpm knip` | Dead code, unused exports and unused dependencies (knip, `knip.jsonc`); `--max-issues=0` is the CI gate. `pnpm knip:report` writes JSON for annotations. Exceptions in `knip.jsonc` each carry a reason. |
 | `pnpm typecheck` | `tsc -b` per member via Turborepo (cached): one strict base config, project references (see `docs/architecture/typescript.md`). |
 | `pnpm build` | Builds every package in topological order (Turborepo). |
 | `pnpm db:seed` | Seeds the demo tenant `acme`, users per role, a verified lab asset and an active SA. |
