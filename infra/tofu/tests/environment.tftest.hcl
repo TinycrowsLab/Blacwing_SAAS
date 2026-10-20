@@ -22,6 +22,13 @@ mock_provider "aws" {
     }
   }
 
+  # The egress-IP list validates its input as public IPv4, so the mocked EIP must be one.
+  mock_resource "aws_eip" {
+    defaults = {
+      public_ip = "203.0.113.10"
+    }
+  }
+
   mock_resource "aws_vpc" {
     defaults = {
       id = "vpc-0123456789abcdef0"
@@ -41,6 +48,13 @@ mock_provider "aws" {
   mock_resource "aws_cloudwatch_log_group" {
     defaults = {
       arn = "arn:aws:logs:us-east-1:123456789012:log-group:/aws/route53/mock"
+    }
+  }
+
+  # CloudFront validates the certificate ARN it is given (egress-IP list, INFRA-015).
+  mock_resource "aws_acm_certificate" {
+    defaults = {
+      arn = "arn:aws:acm:us-east-1:123456789012:certificate/11111111-2222-3333-4444-555555555555"
     }
   }
 }
@@ -149,6 +163,18 @@ run "dns_outputs_are_consumable_by_later_issues" {
   assert {
     condition     = output.dns_app_zone_id != null && output.dns_app_name_servers != null && length(output.dns_oob_ns_set) == 2
     error_message = "Zone id, registrar name servers and the OOB NS set must be output for INFRA-008, INFRA-012 and the registrar hand-off."
+  }
+}
+
+# INFRA-015: the egress-IP list URL is derived from the environment's domain. That the list itself
+# comes from module.vpc.egress_ips is checked by scripts/check-egress-ips.test.mjs, and the
+# published-equals-input property by modules/egress-ips/tests.
+run "egress_ip_list_url_follows_the_domain" {
+  command = plan
+
+  assert {
+    condition     = output.egress_ips_url == "https://egress.${var.domain_name}/.well-known/blackwing-egress-ips.json"
+    error_message = "The egress-IP list URL must be https://egress.<domain>/.well-known/blackwing-egress-ips.json."
   }
 }
 
