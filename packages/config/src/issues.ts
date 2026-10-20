@@ -22,20 +22,25 @@ function hasSafeMessage(issue: z.core.$ZodIssue): boolean {
   return issue.code === "custom" && issue.params?.[SAFE_MESSAGE_PARAM] === true;
 }
 
-function describeBound(
-  origin: string,
-  bound: number | bigint,
-  inclusive: boolean | undefined,
-  side: "min" | "max",
-): string {
+/** Bound fields shared by `too_small` and `too_big` issues. `exact` marks `.length(n)`-style checks. */
+interface BoundIssue {
+  readonly origin: string;
+  readonly inclusive?: boolean | undefined;
+  readonly exact?: boolean | undefined;
+}
+
+function describeBound(issue: BoundIssue, bound: number | bigint, side: "min" | "max"): string {
+  const { origin, inclusive } = issue;
   const bigger = side === "min";
   const value = String(bound);
+  const plural = value === "1" ? "" : "s";
+  const qualifier = issue.exact === true ? "exactly" : bigger ? "at least" : "at most";
   switch (origin) {
     case "string":
-      return `must be ${bigger ? "at least" : "at most"} ${value} characters long`;
+      return `must be ${qualifier} ${value} character${plural} long`;
     case "array":
     case "set":
-      return `must have ${bigger ? "at least" : "at most"} ${value} items`;
+      return `must have ${qualifier} ${value} item${plural}`;
     default: {
       const op = bigger ? (inclusive === false ? ">" : ">=") : inclusive === false ? "<" : "<=";
       return `must be ${op} ${value}`;
@@ -82,9 +87,9 @@ export function describeIssue(issue: z.core.$ZodIssue): string {
     case "invalid_type":
       return `expected ${issue.expected}`;
     case "too_small":
-      return describeBound(issue.origin, issue.minimum, issue.inclusive, "min");
+      return describeBound(issue, issue.minimum, "min");
     case "too_big":
-      return describeBound(issue.origin, issue.maximum, issue.inclusive, "max");
+      return describeBound(issue, issue.maximum, "max");
     case "invalid_format":
       return describeFormat(issue);
     case "invalid_value":

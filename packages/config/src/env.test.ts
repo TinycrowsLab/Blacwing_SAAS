@@ -248,6 +248,27 @@ describe("loadConfig: invalid values", () => {
     expectNoValues(error, leaks);
   });
 
+  it("describes exact lengths and list sizes precisely", () => {
+    const schema = z.object({
+      CODE: z.string().length(3),
+      SHORT: z.string().length(4),
+      ONE: z.string().max(1),
+      HOSTS: zCsv().pipe(z.array(z.string()).min(2)),
+      PAIR: zCsv().pipe(z.array(z.string()).length(2)),
+    });
+    const error = captureConfigError(() =>
+      loadConfig(schema, { CODE: "long-LEAK", SHORT: "ab", ONE: "ab-LEAK", HOSTS: "a-LEAK", PAIR: "a,b,c-LEAK" }),
+    );
+    expect(error.issues.map((issue) => [issue.key, issue.message])).toEqual([
+      ["CODE", "must be exactly 3 characters long"],
+      ["SHORT", "must be exactly 4 characters long"],
+      ["ONE", "must be at most 1 character long"],
+      ["HOSTS", "must have at least 2 items"],
+      ["PAIR", "must have exactly 2 items"],
+    ]);
+    expectNoValues(error, ["long-LEAK", "ab-LEAK", "a-LEAK", "c-LEAK"]);
+  });
+
   it("drops free-form refinement messages unless marked safe", () => {
     const schema = z
       .object({

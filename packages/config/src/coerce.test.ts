@@ -135,14 +135,14 @@ describe("zSecret", () => {
   });
 
   it("rejects the empty string", () => {
-    expect(messages(zSecret(), "")).toEqual(["must be at least 1 characters long"]);
+    expect(messages(zSecret(), "")).toEqual(["must be at least 1 character long"]);
   });
 });
 
 describe("zString", () => {
   it("keeps whitespace by default", () => {
     expect(zString().parse("  value  ")).toBe("  value  ");
-    expect(messages(zString(), "")).toEqual(["must be at least 1 characters long"]);
+    expect(messages(zString(), "")).toEqual(["must be at least 1 character long"]);
   });
 
   it("trims only when declared, and then rejects blank values", () => {
@@ -172,7 +172,7 @@ describe("zCsv", () => {
   });
 
   it.each(["a,,b", "a,", ",a", "a, ,b"])("rejects the empty item in %j", (input) => {
-    expect(messages(zCsv(), input)).toEqual(["must be at least 1 characters long"]);
+    expect(messages(zCsv(), input)).toEqual(["must be at least 1 character long"]);
   });
 
   it("reports every empty item, not only the first", () => {
