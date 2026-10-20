@@ -254,3 +254,15 @@ export {
   type SocKillTokenScope,
   socKillTokenScopeSchema,
 } from './entities/kill.js';
+export {
+  ANTHROPIC_ERROR_TYPES,
+  type AnthropicErrorBody,
+  anthropicErrorBodySchema,
+  type AnthropicErrorType,
+  anthropicErrorTypeSchema,
+  DEFAULT_ANTHROPIC_VERSION,
+  MESSAGES_STREAM_EVENTS,
+  type MessagesRequest,
+  messagesRequestSchema,
+  type MessagesStreamEvent,
+} from './model-gateway/messages.js';

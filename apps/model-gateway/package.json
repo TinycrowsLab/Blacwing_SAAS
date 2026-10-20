@@ -13,7 +13,18 @@
     "test": "vitest run",
     "typecheck": "tsc -b --pretty false"
   },
+  "dependencies": {
+    "@blackwing/config": "workspace:*",
+    "@blackwing/contracts": "workspace:*",
+    "@blackwing/logger": "workspace:*",
+    "@opentelemetry/api": "catalog:",
+    "@opentelemetry/core": "catalog:",
+    "fastify": "catalog:",
+    "prom-client": "catalog:",
+    "zod": "catalog:"
+  },
   "devDependencies": {
+    "@opentelemetry/sdk-trace-base": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
