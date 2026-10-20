@@ -246,6 +246,74 @@ services:
       resources:
         limits: { cpus: '1', memory: 512m }
 
+  # Temporal server (DEVENV-007). The auto-setup image creates its two databases (`temporal`,
+  # `temporal_visibility`) on the dev Postgres and runs the schema migrations on every start.
+  # Pinned to a known-good server (1.29.x): bumping it also bumps the schema, so do both together.
+  temporal:
+    <<: *defaults
+    image: temporalio/auto-setup:1.29.7@sha256:f14912b699cf73015ad5c4fc18d522d4b014db90e794039214dfb7c022c2644f
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      DB: postgres12
+      DB_PORT: '5432'
+      POSTGRES_SEEDS: postgres
+      POSTGRES_USER: ${BW_DEV_POSTGRES_SUPERUSER:-bw_admin}
+      POSTGRES_PWD: ${BW_DEV_POSTGRES_SUPERUSER_PASSWORD:?set BW_DEV_POSTGRES_SUPERUSER_PASSWORD in .env (pnpm dev:deps creates it)}
+      DBNAME: temporal
+      VISIBILITY_DBNAME: temporal_visibility
+      # The blackwing-dev namespace is created by `temporal-bootstrap`, not here.
+      SKIP_DEFAULT_NAMESPACE_CREATION: 'true'
+      LOG_LEVEL: ${BW_DEV_TEMPORAL_LOG_LEVEL:-info}
+    ports:
+      - '127.0.0.1:${BW_DEV_TEMPORAL_PORT:-17233}:7233'
+    healthcheck:
+      test: ['CMD-SHELL', 'temporal operator cluster health --address "$$(hostname -i):7233"']
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 90s
+    deploy:
+      resources:
+        limits: { cpus: '2', memory: 1g }
+
+  temporal-ui:
+    <<: *defaults
+    image: temporalio/ui:2.49.0@sha256:a8b78ea822ae3b0e6079acf84b521ecb75bdd6554c2716aaa97dc0c521364a57
+    depends_on:
+      temporal: { condition: service_healthy }
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_DEFAULT_NAMESPACE: ${TEMPORAL_NAMESPACE:-blackwing-dev}
+      TEMPORAL_CORS_ORIGINS: http://localhost:3000
+    ports:
+      - '127.0.0.1:${BW_DEV_TEMPORAL_UI_PORT:-18233}:8080'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 256m }
+
+  # One-shot: ensures the dev namespace (retention from BW_DEV_TEMPORAL_RETENTION) and the custom search
+  # attributes exist. Idempotent; exits 0 so `up --wait` treats it as done.
+  temporal-bootstrap:
+    <<: *defaults
+    restart: 'no'
+    image: temporalio/auto-setup:1.29.7@sha256:f14912b699cf73015ad5c4fc18d522d4b014db90e794039214dfb7c022c2644f
+    depends_on:
+      temporal: { condition: service_healthy }
+    entrypoint: ['/bin/sh', '/bw/bootstrap.sh']
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-blackwing-dev}
+      BW_TEMPORAL_RETENTION: ${BW_DEV_TEMPORAL_RETENTION:-72h}
+    volumes:
+      - ./temporal/bootstrap.sh:/bw/bootstrap.sh:ro
+
 networks:
   bw-dev:
     name: bw-dev

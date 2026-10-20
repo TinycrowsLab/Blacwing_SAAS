@@ -35,6 +35,8 @@ docker compose -p bwdev --env-file .env -f infra/compose/docker-compose.dev.yml 
 | minio | `cgr.dev/chainguard/minio` | 19000 api (`BW_DEV_MINIO_PORT`), 19001 console (`BW_DEV_MINIO_CONSOLE_PORT`) | `http://127.0.0.1:19000`, path-style, region `us-east-1` |
 | mailpit | `axllent/mailpit` | 11025 smtp (`BW_DEV_MAILPIT_SMTP_PORT`), 18025 ui (`BW_DEV_MAILPIT_UI_PORT`) | `smtp://127.0.0.1:11025`, UI `http://127.0.0.1:18025` |
 | interactsh | `projectdiscovery/interactsh-server` | 18081 http (`BW_DEV_INTERACTSH_HTTP_PORT`), 15353 dns udp+tcp (`BW_DEV_INTERACTSH_DNS_PORT`) | `http://127.0.0.1:18081`, token `INTERACTSH_TOKEN` |
+| temporal | `temporalio/auto-setup:1.29.7` (digest-pinned) | 17233 gRPC (`BW_DEV_TEMPORAL_PORT`) | `TEMPORAL_ADDRESS=127.0.0.1:17233`, namespace `blackwing-dev` |
+| temporal-ui | `temporalio/ui:2.49.0` (digest-pinned) | 18233 (`BW_DEV_TEMPORAL_UI_PORT`) | http://127.0.0.1:18233 |
 
 **Port already in use:** set the override in `.env` (for example `BW_DEV_POSTGRES_PORT=25432`) and update the matching
 URL. The container-side ports never change.
@@ -175,6 +177,33 @@ proxy family as the k3s default ingress). It makes dev behave like production fo
   correlation ids per tenant and run.
 - **Checks:** `pnpm dev:deps:smoke` sends an SMTP message and reads it from the Mailpit API, and asserts
   interactsh rejects unauthenticated registration.
+
+### Temporal (server, Web UI, namespace bootstrap)
+
+`temporal` uses the dev Postgres for persistence and visibility (databases `temporal`, `temporal_visibility`, created
+and migrated by the auto-setup image on every start). It waits for `postgres` to be healthy, and `temporal-ui` and
+`temporal-bootstrap` wait for `temporal` to be healthy (`temporal operator cluster health`). The image is pinned by
+digest to a known-good server: bumping it bumps the schema, so change image and schema expectations together.
+
+`temporal-bootstrap` is a one-shot, idempotent job (`temporal/bootstrap.sh`): it creates namespace `blackwing-dev`
+(or updates its retention if it exists) and registers the custom search attributes `runId`, `tenantId`,
+`assessmentId` and `runState` (Keyword). Re-running it changes nothing that already exists.
+
+- **Retention:** `BW_DEV_TEMPORAL_RETENTION` (default `72h`). Raise it (for example `168h`) when debugging old runs and
+  re-run `docker compose ... up temporal-bootstrap`.
+- **More search attributes:** `docker compose -p bwdev ... run --rm temporal-bootstrap` with
+  `BW_TEMPORAL_SEARCH_ATTRIBUTES="runId:Keyword newAttr:Int"`, or
+  `temporal operator search-attribute create --namespace blackwing-dev --name <n> --type <Keyword|Text|Int|Double|Bool|Datetime|KeywordList>`.
+- **Env:** `TEMPORAL_ADDRESS=127.0.0.1:17233`, `TEMPORAL_NAMESPACE=blackwing-dev` (see `.env.example`).
+- **Smoke:** `pnpm --filter @blackwing/worker test:int` runs a trivial TS SDK worker and workflow against the stack
+  and lists it by search attribute; it then shows in the Web UI under namespace `blackwing-dev`.
+- **Logs:** `docker compose -p bwdev -f infra/compose/docker-compose.dev.yml logs -f temporal` (level via
+  `BW_DEV_TEMPORAL_LOG_LEVEL`). The `obs` profile (DEVENV-009) scrapes Temporal metrics.
+- **Clock:** workflow timers (gate timeouts, windows) use the host clock; keep the host (and WSL) time synced, because
+  skew shifts timers.
+- **Payloads:** workflow inputs, outputs and signals must never contain plaintext secrets (pack section 8.7); pass
+  references. The worker epic enforces this with a payload codec; dev Temporal holds no secrets beyond the DB
+  credentials from `.env`.
 
 ## Troubleshooting
 
