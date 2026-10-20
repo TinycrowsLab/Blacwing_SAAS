@@ -283,6 +283,7 @@ packages/
 infra/
   tofu/  helm/  k3s/  docker/ (Dockerfiles; sandbox image)  compose/ (docker-compose.dev.yml)
   bootstrap.sh  versions.env (idempotent dev-host bootstrap and its pinned toolchain versions)
+  images.lock (digest-pinned data-service images shared by Testcontainers, dev compose and the CI integration job)
 eval/
   targets/  ground-truth/  harness/
 docs/

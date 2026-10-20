@@ -51,15 +51,15 @@ const read = (root, file) =>
 
 /**
  * @param {unknown} value
- * @returns {Record<string, unknown>} the value when it is a plain object, else an empty object
- */
-/**
- * @param {unknown} value
  * @param {string} fallback
  * @returns {string} the value when it is a string, else the fallback
  */
 const str = (value, fallback) => (typeof value === 'string' ? value : fallback);
 
+/**
+ * @param {unknown} value
+ * @returns {Record<string, unknown>} the value when it is a plain object, else an empty object
+ */
 const rec = (value) =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
     ? /** @type {Record<string, unknown>} */ (value)
