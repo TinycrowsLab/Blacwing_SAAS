@@ -1,0 +1,110 @@
+# Gitleaks configuration for Blackwing (CI-012, #146). CONTEXT_PACK §8.7: secrets never reach the
+# repository. One ruleset is shared by the pre-commit hook (`gitleaks protect --staged`, .husky/pre-commit)
+# and CI (.github/workflows/secret-scan.yml); both always run with `--redact`.
+#
+# Security-owned file (CODEOWNERS): every rule or allowlist change needs a security review. Keep the
+# allowlist minimal and give each entry a justification comment. How to triage a finding, add an
+# allowlist entry or rotate a leaked secret: docs/runbooks/secret-scanning.md.
+#
+# Written against the gitleaks v8 schema (`[extend]`, `[[rules]]`, global `[allowlist]`) so it loads
+# in the CI-pinned release and in older v8 builds developers may have installed.
+
+title = "Blackwing gitleaks config"
+
+# Keep every upstream default rule (cloud keys, PEM private keys, GitHub/Slack tokens, ...).
+[extend]
+useDefault = true
+
+# --- Blackwing credential formats (§7 api_tokens, §9 Authn; same prefixes as packages/logger) ---
+
+[[rules]]
+id = "blackwing-personal-access-token"
+description = "Blackwing personal access token (bw_pat_...)"
+regex = '''\bbw_pat_[A-Za-z0-9_-]{16,}'''
+keywords = ["bw_pat_"]
+tags = ["blackwing", "token"]
+
+[[rules]]
+id = "blackwing-ci-token"
+description = "Blackwing scoped CI token (bw_ci_...)"
+regex = '''\bbw_ci_[A-Za-z0-9_-]{16,}'''
+keywords = ["bw_ci_"]
+tags = ["blackwing", "token"]
+
+[[rules]]
+id = "blackwing-virtual-model-key"
+description = "Blackwing model-gateway virtual key (bwk_...)"
+regex = '''\bbwk_[A-Za-z0-9_-]{16,}'''
+keywords = ["bwk_"]
+tags = ["blackwing", "token"]
+
+# --- Private keys (standing-authorisation / service-account signing keys, TLS, SSH) ---
+# PEM blocks of every kind, including encrypted and OpenSSH keys. The upstream `private-key` rule
+# also matches; this one keeps the Blackwing id stable across gitleaks releases.
+[[rules]]
+id = "blackwing-pem-private-key"
+description = "PEM-encoded private key (SA signing key, TLS, SSH)"
+regex = '''-----BEGIN[ A-Z0-9]{0,32} PRIVATE KEY(?: BLOCK)?-----[\s\S]{16,}?-----END[ A-Z0-9]{0,32} PRIVATE KEY(?: BLOCK)?-----'''
+keywords = ["private key"]
+tags = ["blackwing", "key"]
+
+# A JWK private key: the private exponent / scalar `"d"` member (RSA, EC, OKP/Ed25519 signing keys).
+[[rules]]
+id = "blackwing-jwk-private-key"
+description = "JSON Web Key with private key material (\"d\" member)"
+regex = '''"d"\s*:\s*"([A-Za-z0-9_-]{32,})"'''
+secretGroup = 1
+keywords = ['"d"']
+tags = ["blackwing", "key"]
+
+# Service-account / authorisation signing key passed through the environment.
+[[rules]]
+id = "blackwing-signing-key-assignment"
+description = "Blackwing signing key assigned in config (BW_*SIGNING_KEY=...)"
+regex = '''(?i)\bBW_[A-Z0-9_]*SIGNING_KEY[ \t]*[:=][ \t]*["']?([A-Za-z0-9+/=_-]{32,})'''
+secretGroup = 1
+keywords = ["signing_key"]
+tags = ["blackwing", "key"]
+
+# --- Dev-stack services that hold real credentials in production ---
+
+[[rules]]
+id = "openbao-token"
+description = "OpenBao (Vault-compatible) token"
+regex = '''(?i)\b(?:bao|vault|openbao)_?(?:root_|dev_root_)?token(?:_id)?[ \t]*[:=][ \t]*["']?((?:hv[sbr]|[sbr])\.[A-Za-z0-9_-]{20,})'''
+secretGroup = 1
+keywords = ["bao", "vault"]
+tags = ["blackwing", "openbao"]
+
+[[rules]]
+id = "minio-credentials"
+description = "MinIO root password or secret key"
+regex = '''(?im)\bminio_(?:root_password|secret_key)[ \t]*[:=][ \t]*["']?([^\s"'$.,;(){}\[\]\\?+][^\s"'$.,;(){}\[\]\\]{7,})(?:["'\s,;]|$)'''
+secretGroup = 1
+keywords = ["minio_"]
+tags = ["blackwing", "minio"]
+
+[[rules]]
+id = "keycloak-credentials"
+description = "Keycloak admin password or OIDC client secret"
+regex = '''(?im)\b(?:kc_bootstrap_admin_password|keycloak_admin_password|kc_db_password|kc_client_secret|keycloak_client_secret|bw_dev_google_client_secret)[ \t]*[:=][ \t]*["']?([^\s"'$.,;(){}\[\]\\?+][^\s"'$.,;(){}\[\]\\]{7,})(?:["'\s,;]|$)'''
+secretGroup = 1
+keywords = ["kc_", "keycloak_", "client_secret"]
+tags = ["blackwing", "keycloak"]
+
+# Literal values only: a value read from a variable or property (`credentials.secretAccessKey`,
+# `${MINIO_ROOT_PASSWORD}`) or an escape sequence inside a string (`PW=\nNEXT=`) is not a committed
+# secret, so `$`, `.`, `\`, brackets and calls end the match.
+
+# --- Allowlist (keep minimal; every entry is justified) ---
+[allowlist]
+description = "Intentional, non-secret test fixtures"
+paths = [
+  # The scanner's own planted fixtures (fake tokens that exist to prove allowlisting works).
+  '''^scripts/fixtures/gitleaks/allowed/''',
+  # Redaction / parsing unit tests use fake, never-issued tokens to prove the logger, error and id
+  # packages strip Blackwing credential formats (§8.7). They are not credentials.
+  '''^packages/(?:logger|errors|ids|config)/src/[^/]+\.test\.ts$''',
+  # Lockfile integrity hashes look high-entropy to generic rules.
+  '''^pnpm-lock\.yaml$''',
+]

@@ -451,7 +451,10 @@ describe('pre-commit hook (lint-staged + gitleaks)', () => {
 
   it('scans the staged changes with gitleaks and blocks the commit on a finding', () => {
     const calls = path.join(repo.bin, 'gitleaks.calls');
-    assert.match(readFileSync(calls, 'utf8'), /^protect --staged --redact --no-banner$/m);
+    assert.match(
+      readFileSync(calls, 'utf8'),
+      /^protect --staged --redact --no-banner --config \.gitleaks\.toml$/m,
+    );
     fakeGitleaks(repo.bin, 1);
     const before = repo.head();
     repo.write('notes.txt', 'pretend secret\n');
