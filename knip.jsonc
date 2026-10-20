@@ -13,6 +13,12 @@
       // package (the infra/bootstrap.sh self-test lints with it). trivy and openssl are system tools too (Trivy
       // gate, TLS setup tests). None is an npm binary.
       "ignoreBinaries": ["gofmt", "openssl", "shellcheck", "trivy"],
+      // Named as strings in release.config.mjs and loaded by semantic-release at run time (CI-016), never imported.
+      "ignoreDependencies": [
+        "@semantic-release/github",
+        "@semantic-release/release-notes-generator",
+        "conventional-changelog-conventionalcommits",
+      ],
     },
     "apps/*": {
       "entry": ["src/main.ts", "src/main.tsx", "src/instrumentation.ts"],

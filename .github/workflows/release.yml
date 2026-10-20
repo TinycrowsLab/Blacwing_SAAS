@@ -1,0 +1,126 @@
+name: release
+
+# Release workflow (CI-016, #150; the release runbook). One repository version for v1: semantic-release reads the
+# Conventional Commits on main, computes vX.Y.Z (feat -> minor, fix/perf/revert -> patch, `!` or a
+# BREAKING CHANGE footer -> major), commits CHANGELOG.md as the bot with [skip ci], tags the commit and
+# creates the GitHub Release. The `build-images` workflow then builds the digest-pinned images on that
+# same tag (tags = release version), and release-record.json ties tag, commit and image digests
+# together for §8.9. Pull requests only run the `dry-run` job: it reports the next version, never tags.
+# Runbook: docs/runbooks/release.md. Config: release.config.mjs. Helper: scripts/release.mjs.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialises releases (concurrent merges release in order, never in parallel and never cancelled);
+# pull-request dry runs cancel the superseded run.
+concurrency:
+  group: release-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  dry-run:
+    # Needs no secret and creates nothing, so it also runs for forked pull requests.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # full history and tags: the next version depends on the last release tag
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          checkout: 'false'
+      - name: Compute next version (dry run)
+        run: node scripts/release.mjs plan --summary "$GITHUB_STEP_SUMMARY"
+
+  release:
+    # OFFLINE-STUB(online-porting #874): tagging and releasing need the release token and GHCR, so the
+    # job stays off until BW_ONLINE is set to 'true'. Never on forks, never from pull requests.
+    if: github.event_name != 'pull_request' && vars.BW_ONLINE == 'true' && github.event.repository.fork == false && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90 # includes waiting for the image build on the new tag
+    permissions:
+      contents: write # least privilege: tag, release and changelog commit; nothing else
+    env:
+      # Fine-grained token (Contents + Actions on this repository only) that may push to main through
+      # branch protection. Used by semantic-release and the gh CLI; never echoed.
+      GITHUB_TOKEN: ${{ secrets.BW_RELEASE_TOKEN }}
+      GH_TOKEN: ${{ secrets.BW_RELEASE_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          checkout: 'false'
+      - name: Release (no releasable commits exits cleanly)
+        id: release
+        run: |
+          set -euo pipefail
+          pnpm exec semantic-release
+          # The release commit (changelog) carries the tag; no tag on HEAD means nothing was released.
+          tag="$(git tag --points-at HEAD --list 'v*' | head -n1)"
+          if [ -z "$tag" ]; then
+            echo "No releasable commits: no release." >> "$GITHUB_STEP_SUMMARY"
+            echo "released=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          {
+            echo "released=true"
+            echo "tag=${tag}"
+            echo "version=${tag#v}"
+            echo "commit=$(git rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
+      - name: Build images on the release tag
+        if: steps.release.outputs.released == 'true'
+        id: images
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # The tag push normally triggers build-images itself; dispatch it when it did not (a tag
+          # pushed with GITHUB_TOKEN triggers nothing), so the tag is always built exactly once.
+          find_run() {
+            gh run list --workflow build-images.yml --branch "$TAG" --limit 1 --json databaseId --jq '.[0].databaseId // empty'
+          }
+          run_id=""
+          for _ in 1 2 3 4 5 6; do
+            run_id="$(find_run)"
+            [ -n "$run_id" ] && break
+            sleep 10
+          done
+          if [ -z "$run_id" ]; then
+            gh workflow run build-images.yml --ref "$TAG"
+            for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+              sleep 10
+              run_id="$(find_run)"
+              [ -n "$run_id" ] && break
+            done
+          fi
+          [ -n "$run_id" ] || { echo "::error::no build-images run for ${TAG}"; exit 1; }
+          gh run watch "$run_id" --exit-status
+          gh run download "$run_id" --name images.json
+      - name: Record release (tag, commit, image digests)
+        if: steps.release.outputs.released == 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          COMMIT: ${{ steps.release.outputs.commit }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          node scripts/release.mjs record --version "$VERSION" --commit "$COMMIT" --images images.json --out release-record.json --summary "$GITHUB_STEP_SUMMARY"
+          gh release upload "$TAG" release-record.json images.json --clobber
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: steps.release.outputs.released == 'true'
+        with:
+          name: release-record
+          path: release-record.json
+          if-no-files-found: error
