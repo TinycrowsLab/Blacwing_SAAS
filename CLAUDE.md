@@ -52,7 +52,7 @@ Pack §6 is the full layout. Adding or removing an app, package or fixed directo
 
 | Command | Does |
 |---|---|
-| `pnpm install` | Installs the workspace. The preinstall hook checks the repo layout. |
+| `pnpm install` | Installs the workspace. The preinstall hook checks the repo layout; `prepare` installs the git hooks (Husky: lint-staged, commitlint, pre-push typecheck; `HUSKY=0` skips them). |
 | `pnpm dev:deps` | Starts the local dependency stack (`infra/compose/docker-compose.dev.yml`, compose project `bwdev`). |
 | `pnpm dev` | Runs the apps with hot reload against that stack. |
 | `pnpm test` | Unit tests (Vitest) and the `scripts/` self-tests. |
@@ -129,7 +129,9 @@ change:
   (check its "Out of scope"). Leave a clean extension point instead.
 - Branch: `<issue-key>-<slug>`, lowercase. For example `egress-004-request-budgets`.
 - Commits: **Conventional Commits** (`feat|fix|docs|chore|refactor|test|build|ci|perf|revert`, optional scope = a
-  workspace member such as `feat(egress-gateway): …`), enforced by commitlint (FOUND-006, #8).
+  workspace member or epic key such as `feat(egress-gateway): …`; `pnpm commit:scopes` lists them), enforced
+  by commitlint in the `commit-msg` hook (FOUND-006, #8). Never bypass the hooks with `--no-verify` to get a
+  commit through.
 - The PR body says `Closes #N` and fills in the PR template (FOUND-016, #18): acceptance-criteria checklist, DoD,
   security considerations, test evidence.
 - No `Co-Authored-By` trailers or tool-attribution lines in commits, PRs, code or docs. Never force-push a shared

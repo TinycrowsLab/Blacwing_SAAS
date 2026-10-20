@@ -1,0 +1,4 @@
+# Husky pre-push hook (FOUND-006, #8): a failing typecheck aborts the push. `pnpm typecheck` is the
+# Turborepo task (tsc -b per member), so unchanged members are cache hits and the hook stays fast.
+# The test suite is deliberately not run here; CI runs it.
+pnpm typecheck

@@ -1,0 +1,12 @@
+# Husky pre-commit hook (FOUND-006, #8). Husky runs it with `sh -e` and node_modules/.bin on PATH;
+# HUSKY=0 skips every hook (CI sets it). Bypass once with `git commit --no-verify`.
+
+# Format and lint only the staged files (lint-staged.config.mjs).
+lint-staged
+
+# Staged secret scan (CONTEXT_PACK §8.7). Optional: runs when gitleaks is installed.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --no-banner
+else
+  echo "pre-commit: gitleaks is not installed, skipping the staged secret scan"
+fi

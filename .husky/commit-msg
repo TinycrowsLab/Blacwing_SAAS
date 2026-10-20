@@ -1,0 +1,3 @@
+# Husky commit-msg hook (FOUND-006, #8): the message must follow Conventional Commits
+# (commitlint.config.mjs). Git's own merge and revert messages are exempt.
+commitlint --edit "$1"

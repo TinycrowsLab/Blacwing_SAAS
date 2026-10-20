@@ -1,0 +1,20 @@
+# Line endings (FOUND-006, #8): every text file is stored and checked out with LF on every
+# platform, so Windows checkouts produce no spurious CRLF diffs, and Prettier (endOfLine "lf") and
+# the shell hooks under .husky/ keep working. Git detects binary files itself; the list below makes
+# the common ones explicit so they are never normalised.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.zip binary
+*.gz binary
+*.tgz binary

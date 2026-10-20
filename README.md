@@ -224,6 +224,21 @@ ESLint 9 (flat config, [`eslint.config.mjs`](eslint.config.mjs)) and Prettier ([
 
 `pnpm boundaries:check` ([`scripts/check-boundaries.mjs`](scripts/check-boundaries.mjs), dependency-cruiser) enforces the allowed dependency DAG between apps and packages on every import (type-only imports included) and on the workspace dependencies in each `package.json`: apps never import other apps, `@blackwing/contracts` imports nothing internal, deep imports such as `@blackwing/config/src/...` are rejected, sandbox code never reaches server-only packages, and package or module cycles are reported separately. It exits non-zero and names each offending edge. `pnpm boundaries:report` also writes `boundaries-report.json` for CI annotations. The graph is documented in [`docs/architecture/dependency-graph.md`](docs/architecture/dependency-graph.md), which `pnpm boundaries:docs` generates from the same model; the check fails when the file is stale.
 
+### Commit hooks (Husky, lint-staged, commitlint)
+
+`pnpm install` runs the root `prepare` script (`husky`), which points `core.hooksPath` at `.husky/_`. The hooks are plain shell scripts in [`.husky/`](.husky):
+
+| Hook | Runs | Effect |
+|---|---|---|
+| `pre-commit` | `lint-staged` ([`lint-staged.config.mjs`](lint-staged.config.mjs)), then `gitleaks protect --staged` when gitleaks is installed | Only the **staged** files are touched: `*.ts`/`*.tsx`/`*.mjs`/… get `eslint --fix` (zero warnings) and `prettier --write`, JSON/YAML/CSS get `prettier --write`, `*.go` gets `gofmt -w`; the fixes are re-staged. An unfixable lint error, or a gitleaks finding, blocks the commit. |
+| `commit-msg` | `commitlint --edit` ([`commitlint.config.mjs`](commitlint.config.mjs)) | The message must follow Conventional Commits: type `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `build`, `ci`, `perf` or `revert`; header ≤ 100 characters, lower-case subject, body/footer lines ≤ 100. Git's own `Merge …` and `Revert "…"` messages are exempt. |
+| `pre-push` | `pnpm typecheck` | Turbo-cached `tsc -b` per member; a type error aborts the push. Tests are not run in hooks (CI runs them). |
+
+- **Scopes** are optional, but a scope that is present must be in the generated list (`pnpm commit:scopes` prints it): every workspace member (`egress-gateway`, `config`, …), every epic key from `.github/labels.yml` lower-cased (`egress`, `found`, `devenv`, …), the fixed layout directories (`infra`, `compose`, `docs`, `adr`, …) and `repo`, `deps`, `release`, `design`, `scripts`, `github`, `arch`, `readme`. A new member or epic becomes a valid scope without touching the config. Combine scopes with `,` (`feat(api,web): …`); `feat(): …` is rejected.
+- **CI and automation** set `HUSKY=0`: the `prepare` script then skips the install (`HUSKY=0 skip install`) and any hook that is already installed exits immediately, so CI never double-runs them. Locally, fix what a hook reports instead of bypassing it with `--no-verify`.
+- **Line endings**: [`.gitattributes`](.gitattributes) stores and checks out every text file with LF (`* text=auto eol=lf`), so Windows checkouts produce no CRLF diffs.
+- `scripts/commitlint.test.mjs` lints valid and invalid messages with the real config; `scripts/git-hooks.test.mjs` installs the hooks into throwaway git repositories and proves each one end to end (rejected and accepted messages, auto-formatting of staged files only, merges, reverts, `HUSKY=0`, the pre-push abort, LF normalisation).
+
 ---
 
 ## Repository map
