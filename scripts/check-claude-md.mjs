@@ -27,12 +27,12 @@ export const CONTEXT_PACK = 'docs/architecture/CONTEXT_PACK.md';
 export const MAX_LINES = 200;
 
 /**
- * Link targets owned by issues that have not landed yet. They may be missing; once the
- * file exists it is checked like any other link (anchors included).
+ * Link targets owned by issues that have not landed yet (path -> owning issue). They may be
+ * missing; once the file exists it is checked like any other link (anchors included). Empty
+ * since FOUND-005 (#7) and FOUND-015 (#17) landed.
+ * @type {Readonly<Record<string, string>>}
  */
-export const PENDING_LINK_TARGETS = Object.freeze({
-  'docs/adr/README.md': 'FOUND-015 (#17)',
-});
+export const PENDING_LINK_TARGETS = Object.freeze({});
 
 /** Repository-relative files CLAUDE.md must link to. */
 export const REQUIRED_LINK_TARGETS = Object.freeze([
@@ -245,7 +245,8 @@ function readIfExists(file) {
 /**
  * Checks CLAUDE.md under `root`.
  * @param {string} root repository root
- * @param {{ text?: string }} [options] `text` overrides the CLAUDE.md content (tests)
+ * @param {{ text?: string, pending?: Readonly<Record<string, string>> }} [options] `text`
+ *   overrides the CLAUDE.md content and `pending` the pending link targets (tests)
  * @returns {{ ok: boolean, errors: string[], linksChecked: number, packSectionsLinked: string[] }}
  */
 export function checkClaudeMd(root, options = {}) {
@@ -335,7 +336,7 @@ export function checkClaudeMd(root, options = {}) {
     linkedTargets.add(target);
     const absolute = path.join(root, target);
     if (!existsSync(absolute)) {
-      if (!Object.hasOwn(PENDING_LINK_TARGETS, target)) {
+      if (!Object.hasOwn(options.pending ?? PENDING_LINK_TARGETS, target)) {
         errors.push(`${CLAUDE_MD}: broken link "${link}" (${target} does not exist)`);
       }
       continue;

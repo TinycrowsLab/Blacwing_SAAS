@@ -255,7 +255,7 @@ describe('CLAUDE.md failure modes', () => {
   });
 
   it('allows pending link targets to be missing, then checks them once they exist', () => {
-    assert.deepEqual(Object.keys(PENDING_LINK_TARGETS).sort(), ['docs/adr/README.md']);
+    const pendingTargets = { 'docs/adr/README.md': 'FOUND-015 (#17)' };
     const text = `${REAL_TEXT}\n[adr](docs/adr/README.md#index)\n`;
     const base = {
       [CONTEXT_PACK]: REAL_PACK,
@@ -269,16 +269,35 @@ describe('CLAUDE.md failure modes', () => {
     };
 
     const pending = makeRoot({ ...base, [CLAUDE_MD]: text });
-    assert.deepEqual(checkClaudeMd(pending).errors, []);
+    assert.deepEqual(checkClaudeMd(pending, { pending: pendingTargets }).errors, []);
 
     const landedBad = makeRoot({ ...base, [CLAUDE_MD]: text, 'docs/adr/README.md': '# ADRs\n' });
     assertError(
-      checkClaudeMd(landedBad).errors,
+      checkClaudeMd(landedBad, { pending: pendingTargets }).errors,
       /"docs\/adr\/README\.md#index" matches no heading in docs\/adr\/README\.md/,
     );
 
     const landedGood = makeRoot({ ...base, [CLAUDE_MD]: text, 'docs/adr/README.md': '# Index\n' });
-    assert.deepEqual(checkClaudeMd(landedGood).errors, []);
+    assert.deepEqual(checkClaudeMd(landedGood, { pending: pendingTargets }).errors, []);
+  });
+
+  it('requires the ADR index now that FOUND-015 (#17) has landed', () => {
+    assert.deepEqual(Object.keys(PENDING_LINK_TARGETS), []);
+    const files = {
+      [CONTEXT_PACK]: REAL_PACK,
+      [CLAUDE_MD]: REAL_TEXT,
+      'SECURITY.md': 'x\n',
+      'docs/architecture/EPICS.md': '# E\n',
+      'docs/architecture/FEATURE_LIST.md': '# F\n',
+      'docs/labels.md': '# Labels\n',
+      'docs/runbooks/code-owners.md': '# Code owners\n',
+      'design/README.md': '# Design\n',
+      'docs/architecture/dependency-graph.md': '# Allowed package dependency graph\n',
+    };
+    assertError(
+      checkClaudeMd(makeRoot(files)).errors,
+      /broken link "docs\/adr\/README\.md" \(docs\/adr\/README\.md does not exist\)/,
+    );
   });
 
   it('requires the dependency graph doc now that FOUND-005 (#7) has landed', () => {

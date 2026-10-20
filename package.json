@@ -26,6 +26,7 @@
     "test:scripts": "node --test \"scripts/**/*.test.mjs\"",
     "check:layout": "node scripts/check-layout.mjs",
     "check:claude-md": "node scripts/check-claude-md.mjs",
+    "check:adr": "node scripts/check-adr.mjs --quiet",
     "check:tsconfig": "node scripts/check-tsconfig.mjs",
     "check:turbo": "node scripts/check-turbo.mjs",
     "check:github": "node scripts/check-github.mjs --quiet",

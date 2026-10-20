@@ -65,6 +65,7 @@ Pack §6 is the full layout. Adding or removing an app, package or fixed directo
 | `pnpm build` | Builds every package in topological order (Turborepo). |
 | `pnpm db:seed` | Seeds the demo tenant `acme`, users per role, a verified lab asset and an active SA. |
 | `pnpm check:layout` / `pnpm check:claude-md` / `pnpm check:tsconfig` / `pnpm check:turbo` | Repo-layout, CLAUDE.md, tsconfig and Turborepo pipeline drift checks. |
+| `pnpm check:adr` | ADR format, Context Pack citations, supersession links and the index (`docs/adr/`). |
 | `pnpm check:github` / `pnpm labels:check` | Issue/PR templates, CODEOWNERS and label-catalogue checks. `pnpm labels:sync --dry-run` lists the catalogue. |
 
 Root scripts run through Turborepo (`turbo.json`, local cache only; see the README). Each script arrives with the
