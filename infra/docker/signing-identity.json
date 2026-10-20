@@ -1,0 +1,7 @@
+{
+  "$comment": "Single source of truth for the keyless signing identity (CI-010, #144). The sign job in build-images.yml signs with it; deploy-time verification (CI-011) must read the same file. Change it together with the workflow path.",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "repository": "TinycrowsLab/Blacwing_SAAS",
+  "workflow": ".github/workflows/build-images.yml",
+  "refs": ["refs/heads/main", "refs/tags/v*"]
+}
