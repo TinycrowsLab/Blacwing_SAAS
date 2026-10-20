@@ -76,6 +76,9 @@ const DEFINITIONS = {
     retryable: false,
   },
   TEMPORAL_UNAVAILABLE: { status: 503, title: 'Temporal unavailable', retryable: true },
+  // PostgreSQL connection (DB-001): no pooled connection within the acquire timeout, or the server is
+  // unreachable. A dependency outage (503, retryable); query errors keep their own codes.
+  DB_UNAVAILABLE: { status: 503, title: 'Database unavailable', retryable: true },
   // Worker bootstrap (WORKFLOW-002): a misconfigured process refuses to start rather than polling a guess.
   WORKER_QUEUE_UNKNOWN: { status: 500, title: 'Unknown worker task queue', retryable: false },
   // Sandbox controller (SANDBOX-001, #448). Its internal API refuses callers without a valid

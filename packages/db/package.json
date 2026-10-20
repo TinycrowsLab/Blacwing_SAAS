@@ -7,6 +7,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./owner": "./src/owner.ts",
+    "./roles.sql": "./src/roles.sql",
     "./migrations/*": "./migrations/*"
   },
   "scripts": {
@@ -16,6 +18,7 @@
     "test": "vitest run --configLoader runner --config src/vitest.config.ts",
     "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts",
     "typecheck": "tsc -b --pretty false",
+    "db:ping": "tsx --env-file-if-exists=../../.env src/ping.ts",
     "db:seed": "tsx --env-file-if-exists=../../.env src/seed/main.ts",
     "db:seed:reset": "tsx --env-file-if-exists=../../.env src/seed/main.ts --reset"
   },

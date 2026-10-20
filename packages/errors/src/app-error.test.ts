@@ -95,6 +95,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'TEMPORAL_TLS_MISCONFIGURED',
   'TEMPORAL_NAMESPACE_NOT_FOUND',
   'TEMPORAL_UNAVAILABLE',
+  // DbUnavailableError, @blackwing/db (DB-001).
+  'DB_UNAVAILABLE',
   // Raised by apps/worker as a plain AppError (WORKFLOW-002).
   'WORKER_QUEUE_UNKNOWN',
   // Subclassed by apps/sandbox-controller (SANDBOX-001).

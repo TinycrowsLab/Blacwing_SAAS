@@ -38,6 +38,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   TEMPORAL_TLS_MISCONFIGURED: 500,
   TEMPORAL_NAMESPACE_NOT_FOUND: 500,
   TEMPORAL_UNAVAILABLE: 503,
+  DB_UNAVAILABLE: 503,
   WORKER_QUEUE_UNKNOWN: 500,
   SBX_UNAUTHENTICATED: 401,
   SBX_BAD_REQUEST: 400,
@@ -56,7 +57,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(28);
+    expect(ERROR_CODE_LIST).toHaveLength(29);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -81,10 +82,11 @@ describe('error-code registry', () => {
     );
   });
 
-  it('marks only RATE_LIMITED, TEMPORAL_UNAVAILABLE and SBX_DRIVER_UNAVAILABLE as retryable', () => {
+  it('marks only RATE_LIMITED, TEMPORAL_UNAVAILABLE, DB_UNAVAILABLE and SBX_DRIVER_UNAVAILABLE as retryable', () => {
     expect(ERROR_CODE_LIST.filter((code) => ERROR_CODES[code].retryable)).toEqual([
       'RATE_LIMITED',
       'TEMPORAL_UNAVAILABLE',
+      'DB_UNAVAILABLE',
       'SBX_DRIVER_UNAVAILABLE',
     ]);
   });
@@ -165,6 +167,7 @@ describe('error-code registry', () => {
       | 'TEMPORAL_TLS_MISCONFIGURED'
       | 'TEMPORAL_NAMESPACE_NOT_FOUND'
       | 'TEMPORAL_UNAVAILABLE'
+      | 'DB_UNAVAILABLE'
       | 'WORKER_QUEUE_UNKNOWN'
       | 'SBX_UNAUTHENTICATED'
       | 'SBX_BAD_REQUEST'

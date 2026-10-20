@@ -595,6 +595,26 @@ describe('fixture workspaces', () => {
     assert.deepEqual(byRule(report, 'contracts-not-to-shared-lib'), []);
   });
 
+  it('keeps the owner database pool out of runtime code', async () => {
+    ws.member('packages/db', {
+      exports: { '.': './src/index.ts', './owner': './src/owner.ts' },
+    });
+    ws.write('packages/db/src/owner.ts', "export const owner = 'bw_owner';\n");
+    ws.write('packages/db/src/migrate.ts', "export { owner } from './owner.ts';\n");
+    ws.depend('apps/api', 'packages/db');
+    ws.write('apps/api/src/db.ts', "export { name } from '@blackwing/db';\n");
+    ws.write('apps/api/src/owner.ts', "export { owner } from '@blackwing/db/owner';\n");
+    ws.write('apps/api/src/owner.test.ts', "export { owner } from '@blackwing/db/owner';\n");
+    const report = await ws.check();
+    const found = byRule(report, 'db-owner-only-from-migrate');
+    assert.deepEqual(
+      found.map((v) => `${v.from} -> ${v.to}`),
+      ['apps/api/src/owner.ts -> packages/db/src/owner.ts'],
+      formatReport(report),
+    );
+    assert.ok(found.every((v) => v.kind === 'server-only'));
+  });
+
   it('keeps sandbox code away from server-only packages, directly and transitively', async () => {
     ws.depend('apps/agent-runtime', 'packages/db');
     ws.write('apps/agent-runtime/src/direct.ts', "export { name } from '@blackwing/db';\n");

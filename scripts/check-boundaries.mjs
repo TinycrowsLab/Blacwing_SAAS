@@ -147,6 +147,17 @@ export const SERVER_ONLY_MEMBERS = Object.freeze([
 ]);
 
 /**
+ * The owner-role database entry point (`@blackwing/db/owner`, DB-001). Migrations run as the owner
+ * role and runtime apps must never load its credentials (CONTEXT_PACK §7, §8.6), so only
+ * `packages/db` itself, test code and the members listed in DB_OWNER_IMPORTERS may import it.
+ */
+export const DB_OWNER_ENTRY = 'packages/db/src/owner.ts';
+
+/** Members allowed to import DB_OWNER_ENTRY besides packages/db (the migrate job, DB-002). */
+/** @type {readonly string[]} */
+export const DB_OWNER_IMPORTERS = Object.freeze([]);
+
+/**
  * Test code: may additionally import @blackwing/testing. Matched against repository-relative
  * paths.
  */
@@ -433,6 +444,22 @@ export function buildRules(members) {
     });
   }
 
+  if (members.some((m) => m.dir === 'packages/db')) {
+    rules.push({
+      name: 'db-owner-only-from-migrate',
+      severity: 'error',
+      comment:
+        'Only the migrate job may import @blackwing/db/owner: runtime code uses the app-role pool and never loads owner credentials (CONTEXT_PACK §7, §8.6).',
+      from: {
+        pathNot: [
+          TEST_CODE_PATTERN,
+          ...['packages/db', ...DB_OWNER_IMPORTERS].map((dir) => `^${escapeRe(dir)}/`),
+        ],
+      },
+      to: { path: `^${escapeRe(DB_OWNER_ENTRY)}$` },
+    });
+  }
+
   rules.push(
     {
       name: 'no-deep-import',
@@ -522,6 +549,7 @@ function memberOf(target, members) {
 const KIND_BY_RULE = Object.freeze({
   'testing-only-from-tests': 'test-only',
   'sandbox-not-to-server-only': 'server-only',
+  'db-owner-only-from-migrate': 'server-only',
   'no-deep-import': 'deep-import',
   'no-deep-import-specifier': 'deep-import',
   'no-unresolvable': 'unresolvable',
@@ -1108,6 +1136,7 @@ export function renderDependencyGraphDoc() {
     '- **Test code may also import `@blackwing/testing`, and only test code may.** Test code is any `*.test.*` or `*.spec.*` file, anything under a `test/`, `tests/`, `__tests__/`, `__fixtures__/`, `e2e/`, `testdata/` or `typefixtures/` directory, and `vitest.config.*` / `vitest.int.config.*` / `playwright.config.*` (`TEST_CODE_PATTERN`). In `package.json`, `@blackwing/testing` belongs in `devDependencies`. Test code gets no other exemption.',
     '- **No deep imports.** Import another member only through its public entry points (the targets of its `package.json` `exports`): `@blackwing/config`, never `@blackwing/config/src/...` and never a relative path into another member. An `exports` map must not expose a `./src/...` subpath.',
     `- **Sandbox code stays away from server-only packages.** ${SANDBOX_MEMBERS.map((m) => `\`${m}\``).join(' and ')} run inside agent sandboxes, which reach only the egress gateway, the model gateway and the Run Broker API (CONTEXT_PACK §4.1). Their production code must not reach ${SERVER_ONLY_MEMBERS.map((m) => `\`${m}\``).join(', ')}, directly or through another package (§8.6, §8.7).`,
+    `- **The owner database pool stays with the migrate job.** \`@blackwing/db/owner\` (\`${DB_OWNER_ENTRY}\`) holds the owner-role pool that runs migrations. Only \`packages/db\`${DB_OWNER_IMPORTERS.map((m) => `, \`${m}\``).join('')} and test code may import it; runtime code uses the app-role pool from \`@blackwing/db\` and never loads owner credentials (CONTEXT_PACK §7, §8.6).`,
     '- **The Go service stays self-contained.** `apps/egress-gateway/go.mod` must not `replace` a module with a path outside the module, and its Go code must not import other paths of this repository.',
     '- **No cycles.** Package cycles (from imports and declared dependencies) and module cycles inside one package are reported separately from boundary violations.',
     '- **Every member is classified.** A new app or package fails the check until it is added to `ELEMENT_TYPES`.',
