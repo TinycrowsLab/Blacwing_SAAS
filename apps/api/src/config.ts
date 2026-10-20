@@ -20,6 +20,8 @@ export const DEFAULT_API_HOST = '0.0.0.0';
 /** 1 MiB. Larger request bodies are rejected with `413` before any handler runs. */
 export const DEFAULT_API_BODY_LIMIT_BYTES = 1_048_576;
 export const DEFAULT_API_SHUTDOWN_GRACE_MS = 10_000;
+/** Deepest JSON nesting a request body may have (API-002, #54). */
+export const DEFAULT_API_MAX_JSON_DEPTH = 32;
 
 const byteCount = z
   .string()
@@ -40,6 +42,8 @@ export const apiEnvShape = {
   API_PORT: zPort().default(DEFAULT_API_PORT),
   API_HOST: z.string().min(1).default(DEFAULT_API_HOST),
   API_BODY_LIMIT_BYTES: byteCount.default(DEFAULT_API_BODY_LIMIT_BYTES),
+  /** Bodies nested deeper than this are rejected with `422` (deep-nesting abuse guard, API-002). */
+  API_MAX_JSON_DEPTH: byteCount.default(DEFAULT_API_MAX_JSON_DEPTH),
   /** Honour `X-Forwarded-*` only when true. The API normally sits behind the platform load balancer. */
   API_TRUST_PROXY: zBool().default(true),
   /** How long in-flight requests may take to finish after SIGTERM/SIGINT. */

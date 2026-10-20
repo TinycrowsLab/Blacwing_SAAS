@@ -12,6 +12,8 @@ export interface HttpMetrics {
   readonly registry: Registry;
   readonly requests: Counter<'method' | 'route' | 'status'>;
   readonly duration: Histogram<'method' | 'route' | 'status'>;
+  /** Requests rejected by the Zod validation pipe, by matched route template (API-002). */
+  readonly validationFailures: Counter<'route'>;
 }
 
 /** A private registry per app instance, so tests and multiple instances never share counters. */
@@ -30,6 +32,12 @@ export function createHttpMetrics(): HttpMetrics {
       help: 'HTTP request duration in seconds, from the first byte read to the response sent.',
       labelNames: ['method', 'route', 'status'],
       buckets: DURATION_BUCKETS,
+      registers: [registry],
+    }),
+    validationFailures: new Counter({
+      name: 'http_validation_failures_total',
+      help: 'Requests rejected by request validation (422), by matched route template.',
+      labelNames: ['route'],
       registers: [registry],
     }),
   };

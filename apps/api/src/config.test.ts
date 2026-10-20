@@ -32,6 +32,7 @@ describe('loadApiConfig', () => {
     expect(config.API_HOST).toBe(DEFAULT_API_HOST);
     expect(config.API_BODY_LIMIT_BYTES).toBe(DEFAULT_API_BODY_LIMIT_BYTES);
     expect(config.API_BODY_LIMIT_BYTES).toBe(1_048_576);
+    expect(config.API_MAX_JSON_DEPTH).toBe(32);
     expect(config.API_TRUST_PROXY).toBe(true);
     expect(config.API_SHUTDOWN_GRACE_MS).toBe(DEFAULT_API_SHUTDOWN_GRACE_MS);
     expect(config.WEB_ORIGIN).toEqual(['http://localhost:3000']);
@@ -71,6 +72,7 @@ describe('loadApiConfig', () => {
     ['API_PORT', '70000'],
     ['API_BODY_LIMIT_BYTES', '0'],
     ['API_BODY_LIMIT_BYTES', '-5'],
+    ['API_MAX_JSON_DEPTH', '0'],
     ['API_TRUST_PROXY', 'maybe'],
     ['API_SHUTDOWN_GRACE_MS', '0'],
     ['WEB_ORIGIN', 'http://localhost:3000/app'],

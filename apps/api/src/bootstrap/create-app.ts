@@ -75,7 +75,12 @@ export async function createApiApp(options: CreateApiAppOptions): Promise<ApiApp
   });
 
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule.forRoot({ config, logger, imports: [ShutdownModule, ...(options.imports ?? [])] }),
+    AppModule.forRoot({
+      config,
+      logger,
+      metrics,
+      imports: [ShutdownModule, ...(options.imports ?? [])],
+    }),
     adapter,
     { bufferLogs: true, rawBody: true, abortOnError: false },
   );

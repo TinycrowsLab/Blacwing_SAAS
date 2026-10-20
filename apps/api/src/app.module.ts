@@ -1,7 +1,10 @@
 import { type DynamicModule, Global, Module, type ModuleMetadata } from '@nestjs/common';
+import { APP_PIPE } from '@nestjs/core';
 
-import { API_CONFIG, API_LOGGER } from './bootstrap/tokens.js';
+import { createHttpMetrics, type HttpMetrics } from './bootstrap/metrics.js';
+import { API_CONFIG, API_LOGGER, API_METRICS } from './bootstrap/tokens.js';
 import { SmokeController } from './smoke.controller.js';
+import { createValidationPipe } from './validation/zod-validation.pipe.js';
 
 import type { ApiConfig } from './config.js';
 import type { Logger } from '@blackwing/logger';
@@ -35,6 +38,8 @@ export class LoggerModule {
 export interface AppModuleOptions {
   readonly config: Readonly<ApiConfig>;
   readonly logger: Logger;
+  /** Metrics of this app instance; a private set is created when omitted. */
+  readonly metrics?: HttpMetrics;
   /** Extra modules to mount (feature modules of later issues; test-only routes). */
   readonly imports?: NonNullable<ModuleMetadata['imports']>;
 }
@@ -49,6 +54,15 @@ export class AppModule {
         ConfigModule.forRoot(options.config),
         LoggerModule.forRoot(options.logger),
         ...(options.imports ?? []),
+      ],
+      providers: [
+        { provide: API_METRICS, useValue: options.metrics ?? createHttpMetrics() },
+        // Global Zod validation (API-002): acts only on handler params bound to a Zod DTO.
+        {
+          provide: APP_PIPE,
+          inject: [API_CONFIG, API_METRICS, API_LOGGER],
+          useFactory: createValidationPipe,
+        },
       ],
       controllers: [SmokeController],
     };

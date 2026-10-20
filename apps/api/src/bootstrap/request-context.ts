@@ -20,6 +20,8 @@ declare module '@fastify/request-context' {
   interface RequestContextData {
     /** Correlation id of the request (see `deriveTraceId`). */
     traceId: string;
+    /** Matched route template (`/v1/runs/:id`), set on arrival; the validation metric's label. */
+    route?: string;
     /** Tenant of the request, once authentication has resolved it (later API issues). */
     tenantId?: string;
     /** Request-scoped logger carrying `traceId` and, once bound, `tenantId`. */
@@ -69,6 +71,11 @@ export function requestLogger(fallback: Logger): Logger {
   return requestContext.get('logger') ?? fallback;
 }
 
+/** The matched route template of the current request, if any. */
+export function currentRoute(): string | undefined {
+  return requestContext.get('route');
+}
+
 /** The trace id of the current request, if any. */
 export function currentTraceId(): string | undefined {
   return requestContext.get('traceId');
@@ -107,6 +114,7 @@ export async function registerRequestObservability(
   app.addHook('onRequest', (request, reply, done) => {
     const traceId = request.id;
     requestContext.set('traceId', traceId);
+    requestContext.set('route', routeOf(request));
     requestContext.set('logger', withContext(logger, { traceId }));
     const parent = propagator.extract(ROOT_CONTEXT, request.headers, defaultTextMapGetter);
     const span = tracer.startSpan(

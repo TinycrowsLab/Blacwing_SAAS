@@ -275,6 +275,26 @@ export default defineConfig(
     },
   },
 
+  {
+    name: 'blackwing/api-controllers-no-inline-zod',
+    files: ['apps/api/src/**/*.controller.ts'],
+    rules: {
+      // API-002 (#54): request/response schemas live in @blackwing/contracts; controllers use DTOs.
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'zod',
+              message:
+                'Controllers never inline Zod schemas: import them from @blackwing/contracts and use createZodDto (apps/api/src/**/dto).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Must stay last: turns off every rule that would fight Prettier.
   { name: 'eslint-config-prettier', ...prettier },
 );
