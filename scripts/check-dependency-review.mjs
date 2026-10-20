@@ -15,6 +15,17 @@ export const WORKFLOW = '.github/workflows/dependency-review.yml';
 export const CONFIG = '.github/dependency-review-config.yml';
 export const REQUIRED_DENIED = ['LicenseRef-NPSL', 'AGPL-3.0-only', 'AGPL-3.0-or-later'];
 const SEVERITIES = ['high', 'critical'];
+// The action rejects the whole config if any deny entry is not valid SPDX. Entries must be a
+// LicenseRef- custom id or one of these SPDX-listed ids (extend when adding a listed license).
+export const SPDX_LISTED = [
+  'AGPL-1.0-only',
+  'AGPL-1.0-or-later',
+  'AGPL-3.0-only',
+  'AGPL-3.0-or-later',
+  'SSPL-1.0',
+  'BUSL-1.1',
+];
+const LICENSE_REF = /^LicenseRef-[A-Za-z0-9.-]+$/;
 
 /**
  * @param {unknown} v
@@ -50,6 +61,11 @@ export function checkConfig(text) {
   } else {
     for (const id of REQUIRED_DENIED) {
       if (!deny.includes(id)) errors.push(`${CONFIG}: deny-licenses must include ${id}`);
+    }
+    for (const id of deny) {
+      if (typeof id !== 'string' || !(SPDX_LISTED.includes(id) || LICENSE_REF.test(id))) {
+        errors.push(`${CONFIG}: deny-licenses entry ${String(id)} is not a valid SPDX id`);
+      }
     }
   }
   if (doc['allow-licenses'] !== undefined) {

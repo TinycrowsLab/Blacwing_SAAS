@@ -8,7 +8,9 @@ fail-on-scopes:
   - unknown
 # Deny-list is explicit (allow-licenses is intentionally unused so unknown-but-permissive
 # licenses are not blocked). Ambiguous or undetected licenses are surfaced in the PR comment
-# for manual review (warn-on-openssf-scorecard-level is not used; see docs/runbooks/dependency-review.md).
+# for manual review (see docs/runbooks/dependency-review.md). Every entry must be a valid SPDX
+# expression or the action refuses the whole config: licenses not on the SPDX list (NPSL,
+# Commons Clause) use the LicenseRef- form.
 # §5 license-review gate: nmap (NPSL) and similar copyleft/source-available licenses need legal
 # sign-off before they may be added.
 deny-licenses:
@@ -22,7 +24,7 @@ deny-licenses:
   - AGPL-3.0-or-later
   - SSPL-1.0
   - BUSL-1.1
-  - Commons-Clause
+  - LicenseRef-Commons-Clause
 comment-summary-in-pr: always
 # Detect dependency changes in every manifest in the monorepo (package.json, pnpm-lock.yaml, go.mod).
 vulnerability-check: true

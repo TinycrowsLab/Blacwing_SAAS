@@ -36,6 +36,11 @@ describe('dependency-review policy', () => {
     assert.ok(errors.some((e) => e.includes('LicenseRef-NPSL')));
   });
 
+  it('rejects deny entries the action would refuse as non-SPDX', () => {
+    const errors = checkConfig(config.replace('LicenseRef-Commons-Clause', 'Commons-Clause'));
+    assert.ok(errors.some((e) => e.includes('Commons-Clause is not a valid SPDX id')));
+  });
+
   it('fails when an allow-list is added or the comment is disabled', () => {
     const withAllow = checkConfig(`${config}allow-licenses:\n  - MIT\n`);
     assert.ok(withAllow.some((e) => e.includes('allow-licenses')));

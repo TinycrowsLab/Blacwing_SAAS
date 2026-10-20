@@ -8,7 +8,8 @@ check on `main` so supply-chain regressions cannot merge.
 - **Licenses:** an explicit `deny-licenses` list implements the CONTEXT_PACK §5 license-review gate (nmap NPSL,
   AGPL, SSPL, BUSL, Commons Clause). No `allow-licenses` list is used, so permissive licenses are never blocked
   by omission. Licenses the action cannot detect are listed in the PR summary under "unknown"; reviewers must
-  resolve them manually. Adding a denied license needs legal sign-off first, then an edit to the config.
+  resolve them manually. Every entry must be valid SPDX (the action refuses the whole config otherwise), so
+  licenses not on the SPDX list use `LicenseRef-` ids (`LicenseRef-NPSL`, `LicenseRef-Commons-Clause`). Adding a denied license needs legal sign-off first, then an edit to the config.
 - **Comment:** `comment-summary-in-pr: always` posts added/removed dependencies and findings. The job has only
   `contents: read` plus `pull-requests: write` (comment). Pull requests from forks get a read-only token, so
   the comment is skipped there but the check still fails or passes.
@@ -16,3 +17,6 @@ check on `main` so supply-chain regressions cannot merge.
 - **Transitive and images:** the lockfile diff covers transitive npm deps; container images are scanned by Trivy (CI-009).
 
 `pnpm check:dependency-review` validates the policy files (severity, deny-list, permissions, SHA pin).
+
+Live verification with PR fixtures (HIGH-vuln, denied-license and clean PRs) and the required-check setting are
+tracked in #875.

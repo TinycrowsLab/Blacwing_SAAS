@@ -1,7 +1,8 @@
 name: dependency-review
 
 # Required check: blocks PRs that add HIGH+ vulnerable or license-denied dependencies.
-# Policy lives in .github/dependency-review-config.yml; documented in docs/ci/dependency-review.md.
+# OFFLINE-STUB(online-porting #875): live PR fixture verification and required-check setting.
+# Policy lives in .github/dependency-review-config.yml; documented in docs/runbooks/dependency-review.md.
 on:
   pull_request:
 
