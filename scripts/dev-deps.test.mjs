@@ -210,6 +210,19 @@ describe('docker-compose.dev.yml (DEVENV-002)', () => {
     assert.match(init, /CREATE EXTENSION IF NOT EXISTS pgcrypto;/);
   });
 
+  it('applies the DB-001 roles.sql on init and makes the migrator a member of bw_owner only', () => {
+    const mount = (c.services.postgres?.volumes ?? []).find((v) => v.target === '/bw/db/roles.sql');
+    assert.ok(mount, 'roles.sql is mounted into the postgres container');
+    assert.equal(mount.source, path.join(ROOT, 'packages/db/src/roles.sql'));
+    assert.equal(mount.read_only, true);
+    const init = readFileSync(path.join(COMPOSE_DIR, 'postgres/init/02-db-roles.sh'), 'utf8');
+    assert.match(init, /-f "\$ROLES_SQL"/);
+    assert.match(init, /GRANT bw_owner TO :"migrator_role";/);
+    assert.doesNotMatch(init, /GRANT bw_(owner|operator) TO :"app_role"/);
+    assert.doesNotMatch(init, /BYPASSRLS|SUPERUSER/);
+    assert.ok(statSync(path.join(COMPOSE_DIR, 'postgres/init/02-db-roles.sh')).mode & 0o100);
+  });
+
   it('creates an app role and a separate migration owner, neither with BYPASSRLS', () => {
     const init = readFileSync(
       path.join(COMPOSE_DIR, 'postgres/init/01-extensions-and-roles.sh'),
