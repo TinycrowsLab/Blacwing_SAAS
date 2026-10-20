@@ -9,6 +9,8 @@
     ".": {
       "entry": ["scripts/*.mjs"],
       "project": ["scripts/**/*.mjs"],
+      // gofmt ships with the Go toolchain (lint-staged formats Go files with it); it is not an npm binary.
+      "ignoreBinaries": ["gofmt"],
     },
     "apps/*": {
       "entry": ["src/main.ts", "src/main.tsx", "src/instrumentation.ts"],
