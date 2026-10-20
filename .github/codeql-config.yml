@@ -1,0 +1,15 @@
+# CodeQL configuration (CI-013, #147). Focus analysis on first-party source (monorepo size)
+# and run the security-and-quality suite; tune noise later via the Security tab (dismissals are audited).
+name: blackwing-codeql
+queries:
+  - uses: security-and-quality
+paths:
+  - apps
+  - packages
+paths-ignore:
+  - '**/node_modules'
+  - '**/dist'
+  - '**/*.test.ts'
+  - '**/*.spec.ts'
+  - '**/testdata'
+  - '**/__fixtures__'

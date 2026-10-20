@@ -1,0 +1,65 @@
+name: codeql
+
+# CodeQL static analysis for JavaScript/TypeScript and Go (CI-013, #147). SARIF goes to code
+# scanning (Security tab). Blocking on new HIGH/CRITICAL alerts is a code-scanning merge-protection
+# setting on the repo ruleset, documented in docs/runbooks/codeql.md.
+# OFFLINE-STUB(online-porting #875): live smoke on a scratch branch and the required code-scanning ruleset.
+# Config (queries, paths) lives in .github/codeql-config.yml.
+
+on:
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 3 * * 1' # weekly, Monday 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write # upload SARIF to code scanning only
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
+          - language: go
+            build-mode: manual
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Same toolchain pin as go.yml (CI-005): the go.mod `toolchain` directive.
+      - name: Set up Go
+        if: matrix.language == 'go'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: apps/egress-gateway/go.mod
+          cache-dependency-path: apps/egress-gateway/go.sum
+      - uses: github/codeql-action/init@48870fdd6b42ee6474ec4207209ff87609271a5e # v4.39.0
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          config-file: ./.github/codeql-config.yml
+      - name: Build egress gateway (Makefile, as in go.yml)
+        if: matrix.language == 'go'
+        working-directory: apps/egress-gateway
+        run: make build
+      - uses: github/codeql-action/analyze@48870fdd6b42ee6474ec4207209ff87609271a5e # v4.39.0
+        with:
+          category: /language:${{ matrix.language }}
