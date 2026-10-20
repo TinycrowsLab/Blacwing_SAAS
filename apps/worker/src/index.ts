@@ -3,3 +3,5 @@ export const name = '@blackwing/worker';
 
 /** Package version; kept in sync with package.json. */
 export const version = '0.0.0';
+
+export { ALL_TASK_QUEUES, TASK_QUEUES, type TaskQueueName } from './task-queues.js';
