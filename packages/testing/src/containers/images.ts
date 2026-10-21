@@ -22,6 +22,9 @@ export const TEST_IMAGES = Object.freeze({
   /** Neo4j 5 Community (LTS line). §5 graph. */
   neo4j:
     'neo4j:5.26.12-community@sha256:9f75e8df4325a24f00fdd7a8c0bcce650a58375049b1058e496e8b43d6c36b37',
+  /** OpenBao dev server (same pin as the dev compose stack). §5 secrets/KMS. */
+  openbao:
+    'openbao/openbao:2.4.3@sha256:48174d0c98dbb955731c5d54a7e7083987fd25a7fb5d793181db8576ada8ed64',
   /** Temporal CLI dev server (single node, in-memory). §5 durable workflows. */
   temporal:
     'temporalio/temporal:1.5.1@sha256:597a5dbbcc6e7716b326dde4a51622d5ea0879eb0cf06ff8a94381361d0a987d',

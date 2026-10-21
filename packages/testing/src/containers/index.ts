@@ -14,6 +14,7 @@ export {
   withPostgres,
   type WithPostgresOptions,
 } from './postgres.js';
+export { type OpenBaoHandle, withOpenBao, type WithOpenBaoOptions } from './openbao.js';
 export {
   CONTAINER_LABEL,
   type ContainerOptions,

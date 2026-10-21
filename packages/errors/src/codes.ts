@@ -145,6 +145,9 @@ const DEFINITIONS = {
   // Audit emission (AUDIT-003, #82): an event that fails AuditEventSchema is refused at the helper's
   // boundary. The producer is at fault, so it is never retried unchanged.
   AUDIT_EVENT_INVALID: { status: 422, title: 'Invalid audit event', retryable: false },
+  // Per-tenant KEK (SECRETS-001): OpenBao sealed, unreachable or the AppRole login failed. Fail closed:
+  // no shared-key fallback; the caller retries later.
+  KEK_UNAVAILABLE: { status: 503, title: 'Tenant key unavailable', retryable: true },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

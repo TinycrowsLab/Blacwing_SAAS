@@ -34,6 +34,9 @@ export function parseEnv(text) {
 
 /** Keys that may stay empty because the owner supplies them out of band. */
 export const OPTIONAL_EMPTY = new Set([
+  // AppRole credentials of @blackwing/secrets: filled from .bw-dev/openbao/ after the bootstrap.
+  'OPENBAO_ROLE_ID',
+  'OPENBAO_SECRET_ID',
   'BW_DEV_GOOGLE_CLIENT_ID',
   'BW_DEV_GOOGLE_CLIENT_SECRET',
   // Temporal mTLS PEM paths: only needed when TEMPORAL_TLS_ENABLED=true (not the plain dev server).

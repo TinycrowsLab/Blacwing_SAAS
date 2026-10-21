@@ -7,9 +7,11 @@
 #   1. waits for /v1/sys/health (file mode: initialises once and unseals);
 #   2. enables Transit at transit/ and checks KV v2 at secret/ (enables it when missing);
 #   3. creates one Transit key per tenant (transit/keys/tenant-<slug>, aes256-gcm96, not exportable,
-#      deletion disabled) for BW_DEV_OPENBAO_TENANTS (default: acme);
+#      deletion allowed for shred, SECRETS-001) for BW_DEV_OPENBAO_TENANTS (default: acme);
 #   4. writes dev placeholder platform secrets under secret/platform/* only when absent (cas=0);
 #   5. writes least-privilege policies bw-app-platform + bw-app-tenant-<slug>;
+#   5b. enables AppRole auth, loads policies/*.hcl (bw-kek-app, bw-kek-provisioner) and creates the two
+#       roles (SECRETS-001); role-id / secret-id go to $STATE_DIR/<role>.{role-id,secret-id} (0600);
 #   6. keeps the app token in $STATE_DIR/app-token (0600) when it is still valid with exactly those
 #      policies, otherwise issues a new one from the bw-app token role.
 # Nothing that already exists is re-created: no duplicate mounts, keys or secret versions.
@@ -195,7 +197,7 @@ for t in $TENANTS; do
     expect "read transit key $key" 200
     log "transit/keys/$key already exists"
   fi
-  api POST "transit/keys/$key/config" '{"deletion_allowed":false}'
+  api POST "transit/keys/$key/config" '{"deletion_allowed":true}'
   expect "configure transit key $key" 200 204
 done
 
@@ -259,6 +261,32 @@ HCL
 done
 policies+=']'
 log "policies written: $(jq -r 'join(", ")' <<<"$policies")"
+
+# --- 5b. AppRole auth for the per-tenant KEK roles (SECRETS-001) -------------------------------
+api GET sys/auth
+auths="$(body)"
+expect 'sys/auth' 200
+if [[ -z "$(jq -r '.data["approle/"].type // empty' <<<"$auths")" ]]; then
+  api POST sys/auth/approle '{"type":"approle","description":"Blackwing service roles"}'
+  expect 'enable approle' 200 204
+  log "enabled auth/approle/"
+fi
+for role in bw-kek-app bw-kek-provisioner; do
+  put_policy "$role" "$(cat "$SCRIPT_DIR/policies/$role.hcl")"
+  api POST "auth/approle/role/$role" "$(jq -cn --arg p "$role" '{
+    token_policies: [$p], token_ttl: "1h", token_max_ttl: "4h", secret_id_num_uses: 0, secret_id_ttl: 0
+  }')"
+  expect "write approle $role" 200 204
+  api GET "auth/approle/role/$role/role-id"
+  jq -r '.data.role_id' <"$BODY_FILE" >"$STATE_DIR/$role.role-id"
+  if [[ ! -s "$STATE_DIR/$role.secret-id" ]]; then
+    api POST "auth/approle/role/$role/secret-id" '{}'
+    expect "secret-id for $role" 200
+    jq -r '.data.secret_id' <"$BODY_FILE" >"$STATE_DIR/$role.secret-id"
+  fi
+  chmod 600 "$STATE_DIR/$role.role-id" "$STATE_DIR/$role.secret-id"
+  log "approle $role ready"
+done
 
 # --- 6. app token ------------------------------------------------------------------------------
 api POST auth/token/roles/bw-app "$(jq -cn --argjson p "$policies" '{

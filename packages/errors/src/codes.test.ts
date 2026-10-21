@@ -66,6 +66,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   IDEMPOTENCY_KEY_REQUIRED: 400,
   IDEMPOTENCY_KEY_MISMATCH: 422,
   AUDIT_EVENT_INVALID: 422,
+  KEK_UNAVAILABLE: 503,
   INTERNAL: 500,
 };
 
@@ -79,7 +80,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(51);
+    expect(ERROR_CODE_LIST).toHaveLength(52);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -104,13 +105,14 @@ describe('error-code registry', () => {
     );
   });
 
-  it('marks only RATE_LIMITED, TX_RETRY_EXHAUSTED, TEMPORAL_UNAVAILABLE, DB_UNAVAILABLE and SBX_DRIVER_UNAVAILABLE as retryable', () => {
+  it('marks only RATE_LIMITED, TX_RETRY_EXHAUSTED, TEMPORAL_UNAVAILABLE, DB_UNAVAILABLE, SBX_DRIVER_UNAVAILABLE and KEK_UNAVAILABLE as retryable', () => {
     expect(ERROR_CODE_LIST.filter((code) => ERROR_CODES[code].retryable)).toEqual([
       'RATE_LIMITED',
       'TX_RETRY_EXHAUSTED',
       'TEMPORAL_UNAVAILABLE',
       'DB_UNAVAILABLE',
       'SBX_DRIVER_UNAVAILABLE',
+      'KEK_UNAVAILABLE',
     ]);
   });
 
@@ -218,6 +220,7 @@ describe('error-code registry', () => {
       | 'NOT_IMPLEMENTED'
       | 'RUN_NOT_ACTIVE'
       | 'AUDIT_EVENT_INVALID'
+      | 'KEK_UNAVAILABLE'
       | 'INTERNAL'
     >();
     expectTypeOf<HttpStatusOf<'NOT_FOUND'>>().toEqualTypeOf<404>();

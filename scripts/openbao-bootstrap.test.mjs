@@ -223,12 +223,12 @@ describe('openbao dev server + bootstrap (integration)', () => {
     assert.ok(!out.includes(appToken()));
   });
 
-  it('creates transit/keys/tenant-acme (not exportable, not deletable)', async () => {
+  it('creates transit/keys/tenant-acme (not exportable, deletable for shred)', async () => {
     const key = await root('GET', 'transit/keys/tenant-acme');
     assert.equal(key.status, 200);
     assert.equal(key.json.data.type, 'aes256-gcm96');
     assert.equal(key.json.data.exportable, false);
-    assert.equal(key.json.data.deletion_allowed, false);
+    assert.equal(key.json.data.deletion_allowed, true);
     assert.equal(key.json.data.latest_version, 1);
   });
 

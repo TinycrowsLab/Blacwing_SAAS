@@ -138,6 +138,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'RUN_NOT_ACTIVE',
   // Raised by @blackwing/audit (AUDIT-003) as AuditEventInvalidError.
   'AUDIT_EVENT_INVALID',
+  // Raised by @blackwing/secrets (SECRETS-001) as a plain AppError.
+  'KEK_UNAVAILABLE',
 ];
 
 describe('AppError subclasses', () => {

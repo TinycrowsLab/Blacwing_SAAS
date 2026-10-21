@@ -368,6 +368,12 @@ pnpm dev:openbao:bootstrap       # configure it; safe to re-run at any time
   other KV paths, read or export keys, rotate, delete, touch `sys/*` or mint tokens;
 - an app token from the orphan, periodic token role `bw-app` is in `.bw-dev/openbao/app-token` (mode `0600`,
   in the ignore list). A still-valid token with the same policies is kept; otherwise a new one is issued.
+- AppRole auth is enabled with the SECRETS-001 roles `bw-kek-app` (encrypt/decrypt/rewrap/rotate on `tenant-*`)
+  and `bw-kek-provisioner` (create/configure tenant keys and their lifecycle marker); their policies are
+  `openbao/policies/*.hcl`, and `<role>.role-id` / `<role>.secret-id` (mode `0600`) land in
+  `.bw-dev/openbao/`. Apps pass them as `OPENBAO_ROLE_ID` / `OPENBAO_SECRET_ID` to `@blackwing/secrets`.
+  Tenant keys are created with `deletion_allowed:true` so they can be crypto-shredded; always disable a
+  key (`disableTenantKek`) before deleting it, so in-flight decrypts fail closed instead of racing the delete.
 
 Re-running changes nothing that exists: no duplicate mounts, key versions or secret versions. The script never
 prints a token. Apps read `OPENBAO_ADDR` and `OPENBAO_TOKEN_FILE` from `.env` (`.env.example` lists them) and

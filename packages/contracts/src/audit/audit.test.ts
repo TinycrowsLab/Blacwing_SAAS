@@ -60,6 +60,9 @@ const RELEASED_ACTIONS = [
   'kill.forbidden',
   'kill.egress_blocked',
   'kill.sandboxes_terminated',
+  'secret.kek_provisioned',
+  'secret.kek_rotated',
+  'secret.kek_disabled',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

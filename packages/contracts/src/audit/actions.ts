@@ -285,6 +285,25 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'Kill stage 2: the sandbox controller was told to force-terminate the sandboxes of a kill.',
   },
+  // per-tenant KEK lifecycle (SECRETS-001, §8.6/§8.8): appended; the event never carries key material
+  {
+    action: 'secret.kek_provisioned',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description: 'A tenant Transit key (KEK) was provisioned.',
+  },
+  {
+    action: 'secret.kek_rotated',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description: 'A tenant Transit key (KEK) was rotated to a new version.',
+  },
+  {
+    action: 'secret.kek_disabled',
+    defaultSeverity: 'critical',
+    isAlwaysAudited: true,
+    description: 'A tenant Transit key (KEK) was disabled; decrypt is blocked (crypto-shred step).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */
