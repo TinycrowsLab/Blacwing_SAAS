@@ -116,6 +116,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'SBX_BAD_REQUEST',
   'SBX_CONFIG_INVALID',
   'SBX_DRIVER_UNAVAILABLE',
+  'SBX_RUNTIME_MISSING',
+  'SBX_IMAGE_MISSING',
   // Raised by apps/api's kill module (KILL-003) as KillApiError / IdempotencyError.
   'KILL_SCOPE_INVALID',
   'KILL_REF_REQUIRED',

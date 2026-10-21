@@ -99,6 +99,9 @@ const DEFINITIONS = {
     retryable: false,
   },
   SBX_DRIVER_UNAVAILABLE: { status: 503, title: 'Sandbox driver unavailable', retryable: true },
+  // DockerDriver (SANDBOX-004): no registered runsc runtime (never fall back to runc); pinned image absent.
+  SBX_RUNTIME_MISSING: { status: 500, title: 'Sandbox runtime missing', retryable: false },
+  SBX_IMAGE_MISSING: { status: 422, title: 'Sandbox image missing', retryable: false },
   // Kill trigger API (KILL-003, F33/§8.5). Malformed scope input is 422; refusing the caller is 403;
   // `global` is an operator-only path (KILL-013), so the tenant endpoint refuses it with its own code.
   KILL_SCOPE_INVALID: { status: 422, title: 'Invalid kill scope', retryable: false },

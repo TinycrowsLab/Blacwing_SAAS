@@ -409,6 +409,9 @@ importers:
       '@opentelemetry/api':
         specifier: 'catalog:'
         version: 1.9.1
+      dockerode:
+        specifier: 5.0.1
+        version: 5.0.1
       fastify:
         specifier: 'catalog:'
         version: 5.12.7
@@ -425,6 +428,9 @@ importers:
       '@blackwing/testing':
         specifier: workspace:*
         version: link:../../packages/testing
+      '@types/dockerode':
+        specifier: 4.0.2
+        version: 4.0.2
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5

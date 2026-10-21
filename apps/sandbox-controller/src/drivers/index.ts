@@ -1,15 +1,16 @@
 import { SbxDriverUnavailableError } from '../errors.js';
+import { DockerDriver } from './docker.js';
 
 import type { SandboxDriver } from './driver.js';
 import type { SandboxDriverKind } from '@blackwing/contracts';
 
 export type { SandboxDriver } from './driver.js';
+export { DockerDriver, type DockerDriverOptions } from './docker.js';
 export { FakeDriver, type FakeDriverOptions } from './fake.js';
 export type { CaProvisioner, RunCaRef, RunScope } from './types.js';
 
 /**
- * Stand-in for a driver this build does not ship yet (KubernetesDriver: SANDBOX-003, DockerDriver:
- * SANDBOX-004). It fails closed: every operation rejects, so `/readyz` stays 503 and nothing is created.
+ * Stand-in for a driver this build does not ship yet (KubernetesDriver: SANDBOX-003). It fails closed: every operation rejects, so `/readyz` stays 503 and nothing is created.
  */
 export class UnavailableDriver implements SandboxDriver {
   readonly kind: SandboxDriverKind;
@@ -70,7 +71,30 @@ export class UnavailableDriver implements SandboxDriver {
   }
 }
 
-export type DriverFactory = (kind: SandboxDriverKind) => SandboxDriver;
+/** Driver-relevant slice of the controller config. */
+export interface DriverConfig {
+  readonly NODE_ENV: string;
+  readonly SBX_DOCKER_RUNTIME?: string;
+  readonly SBX_DOCKER_SOCKET?: string;
+  readonly SBX_DOCKER_PULL?: boolean;
+}
 
-/** Default factory. SANDBOX-003/004 replace the branches with lazily-initialised real drivers. */
-export const createDriver: DriverFactory = (kind) => new UnavailableDriver(kind);
+export type DriverFactory = (kind: SandboxDriverKind, config?: DriverConfig) => SandboxDriver;
+
+/**
+ * Default factory. DockerDriver is lazy (no daemon contact until first use). `runc` is accepted only
+ * outside production (dev/test hosts without gVisor) and is never a fallback for a missing `runsc`.
+ * SANDBOX-003 replaces the kubernetes branch.
+ */
+export const createDriver: DriverFactory = (kind, config) => {
+  if (kind === 'docker') {
+    const runtime = config?.SBX_DOCKER_RUNTIME ?? 'runsc';
+    return new DockerDriver({
+      runtime,
+      allowInsecureRuntime: runtime !== 'runsc' && config?.NODE_ENV !== 'production',
+      socketPath: config?.SBX_DOCKER_SOCKET ?? '/var/run/docker.sock',
+      pullMissingImages: config?.SBX_DOCKER_PULL ?? false,
+    });
+  }
+  return new UnavailableDriver(kind);
+};

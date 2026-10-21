@@ -49,6 +49,8 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   SBX_BAD_REQUEST: 400,
   SBX_CONFIG_INVALID: 500,
   SBX_DRIVER_UNAVAILABLE: 503,
+  SBX_RUNTIME_MISSING: 500,
+  SBX_IMAGE_MISSING: 422,
   KILL_SCOPE_INVALID: 422,
   KILL_REF_REQUIRED: 422,
   KILL_FORBIDDEN: 403,
@@ -68,7 +70,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(40);
+    expect(ERROR_CODE_LIST).toHaveLength(42);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -189,6 +191,8 @@ describe('error-code registry', () => {
       | 'SBX_BAD_REQUEST'
       | 'SBX_CONFIG_INVALID'
       | 'SBX_DRIVER_UNAVAILABLE'
+      | 'SBX_RUNTIME_MISSING'
+      | 'SBX_IMAGE_MISSING'
       | 'KILL_SCOPE_INVALID'
       | 'KILL_REF_REQUIRED'
       | 'KILL_FORBIDDEN'

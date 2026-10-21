@@ -6,6 +6,8 @@ export const SBX_ERROR_CODES = [
   'SBX_BAD_REQUEST',
   'SBX_CONFIG_INVALID',
   'SBX_DRIVER_UNAVAILABLE',
+  'SBX_RUNTIME_MISSING',
+  'SBX_IMAGE_MISSING',
 ] as const;
 export type SbxErrorCode = (typeof SBX_ERROR_CODES)[number];
 
@@ -60,5 +62,19 @@ export class SbxConfigInvalidError extends AppError {
 export class SbxDriverUnavailableError extends AppError {
   constructor(message: string, options: AppErrorOptions = {}) {
     super('SBX_DRIVER_UNAVAILABLE', message, options);
+  }
+}
+
+/** 500: the daemon has no `runsc` runtime. Never falls back to `runc` (§1.1); fail fast. */
+export class SbxRuntimeMissingError extends AppError {
+  constructor(message: string, options: AppErrorOptions = {}) {
+    super('SBX_RUNTIME_MISSING', message, options);
+  }
+}
+
+/** 422: the digest-pinned image is not present locally and pulling is disabled. */
+export class SbxImageMissingError extends AppError {
+  constructor(message: string, options: AppErrorOptions = {}) {
+    super('SBX_IMAGE_MISSING', message, options);
   }
 }

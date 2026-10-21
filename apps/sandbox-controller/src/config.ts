@@ -31,6 +31,7 @@ export const MIN_RUN_TOKEN_SECRET_LENGTH = 32;
 const MAX_PORT = 65_535;
 const MAX_TTL_SECONDS = 86_400;
 const MAX_BODY_BYTES_CEILING = 67_108_864;
+const MAX_SOCKET_PATH = 256;
 const DNS_LABEL_MAX = 63;
 
 /** A management listen address `host:port`; an empty host (`:7070`) means every interface of the controller pod. */
@@ -86,6 +87,19 @@ export const sandboxControllerEnvShape = {
   SBX_NAMESPACE: dnsLabel.default('bw-runs'),
   SBX_RUNTIME_CLASS: dnsLabel.default('gvisor'),
   SBX_IMAGE_DIGEST: imageDigest,
+  /** DockerDriver OCI runtime. `runsc` (gVisor) always; `runc` is refused when NODE_ENV=production. */
+  SBX_DOCKER_RUNTIME: z.enum(['runsc', 'runc']).default('runsc'),
+  /** Docker Engine socket the controller (and only the controller) talks to. */
+  SBX_DOCKER_SOCKET: z
+    .string()
+    .startsWith('/')
+    .max(MAX_SOCKET_PATH)
+    .default('/var/run/docker.sock'),
+  /** Pull a digest-pinned sandbox image that is absent locally (off: fail the create). */
+  SBX_DOCKER_PULL: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
   SBX_TTL_SECONDS: positiveInt(MAX_TTL_SECONDS).default(DEFAULT_TTL_SECONDS),
   /** Longest wait for in-flight requests on SIGTERM/SIGINT before connections are cut. */
   SBX_DRAIN_TIMEOUT: zDurationMs()

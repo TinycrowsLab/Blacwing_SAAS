@@ -91,7 +91,7 @@ export async function startSandboxController(
     try {
       const metrics = createControllerMetrics(version, commit);
       // The driver client is lazy: constructing the driver never touches Kubernetes/Docker.
-      const driver = (deps.driverFactory ?? createDriver)(config.SBX_DRIVER);
+      const driver = (deps.driverFactory ?? createDriver)(config.SBX_DRIVER, config);
       const valkey = deps.valkeyProbe ?? createValkeyProbe(config.VALKEY_URL);
       const readiness = createReadinessMonitor({
         probes: [{ name: 'driver', check: () => driver.ping() }, valkey],

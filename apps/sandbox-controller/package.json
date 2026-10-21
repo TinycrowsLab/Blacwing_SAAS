@@ -23,6 +23,7 @@
     "@blackwing/errors": "workspace:*",
     "@blackwing/logger": "workspace:*",
     "@opentelemetry/api": "catalog:",
+    "dockerode": "5.0.1",
     "fastify": "catalog:",
     "ioredis": "5.11.1",
     "prom-client": "catalog:",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@blackwing/testing": "workspace:*",
+    "@types/dockerode": "4.0.2",
     "@types/node": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
