@@ -1,5 +1,5 @@
 import { idempotencyKeySchema, problemSchema } from '@blackwing/contracts';
-import { ERROR_CODES, type ErrorCode, PROBLEM_JSON_CONTENT_TYPE } from '@blackwing/errors';
+import { ERROR_CODES, type ErrorCode } from '@blackwing/errors';
 
 import { errorResponses, type JsonObject, jsonSchema } from './schema.js';
 import { killOpenApiDocument } from '../kill/openapi.js';
@@ -100,11 +100,8 @@ const STANDARD_ERROR_STATUSES = [
   HTTP_UNPROCESSABLE,
   HTTP_TOO_MANY_REQUESTS,
 ] as const;
-const PRECONDITION_REQUIRED_STATUS = 428;
-const CONCURRENCY_ERROR_STATUSES = [
-  HTTP_PRECONDITION_FAILED,
-  PRECONDITION_REQUIRED_STATUS,
-] as const;
+const HTTP_PRECONDITION_REQUIRED = 428;
+const CONCURRENCY_ERROR_STATUSES = [HTTP_PRECONDITION_FAILED, HTTP_PRECONDITION_REQUIRED] as const;
 
 function withStandardErrors(operation: JsonObject): JsonObject {
   const parameters = (operation.parameters ?? []) as JsonObject[];
@@ -121,25 +118,6 @@ function withStandardErrors(operation: JsonObject): JsonObject {
       existing[String(ERROR_CODES[code].status)] === undefined,
   );
   const generated: JsonObject = errorResponses(codes);
-  // The registry has no 428 code yet (see the discovered issue); document the status with the shared
-  // Problem schema so If-Match endpoints still declare it.
-  if (wanted.includes(PRECONDITION_REQUIRED_STATUS) && existing['428'] === undefined) {
-    generated['428'] = {
-      description: 'Problem details; the If-Match header is required on this operation.',
-      content: {
-        [PROBLEM_JSON_CONTENT_TYPE]: {
-          schema: { $ref: '#/components/schemas/Problem' },
-          example: {
-            type: 'https://errors.blackwing.dev/PRECONDITION_REQUIRED',
-            title: 'Precondition required',
-            status: PRECONDITION_REQUIRED_STATUS,
-            code: 'PRECONDITION_REQUIRED',
-            traceId: '4bf92f3577b34da6a3ce929d0e0e4736',
-          },
-        },
-      },
-    };
-  }
   return { ...operation, responses: sortedKeys({ ...existing, ...generated }) };
 }
 
