@@ -35,6 +35,9 @@ describe('loadApiConfig', () => {
     expect(config.API_MAX_JSON_DEPTH).toBe(32);
     expect(config.API_TRUST_PROXY).toBe(true);
     expect(config.API_SHUTDOWN_GRACE_MS).toBe(DEFAULT_API_SHUTDOWN_GRACE_MS);
+    expect(config.API_IDEMPOTENCY_TTL_S).toBe(86_400);
+    expect(config.API_IDEMPOTENCY_LOCK_TTL_S).toBe(120);
+    expect(config.API_IDEMPOTENCY_MAX_BODY_BYTES).toBe(65_536);
     expect(config.WEB_ORIGIN).toEqual(['http://localhost:3000']);
     expect(Object.isFrozen(config)).toBe(true);
   });
@@ -75,6 +78,9 @@ describe('loadApiConfig', () => {
     ['API_MAX_JSON_DEPTH', '0'],
     ['API_TRUST_PROXY', 'maybe'],
     ['API_SHUTDOWN_GRACE_MS', '0'],
+    ['API_IDEMPOTENCY_TTL_S', '0'],
+    ['API_IDEMPOTENCY_LOCK_TTL_S', '1.5'],
+    ['API_IDEMPOTENCY_MAX_BODY_BYTES', '-1'],
     ['WEB_ORIGIN', 'http://localhost:3000/app'],
     ['WEB_ORIGIN', 'http://localhost:3000/'],
     ['WEB_ORIGIN', 'ftp://localhost'],

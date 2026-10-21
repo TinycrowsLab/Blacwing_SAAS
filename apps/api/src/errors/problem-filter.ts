@@ -22,7 +22,7 @@ import { type Logger, redactText } from '@blackwing/logger';
 
 import { ApiProblemError } from './problem-errors.js';
 import { problemRegistry, type ProblemRegistry, wireCodeFor } from './registry.js';
-import { UNMATCHED_ROUTE ,type  HttpMetrics } from '../bootstrap/metrics.js';
+import { UNMATCHED_ROUTE, type HttpMetrics } from '../bootstrap/metrics.js';
 import { currentTraceId, requestLogger } from '../bootstrap/request-context.js';
 import {
   API_CONFIG,
@@ -47,6 +47,8 @@ const FIRST_CLIENT_ERROR_STATUS = 400;
 const LAST_HTTP_ERROR_STATUS = 599;
 const STATUS_RATE_LIMITED = 429;
 const STATUS_SERVICE_UNAVAILABLE = 503;
+/** `409 idempotency_in_progress` tells the client when to retry (API-008). */
+const STATUS_CONFLICT = 409;
 const HIGH_SURROGATE_MIN = 0xd800;
 const HIGH_SURROGATE_MAX = 0xdbff;
 const LAST_CLIENT_ERROR_STATUS = 499;
@@ -193,11 +195,11 @@ export class ProblemJsonExceptionFilter implements ExceptionFilter {
         .status(status)
         .header('content-type', PROBLEM_JSON_CONTENT_TYPE)
         .header('cache-control', 'no-store');
-      if (resolved.retryAfterSeconds !== undefined && status === STATUS_RATE_LIMITED) {
-        void reply.header('retry-after', String(resolved.retryAfterSeconds));
-      } else if (
+      if (
         resolved.retryAfterSeconds !== undefined &&
-        status === STATUS_SERVICE_UNAVAILABLE
+        (status === STATUS_RATE_LIMITED ||
+          status === STATUS_SERVICE_UNAVAILABLE ||
+          status === STATUS_CONFLICT)
       ) {
         void reply.header('retry-after', String(resolved.retryAfterSeconds));
       }

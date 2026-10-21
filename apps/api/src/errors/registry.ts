@@ -37,6 +37,11 @@ export const BASE_PROBLEM_CODES = {
   precondition_required: { status: 428, title: 'Precondition required' },
   rate_limited: { status: 429, title: 'Too many requests' },
   idempotency_conflict: { status: 409, title: 'Idempotency key conflict' },
+  // Idempotency-Key handling (API-008): the header, a request in flight, the store, an unreplayable result.
+  idempotency_key_required: { status: 400, title: 'Idempotency-Key header required' },
+  idempotency_in_progress: { status: 409, title: 'Request with this Idempotency-Key in progress' },
+  idempotency_result_too_large: { status: 409, title: 'Stored result too large to replay' },
+  idempotency_unavailable: { status: 503, title: 'Idempotency store unavailable' },
   // List endpoints (API-005): a forged, stale or mismatched cursor; a filter/sort outside the allowlist.
   invalid_cursor: { status: 400, title: 'Invalid cursor' },
   invalid_filter: { status: 400, title: 'Invalid filter' },

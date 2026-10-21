@@ -10,11 +10,13 @@ import {
 } from './bootstrap/tokens.js';
 import { ProblemJsonExceptionFilter, type SecurityEventSink } from './errors/problem-filter.js';
 import { HealthModule } from './health/health.module.js';
+import { IdempotencyModule } from './idempotency/module.js';
 import { SmokeController } from './smoke.controller.js';
 import { createValidationPipe } from './validation/zod-validation.pipe.js';
 
 import type { ApiConfig } from './config.js';
 import type { HealthProbe } from './health/health.types.js';
+import type { IdempotencyStore } from './idempotency/ports.js';
 import type { Logger } from '@blackwing/logger';
 
 /** Provides the validated, frozen `ApiConfig` (from `@blackwing/config`) under `API_CONFIG`. */
@@ -50,6 +52,11 @@ export interface AppModuleOptions {
   readonly metrics?: HttpMetrics;
   /** Dependencies the health endpoints check (postgresProbe, valkeyProbe, ...). */
   readonly healthProbes?: readonly HealthProbe[];
+  /**
+   * Store behind `@Idempotent()` routes (API-008): the Valkey adapter in production. Without one those
+   * routes answer `503 idempotency_unavailable` (fail closed).
+   */
+  readonly idempotencyStore?: IdempotencyStore;
   /** Receives security-relevant errors (`permission_denied`, `tenant_context_missing`); AUDIT wires `emitAudit`. */
   readonly securityEventSink?: SecurityEventSink;
   /** Extra modules to mount (feature modules of later issues; test-only routes). */
@@ -69,6 +76,10 @@ export class AppModule {
         HealthModule.forRoot({
           registry: metrics.registry,
           ...(options.healthProbes === undefined ? {} : { probes: options.healthProbes }),
+        }),
+        IdempotencyModule.forRoot({
+          registry: metrics.registry,
+          ...(options.idempotencyStore === undefined ? {} : { store: options.idempotencyStore }),
         }),
         ...(options.imports ?? []),
       ],

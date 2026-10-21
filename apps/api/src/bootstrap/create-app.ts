@@ -19,6 +19,7 @@ import { apiPackageVersion } from '../openapi/emit.js';
 import type { ApiConfig } from '../config.js';
 import type { SecurityEventSink } from '../errors/problem-filter.js';
 import type { HealthProbe } from '../health/health.types.js';
+import type { IdempotencyStore } from '../idempotency/ports.js';
 import type { Logger } from '@blackwing/logger';
 import type { Tracer } from '@opentelemetry/api';
 import type { FastifyInstance } from 'fastify';
@@ -47,6 +48,8 @@ export interface CreateApiAppOptions {
   readonly metrics?: HttpMetrics;
   /** Dependencies the health endpoints check; wired by the process entry point. */
   readonly healthProbes?: readonly HealthProbe[];
+  /** Store behind `@Idempotent()` routes; without one they fail closed with 503 (API-008). */
+  readonly idempotencyStore?: IdempotencyStore;
   /** Receives security-relevant errors for auditing (see `SecurityEventSink`). */
   readonly securityEventSink?: SecurityEventSink;
   /** Extra modules to mount (feature modules; test-only routes). */
@@ -100,6 +103,9 @@ export async function createApiApp(options: CreateApiAppOptions): Promise<ApiApp
       logger,
       metrics,
       ...(options.healthProbes === undefined ? {} : { healthProbes: options.healthProbes }),
+      ...(options.idempotencyStore === undefined
+        ? {}
+        : { idempotencyStore: options.idempotencyStore }),
       ...(options.securityEventSink === undefined
         ? {}
         : { securityEventSink: options.securityEventSink }),

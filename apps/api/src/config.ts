@@ -28,9 +28,20 @@ export const DEFAULT_API_MAX_JSON_DEPTH = 32;
 export const DEFAULT_API_HEALTH_CHECK_TIMEOUT_MS = 2000;
 export const DEFAULT_API_HEALTH_CACHE_MS = 1000;
 
+/** Idempotency-Key handling (API-008, #60). */
+const DEFAULT_API_IDEMPOTENCY_TTL_S = 86_400;
+const DEFAULT_API_IDEMPOTENCY_LOCK_TTL_S = 120;
+const DEFAULT_API_IDEMPOTENCY_MAX_BODY_BYTES = 65_536;
+
 const byteCount = z
   .string()
   .regex(/^[1-9][0-9]{0,14}$/, 'must be a positive integer number of bytes')
+  .transform(Number);
+
+/** Whole seconds, at least 1. */
+const seconds = z
+  .string()
+  .regex(/^[1-9][0-9]{0,8}$/, 'must be a positive integer number of seconds')
   .transform(Number);
 
 const positiveDuration = zDurationMs().refine((ms) => ms > 0, 'must be greater than zero');
@@ -64,6 +75,15 @@ export const apiEnvShape = {
    * the cursor codec refuses a missing or short (< 32 chars) key (fail closed).
    */
   API_CURSOR_SECRET: zSecret().optional(),
+  /** How long a stored `Idempotency-Key` result is replayed (API-008). */
+  API_IDEMPOTENCY_TTL_S: seconds.default(DEFAULT_API_IDEMPOTENCY_TTL_S),
+  /**
+   * How long an `in_progress` marker blocks duplicates. A crash between the work and the stored result
+   * lets a retry proceed once it expires (API-008).
+   */
+  API_IDEMPOTENCY_LOCK_TTL_S: seconds.default(DEFAULT_API_IDEMPOTENCY_LOCK_TTL_S),
+  /** Largest response body stored for replay; a bigger one is flagged and replays as `409 idempotency_result_too_large`. */
+  API_IDEMPOTENCY_MAX_BODY_BYTES: byteCount.default(DEFAULT_API_IDEMPOTENCY_MAX_BODY_BYTES),
   /** Release version and commit echoed by `/health`. Neither is a secret. */
   API_VERSION: z.string().min(1).default('0.0.0'),
   API_COMMIT: z.string().min(1).default('unknown'),

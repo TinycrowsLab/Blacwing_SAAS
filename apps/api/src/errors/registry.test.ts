@@ -21,6 +21,10 @@ const EXPECTED_STATUS: Readonly<Record<string, number>> = {
   precondition_required: 428,
   rate_limited: 429,
   idempotency_conflict: 409,
+  idempotency_key_required: 400,
+  idempotency_in_progress: 409,
+  idempotency_result_too_large: 409,
+  idempotency_unavailable: 503,
   tenant_context_missing: 500,
   internal_error: 500,
 };
