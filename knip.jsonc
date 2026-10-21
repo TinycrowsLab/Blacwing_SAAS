@@ -26,6 +26,10 @@
       "entry": ["src/main.ts", "src/main.tsx", "src/instrumentation.ts"],
       "project": ["src/**/*.{ts,tsx}"],
     },
+    "apps/web": {
+      // Next.js App Router segment files are loaded by the framework by file name, never imported.
+      "entry": ["src/app/**/{error,loading,not-found,layout,page}.tsx"],
+    },
     "packages/*": {
       "project": ["src/**/*.{ts,tsx}"],
     },

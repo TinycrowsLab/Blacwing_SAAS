@@ -38,6 +38,16 @@ Interactive primitives are Radix underneath (roles, focus trap, keyboard) and ma
 Button, Input, Badge, Card, Table, Skeleton, Breadcrumb are server-safe.
 Icons: `lucide-react` (pinned).
 
+## State components (CONSOLE-006)
+
+`LoadingState` (spinner, table, card, detail skeletons; stops animating under `prefers-reduced-motion`),
+`EmptyState`, `ErrorState`, `PermissionDenied`, `NotFound` and `QueryState` (picks exactly one of them for a
+query). `ErrorState` takes a structural `ApiErrorLike` (`status`, `code`, `traceId`, `detail`), renders fixed
+copy per error kind plus the `code` and a copyable `traceId`, never `message` or stacks, truncates and
+sanitises `detail`, and backs Retry off (1s, 2s, 4s, capped at 30s) while disabling it during a refetch. A 403
+always renders `PermissionDenied`, a reflection of the server decision, never a client guess. The error
+boundaries live in `apps/web` (`components/errors/route-error-boundary.tsx`, `app/(console)/error.tsx`).
+
 ## Bundle budget
 
 Each module is imported by name from the barrel and the package declares `sideEffects: ["**/*.css"]`, so
