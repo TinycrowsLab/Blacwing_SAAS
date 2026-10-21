@@ -12,6 +12,7 @@ import {
   KillSwitchActiveError,
   NotFoundError,
   PreconditionFailedError,
+  PreconditionRequiredError,
   RateLimitedError,
   ScopeViolationError,
   TenantContextMissingError,
@@ -43,6 +44,12 @@ const SUBCLASSES: readonly (readonly [
     'PRECONDITION_FAILED',
     (o) => new PreconditionFailedError('etag', o),
     PreconditionFailedError,
+  ],
+  [
+    'PreconditionRequiredError',
+    'PRECONDITION_REQUIRED',
+    (o) => new PreconditionRequiredError('if-match', o),
+    PreconditionRequiredError,
   ],
   [
     'RateLimitedError',

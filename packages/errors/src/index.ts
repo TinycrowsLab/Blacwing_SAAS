@@ -19,6 +19,7 @@ export {
   type KillSwitchActiveErrorOptions,
   NotFoundError,
   PreconditionFailedError,
+  PreconditionRequiredError,
   RateLimitedError,
   type RateLimitedErrorOptions,
   ScopeViolationError,

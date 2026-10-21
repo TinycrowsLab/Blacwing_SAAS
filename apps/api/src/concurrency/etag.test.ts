@@ -65,7 +65,7 @@ describe('parseIfMatch', () => {
   it.each(['W/"v1"', '"v1", W/"v2"', 'v1', '"v1" "v2"', '"unterminated'])(
     'rejects %s as 428 precondition_required',
     (header) => {
-      expect(code(thrown(() => parseIfMatch(header)))).toBe('precondition_required');
+      expect(code(thrown(() => parseIfMatch(header)))).toBe('PRECONDITION_REQUIRED');
     },
   );
 });
@@ -85,7 +85,7 @@ describe('requireIfMatch', () => {
   });
 
   it('missing header is 428', () => {
-    expect(code(thrown(() => requireIfMatch('"v3"', undefined)))).toBe('precondition_required');
+    expect(code(thrown(() => requireIfMatch('"v3"', undefined)))).toBe('PRECONDITION_REQUIRED');
   });
 
   it('stale tag is 412', () => {
@@ -99,7 +99,7 @@ describe('requireIfMatch', () => {
   });
 
   it('a missing header on a missing resource is still 428', () => {
-    expect(code(thrown(() => requireIfMatch(null, undefined)))).toBe('precondition_required');
+    expect(code(thrown(() => requireIfMatch(null, undefined)))).toBe('PRECONDITION_REQUIRED');
   });
 });
 

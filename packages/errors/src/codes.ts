@@ -25,6 +25,7 @@ const DEFINITIONS = {
   NOT_FOUND: { status: 404, title: 'Resource not found', retryable: false },
   CONFLICT: { status: 409, title: 'Conflict', retryable: false },
   PRECONDITION_FAILED: { status: 412, title: 'Precondition failed', retryable: false },
+  PRECONDITION_REQUIRED: { status: 428, title: 'Precondition required', retryable: false },
   RATE_LIMITED: { status: 429, title: 'Too many requests', retryable: true },
   ILLEGAL_RUN_TRANSITION: { status: 409, title: 'Illegal run state transition', retryable: false },
   // A request that reaches a tenant-scoped path without tenant context is a server defect, and it is

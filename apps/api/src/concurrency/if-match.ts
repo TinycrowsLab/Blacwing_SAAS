@@ -1,7 +1,6 @@
-import { PreconditionFailedError } from '@blackwing/errors';
+import { PreconditionFailedError, PreconditionRequiredError } from '@blackwing/errors';
 
 import { versionFromEtag } from './etag.js';
-import { ApiProblemError } from '../errors/problem-errors.js';
 
 /** A parsed `If-Match` header: `*` ("must exist") or a list of strong entity-tags. */
 export type IfMatch =
@@ -20,8 +19,8 @@ export interface IfMatchResult {
 
 const TAG = /\s*(W\/)?"([^"\\\s,]*)"\s*(?:,|$)/y;
 
-function required(detail: string): ApiProblemError {
-  return new ApiProblemError('precondition_required', detail, { detail });
+function required(detail: string): PreconditionRequiredError {
+  return new PreconditionRequiredError(detail, { detail });
 }
 
 function stale(detail: string): PreconditionFailedError {

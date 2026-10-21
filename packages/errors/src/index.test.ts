@@ -28,6 +28,7 @@ describe('@blackwing/errors', () => {
       'NotFoundError',
       'ConflictError',
       'PreconditionFailedError',
+      'PreconditionRequiredError',
       'RateLimitedError',
       'IllegalRunTransitionError',
       'TenantContextMissingError',

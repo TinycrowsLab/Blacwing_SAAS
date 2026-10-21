@@ -133,6 +133,14 @@ export class PreconditionFailedError extends AppError {
   }
 }
 
+/** `PRECONDITION_REQUIRED` (428): a mutation arrived without a usable `If-Match` header (§9). */
+export class PreconditionRequiredError extends AppError {
+  declare readonly code: 'PRECONDITION_REQUIRED';
+  constructor(message?: string, options?: AppErrorOptions) {
+    super('PRECONDITION_REQUIRED', message, options);
+  }
+}
+
 /** Options for {@link RateLimitedError}. */
 export interface RateLimitedErrorOptions extends AppErrorOptions {
   /** Seconds until the caller may retry; the API sends it as `Retry-After` (§9). */
