@@ -67,3 +67,19 @@ export {
 } from './pool.js';
 export * from './schema/index.js';
 export * from './columns.js';
+export {
+  APP_ROLE,
+  assertRlsEnabled,
+  readRlsState,
+  RLS_PREDICATE,
+  rlsMigrationSql,
+  rlsPolicyName,
+  rlsPolicySql,
+  RlsConfigError,
+  type RlsPolicyOptions,
+  type RlsQueryable,
+  type RlsState,
+  STATEMENT_BREAKPOINT,
+  TENANT_COLUMN,
+  toTenantIsolationError,
+} from './rls.js';

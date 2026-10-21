@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@blackwing/testing": "workspace:*",
+    "fast-check": "catalog:",
     "@types/node": "catalog:",
     "@types/pg": "8.23.1",
     "drizzle-kit": "0.31.11",
