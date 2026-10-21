@@ -44,3 +44,4 @@ export {
 export { BOOT_FAILURE_EXIT_CODE, runApi, type RunApiOptions } from './run.js';
 export * from './validation/index.js';
 export * from './kill/index.js';
+export * from './concurrency/index.js';

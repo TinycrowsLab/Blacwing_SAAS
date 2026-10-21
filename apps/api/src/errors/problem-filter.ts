@@ -22,6 +22,7 @@ import { type Logger, redactText } from '@blackwing/logger';
 
 import { ApiProblemError } from './problem-errors.js';
 import { problemRegistry, type ProblemRegistry, wireCodeFor } from './registry.js';
+import { UNMATCHED_ROUTE ,type  HttpMetrics } from '../bootstrap/metrics.js';
 import { currentTraceId, requestLogger } from '../bootstrap/request-context.js';
 import {
   API_CONFIG,
@@ -31,7 +32,6 @@ import {
   API_SECURITY_EVENT_SINK,
 } from '../bootstrap/tokens.js';
 
-import type { HttpMetrics } from '../bootstrap/metrics.js';
 import type { ApiConfig } from '../config.js';
 import type { Problem, ProblemFieldError } from '@blackwing/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -291,6 +291,11 @@ export class ProblemJsonExceptionFilter implements ExceptionFilter {
   ): void {
     try {
       this.metrics.errors.inc({ code, status: String(status) });
+      if (code === 'precondition_failed') {
+        this.metrics.optimisticConflicts.inc({
+          route: request.routeOptions.url ?? UNMATCHED_ROUTE,
+        });
+      }
     } catch {
       // Metrics must never turn an error response into a crash.
     }

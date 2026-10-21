@@ -16,6 +16,8 @@ export interface HttpMetrics {
   readonly validationFailures: Counter<'route'>;
   /** `http_errors_total{code,status}`: every problem+json the exception filter rendered (API-004). */
   readonly errors: Counter<'code' | 'status'>;
+  /** `optimistic_conflicts_total{route}`: `If-Match` mismatches answered 412 (API-007). */
+  readonly optimisticConflicts: Counter<'route'>;
 }
 
 /** A private registry per app instance, so tests and multiple instances never share counters. */
@@ -46,6 +48,12 @@ export function createHttpMetrics(): HttpMetrics {
       name: 'http_errors_total',
       help: 'Error responses rendered as problem+json, by stable error code and status.',
       labelNames: ['code', 'status'],
+      registers: [registry],
+    }),
+    optimisticConflicts: new Counter({
+      name: 'optimistic_conflicts_total',
+      help: 'Mutations rejected with 412 because the If-Match ETag was stale, by matched route template.',
+      labelNames: ['route'],
       registers: [registry],
     }),
   };
