@@ -37,6 +37,9 @@ export const BASE_PROBLEM_CODES = {
   precondition_required: { status: 428, title: 'Precondition required' },
   rate_limited: { status: 429, title: 'Too many requests' },
   idempotency_conflict: { status: 409, title: 'Idempotency key conflict' },
+  // List endpoints (API-005): a forged, stale or mismatched cursor; a filter/sort outside the allowlist.
+  invalid_cursor: { status: 400, title: 'Invalid cursor' },
+  invalid_filter: { status: 400, title: 'Invalid filter' },
   // Fail closed (§8.6): a tenant-scoped path ran without tenant context.
   tenant_context_missing: { status: 500, title: 'Tenant context missing' },
   internal_error: { status: 500, title: 'Internal server error' },

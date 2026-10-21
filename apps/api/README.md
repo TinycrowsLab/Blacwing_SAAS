@@ -38,3 +38,21 @@ Validated with Zod through `@blackwing/config` at boot. Any missing or invalid k
   `bindTenant()` is the hook later authentication uses to attach the verified tenant (§8.6).
 - On SIGTERM/SIGINT the listener closes, in-flight requests finish (cut once the grace window elapses)
   and the process exits 0.
+
+## Pagination and list filters (API-005)
+
+`src/pagination/` gives every list endpoint cursor (keyset) pagination, an allowlisted filter/sort parser
+and `Page<T>` (`{ items, nextCursor, hasMore }`). `PageQuerySchema` and `Page<T>` live in
+`@blackwing/contracts`.
+
+- Query: `?cursor=&limit=` (default 50, clamped to 200, `limit=0` is `400`), `sort=field[:asc|desc]`,
+  `filter[field]=v`, `filter[field][op]=v` (ops: `eq ne lt lte gt gte in prefix`, per-field allowlist).
+- A feature supplies a `ListSpec` (sort and filter allowlists, the unique `id` tiebreaker), calls
+  `parseListQuery`, then `listPage({ fetch })`, where `fetch` runs `.where(plan.where).orderBy(...plan.orderBy).limit(plan.fetchLimit)` inside `withTenant` (RLS applies).
+- Cursors are `base64url(json).base64url(hmac)` keyed by `API_CURSOR_SECRET` (>= 32 chars, `createCursorCodec`
+  fails closed otherwise) and are bound to the sort, direction and filters. A forged, stale or mismatched
+  cursor is `400 invalid_cursor`; a non-allowlisted field, operator, sort or value is `400 invalid_filter`.
+- ORDER BY and the keyset predicate share one expression per column: strings use `COLLATE "C"`, timestamps
+  are compared at millisecond precision (`date_trunc('milliseconds', col)`; add a matching expression index
+  for hot lists). Forward-only. Rows inserted between pages appear only if they sort after the cursor.
+- Metrics: `list_page_size`, `list_requests_total{route}` (`createListMetrics`).

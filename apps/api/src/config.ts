@@ -8,6 +8,7 @@ import {
   zCsv,
   zDurationMs,
   zPort,
+  zSecret,
   zUrl,
 } from '@blackwing/config';
 
@@ -58,6 +59,11 @@ export const apiEnvShape = {
   API_HEALTH_CACHE_MS: zDurationMs().default(DEFAULT_API_HEALTH_CACHE_MS),
   /** Include the (non-critical) Temporal check in readiness and the detailed report. */
   API_HEALTH_CHECK_TEMPORAL: zBool().default(true),
+  /**
+   * HMAC key that signs pagination cursors (API-005). Optional so the API boots without list routes;
+   * the cursor codec refuses a missing or short (< 32 chars) key (fail closed).
+   */
+  API_CURSOR_SECRET: zSecret().optional(),
   /** Release version and commit echoed by `/health`. Neither is a secret. */
   API_VERSION: z.string().min(1).default('0.0.0'),
   API_COMMIT: z.string().min(1).default('unknown'),

@@ -34,6 +34,7 @@
     "@nestjs/platform-fastify": "catalog:",
     "@opentelemetry/api": "catalog:",
     "@opentelemetry/core": "catalog:",
+    "drizzle-orm": "0.45.3",
     "fastify": "catalog:",
     "pg": "8.23.1",
     "prom-client": "catalog:",
@@ -47,6 +48,7 @@
     "@opentelemetry/sdk-trace-base": "catalog:",
     "@types/pg": "8.23.1",
     "@types/node": "catalog:",
+    "fast-check": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
