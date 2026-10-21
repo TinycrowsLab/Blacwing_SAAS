@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { DONE_RUN, harness, LIVE_RUN, principal, TENANT_A } from './fixtures.test-helpers.js';
 import { InMemoryKillAuditSink } from './memory.js';
@@ -222,6 +222,64 @@ describe('KillService edge cases', () => {
       code: 'KILL_FORBIDDEN',
     });
     expect((await h.service.get(appsec, response.killEventId)).id).toBe(response.killEventId);
+  });
+});
+
+describe('GET kill read model (halt timings)', () => {
+  async function viewOf(patch: Record<string, unknown>) {
+    const h = harness();
+    const { response } = await h.service.trigger({
+      principal: appsec,
+      body: runKill,
+      idempotencyKey: 'view-check-1',
+      traceId: null,
+    });
+    const base = await h.store.get(TENANT_A, response.killEventId);
+    if (base === null) throw new Error('kill event not stored');
+    vi.spyOn(h.store, 'get').mockResolvedValue({ ...base, ...patch });
+    return { h, view: await h.service.getView(appsec, response.killEventId), base };
+  }
+
+  it('returns haltMs and the stage breakdown for a completed kill', async () => {
+    const t = (ms: number): string =>
+      new Date(Date.parse('2026-10-20T10:00:00.000Z') + ms).toISOString();
+    const { view } = await viewOf({
+      status: 'halted',
+      triggeredAt: t(0),
+      egressBlockedAt: t(400),
+      sandboxesTerminatedAt: t(3100),
+      keysRevokedAt: t(3200),
+      workflowsCancelledAt: t(3300),
+      completedAt: t(3300),
+      haltMs: 3300,
+    });
+    expect(view).toMatchObject({
+      haltMs: 3300,
+      elapsedMs: null,
+      stages: { egressMs: 400, sandboxMs: 2700, keysMs: 100, workflowsMs: 100 },
+    });
+  });
+
+  it('surfaces elapsed-so-far with null stages for an open kill', async () => {
+    const { h, view, base } = await viewOf({});
+    h.clock.advance(2500);
+    const later = await h.service.getView(appsec, view.id);
+    expect(base.completedAt).toBeNull();
+    expect(later.haltMs).toBeNull();
+    expect(later.elapsedMs).toBe(2500);
+    expect(later.stages).toEqual({
+      egressMs: null,
+      sandboxMs: null,
+      keysMs: null,
+      workflowsMs: null,
+    });
+  });
+
+  it('keeps the tenant guard and run:read permission', async () => {
+    const h = harness();
+    await expect(h.service.getView(principal([]), 'x')).rejects.toMatchObject({
+      code: 'KILL_FORBIDDEN',
+    });
   });
 });
 

@@ -369,3 +369,55 @@ export const idempotencyKeySchema = z
   .min(IDEMPOTENCY_KEY_MIN)
   .max(LIMITS.subjectMax)
   .regex(/^[\x21-\x7e]+$/, 'must be visible ASCII');
+
+/** `bw_kill_halt_ms`: trigger to completion of a kill, no labels beyond scope (bounded cardinality). */
+export const KILL_HALT_MS_METRIC = Object.freeze({
+  name: 'bw_kill_halt_ms',
+  help: 'Kill halt time in milliseconds, triggered_at to completed_at',
+} as const);
+
+export interface KillStageMs {
+  readonly egressMs: number | null;
+  readonly sandboxMs: number | null;
+  readonly keysMs: number | null;
+  readonly workflowsMs: number | null;
+}
+
+export interface KillHaltTimings {
+  /** `completed_at - triggered_at`; null while the kill is still open. */
+  readonly haltMs: number | null;
+  /** Consecutive-timestamp deltas; null when either bounding timestamp is missing. */
+  readonly stages: KillStageMs;
+  /** True when a negative delta (clock skew) was clamped to 0. The caller logs the anomaly. */
+  readonly clamped: boolean;
+}
+
+type KillTime = Date | string | null;
+
+/**
+ * The single authoritative halt-time derivation, shared by the worker (persisted `halt_ms`) and the API
+ * (read model) so the two cannot drift. Server timestamps only; negative deltas clamp to 0.
+ */
+export function computeKillHalt(event: {
+  readonly triggeredAt: Date | string;
+  readonly egressBlockedAt: KillTime;
+  readonly sandboxesTerminatedAt: KillTime;
+  readonly keysRevokedAt: KillTime;
+  readonly workflowsCancelledAt: KillTime;
+  readonly completedAt: KillTime;
+}): KillHaltTimings {
+  let clamped = false;
+  const ms = (from: KillTime, to: KillTime): number | null => {
+    if (from === null || to === null) return null;
+    const delta = new Date(to).getTime() - new Date(from).getTime();
+    if (delta < 0) clamped = true;
+    return Math.max(0, delta);
+  };
+  const stages = {
+    egressMs: ms(event.triggeredAt, event.egressBlockedAt),
+    sandboxMs: ms(event.egressBlockedAt, event.sandboxesTerminatedAt),
+    keysMs: ms(event.sandboxesTerminatedAt, event.keysRevokedAt),
+    workflowsMs: ms(event.keysRevokedAt, event.workflowsCancelledAt),
+  };
+  return { haltMs: ms(event.triggeredAt, event.completedAt), stages, clamped };
+}
