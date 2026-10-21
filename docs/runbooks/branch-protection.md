@@ -32,7 +32,7 @@ without review, green supply-chain checks and immutable history.
 |---|---|---|
 | `required-checks` | `pr.yml` | Always-running aggregator over `changes`, `lint`, `typecheck`, `commitlint` and `boundaries`. Fails if any of them failed or was cancelled; skipped is fine. |
 | `lint`, `typecheck`, `commitlint` | `pr.yml` | Skipped on docs-only change sets (the classifier fails closed). A skipped required check counts as passing. |
-| `unit`, `integration` | `test.yml` | Vitest with coverage; Testcontainers integration tests. |
+| `unit`, `integration`, `isolation` | `test.yml` | Vitest with coverage; Testcontainers integration tests; the cross-tenant isolation gate (`pnpm test:isolation`). |
 | `go` | `go.yml` | Always-running aggregator. A `gate` job decides whether Go code changed; `egress-gateway` runs only then. `go` passes when that job passed or was skipped and fails when it failed. |
 | `gitleaks` | `secret-scan.yml` | Secret scanning. |
 | `drift` | `drift.yml` | Generated-artifact drift. |

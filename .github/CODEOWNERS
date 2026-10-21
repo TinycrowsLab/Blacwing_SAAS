@@ -23,6 +23,9 @@ packages/crypto/**        @TinycrowsLab/blackwing-security-owners
 packages/secrets/**       @TinycrowsLab/blackwing-security-owners
 # Append-only, tamper-evident audit ledger (§8.8).
 packages/audit/**         @TinycrowsLab/blackwing-security-owners
+# Cross-tenant isolation assertions and suite (§8.6): data-access packages must import them.
+packages/testing/src/containers/tenant-isolation*.ts  @TinycrowsLab/blackwing-security-owners
+packages/db/src/tenant-isolation.int.test.ts          @TinycrowsLab/blackwing-security-owners
 
 # The review rules themselves, CI workflows and the security tooling configuration.
 /.github/CODEOWNERS       @TinycrowsLab/blackwing-security-owners

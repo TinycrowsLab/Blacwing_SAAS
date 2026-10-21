@@ -41,6 +41,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:int": "turbo run test:int",
+    "test:isolation": "pnpm --filter @blackwing/db test:isolation",
     "test:e2e": "turbo run test:e2e",
     "test:ci": "node scripts/ci-unit.mjs",
     "test:int:ci": "turbo run test:int --concurrency=2 -- --reporter=default --reporter=junit --outputFile.junit=reports/junit-int.xml",

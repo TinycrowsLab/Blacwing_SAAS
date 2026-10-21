@@ -53,6 +53,9 @@
             "context": "integration"
           },
           {
+            "context": "isolation"
+          },
+          {
             "context": "go"
           },
           {

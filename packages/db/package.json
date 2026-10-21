@@ -18,6 +18,7 @@
     "db:check": "vitest run --configLoader runner --config src/vitest.int.config.ts src/check/drift.int.test.ts",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run --configLoader runner --config src/vitest.config.ts",
+    "test:isolation": "vitest run --configLoader runner --config src/vitest.int.config.ts src/tenant-isolation.int.test.ts",
     "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts",
     "typecheck": "tsc -b --pretty false",
     "db:ping": "tsx --env-file-if-exists=../../.env src/ping.ts",

@@ -97,3 +97,40 @@ jobs:
             integration-logs
           if-no-files-found: warn
           retention-days: 14
+
+  # Cross-tenant isolation gate (TENANT-003, #102, CONTEXT_PACK §8.6): the real migrations on a
+  # Testcontainers Postgres, asserted as bw_app. Required on every PR; a failure means a tenant
+  # table lost RLS, fails open without context, leaks across pooled connections or the role can bypass.
+  isolation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      TZ: UTC
+      BW_FC_SEED: '20240101'
+      TESTCONTAINERS_REUSE_ENABLE: 'false'
+      BW_TESTCONTAINERS_REUSE: 'false'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Pre-pull the Postgres image (retry)
+        run: |
+          set -euo pipefail
+          ref=$(grep '^postgres=' infra/images.lock | cut -d= -f2-)
+          for attempt in 1 2 3 4; do
+            if docker pull --quiet "$ref" >/dev/null; then exit 0; fi
+            sleep $((attempt * 5))
+          done
+          echo "failed to pull $ref" >&2; exit 1
+      - name: Cross-tenant isolation tests
+        run: pnpm test:isolation -- --reporter=default --reporter=junit --outputFile.junit=reports/junit-isolation.xml
+      - name: Upload the isolation report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: isolation-report
+          path: packages/db/reports/junit-isolation.xml
+          if-no-files-found: warn
+          retention-days: 14

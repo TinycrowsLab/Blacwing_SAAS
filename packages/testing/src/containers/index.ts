@@ -25,6 +25,17 @@ export {
   isDockerAvailable,
   UnsafeTestEnvironmentError,
 } from './runtime.js';
+export {
+  expectAllTenantTablesForceRls,
+  expectAppRoleCannotBypass,
+  expectEveryTenantTableCovered,
+  expectFailsClosedWithoutContext,
+  expectNoLeakAcrossTransactions,
+  expectRlsBlocksCrossTenant,
+  type CrossTenantOptions,
+  listTenantTables,
+  TenantIsolationError,
+} from './tenant-isolation.js';
 export { type Queryable, TenantContextError, tenantUuid, withTenant } from './tenant.js';
 export { type TemporalHandle, withTemporal, type WithTemporalOptions } from './temporal.js';
 export { type ValkeyHandle, withValkey, type WithValkeyOptions } from './valkey.js';
