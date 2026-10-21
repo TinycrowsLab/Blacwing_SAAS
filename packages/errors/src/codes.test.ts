@@ -26,6 +26,8 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   RATE_LIMITED: 429,
   ILLEGAL_RUN_TRANSITION: 409,
   TENANT_CONTEXT_MISSING: 500,
+  TENANT_CONTEXT_CONFLICT: 500,
+  TX_RETRY_EXHAUSTED: 503,
   KILL_SWITCH_ACTIVE: 423,
   SCOPE_VIOLATION: 403,
   SCOPE_INTRUSIVENESS_EXCEEDS_CEILING: 403,
@@ -76,7 +78,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(46);
+    expect(ERROR_CODE_LIST).toHaveLength(50);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -101,9 +103,10 @@ describe('error-code registry', () => {
     );
   });
 
-  it('marks only RATE_LIMITED, TEMPORAL_UNAVAILABLE, DB_UNAVAILABLE and SBX_DRIVER_UNAVAILABLE as retryable', () => {
+  it('marks only RATE_LIMITED, TX_RETRY_EXHAUSTED, TEMPORAL_UNAVAILABLE, DB_UNAVAILABLE and SBX_DRIVER_UNAVAILABLE as retryable', () => {
     expect(ERROR_CODE_LIST.filter((code) => ERROR_CODES[code].retryable)).toEqual([
       'RATE_LIMITED',
+      'TX_RETRY_EXHAUSTED',
       'TEMPORAL_UNAVAILABLE',
       'DB_UNAVAILABLE',
       'SBX_DRIVER_UNAVAILABLE',
@@ -174,6 +177,8 @@ describe('error-code registry', () => {
       | 'RATE_LIMITED'
       | 'ILLEGAL_RUN_TRANSITION'
       | 'TENANT_CONTEXT_MISSING'
+      | 'TENANT_CONTEXT_CONFLICT'
+      | 'TX_RETRY_EXHAUSTED'
       | 'KILL_SWITCH_ACTIVE'
       | 'SCOPE_VIOLATION'
       | 'SCOPE_INTRUSIVENESS_EXCEEDS_CEILING'

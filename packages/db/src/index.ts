@@ -25,6 +25,14 @@ export {
 export {
   appDbEnvSchema,
   DB_ROLES,
+  dbTxEnvSchema,
+  DEFAULT_DB_TX_ISOLATION,
+  DEFAULT_DB_TX_MAX_RETRIES,
+  type DbTxConfig,
+  loadDbTxConfig,
+  MAX_DB_TX_MAX_RETRIES,
+  TX_ISOLATION_LEVELS,
+  type TxIsolation,
   type DbConnectionConfig,
   DEFAULT_PG_ACQUIRE_TIMEOUT_MS,
   DEFAULT_PG_DATABASE,
@@ -65,6 +73,22 @@ export {
   ObservedPool,
   type PoolName,
 } from './pool.js';
+export {
+  type DbTxMetrics,
+  RETRYABLE_PG_CODES,
+  type SystemAccessEvent,
+  type SystemAuditEmitter,
+  type SystemTx,
+  TenantContextMismatchError,
+  type TenantTx,
+  type TxLogger,
+  type TxOptions,
+  TxRetryExhaustedError,
+  unwrapQueryError,
+  withSystem,
+  withTenant,
+  type WithSystemOptions,
+} from './with-tenant.js';
 export * from './schema/index.js';
 export * from './columns.js';
 export {
@@ -104,4 +128,3 @@ export {
   type RowOf,
   type TenantContextSource,
 } from './repository.js';
-export { type TenantTx, withTenant } from './with-tenant.js';

@@ -172,10 +172,14 @@ export function toTenantIsolationError(error: unknown): Error | undefined {
   const message = (error as { message?: unknown } | null)?.message;
   const text = typeof message === 'string' ? message : '';
   if (code === '42704' && text.includes('app.tenant_id')) {
-    return new TenantContextMissingError('tenant context is not set', { cause: error });
+    return new TenantContextMissingError('tenant context is not set', {
+      reason: 'missing',
+      cause: error,
+    });
   }
   if (code === '22P02' && text.includes('uuid')) {
     return new TenantContextMissingError('tenant context is not a valid tenant id', {
+      reason: 'invalid_uuid',
       cause: error,
     });
   }

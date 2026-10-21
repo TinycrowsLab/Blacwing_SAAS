@@ -351,7 +351,7 @@ CLAUDE.md  README.md  SECURITY.md  LICENSE (proprietary notice)
 Rules:
 - Every table has `created_at`/`updated_at`, uses soft-delete only where stated, and puts foreign keys and indexes on all lookup columns.
 - **RLS policy:** `USING (tenant_id = current_setting('app.tenant_id')::uuid)`. The app DB role has no `BYPASSRLS`, and migrations run as a separate owner role.
-- Every request sets `app.tenant_id` with `SET LOCAL` inside a transaction (`withTenant(tx, tenantId, fn)` helper). A request without a tenant context **fails closed**.
+- Every request sets `app.tenant_id` with `SET LOCAL` inside a transaction (`withTenant(db, tenantId, fn)` helper in `packages/db`, which owns the BEGIN/COMMIT; the only bypass is the explicit, audited `withSystem`). A request without a tenant context **fails closed**.
 
 ---
 

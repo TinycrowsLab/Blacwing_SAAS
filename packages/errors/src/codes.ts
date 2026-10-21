@@ -31,6 +31,11 @@ const DEFINITIONS = {
   // A request that reaches a tenant-scoped path without tenant context is a server defect, and it is
   // refused outright (§7/§8.6 fail closed): 500, never retried, never served without isolation.
   TENANT_CONTEXT_MISSING: { status: 500, title: 'Tenant context missing', retryable: false },
+  // withTenant/withSystem (DB-004). Nesting a different tenant context is a programming defect (500,
+  // never retried: no silent re-scoping). A transaction that keeps hitting serialization failures or
+  // deadlocks is a transient overload (503, retryable).
+  TENANT_CONTEXT_CONFLICT: { status: 500, title: 'Tenant context conflict', retryable: false },
+  TX_RETRY_EXHAUSTED: { status: 503, title: 'Transaction retries exhausted', retryable: true },
   KILL_SWITCH_ACTIVE: { status: 423, title: 'Kill switch active', retryable: false },
   SCOPE_VIOLATION: { status: 403, title: 'Out of authorised scope', retryable: false },
   // Intrusiveness-class validation (SCOPE-003, §3.5/§8.3). Exceeding a ceiling or naming

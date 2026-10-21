@@ -3,6 +3,26 @@
 Drizzle schema, SQL migrations and tenant-scoped (RLS) data access. See
 [CONTEXT_PACK §7](../../docs/architecture/CONTEXT_PACK.md) and ADR 0010.
 
+## `withTenant` and `withSystem` (DB-004)
+
+`src/with-tenant.ts` is the only implementation of the tenant transaction doorway.
+
+- `withTenant(db, tenantId, fn, options?)` opens the transaction (`BEGIN`), runs a bound,
+  transaction-local `set_config('app.tenant_id', $1, true)`, calls `fn(tx)` and commits (rolls back
+  on a throw). A missing id throws `TenantContextMissingError` (`meta.reason: 'missing'`), a non-UUID
+  the same error (`'invalid_uuid'`), both before any query.
+- `40001` and `40P01` re-run the whole transaction up to `DB_TX_MAX_RETRIES` (default 3) with
+  jittered backoff, then throw `TxRetryExhaustedError` (`TX_RETRY_EXHAUSTED`, 503). `fn` can run more
+  than once: keep it idempotent and do database work only. `DB_TX_ISOLATION` (`read committed`
+  default, `repeatable read`, `serializable`) sets the level; `options.isolation` overrides it.
+- A nested call for the same tenant reuses the open transaction; a different tenant (or `withSystem`
+  inside `withTenant`) throws `TenantContextMismatchError` (`TENANT_CONTEXT_CONFLICT`).
+- `options.signal` (kill switch) is checked before BEGIN, before each retry and before COMMIT: an
+  aborted transaction never commits.
+- `withSystem(db, fn, { audit, actor, reason })` is the explicit, audited bypass for platform
+  maintenance. It sets no tenant, so RLS keeps tenant tables closed to it.
+- Queries on another client or pool inside `fn` run outside the transaction and are unsupported.
+
 ## The repository pattern (DB-007)
 
 Every domain module reads and writes through a repository built on `BaseRepository`

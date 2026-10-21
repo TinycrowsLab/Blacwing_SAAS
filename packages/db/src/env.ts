@@ -172,3 +172,41 @@ export function loadOwnerDbConfig(
 ): Readonly<DbConnectionConfig> {
   return loadConfig(ownerDbEnvSchema, source, options);
 }
+
+/** Transaction isolation levels `withTenant`/`withSystem` accept (never `read uncommitted`). */
+export const TX_ISOLATION_LEVELS = ['read committed', 'repeatable read', 'serializable'] as const;
+export type TxIsolation = (typeof TX_ISOLATION_LEVELS)[number];
+
+export const DEFAULT_DB_TX_MAX_RETRIES = 3;
+export const DEFAULT_DB_TX_ISOLATION: TxIsolation = 'read committed';
+/** Upper bound on `DB_TX_MAX_RETRIES`: a transaction that fails this often should surface, not spin. */
+export const MAX_DB_TX_MAX_RETRIES = 10;
+
+/** Transaction settings of the `withTenant` helper (DB-004). */
+export interface DbTxConfig {
+  readonly maxRetries: number;
+  readonly isolation: TxIsolation;
+}
+
+/** `DB_TX_MAX_RETRIES` (default 3) and `DB_TX_ISOLATION` (default `read committed`). */
+export const dbTxEnvSchema = z
+  .object({
+    DB_TX_MAX_RETRIES: zString({ trim: true })
+      .pipe(z.coerce.number<string>().int().min(0).max(MAX_DB_TX_MAX_RETRIES))
+      .default(DEFAULT_DB_TX_MAX_RETRIES),
+    DB_TX_ISOLATION: zString({ trim: true })
+      .pipe(z.enum(TX_ISOLATION_LEVELS))
+      .default(DEFAULT_DB_TX_ISOLATION),
+  })
+  .transform((env): DbTxConfig => ({
+    maxRetries: env.DB_TX_MAX_RETRIES,
+    isolation: env.DB_TX_ISOLATION,
+  }));
+
+/** Parses the transaction settings. Throws `ConfigValidationError` (`CONFIG_INVALID`) naming keys only. */
+export function loadDbTxConfig(
+  source?: EnvSource,
+  options?: LoadConfigOptions,
+): Readonly<DbTxConfig> {
+  return loadConfig(dbTxEnvSchema, source, options);
+}

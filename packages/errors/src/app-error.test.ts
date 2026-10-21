@@ -87,6 +87,9 @@ const SUBCLASSES: readonly (readonly [
 /** Codes whose subclass lives in the package that owns the failure, not here. */
 const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'CONFIG_INVALID', // ConfigValidationError, @blackwing/config
+  // TxRetryExhaustedError and TenantContextMismatchError, @blackwing/db (DB-004).
+  'TX_RETRY_EXHAUSTED',
+  'TENANT_CONTEXT_CONFLICT',
   // PersonaError, @blackwing/agents (REGISTRY-001).
   'PERSONA_UNKNOWN',
   'PERSONA_NOT_DEFINED',
@@ -246,6 +249,14 @@ describe('specialised subclasses', () => {
     const error = new TenantContextMissingError();
     expect(error.httpStatus).toBe(500);
     expect(error.retryable).toBe(false);
+  });
+
+  it('TenantContextMissingError carries a frozen meta.reason (default "missing")', () => {
+    expect(new TenantContextMissingError().meta).toEqual({ reason: 'missing' });
+    const invalid = new TenantContextMissingError('bad id', { reason: 'invalid_uuid' });
+    expect(invalid.meta).toEqual({ reason: 'invalid_uuid' });
+    expect(Object.isFrozen(invalid.meta)).toBe(true);
+    expect(invalid.code).toBe('TENANT_CONTEXT_MISSING');
   });
 });
 

@@ -31,6 +31,7 @@
     "@blackwing/ids": "workspace:*",
     "@blackwing/logger": "workspace:*",
     "@blackwing/time": "workspace:*",
+    "@opentelemetry/api": "catalog:",
     "drizzle-orm": "0.45.3",
     "pg": "8.23.1",
     "zod": "catalog:"

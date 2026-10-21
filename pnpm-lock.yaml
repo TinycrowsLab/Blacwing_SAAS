@@ -673,6 +673,9 @@ importers:
       '@blackwing/time':
         specifier: workspace:*
         version: link:../time
+      '@opentelemetry/api':
+        specifier: 'catalog:'
+        version: 1.9.1
       drizzle-orm:
         specifier: 0.45.3
         version: 0.45.3(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(pg@8.23.1)

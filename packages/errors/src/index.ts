@@ -24,6 +24,8 @@ export {
   type RateLimitedErrorOptions,
   ScopeViolationError,
   TenantContextMissingError,
+  type TenantContextMissingErrorOptions,
+  type TenantContextMissingReason,
   ValidationError,
 } from './app-error.js';
 export {

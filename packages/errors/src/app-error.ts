@@ -183,14 +183,28 @@ export class IllegalRunTransitionError extends AppError {
   }
 }
 
+/** Why a tenant context could not be established. */
+export type TenantContextMissingReason = 'missing' | 'invalid_uuid';
+
+/** Options for {@link TenantContextMissingError}. */
+export interface TenantContextMissingErrorOptions extends AppErrorOptions {
+  /** `missing` (no tenant id; the default) or `invalid_uuid` (an id that is not a UUID). */
+  readonly reason?: TenantContextMissingReason;
+}
+
 /**
  * `TENANT_CONTEXT_MISSING` (500): a tenant-scoped path ran without tenant context. Thrown by
  * `withTenant` and friends to fail closed (§7, §8.6); the request is refused, never served unscoped.
+ * A malformed id is the same error (`meta.reason === 'invalid_uuid'`): it can never establish a context.
  */
 export class TenantContextMissingError extends AppError {
   declare readonly code: 'TENANT_CONTEXT_MISSING';
-  constructor(message?: string, options?: AppErrorOptions) {
+  /** Machine-readable detail of this occurrence; never contains the offending value. */
+  readonly meta: { readonly reason: TenantContextMissingReason };
+
+  constructor(message?: string, options: TenantContextMissingErrorOptions = {}) {
     super('TENANT_CONTEXT_MISSING', message, options);
+    this.meta = Object.freeze({ reason: options.reason ?? 'missing' });
   }
 }
 
