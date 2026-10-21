@@ -7,7 +7,7 @@ const TRANSIT_MOUNT = 'transit';
 const KEK_KEY_TYPE = 'aes256-gcm96';
 
 /** Tenant ids become part of a Transit path and a policy glob, so only a conservative alphabet passes. */
-const TENANT_ID = /^[a-z0-9][a-z0-9_-]{0,127}$/;
+export const TENANT_ID = /^[a-z0-9][a-z0-9_-]{0,127}$/;
 
 /** `tenant-{tenantId}`; rejects ids that could address another key or path (traversal, wildcard). */
 export function kekKeyName(tenantId: string): string {

@@ -36,3 +36,23 @@ export {
   type EnvelopeMetrics,
 } from './envelope.js';
 export { createTransit, type TransitClient } from './transit.js';
+
+// Per-run redaction registry and its internal endpoint (SECRETS-007, §8.7).
+export {
+  createRedactionRegistry,
+  redactFailClosed,
+  type RedactionAuditAction,
+  type RedactionAuditEvent,
+  type RedactionMetrics,
+  type RedactionRegistry,
+  type RedactionRegistryDeps,
+  type RedactionStream,
+  type RedactResult,
+  type RegisterInput,
+} from './redaction.js';
+export {
+  createRedactionHandler,
+  isInternalAddress,
+  redactionRunToken,
+  type RedactionHandlerDeps,
+} from './redaction-endpoint.js';
