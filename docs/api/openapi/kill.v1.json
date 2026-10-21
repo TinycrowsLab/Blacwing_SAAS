@@ -714,7 +714,6 @@
       },
       "Problem": {
         "type": "object",
-        "required": ["type", "title", "status", "code", "traceId"],
         "properties": {
           "type": {
             "type": "string",
@@ -724,7 +723,9 @@
             "type": "string"
           },
           "status": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
           },
           "detail": {
             "type": "string"
@@ -734,8 +735,29 @@
           },
           "traceId": {
             "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                }
+              },
+              "required": ["path", "message", "code"],
+              "additionalProperties": false
+            }
           }
-        }
+        },
+        "required": ["type", "title", "status", "code", "traceId"],
+        "additionalProperties": false
       }
     }
   }

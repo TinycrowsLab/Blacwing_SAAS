@@ -12,6 +12,9 @@ import { NestPinoLogger } from './nest-logger.js';
 import { registerRequestObservability } from './request-context.js';
 import { SHUTDOWN_SIGNALS, ShutdownDrain } from './shutdown.js';
 import { deriveTraceId } from './trace-id.js';
+import { type DocsAuthenticator, registerDocsRoutes } from '../openapi/docs-routes.js';
+import { buildOpenApiDocument, countOperations } from '../openapi/document.js';
+import { apiPackageVersion } from '../openapi/emit.js';
 
 import type { ApiConfig } from '../config.js';
 import type { SecurityEventSink } from '../errors/problem-filter.js';
@@ -57,6 +60,11 @@ export interface CreateApiAppOptions {
    * Fastify route modules to mount on the adapter's instance before the app initialises (for example
    * `registerKillRoutes`, KILL-003). They register their full `/v1/...` paths themselves.
    */
+  /**
+   * Verifies the caller of `/v1/docs` in production (API-003). Without it production answers 401 to
+   * every docs request (fail closed); other environments serve the docs publicly.
+   */
+  readonly docsAuthenticate?: DocsAuthenticator;
   readonly routes?: readonly ((instance: FastifyInstance) => void | Promise<void>)[];
 }
 
@@ -109,6 +117,14 @@ export async function createApiApp(options: CreateApiAppOptions): Promise<ApiApp
     logger,
     metrics,
     ...(options.tracer === undefined ? {} : { tracer: options.tracer }),
+  });
+
+  const document = buildOpenApiDocument({ version: apiPackageVersion() });
+  metrics.openapiOperations.set(countOperations(document));
+  registerDocsRoutes(app.getHttpAdapter().getInstance(), {
+    document,
+    environment: config.NODE_ENV,
+    ...(options.docsAuthenticate === undefined ? {} : { authenticate: options.docsAuthenticate }),
   });
 
   for (const mount of options.routes ?? []) {

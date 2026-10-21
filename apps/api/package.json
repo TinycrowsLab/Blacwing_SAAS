@@ -11,8 +11,11 @@
   "scripts": {
     "build": "tsc -b --pretty false",
     "dev": "tsx watch src/main.ts",
-    "start": "tsx src/main.ts",
     "lint": "eslint . --max-warnings=0",
+    "openapi:check": "tsx src/openapi/emit.ts --check",
+    "openapi:emit": "tsx src/openapi/emit.ts",
+    "openapi:generate": "tsx src/openapi/emit.ts",
+    "start": "tsx src/main.ts",
     "test": "vitest run --configLoader runner --config src/vitest.config.ts",
     "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts",
     "typecheck": "tsc -b --pretty false"
@@ -40,14 +43,17 @@
     "prom-client": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
+    "swagger-ui-dist": "5.34.0",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@blackwing/testing": "workspace:*",
     "@opentelemetry/context-async-hooks": "catalog:",
     "@opentelemetry/sdk-trace-base": "catalog:",
-    "@types/pg": "8.23.1",
+    "@seriousme/openapi-schema-validator": "2.11.0",
     "@types/node": "catalog:",
+    "@types/pg": "8.23.1",
+    "@types/swagger-ui-dist": "3.30.6",
     "fast-check": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",

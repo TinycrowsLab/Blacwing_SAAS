@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 /** Committed generated contracts and what regenerates them. */
 export const ARTIFACTS = [
   { name: 'OpenAPI 3.1 spec', path: 'apps/api/openapi', fix: 'pnpm openapi:generate' },
+  { name: 'OpenAPI 3.1 spec', path: 'docs/api/openapi.json', fix: 'pnpm openapi:generate' },
   { name: 'GraphQL SDL', path: 'apps/api/graphql', fix: 'pnpm graphql:generate' },
   {
     name: 'Drizzle migrations',

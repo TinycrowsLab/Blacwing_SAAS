@@ -1,4 +1,4 @@
-import { Counter, Histogram, Registry } from 'prom-client';
+import { Counter, Gauge, Histogram, Registry } from 'prom-client';
 
 /** `route` label of requests that matched no route (404s), so unbounded URLs never become labels. */
 export const UNMATCHED_ROUTE = 'unmatched';
@@ -18,6 +18,8 @@ export interface HttpMetrics {
   readonly errors: Counter<'code' | 'status'>;
   /** `optimistic_conflicts_total{route}`: `If-Match` mismatches answered 412 (API-007). */
   readonly optimisticConflicts: Counter<'route'>;
+  /** `openapi_operations_total`: operations in the published public spec (API-003). */
+  readonly openapiOperations: Gauge;
 }
 
 /** A private registry per app instance, so tests and multiple instances never share counters. */
@@ -54,6 +56,11 @@ export function createHttpMetrics(): HttpMetrics {
       name: 'optimistic_conflicts_total',
       help: 'Mutations rejected with 412 because the If-Match ETag was stale, by matched route template.',
       labelNames: ['route'],
+      registers: [registry],
+    }),
+    openapiOperations: new Gauge({
+      name: 'openapi_operations_total',
+      help: 'Operations in the public OpenAPI document served at /v1/docs.',
       registers: [registry],
     }),
   };

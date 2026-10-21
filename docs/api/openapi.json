@@ -1,0 +1,1059 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Blackwing control-plane API",
+    "version": "0.0.0",
+    "description": "REST API of the Blackwing control plane. Errors are RFC 9457 problem+json (`Problem`)."
+  },
+  "servers": [
+    {
+      "url": "/v1"
+    }
+  ],
+  "tags": [
+    {
+      "name": "kill",
+      "description": "Kill switch: stop every agent in a run, asset or tenant scope."
+    }
+  ],
+  "paths": {
+    "/kill": {
+      "post": {
+        "tags": ["kill"],
+        "operationId": "triggerKill",
+        "summary": "Trigger the kill switch for a run, asset or the whole tenant",
+        "description": "Requires kill:trigger and the Cedar Kill::trigger resource check. An asset_owner may kill only assets they own; only org_admin may kill the tenant. Propagation is asynchronous: poll the Location.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255,
+              "pattern": "^[\\x21-\\x7e]+$"
+            },
+            "example": "kill-7f3c2a9e-1"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KillTriggerRequest"
+              },
+              "examples": {
+                "run": {
+                  "summary": "Kill one run",
+                  "value": {
+                    "scope": "run",
+                    "scopeRefId": "01890a5d-ac96-774b-bcce-b302099a8058",
+                    "reason": "unexpected 5xx spike"
+                  }
+                },
+                "asset": {
+                  "summary": "Kill every run on an asset",
+                  "value": {
+                    "scope": "asset",
+                    "scopeRefId": "01890a5d-ac96-774b-bcce-b302099a8058",
+                    "reason": "change freeze"
+                  }
+                },
+                "tenant": {
+                  "summary": "Kill every run in the tenant",
+                  "value": {
+                    "scope": "tenant",
+                    "reason": "incident declared"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Kill accepted. status is halted when nothing in scope was running.",
+            "headers": {
+              "Location": {
+                "description": "URL of the kill event, /v1/kill/{killEventId}.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KillTriggerResponse"
+                },
+                "examples": {
+                  "initiated": {
+                    "value": {
+                      "killEventId": "01890a5d-ac96-774b-bcce-b302099a8057",
+                      "status": "initiated",
+                      "triggeredAt": "2026-10-20T10:00:00.000Z"
+                    }
+                  },
+                  "nothingRunning": {
+                    "value": {
+                      "killEventId": "01890a5d-ac96-774b-bcce-b302099a8057",
+                      "status": "halted",
+                      "triggeredAt": "2026-10-20T10:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "KILL_FORBIDDEN": {
+                    "summary": "Kill not permitted",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+                      "title": "Kill not permitted",
+                      "status": 403,
+                      "code": "KILL_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_GLOBAL_NOT_ALLOWED_HERE": {
+                    "summary": "Global kill is not allowed on this endpoint",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+                      "title": "Global kill is not allowed on this endpoint",
+                      "status": 403,
+                      "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "CONFLICT": {
+                    "summary": "Conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONFLICT",
+                      "title": "Conflict",
+                      "status": 409,
+                      "code": "CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ILLEGAL_RUN_TRANSITION": {
+                    "summary": "Illegal run state transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+                      "title": "Illegal run state transition",
+                      "status": 409,
+                      "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of KILL_SCOPE_INVALID, KILL_REF_REQUIRED, VALIDATION_FAILED, IDEMPOTENCY_KEY_MISMATCH.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "KILL_SCOPE_INVALID": {
+                    "summary": "Invalid kill scope",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+                      "title": "Invalid kill scope",
+                      "status": 422,
+                      "code": "KILL_SCOPE_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_REF_REQUIRED": {
+                    "summary": "Kill scope reference required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+                      "title": "Kill scope reference required",
+                      "status": 422,
+                      "code": "KILL_REF_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_MISMATCH": {
+                    "summary": "Idempotency key reused with a different request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+                      "title": "Idempotency key reused with a different request",
+                      "status": 422,
+                      "code": "IDEMPOTENCY_KEY_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kill/{id}": {
+      "get": {
+        "tags": ["kill"],
+        "operationId": "getKillEvent",
+        "summary": "A kill event with its halt timings",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The kill event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KillEvent"
+                },
+                "examples": {
+                  "halted": {
+                    "value": {
+                      "killEventId": "01890a5d-ac96-774b-bcce-b302099a8057",
+                      "tenantId": "01890a5d-ac96-774b-bcce-b302099a8058",
+                      "scope": "run",
+                      "scopeRefId": "01890a5d-ac96-774b-bcce-b302099a8058",
+                      "source": "api",
+                      "actorType": "user",
+                      "actorRef": "01890a5d-ac96-774b-bcce-b302099a8058",
+                      "reason": "unexpected 5xx spike",
+                      "status": "halted",
+                      "triggeredAt": "2026-10-20T10:00:00.000Z",
+                      "egressBlockedAt": "2026-10-20T10:00:00.400Z",
+                      "sandboxesTerminatedAt": "2026-10-20T10:00:03.100Z",
+                      "keysRevokedAt": "2026-10-20T10:00:03.200Z",
+                      "workflowsCancelledAt": "2026-10-20T10:00:03.300Z",
+                      "completedAt": "2026-10-20T10:00:03.300Z",
+                      "haltMs": 3300,
+                      "affected": {
+                        "runs": 1,
+                        "sessions": 2,
+                        "sandboxes": 2,
+                        "keys": 2,
+                        "workflows": 3
+                      },
+                      "reenabledAt": null,
+                      "reenabledBy": null,
+                      "createdAt": "2026-10-20T10:00:00.000Z",
+                      "updatedAt": "2026-10-20T10:00:03.300Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of KILL_FORBIDDEN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "KILL_FORBIDDEN": {
+                    "summary": "Kill not permitted",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+                      "title": "Kill not permitted",
+                      "status": 403,
+                      "code": "KILL_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "CONFLICT": {
+                    "summary": "Conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONFLICT",
+                      "title": "Conflict",
+                      "status": 409,
+                      "code": "CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ILLEGAL_RUN_TRANSITION": {
+                    "summary": "Illegal run state transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+                      "title": "Illegal run state transition",
+                      "status": 409,
+                      "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_INVALID_CLASS": {
+                    "summary": "Invalid intrusiveness class",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
+                      "title": "Invalid intrusiveness class",
+                      "status": 422,
+                      "code": "SCOPE_INVALID_CLASS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_INVALID_BUDGET": {
+                    "summary": "Invalid request budget",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
+                      "title": "Invalid request budget",
+                      "status": 422,
+                      "code": "SCOPE_INVALID_BUDGET",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_INVALID_RULE": {
+                    "summary": "Invalid scope rule",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
+                      "title": "Invalid scope rule",
+                      "status": 422,
+                      "code": "SCOPE_INVALID_RULE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_SCOPE_INVALID": {
+                    "summary": "Invalid kill scope",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+                      "title": "Invalid kill scope",
+                      "status": 422,
+                      "code": "KILL_SCOPE_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_REF_REQUIRED": {
+                    "summary": "Kill scope reference required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+                      "title": "Kill scope reference required",
+                      "status": 422,
+                      "code": "KILL_REF_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_MISMATCH": {
+                    "summary": "Idempotency key reused with a different request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+                      "title": "Idempotency key reused with a different request",
+                      "status": 422,
+                      "code": "IDEMPOTENCY_KEY_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Personal access token (bw_pat_...) or CI token (bw_ci_...)."
+      },
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "bw_session"
+      }
+    },
+    "parameters": {
+      "Cursor": {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "Opaque cursor from the previous page `nextCursor`.",
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "example": "eyJpZCI6IjAxODkwYTVkIn0"
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Page size, 1 to 200.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        "example": 50
+      },
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "Required on POSTs that create runs, exports or tickets; replays return the first result.",
+        "schema": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 255,
+          "pattern": "^[\\x21-\\x7e]+$"
+        },
+        "example": "run-7f3c2a9e-1"
+      },
+      "IfMatch": {
+        "name": "If-Match",
+        "in": "header",
+        "required": true,
+        "description": "The ETag of the version being changed; a stale value answers 412, a missing one 428.",
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        },
+        "example": "\"3\""
+      }
+    },
+    "headers": {
+      "ETag": {
+        "description": "Version of the resource, to send back in If-Match.",
+        "schema": {
+          "type": "string"
+        },
+        "example": "\"3\""
+      }
+    },
+    "schemas": {
+      "KillEvent": {
+        "type": "object",
+        "properties": {
+          "killEventId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "tenantId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "enum": ["run", "asset", "tenant", "global"]
+          },
+          "scopeRefId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": ["console", "api", "soc_link", "operator", "system"]
+          },
+          "actorType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "actorRef": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "status": {
+            "type": "string",
+            "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
+          },
+          "triggeredAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+          },
+          "egressBlockedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sandboxesTerminatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "keysRevokedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "workflowsCancelledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "haltMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "affected": {
+            "type": "object",
+            "properties": {
+              "runs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "sessions": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "sandboxes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "keys": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "workflows": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "additionalProperties": false
+          },
+          "reenabledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reenabledBy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+          }
+        },
+        "required": [
+          "killEventId",
+          "tenantId",
+          "scope",
+          "scopeRefId",
+          "source",
+          "actorType",
+          "actorRef",
+          "reason",
+          "status",
+          "triggeredAt",
+          "egressBlockedAt",
+          "sandboxesTerminatedAt",
+          "keysRevokedAt",
+          "workflowsCancelledAt",
+          "completedAt",
+          "haltMs",
+          "affected",
+          "reenabledAt",
+          "reenabledBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "KillTriggerRequest": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": ["run", "asset", "tenant"]
+          },
+          "scopeRefId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["scope", "reason"],
+        "additionalProperties": false
+      },
+      "KillTriggerResponse": {
+        "type": "object",
+        "properties": {
+          "killEventId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
+          },
+          "triggeredAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+          }
+        },
+        "required": ["killEventId", "status", "triggeredAt"],
+        "additionalProperties": false
+      },
+      "Problem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "detail": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "traceId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                }
+              },
+              "required": ["path", "message", "code"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["type", "title", "status", "code", "traceId"],
+        "additionalProperties": false
+      }
+    }
+  }
+}

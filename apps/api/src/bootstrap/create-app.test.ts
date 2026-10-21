@@ -128,6 +128,14 @@ describe('createApiApp', () => {
     await h.app.close();
   });
 
+  it('serves the API docs at /v1/docs and counts the published operations', async () => {
+    const page = await h.app.inject({ method: 'GET', url: '/v1/docs' });
+    expect(page.statusCode).toBe(200);
+    const spec = await h.app.inject({ method: 'GET', url: '/v1/docs/openapi.json' });
+    expect(spec.json<{ openapi: string }>().openapi).toBe('3.1.0');
+    expect(await h.metrics.registry.metrics()).toMatch(/openapi_operations_total 2/);
+  });
+
   it('serves the smoke controller under /v1', async () => {
     const response = await h.app.inject({ method: 'GET', url: '/v1' });
     expect(response.statusCode).toBe(200);

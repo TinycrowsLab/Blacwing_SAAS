@@ -1,21 +1,15 @@
-import { z } from 'zod';
-
 import {
   idempotencyKeySchema,
   killEventSchema,
   killTriggerRequestSchema,
   killTriggerResponseSchema,
+  problemSchema,
 } from '@blackwing/contracts';
-import {
-  ERROR_CODES,
-  type ErrorCode,
-  PROBLEM_JSON_CONTENT_TYPE,
-  problemTypeFor,
-} from '@blackwing/errors';
 
 import { KILL_ROUTE } from './routes.js';
+import { errorResponses, type JsonObject, jsonSchema } from '../openapi/schema.js';
 
-type JsonObject = Record<string, unknown>;
+import type { ErrorCode } from '@blackwing/errors';
 
 /** Error codes `POST /v1/kill` can answer with, by status. */
 export const KILL_TRIGGER_ERROR_CODES = [
@@ -43,17 +37,6 @@ const EXAMPLE_ID = '01890a5d-ac96-774b-bcce-b302099a8057';
 const EXAMPLE_RUN = '01890a5d-ac96-774b-bcce-b302099a8058';
 const EXAMPLE_AT = '2026-10-20T10:00:00.000Z';
 
-const jsonSchema = (schema: z.ZodType): JsonObject => {
-  const generated = z.toJSONSchema(schema, {
-    target: 'draft-2020-12',
-    unrepresentable: 'any',
-    io: 'output',
-  }) as JsonObject;
-  const rest = { ...generated };
-  delete rest.$schema;
-  return rest;
-};
-
 function killEventViewSchema(): JsonObject {
   const base = jsonSchema(killEventSchema);
   const properties = { ...(base.properties as JsonObject) };
@@ -62,46 +45,6 @@ function killEventViewSchema(): JsonObject {
     name === 'id' ? 'killEventId' : name,
   );
   return { ...base, properties: { killEventId: id, ...others }, required };
-}
-
-function problemExamples(codes: readonly ErrorCode[]): JsonObject {
-  return Object.fromEntries(
-    codes.map((code) => [
-      code,
-      {
-        summary: ERROR_CODES[code].title,
-        value: {
-          type: problemTypeFor(code),
-          title: ERROR_CODES[code].title,
-          status: ERROR_CODES[code].status,
-          code,
-          traceId: '4bf92f3577b34da6a3ce929d0e0e4736',
-        },
-      },
-    ]),
-  );
-}
-
-function errorResponses(codes: readonly ErrorCode[]): JsonObject {
-  const byStatus = new Map<number, ErrorCode[]>();
-  for (const code of codes) {
-    const status = ERROR_CODES[code].status;
-    byStatus.set(status, [...(byStatus.get(status) ?? []), code]);
-  }
-  return Object.fromEntries(
-    [...byStatus.entries()].map(([status, list]) => [
-      String(status),
-      {
-        description: `Problem details; code is one of ${list.join(', ')}.`,
-        content: {
-          [PROBLEM_JSON_CONTENT_TYPE]: {
-            schema: { $ref: '#/components/schemas/Problem' },
-            examples: problemExamples(list),
-          },
-        },
-      },
-    ]),
-  );
 }
 
 /** The OpenAPI 3.1 document for the kill trigger API, generated from the Zod contracts. */
@@ -246,18 +189,7 @@ export function killOpenApiDocument(): JsonObject {
         KillTriggerRequest: jsonSchema(killTriggerRequestSchema),
         KillTriggerResponse: jsonSchema(killTriggerResponseSchema),
         KillEvent: killEventViewSchema(),
-        Problem: {
-          type: 'object',
-          required: ['type', 'title', 'status', 'code', 'traceId'],
-          properties: {
-            type: { type: 'string', format: 'uri' },
-            title: { type: 'string' },
-            status: { type: 'integer' },
-            detail: { type: 'string' },
-            code: { type: 'string' },
-            traceId: { type: 'string' },
-          },
-        },
+        Problem: jsonSchema(problemSchema),
       },
     },
   };

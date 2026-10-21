@@ -8,7 +8,7 @@ Postgres service container. `TZ=UTC` and `LANG=C.UTF-8` are pinned so generation
 
 | Check | Fails when | Fix |
 |---|---|---|
-| OpenAPI 3.1 | `pnpm openapi:generate` changes `apps/api/openapi/` | Run `pnpm openapi:generate`, commit |
+| OpenAPI 3.1 | `pnpm openapi:generate` changes `docs/api/openapi.json` | Run `pnpm --filter @blackwing/api openapi:emit` (alias `openapi:generate`), commit |
 | GraphQL SDL | `pnpm graphql:generate` changes `apps/api/graphql/` | Run `pnpm graphql:generate`, commit |
 | Schema vs migrations | `pnpm db:generate` (drizzle-kit generate) emits a new file in `packages/db/migrations/` | Review and commit the generated migration |
 | Forward-only | A migration file that exists on the base branch is modified or deleted | Add a new migration instead |
@@ -35,3 +35,13 @@ node scripts/check-drift.mjs stale
 node scripts/check-drift.mjs immutable origin/main
 DATABASE_URL=postgres://... node scripts/check-drift.mjs apply
 ```
+
+## Public API spec and docs UI (API-003, #55)
+
+`docs/api/openapi.json` is the OpenAPI 3.1 document of the public `/v1` API, generated from the Zod
+contracts by `apps/api/src/openapi/` and linted (3.1 meta-schema, unique `operationId`s, a `Problem` error
+response and an example on every operation) before it is written. `pnpm --filter @blackwing/api
+openapi:check` fails when the committed file is stale. The `/internal/broker` routes are never published.
+The interactive reference is served (self-hosted Swagger UI) at `/v1/docs`; in `production` it requires an
+authenticated caller and answers 401 otherwise. New modules add an `OpenApiModule` to
+`publicOpenApiModules()`; keep `operationId`s stable, the client generator (API-012) depends on them.
