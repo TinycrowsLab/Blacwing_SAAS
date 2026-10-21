@@ -91,6 +91,7 @@ export {
 } from './with-tenant.js';
 export * from './schema/index.js';
 export * from './columns.js';
+export * from './vector.js';
 export {
   APP_ROLE,
   assertRlsEnabled,

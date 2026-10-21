@@ -64,3 +64,24 @@ Every domain module reads and writes through a repository built on `BaseReposito
 The ambient tenant is supplied as a function (`tenant: () => string | undefined`); request-scoped
 propagation (TENANT-003) provides the real source. The `widget` table lives under `src/examples` only: it
 is not in `schema/index.ts` and has no migration.
+
+## Embeddings and pgvector (DB-005)
+
+Migration `20261021081012_pgvector_pgcrypto` enables `vector` (pgvector) and `pgcrypto`. The vector
+migration fails fast with guidance when the server does not ship pgvector. `src/vector.ts` holds the
+conventions; MEMORY and knowledge tables build on them.
+
+| Convention | How it is enforced |
+| --- | --- |
+| Embeddings are `vector(384)` (bge-small-en-v1.5) | `embeddingColumn(name = 'embedding')`. The database also rejects a wrong length. |
+| The boundary validates the length | `parseEmbedding()` / `embeddingSchema` throw `ValidationError` `vector_dim_mismatch` (422) for a wrong length and `vector_invalid` for NaN, Infinity or a non-number. The detail never echoes the values. |
+| HNSW indexes use cosine ops, `m = 16`, `ef_construction = 64` | `hnswIndex(tableName, column, { distance })`. `distance` is `cosine` (default) or `l2`, and each one pairs its operator class with its query operator (`VECTOR_DISTANCE`). |
+| Queries use the matching operator (`<=>` cosine, `<->` L2) | `embeddingDistance(column, query, distance)`. The query vector is validated first. |
+| `hnsw.ef_search` defaults to 40 | `hnswEfSearchSql(n)` returns `SET LOCAL hnsw.ef_search = n` (1 to 1000). Run it inside the tenant transaction, before the ANN query. |
+| Embeddings are tenant data | An embedding table gets `tenantIdColumn`, `tenantIdIndex` and `rlsPolicySql`, like any tenant table. |
+| pgcrypto is for non-secret hashing and UUID fallback only | Customer secrets stay in OpenBao (SECRETS), never in these tables in plaintext. |
+
+Operational notes: a large HNSW build needs `maintenance_work_mem` headroom, so raise it for the session that
+runs the migration. ANN queries show up in the slow-query log under `<=>` and `<->`. Metrics are deferred to
+MEMORY. `CREATE EXTENSION` runs as its own statement in the migration with `IF NOT EXISTS`, so a re-run after a
+partial apply is safe. The integration test for these helpers is `src/vector.int.test.ts` (Testcontainers).

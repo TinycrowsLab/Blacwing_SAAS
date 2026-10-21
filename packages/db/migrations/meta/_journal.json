@@ -36,6 +36,13 @@
       "when": 1792570030021,
       "tag": "20261021080710_outbox",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792571520508,
+      "tag": "20261021083200_pgvector_pgcrypto",
+      "breakpoints": true
     }
   ]
 }

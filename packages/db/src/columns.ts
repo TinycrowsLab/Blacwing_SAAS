@@ -78,7 +78,7 @@ export const UPDATED_AT_FUNCTION = 'bw_set_updated_at';
 
 const SQL_IDENTIFIER = /^[a-z_][a-z0-9_]{0,62}$/;
 
-function assertIdentifier(value: string): string {
+export function assertIdentifier(value: string): string {
   if (!SQL_IDENTIFIER.test(value)) {
     throw new TypeError(`invalid SQL identifier: ${JSON.stringify(value)}`);
   }
