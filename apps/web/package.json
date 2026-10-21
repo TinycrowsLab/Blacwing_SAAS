@@ -23,8 +23,11 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@blackwing/contracts": "workspace:*",
     "@blackwing/ui": "workspace:*",
+    "@tanstack/react-query": "catalog:",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "zod": "catalog:"
   }
 }
