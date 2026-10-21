@@ -38,7 +38,7 @@ const BOOTSTRAP_LOCK_KEY = 'blackwing-testing:rls-bootstrap';
 export type MigrationRunner = (
   owner: pg.Client,
   context: { readonly database: string },
-) => Promise<void>;
+) => Promise<unknown>;
 
 /** Options for {@link withPostgres}. */
 export interface WithPostgresOptions extends ContainerOptions {

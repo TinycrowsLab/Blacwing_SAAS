@@ -36,11 +36,26 @@ export {
   type PgSslMode,
 } from './env.js';
 export {
+  assertMigrationAllowed,
+  type DestructiveKind,
+  DestructiveMigrationError,
+  type DestructiveStatement,
+  findDestructiveStatements,
+  type GuardedMigration,
+  type MigrationGuardEnv,
+} from './migrate-guard.js';
+export {
+  DOWN_MIGRATIONS_DIR,
+  loadMigrations,
+  type MigrateOptions,
   migrateDatabase,
+  type MigrationEntry,
   type MigrationLogger,
   migrationNames,
+  type MigrationResult,
   MIGRATIONS_DIR,
   MIGRATIONS_TABLE,
+  rollbackLatestMigration,
 } from './migrate.js';
 export {
   type DbLogger,

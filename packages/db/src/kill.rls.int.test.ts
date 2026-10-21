@@ -118,10 +118,15 @@ describe('kill.rls migrations', () => {
   it('applies the forward-only migrations as the owner and logs their names', async () => {
     expect(migrationNames()).toEqual(['0000_extensions', '0001_kill_switch', '0002_column_mixins']);
     expect(logged.map((entry) => entry.message)).toEqual([
-      'applying database migrations',
-      'database migrations applied',
+      'db.migrate.start',
+      'db.migrate.applied',
+      'db.migrate.applied',
+      'db.migrate.applied',
+      'db.migrate.done',
     ]);
-    expect(logged[0]?.fields).toEqual({ migrations: ['0000_extensions', '0001_kill_switch', '0002_column_mixins'] });
+    expect(
+      logged.slice(1, 4).map((entry) => (entry.fields as { version: string }).version),
+    ).toEqual(['0000_extensions', '0001_kill_switch', '0002_column_mixins']);
     const { rows } = await db.ownerPool.query<{
       relname: string;
       owner: string;

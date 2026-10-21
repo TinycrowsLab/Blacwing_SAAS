@@ -1,8 +1,7 @@
 # Drift checks
 
 The `drift` workflow (`.github/workflows/drift.yml`, CI-015) keeps generated contracts and the database in
-lockstep with code. It runs on every pull request and on `main`, with `contents: read` and a throwaway
-Postgres service container. `TZ=UTC` and `LANG=C.UTF-8` are pinned so generation is deterministic.
+lockstep with code. It runs on every pull request and on `main`, with `contents: read`. `TZ=UTC` and `LANG=C.UTF-8` are pinned so generation is deterministic.
 
 ## What it checks
 
@@ -12,7 +11,7 @@ Postgres service container. `TZ=UTC` and `LANG=C.UTF-8` are pinned so generation
 | GraphQL SDL | `pnpm graphql:generate` changes `apps/api/graphql/` | Run `pnpm graphql:generate`, commit |
 | Schema vs migrations | `pnpm db:generate` (drizzle-kit generate) emits a new file in `packages/db/migrations/` | Review and commit the generated migration |
 | Forward-only | A migration file that exists on the base branch is modified or deleted | Add a new migration instead |
-| Fresh apply | Any migration fails on a fresh pgvector Postgres 16 (`psql -v ON_ERROR_STOP=1`) | Fix the migration (before it is merged) |
+| `db-drift` job | `pnpm db:check`: journal collisions, schema vs migrations, a scratch Postgres 16 + pgvector built from the migrations differs from the snapshot, or a re-run is not a no-op | See [db-migrations.md](db-migrations.md) |
 
 Generators are the `openapi:generate`, `graphql:generate` and `db:generate` scripts of workspace members
 (`pnpm -r --if-present`), so each owning epic (API, DB) adds its script and the artifact paths listed in
@@ -33,7 +32,7 @@ never squash after a migration has been applied to a shared or production databa
 pnpm openapi:generate && pnpm graphql:generate && pnpm db:generate
 node scripts/check-drift.mjs stale
 node scripts/check-drift.mjs immutable origin/main
-DATABASE_URL=postgres://... node scripts/check-drift.mjs apply
+pnpm db:check   # needs Docker (Testcontainers)
 ```
 
 ## Public API spec and docs UI (API-003, #55)

@@ -13,7 +13,9 @@
   },
   "scripts": {
     "db:generate": "drizzle-kit generate --config src/drizzle.config.ts",
-    "db:migrate": "node --env-file-if-exists=../../.env node_modules/drizzle-kit/bin.cjs migrate --config src/drizzle.config.ts",
+    "db:migrate": "tsx --env-file-if-exists=../../.env src/migrate-main.ts",
+    "db:migrate:down": "tsx --env-file-if-exists=../../.env src/migrate-main.ts --down",
+    "db:check": "vitest run --configLoader runner --config src/vitest.int.config.ts src/check/drift.int.test.ts",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run --configLoader runner --config src/vitest.config.ts",
     "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts",

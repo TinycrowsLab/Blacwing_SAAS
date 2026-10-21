@@ -1,0 +1,54 @@
+name: migrate
+
+# Deploy-time database migration (DB-002, #69): runs `pnpm db:migrate` as the owner role (bw_owner),
+# forward-only (NODE_ENV=production enables the destructive-migration guard). Called by the deploy
+# pipeline before the new app version rolls out, or dispatched by hand for one environment.
+# Owner credentials come from the secret store at run time, never from the repository.
+# OFFLINE-STUB(online-porting #893): gated off until the online secret store and database exist.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [staging, production]
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never two migrate runs against one environment (the runner also takes an advisory lock).
+  group: migrate-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    if: vars.BW_ONLINE == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      NODE_ENV: production
+      PGSSLMODE: verify-full
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      # OFFLINE-STUB(online-porting #893): fetch PGHOST/PGDATABASE/PG_OWNER_USER/PG_OWNER_PASSWORD from
+      # the secret store via OIDC and export them masked to $GITHUB_ENV; fails closed until then.
+      - name: Load owner credentials from the secret store
+        run: |
+          echo "::error::the secret-store integration is not wired yet (online-porting #893)"
+          exit 1
+      - name: Apply migrations
+        run: pnpm db:migrate

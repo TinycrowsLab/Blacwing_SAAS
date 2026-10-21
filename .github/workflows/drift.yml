@@ -1,8 +1,9 @@
 name: drift
 
-# Contract and migration drift (CI-015, #149): generated OpenAPI/GraphQL and Drizzle migrations
-# must match the code, applied migrations are immutable, and all migrations apply to a fresh
-# Postgres. Documented in docs/runbooks/drift-checks.md.
+# Contract and migration drift (CI-015, #149; DB-002, #69): generated OpenAPI/GraphQL and Drizzle
+# migrations must match the code, applied migrations are immutable, and `db-drift` applies every
+# migration to a scratch Postgres and diffs it against the schema snapshot. Documented in
+# docs/runbooks/drift-checks.md and docs/runbooks/db-migrations.md.
 on:
   pull_request:
   push:
@@ -25,19 +26,6 @@ jobs:
   drift:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    services:
-      postgres:
-        # Throwaway database for the migration apply check; pgvector is required by the schema.
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_USER: drift
-          POSTGRES_PASSWORD: drift
-          POSTGRES_DB: drift
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U drift" --health-interval 5s --health-timeout 5s
-          --health-retries 10
     steps:
       # A local composite action is only readable after a checkout; fetch just its directory.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -62,7 +50,37 @@ jobs:
           BW_MIGRATION_SQUASH: ${{ contains(github.event.pull_request.labels.*.name, 'migration-squash') }}
           BASE_REF: ${{ github.base_ref }}
         run: node scripts/check-drift.mjs immutable "origin/${BASE_REF}"
-      - name: Apply all migrations to a fresh Postgres
+
+  # DB-002 (#69): `pnpm db:check` on every PR. Journal/snapshot consistency (colliding migrations from
+  # parallel PRs), schema vs committed migrations (drizzle-kit generate on a temp copy), and a scratch
+  # Postgres 16 + pgvector (Testcontainers, image pinned by digest) built from the migrations must
+  # match the snapshot and re-apply as a no-op. The diff is uploaded as the `db-drift` artifact.
+  db-drift:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      TESTCONTAINERS_REUSE_ENABLE: 'false'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Migration drift check
         env:
-          DATABASE_URL: postgres://drift:drift@127.0.0.1:5432/drift
-        run: node scripts/check-drift.mjs apply
+          BW_DB_CHECK_REPORT: ${{ runner.temp }}/db-drift/db-drift.md
+        run: pnpm db:check
+      - name: Publish the drift diff
+        if: failure()
+        env:
+          REPORT: ${{ runner.temp }}/db-drift/db-drift.md
+        run: |
+          if [ -f "$REPORT" ]; then cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"; fi
+      - name: Upload the drift diff
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: db-drift
+          path: ${{ runner.temp }}/db-drift
+          if-no-files-found: ignore
+          retention-days: 14
