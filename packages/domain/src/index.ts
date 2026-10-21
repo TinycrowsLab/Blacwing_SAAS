@@ -31,3 +31,29 @@ export {
 } from './kill/resolve.js';
 
 export { matchScope, ruleSpecificity } from './scope/matcher.js';
+
+export {
+  applyTransition,
+  canAcceptTargetTraffic,
+  describeTransition,
+  IllegalRunEventError,
+  isTerminal,
+  nextVersion,
+  type PausableState,
+  type PausedReason,
+  requiresEnvelope,
+  RUN_EVENT_TYPES,
+  RUN_STATES,
+  RUN_TRANSITIONS_METRIC,
+  RUN_TRANSITIONS_METRIC_LABELS,
+  type RunActor,
+  type RunAuditIntent,
+  type RunEvent,
+  type RunEventType,
+  type RunState,
+  type RunStatus,
+  type RunTransitionContext,
+  type SimpleRunEventType,
+  transitions,
+  type TransitionResult,
+} from './run/state.js';
