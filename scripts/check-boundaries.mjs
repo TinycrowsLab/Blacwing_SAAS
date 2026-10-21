@@ -184,6 +184,7 @@ const SKIPPED_DIRS = new Set([
   'coverage',
   '.next',
   '.turbo',
+  'storybook-static',
 ]);
 
 /** package.json dependency fields that hold workspace edges. */

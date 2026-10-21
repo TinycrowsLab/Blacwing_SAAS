@@ -46,6 +46,31 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # Storybook build (issue #271): every kit story compiles into a static site. The stories' interaction and
+  # a11y checks run in the unit job (packages/ui/src/storybook.test.tsx), so this job proves the build only.
+  storybook:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      TZ: UTC
+      STORYBOOK_DISABLE_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Build Storybook
+        run: pnpm --filter @blackwing/ui build-storybook
+      - name: Upload Storybook build
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: storybook-static
+          path: packages/ui/storybook-static
+          if-no-files-found: error
+          retention-days: 14
+
   # Integration job (CI-004, #138): Testcontainers boots Postgres/Valkey/Neo4j/MinIO on the runner's
   # Docker daemon (random ports, never reused). Images come from infra/images.lock, the same
   # digests the helpers and the dev compose stack use. No secrets, read-only token.

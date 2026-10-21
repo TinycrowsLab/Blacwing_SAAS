@@ -251,7 +251,7 @@ Model tier aliases resolve per tenant provider: `deep` → `claude-opus-5-5`, `s
 | SARIF | 2.1.0, validated with Ajv against the official schema |
 | Observability | OpenTelemetry SDK + Collector, **Prometheus**, **Loki**, **Tempo**, **Grafana**, Alertmanager. Claude Code OTel export (`CLAUDE_CODE_ENABLE_TELEMETRY=1`, `OTEL_*`) |
 | Email | Nodemailer via SMTP (Amazon SES SMTP in prod, **Mailpit** in dev) |
-| Testing | **Vitest** (unit), **Testcontainers** (integration), **Playwright** (e2e), Go `testing` + testify, **k6** (load), `@fast-check` property tests where useful |
+| Testing | **Vitest** (unit), **Storybook** 10 with the a11y addon and axe-core (design-system kit stories in `packages/ui`, #271), **Testcontainers** (integration), **Playwright** (e2e), Go `testing` + testify, **k6** (load), `@fast-check` property tests where useful |
 | Quality | ESLint 9 flat config + typescript-eslint (strict), Prettier, golangci-lint, commitlint (Conventional Commits), Husky + lint-staged, `knip` for dead code |
 | CI | **GitHub Actions** (free for this public repo); images on **GHCR**; **cosign** keyless signing; **Syft** SBOM; **Trivy** scan; Renovate for deps |
 | Eval targets | OWASP Juice Shop, crAPI, VAmPI, DVGA (Damn Vulnerable GraphQL App), DVWA, WebGoat, plus Blackwing's own synthetic labs |

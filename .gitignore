@@ -9,6 +9,7 @@ out/
 .next/
 .turbo/
 coverage/
+storybook-static/
 *.tsbuildinfo
 
 # Go build output (apps/egress-gateway)

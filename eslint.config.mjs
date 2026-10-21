@@ -45,6 +45,15 @@ export const NEXT_ROUTE_FILES = [
   'apps/web/**/app/**/{sitemap,robots,manifest}.ts',
 ];
 
+/**
+ * Storybook files, which Storybook loads through a default export: the `.storybook/` config and the
+ * Component Story Format `default` meta in each `*.stories.tsx` (packages/ui, issue #271).
+ */
+export const STORYBOOK_FILES = [
+  'packages/ui/.storybook/*.{ts,tsx}',
+  'packages/ui/src/components/*.stories.{ts,tsx}',
+];
+
 /** Places where writing to the console is the job: the CLI and repository tooling. */
 export const CONSOLE_ALLOWED_FILES = ['apps/cli/**', 'scripts/**'];
 
@@ -58,6 +67,7 @@ export const IGNORES = [
   '**/dist/**',
   '**/build/**',
   '**/out/**',
+  '**/storybook-static/**',
   '**/coverage/**',
   '**/.next/**',
   '**/.turbo/**',
@@ -281,7 +291,7 @@ export default defineConfig(
 
   {
     name: 'blackwing/config-files',
-    files: [...CONFIG_FILES, ...NEXT_ROUTE_FILES],
+    files: [...CONFIG_FILES, ...NEXT_ROUTE_FILES, ...STORYBOOK_FILES],
     rules: {
       'import/no-default-export': 'off',
     },

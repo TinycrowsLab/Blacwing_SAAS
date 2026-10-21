@@ -54,6 +54,36 @@ Each module is imported by name from the barrel and the package declares `sideEf
 bundlers drop unused components. Budget: kit JS for a route that uses Button + Dialog + Table stays under
 30 kB gzipped; verify with `next build` analysis once the console lands (CONSOLE-001).
 
+## Do and don't
+
+- **Do** use the token utilities (`bg-background`, `text-muted-foreground`, `border-border`, `bg-sev-high-soft`)
+  and the `Button`/`Badge`/... variants. Pick a variant before reaching for a class.
+- **Do** put `class="dark"` on an ancestor to switch a subtree to the dark token set. Setting only a background
+  colour does not restyle token-driven components.
+- **Do** wrap a story (or app) in the providers a component needs: `TooltipProvider` for `Tooltip`,
+  `ToastProvider` + `ToastViewport` for `Toast`.
+- **Don't** hard-code hex, `rgb()` or Tailwind palette colours (`bg-red-500`). Add a token to `src/styles/tokens.css`
+  (mirrored from `design/tokens.json`) and map it in `src/styles/theme.css` instead.
+- **Don't** add a `tailwind.config` theme or a second theme provider. Tailwind 4 reads tokens from CSS.
+- **Don't** join class strings by hand. Merge caller classes with `cn()` so a later Tailwind class overrides an earlier one.
+
+## Storybook
+
+```bash
+pnpm --filter @blackwing/ui storybook        # dev server on http://localhost:6006
+pnpm --filter @blackwing/ui build-storybook  # static build into storybook-static/ (CI builds it too)
+```
+
+- Stories live beside each primitive as `src/components/<name>.stories.tsx` (Component Story Format, title
+  `Primitives/<Name>`). Every primitive has one; `storybook.test.tsx` fails if one is missing.
+- The toolbar **Theme** switch (Light/Dark) sets `.dark` on the story root. It is a standalone class toggle, not
+  the app's theme provider (CONSOLE-003), so the stories show the same token overrides the app gets.
+- The `@storybook/addon-a11y` panel reports contrast. Interaction tests are `play` functions (Dialog,
+  DropdownMenu, Sheet, Tooltip, Tabs).
+- Config is in `.storybook/` with its own `tsconfig.json`, so `src/` keeps its `rootDir`.
+
 ## Tests
 
-`pnpm --filter @blackwing/ui test` (Vitest + Testing Library). Visual and axe tests: CONSOLE-011 / CONSOLE-009.
+`pnpm --filter @blackwing/ui test` (Vitest + Testing Library). `storybook.test.tsx` renders every story in light and
+dark, runs its `play` interaction and fails on any serious or critical axe violation. Contrast is left to the
+Storybook a11y addon, because jsdom has no layout.
