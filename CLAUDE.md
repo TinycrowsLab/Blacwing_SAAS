@@ -27,6 +27,7 @@ runtime. See [§1](docs/architecture/CONTEXT_PACK.md#1-product-in-one-paragraph)
 | Policy, terms and branding constraints | [pack §4.5](docs/architecture/CONTEXT_PACK.md#45-policy--terms-constraints-must-follow) |
 | SaaS overrides and what is not in v1 | [pack §1.1](docs/architecture/CONTEXT_PACK.md#11-what-changed-versus-the-original-feature-list-deliberate-overrides) |
 | API conventions | [pack §9](docs/architecture/CONTEXT_PACK.md#9-api-conventions) |
+| Workflow versioning, `patched()` and Build IDs | [`docs/architecture/workflow-versioning.md`](docs/architecture/workflow-versioning.md) (WORKFLOW-008, #28) |
 | Architecture decision records (index) | [`docs/adr/README.md`](docs/adr/README.md) (FOUND-015, #17) |
 | Allowed package dependency graph | [`docs/architecture/dependency-graph.md`](docs/architecture/dependency-graph.md) (FOUND-005, #7) |
 | Epics and features | [`EPICS.md`](docs/architecture/EPICS.md), [`FEATURE_LIST.md`](docs/architecture/FEATURE_LIST.md) |

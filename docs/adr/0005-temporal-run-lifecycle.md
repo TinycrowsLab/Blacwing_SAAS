@@ -32,7 +32,8 @@ compliance.
 
 - Every gate wait, timeout and kill is durable and replayable, and a crashed worker resumes where it stopped.
 - Workflow code must be deterministic, with all IO in activities; that convention is
-  documented and lint-enforced separately (WORKFLOW-003, #24).
+  documented and lint-enforced separately (WORKFLOW-003, #24). Versioning and patching of in-flight histories are
+  documented in [`workflow-versioning.md`](../architecture/workflow-versioning.md) (WORKFLOW-008, #28).
 - Temporal becomes a core dependency of the dev stack and of production, with its own operations burden.
 
 ## References
