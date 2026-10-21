@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { runBudgetSchema } from '../budget.js';
 import { LIMITS } from '../limits.js';
 import {
   checkTimestamps,
@@ -8,7 +9,6 @@ import {
   timestampsShape,
   uuidV7Schema,
 } from '../primitives.js';
-import { runBudgetsSchema } from './authorisation.js';
 
 /** Assessment mode (§7 `runs.mode`). */
 export const runModeSchema = z.enum(['black', 'grey', 'white']);
@@ -81,7 +81,7 @@ export const runSchema = z
     pauseReason: runPauseReasonSchema.nullable(),
     stateVersion: z.int().min(0),
     runManifest: z.record(z.string().min(1), z.string().min(1)).nullable(),
-    budgets: runBudgetsSchema,
+    budgets: runBudgetSchema,
     requestedBy: uuidV7Schema,
     trigger: runTriggerSchema,
     startedAt: isoDateTimeSchema.nullable(),

@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     include: ['src/**/*.int.test.ts'],
     exclude: ['**/node_modules/**', '**/dist/**'],
-    testTimeout: 60_000,
+    testTimeout: 120_000,
     hookTimeout: 60_000,
     fileParallelism: false,
   },

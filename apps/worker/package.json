@@ -36,7 +36,9 @@
   },
   "devDependencies": {
     "@temporalio/client": "catalog:",
+    "@temporalio/common": "catalog:",
     "@temporalio/proto": "catalog:",
+    "@temporalio/testing": "catalog:",
     "@types/node": "catalog:",
     "long": "5.3.2",
     "tsx": "catalog:",

@@ -7,6 +7,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./run": "./src/entities/run.ts",
+    "./run-workflow": "./src/run-workflow.ts",
     "./schemas/audit-event.schema.json": "./schemas/audit-event.schema.json",
     "./test-vectors/audit-event-hash.json": "./test-vectors/audit-event-hash.json",
     "./scope.vectors.json": "./src/scope.vectors.json"
