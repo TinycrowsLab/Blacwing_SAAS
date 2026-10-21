@@ -19,3 +19,12 @@ export {
 export { createOtelKillMetrics } from './kill/metrics.js';
 export type * from './kill/ports.js';
 export * from './kill/types.js';
+export {
+  createPreflightActivities,
+  type PreflightActivityDeps,
+} from './run/preflight/activities.js';
+export { isDisallowedAddress } from './run/preflight/address-guard.js';
+export { decide as decidePreflight, executePreflight } from './run/preflight/aggregate.js';
+export { createOtelPreflightMetrics } from './run/preflight/metrics.js';
+export type * from './run/preflight/ports.js';
+export * from './run/preflight/types.js';

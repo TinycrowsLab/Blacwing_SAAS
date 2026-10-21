@@ -3,6 +3,7 @@
 // ORCH and SCHED add their workflows by re-exporting them from this file.
 
 export { KillPropagationWorkflow } from './kill-propagation.js';
+export { PreflightWorkflow } from './preflight.js';
 
 /** Trivial workflow proving the worker end to end. It is not a product workflow. */
 export function noopWorkflow(): Promise<void> {
