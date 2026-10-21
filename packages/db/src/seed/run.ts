@@ -1,4 +1,4 @@
-// Writes the seed plan (DEVENV-011). Platform-scope rows (tenant, users) go through the owner pool;
+// Writes the seed plan (DEVENV-011). Platform-scope rows (tenant, users) go through the owner pool (the tenant row under its own tenant context);
 // every tenant-scoped row goes through the app pool inside a transaction with `SET LOCAL app.tenant_id`,
 // so RLS applies to each insert (§7, §8.6). Upserts on deterministic keys make re-runs converge.
 
@@ -93,6 +93,8 @@ async function upsertPlatformRows(
   const client = await owner.connect();
   try {
     await client.query('BEGIN');
+    // `tenants` is under FORCE RLS keyed on its own id: the owner too must name the tenant it writes.
+    await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenant.id]);
     const t = await client.query<{ id: Uuid }>(
       `INSERT INTO tenants (id, slug, name, status, region, plan, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, now(), now())

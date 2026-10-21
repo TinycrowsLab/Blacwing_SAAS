@@ -19,6 +19,13 @@ export const APP_ROLE = 'bw_app';
 /** The column every tenant table must carry (§8.6 anchor). */
 export const TENANT_COLUMN = 'tenant_id';
 
+/**
+ * Tables whose tenant key is their own primary key rather than a `tenant_id` column: `tenants` (its
+ * row IS the tenant). They are the only exception to {@link rlsPolicySql}; their policy is the same
+ * fail-closed expression keyed on the listed column, and {@link assertRlsEnabled} checks that form.
+ */
+export const SELF_KEYED_TABLES: Readonly<Record<string, string>> = Object.freeze({ tenants: 'id' });
+
 /** Postgres truncates identifiers at 63 bytes; the policy name is `<table>_tenant_isolation`. */
 const POLICY_SUFFIX = '_tenant_isolation';
 const MAX_IDENTIFIER = 63;
@@ -144,6 +151,7 @@ const normalise = (sqlText: string): string => sqlText.replace(/[\s()]/g, '').to
 /**
  * Test util: asserts `table` has RLS enabled and forced and exactly one policy, the canonical
  * tenant policy for ALL commands with the fail-closed predicate in both USING and WITH CHECK.
+ * The key column is `tenant_id`, or `id` for the self-keyed {@link SELF_KEYED_TABLES} (`tenants`).
  */
 export async function assertRlsEnabled(db: RlsQueryable, table: string): Promise<void> {
   const state = await readRlsState(db, table);
@@ -160,7 +168,8 @@ export async function assertRlsEnabled(db: RlsQueryable, table: string): Promise
       `"${table}" does not have the canonical tenant policy for ALL commands`,
     );
   }
-  const expected = normalise(`${TENANT_COLUMN} = (current_setting('app.tenant_id'::text))::uuid`);
+  const keyColumn = SELF_KEYED_TABLES[table] ?? TENANT_COLUMN;
+  const expected = normalise(`${keyColumn} = (current_setting('app.tenant_id'::text))::uuid`);
   if (normalise(policy.using) !== expected || normalise(policy.withCheck) !== expected) {
     throw new RlsConfigError(`"${table}" policy predicate is not the canonical tenant predicate`);
   }

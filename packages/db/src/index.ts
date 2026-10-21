@@ -126,6 +126,7 @@ export {
   rlsPolicyName,
   rlsPolicySql,
   RlsConfigError,
+  SELF_KEYED_TABLES,
   type RlsPolicyOptions,
   type RlsQueryable,
   type RlsState,

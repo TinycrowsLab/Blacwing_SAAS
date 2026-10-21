@@ -1,22 +1,7 @@
 -- TEST FIXTURE ONLY (DEVENV-011). Not a migration. Stand-in for the §7 tables the seed writes, until the
--- DB/domain epics ship their migrations (#94 and successors). It mirrors SEED_SCHEMA_CONTRACT plus the
+-- DB/domain epics ship their migrations. tenants, users and memberships are real migrations now (TENANT-001);
+-- the rest are stand-ins that reference them. The fixture mirrors SEED_SCHEMA_CONTRACT plus the
 -- §7 RLS pattern and the §8.4 SoD check, so the seed is exercised against RLS exactly as in production.
-CREATE TABLE tenants (
-  id uuid PRIMARY KEY, slug text NOT NULL UNIQUE, name text NOT NULL,
-  status text NOT NULL CHECK (status IN ('active', 'suspended', 'deleted')),
-  region text NOT NULL, plan text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE TABLE users (
-  id uuid PRIMARY KEY, keycloak_sub text NOT NULL UNIQUE, email citext NOT NULL UNIQUE,
-  name text NOT NULL, status text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE TABLE memberships (
-  tenant_id uuid NOT NULL REFERENCES tenants(id), user_id uuid NOT NULL REFERENCES users(id),
-  roles text[] NOT NULL, PRIMARY KEY (tenant_id, user_id),
-  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
-);
 CREATE TABLE assets (
   id uuid PRIMARY KEY, tenant_id uuid NOT NULL REFERENCES tenants(id), type text NOT NULL,
   identifiers text[] NOT NULL, environment text NOT NULL, owner_user_id uuid NOT NULL REFERENCES users(id),
@@ -48,7 +33,7 @@ CREATE TABLE role_matrices (
 DO $$
 DECLARE t text;
 BEGIN
-  FOREACH t IN ARRAY ARRAY['memberships', 'assets', 'asset_credentials', 'standing_authorisations', 'role_matrices'] LOOP
+  FOREACH t IN ARRAY ARRAY['assets', 'asset_credentials', 'standing_authorisations', 'role_matrices'] LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
     EXECUTE format('CREATE POLICY %I ON %I USING (tenant_id = current_setting(''app.tenant_id'')::uuid) '
@@ -56,5 +41,3 @@ BEGIN
   END LOOP;
 END
 $$;
--- Platform tables: the app role reads them; only the owner writes them.
-REVOKE INSERT, UPDATE, DELETE ON tenants, users FROM bw_app;

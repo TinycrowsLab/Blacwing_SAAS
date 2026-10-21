@@ -11,6 +11,7 @@ import { newId } from '@blackwing/ids';
 import { type PostgresHandle, withPostgres } from '@blackwing/testing/containers';
 
 import { migrateDatabase } from '../index.js';
+import { tenantRow } from './plan.js';
 import { inTenant, runSeed, type SeedSummary } from './run.js';
 import { SeedPreflightError } from './schema-contract.js';
 
@@ -23,19 +24,28 @@ let db: PostgresHandle;
 const seed = (over: Partial<Parameters<typeof runSeed>[0]> = {}): Promise<SeedSummary> =>
   runSeed({ ownerPool: db.ownerPool, appPool: db.appPool, juiceShopUrl: JUICE, ...over });
 
-async function ownerCount(table: string): Promise<number> {
+/** The seeded tenant's id: deterministic, so tests can set the tenant context without reading `tenants`. */
+const ACME_ID = tenantRow('2026-01-01T00:00:00.000Z' as IsoTimestamp).id;
+
+/** Runs `fn` on the owner connection with the acme context set (the owner is subject to FORCE RLS too). */
+async function asOwnerInAcme<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
   const client = await db.ownerPool.connect();
   try {
     await client.query('BEGIN');
-    // The owner is subject to FORCE RLS on tenant tables: count with the acme context set.
-    const t = await client.query<{ id: string }>("SELECT id FROM tenants WHERE slug = 'acme'");
-    await client.query("SELECT set_config('app.tenant_id', $1, true)", [t.rows[0]?.id ?? newId()]);
-    const { rows } = await client.query<{ n: string }>(`SELECT count(*) AS n FROM ${table}`);
+    await client.query("SELECT set_config('app.tenant_id', $1, true)", [ACME_ID]);
+    const result = await fn(client);
     await client.query('COMMIT');
-    return Number(rows[0]?.n);
+    return result;
   } finally {
     client.release();
   }
+}
+
+async function ownerCount(table: string): Promise<number> {
+  return asOwnerInAcme(async (client) => {
+    const { rows } = await client.query<{ n: string }>(`SELECT count(*) AS n FROM ${table}`);
+    return Number(rows[0]?.n);
+  });
 }
 
 beforeAll(async () => {
@@ -47,13 +57,13 @@ afterAll(async () => {
 });
 
 describe('db:seed', () => {
-  it('fails fast with guidance when the migrations are not applied', async () => {
+  it('fails fast with guidance when the tables it writes are not migrated', async () => {
     const error = await seed().catch((e: unknown) => e);
     expect(error).toBeInstanceOf(SeedPreflightError);
     expect((error as SeedPreflightError).message).toMatch(/pnpm db:migrate/);
-    expect((error as SeedPreflightError).problems).toContain('table tenants does not exist');
+    expect((error as SeedPreflightError).problems).toContain('table assets does not exist');
     // Nothing was created by the failed run.
-    const { rows } = await db.ownerPool.query("SELECT to_regclass('tenants') AS t");
+    const { rows } = await db.ownerPool.query("SELECT to_regclass('assets') AS t");
     expect(rows[0]).toEqual({ t: null });
   });
 
@@ -85,8 +95,8 @@ describe('db:seed', () => {
       for (const row of list)
         expect((row as { tenant_id: string }).tenant_id).toBe(summary.tenantId);
     }
-    const tenant = await db.ownerPool.query(
-      "SELECT status, region, plan FROM tenants WHERE slug = 'acme'",
+    const tenant = await asOwnerInAcme((client) =>
+      client.query("SELECT status, region, plan FROM tenants WHERE slug = 'acme'"),
     );
     expect(tenant.rows).toEqual([{ status: 'active', region: 'eu-west-1', plan: 'dev' }]);
     const operator = await db.ownerPool.query<{ id: string }>(
@@ -135,11 +145,7 @@ describe('db:seed', () => {
   it('is idempotent and converges after a partial run (no duplicate SAs/assets)', async () => {
     await seed();
     // Simulate a partial earlier run: drop some tenant rows, then re-seed.
-    const t = await db.ownerPool.query<{ id: string }>(
-      "SELECT id FROM tenants WHERE slug = 'acme'",
-    );
-    const tenantId = t.rows[0]?.id ?? '';
-    await inTenant(db.appPool, tenantId, async (tx) => {
+    await inTenant(db.appPool, ACME_ID, async (tx) => {
       await tx.query('DELETE FROM role_matrices');
       await tx.query('DELETE FROM asset_credentials');
     });
@@ -184,10 +190,7 @@ describe('db:seed', () => {
     await expect(seed({ requester: 'owner', approver: 'owner' })).rejects.toThrow(
       /approver must not be the requester/,
     );
-    const t = await db.ownerPool.query<{ id: string }>(
-      "SELECT id FROM tenants WHERE slug = 'acme'",
-    );
-    const code = await inTenant(db.appPool, t.rows[0]?.id ?? '', (tx) =>
+    const code = await inTenant(db.appPool, ACME_ID, (tx) =>
       tx.query('UPDATE standing_authorisations SET approver_id = requester_id'),
     ).then(
       () => 'ok',

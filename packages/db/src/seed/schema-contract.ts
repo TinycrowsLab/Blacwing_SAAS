@@ -101,7 +101,7 @@ export class SeedPreflightError extends PreconditionFailedError {
     super(
       `db:seed: the database schema is missing what the seed writes (${problems.join('; ')}). ` +
         'Apply the migrations first (`pnpm db:migrate`); the tables come from the DB/domain epics ' +
-        '(tenants/users/memberships: #94). The seed never creates tables.',
+        '(tenants/users/memberships: TENANT-001; the rest from later epics). The seed never creates tables.',
     );
     this.problems = problems;
   }

@@ -116,7 +116,10 @@ export {
   uuidV7Schema,
 } from './primitives.js';
 export {
+  type Membership,
+  membershipSchema,
   type Tenant,
+  TENANT_STATUSES,
   tenantSchema,
   tenantSlugSchema,
   type TenantStatus,
@@ -124,6 +127,7 @@ export {
   type User,
   userSchema,
   type UserStatus,
+  USER_STATUSES,
   userStatusSchema,
 } from './entities/tenancy.js';
 export {

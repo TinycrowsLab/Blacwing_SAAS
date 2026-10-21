@@ -10,6 +10,7 @@ import {
   isoDateTimeSchema,
   runSchema,
   standingAuthorisationSchema,
+  membershipSchema,
   tenantSchema,
   testCaseSchema,
   userSchema,
@@ -37,6 +38,12 @@ const user = {
   email: 'a@example.test',
   name: 'Ada',
   status: 'active',
+  ...stamps,
+};
+const membership = {
+  tenantId: ID(1),
+  userId: ID(2),
+  roles: ['org_admin', 'auditor'],
   ...stamps,
 };
 const asset = {
@@ -167,6 +174,9 @@ describe('entity contracts accept the valid fixtures', () => {
   it.each([
     ['tenant', tenantSchema, tenant],
     ['user', userSchema, user],
+    ['user without a display name', userSchema, { ...user, name: null }],
+    ['membership', membershipSchema, membership],
+    ['membership without roles', membershipSchema, { ...membership, roles: [] }],
     ['asset', assetSchema, asset],
     ['standing authorisation', standingAuthorisationSchema, sa],
     ['run', runSchema, run],
@@ -196,6 +206,15 @@ describe('tenant and user', () => {
 
   it('rejects an invalid e-mail', () => {
     expect(userSchema.safeParse({ ...user, email: 'not-an-email' }).success).toBe(false);
+  });
+
+  it('rejects unknown, duplicate and platform roles on a membership', () => {
+    for (const roles of [['root'], ['platform_operator'], ['developer', 'developer']]) {
+      expect(membershipSchema.safeParse({ ...membership, roles }).success, roles.join()).toBe(
+        false,
+      );
+    }
+    expect(membershipSchema.safeParse({ ...membership, userId: 'not-a-uuid' }).success).toBe(false);
   });
 });
 

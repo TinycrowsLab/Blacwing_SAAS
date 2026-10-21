@@ -2,9 +2,11 @@ import { z } from 'zod';
 
 import { LIMITS } from '../limits.js';
 import { checkTimestamps, labelSchema, timestampsShape, uuidV7Schema } from '../primitives.js';
+import { roleSchema } from '../rbac/roles.js';
 
 /** `tenants.status` (§7). */
-export const tenantStatusSchema = z.enum(['active', 'suspended', 'deleted']);
+export const TENANT_STATUSES = ['active', 'suspended', 'deleted'] as const;
+export const tenantStatusSchema = z.enum(TENANT_STATUSES);
 export type TenantStatus = z.infer<typeof tenantStatusSchema>;
 
 /** URL-safe organisation slug: lowercase letters, digits and single hyphens, 3-63 characters. */
@@ -30,7 +32,8 @@ export const tenantSchema = z
 export type Tenant = z.infer<typeof tenantSchema>;
 
 /** `users.status`. Users are global; tenant access comes from memberships. */
-export const userStatusSchema = z.enum(['active', 'suspended', 'deleted']);
+export const USER_STATUSES = ['active', 'suspended', 'deleted'] as const;
+export const userStatusSchema = z.enum(USER_STATUSES);
 export type UserStatus = z.infer<typeof userStatusSchema>;
 
 /** A user, §7 `users`. Identity lives in Keycloak; `keycloakSub` is the OIDC subject. */
@@ -39,9 +42,26 @@ export const userSchema = z
     id: uuidV7Schema,
     keycloakSub: z.string().min(1).max(LIMITS.subjectMax),
     email: z.email(),
-    name: labelSchema,
+    /** `users.name` is nullable: Keycloak may not supply a display name. */
+    name: labelSchema.nullable(),
     status: userStatusSchema,
     ...timestampsShape,
   })
   .superRefine(checkTimestamps);
 export type User = z.infer<typeof userSchema>;
+
+/**
+ * A membership, §7 `memberships`: the (tenant, user) pair with the user's roles in that tenant.
+ * An empty `roles` array means no permissions (RBAC enforces); roles are unique tenant roles.
+ */
+export const membershipSchema = z
+  .strictObject({
+    tenantId: uuidV7Schema,
+    userId: uuidV7Schema,
+    roles: z
+      .array(roleSchema)
+      .refine((roles) => new Set(roles).size === roles.length, 'roles must be unique'),
+    ...timestampsShape,
+  })
+  .superRefine(checkTimestamps);
+export type Membership = z.infer<typeof membershipSchema>;

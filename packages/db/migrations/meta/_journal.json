@@ -50,6 +50,13 @@
       "when": 1793123216012,
       "tag": "20261027174656_secrets",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792575672976,
+      "tag": "20261021094112_tenancy",
+      "breakpoints": true
     }
   ]
 }
