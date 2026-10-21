@@ -51,6 +51,7 @@
     "check:claude-md": "node scripts/check-claude-md.mjs",
     "docs:check": "node scripts/docs-site.mjs check",
     "docs:build": "node scripts/docs-site.mjs build",
+    "check:runbooks": "node scripts/check-runbooks.mjs",
     "check:onboarding": "node scripts/check-onboarding.mjs",
     "check:adr": "node scripts/check-adr.mjs --quiet",
     "check:tsconfig": "node scripts/check-tsconfig.mjs",
