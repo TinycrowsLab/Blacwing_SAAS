@@ -1,8 +1,9 @@
 'use client';
 
 import { QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from 'next-themes';
 import { useState, type ReactNode } from 'react';
+
+import { ThemeProvider } from '@blackwing/ui';
 
 import { Toaster } from '../components/toaster';
 import { makeQueryClient } from '../lib/query-client';
@@ -12,7 +13,7 @@ export function Providers({ children }: { readonly children: ReactNode }): React
   const [queryClient] = useState(() => makeQueryClient());
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <ThemeProvider>
         <Toaster>{children}</Toaster>
       </ThemeProvider>
     </QueryClientProvider>

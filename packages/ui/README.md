@@ -27,7 +27,7 @@ Tailwind is pinned to 4.x: tokens live in CSS, there is no `tailwind.config` the
   `text-foreground`, `border-border`, `bg-primary`, `text-muted-foreground`, severity (`bg-sev-high-soft`)
   and status (`text-success`, `text-warning`, `text-danger`, `bg-kill`) utilities resolve.
 - `--radius` is defined once; `rounded-sm/md/lg/xl` derive from it, so changing it restyles every component.
-- Fonts: `--font-family-sans` (Poppins), `--font-family-mono` (JetBrains Mono). Theme provider and toggle: CONSOLE-003.
+- Fonts: `--font-family-sans` (Poppins), `--font-family-mono` (JetBrains Mono). 
 
 ## Components
 
@@ -97,3 +97,17 @@ pnpm --filter @blackwing/ui build-storybook  # static build into storybook-stati
 `pnpm --filter @blackwing/ui test` (Vitest + Testing Library). `storybook.test.tsx` renders every story in light and
 dark, runs its `play` interaction and fails on any serious or critical axe violation. Contrast is left to the
 Storybook a11y addon, because jsdom has no layout.
+
+## Theming (CONSOLE-003)
+
+`ThemeProvider` (next-themes 0.4.6, pinned) uses the class strategy: `.dark` on `<html>`, default `system`,
+choice stored client-side only under `localStorage` key `bw-theme` (no server state, no PII). The pre-hydration
+script is injected by next-themes, so there is no flash; do not read `localStorage` in a client effect. If
+storage is blocked or full it falls back to `system` without throwing. Mount it once in
+`apps/web/src/app/providers.tsx` and put `suppressHydrationWarning` on `<html>` (not `<body>`).
+`ModeToggle` is the Light/Dark/System dropdown for the topbar. Tokens exist for `:root` and `.dark`; components
+use token utilities only, so they restyle without per-component overrides.
+
+Forced-colors (Windows high contrast): tokens are plain colours that the UA overrides; `styles/index.css` keeps a
+`Highlight` focus outline under `@media (forced-colors: active)`. Never encode state by colour alone. Reduced
+motion: there is no theme transition, and `prefers-reduced-motion: reduce` zeroes transition/animation durations.

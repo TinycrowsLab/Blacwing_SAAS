@@ -33,6 +33,10 @@
     "packages/*": {
       "project": ["src/**/*.{ts,tsx}"],
     },
+    "apps/web": {
+      // Next.js App Router files are loaded by the framework by file name (CONSOLE-001), never imported.
+      "entry": ["src/app/**/{layout,page,providers}.tsx"],
+    },
     "apps/api": {
       // Spawned as a child process by shutdown.process.test.ts (never imported).
       "entry": ["src/testdata/slow-server.ts"],

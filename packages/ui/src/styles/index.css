@@ -2,11 +2,41 @@
 @import './tokens.css';
 @import './theme.css';
 
+/* `dark:` follows the `.dark` class on <html> (CONSOLE-003), not the OS media query. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
+  :root {
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground font-sans;
+  }
+}
+
+/*
+ * Forced-colors / high-contrast OS mode: the UA overrides colours with system keywords, so components
+ * must not rely on background colour alone for borders or focus. Keep a real outline on focus.
+ */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid Highlight;
+  }
+}
+
+/* No theme cross-fade exists; any future transition must be disabled here. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
   }
 }

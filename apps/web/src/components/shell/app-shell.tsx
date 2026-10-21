@@ -1,7 +1,6 @@
 'use client';
 
-import { Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import * as React from 'react';
 
 import {
@@ -12,6 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  ModeToggle,
   Sheet,
   SheetContent,
   SheetDescription,
@@ -39,24 +39,6 @@ function readCollapsed(): boolean {
   } catch {
     return false;
   }
-}
-
-function ModeToggle(): ReactNode {
-  const { resolvedTheme, setTheme } = useTheme();
-  const dark = resolvedTheme === 'dark';
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      aria-label="Toggle colour mode"
-      onClick={() => {
-        setTheme(dark ? 'light' : 'dark');
-      }}
-    >
-      <Sun aria-hidden="true" className="size-4 dark:hidden" />
-      <Moon aria-hidden="true" className="hidden size-4 dark:block" />
-    </Button>
-  );
 }
 
 /** Frame of every authenticated page: role-aware sidebar (drawer under `md`), topbar and content. */
