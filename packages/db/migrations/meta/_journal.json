@@ -22,6 +22,13 @@
       "when": 1792525439115,
       "tag": "0002_column_mixins",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792568606911,
+      "tag": "20261021074326_audit_events",
+      "breakpoints": true
     }
   ]
 }

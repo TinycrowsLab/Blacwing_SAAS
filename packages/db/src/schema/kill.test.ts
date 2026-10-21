@@ -38,7 +38,11 @@ describe('kill-switch schema', () => {
 
 describe('migrations', () => {
   it('are forward-only and ordered', () => {
-    expect(migrationNames()).toEqual(['0000_extensions', '0001_kill_switch', '0002_column_mixins']);
+    expect(migrationNames().slice(0, 3)).toEqual([
+      '0000_extensions',
+      '0001_kill_switch',
+      '0002_column_mixins',
+    ]);
     for (const name of migrationNames()) {
       expect(migration(name)).not.toMatch(/\bDROP\s+(TABLE|COLUMN|SCHEMA)\b/i);
     }
