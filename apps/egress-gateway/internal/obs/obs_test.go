@@ -79,6 +79,13 @@ func TestMetricsExposeCoreGauges(t *testing.T) {
 	assert.Contains(t, out, "egress_up 1")
 	assert.Contains(t, out, "egress_ready 1")
 	assert.Contains(t, out, "egress_not_ready_reason 0")
+
+	m.ObserveScope(true)
+	m.ObserveScope(false)
+	m.ObserveScope(false)
+	out = scrape()
+	assert.Contains(t, out, `egress_scope_eval_total{result="allow"} 1`)
+	assert.Contains(t, out, `egress_scope_eval_total{result="deny"} 2`)
 }
 
 func TestTracerProviderWithoutEndpointRecordsLocally(t *testing.T) {

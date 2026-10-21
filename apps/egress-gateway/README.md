@@ -42,6 +42,7 @@ internal/server      lifecycle, management plane, readiness, hook interfaces
 internal/config      environment loader (fail closed) and the Secret type
 internal/identity    proxy identity parser (tc/role/sess/run + token), verifier contract, 407/SOCKS mapping
 internal/proxy       HTTP(S) MITM + SOCKS5 listeners (EGRESS epic)
+internal/scope       deterministic scope matcher (host/IP/CIDR/port/path/method), shared TS vectors
 internal/policy      Cedar evaluation of the signed policy snapshot (EGRESS/POLICY)
 internal/dns         scoped resolver, IP pinning, anti-rebinding (EGRESS epic)
 internal/capture     evidence capture; capture failure blocks (EGRESS epic)
@@ -220,3 +221,14 @@ Multi-stage: `golang:<pin>-bookworm` builds a static binary (`CGO_ENABLED=0`,
 `gcr.io/distroless/static-debian12:nonroot` with entrypoint `/egress-gateway run`.
 The image exposes the management port 9090; data-plane ports arrive with the
 listener issues (dev ports: proxy 13128, management 13129).
+
+### Scope matcher (`internal/scope`, EGRESS-004)
+
+`scope.ParseRules` parses and canonicalises an ordered include/exclude rule set (same JSON and
+canonical forms as `parseScopeRules` in `@blackwing/contracts`); `scope.Match(target, rules)`
+returns `Decision{Allow, MatchedRule, MatchedRuleIndex, Reason}`. Default deny, most specific rule
+wins, exclude beats include on a tie, a host rule never authorises resolved IPs. The Go tests run
+`packages/contracts/src/scope.vectors.json`, the same file `matchScope` (`@blackwing/domain`) runs
+in Vitest, so the two implementations cannot drift. Callers count each evaluation with
+`obs.Metrics.ObserveScope` (`egress_scope_eval_total{result}`) and log `Reason` and `MatchedRule`
+(never the query string).

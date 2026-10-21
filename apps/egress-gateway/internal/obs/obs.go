@@ -112,6 +112,7 @@ type Metrics struct {
 	up             prometheus.Gauge
 	ready          prometheus.Gauge
 	notReadyReason prometheus.Gauge
+	scopeEval      *prometheus.CounterVec
 }
 
 // NewMetrics creates a private registry (no global state) with egress_build_info,
@@ -130,6 +131,10 @@ func NewMetrics(version, commit string) *Metrics {
 			Name: "egress_not_ready_reason",
 			Help: "Readiness reason code: 0 ready, 1 starting, 2 policy not loaded, 3 policy unreadable, 4 policy unverified, 5 valkey unreachable, 6 shutting down.",
 		}),
+		scopeEval: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "egress_scope_eval_total",
+			Help: "Scope matcher evaluations by result (allow or deny).",
+		}, []string{"result"}),
 	}
 	buildInfo := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name:        "egress_build_info",
@@ -138,7 +143,7 @@ func NewMetrics(version, commit string) *Metrics {
 	})
 	buildInfo.Set(1)
 	m.notReadyReason.Set(ReasonCodeStarting)
-	reg.MustRegister(m.up, m.ready, m.notReadyReason, buildInfo,
+	reg.MustRegister(m.up, m.ready, m.notReadyReason, m.scopeEval, buildInfo,
 		collectors.NewGoCollector(),
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 	)
@@ -152,6 +157,15 @@ func (m *Metrics) SetUp(up bool) { m.up.Set(boolGauge(up)) }
 func (m *Metrics) SetReadiness(ready bool, reasonCode int) {
 	m.ready.Set(boolGauge(ready))
 	m.notReadyReason.Set(float64(reasonCode))
+}
+
+// ObserveScope counts one scope evaluation (egress_scope_eval_total{result=allow|deny}).
+func (m *Metrics) ObserveScope(allow bool) {
+	result := "deny"
+	if allow {
+		result = "allow"
+	}
+	m.scopeEval.WithLabelValues(result).Inc()
 }
 
 // Handler serves the registry in the Prometheus exposition format.
