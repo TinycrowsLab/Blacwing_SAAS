@@ -12,6 +12,7 @@ import {
   brokerJournalRequestSchema,
   TERMINAL_RUN_STATES,
 } from '@blackwing/contracts';
+import { createCrossTenantGuard, runWithTenantContext } from '@blackwing/db/tenant-context';
 import {
   AppError,
   type ErrorEnvironment,
@@ -27,6 +28,7 @@ import { type Logger, withContext } from '@blackwing/logger';
 
 import { type BrokerMetrics, createBrokerMetrics } from './metrics.js';
 import { BrokerAuthError, type BrokerTokenVerifier, type RunTokenRevocations } from './token.js';
+import { createTenantContextMetrics } from '../tenant/metrics.js';
 
 import type { SourceGuard } from './network.js';
 import type { BrokerAuditSink, BrokerRunReader } from './ports.js';
@@ -127,14 +129,9 @@ function traceIdOf(): string {
   );
 }
 
-/** True for the object body ids that are present and differ from the token's (cross-run / cross-tenant). */
-function bodyIdsMismatch(body: unknown, principal: BrokerPrincipal): boolean {
-  if (typeof body !== 'object' || body === null) return false;
-  const { runId, tenantId } = body as { runId?: unknown; tenantId?: unknown };
-  return (
-    (runId !== undefined && runId !== principal.runId) ||
-    (tenantId !== undefined && tenantId !== principal.tenantId)
-  );
+/** The `runId` / `tenantId` a body states about itself; they must equal the token's, never widen it. */
+function bodyIds(body: unknown): { runId?: unknown; tenantId?: unknown } {
+  return typeof body === 'object' && body !== null ? body : {};
 }
 
 /** Fixed-window limiter keyed by run session (never by user token). */
@@ -191,6 +188,25 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
   const now = options.now ?? Date.now;
   const limiter = createRateLimiter(options.rateLimit ?? DEFAULT_RATE_LIMIT, now);
   const tracer = trace.getTracer(BROKER_TRACER);
+  // Requirement 6 (TENANT-003): a tenant mismatch is `CROSS_TENANT_DENIED` and leaves a
+  // `tenant.cross_tenant_denied` audit event next to the endpoint's own denied event.
+  const tenantGuard = createCrossTenantGuard({
+    audit: (event) =>
+      options.audit.record({
+        action: event.action,
+        endpoint: event.surface,
+        outcome: 'denied',
+        status: HTTP_STATUS_FORBIDDEN,
+        code: 'CROSS_TENANT_DENIED',
+        tenantId: event.contextTenantId,
+        runId: event.resource?.replace(/^run:/, '') ?? '',
+        sessionId: '',
+        tokenId: '',
+        traceId: traceIdOf(),
+      }),
+    metrics: createTenantContextMetrics(metrics.registry),
+    logger: options.logger,
+  });
 
   const authFailure = (request: FastifyRequest, reason: string): void => {
     metrics.authFailures.inc({ reason });
@@ -302,8 +318,15 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
             throw new ForbiddenError('run mismatch', { detail: GENERIC_FORBIDDEN });
           }
           if (endpoint.body !== null) {
-            if (bodyIdsMismatch(request.body, principal)) {
+            const stated = bodyIds(request.body);
+            if (stated.runId !== undefined && stated.runId !== principal.runId) {
               throw new ForbiddenError('run mismatch', { detail: GENERIC_FORBIDDEN });
+            }
+            if (stated.tenantId !== undefined) {
+              await tenantGuard.assertSameTenant(
+                typeof stated.tenantId === 'string' ? stated.tenantId : null,
+                { surface: endpoint.route, resource: `run:${principal.runId}` },
+              );
             }
             const parsed = endpoint.body.safeParse(request.body);
             if (!parsed.success) {
@@ -322,9 +345,13 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
           // Tenant context (§8.6): the lookup runs for the token's tenant only. Unknown run and another
           // tenant's run are the same `null`, answered identically.
           const found = await options.runs.getRun(principal.tenantId, principal.runId);
-          if (found?.tenantId !== principal.tenantId) {
+          if (found === null) {
             throw new ForbiddenError('run not accessible', { detail: GENERIC_FORBIDDEN });
           }
+          await tenantGuard.assertSameTenant(found.tenantId, {
+            surface: endpoint.route,
+            resource: `run:${principal.runId}`,
+          });
           if (endpoint.body !== null && terminalStates.has(found.state)) {
             throw new AppError('RUN_NOT_ACTIVE', 'run is not active', {
               detail: 'The run has ended; the broker accepts no more writes for it.',
@@ -366,7 +393,11 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
             },
           });
           try {
-            const result = await run(request, principal, endpoint);
+            // The whole request runs in the run token's tenant context (§8.6, TENANT-003).
+            const result = await runWithTenantContext(
+              { tenantId: principal.tenantId, actor: { type: 'run', id: principal.runId } },
+              () => run(request, principal, endpoint),
+            );
             span.end();
             return result;
           } catch (error) {

@@ -1,6 +1,7 @@
 import { Controller, Get, Inject, Res } from '@nestjs/common';
 
 import { HealthService } from './health.service.js';
+import { PublicRoute } from '../tenant/public-route.js';
 
 import type { HealthReport } from './health.types.js';
 import type { FastifyReply } from 'fastify';
@@ -8,6 +9,7 @@ import type { FastifyReply } from 'fastify';
 const SERVICE_UNAVAILABLE = 503;
 
 /** Probe endpoints (API-011): unprefixed, unauthenticated, no audit, exempt from rate limiting. */
+@PublicRoute()
 @Controller('health')
 export class HealthController {
   constructor(@Inject(HealthService) private readonly health: HealthService) {}

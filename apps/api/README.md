@@ -68,7 +68,7 @@ client); without a store every `@Idempotent()` route answers `503` (fail closed)
 
 - Missing header: `400 idempotency_key_required`; a malformed one (8 to 255 visible ASCII, one value): `400 bad_request`.
 - Record: `idem:{tenantId}:{route}:{sha256(key)}` holding `{keyHash, fingerprint, state, result}`. The tenant comes
-  from the request context (`bindTenant`); none means `500 tenant_context_missing`, never a shared key. The raw
+  from the request context (`bindTenant`); none means `403 tenant_context_missing`, never a shared key. The raw
   key is never stored. `fingerprint = sha256(method + path + sorted query + canonical JSON body)`.
 - First request: `SET ... NX PX API_IDEMPOTENCY_LOCK_TTL_S` marks it `in_progress`. A duplicate meanwhile is
   `409 idempotency_in_progress` (`Retry-After: 1`); a crash leaves the marker to expire, then a retry proceeds.
@@ -103,3 +103,15 @@ tenant-scoped run lookup and the run state (`409 run_not_active` for writes on a
 answer `501 not_implemented` until FINDING, EVIDENCE, REVERSAL and ORCH implement them. Tokens are minted by
 `signBrokerToken` (issuance wiring: RUNTIME/SANDBOX). Metrics: `broker_requests_total`,
 `broker_auth_failures_total`. In-memory stores are offline stubs (online-porting #895).
+
+## Tenant context (TENANT-003)
+
+Every route is tenant-scoped unless marked `@PublicRoute()` (probes, the banner). `TenantContextGuard` asks the
+`tenantPrincipalSource` (IAM's validated principal: session claim or `bw_pat_`/`bw_ci_` binding) and resolves exactly
+one tenant with `resolveTenantContext` from `@blackwing/db/tenant-context`; `TenantContextInterceptor` then runs the
+handler inside the `AsyncLocalStorage` scope that repositories read (`getTenantContextOrThrow`). No principal is
+`401`; a missing, malformed or ambiguous tenant is `403 tenant_context_missing`. A tenant in a body, query or header
+is never read. The Run Broker runs each request in its run token's tenant and answers `403 cross_tenant_denied`
+(audited as `tenant.cross_tenant_denied`) when a body or run record names another tenant. Worker activities get the
+same context from `createTenantActivityInterceptors` (`apps/worker/src/tenant`), which re-reads the run's tenant on
+every attempt. Metrics: `bw_tenant_context_missing_total`, `bw_cross_tenant_denied_total`.

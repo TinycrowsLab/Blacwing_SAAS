@@ -9,7 +9,6 @@
 // consumes it; it does not re-implement it. `withSystem` is the one explicit, audited bypass.
 
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { createHash } from 'node:crypto';
 
 import { type Span, SpanStatusCode, trace } from '@opentelemetry/api';
 import { sql } from 'drizzle-orm';
@@ -19,6 +18,7 @@ import { createLogger, type Logger } from '@blackwing/logger';
 
 import { type DbTxConfig, loadDbTxConfig, type TxIsolation } from './env.js';
 import { toTenantIsolationError } from './rls.js';
+import { hashTenantId } from './tenant-context.js';
 
 import type { Database, Tx } from './client.js';
 
@@ -45,7 +45,6 @@ export const RETRYABLE_PG_CODES: readonly string[] = Object.freeze([
 const BACKOFF_BASE_MS = 10;
 const BACKOFF_CAP_MS = 500;
 const CAUSE_DEPTH = 5;
-const TENANT_HASH_LENGTH = 12;
 const CANONICAL_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SQLSTATE = /^[0-9A-Z]{5}$/;
 
@@ -183,7 +182,7 @@ function loggerOf(options: TxOptions): TxLogger {
 
 /** A short, non-reversible tenant label for logs (§8.7). */
 export function hashTenant(tenantId: string): string {
-  return createHash('sha256').update(tenantId).digest('hex').slice(0, TENANT_HASH_LENGTH);
+  return hashTenantId(tenantId);
 }
 
 /**
@@ -261,7 +260,7 @@ async function runTransaction<T>(input: RunInput<T>): Promise<T> {
   const metrics = options.metrics ?? NOOP_METRICS;
   const backoff = options.backoffMs ?? defaultBackoff;
   const signal = options.signal;
-  const label = tenantId === null ? 'system' : hashTenant(tenantId);
+  const label = tenantId === null ? 'system' : hashTenantId(tenantId);
   const failures: string[] = [];
 
   for (let attempt = 1; ; attempt += 1) {

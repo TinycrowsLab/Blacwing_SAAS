@@ -521,7 +521,7 @@ describe('boundary logging (observability)', () => {
     expect(log).toHaveBeenCalledTimes(2);
     expect(log.mock.calls.map(([entry]) => [entry.level, entry.code, entry.status])).toEqual([
       ['warn', 'NOT_FOUND', 404],
-      ['error', 'TENANT_CONTEXT_MISSING', 500],
+      ['warn', 'TENANT_CONTEXT_MISSING', 403],
     ]);
   });
 

@@ -10,6 +10,7 @@ import {
 } from '@opentelemetry/api';
 import { W3CTraceContextPropagator } from '@opentelemetry/core';
 
+import { hashTenantId } from '@blackwing/db/tenant-context';
 import { type Logger, withContext } from '@blackwing/logger';
 
 import { type HttpMetrics, UNMATCHED_ROUTE } from './metrics.js';
@@ -82,14 +83,20 @@ export function currentTraceId(): string | undefined {
 }
 
 /**
- * Hook point for tenant context (§8.6): binds `tenantId` to the current request, so its logger and its
- * access log line carry it. Authentication (later API issues) calls this once the tenant is verified;
+ * Binds the verified tenant to the current request (§8.6), so its logger and its access log line carry
+ * the hashed id and the server span gets `tenant.id`. The tenant guard calls it after resolution. Authentication (later API issues) calls this once the tenant is verified;
  * nothing here derives a tenant from client input.
  */
-export function bindTenant(tenantId: string): void {
+export function bindTenant(tenantId: string, fields: Readonly<Record<string, string>> = {}): void {
   const logger = requestContext.get('logger');
   requestContext.set('tenantId', tenantId);
-  if (logger !== undefined) requestContext.set('logger', withContext(logger, { tenantId }));
+  // Logs carry the hashed tenant id only (§8.7); the raw id stays in the request context for keying.
+  if (logger !== undefined) {
+    requestContext.set(
+      'logger',
+      withContext(logger, { tenantId: hashTenantId(tenantId), ...fields }),
+    );
+  }
 }
 
 /**
@@ -147,6 +154,7 @@ export async function registerRequestObservability(
     state.span.end();
 
     const tenantId = requestContext.get('tenantId');
+    if (tenantId !== undefined) state.span.setAttribute('tenant.id', hashTenantId(tenantId));
     requestLogger(logger).info(
       {
         method: request.method,
@@ -154,7 +162,7 @@ export async function registerRequestObservability(
         route,
         statusCode,
         durationMs: Math.round(durationMs * DURATION_PRECISION) / DURATION_PRECISION,
-        ...(tenantId === undefined ? {} : { tenantId }),
+        ...(tenantId === undefined ? {} : { tenantId: hashTenantId(tenantId) }),
       },
       'http.request',
     );

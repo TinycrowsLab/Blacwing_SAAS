@@ -16,6 +16,7 @@ export {
   SANDBOX_TERMINATE_PATH,
   sandboxDeadlineFromEnv,
 } from './kill/sandbox-client.js';
+export { createTenantActivityInterceptors, type TenantActivityDeps } from './tenant/interceptor.js';
 export { createOtelKillMetrics } from './kill/metrics.js';
 export type * from './kill/ports.js';
 export * from './kill/types.js';

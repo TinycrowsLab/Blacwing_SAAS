@@ -6,6 +6,7 @@ import {
 } from '@opentelemetry/sdk-trace-base';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { hashTenantId } from '@blackwing/db/tenant-context';
 import { createLogger } from '@blackwing/logger';
 
 import { loadApiConfig } from '../config.js';
@@ -216,8 +217,11 @@ describe('createApiApp', () => {
     h.lines.length = 0;
     await h.app.inject({ method: 'GET', url: '/v1/probe/tenant' });
     const all = records(h.lines);
-    expect(all.find((record) => record.msg === 'probe.tenant')?.tenantId).toBe('tnt_test');
-    expect(accessLogs(h.lines)[0]?.tenantId).toBe('tnt_test');
+    expect(all.find((record) => record.msg === 'probe.tenant')?.tenantId).toBe(
+      hashTenantId('tnt_test'),
+    );
+    expect(accessLogs(h.lines)[0]?.tenantId).toBe(hashTenantId('tnt_test'));
+    expect(JSON.stringify(all)).not.toContain('tnt_test');
   });
 
   it('accepts a body within the limit and keeps the raw body', async () => {

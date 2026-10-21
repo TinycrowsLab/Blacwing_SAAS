@@ -230,6 +230,9 @@ importers:
       '@blackwing/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@blackwing/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@blackwing/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -537,6 +540,9 @@ importers:
       '@blackwing/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@blackwing/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../../packages/errors

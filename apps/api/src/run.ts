@@ -5,6 +5,7 @@ import { createLogger, type Logger } from '@blackwing/logger';
 import { createApiApp, type CreateApiAppOptions } from './bootstrap/create-app.js';
 import { type ApiConfig, loadApiConfig } from './config.js';
 
+import type { TenantPrincipalSource } from './tenant/guard.js';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 /** Exit status of a process whose boot failed after its configuration was accepted. */
@@ -18,6 +19,11 @@ export interface RunApiOptions {
   readonly write: (text: string) => void;
   /** Overrides the logger built from config (tests). */
   readonly logger?: Logger;
+  /**
+   * IAM's validated-principal lookup. Defaults to none, which makes every tenant-scoped route answer 401
+   * (fail closed) until IAM is wired; probes and the banner are `@PublicRoute()`.
+   */
+  readonly tenantPrincipalSource?: TenantPrincipalSource;
   /** Extra modules to mount (see `CreateApiAppOptions.imports`). */
   readonly imports?: CreateApiAppOptions['imports'];
 }
@@ -49,6 +55,7 @@ export async function runApi(options: RunApiOptions): Promise<NestFastifyApplica
       config,
       logger,
       shutdownHooks: true,
+      tenantPrincipalSource: options.tenantPrincipalSource ?? (() => null),
       ...(options.imports === undefined ? {} : { imports: options.imports }),
     });
     await app.listen({ port: config.API_PORT, host: config.API_HOST });

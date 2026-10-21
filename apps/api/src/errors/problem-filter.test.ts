@@ -222,7 +222,7 @@ describe('ProblemJsonExceptionFilter (test environment)', () => {
     ['precondition-required', 428, 'precondition_required'],
     ['rate-limited', 429, 'rate_limited'],
     ['idempotency', 409, 'idempotency_conflict'],
-    ['tenant', 500, 'tenant_context_missing'],
+    ['tenant', 403, 'tenant_context_missing'],
     ['uncaught', 500, 'internal_error'],
     ['module-code', 423, 'run_locked'],
   ])('GET %s -> %i %s as problem+json with a traceId', async (path, status, code) => {

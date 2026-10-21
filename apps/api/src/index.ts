@@ -49,3 +49,4 @@ export * from './idempotency/index.js';
 export * from './pagination/index.js';
 export * from './openapi/index.js';
 export * from './broker/index.js';
+export * from './tenant/index.js';

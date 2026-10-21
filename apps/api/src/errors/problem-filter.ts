@@ -62,13 +62,14 @@ export interface SecurityErrorEvent {
   readonly tenantId?: string;
 }
 
-/** Receives security-relevant errors (`permission_denied`, `tenant_context_missing`). Failures are swallowed. */
+/** Receives security-relevant errors (`permission_denied`, `tenant_context_missing`, `cross_tenant_denied`). Failures are swallowed. */
 export type SecurityEventSink = (event: SecurityErrorEvent) => void | Promise<void>;
 
 /** Wire codes whose occurrence is a security decision worth auditing. */
 const SECURITY_CODES: ReadonlySet<string> = new Set([
   'permission_denied',
   'tenant_context_missing',
+  'cross_tenant_denied',
 ]);
 
 /** HTTP status -> wire code for `HttpException`s and Fastify errors. */

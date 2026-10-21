@@ -184,16 +184,19 @@ export class IllegalRunTransitionError extends AppError {
 }
 
 /** Why a tenant context could not be established. */
-export type TenantContextMissingReason = 'missing' | 'invalid_uuid';
+export type TenantContextMissingReason = 'missing' | 'invalid_uuid' | 'ambiguous';
 
 /** Options for {@link TenantContextMissingError}. */
 export interface TenantContextMissingErrorOptions extends AppErrorOptions {
-  /** `missing` (no tenant id; the default) or `invalid_uuid` (an id that is not a UUID). */
+  /**
+   * `missing` (no tenant id; the default), `invalid_uuid` (an id that is not a UUID) or `ambiguous`
+   * (the principal carries two different tenants).
+   */
   readonly reason?: TenantContextMissingReason;
 }
 
 /**
- * `TENANT_CONTEXT_MISSING` (500): a tenant-scoped path ran without tenant context. Thrown by
+ * `TENANT_CONTEXT_MISSING` (403): a tenant-scoped path ran without tenant context. Thrown by
  * `withTenant` and friends to fail closed (§7, §8.6); the request is refused, never served unscoped.
  * A malformed id is the same error (`meta.reason === 'invalid_uuid'`): it can never establish a context.
  */
@@ -205,6 +208,21 @@ export class TenantContextMissingError extends AppError {
   constructor(message?: string, options: TenantContextMissingErrorOptions = {}) {
     super('TENANT_CONTEXT_MISSING', message, options);
     this.meta = Object.freeze({ reason: options.reason ?? 'missing' });
+  }
+}
+
+/**
+ * `CROSS_TENANT_DENIED` (403): a resource belongs to another tenant than the current context (§8.6).
+ * The message and detail never name either tenant; the audit event carries the ids.
+ */
+export class CrossTenantAccessError extends AppError {
+  declare readonly code: 'CROSS_TENANT_DENIED';
+
+  constructor(message?: string, options?: AppErrorOptions) {
+    super('CROSS_TENANT_DENIED', message ?? 'resource belongs to another tenant', {
+      detail: 'This request is not permitted for the current tenant.',
+      ...options,
+    });
   }
 }
 

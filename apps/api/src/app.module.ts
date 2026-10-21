@@ -12,11 +12,13 @@ import { ProblemJsonExceptionFilter, type SecurityEventSink } from './errors/pro
 import { HealthModule } from './health/health.module.js';
 import { IdempotencyModule } from './idempotency/module.js';
 import { SmokeController } from './smoke.controller.js';
+import { TenantContextModule } from './tenant/module.js';
 import { createValidationPipe } from './validation/zod-validation.pipe.js';
 
 import type { ApiConfig } from './config.js';
 import type { HealthProbe } from './health/health.types.js';
 import type { IdempotencyStore } from './idempotency/ports.js';
+import type { TenantPrincipalSource } from './tenant/guard.js';
 import type { Logger } from '@blackwing/logger';
 
 /** Provides the validated, frozen `ApiConfig` (from `@blackwing/config`) under `API_CONFIG`. */
@@ -57,6 +59,13 @@ export interface AppModuleOptions {
    * routes answer `503 idempotency_unavailable` (fail closed).
    */
   readonly idempotencyStore?: IdempotencyStore;
+  /**
+   * IAM's validated-principal lookup (TENANT-003). When set, a global guard and interceptor make every
+   * route not marked `@PublicRoute()` tenant-scoped: no principal is 401, no resolvable tenant is
+   * `403 tenant_context_missing`, and the handler runs inside the `AsyncLocalStorage` tenant context.
+   * The process entry point (`runApi`) always sets it; it fails closed when none is supplied.
+   */
+  readonly tenantPrincipalSource?: TenantPrincipalSource;
   /** Receives security-relevant errors (`permission_denied`, `tenant_context_missing`); AUDIT wires `emitAudit`. */
   readonly securityEventSink?: SecurityEventSink;
   /** Extra modules to mount (feature modules of later issues; test-only routes). */
@@ -81,6 +90,14 @@ export class AppModule {
           registry: metrics.registry,
           ...(options.idempotencyStore === undefined ? {} : { store: options.idempotencyStore }),
         }),
+        ...(options.tenantPrincipalSource === undefined
+          ? []
+          : [
+              TenantContextModule.forRoot({
+                principalSource: options.tenantPrincipalSource,
+                registry: metrics.registry,
+              }),
+            ]),
         ...(options.imports ?? []),
       ],
       providers: [

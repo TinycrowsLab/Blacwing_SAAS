@@ -25,7 +25,8 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   PRECONDITION_REQUIRED: 428,
   RATE_LIMITED: 429,
   ILLEGAL_RUN_TRANSITION: 409,
-  TENANT_CONTEXT_MISSING: 500,
+  TENANT_CONTEXT_MISSING: 403,
+  CROSS_TENANT_DENIED: 403,
   TENANT_CONTEXT_CONFLICT: 500,
   TX_RETRY_EXHAUSTED: 503,
   KILL_SWITCH_ACTIVE: 423,
@@ -116,9 +117,9 @@ describe('error-code registry', () => {
     ]);
   });
 
-  it('fails closed on a missing tenant context: 500 and not retryable', () => {
+  it('fails closed on a missing tenant context: 403 and not retryable', () => {
     expect(ERROR_CODES.TENANT_CONTEXT_MISSING).toEqual({
-      status: 500,
+      status: 403,
       title: 'Tenant context missing',
       retryable: false,
     });
@@ -180,6 +181,7 @@ describe('error-code registry', () => {
       | 'RATE_LIMITED'
       | 'ILLEGAL_RUN_TRANSITION'
       | 'TENANT_CONTEXT_MISSING'
+      | 'CROSS_TENANT_DENIED'
       | 'TENANT_CONTEXT_CONFLICT'
       | 'TX_RETRY_EXHAUSTED'
       | 'KILL_SWITCH_ACTIVE'

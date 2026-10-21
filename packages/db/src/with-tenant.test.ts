@@ -210,7 +210,7 @@ describe('withTenant fails closed on a missing or malformed tenant', () => {
     const error = await withTenant(db, '', () => Promise.resolve(), fast).catch((e: unknown) => e);
     expect(isAppError(error)).toBe(true);
     expect(toProblemDetails(error, 'trace-1')).toMatchObject({
-      status: 500,
+      status: 403,
       code: 'TENANT_CONTEXT_MISSING',
     });
   });

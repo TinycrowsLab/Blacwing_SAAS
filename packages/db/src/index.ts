@@ -94,6 +94,26 @@ export {
   type AssertTenantScopeOptions,
   type TenantScopedDb,
 } from './tenant-scope.js';
+export {
+  createCrossTenantGuard,
+  type CrossTenantAuditEmitter,
+  type CrossTenantDeniedEvent,
+  type CrossTenantGuard,
+  type CrossTenantGuardOptions,
+  type CrossTenantLogger,
+  currentTenantId,
+  getTenantContext,
+  getTenantContextOrThrow,
+  hashTenantId,
+  perTenantContext,
+  resolveTenantContext,
+  runWithTenantContext,
+  type TenantActor,
+  type TenantActorType,
+  type TenantContext,
+  type TenantContextMetrics,
+  type TenantPrincipal,
+} from './tenant-context.js';
 export * from './schema/index.js';
 export * from './columns.js';
 export * from './vector.js';

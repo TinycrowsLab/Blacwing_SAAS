@@ -28,9 +28,12 @@ const DEFINITIONS = {
   PRECONDITION_REQUIRED: { status: 428, title: 'Precondition required', retryable: false },
   RATE_LIMITED: { status: 429, title: 'Too many requests', retryable: true },
   ILLEGAL_RUN_TRANSITION: { status: 409, title: 'Illegal run state transition', retryable: false },
-  // A request that reaches a tenant-scoped path without tenant context is a server defect, and it is
-  // refused outright (§7/§8.6 fail closed): 500, never retried, never served without isolation.
-  TENANT_CONTEXT_MISSING: { status: 500, title: 'Tenant context missing', retryable: false },
+  // A request that reaches a tenant-scoped path without a resolvable tenant context is refused outright
+  // (§7/§8.6 fail closed, TENANT-003): 403, never retried, never served without isolation. A caller with no
+  // principal at all is `UNAUTHENTICATED` (401) before this can happen.
+  TENANT_CONTEXT_MISSING: { status: 403, title: 'Tenant context missing', retryable: false },
+  // A resource whose tenant differs from the context tenant (TENANT-003, §8.6): denied and audited.
+  CROSS_TENANT_DENIED: { status: 403, title: 'Cross tenant access denied', retryable: false },
   // withTenant/withSystem (DB-004). Nesting a different tenant context is a programming defect (500,
   // never retried: no silent re-scoping). A transaction that keeps hitting serialization failures or
   // deadlocks is a transient overload (503, retryable).

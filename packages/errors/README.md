@@ -34,7 +34,8 @@ frozen. Codes are public API: never rename or reuse one, add a new one instead.
 | `PRECONDITION_FAILED` | 412 | `PreconditionFailedError` | no |
 | `RATE_LIMITED` | 429 | `RateLimitedError` (`retryAfterSeconds` sets `Retry-After`) | yes |
 | `ILLEGAL_RUN_TRANSITION` | 409 | `IllegalRunTransitionError(from, to)` | no |
-| `TENANT_CONTEXT_MISSING` | 500 | `TenantContextMissingError` (fails closed, §7/§8.6) | no |
+| `TENANT_CONTEXT_MISSING` | 403 | `TenantContextMissingError` (fails closed, §7/§8.6) | no |
+| `CROSS_TENANT_DENIED` | 403 | `CrossTenantAccessError` (a resource of another tenant; audited, §8.6) | no |
 | `KILL_SWITCH_ACTIVE` | 423 | `KillSwitchActiveError` (`scope`: run/asset/tenant/global) | no |
 | `SCOPE_VIOLATION` | 403 | `ScopeViolationError` | no |
 | `SCOPE_INTRUSIVENESS_EXCEEDS_CEILING` | 403 | `IntrusivenessError` (in `@blackwing/contracts`, SCOPE-003) | no |

@@ -5,6 +5,7 @@ import {
   type AppErrorOptions,
   AuthError,
   ConflictError,
+  CrossTenantAccessError,
   ForbiddenError,
   IllegalRunTransitionError,
   InternalError,
@@ -68,6 +69,12 @@ const SUBCLASSES: readonly (readonly [
     'TENANT_CONTEXT_MISSING',
     (o) => new TenantContextMissingError('no tenant', o),
     TenantContextMissingError,
+  ],
+  [
+    'CrossTenantAccessError',
+    'CROSS_TENANT_DENIED',
+    (o) => new CrossTenantAccessError('other tenant', o),
+    CrossTenantAccessError,
   ],
   [
     'KillSwitchActiveError',
@@ -249,9 +256,9 @@ describe('specialised subclasses', () => {
     expect(new KillSwitchActiveError().httpStatus).toBe(423);
   });
 
-  it('TenantContextMissingError fails closed: 500 and never retryable', () => {
+  it('TenantContextMissingError fails closed: 403 and never retryable', () => {
     const error = new TenantContextMissingError();
-    expect(error.httpStatus).toBe(500);
+    expect(error.httpStatus).toBe(403);
     expect(error.retryable).toBe(false);
   });
 
@@ -261,6 +268,16 @@ describe('specialised subclasses', () => {
     expect(invalid.meta).toEqual({ reason: 'invalid_uuid' });
     expect(Object.isFrozen(invalid.meta)).toBe(true);
     expect(invalid.code).toBe('TENANT_CONTEXT_MISSING');
+    expect(new TenantContextMissingError('x', { reason: 'ambiguous' }).meta.reason).toBe(
+      'ambiguous',
+    );
+  });
+
+  it('CrossTenantAccessError is a 403 whose client detail names no tenant', () => {
+    const error = new CrossTenantAccessError();
+    expect(error.httpStatus).toBe(403);
+    expect(error.retryable).toBe(false);
+    expect(error.detail).toBe('This request is not permitted for the current tenant.');
   });
 });
 

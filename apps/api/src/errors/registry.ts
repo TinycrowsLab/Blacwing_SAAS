@@ -46,7 +46,9 @@ export const BASE_PROBLEM_CODES = {
   invalid_cursor: { status: 400, title: 'Invalid cursor' },
   invalid_filter: { status: 400, title: 'Invalid filter' },
   // Fail closed (§8.6): a tenant-scoped path ran without tenant context.
-  tenant_context_missing: { status: 500, title: 'Tenant context missing' },
+  tenant_context_missing: { status: 403, title: 'Tenant context missing' },
+  // A resource of another tenant than the context (§8.6): denied and audited (TENANT-003).
+  cross_tenant_denied: { status: 403, title: 'Cross tenant access denied' },
   internal_error: { status: 500, title: 'Internal server error' },
   // Transport-level errors raised by Nest/Fastify (malformed JSON, unknown route, oversized body...).
   bad_request: { status: 400, title: 'Bad request' },

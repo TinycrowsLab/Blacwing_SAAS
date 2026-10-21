@@ -311,6 +311,29 @@ describe('Run Broker API', () => {
       expect(res.statusCode).toBe(403);
     });
 
+    it('answers CROSS_TENANT_DENIED and audits when the body names another tenant', async () => {
+      const res = await call(ctx, { payload: { ...CANDIDATE, tenantId: OTHER_TENANT } });
+      expect(res.statusCode).toBe(403);
+      expect(res.json<{ code: string }>().code).toBe('CROSS_TENANT_DENIED');
+      expect(res.body).not.toContain(OTHER_TENANT);
+      const event = ctx.audit.events.find((e) => e.action === 'tenant.cross_tenant_denied');
+      expect(event?.tenantId).toBe(TENANT);
+      expect(event?.runId).toBe(RUN);
+      const metric = await ctx.metrics.registry.getSingleMetricAsString(
+        'bw_cross_tenant_denied_total',
+      );
+      expect(metric).toContain('bw_cross_tenant_denied_total 1');
+    });
+
+    it('answers CROSS_TENANT_DENIED when the reader returns a run of another tenant', async () => {
+      ctx.runs.getRun = () =>
+        Promise.resolve({ id: RUN, tenantId: OTHER_TENANT, state: 'executing' });
+      const res = await call(ctx, { method: 'GET', url: `${BASE}/runs/${RUN}/state` });
+      expect(res.statusCode).toBe(403);
+      expect(res.json<{ code: string }>().code).toBe('CROSS_TENANT_DENIED');
+      expect(ctx.audit.events.some((e) => e.action === 'tenant.cross_tenant_denied')).toBe(true);
+    });
+
     it('rejects an endpoint whose scope the token does not carry', async () => {
       const t = token({ scopes: ['state:read'] });
       expect((await call(ctx, { auth: `Bearer ${t}` })).statusCode).toBe(403);

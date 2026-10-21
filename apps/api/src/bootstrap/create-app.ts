@@ -20,6 +20,7 @@ import type { ApiConfig } from '../config.js';
 import type { SecurityEventSink } from '../errors/problem-filter.js';
 import type { HealthProbe } from '../health/health.types.js';
 import type { IdempotencyStore } from '../idempotency/ports.js';
+import type { TenantPrincipalSource } from '../tenant/guard.js';
 import type { Logger } from '@blackwing/logger';
 import type { Tracer } from '@opentelemetry/api';
 import type { FastifyInstance } from 'fastify';
@@ -50,6 +51,8 @@ export interface CreateApiAppOptions {
   readonly healthProbes?: readonly HealthProbe[];
   /** Store behind `@Idempotent()` routes; without one they fail closed with 503 (API-008). */
   readonly idempotencyStore?: IdempotencyStore;
+  /** IAM's validated-principal lookup; installs the global tenant guard (see `AppModuleOptions`). */
+  readonly tenantPrincipalSource?: TenantPrincipalSource;
   /** Receives security-relevant errors for auditing (see `SecurityEventSink`). */
   readonly securityEventSink?: SecurityEventSink;
   /** Extra modules to mount (feature modules; test-only routes). */
@@ -106,6 +109,9 @@ export async function createApiApp(options: CreateApiAppOptions): Promise<ApiApp
       ...(options.idempotencyStore === undefined
         ? {}
         : { idempotencyStore: options.idempotencyStore }),
+      ...(options.tenantPrincipalSource === undefined
+        ? {}
+        : { tenantPrincipalSource: options.tenantPrincipalSource }),
       ...(options.securityEventSink === undefined
         ? {}
         : { securityEventSink: options.securityEventSink }),

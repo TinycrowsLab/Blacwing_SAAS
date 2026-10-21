@@ -17,6 +17,7 @@ import {
   ForeignKeyError,
   MAX_PAGE_LIMIT,
 } from './repository.js';
+import { runWithTenantContext } from './tenant-context.js';
 
 import type { Database } from './client.js';
 
@@ -168,5 +169,20 @@ describe('boundary checks (no database reached)', () => {
       updateSchema: z.object({ name: z.string().optional() }),
     });
     expect(generic).toBeInstanceOf(BaseRepository);
+  });
+});
+
+describe('ambient tenant default (TENANT-003)', () => {
+  const TENANT = '0198f0a0-0000-7000-8000-00000000000a';
+
+  it('without an explicit source, reads the AsyncLocalStorage context and fails closed outside it', async () => {
+    const widgetsRepo = new WidgetRepository({ db: untouchedDb });
+    await expect(widgetsRepo.findById(newId())).rejects.toBeInstanceOf(TenantContextMissingError);
+    await expect(
+      runWithTenantContext({ tenantId: TENANT, actor: { type: 'user', id: 'u' } }, () =>
+        widgetsRepo.findById(newId()),
+      ),
+      // The context is found, so the repository reaches the (untouched) database.
+    ).rejects.toThrow('the database must not be reached');
   });
 });

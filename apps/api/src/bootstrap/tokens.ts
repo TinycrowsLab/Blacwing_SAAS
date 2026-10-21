@@ -17,3 +17,9 @@ export const API_SECURITY_EVENT_SINK = Symbol.for('blackwing.api.security-event-
 
 /** DI token of the `ProblemRegistry` the exception filter resolves codes against. */
 export const API_PROBLEM_REGISTRY = Symbol.for('blackwing.api.problem-registry');
+
+/** DI token of the `TenantPrincipalSource` the tenant guard asks for the validated principal (TENANT-003). */
+export const API_TENANT_PRINCIPAL_SOURCE = Symbol.for('blackwing.api.tenant-principal-source');
+
+/** DI token of the `TenantContextMetrics` (`bw_tenant_context_missing_total`, `bw_cross_tenant_denied_total`). */
+export const API_TENANT_METRICS = Symbol.for('blackwing.api.tenant-metrics');

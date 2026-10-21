@@ -10,6 +10,7 @@ export {
   type AppErrorOptions,
   AuthError,
   ConflictError,
+  CrossTenantAccessError,
   ForbiddenError,
   IllegalRunTransitionError,
   InternalError,

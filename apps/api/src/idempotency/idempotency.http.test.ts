@@ -352,7 +352,7 @@ describe('tenant isolation', () => {
 
   it('refuses (fail closed) when the request has no tenant context', async () => {
     const res = await post({ tenant: null });
-    expect(res.statusCode).toBe(500);
+    expect(res.statusCode).toBe(403);
     expect(res.json<Problem>().code).toBe('tenant_context_missing');
     expect(log.attempts).toBe(0);
     expect(store.keys()).toHaveLength(0);

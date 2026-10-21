@@ -20,6 +20,7 @@ import {
 } from '@blackwing/errors';
 
 import { toTenantIsolationError } from './rls.js';
+import { currentTenantId } from './tenant-context.js';
 import { unwrapQueryError, withTenant, type TenantTx } from './with-tenant.js';
 
 import type { Database } from './client.js';
@@ -163,8 +164,11 @@ export interface RepositoryConfig<T extends RepositoryTable, C extends object, U
   readonly entity: string;
   readonly table: T;
   readonly db: Database;
-  /** Supplies the ambient tenant id; TENANT-003 provides the request-scoped source. */
-  readonly tenant: TenantContextSource;
+  /**
+   * Supplies the ambient tenant id. Defaults to the `AsyncLocalStorage` context the API, worker and
+   * broker fill (TENANT-003); an explicit source is for tests and tools.
+   */
+  readonly tenant?: TenantContextSource;
   /** Zod schema of `create` input. Must not accept `id`, `tenantId` or `stateVersion`. */
   readonly createSchema: z.ZodType<C>;
   /** Zod schema of the `update` patch. Must not accept `id`, `tenantId`, `stateVersion` or `deletedAt`. */
@@ -411,7 +415,7 @@ export class BaseRepository<
   }
 
   private tenantId(): string {
-    const tenantId = this.config.tenant();
+    const tenantId = (this.config.tenant ?? currentTenantId)();
     if (tenantId === undefined || tenantId === '') {
       throw new TenantContextMissingError(
         `no tenant context: refusing to run ${this.config.entity} query`,

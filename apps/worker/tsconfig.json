@@ -10,6 +10,7 @@
     { "path": "../../packages/errors" },
     { "path": "../../packages/config" },
     { "path": "../../packages/contracts" },
+    { "path": "../../packages/db" },
     { "path": "../../packages/logger" },
     { "path": "../../packages/workflow-shared" }
   ]
