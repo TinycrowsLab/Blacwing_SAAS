@@ -142,6 +142,9 @@ const DEFINITIONS = {
   // a run that is no longer active is refused with 409 (the run is terminal, §3.3).
   NOT_IMPLEMENTED: { status: 501, title: 'Not implemented', retryable: false },
   RUN_NOT_ACTIVE: { status: 409, title: 'Run is not active', retryable: false },
+  // Audit emission (AUDIT-003, #82): an event that fails AuditEventSchema is refused at the helper's
+  // boundary. The producer is at fault, so it is never retried unchanged.
+  AUDIT_EVENT_INVALID: { status: 422, title: 'Invalid audit event', retryable: false },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

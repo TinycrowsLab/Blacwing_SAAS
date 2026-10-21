@@ -136,6 +136,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   // Raised by apps/api's Run Broker (API-014) as plain AppErrors.
   'NOT_IMPLEMENTED',
   'RUN_NOT_ACTIVE',
+  // Raised by @blackwing/audit (AUDIT-003) as AuditEventInvalidError.
+  'AUDIT_EVENT_INVALID',
 ];
 
 describe('AppError subclasses', () => {
