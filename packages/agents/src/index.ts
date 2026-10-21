@@ -5,3 +5,4 @@ export const name = '@blackwing/agents';
 export const version = '0.0.0';
 
 export * from './persona.js';
+export * from './prompt.js';

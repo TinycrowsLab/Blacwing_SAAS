@@ -92,6 +92,11 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'PERSONA_NOT_DEFINED',
   'PERSONA_FORBIDDEN_TOOL',
   'PERSONA_INVALID',
+  // PromptError, @blackwing/agents (REGISTRY-002).
+  'PROMPT_INVALID',
+  'PROMPT_HASH_MISMATCH',
+  'PROMPT_NO_RELEASED_VERSION',
+  'PROMPT_DRAFT_FORBIDDEN',
   // IntrusivenessError, @blackwing/contracts (SCOPE-003): contracts is the root of the dependency
   // graph and cannot import this package, so its error carries the registered code instead.
   'SCOPE_INTRUSIVENESS_EXCEEDS_CEILING',

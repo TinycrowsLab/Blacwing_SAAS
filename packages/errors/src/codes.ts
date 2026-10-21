@@ -64,6 +64,19 @@ const DEFINITIONS = {
   PERSONA_FORBIDDEN_TOOL: { status: 422, title: 'Forbidden tool in persona', retryable: false },
   PERSONA_INVALID: { status: 422, title: 'Invalid persona definition', retryable: false },
   // `@blackwing/config` (FOUND-007) refuses to start on an invalid environment: a server fault.
+  // Prompt registry (REGISTRY-002, §8.9): a prompt that fails its pinned hash is never served.
+  PROMPT_INVALID: { status: 422, title: 'Invalid prompt file', retryable: false },
+  PROMPT_HASH_MISMATCH: { status: 500, title: 'Prompt hash mismatch', retryable: false },
+  PROMPT_NO_RELEASED_VERSION: {
+    status: 404,
+    title: 'No released prompt version',
+    retryable: false,
+  },
+  PROMPT_DRAFT_FORBIDDEN: {
+    status: 403,
+    title: 'Draft prompt forbidden in production',
+    retryable: false,
+  },
   CONFIG_INVALID: { status: 500, title: 'Invalid configuration', retryable: false },
   // Temporal connection (WORKFLOW-001). Misconfiguration is a server fault (500, never retried);
   // an unreachable server is a dependency outage (503, retryable).
