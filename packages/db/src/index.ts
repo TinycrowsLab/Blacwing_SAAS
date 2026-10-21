@@ -128,3 +128,9 @@ export {
   type RowOf,
   type TenantContextSource,
 } from './repository.js';
+export {
+  OutboxDuplicateError,
+  type OutboxMetrics,
+  withOutbox,
+  type WithOutboxOptions,
+} from './outbox.js';

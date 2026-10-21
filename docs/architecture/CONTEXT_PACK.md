@@ -346,6 +346,7 @@ CLAUDE.md  README.md  SECURITY.md  LICENSE (proprietary notice)
 - **reversal_journal_entries**: `test_case_id`, `action`, `target`, `undo_instructions`, `undo_status(pending|undone|not_needed|failed)`, `created_at`.
 - **oob_correlations**: `token`, `run_id`, `test_case_id`, `expires_at`; **oob_interactions**.
 - **audit_events**: append-only hash chain per tenant.
+- **outbox**: transactional outbox, written in the same transaction as the domain change by `withOutbox` (`packages/db`). `type(audit.event|notify.send|temporal.signal)`, `payload` (jsonb ≤ 64 KiB, references never secrets), `dedupe_key` (unique per tenant), `status(pending|dispatched|failed)`, `attempts`, `available_at` (DB clock), `last_error`. Delivered at least once by the relay (WORKFLOW-012).
 - **connectors**, **ticket_links**, **notification_channels**, **schedules**, **blackout_windows**, **retention_policies**, **cost_ledger**, **price_tables** (versioned), **kill_events** (halt timings), **eval_runs**.
 
 Rules:
