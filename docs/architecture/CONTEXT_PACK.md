@@ -281,7 +281,7 @@ packages/
   contracts/  db/  domain/  policy/  agents/  mcp-tools/  memory/  replay/  oob/  evidence/  crypto/
   secrets/  audit/  events/  notify/  connectors/  reporting/  cost/  config/  logger/  ids/  time/  errors/  telemetry/  workflow-shared/  ui/  testing/
 infra/
-  tofu/  helm/  k3s/  docker/ (Dockerfiles; sandbox image)  compose/ (docker-compose.dev.yml)
+  tofu/  helm/  k3s/  docker/ (Dockerfiles; sandbox image)  compose/ (docker-compose.dev.yml)  keycloak/ (realm as code)
   bootstrap.sh  versions.env (idempotent dev-host bootstrap and its pinned toolchain versions)
   images.lock (digest-pinned data-service images shared by Testcontainers, dev compose and the CI integration job)
 eval/
@@ -289,7 +289,7 @@ eval/
 docs/
   adr/  architecture/  runbooks/  api/  user/  labels.md (label catalogue)
 design/               Claude Design export: UI source of truth for every GUI (design system, screens, tokens.json); see design/README.md
-.github/ (workflows, actions (reusable composite actions, e.g. setup), ISSUE_TEMPLATE, PULL_REQUEST_TEMPLATE.md, CODEOWNERS, labels.yml, dependency-review-config.yml)
+.github/ (workflows, actions (reusable composite actions, e.g. setup), ISSUE_TEMPLATE, PULL_REQUEST_TEMPLATE.md, CODEOWNERS, labels.yml, dependency-review-config.yml, codeql-config.yml, required-checks.json, rulesets)
 CLAUDE.md  README.md  SECURITY.md  LICENSE (proprietary notice)
 ```
 

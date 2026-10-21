@@ -68,7 +68,7 @@ export const EXPECTED_PACKAGES = Object.freeze([
 
 /** Fixed directories whose immediate children must match exactly. */
 export const EXPECTED_DIRS = Object.freeze({
-  infra: Object.freeze(['tofu', 'helm', 'k3s', 'docker', 'compose']),
+  infra: Object.freeze(['tofu', 'helm', 'k3s', 'docker', 'compose', 'keycloak']),
   eval: Object.freeze(['targets', 'ground-truth', 'harness']),
   docs: Object.freeze(['adr', 'architecture', 'runbooks', 'api', 'user']),
 });
@@ -90,13 +90,14 @@ export const EXPECTED_DIR_FILES = Object.freeze({
  * actions such as `setup`) with CI-001 (#135); the dependency-review policy with CI-014 (#148) and the CodeQL config with CI-013 (#147).
  */
 export const GITHUB_LAYOUT = Object.freeze({
-  dirs: Object.freeze(['workflows', 'actions', 'ISSUE_TEMPLATE']),
+  dirs: Object.freeze(['workflows', 'actions', 'ISSUE_TEMPLATE', 'rulesets']),
   files: Object.freeze([
     'PULL_REQUEST_TEMPLATE.md',
     'CODEOWNERS',
     'labels.yml',
     'dependency-review-config.yml',
     'codeql-config.yml',
+    'required-checks.json',
   ]),
   optional: Object.freeze([]),
 });
