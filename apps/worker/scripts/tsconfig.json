@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "outDir": "../dist/scripts",
+    "tsBuildInfoFile": "../dist/scripts/.tsbuildinfo"
+  },
+  "include": [
+    "**/*.ts",
+    "../src/search-attributes.ts",
+    "../src/search-attribute-registration.ts"
+  ],
+  "references": []
+}

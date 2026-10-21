@@ -52,6 +52,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   TEMPORAL_UNAVAILABLE: 503,
   DB_UNAVAILABLE: 503,
   WORKER_QUEUE_UNKNOWN: 500,
+  SEARCH_ATTR_TYPE_CONFLICT: 500,
   SBX_UNAUTHENTICATED: 401,
   SBX_BAD_REQUEST: 400,
   SBX_CONFIG_INVALID: 500,
@@ -81,7 +82,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(52);
+    expect(ERROR_CODE_LIST).toHaveLength(54);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -207,6 +208,7 @@ describe('error-code registry', () => {
       | 'TEMPORAL_UNAVAILABLE'
       | 'DB_UNAVAILABLE'
       | 'WORKER_QUEUE_UNKNOWN'
+      | 'SEARCH_ATTR_TYPE_CONFLICT'
       | 'SBX_UNAUTHENTICATED'
       | 'SBX_BAD_REQUEST'
       | 'SBX_CONFIG_INVALID'

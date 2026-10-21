@@ -90,6 +90,28 @@ describe('temporal bootstrap.sh', () => {
     assert.equal(read(s, 'retention').trim(), '168h');
   });
 
+  it('fails loudly on a type conflict and leaves the registered attribute alone', () => {
+    const s = state();
+    assert.equal(run(s).status, 0);
+    // tenantId was registered as Int by someone else: the run must refuse, not skip or retype it.
+    fs.writeFileSync(
+      path.join(s, 'attrs'),
+      'runId Keyword\ntenantId Int\nassessmentId Keyword\nrunState Keyword\n',
+    );
+    const before = read(s, 'attrs');
+    const r = run(s);
+    assert.notEqual(r.status, 0);
+    assert.match(
+      r.stderr,
+      /SEARCH_ATTR_TYPE_CONFLICT: search attribute tenantId is Int, expected Keyword/,
+    );
+    assert.equal(read(s, 'attrs'), before);
+    const creates = read(s, 'calls')
+      .split('\n')
+      .filter((l) => /search-attribute create/.test(l));
+    assert.equal(creates.length, 4, 'no attribute was created by the conflicting run');
+  });
+
   it('fails (non-zero) when the server never becomes healthy', () => {
     const s = state();
     fs.writeFileSync(path.join(s, 'down'), '');

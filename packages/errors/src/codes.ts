@@ -109,6 +109,13 @@ const DEFINITIONS = {
   DB_UNAVAILABLE: { status: 503, title: 'Database unavailable', retryable: true },
   // Worker bootstrap (WORKFLOW-002): a misconfigured process refuses to start rather than polling a guess.
   WORKER_QUEUE_UNKNOWN: { status: 500, title: 'Unknown worker task queue', retryable: false },
+  // Temporal search attributes (WORKFLOW-003). A registered attribute of another type is never dropped or
+  // retyped: the namespace is misconfigured, a server fault (500, never retried until an operator fixes it).
+  SEARCH_ATTR_TYPE_CONFLICT: {
+    status: 500,
+    title: 'Search attribute type conflict',
+    retryable: false,
+  },
   // Sandbox controller (SANDBOX-001, #448). Its internal API refuses callers without a valid
   // run-scoped token (401, fail closed); a bad body is refused before any processing (400); a bad
   // environment stops the process (500); an unreachable driver or Valkey is an outage (503).

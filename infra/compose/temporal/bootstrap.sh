@@ -1,6 +1,7 @@
 #!/bin/sh
 # Temporal dev bootstrap (DEVENV-007, #161): creates the Blackwing dev namespace and registers the
-# custom search attributes the worker epic needs. Idempotent: re-running changes nothing that exists.
+# custom search attributes the worker epic needs. Idempotent: re-running changes nothing that exists, and an
+# attribute registered with another type fails the run (SEARCH_ATTR_TYPE_CONFLICT) instead of being skipped.
 #
 # Env (all have defaults except the address, which compose provides):
 #   TEMPORAL_ADDRESS               gRPC endpoint of the server
@@ -54,11 +55,17 @@ done
 for pair in $ATTRS; do
   name="${pair%%:*}"
   type="${pair#*:}"
-  if printf '%s\n' "$existing" | grep -Eq "^[[:space:]]*${name}[[:space:]]"; then
-    log "search attribute $name already registered"
-  else
+  # The registered type is column 2 of the listing. A different type is a conflict: fail loudly and never drop
+  # or retype the attribute (SEARCH_ATTR_TYPE_CONFLICT, WORKFLOW-003).
+  registered="$(printf '%s\n' "$existing" | awk -v n="$name" '$1 == n { print $2; exit }')"
+  if [ -z "$registered" ]; then
     log "registering search attribute $name ($type)"
     "$BIN" operator search-attribute create --namespace "$NS" --name "$name" --type "$type" >/dev/null
+  elif [ "$registered" = "$type" ]; then
+    log "search attribute $name already registered"
+  else
+    log "SEARCH_ATTR_TYPE_CONFLICT: search attribute $name is $registered, expected $type; not changed" >&2
+    exit 1
   fi
 done
 log "done"

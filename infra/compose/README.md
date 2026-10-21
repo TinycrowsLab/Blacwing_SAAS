@@ -195,6 +195,9 @@ digest to a known-good server: bumping it bumps the schema, so change image and 
 `temporal-bootstrap` is a one-shot, idempotent job (`temporal/bootstrap.sh`): it creates namespace `blackwing-dev`
 (or updates its retention if it exists) and registers the custom search attributes `runId`, `tenantId`,
 `assessmentId` and `runState` (Keyword). Re-running it changes nothing that already exists.
+A search attribute already registered with another type fails the job (`SEARCH_ATTR_TYPE_CONFLICT`) and is never
+changed. The deploy-time equivalent is `pnpm --filter @blackwing/worker register:search-attributes`; see
+[docs/runbooks/search-attributes.md](../../docs/runbooks/search-attributes.md).
 
 - **Retention:** `BW_DEV_TEMPORAL_RETENTION` (default `72h`). Raise it (for example `168h`) when debugging old runs and
   re-run `docker compose ... up temporal-bootstrap`.

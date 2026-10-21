@@ -126,6 +126,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'DB_UNAVAILABLE',
   // Raised by apps/worker as a plain AppError (WORKFLOW-002).
   'WORKER_QUEUE_UNKNOWN',
+  // Raised by apps/worker's search attribute registration as a plain AppError (WORKFLOW-003).
+  'SEARCH_ATTR_TYPE_CONFLICT',
   // Subclassed by apps/sandbox-controller (SANDBOX-001).
   'SBX_UNAUTHENTICATED',
   'SBX_BAD_REQUEST',

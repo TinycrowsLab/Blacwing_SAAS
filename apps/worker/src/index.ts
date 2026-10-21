@@ -18,6 +18,24 @@ export {
 } from './kill/sandbox-client.js';
 export { createTenantActivityInterceptors, type TenantActivityDeps } from './tenant/interceptor.js';
 export { createOtelKillMetrics } from './kill/metrics.js';
+export {
+  planSearchAttributeRegistration,
+  registerSearchAttributes,
+  type RegisterSearchAttributesOptions,
+  type SearchAttributeOperator,
+  type SearchAttributeRegistrationOutcome,
+  type SearchAttributeRegistrationResult,
+} from './search-attribute-registration.js';
+export {
+  RUN_STATE_VALUES,
+  runStartSearchAttributes,
+  runStateSearchAttributes,
+  SEARCH_ATTRIBUTES,
+  type RunSearchAttributeInput,
+  type SearchAttributeName,
+  type SearchAttributeType,
+  upsertRunSearchAttributes,
+} from './search-attributes.js';
 export type * from './kill/ports.js';
 export * from './kill/types.js';
 export {
