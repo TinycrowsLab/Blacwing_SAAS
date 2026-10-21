@@ -68,3 +68,12 @@ export { acceptedRiskValid, classifyVerdict, dedupeDecisions } from './run/poste
 export { createOtelPostExecutionMetrics } from './run/postexec/metrics.js';
 export type * from './run/postexec/ports.js';
 export * from './run/postexec/types.js';
+export {
+  createAgentSessionActivities,
+  type AgentSessionActivityDeps,
+} from './agent-session/activities.js';
+export { costEntries, UNATTRIBUTED_MODEL } from './agent-session/cost.js';
+export { createOtelSessionMetrics } from './agent-session/metrics.js';
+export { runAgentSessionLifecycle, SandboxProvisionError } from './agent-session/lifecycle.js';
+export type * from './agent-session/ports.js';
+export * from './agent-session/types.js';
