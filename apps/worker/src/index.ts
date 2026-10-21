@@ -51,3 +51,12 @@ export { decide as decidePreflight, executePreflight } from './run/preflight/agg
 export { createOtelPreflightMetrics } from './run/preflight/metrics.js';
 export type * from './run/preflight/ports.js';
 export * from './run/preflight/types.js';
+export {
+  createSaBoundsActivities,
+  MAX_TIMER_MS,
+  type SaBoundsActivityDeps,
+} from './sa-bounds/activities.js';
+export { createOtelSaBoundsMetrics } from './sa-bounds/metrics.js';
+export { computeSaTimeline } from './sa-bounds/timeline.js';
+export type * from './sa-bounds/ports.js';
+export * from './sa-bounds/types.js';

@@ -53,7 +53,12 @@ export const TERMINAL_RUN_STATES: readonly RunState[] = Object.freeze([
 ]);
 
 /** Why an `executing` run is `paused` (§3.3). */
-export const runPauseReasonSchema = z.enum(['gate2_pending', 'cost_cap', 'operator_pause']);
+export const runPauseReasonSchema = z.enum([
+  'gate2_pending',
+  'cost_cap',
+  'operator_pause',
+  'window_closed',
+]);
 export type RunPauseReason = z.infer<typeof runPauseReasonSchema>;
 
 /**

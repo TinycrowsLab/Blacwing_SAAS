@@ -4,6 +4,7 @@
 
 export { KillPropagationWorkflow } from './kill-propagation.js';
 export { PreflightWorkflow } from './preflight.js';
+export { SaTimeBoundsWorkflow } from './sa-time-bounds.js';
 
 /** Trivial workflow proving the worker end to end. It is not a product workflow. */
 export function noopWorkflow(): Promise<void> {

@@ -18,7 +18,7 @@ const eventArb: fc.Arbitrary<RunEvent> = fc.oneof(
     .constantFrom(...RUN_EVENT_TYPES.filter((t) => t !== 'pause'))
     .map((type): RunEvent => ({ type })),
   fc
-    .constantFrom<PausedReason[]>('gate2_pending', 'cost_cap', 'operator_pause')
+    .constantFrom<PausedReason[]>('gate2_pending', 'cost_cap', 'operator_pause', 'window_closed')
     .map((reason): RunEvent => ({ type: 'pause', reason })),
 );
 

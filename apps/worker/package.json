@@ -23,10 +23,12 @@
     "@blackwing/db": "workspace:*",
     "@blackwing/errors": "workspace:*",
     "@blackwing/logger": "workspace:*",
+    "@blackwing/time": "workspace:*",
     "@blackwing/workflow-shared": "workspace:*",
     "@opentelemetry/api": "catalog:",
     "@temporalio/worker": "catalog:",
     "@temporalio/workflow": "catalog:",
+    "croner": "9.1.0",
     "fastify": "catalog:",
     "zod": "catalog:"
   },

@@ -9,7 +9,7 @@ import {
   type RunStatus,
 } from './state.js';
 
-const REASONS: PausedReason[] = ['gate2_pending', 'cost_cap', 'operator_pause'];
+const REASONS: PausedReason[] = ['gate2_pending', 'cost_cap', 'operator_pause', 'window_closed'];
 
 describe('paused round trip', () => {
   it.each(REASONS)('pause(%s) then resume returns to executing, remembering resumeTo', (reason) => {

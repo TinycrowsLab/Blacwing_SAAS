@@ -99,7 +99,7 @@ Still **NOT in v1** (do not build; reject scope creep): destructive tests, stand
 10. **Gate 3:** an analyst releases confirmed findings. Then the **Reporter** writes findings up (OWASP/CWE/compliance mapping) and **Remediation** produces fix guidance, raises tickets and schedules retest. Findings are tracked to closure on the dashboard and in trackers.
 
 ### 3.3 Run state machine (authoritative; implement in `packages/domain/run`)
-`draft → preflight → recon → planning → awaiting_gate1 → approved → executing ⇄ paused (gate2_pending | cost_cap | operator_pause) → validating → awaiting_gate3 → released → reporting → completed`
+`draft → preflight → recon → planning → awaiting_gate1 → approved → executing ⇄ paused (gate2_pending | cost_cap | operator_pause | window_closed) → validating → awaiting_gate3 → released → reporting → completed`
 
 Terminal states: `cancelled`, `killed`, `failed`, `expired` (standing authorisation expired mid-run → stop all traffic immediately).
 - Every transition is a guarded function: actor, preconditions, audit event.

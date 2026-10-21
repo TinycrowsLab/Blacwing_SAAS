@@ -12,6 +12,7 @@
     { "path": "../../packages/contracts" },
     { "path": "../../packages/db" },
     { "path": "../../packages/logger" },
+    { "path": "../../packages/time" },
     { "path": "../../packages/workflow-shared" },
     { "path": "./scripts" }
   ]

@@ -284,6 +284,12 @@ describe('run (§3.3)', () => {
     expect(runSchema.safeParse({ ...run, pauseReason: 'cost_cap' }).success).toBe(false);
   });
 
+  it('a run paused for a closed test window records pauseReason window_closed (ORCH-014)', () => {
+    expect(
+      runSchema.safeParse({ ...run, state: 'paused', pauseReason: 'window_closed' }).success,
+    ).toBe(true);
+  });
+
   it('only terminal runs have endedAt, and never before startedAt', () => {
     expect(runSchema.safeParse({ ...run, endedAt: T1 }).success).toBe(false);
     expect(runSchema.safeParse({ ...run, state: 'killed', endedAt: T1 }).success).toBe(true);
