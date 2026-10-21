@@ -4,6 +4,8 @@ import type {
   KillApiScope,
   KillEgressIdentity,
   KillEgressOutcome,
+  KillKeyOutcome,
+  KillWorkflowOutcome,
   KillEventStatus,
   KillTargetSet,
 } from '@blackwing/contracts';
@@ -77,6 +79,41 @@ export interface SandboxStageResult {
   readonly latencyMs: number;
 }
 
+export const KEY_DEADLINE_MS = 10_000;
+export const KEY_BACKOFF_BASE_MS = 100;
+export const WORKFLOW_DEADLINE_MS = 10_000;
+export const WORKFLOW_BACKOFF_BASE_MS = 100;
+
+export type KeyStageOutcome = 'revoked' | 'partially_halted' | 'skipped';
+
+export interface KeyIdResult {
+  readonly keyId: string;
+  readonly outcome: KillKeyOutcome;
+}
+
+export interface KeyStageResult {
+  readonly outcome: KeyStageOutcome;
+  readonly keys: readonly KeyIdResult[];
+  readonly attempts: number;
+  readonly latencyMs: number;
+}
+
+export type WorkflowStageOutcome = 'cancelled' | 'partially_halted' | 'skipped';
+
+export interface WorkflowIdResult {
+  readonly workflowId: string;
+  readonly outcome: KillWorkflowOutcome;
+}
+
+export interface WorkflowStageResult {
+  readonly outcome: WorkflowStageOutcome;
+  readonly workflows: readonly WorkflowIdResult[];
+  /** Pending reversal-journal entries flagged for the reversal process (not undone here). */
+  readonly reversalsFlagged: number;
+  readonly attempts: number;
+  readonly latencyMs: number;
+}
+
 export interface KillProgress {
   readonly received: boolean;
   readonly stage: 'waiting' | KillStageName | 'finalizing' | 'done';
@@ -106,6 +143,29 @@ export interface KillActivities {
     readonly tenantId: string;
     readonly killEventId: string;
     readonly result: SandboxStageResult;
+  }): Promise<void>;
+  /** Stage 3: revoke the virtual model keys. Expiry is the backstop when the gateway cannot be reached. */
+  revokeKeys(input: {
+    readonly tenantId: string;
+    readonly killEventId: string;
+    readonly keyIds: readonly string[];
+  }): Promise<KeyStageResult>;
+  auditKeysRevoked(input: {
+    readonly tenantId: string;
+    readonly killEventId: string;
+    readonly result: KeyStageResult;
+  }): Promise<void>;
+  /** Stage 4: cancel the Temporal workflows and flag pending reversal entries. */
+  cancelWorkflows(input: {
+    readonly tenantId: string;
+    readonly killEventId: string;
+    readonly workflowIds: readonly string[];
+    readonly runIds: readonly string[];
+  }): Promise<WorkflowStageResult>;
+  auditWorkflowsCancelled(input: {
+    readonly tenantId: string;
+    readonly killEventId: string;
+    readonly result: WorkflowStageResult;
   }): Promise<void>;
   /** Empty target set: `status=halted`, `halt_ms=0`. */
   completeEmptyKill(input: {

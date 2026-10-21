@@ -17,6 +17,10 @@ export {
   sandboxDeadlineFromEnv,
 } from './kill/sandbox-client.js';
 export { createTenantActivityInterceptors, type TenantActivityDeps } from './tenant/interceptor.js';
+export {
+  createTemporalWorkflowControlClient,
+  type WorkflowHandleSource,
+} from './kill/workflow-client.js';
 export { createOtelKillMetrics } from './kill/metrics.js';
 export {
   planSearchAttributeRegistration,

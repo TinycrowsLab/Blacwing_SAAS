@@ -22,7 +22,19 @@ export function createOtelKillMetrics(): KillStageMetrics {
   const sandboxes = meter.createCounter('bw_kill_sandboxes_terminated_total', {
     description: 'Sandboxes confirmed terminated (or already gone) by the kill sandbox stage',
   });
+  const keys = meter.createCounter('bw_kill_keys_revoked_total', {
+    description: 'Virtual model keys confirmed revoked by the kill key stage',
+  });
+  const workflows = meter.createCounter('bw_kill_workflows_cancelled_total', {
+    description: 'Temporal workflows confirmed cancelled by the kill workflow stage',
+  });
   return {
+    keysRevoked: (count) => {
+      keys.add(count);
+    },
+    workflowsCancelled: (count) => {
+      workflows.add(count);
+    },
     sandboxesTerminated: (count) => {
       sandboxes.add(count);
     },

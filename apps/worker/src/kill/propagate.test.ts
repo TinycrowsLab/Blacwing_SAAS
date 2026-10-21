@@ -23,6 +23,17 @@ function recorder(overrides: Partial<KillActivities> = {}) {
     terminateSandboxes: () =>
       Promise.resolve({ outcome: 'terminated', sandboxes: [], attempts: 1, latencyMs: 1 }),
     auditSandboxesTerminated: () => Promise.resolve(),
+    revokeKeys: () => Promise.resolve({ outcome: 'revoked', keys: [], attempts: 1, latencyMs: 1 }),
+    auditKeysRevoked: () => Promise.resolve(),
+    cancelWorkflows: () =>
+      Promise.resolve({
+        outcome: 'cancelled',
+        workflows: [],
+        reversalsFlagged: 0,
+        attempts: 1,
+        latencyMs: 1,
+      }),
+    auditWorkflowsCancelled: () => Promise.resolve(),
     completeEmptyKill: () => {
       calls.push('empty');
       return Promise.resolve();

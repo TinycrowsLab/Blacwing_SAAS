@@ -63,6 +63,8 @@ const RELEASED_ACTIONS = [
   'secret.kek_provisioned',
   'secret.kek_rotated',
   'secret.kek_disabled',
+  'kill.keys_revoked',
+  'kill.workflows_cancelled',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

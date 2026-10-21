@@ -304,6 +304,22 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     isAlwaysAudited: true,
     description: 'A tenant Transit key (KEK) was disabled; decrypt is blocked (crypto-shred step).',
   },
+  // kill propagation (KILL-006)
+  {
+    action: 'kill.keys_revoked',
+    defaultSeverity: 'critical',
+    isAlwaysAudited: true,
+    actionClass: 'kill',
+    description: 'Kill stage 3: the virtual model keys of a kill were revoked.',
+  },
+  {
+    action: 'kill.workflows_cancelled',
+    defaultSeverity: 'critical',
+    isAlwaysAudited: true,
+    actionClass: 'kill',
+    description:
+      'Kill stage 4: the Temporal workflows of a kill were cancelled and pending reversal entries flagged.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

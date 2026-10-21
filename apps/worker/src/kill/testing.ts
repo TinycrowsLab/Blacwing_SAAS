@@ -4,6 +4,11 @@ import type { KillActivityDeps } from './activities.js';
 import type {
   EgressAck,
   EgressControlClient,
+  KeyAck,
+  KeyControlClient,
+  ReversalJournal,
+  WorkflowAck,
+  WorkflowControlClient,
   KillEventRepo,
   KillStageAuditRecord,
   KillStageMetrics,
@@ -132,6 +137,48 @@ export class FakeSandboxController implements SandboxControlClient {
   }
 }
 
+export class FakeKeyGateway implements KeyControlClient {
+  calls: { keyIds: string[] }[] = [];
+  constructor(
+    private readonly behave: (ids: readonly string[], call: number) => readonly KeyAck[] | Error = (
+      ids,
+    ) => ids.map((keyId) => ({ keyId, outcome: 'revoked' as const })),
+  ) {}
+  revoke(request: { keyIds: readonly string[] }): Promise<readonly KeyAck[]> {
+    this.calls.push({ keyIds: [...request.keyIds] });
+    const out = this.behave(request.keyIds, this.calls.length);
+    return out instanceof Error ? Promise.reject(out) : Promise.resolve(out);
+  }
+}
+
+export class FakeWorkflowCanceller implements WorkflowControlClient {
+  calls: { workflowIds: string[] }[] = [];
+  constructor(
+    private readonly behave: (
+      ids: readonly string[],
+      call: number,
+    ) => readonly WorkflowAck[] | Error = (ids) =>
+      ids.map((workflowId) => ({ workflowId, outcome: 'cancelled' as const })),
+  ) {}
+  cancel(request: { workflowIds: readonly string[] }): Promise<readonly WorkflowAck[]> {
+    this.calls.push({ workflowIds: [...request.workflowIds] });
+    const out = this.behave(request.workflowIds, this.calls.length);
+    return out instanceof Error ? Promise.reject(out) : Promise.resolve(out);
+  }
+}
+
+export class FakeReversalJournal implements ReversalJournal {
+  calls: { runIds: string[] }[] = [];
+  constructor(
+    private readonly pending = 0,
+    private readonly fail = false,
+  ) {}
+  flagPending(_tenantId: string, _killEventId: string, runIds: readonly string[]): Promise<number> {
+    this.calls.push({ runIds: [...runIds] });
+    return this.fail ? Promise.reject(new Error('journal down')) : Promise.resolve(this.pending);
+  }
+}
+
 export const ackSandboxes = (
   ids: readonly string[],
   outcome: SandboxAck['outcome'] = 'terminated',
@@ -151,6 +198,14 @@ export class RecordingMetrics implements KillStageMetrics {
   }
   stageResult(stage: string, result: string): void {
     this.results.push([stage, result]);
+  }
+  keyCount = 0;
+  workflowCount = 0;
+  keysRevoked(count: number): void {
+    this.keyCount += count;
+  }
+  workflowsCancelled(count: number): void {
+    this.workflowCount += count;
   }
   sandboxCount = 0;
   sandboxesTerminated(count: number): void {
@@ -174,6 +229,9 @@ export function makeDeps(
     repo,
     egress,
     sandboxes: new FakeSandboxController(),
+    keys: new FakeKeyGateway(),
+    workflows: new FakeWorkflowCanceller(),
+    reversals: new FakeReversalJournal(),
     audit: {
       append: (record) => {
         audits.push(record);

@@ -71,6 +71,21 @@ export const KILL_SANDBOX_OUTCOMES = [
 export const killSandboxOutcomeSchema = z.enum(KILL_SANDBOX_OUTCOMES);
 export type KillSandboxOutcome = z.infer<typeof killSandboxOutcomeSchema>;
 
+/** Per-key result of the virtual-key revoke stage (KILL-006). A key past its expiry counts as `already_revoked`. */
+export const KILL_KEY_OUTCOMES = ['revoked', 'already_revoked', 'failed'] as const;
+export const killKeyOutcomeSchema = z.enum(KILL_KEY_OUTCOMES);
+export type KillKeyOutcome = z.infer<typeof killKeyOutcomeSchema>;
+
+/** Per-workflow result of the Temporal cancel stage (KILL-006). `already_closed` / `not_found` are idempotent successes. */
+export const KILL_WORKFLOW_OUTCOMES = [
+  'cancelled',
+  'already_closed',
+  'not_found',
+  'failed',
+] as const;
+export const killWorkflowOutcomeSchema = z.enum(KILL_WORKFLOW_OUTCOMES);
+export type KillWorkflowOutcome = z.infer<typeof killWorkflowOutcomeSchema>;
+
 /** Counts of what a kill touched (`kill_events.affected`), plus the per-identity egress outcome. */
 export const killAffectedSchema = z.strictObject({
   egress: z
@@ -93,7 +108,25 @@ export const killAffectedSchema = z.strictObject({
     )
     .optional(),
   keys: z.int().nonnegative().optional(),
+  keyResults: z
+    .array(
+      z.strictObject({
+        keyId: z.string().min(1).max(LIMITS.subjectMax),
+        outcome: killKeyOutcomeSchema,
+      }),
+    )
+    .optional(),
   workflows: z.int().nonnegative().optional(),
+  workflowResults: z
+    .array(
+      z.strictObject({
+        workflowId: z.string().min(1).max(LIMITS.subjectMax),
+        outcome: killWorkflowOutcomeSchema,
+      }),
+    )
+    .optional(),
+  /** Reversal-journal entries left pending by the kill: flagged for the reversal process, not undone (§8.5). */
+  reversalsFlagged: z.int().nonnegative().optional(),
 });
 export type KillAffected = z.infer<typeof killAffectedSchema>;
 

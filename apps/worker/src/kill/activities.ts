@@ -4,8 +4,16 @@ import {
   EGRESS_BACKOFF_BASE_MS,
   EGRESS_DEADLINE_MS,
   EGRESS_MAX_ATTEMPTS,
+  KEY_BACKOFF_BASE_MS,
+  KEY_DEADLINE_MS,
   SANDBOX_BACKOFF_BASE_MS,
   SANDBOX_DEADLINE_MS,
+  WORKFLOW_BACKOFF_BASE_MS,
+  WORKFLOW_DEADLINE_MS,
+  type KeyIdResult,
+  type KeyStageResult,
+  type WorkflowIdResult,
+  type WorkflowStageResult,
   type SandboxIdResult,
   type SandboxStageResult,
   type EgressIdentityResult,
@@ -17,14 +25,19 @@ import {
 import type {
   EgressControlClient,
   KillEventRepo,
+  KeyControlClient,
   KillStageAuditSink,
   KillStageMetrics,
+  ReversalJournal,
   SandboxControlClient,
+  WorkflowControlClient,
 } from './ports.js';
 import type {
   KillEgressIdentity,
   KillEgressOutcome,
+  KillKeyOutcome,
   KillSandboxOutcome,
+  KillWorkflowOutcome,
 } from '@blackwing/contracts';
 import type { Logger } from '@blackwing/logger';
 
@@ -32,6 +45,9 @@ export interface KillActivityDeps {
   readonly repo: KillEventRepo;
   readonly egress: EgressControlClient;
   readonly sandboxes: SandboxControlClient;
+  readonly keys: KeyControlClient;
+  readonly workflows: WorkflowControlClient;
+  readonly reversals: ReversalJournal;
   readonly audit: KillStageAuditSink;
   readonly metrics: KillStageMetrics;
   readonly log: Logger;
@@ -44,6 +60,11 @@ export interface KillActivityDeps {
   /** Sandbox stage deadline (`KILL_SANDBOX_DEADLINE_MS`, default 10 s). */
   readonly sandboxDeadlineMs?: number;
   readonly sandboxBackoffBaseMs?: number;
+  /** Key stage deadline; keys are short-lived, so expiry backs up a revoke that cannot be acked. */
+  readonly keyDeadlineMs?: number;
+  readonly keyBackoffBaseMs?: number;
+  readonly workflowDeadlineMs?: number;
+  readonly workflowBackoffBaseMs?: number;
 }
 
 /** Stable, opaque key for an identity: `run:<runId>` or `principal:<tc_..role_..>`. */
@@ -80,7 +101,53 @@ export function createKillActivities(deps: KillActivityDeps): KillActivities {
   const maxAttempts = deps.maxAttempts ?? EGRESS_MAX_ATTEMPTS;
   const sandboxDeadlineMs = deps.sandboxDeadlineMs ?? SANDBOX_DEADLINE_MS;
   const sandboxBackoffMs = deps.sandboxBackoffBaseMs ?? SANDBOX_BACKOFF_BASE_MS;
+  const keyDeadlineMs = deps.keyDeadlineMs ?? KEY_DEADLINE_MS;
+  const keyBackoffMs = deps.keyBackoffBaseMs ?? KEY_BACKOFF_BASE_MS;
+  const workflowDeadlineMs = deps.workflowDeadlineMs ?? WORKFLOW_DEADLINE_MS;
+  const workflowBackoffMs = deps.workflowBackoffBaseMs ?? WORKFLOW_BACKOFF_BASE_MS;
   const { repo, log } = deps;
+
+  /**
+   * Asks `call` for every id until each is settled (any outcome but `failed`) or the deadline passes.
+   * Shared by the key and workflow stages; the egress and sandbox stages keep their own loops.
+   */
+  async function settleWithRetry<O extends string>(
+    ids: readonly string[],
+    failed: O,
+    deadlineMsFor: number,
+    backoffBaseFor: number,
+    startedMs: number,
+    call: (pending: readonly string[], signal: AbortSignal) => Promise<readonly [string, O][]>,
+    what: string,
+    killEventId: string,
+  ): Promise<{ results: { id: string; outcome: O }[]; attempts: number }> {
+    const settled = new Map<string, O>();
+    let pending = [...ids];
+    let attempts = 0;
+    for (;;) {
+      const remaining = deadlineMsFor - (now().getTime() - startedMs);
+      if (pending.length === 0 || remaining <= 0) break;
+      attempts += 1;
+      try {
+        const acks = await call(pending, AbortSignal.timeout(remaining));
+        const asked = new Set(pending);
+        for (const [id, outcome] of acks) {
+          if (asked.has(id) && outcome !== failed) settled.set(id, outcome);
+        }
+      } catch (err) {
+        log.warn({ killEventId, attempt: attempts, err }, `${what} attempt failed`);
+      }
+      pending = pending.filter((id) => !settled.has(id));
+      if (pending.length === 0) break;
+      const backoff = backoffBaseFor * 2 ** (attempts - 1);
+      if (now().getTime() - startedMs + backoff >= deadlineMsFor) break;
+      await sleep(backoff);
+    }
+    return {
+      attempts,
+      results: ids.map((id) => ({ id, outcome: settled.get(id) ?? failed })),
+    };
+  }
 
   /** Asks the controller until every id is settled (anything but `failed`) or the deadline passes. */
   async function terminateWithRetry(
@@ -329,6 +396,214 @@ export function createKillActivities(deps: KillActivityDeps): KillActivities {
           alreadyGone: count(['already_gone']),
           terminating: count(['terminating']),
           failed: count(['failed']),
+          attempts: result.attempts,
+          latencyMs: result.latencyMs,
+        },
+      });
+    },
+
+    async revokeKeys({ tenantId, killEventId, keyIds }) {
+      return tracer.startActiveSpan('kill.stage.keys', async (span) => {
+        span.setAttribute('kill.event_id', killEventId);
+        span.setAttribute('kill.keys', keyIds.length);
+        const started = now();
+        try {
+          const event = await requireEvent(repo, tenantId, killEventId);
+          if (event.keysRevokedAt !== null) {
+            deps.metrics.stageResult('keys', 'skipped');
+            return {
+              outcome: 'skipped',
+              keys: [],
+              attempts: 0,
+              latencyMs: 0,
+            } satisfies KeyStageResult;
+          }
+
+          const unique = [...new Set(keyIds)];
+          const { results: raw, attempts } = await settleWithRetry<KillKeyOutcome>(
+            unique,
+            'failed',
+            keyDeadlineMs,
+            keyBackoffMs,
+            started.getTime(),
+            async (pending, signal) =>
+              (await deps.keys.revoke({ killEventId, keyIds: pending }, signal)).map(
+                (a) => [a.keyId, a.outcome] as [string, KillKeyOutcome],
+              ),
+            'key revoke',
+            killEventId,
+          );
+          const results: KeyIdResult[] = raw.map((r) => ({ keyId: r.id, outcome: r.outcome }));
+          for (const r of results) {
+            log.info({ killEventId, keyId: r.keyId, outcome: r.outcome }, 'key result');
+          }
+          const done = results.filter((r) => r.outcome !== 'failed');
+          await repo.mergeAffected(tenantId, killEventId, {
+            keys: done.length,
+            keyResults: results.map((r) => ({ keyId: r.keyId, outcome: r.outcome })),
+          });
+          const clean = done.length === results.length;
+          const finished = now();
+          const latencyMs = Math.max(0, finished.getTime() - started.getTime());
+          // Stamped on full ack or at the deadline: keys are short-lived, so an unrevoked key expires on its
+          // own, and the sandboxes and egress behind it are already gone (stages 1 and 2).
+          await repo.markStage(tenantId, killEventId, 'keysRevokedAt', finished);
+          if (!clean) {
+            await repo.transition(tenantId, killEventId, 'partially_halted', [
+              'initiated',
+              'propagating',
+            ]);
+            deps.metrics.partialHalt('keys');
+          }
+          deps.metrics.keysRevoked(done.length);
+          const outcome = clean ? 'revoked' : 'partially_halted';
+          deps.metrics.stageLatency('keys', latencyMs);
+          deps.metrics.stageResult('keys', outcome);
+          span.setAttribute('kill.keys.outcome', outcome);
+          return { outcome, keys: results, attempts, latencyMs } satisfies KeyStageResult;
+        } catch (err) {
+          span.setStatus({ code: SpanStatusCode.ERROR });
+          deps.metrics.stageResult('keys', 'error');
+          throw err;
+        } finally {
+          span.end();
+        }
+      });
+    },
+
+    async auditKeysRevoked({ tenantId, killEventId, result }) {
+      if (result.outcome === 'skipped') return;
+      const count = (o: KillKeyOutcome): number =>
+        result.keys.filter((k) => k.outcome === o).length;
+      await deps.audit.append({
+        action: 'kill.keys_revoked',
+        severity: 'critical',
+        outcome: result.outcome === 'revoked' ? 'success' : 'failure',
+        tenantId,
+        killEventId,
+        occurredAt: now().toISOString(),
+        metadata: {
+          stage: 'keys',
+          outcome: result.outcome,
+          total: result.keys.length,
+          revoked: count('revoked'),
+          alreadyRevoked: count('already_revoked'),
+          failed: count('failed'),
+          attempts: result.attempts,
+          latencyMs: result.latencyMs,
+        },
+      });
+    },
+
+    async cancelWorkflows({ tenantId, killEventId, workflowIds, runIds }) {
+      return tracer.startActiveSpan('kill.stage.workflows', async (span) => {
+        span.setAttribute('kill.event_id', killEventId);
+        span.setAttribute('kill.workflows', workflowIds.length);
+        const started = now();
+        try {
+          const event = await requireEvent(repo, tenantId, killEventId);
+          if (event.workflowsCancelledAt !== null) {
+            deps.metrics.stageResult('workflows', 'skipped');
+            return {
+              outcome: 'skipped',
+              workflows: [],
+              reversalsFlagged: 0,
+              attempts: 0,
+              latencyMs: 0,
+            } satisfies WorkflowStageResult;
+          }
+
+          const unique = [...new Set(workflowIds)];
+          const { results: raw, attempts } = await settleWithRetry<KillWorkflowOutcome>(
+            unique,
+            'failed',
+            workflowDeadlineMs,
+            workflowBackoffMs,
+            started.getTime(),
+            async (pending, signal) =>
+              (await deps.workflows.cancel({ killEventId, workflowIds: pending }, signal)).map(
+                (a) => [a.workflowId, a.outcome] as [string, KillWorkflowOutcome],
+              ),
+            'workflow cancel',
+            killEventId,
+          );
+          const results: WorkflowIdResult[] = raw.map((r) => ({
+            workflowId: r.id,
+            outcome: r.outcome,
+          }));
+          for (const r of results) {
+            log.info(
+              { killEventId, workflowId: r.workflowId, outcome: r.outcome },
+              'workflow result',
+            );
+          }
+          const done = results.filter((r) => r.outcome !== 'failed');
+          // Pending reversal entries are flagged for the reversal process, never undone here (§8.5). A
+          // failure throws before the stage is stamped, so Temporal (or the reconciler) retries it.
+          const reversalsFlagged = await deps.reversals.flagPending(tenantId, killEventId, [
+            ...new Set(runIds),
+          ]);
+          await repo.mergeAffected(tenantId, killEventId, {
+            workflows: done.length,
+            workflowResults: results.map((r) => ({
+              workflowId: r.workflowId,
+              outcome: r.outcome,
+            })),
+            reversalsFlagged,
+          });
+          const clean = done.length === results.length;
+          const finished = now();
+          const latencyMs = Math.max(0, finished.getTime() - started.getTime());
+          await repo.markStage(tenantId, killEventId, 'workflowsCancelledAt', finished);
+          if (!clean) {
+            await repo.transition(tenantId, killEventId, 'partially_halted', [
+              'initiated',
+              'propagating',
+            ]);
+            deps.metrics.partialHalt('workflows');
+          }
+          deps.metrics.workflowsCancelled(done.length);
+          const outcome = clean ? 'cancelled' : 'partially_halted';
+          deps.metrics.stageLatency('workflows', latencyMs);
+          deps.metrics.stageResult('workflows', outcome);
+          span.setAttribute('kill.workflows.outcome', outcome);
+          return {
+            outcome,
+            workflows: results,
+            reversalsFlagged,
+            attempts,
+            latencyMs,
+          } satisfies WorkflowStageResult;
+        } catch (err) {
+          span.setStatus({ code: SpanStatusCode.ERROR });
+          deps.metrics.stageResult('workflows', 'error');
+          throw err;
+        } finally {
+          span.end();
+        }
+      });
+    },
+
+    async auditWorkflowsCancelled({ tenantId, killEventId, result }) {
+      if (result.outcome === 'skipped') return;
+      const count = (o: KillWorkflowOutcome): number =>
+        result.workflows.filter((w) => w.outcome === o).length;
+      await deps.audit.append({
+        action: 'kill.workflows_cancelled',
+        severity: 'critical',
+        outcome: result.outcome === 'cancelled' ? 'success' : 'failure',
+        tenantId,
+        killEventId,
+        occurredAt: now().toISOString(),
+        metadata: {
+          stage: 'workflows',
+          outcome: result.outcome,
+          total: result.workflows.length,
+          cancelled: count('cancelled'),
+          alreadyClosed: count('already_closed'),
+          notFound: count('not_found'),
+          failed: count('failed'),
+          reversalsFlagged: result.reversalsFlagged,
           attempts: result.attempts,
           latencyMs: result.latencyMs,
         },

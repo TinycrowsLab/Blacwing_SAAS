@@ -9,7 +9,9 @@ import {
 import { runKillPropagation } from '../kill/propagate.js';
 import {
   EGRESS_DEADLINE_MS,
+  KEY_DEADLINE_MS,
   SANDBOX_DEADLINE_MS,
+  WORKFLOW_DEADLINE_MS,
   KILL_PROGRESS_QUERY,
   KILL_TARGETS_SIGNAL,
   type KillActivities,
@@ -37,6 +39,16 @@ const sandboxActs = proxyActivities<KillActivities>({
   retry: { initialInterval: '100 milliseconds', backoffCoefficient: 2, maximumAttempts: 2 },
 });
 
+const keyActs = proxyActivities<KillActivities>({
+  startToCloseTimeout: `${String(KEY_DEADLINE_MS + ACTIVITY_SLACK_MS * 2)} milliseconds`,
+  retry: { initialInterval: '100 milliseconds', backoffCoefficient: 2, maximumAttempts: 2 },
+});
+
+const workflowActs = proxyActivities<KillActivities>({
+  startToCloseTimeout: `${String(WORKFLOW_DEADLINE_MS + ACTIVITY_SLACK_MS * 2)} milliseconds`,
+  retry: { initialInterval: '100 milliseconds', backoffCoefficient: 2, maximumAttempts: 4 },
+});
+
 /** KILL-005: force-terminate the target sandboxes, then audit. An audit failure never blocks the kill. */
 const sandboxStage: KillLaterStage = {
   name: 'sandbox',
@@ -54,8 +66,40 @@ const sandboxStage: KillLaterStage = {
   },
 };
 
-/** KILL-006 appends its stages after this one, in §8.5 order. */
-const LATER_STAGES: readonly KillLaterStage[] = [sandboxStage];
+/** KILL-006 stage 3: revoke the virtual model keys, then audit. */
+const keyStage: KillLaterStage = {
+  name: 'keys',
+  async run(request) {
+    const ref = { tenantId: request.tenantId, killEventId: request.killEventId };
+    const result = await keyActs.revokeKeys({ ...ref, keyIds: request.targets.virtualKeyIds });
+    try {
+      await acts.auditKeysRevoked({ ...ref, result });
+    } catch {
+      // Retried by Temporal; if it still fails the kill goes on.
+    }
+  },
+};
+
+/** KILL-006 stage 4: cancel the run and session workflows, flag pending reversals, then audit. */
+const workflowStage: KillLaterStage = {
+  name: 'workflows',
+  async run(request) {
+    const ref = { tenantId: request.tenantId, killEventId: request.killEventId };
+    const result = await workflowActs.cancelWorkflows({
+      ...ref,
+      workflowIds: request.targets.workflowIds,
+      runIds: request.targets.runIds,
+    });
+    try {
+      await acts.auditWorkflowsCancelled({ ...ref, result });
+    } catch {
+      // Retried by Temporal; if it still fails the kill goes on.
+    }
+  },
+};
+
+/** The §8.5 order after egress: sandboxes terminated, then keys revoked, then workflows cancelled. */
+const LATER_STAGES: readonly KillLaterStage[] = [sandboxStage, keyStage, workflowStage];
 
 /**
  * KILL-004: executes one kill in the mandated order (egress block first). One workflow per kill event

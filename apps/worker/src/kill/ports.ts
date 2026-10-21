@@ -4,7 +4,9 @@ import type {
   KillEgressIdentity,
   KillEgressOutcome,
   KillEventStatus,
+  KillKeyOutcome,
   KillSandboxOutcome,
+  KillWorkflowOutcome,
 } from '@blackwing/contracts';
 
 /**
@@ -75,9 +77,56 @@ export interface SandboxControlClient {
   ): Promise<readonly SandboxAck[]>;
 }
 
+/** One virtual key's answer from the model gateway. `already_revoked` (also: expired) is the idempotent ack. */
+export interface KeyAck {
+  readonly keyId: string;
+  readonly outcome: KillKeyOutcome;
+}
+
+/**
+ * The model gateway key-revocation API (MODELGW owns the keys). Revoking is idempotent. A thrown error
+ * means the gateway could not be reached or answered no; keys are short-lived, so expiry is the backstop.
+ */
+export interface KeyControlClient {
+  revoke(
+    request: { readonly killEventId: string; readonly keyIds: readonly string[] },
+    signal: AbortSignal,
+  ): Promise<readonly KeyAck[]>;
+}
+
+/** One Temporal workflow's answer. `already_closed` and `not_found` are successes: nothing is left running. */
+export interface WorkflowAck {
+  readonly workflowId: string;
+  readonly outcome: KillWorkflowOutcome;
+}
+
+/**
+ * Cancels Temporal workflows (the `AssessmentRunWorkflow` of each run and its `AgentSessionWorkflow`
+ * children). Cancellation is requested, not awaited to completion: the workflows' own cleanup runs after
+ * egress is blocked and the sandboxes are gone. A pending Gate 2 decision resolves as denied inside the workflow.
+ */
+export interface WorkflowControlClient {
+  cancel(
+    request: { readonly killEventId: string; readonly workflowIds: readonly string[] },
+    signal: AbortSignal,
+  ): Promise<readonly WorkflowAck[]>;
+}
+
+/**
+ * The reversal journal (§8.5): the kill never auto-undoes a state change, it flags the entries still
+ * pending for the reversal process. Returns how many entries were flagged; idempotent.
+ */
+export interface ReversalJournal {
+  flagPending(tenantId: string, killEventId: string, runIds: readonly string[]): Promise<number>;
+}
+
 /** An audit record before the ledger assigns its sequence number and hash (AUDIT-002). */
 export interface KillStageAuditRecord {
-  readonly action: 'kill.egress_blocked' | 'kill.sandboxes_terminated';
+  readonly action:
+    | 'kill.egress_blocked'
+    | 'kill.sandboxes_terminated'
+    | 'kill.keys_revoked'
+    | 'kill.workflows_cancelled';
   readonly severity: 'critical';
   readonly outcome: 'success' | 'failure';
   readonly tenantId: string;
@@ -99,4 +148,8 @@ export interface KillStageMetrics {
   partialHalt(stage: KillStageName): void;
   /** `bw_kill_sandboxes_terminated_total`. */
   sandboxesTerminated(count: number): void;
+  /** Keys confirmed revoked by the key stage. */
+  keysRevoked(count: number): void;
+  /** Workflows confirmed cancelled (or already closed) by the workflow stage. */
+  workflowsCancelled(count: number): void;
 }
