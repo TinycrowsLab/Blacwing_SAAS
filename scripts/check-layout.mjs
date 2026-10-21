@@ -79,7 +79,7 @@ export const EXPECTED_DIRS = Object.freeze({
  * manifest `images.lock`: CI-004).
  */
 export const EXPECTED_DIR_FILES = Object.freeze({
-  docs: Object.freeze(['labels.md']),
+  docs: Object.freeze(['labels.md', 'site.json', 'CONTRIBUTING-docs.md']),
   infra: Object.freeze(['bootstrap.sh', 'images.lock', 'versions.env']),
 });
 

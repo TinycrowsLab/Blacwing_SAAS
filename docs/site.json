@@ -1,0 +1,91 @@
+{
+  "$schema-note": "Navigation and link-check settings for the docs site (DOCS-001, #813). Built by scripts/docs-site.mjs (pnpm docs:build). Every Markdown page under docs/ must be listed in a section; a page that is not listed fails the build.",
+  "title": "Blackwing documentation",
+  "sections": [
+    {
+      "title": "User Guide",
+      "pages": ["user/onboarding.md", "user/egress-ips.md"]
+    },
+    {
+      "title": "Admin Guide",
+      "pages": [
+        "user/admin-guide.md",
+        "runbooks/release.md",
+        "runbooks/branch-protection.md",
+        "runbooks/ingress-tls.md",
+        "runbooks/dns-delegation.md",
+        "runbooks/ses-email.md",
+        "runbooks/egress-ip-list.md",
+        "runbooks/db-migrations.md",
+        "runbooks/image-verification.md",
+        "runbooks/renovate.md",
+        "runbooks/secret-scanning.md"
+      ]
+    },
+    {
+      "title": "API Reference",
+      "pages": ["api/README.md"]
+    },
+    {
+      "title": "Runbooks",
+      "pages": [
+        "runbooks/branch-protection.md",
+        "runbooks/ci-pr-checks.md",
+        "runbooks/code-owners.md",
+        "runbooks/codeql.md",
+        "runbooks/db-migrations.md",
+        "runbooks/dependency-review.md",
+        "runbooks/dev-host-bootstrap.md",
+        "runbooks/dev-k3s.md",
+        "runbooks/dev-seed.md",
+        "runbooks/dns-delegation.md",
+        "runbooks/drift-checks.md",
+        "runbooks/e2e.md",
+        "runbooks/egress-ip-list.md",
+        "runbooks/image-signing.md",
+        "runbooks/image-verification.md",
+        "runbooks/ingress-tls.md",
+        "runbooks/node-imds.md",
+        "runbooks/release.md",
+        "runbooks/renovate.md",
+        "runbooks/secret-scanning.md",
+        "runbooks/ses-email.md",
+        "runbooks/trivy.md"
+      ]
+    },
+    {
+      "title": "Architecture and Security",
+      "pages": [
+        "architecture/CONTEXT_PACK.md",
+        "architecture/EPICS.md",
+        "architecture/FEATURE_LIST.md",
+        "architecture/REFERENCES.md",
+        "architecture/workflow-determinism.md",
+        "architecture/workflow-versioning.md",
+        "architecture/dependency-graph.md",
+        "architecture/egress-gateway.md",
+        "architecture/storage-buckets.md",
+        "architecture/typescript.md",
+        "adr/README.md",
+        "adr/template.md",
+        "adr/0001-record-architecture-decisions.md",
+        "adr/0002-pnpm-turborepo-monorepo.md",
+        "adr/0003-strict-typescript-zod-contracts.md",
+        "adr/0004-nestjs-fastify-rest-graphql-api.md",
+        "adr/0005-temporal-run-lifecycle.md",
+        "adr/0006-claude-agent-sdk-claude-only-models.md",
+        "adr/0007-cedar-policy-decision-point.md",
+        "adr/0008-go-egress-gateway-fail-closed.md",
+        "adr/0009-openbao-secrets-byok.md",
+        "adr/0010-postgres-rls-multi-tenancy.md",
+        "adr/0011-gvisor-sandboxes-on-k3s.md",
+        "labels.md",
+        "CONTRIBUTING-docs.md"
+      ]
+    }
+  ],
+  "linkCheck": {
+    "ignoreTargets": ["NNNN-slug.md", "…", "../architecture/CONTEXT_PACK.md#n-section-title"],
+    "$ignore-note": "Placeholder link targets in the ADR template and ADR rules text (ADR-NNNN, ADR-MMMM, §N). They are not real files or headings."
+  }
+}

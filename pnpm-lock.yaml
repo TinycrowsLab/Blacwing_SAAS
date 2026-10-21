@@ -185,6 +185,9 @@ importers:
       lint-staged:
         specifier: 16.4.0
         version: 16.4.0
+      marked:
+        specifier: 15.0.12
+        version: 15.0.12
       prettier:
         specifier: 3.9.9
         version: 3.9.9

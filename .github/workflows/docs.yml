@@ -1,0 +1,127 @@
+name: docs
+
+# Documentation site (DOCS-001, #813). A pull request that touches the docs builds the site and runs the
+# link check: a broken internal link, a missing anchor or an unlisted page fails the run (scripts/docs-site.mjs).
+# A push to main publishes the `main` version to the gh-pages branch, which GitHub Pages serves. A manual run
+# (workflow_dispatch) publishes a release version folder such as `v1.4.0`, so a customer can read the docs for
+# their version. The contributor guide is docs/CONTRIBUTING-docs.md; the release steps are in docs/runbooks/release.md.
+#
+# The publish job holds `contents: write` only to push the gh-pages branch. The token is passed as an HTTP header
+# for that one push, never in a remote URL, and the job runs no untrusted code.
+
+on:
+  pull_request:
+    paths: &docs-paths
+      - 'docs/**'
+      - 'scripts/docs-site.mjs'
+      - 'scripts/docs-site.test.mjs'
+      - 'scripts/check-claude-md.mjs'
+      - '.github/workflows/docs.yml'
+  push:
+    branches: [main]
+    paths: *docs-paths
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version folder to publish, for example v1.4.0 (or main)'
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+# Pull requests supersede each other; publishes queue so two runs never race on the gh-pages branch.
+concurrency:
+  group: docs-${{ github.event_name == 'pull_request' && github.ref || 'publish' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  FORCE_COLOR: '0'
+  TURBO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  build:
+    name: docs-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      # A local composite action is only readable after a checkout; fetch just its directory.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          fetch-depth: '1'
+      - name: Check navigation and internal links
+        run: pnpm docs:check
+      - name: Build the site (smoke)
+        run: pnpm docs:build --out "$RUNNER_TEMP/docs-site" --version main
+
+  publish:
+    name: docs-publish
+    needs: build
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      # workflow_dispatch input goes through the environment, never into the script text.
+      VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || 'main' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          fetch-depth: '1'
+      - name: Check the version name
+        run: |
+          set -euo pipefail
+          if ! [[ "$VERSION" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]]; then
+            echo "docs-publish: '$VERSION' is not a valid version folder name" >&2
+            exit 1
+          fi
+      - name: Check navigation and internal links
+        run: pnpm docs:check
+      - name: Open the gh-pages worktree
+        run: |
+          set -euo pipefail
+          PAGES="$RUNNER_TEMP/pages"
+          if git fetch --depth=1 origin gh-pages; then
+            git worktree add --detach "$PAGES" FETCH_HEAD
+          else
+            # First publish: an empty root commit gives the branch a history to push onto.
+            EMPTY=$(git commit-tree "$(git hash-object -t tree /dev/null)" -m "docs: initialise gh-pages")
+            git worktree add --detach "$PAGES" "$EMPTY"
+          fi
+          echo "PAGES=$PAGES" >> "$GITHUB_ENV"
+        env:
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+      - name: Build the version into the gh-pages worktree
+        # Other version folders stay as they are; only $VERSION is replaced. The index and versions.json are regenerated.
+        run: node scripts/docs-site.mjs build --out "$PAGES" --version "$VERSION"
+      - name: Commit and push the gh-pages branch
+        run: |
+          set -euo pipefail
+          cd "$PAGES"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "docs-publish: $VERSION is already up to date"
+            exit 0
+          fi
+          git commit -m "docs: publish $VERSION"
+          AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $AUTH" push origin HEAD:refs/heads/gh-pages
+        env:
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com

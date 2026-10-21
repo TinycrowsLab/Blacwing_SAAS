@@ -287,7 +287,7 @@ infra/
 eval/
   targets/  ground-truth/  harness/
 docs/
-  adr/  architecture/  runbooks/  api/  user/  labels.md (label catalogue)
+  adr/  architecture/  runbooks/  api/  user/  labels.md (label catalogue)  site.json (docs site navigation and link-check settings)  CONTRIBUTING-docs.md (docs style and contribution guide)
 design/               Claude Design export: UI source of truth for every GUI (design system, screens, tokens.json); see design/README.md
 .github/ (workflows, actions (reusable composite actions, e.g. setup), ISSUE_TEMPLATE, PULL_REQUEST_TEMPLATE.md, CODEOWNERS, labels.yml, dependency-review-config.yml, codeql-config.yml, required-checks.json, rulesets)
 CLAUDE.md  README.md  SECURITY.md  LICENSE (proprietary notice)
