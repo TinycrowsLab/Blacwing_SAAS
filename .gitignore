@@ -53,3 +53,6 @@ infra/compose/tls/certs/
 playwright-report/
 test-results/
 dev-apps.log
+
+# Next.js generated type reference (apps/web)
+next-env.d.ts

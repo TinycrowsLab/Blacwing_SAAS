@@ -17,6 +17,7 @@ export const DEFAULT_TEST_USER = 'owner@acme.test';
 const DEFAULTS = Object.freeze({
   BW_TARGET_JUICE_SHOP_URL: 'http://127.0.0.1:13000',
   BW_DEV_KEYCLOAK_PUBLIC_URL: 'http://localhost:18080',
+  BW_WEB_URL: 'http://127.0.0.1:3000',
 });
 
 export interface E2eSettings {
@@ -24,6 +25,8 @@ export interface E2eSettings {
   readonly targetUrl: URL;
   /** Keycloak as the browser reaches it (issuer host). */
   readonly keycloakUrl: URL;
+  /** The web console (`pnpm dev` serves apps/web here). */
+  readonly webUrl: URL;
   readonly realm: string;
   readonly testUser: string;
   /** Dev-only password of the seeded Keycloak test users; `undefined` when `.env` has none. */
@@ -106,6 +109,7 @@ export function resolveE2eSettings(fileEnv: EnvMap, processEnv: EnvMap): E2eSett
       'BW_DEV_KEYCLOAK_PUBLIC_URL',
       pick(env, 'BW_DEV_KEYCLOAK_PUBLIC_URL'),
     ),
+    webUrl: requireLoopbackUrl('BW_WEB_URL', pick(env, 'BW_WEB_URL')),
     realm: DEV_REALM,
     testUser: user === undefined || user === '' ? DEFAULT_TEST_USER : user,
     testPassword: password === undefined || password === '' ? undefined : password,

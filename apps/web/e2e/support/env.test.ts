@@ -68,6 +68,7 @@ describe('resolveE2eSettings', () => {
     const s = resolveE2eSettings({}, {});
     expect(s.targetUrl.href).toBe('http://127.0.0.1:13000/');
     expect(s.keycloakUrl.href).toBe('http://localhost:18080/');
+    expect(s.webUrl.href).toBe('http://127.0.0.1:3000/');
     expect(s.realm).toBe('blackwing-dev');
     expect(s.testUser).toBe(DEFAULT_TEST_USER);
     expect(s.testPassword).toBeUndefined();

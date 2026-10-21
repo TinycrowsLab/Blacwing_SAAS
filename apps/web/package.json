@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3000",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run --configLoader runner --config src/vitest.config.ts",
     "test:e2e": "playwright test -c e2e/playwright.config.ts",
@@ -17,6 +18,7 @@
   "devDependencies": {
     "@blackwing/testing": "workspace:*",
     "@playwright/test": "catalog:",
+    "@tailwindcss/postcss": "4.3.3",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.8",
     "@types/node": "catalog:",
@@ -33,6 +35,8 @@
     "@hookform/resolvers": "6.0.0",
     "@radix-ui/react-slot": "1.5.0",
     "@tanstack/react-query": "catalog:",
+    "next": "15.5.28",
+    "next-themes": "0.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-hook-form": "7.90.0",
