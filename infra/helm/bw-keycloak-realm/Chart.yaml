@@ -1,0 +1,6 @@
+apiVersion: v2
+name: bw-keycloak-realm
+description: Idempotent sync of the Blackwing Keycloak realm (IAM-001)
+type: application
+version: 0.1.0
+appVersion: '26.4.2'

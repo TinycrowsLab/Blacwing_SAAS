@@ -1,0 +1,10 @@
+image:
+  # Node image that carries scripts/keycloak-sync.mjs and infra/keycloak/realm-blackwing.json.
+  repository: ghcr.io/tinycrowslab/bw-ops
+  tag: ''
+environment: staging
+keycloakUrl: http://keycloak:8080
+publicUrl: ''
+consoleOrigin: ''
+# Name of a Secret (synced from OpenBao) with keys: admin-user, admin-password, api-secret, cli-secret.
+existingSecret: bw-keycloak-realm-secrets

@@ -1,0 +1,204 @@
+{
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 300,
+  "attributes": {
+    "acr.loa.map": "{\"password\":1,\"mfa\":2}",
+    "bw.environment": "${BW_ENVIRONMENT}",
+    "frontendUrl": "${BW_KEYCLOAK_PUBLIC_URL}"
+  },
+  "bruteForceProtected": true,
+  "clientScopes": [
+    {
+      "attributes": {
+        "display.on.consent.screen": "false",
+        "include.in.token.scope": "false"
+      },
+      "description": "Blackwing tenantId and roles claims",
+      "name": "bw-claims",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "config": {
+            "access.token.claim": "true",
+            "claim.name": "tenantId",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "jsonType.label": "String",
+            "multivalued": "false",
+            "user.attribute": "tenantId",
+            "userinfo.token.claim": "true"
+          },
+          "name": "tenantId",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper"
+        },
+        {
+          "config": {
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "userinfo.token.claim": "true"
+          },
+          "name": "roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper"
+        },
+        {
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "included.client.audience": "blackwing-api",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "false"
+          },
+          "name": "api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper"
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false",
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${BW_CONSOLE_ORIGIN}/"
+      },
+      "clientId": "blackwing-console",
+      "consentRequired": false,
+      "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "email", "bw-claims"],
+      "directAccessGrantsEnabled": false,
+      "enabled": true,
+      "frontchannelLogout": false,
+      "implicitFlowEnabled": false,
+      "name": "Blackwing console (BFF)",
+      "optionalClientScopes": ["offline_access"],
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "redirectUris": ["${BW_CONSOLE_ORIGIN}/auth/callback"],
+      "serviceAccountsEnabled": false,
+      "standardFlowEnabled": true,
+      "webOrigins": ["${BW_CONSOLE_ORIGIN}"]
+    },
+    {
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false"
+      },
+      "clientAuthenticatorType": "client-secret",
+      "clientId": "blackwing-api",
+      "consentRequired": false,
+      "defaultClientScopes": ["acr", "profile", "roles", "bw-claims"],
+      "directAccessGrantsEnabled": false,
+      "enabled": true,
+      "frontchannelLogout": false,
+      "implicitFlowEnabled": false,
+      "name": "Blackwing API",
+      "optionalClientScopes": [],
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${BW_KEYCLOAK_API_SECRET}",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false
+    },
+    {
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false"
+      },
+      "clientAuthenticatorType": "client-secret",
+      "clientId": "blackwing-cli",
+      "consentRequired": false,
+      "defaultClientScopes": ["acr", "profile", "roles", "bw-claims"],
+      "directAccessGrantsEnabled": false,
+      "enabled": true,
+      "frontchannelLogout": false,
+      "implicitFlowEnabled": false,
+      "name": "Blackwing CLI / CI tokens",
+      "optionalClientScopes": [],
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${BW_KEYCLOAK_CLI_SECRET}",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false
+    }
+  ],
+  "displayName": "Blackwing",
+  "duplicateEmailsAllowed": false,
+  "editUsernameAllowed": false,
+  "enabled": true,
+  "failureFactor": 5,
+  "loginWithEmailAllowed": true,
+  "maxDeltaTimeSeconds": 43200,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "offlineSessionIdleTimeout": 2592000,
+  "offlineSessionMaxLifespan": 5184000,
+  "offlineSessionMaxLifespanEnabled": true,
+  "organizationsEnabled": true,
+  "permanentLockout": false,
+  "quickLoginCheckMilliSeconds": 1000,
+  "realm": "blackwing",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "roles": {
+    "realm": [
+      {
+        "attributes": {
+          "bw.scope": ["tenant"]
+        },
+        "description": "AppSec Engineer",
+        "name": "appsec-engineer"
+      },
+      {
+        "attributes": {
+          "bw.scope": ["tenant"]
+        },
+        "description": "Asset Owner",
+        "name": "asset-owner"
+      },
+      {
+        "attributes": {
+          "bw.scope": ["tenant"]
+        },
+        "description": "Developer",
+        "name": "developer"
+      },
+      {
+        "attributes": {
+          "bw.scope": ["tenant"]
+        },
+        "description": "Org admin",
+        "name": "org-admin"
+      },
+      {
+        "attributes": {
+          "bw.scope": ["tenant"]
+        },
+        "description": "Auditor",
+        "name": "auditor"
+      },
+      {
+        "attributes": {
+          "bw.scope": ["tenant"]
+        },
+        "description": "CI/CD pipeline",
+        "name": "ci-pipeline"
+      },
+      {
+        "attributes": {
+          "bw.scope": ["platform"]
+        },
+        "description": "Tinycrows platform operator",
+        "name": "platform-operator"
+      }
+    ]
+  },
+  "sslRequired": "external",
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "verifyEmail": true,
+  "waitIncrementSeconds": 60
+}
