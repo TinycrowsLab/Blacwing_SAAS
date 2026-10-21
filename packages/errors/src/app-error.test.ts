@@ -87,6 +87,11 @@ const SUBCLASSES: readonly (readonly [
 /** Codes whose subclass lives in the package that owns the failure, not here. */
 const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'CONFIG_INVALID', // ConfigValidationError, @blackwing/config
+  // PersonaError, @blackwing/agents (REGISTRY-001).
+  'PERSONA_UNKNOWN',
+  'PERSONA_NOT_DEFINED',
+  'PERSONA_FORBIDDEN_TOOL',
+  'PERSONA_INVALID',
   // IntrusivenessError, @blackwing/contracts (SCOPE-003): contracts is the root of the dependency
   // graph and cannot import this package, so its error carries the registered code instead.
   'SCOPE_INTRUSIVENESS_EXCEEDS_CEILING',

@@ -34,6 +34,10 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   SCOPE_INVALID_BUDGET: 422,
   SCOPE_INVALID_RULE: 422,
   SCOPE_BUDGET_EXCEEDS_SA: 403,
+  PERSONA_UNKNOWN: 422,
+  PERSONA_NOT_DEFINED: 404,
+  PERSONA_FORBIDDEN_TOOL: 422,
+  PERSONA_INVALID: 422,
   CONFIG_INVALID: 500,
   TEMPORAL_CONFIG_INVALID: 500,
   TEMPORAL_TLS_MISCONFIGURED: 500,
@@ -64,7 +68,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(36);
+    expect(ERROR_CODE_LIST).toHaveLength(40);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -170,6 +174,10 @@ describe('error-code registry', () => {
       | 'SCOPE_INVALID_BUDGET'
       | 'SCOPE_INVALID_RULE'
       | 'SCOPE_BUDGET_EXCEEDS_SA'
+      | 'PERSONA_UNKNOWN'
+      | 'PERSONA_NOT_DEFINED'
+      | 'PERSONA_FORBIDDEN_TOOL'
+      | 'PERSONA_INVALID'
       | 'CONFIG_INVALID'
       | 'TEMPORAL_CONFIG_INVALID'
       | 'TEMPORAL_TLS_MISCONFIGURED'

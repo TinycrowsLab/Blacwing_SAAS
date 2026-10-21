@@ -57,6 +57,12 @@ const DEFINITIONS = {
     title: 'Budget exceeds the standing authorisation',
     retryable: false,
   },
+  // Persona-definition validation (REGISTRY-001, §4.5/§8.11). Malformed or forbidden definitions are
+  // rejected at load/CI time: invalid input (422); a persona that is not registered yet is 404.
+  PERSONA_UNKNOWN: { status: 422, title: 'Unknown persona', retryable: false },
+  PERSONA_NOT_DEFINED: { status: 404, title: 'Persona not defined', retryable: false },
+  PERSONA_FORBIDDEN_TOOL: { status: 422, title: 'Forbidden tool in persona', retryable: false },
+  PERSONA_INVALID: { status: 422, title: 'Invalid persona definition', retryable: false },
   // `@blackwing/config` (FOUND-007) refuses to start on an invalid environment: a server fault.
   CONFIG_INVALID: { status: 500, title: 'Invalid configuration', retryable: false },
   // Temporal connection (WORKFLOW-001). Misconfiguration is a server fault (500, never retried);
