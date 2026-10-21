@@ -555,6 +555,9 @@ importers:
       '@blackwing/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@blackwing/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../../packages/errors

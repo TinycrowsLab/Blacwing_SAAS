@@ -60,3 +60,11 @@ export { createOtelSaBoundsMetrics } from './sa-bounds/metrics.js';
 export { computeSaTimeline } from './sa-bounds/timeline.js';
 export type * from './sa-bounds/ports.js';
 export * from './sa-bounds/types.js';
+export {
+  createPostExecutionActivities,
+  type PostExecutionActivityDeps,
+} from './run/postexec/activities.js';
+export { acceptedRiskValid, classifyVerdict, dedupeDecisions } from './run/postexec/classify.js';
+export { createOtelPostExecutionMetrics } from './run/postexec/metrics.js';
+export type * from './run/postexec/ports.js';
+export * from './run/postexec/types.js';

@@ -3,6 +3,7 @@
 // ORCH and SCHED add their workflows by re-exporting them from this file.
 
 export { KillPropagationWorkflow } from './kill-propagation.js';
+export { PostExecutionWorkflow } from './post-execution.js';
 export { PreflightWorkflow } from './preflight.js';
 export { SaTimeBoundsWorkflow } from './sa-time-bounds.js';
 
