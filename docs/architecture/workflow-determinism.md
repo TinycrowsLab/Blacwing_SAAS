@@ -64,6 +64,8 @@ where a clock read or a timer belongs when its effect is real.
 ## Enforcement
 
 - `pnpm lint` fails on any banned call in `apps/worker/src/workflows/**/*.ts`. The rules run with type information.
+- Test files (`*.test.ts`) are exempt. They run under Node, not in the sandbox, and are not part of the bundle
+  entry. Replay tests use `node:fs` to read recorded histories.
 - `scripts/lint-config.test.mjs` (`workflow determinism`) proves that each banned call fails in a workflow
   file and passes in an activity file, and that `import type` and `uuid4()` pass.
 - Do not add an `eslint-disable` comment to get past a workflow rule. If a rule is wrong, change the rule and

@@ -314,6 +314,9 @@ export default defineConfig(
   {
     name: 'blackwing/workflow-determinism',
     files: ['apps/worker/src/workflows/**/*.ts'],
+    // Test files run under Node (replay tests read fixtures and start a test Worker); they are never
+    // bundled into the workflow sandbox, so the sandbox rules do not apply to them.
+    ignores: TEST_FILES,
     rules: {
       // Temporal replays workflow code, so it must make the same decisions on every replay
       // (docs/architecture/workflow-determinism.md). Type-only imports stay allowed everywhere.

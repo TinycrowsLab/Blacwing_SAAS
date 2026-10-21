@@ -466,6 +466,17 @@ describe('workflow determinism (apps/worker/src/workflows, WORKFLOW-003)', () =>
     }
   });
 
+  it('exempts test files under workflows/ (replay tests read fixtures under Node)', async () => {
+    const replayTest = path.join(
+      REPO_ROOT,
+      'apps/worker/src/workflows/examples/versioned-example.replay.test.ts',
+    );
+    const code =
+      "import { readFileSync } from 'node:fs';\nexport const text = readFileSync('x', 'utf8');\n";
+    const ids = ruleIds(await lintAt(replayTest, code));
+    assert.ok(!ids.includes('no-restricted-imports'), `got ${ids.join(', ')}`);
+  });
+
   it('allows type-only imports of banned modules (import type is the escape hatch)', async () => {
     const code = [
       "import type { Redis } from 'ioredis';",
