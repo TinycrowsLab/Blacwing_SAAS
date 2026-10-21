@@ -59,6 +59,7 @@ const RELEASED_ACTIONS = [
   'kill.triggered',
   'kill.forbidden',
   'kill.egress_blocked',
+  'kill.sandboxes_terminated',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

@@ -4,6 +4,10 @@ import {
   EGRESS_BACKOFF_BASE_MS,
   EGRESS_DEADLINE_MS,
   EGRESS_MAX_ATTEMPTS,
+  SANDBOX_BACKOFF_BASE_MS,
+  SANDBOX_DEADLINE_MS,
+  type SandboxIdResult,
+  type SandboxStageResult,
   type EgressIdentityResult,
   type EgressStageResult,
   type KillActivities,
@@ -15,14 +19,19 @@ import type {
   KillEventRepo,
   KillStageAuditSink,
   KillStageMetrics,
+  SandboxControlClient,
 } from './ports.js';
-import type { KillEgressIdentity, KillEgressOutcome } from '@blackwing/contracts';
+import type {
+  KillEgressIdentity,
+  KillEgressOutcome,
+  KillSandboxOutcome,
+} from '@blackwing/contracts';
 import type { Logger } from '@blackwing/logger';
-
 
 export interface KillActivityDeps {
   readonly repo: KillEventRepo;
   readonly egress: EgressControlClient;
+  readonly sandboxes: SandboxControlClient;
   readonly audit: KillStageAuditSink;
   readonly metrics: KillStageMetrics;
   readonly log: Logger;
@@ -32,6 +41,9 @@ export interface KillActivityDeps {
   readonly deadlineMs?: number;
   readonly backoffBaseMs?: number;
   readonly maxAttempts?: number;
+  /** Sandbox stage deadline (`KILL_SANDBOX_DEADLINE_MS`, default 10 s). */
+  readonly sandboxDeadlineMs?: number;
+  readonly sandboxBackoffBaseMs?: number;
 }
 
 /** Stable, opaque key for an identity: `run:<runId>` or `principal:<tc_..role_..>`. */
@@ -66,7 +78,51 @@ export function createKillActivities(deps: KillActivityDeps): KillActivities {
   const deadlineMs = deps.deadlineMs ?? EGRESS_DEADLINE_MS;
   const backoffBaseMs = deps.backoffBaseMs ?? EGRESS_BACKOFF_BASE_MS;
   const maxAttempts = deps.maxAttempts ?? EGRESS_MAX_ATTEMPTS;
+  const sandboxDeadlineMs = deps.sandboxDeadlineMs ?? SANDBOX_DEADLINE_MS;
+  const sandboxBackoffMs = deps.sandboxBackoffBaseMs ?? SANDBOX_BACKOFF_BASE_MS;
   const { repo, log } = deps;
+
+  /** Asks the controller until every id is settled (anything but `failed`) or the deadline passes. */
+  async function terminateWithRetry(
+    killEventId: string,
+    sandboxIds: readonly string[],
+    startedMs: number,
+  ): Promise<{ results: SandboxIdResult[]; attempts: number }> {
+    const settled = new Map<string, KillSandboxOutcome>();
+    let pending = [...sandboxIds];
+    let attempts = 0;
+    for (;;) {
+      const remaining = sandboxDeadlineMs - (now().getTime() - startedMs);
+      if (pending.length === 0 || remaining <= 0) break;
+      attempts += 1;
+      try {
+        const acks = await deps.sandboxes.terminate(
+          { killEventId, sandboxIds: pending },
+          AbortSignal.timeout(remaining),
+        );
+        const asked = new Set(pending);
+        for (const ack of acks) {
+          if (asked.has(ack.sandboxId) && ack.outcome !== 'failed') {
+            settled.set(ack.sandboxId, ack.outcome);
+          }
+        }
+      } catch (err) {
+        log.warn({ killEventId, attempt: attempts, err }, 'sandbox terminate attempt failed');
+      }
+      pending = pending.filter((id) => !settled.has(id));
+      if (pending.length === 0) break;
+      const backoff = sandboxBackoffMs * 2 ** (attempts - 1);
+      if (now().getTime() - startedMs + backoff >= sandboxDeadlineMs) break;
+      await sleep(backoff);
+    }
+    return {
+      attempts,
+      results: sandboxIds.map((sandboxId) => ({
+        sandboxId,
+        outcome: settled.get(sandboxId) ?? 'failed',
+      })),
+    };
+  }
 
   async function blockWithRetry(
     killEventId: string,
@@ -119,7 +175,12 @@ export function createKillActivities(deps: KillActivityDeps): KillActivities {
           if (event.egressBlockedAt !== null) {
             // Re-run for an already-blocked event: no second block, no timestamp reset.
             deps.metrics.stageResult('egress', 'skipped');
-            return { outcome: 'skipped', identities: [], attempts: 0, latencyMs: 0 } satisfies EgressStageResult;
+            return {
+              outcome: 'skipped',
+              identities: [],
+              attempts: 0,
+              latencyMs: 0,
+            } satisfies EgressStageResult;
           }
 
           const { results, attempts } = await blockWithRetry(
@@ -183,6 +244,94 @@ export function createKillActivities(deps: KillActivityDeps): KillActivities {
         killEventId,
         occurredAt: now().toISOString(),
         metadata,
+      });
+    },
+
+    async terminateSandboxes({ tenantId, killEventId, sandboxIds }) {
+      return tracer.startActiveSpan('kill.stage.sandbox', async (span) => {
+        span.setAttribute('kill.event_id', killEventId);
+        span.setAttribute('kill.sandboxes', sandboxIds.length);
+        const started = now();
+        try {
+          const event = await requireEvent(repo, tenantId, killEventId);
+          if (event.sandboxesTerminatedAt !== null) {
+            // Re-run: the stage already recorded; do not call the controller again.
+            deps.metrics.stageResult('sandbox', 'skipped');
+            return {
+              outcome: 'skipped',
+              sandboxes: [],
+              attempts: 0,
+              latencyMs: 0,
+            } satisfies SandboxStageResult;
+          }
+
+          const unique = [...new Set(sandboxIds)];
+          const { results, attempts } = await terminateWithRetry(
+            killEventId,
+            unique,
+            started.getTime(),
+          );
+          for (const r of results) {
+            log.info({ killEventId, sandboxId: r.sandboxId, outcome: r.outcome }, 'sandbox result');
+          }
+          const done = results.filter(
+            (r) => r.outcome === 'terminated' || r.outcome === 'already_gone',
+          );
+          await repo.mergeAffected(tenantId, killEventId, {
+            sandboxes: done.length,
+            sandboxResults: results.map((r) => ({ sandboxId: r.sandboxId, outcome: r.outcome })),
+          });
+          const clean = done.length === results.length;
+          const finished = now();
+          const latencyMs = Math.max(0, finished.getTime() - started.getTime());
+          // Stamped on full ack or at the deadline: a lingering sandbox is already egress-isolated (stage 1),
+          // so the kill never waits on it.
+          await repo.markStage(tenantId, killEventId, 'sandboxesTerminatedAt', finished);
+          if (!clean) {
+            await repo.transition(tenantId, killEventId, 'partially_halted', [
+              'initiated',
+              'propagating',
+            ]);
+            deps.metrics.partialHalt('sandbox');
+          }
+          deps.metrics.sandboxesTerminated(done.length);
+          const outcome = clean ? 'terminated' : 'partially_halted';
+          deps.metrics.stageLatency('sandbox', latencyMs);
+          deps.metrics.stageResult('sandbox', outcome);
+          span.setAttribute('kill.sandbox.outcome', outcome);
+          return { outcome, sandboxes: results, attempts, latencyMs } satisfies SandboxStageResult;
+        } catch (err) {
+          span.setStatus({ code: SpanStatusCode.ERROR });
+          deps.metrics.stageResult('sandbox', 'error');
+          throw err;
+        } finally {
+          span.end();
+        }
+      });
+    },
+
+    async auditSandboxesTerminated({ tenantId, killEventId, result }) {
+      if (result.outcome === 'skipped') return;
+      const count = (o: readonly KillSandboxOutcome[]): number =>
+        result.sandboxes.filter((s) => o.includes(s.outcome)).length;
+      await deps.audit.append({
+        action: 'kill.sandboxes_terminated',
+        severity: 'critical',
+        outcome: result.outcome === 'terminated' ? 'success' : 'failure',
+        tenantId,
+        killEventId,
+        occurredAt: now().toISOString(),
+        metadata: {
+          stage: 'sandbox',
+          outcome: result.outcome,
+          total: result.sandboxes.length,
+          terminated: count(['terminated']),
+          alreadyGone: count(['already_gone']),
+          terminating: count(['terminating']),
+          failed: count(['failed']),
+          attempts: result.attempts,
+          latencyMs: result.latencyMs,
+        },
       });
     },
 

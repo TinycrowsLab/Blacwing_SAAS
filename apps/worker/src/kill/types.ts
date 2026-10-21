@@ -1,5 +1,6 @@
 import type {
   KillAffected,
+  KillSandboxOutcome,
   KillApiScope,
   KillEgressIdentity,
   KillEgressOutcome,
@@ -22,6 +23,10 @@ export const EGRESS_MAX_ATTEMPTS = 5;
 export const EGRESS_DEADLINE_MS = 2_000;
 export const EGRESS_BACKOFF_BASE_MS = 50;
 
+/** Sandbox stage budget (§8.5: p99 < 10 s), overridable with `KILL_SANDBOX_DEADLINE_MS`. */
+export const SANDBOX_DEADLINE_MS = 10_000;
+export const SANDBOX_BACKOFF_BASE_MS = 100;
+
 export interface KillWorkflowInput {
   readonly killEventId: string;
   readonly tenantId: string;
@@ -41,10 +46,7 @@ export type KillStageName = 'egress' | 'sandbox' | 'keys' | 'workflows';
 
 /** The four stage timestamp columns of `kill_events`, one per stage, in §8.5 order. */
 export type KillStageColumn =
-  | 'egressBlockedAt'
-  | 'sandboxesTerminatedAt'
-  | 'keysRevokedAt'
-  | 'workflowsCancelledAt';
+  'egressBlockedAt' | 'sandboxesTerminatedAt' | 'keysRevokedAt' | 'workflowsCancelledAt';
 
 export interface EgressIdentityResult {
   /** `run:<runId>` or `principal:<tc_..role_..>`; opaque ids only, never a secret. */
@@ -57,6 +59,20 @@ export type EgressStageOutcome = 'blocked' | 'partially_halted' | 'skipped';
 export interface EgressStageResult {
   readonly outcome: EgressStageOutcome;
   readonly identities: readonly EgressIdentityResult[];
+  readonly attempts: number;
+  readonly latencyMs: number;
+}
+
+export type SandboxStageOutcome = 'terminated' | 'partially_halted' | 'skipped';
+
+export interface SandboxIdResult {
+  readonly sandboxId: string;
+  readonly outcome: KillSandboxOutcome;
+}
+
+export interface SandboxStageResult {
+  readonly outcome: SandboxStageOutcome;
+  readonly sandboxes: readonly SandboxIdResult[];
   readonly attempts: number;
   readonly latencyMs: number;
 }
@@ -79,6 +95,17 @@ export interface KillActivities {
     readonly tenantId: string;
     readonly killEventId: string;
     readonly result: EgressStageResult;
+  }): Promise<void>;
+  /** Stage 2: force-terminate the target sandboxes via the sandbox controller and record the ack. */
+  terminateSandboxes(input: {
+    readonly tenantId: string;
+    readonly killEventId: string;
+    readonly sandboxIds: readonly string[];
+  }): Promise<SandboxStageResult>;
+  auditSandboxesTerminated(input: {
+    readonly tenantId: string;
+    readonly killEventId: string;
+    readonly result: SandboxStageResult;
   }): Promise<void>;
   /** Empty target set: `status=halted`, `halt_ms=0`. */
   completeEmptyKill(input: {

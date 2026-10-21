@@ -64,7 +64,9 @@ describe('blockEgress', () => {
   it('retries with backoff and succeeds on a later attempt', async () => {
     const repo = new MemoryKillRepo();
     const ids = [runIdentity(RUN_ID)];
-    const gateway = new FakeGateway((i, call) => (call < 3 ? new Error('econnrefused') : ackAll(i)));
+    const gateway = new FakeGateway((i, call) =>
+      call < 3 ? new Error('econnrefused') : ackAll(i),
+    );
     const acts = createKillActivities(makeDeps(repo, gateway).deps);
     const result = await acts.blockEgress({ ...ref, identities: ids });
     expect(result.attempts).toBe(3);

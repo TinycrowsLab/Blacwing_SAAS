@@ -7,6 +7,8 @@ import type {
   KillEventRepo,
   KillStageAuditRecord,
   KillStageMetrics,
+  SandboxAck,
+  SandboxControlClient,
 } from './ports.js';
 import type { KillEventState, KillPropagationRequest, KillStageColumn } from './types.js';
 import type { KillAffected, KillEgressIdentity, KillEventStatus } from '@blackwing/contracts';
@@ -77,7 +79,8 @@ export class MemoryKillRepo implements KillEventRepo {
     to: KillEventStatus,
     from: readonly KillEventStatus[],
   ): Promise<boolean> {
-    if (!this.owns(tenantId, id) || !from.includes(this.event.status)) return Promise.resolve(false);
+    if (!this.owns(tenantId, id) || !from.includes(this.event.status))
+      return Promise.resolve(false);
     this.event = { ...this.event, status: to };
     return Promise.resolve(true);
   }
@@ -114,6 +117,26 @@ export class FakeGateway implements EgressControlClient {
   }
 }
 
+export class FakeSandboxController implements SandboxControlClient {
+  calls: { sandboxIds: string[] }[] = [];
+  constructor(
+    private readonly behave: (
+      ids: readonly string[],
+      call: number,
+    ) => readonly SandboxAck[] | Error = (ids) => ackSandboxes(ids),
+  ) {}
+  terminate(request: { sandboxIds: readonly string[] }): Promise<readonly SandboxAck[]> {
+    this.calls.push({ sandboxIds: [...request.sandboxIds] });
+    const out = this.behave(request.sandboxIds, this.calls.length);
+    return out instanceof Error ? Promise.reject(out) : Promise.resolve(out);
+  }
+}
+
+export const ackSandboxes = (
+  ids: readonly string[],
+  outcome: SandboxAck['outcome'] = 'terminated',
+): SandboxAck[] => ids.map((sandboxId) => ({ sandboxId, outcome }));
+
 export const ackAll = (
   identities: readonly KillEgressIdentity[],
   outcome: EgressAck['outcome'] = 'blocked',
@@ -128,6 +151,10 @@ export class RecordingMetrics implements KillStageMetrics {
   }
   stageResult(stage: string, result: string): void {
     this.results.push([stage, result]);
+  }
+  sandboxCount = 0;
+  sandboxesTerminated(count: number): void {
+    this.sandboxCount += count;
   }
   partialHalt(): void {
     this.partial += 1;
@@ -146,6 +173,7 @@ export function makeDeps(
   const deps: KillActivityDeps = {
     repo,
     egress,
+    sandboxes: new FakeSandboxController(),
     audit: {
       append: (record) => {
         audits.push(record);

@@ -48,7 +48,8 @@
         "connector.configured",
         "kill.triggered",
         "kill.forbidden",
-        "kill.egress_blocked"
+        "kill.egress_blocked",
+        "kill.sandboxes_terminated"
       ]
     },
     "severity": {

@@ -61,14 +61,37 @@ export const KILL_EGRESS_OUTCOMES = ['blocked', 'already_blocked', 'failed'] as 
 export const killEgressOutcomeSchema = z.enum(KILL_EGRESS_OUTCOMES);
 export type KillEgressOutcome = z.infer<typeof killEgressOutcomeSchema>;
 
+/** Per-sandbox result of the sandbox terminate stage (KILL-005). `terminating` = the controller's finalizer owns it. */
+export const KILL_SANDBOX_OUTCOMES = [
+  'terminated',
+  'already_gone',
+  'terminating',
+  'failed',
+] as const;
+export const killSandboxOutcomeSchema = z.enum(KILL_SANDBOX_OUTCOMES);
+export type KillSandboxOutcome = z.infer<typeof killSandboxOutcomeSchema>;
+
 /** Counts of what a kill touched (`kill_events.affected`), plus the per-identity egress outcome. */
 export const killAffectedSchema = z.strictObject({
   egress: z
-    .array(z.strictObject({ identity: z.string().min(1).max(LIMITS.subjectMax), outcome: killEgressOutcomeSchema }))
+    .array(
+      z.strictObject({
+        identity: z.string().min(1).max(LIMITS.subjectMax),
+        outcome: killEgressOutcomeSchema,
+      }),
+    )
     .optional(),
   runs: z.int().nonnegative().optional(),
   sessions: z.int().nonnegative().optional(),
   sandboxes: z.int().nonnegative().optional(),
+  sandboxResults: z
+    .array(
+      z.strictObject({
+        sandboxId: z.string().min(1).max(LIMITS.subjectMax),
+        outcome: killSandboxOutcomeSchema,
+      }),
+    )
+    .optional(),
   keys: z.int().nonnegative().optional(),
   workflows: z.int().nonnegative().optional(),
 });

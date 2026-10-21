@@ -19,7 +19,13 @@ export function createOtelKillMetrics(): KillStageMetrics {
   const partial = meter.createCounter('bw_kill_partial_halt_total', {
     description: 'Kill stages that finished partially_halted (alert on any increase)',
   });
+  const sandboxes = meter.createCounter('bw_kill_sandboxes_terminated_total', {
+    description: 'Sandboxes confirmed terminated (or already gone) by the kill sandbox stage',
+  });
   return {
+    sandboxesTerminated: (count) => {
+      sandboxes.add(count);
+    },
     stageLatency: (stage, ms) => {
       latency.record(ms, { stage });
     },

@@ -4,8 +4,8 @@ import type {
   KillEgressIdentity,
   KillEgressOutcome,
   KillEventStatus,
+  KillSandboxOutcome,
 } from '@blackwing/contracts';
-
 
 /**
  * Ports the kill activities depend on. The Postgres repository (tenant data access, #95) and the audit
@@ -57,9 +57,27 @@ export interface EgressControlClient {
   ): Promise<readonly EgressAck[]>;
 }
 
+/** One sandbox's answer from the controller. `already_gone` (evicted or never started) counts as success. */
+export interface SandboxAck {
+  readonly sandboxId: string;
+  readonly outcome: KillSandboxOutcome;
+}
+
+/**
+ * The sandbox controller terminate API, `POST /sandboxes:terminate` (SANDBOX owns the teardown). Requests
+ * immediate (SIGKILL-equivalent) termination, never a graceful drain. The controller fans out across hosts;
+ * the reply is the aggregate ack. A thrown error means it could not be reached or answered no.
+ */
+export interface SandboxControlClient {
+  terminate(
+    request: { readonly killEventId: string; readonly sandboxIds: readonly string[] },
+    signal: AbortSignal,
+  ): Promise<readonly SandboxAck[]>;
+}
+
 /** An audit record before the ledger assigns its sequence number and hash (AUDIT-002). */
 export interface KillStageAuditRecord {
-  readonly action: 'kill.egress_blocked';
+  readonly action: 'kill.egress_blocked' | 'kill.sandboxes_terminated';
   readonly severity: 'critical';
   readonly outcome: 'success' | 'failure';
   readonly tenantId: string;
@@ -79,4 +97,6 @@ export interface KillStageMetrics {
   stageResult(stage: KillStageName, result: string): void;
   /** Alert counter: a stage finished `partially_halted`. */
   partialHalt(stage: KillStageName): void;
+  /** `bw_kill_sandboxes_terminated_total`. */
+  sandboxesTerminated(count: number): void;
 }

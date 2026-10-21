@@ -9,6 +9,7 @@ import {
 import { runKillPropagation } from '../kill/propagate.js';
 import {
   EGRESS_DEADLINE_MS,
+  SANDBOX_DEADLINE_MS,
   KILL_PROGRESS_QUERY,
   KILL_TARGETS_SIGNAL,
   type KillActivities,
@@ -30,8 +31,31 @@ const acts = proxyActivities<KillActivities>({
   retry: { initialInterval: '100 milliseconds', backoffCoefficient: 2, maximumAttempts: 4 },
 });
 
-/** KILL-005 and KILL-006 append their stages here, in §8.5 order. */
-const LATER_STAGES: readonly KillLaterStage[] = [];
+// Stage 2 may use the full (configurable) sandbox deadline; the 60 s cap bounds a mis-set env value.
+const sandboxActs = proxyActivities<KillActivities>({
+  startToCloseTimeout: `${String(SANDBOX_DEADLINE_MS + ACTIVITY_SLACK_MS * 2)} milliseconds`,
+  retry: { initialInterval: '100 milliseconds', backoffCoefficient: 2, maximumAttempts: 2 },
+});
+
+/** KILL-005: force-terminate the target sandboxes, then audit. An audit failure never blocks the kill. */
+const sandboxStage: KillLaterStage = {
+  name: 'sandbox',
+  async run(request) {
+    const ref = { tenantId: request.tenantId, killEventId: request.killEventId };
+    const result = await sandboxActs.terminateSandboxes({
+      ...ref,
+      sandboxIds: request.targets.sandboxIds,
+    });
+    try {
+      await acts.auditSandboxesTerminated({ ...ref, result });
+    } catch {
+      // Retried by Temporal; if it still fails the kill goes on.
+    }
+  },
+};
+
+/** KILL-006 appends its stages after this one, in §8.5 order. */
+const LATER_STAGES: readonly KillLaterStage[] = [sandboxStage];
 
 /**
  * KILL-004: executes one kill in the mandated order (egress block first). One workflow per kill event

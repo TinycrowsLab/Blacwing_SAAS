@@ -276,6 +276,15 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'kill',
     description: 'Kill stage 1: the egress gateway was told to block the identities of a kill.',
   },
+  // kill propagation (KILL-005)
+  {
+    action: 'kill.sandboxes_terminated',
+    defaultSeverity: 'critical',
+    isAlwaysAudited: true,
+    actionClass: 'kill',
+    description:
+      'Kill stage 2: the sandbox controller was told to force-terminate the sandboxes of a kill.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

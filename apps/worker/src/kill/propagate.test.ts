@@ -20,6 +20,9 @@ function recorder(overrides: Partial<KillActivities> = {}) {
       calls.push('audit');
       return Promise.resolve();
     },
+    terminateSandboxes: () =>
+      Promise.resolve({ outcome: 'terminated', sandboxes: [], attempts: 1, latencyMs: 1 }),
+    auditSandboxesTerminated: () => Promise.resolve(),
     completeEmptyKill: () => {
       calls.push('empty');
       return Promise.resolve();
