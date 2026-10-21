@@ -333,6 +333,152 @@ describe('lint-fail fixtures (scripts/fixtures/eslint)', () => {
   });
 });
 
+describe('workflow determinism (apps/worker/src/workflows, WORKFLOW-003)', () => {
+  // The snippets are linted as the content of real files (the project service needs the path to
+  // exist in apps/worker's tsconfig); nothing is written to disk.
+  const WORKFLOW = path.join(REPO_ROOT, 'apps/worker/src/workflows/kill-propagation.ts');
+  const ACTIVITY = path.join(REPO_ROOT, 'apps/worker/src/kill/activities.ts');
+
+  /**
+   * Lints a snippet as if it lived at `filePath`.
+   * @param {string} filePath
+   * @param {string} code
+   */
+  async function lintAt(filePath, code) {
+    const [result] = await eslint.lintText(code, { filePath });
+    assert.ok(result, `no lint result for ${filePath}`);
+    return result;
+  }
+
+  /**
+   * Snippets that read the wall clock (Date.now(), new Date() with no argument, Date()).
+   * They fail in workflows and pass in activities.
+   */
+  const CLOCK_SNIPPETS = {
+    'Date.now()': 'export const at = Date.now();\n',
+    'new Date()': 'export const at = new Date();\n',
+    'Date()': 'export const at = Date();\n',
+  };
+
+  for (const [name, code] of Object.entries(CLOCK_SNIPPETS)) {
+    it(`fails lint for ${name} in a workflow file`, async () => {
+      const ids = ruleIds(await lintAt(WORKFLOW, code));
+      assert.ok(ids.includes('no-restricted-syntax'), `got ${ids.join(', ')}`);
+    });
+
+    it(`passes lint for ${name} in an activity file`, async () => {
+      const ids = ruleIds(await lintAt(ACTIVITY, code));
+      assert.ok(!ids.includes('no-restricted-syntax'), `got ${ids.join(', ')}`);
+    });
+  }
+
+  it('allows deterministic time and randomness through the SDK', async () => {
+    const code = [
+      "import { sleep, uuid4, workflowInfo } from '@temporalio/workflow';",
+      '',
+      'export async function step(): Promise<string> {',
+      '  await sleep(1);',
+      '  return `${String(workflowInfo().startTime.getTime())}-${uuid4()}`;',
+      '}',
+      '',
+      'export const epoch = new Date(0);',
+      '',
+    ].join('\n');
+    assert.deepEqual(ruleIds(await lintAt(WORKFLOW, code)), []);
+  });
+
+  const BANNED_SNIPPETS = [
+    {
+      name: 'Math.random()',
+      rule: 'no-restricted-properties',
+      code: 'export const roll = Math.random();\n',
+    },
+    {
+      name: 'setTimeout',
+      rule: 'no-restricted-globals',
+      code: 'export const timer = setTimeout(() => undefined, 1);\n',
+    },
+    {
+      name: 'setInterval',
+      rule: 'no-restricted-globals',
+      code: 'export const timer = setInterval(() => undefined, 1);\n',
+    },
+    {
+      name: 'process.env',
+      rule: 'no-restricted-globals',
+      code: 'export const port = process.env.PORT;\n',
+    },
+    {
+      name: 'the global crypto object',
+      rule: 'no-restricted-globals',
+      code: 'export const id = crypto.randomUUID();\n',
+    },
+    {
+      name: 'fetch',
+      rule: 'no-restricted-globals',
+      code: "export const response = fetch('https://example.invalid');\n",
+    },
+    {
+      name: 'a node:crypto import',
+      rule: 'no-restricted-imports',
+      code: "import { randomUUID } from 'node:crypto';\nexport const id = randomUUID();\n",
+    },
+    {
+      name: 'a bare crypto import',
+      rule: 'no-restricted-imports',
+      code: "import { randomUUID } from 'crypto';\nexport const id = randomUUID();\n",
+    },
+    {
+      name: 'a node:fs import',
+      rule: 'no-restricted-imports',
+      code: "import { readFileSync } from 'node:fs';\nexport const text = readFileSync('x', 'utf8');\n",
+    },
+    {
+      name: 'an ioredis value import',
+      rule: 'no-restricted-imports',
+      code: "import { Redis } from 'ioredis';\nexport const client = Redis;\n",
+    },
+    {
+      name: 'a pg value import',
+      rule: 'no-restricted-imports',
+      code: "import { Pool } from 'pg';\nexport const pool = Pool;\n",
+    },
+    {
+      name: 'a @temporalio/client value import',
+      rule: 'no-restricted-imports',
+      code: "import { Client } from '@temporalio/client';\nexport const client = Client;\n",
+    },
+  ];
+
+  for (const { name, rule, code } of BANNED_SNIPPETS) {
+    it(`fails lint for ${name} in a workflow file`, async () => {
+      assert.ok(ruleIds(await lintAt(WORKFLOW, code)).includes(rule), `${rule} not reported`);
+    });
+  }
+
+  it('passes lint for the same banned APIs in an activity file', async () => {
+    for (const { name, code } of BANNED_SNIPPETS) {
+      assert.deepEqual(
+        ruleIds(await lintAt(ACTIVITY, code)).filter((id) => id.startsWith('no-restricted')),
+        [],
+        `${name} must stay allowed in activities`,
+      );
+    }
+  });
+
+  it('allows type-only imports of banned modules (import type is the escape hatch)', async () => {
+    const code = [
+      "import type { Redis } from 'ioredis';",
+      "import type { Client } from '@temporalio/client';",
+      "import type { Stats } from 'node:fs';",
+      'export type Handles = { redis: Redis; client: Client; stats: Stats };',
+      '',
+    ].join('\n');
+    const ids = ruleIds(await lintAt(WORKFLOW, code));
+    assert.ok(!ids.includes('no-restricted-imports'), `got ${ids.join(', ')}`);
+  });
+});
+
 describe('Prettier', () => {
   const SAMPLE = `import {b,a} from "./x.js"
 export const longName = { first: "alpha", second: "beta", third: "gamma", fourth: "delta", fifth: 5 }

@@ -13,6 +13,8 @@
 // Each workspace member runs `eslint . --max-warnings=0` from its own directory (via `pnpm lint` /
 // Turborepo); the root task `lint:root` covers scripts/ and the root config files.
 
+import { builtinModules } from 'node:module';
+
 import eslint from '@eslint/js';
 import vitest from '@vitest/eslint-plugin';
 import { defineConfig } from 'eslint/config';
@@ -288,6 +290,101 @@ export default defineConfig(
               name: 'zod',
               message:
                 'Controllers never inline Zod schemas: import them from @blackwing/contracts and use createZodDto (apps/api/src/**/dto).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
+    name: 'blackwing/workflow-determinism',
+    files: ['apps/worker/src/workflows/**/*.ts'],
+    rules: {
+      // Temporal replays workflow code, so it must make the same decisions on every replay
+      // (docs/architecture/workflow-determinism.md). Type-only imports stay allowed everywhere.
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'process',
+          message: 'Workflows are deterministic: read configuration in activities, not here.',
+        },
+        {
+          name: 'crypto',
+          message: 'Use uuid4() from @temporalio/workflow, never the Node or Web crypto API.',
+        },
+        {
+          name: 'fetch',
+          message: 'Network calls belong in activities; workflows only schedule them.',
+        },
+        {
+          name: 'setTimeout',
+          message: 'Use sleep() from @temporalio/workflow; timers outside it do not replay.',
+        },
+        {
+          name: 'setInterval',
+          message: 'Use sleep() from @temporalio/workflow; timers outside it do not replay.',
+        },
+        {
+          name: 'setImmediate',
+          message: 'Use sleep() from @temporalio/workflow; timers outside it do not replay.',
+        },
+      ],
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'Math',
+          property: 'random',
+          message: 'Use uuid4() from @temporalio/workflow for randomness.',
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'TSEnumDeclaration[const=true]',
+          message: 'const enums break isolatedModules.',
+        },
+        {
+          selector: 'NewExpression[callee.name="Date"][arguments.length=0]',
+          message:
+            'Reads the wall clock. Use workflowInfo().startTime or an activity. new Date(value) is fine.',
+        },
+        {
+          selector: 'CallExpression[callee.name="Date"]',
+          message: 'Date() reads the wall clock. Use workflowInfo().startTime or an activity.',
+        },
+        {
+          selector: 'CallExpression[callee.object.name="Date"][callee.property.name="now"]',
+          message: 'Date.now() reads the wall clock. Use workflowInfo().startTime or an activity.',
+        },
+      ],
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@temporalio/client',
+              allowTypeImports: true,
+              message:
+                'Workflows never start or signal workflows; that is the API or worker code. Use activities.',
+            },
+            {
+              name: 'ioredis',
+              allowTypeImports: true,
+              message: 'Redis access is I/O: move it into an activity.',
+            },
+            {
+              name: 'pg',
+              allowTypeImports: true,
+              message: 'Database access is I/O: move it into an activity behind withTenant.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['node:*', ...builtinModules, ...builtinModules.map((m) => `${m}/*`)],
+              allowTypeImports: true,
+              message:
+                'Node built-ins do IO or read the environment. Keep them in activities; see docs/architecture/workflow-determinism.md.',
             },
           ],
         },

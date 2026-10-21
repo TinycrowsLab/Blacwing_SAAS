@@ -267,6 +267,7 @@ describe('CLAUDE.md failure modes', () => {
       'docs/runbooks/renovate.md': '# Renovate\n',
       'design/README.md': '# Design\n',
       'docs/architecture/dependency-graph.md': '# Allowed package dependency graph\n',
+      'docs/architecture/workflow-determinism.md': '# Workflow determinism\n',
     };
 
     const pending = makeRoot({ ...base, [CLAUDE_MD]: text });

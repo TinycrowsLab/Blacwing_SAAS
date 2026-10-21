@@ -29,6 +29,7 @@ runtime. See [§1](docs/architecture/CONTEXT_PACK.md#1-product-in-one-paragraph)
 | API conventions | [pack §9](docs/architecture/CONTEXT_PACK.md#9-api-conventions) |
 | Workflow versioning, `patched()` and Build IDs | [`docs/architecture/workflow-versioning.md`](docs/architecture/workflow-versioning.md) (WORKFLOW-008, #28) |
 | Architecture decision records (index) | [`docs/adr/README.md`](docs/adr/README.md) (FOUND-015, #17) |
+| Temporal workflow determinism rules (lint-enforced) | [`docs/architecture/workflow-determinism.md`](docs/architecture/workflow-determinism.md) (WORKFLOW-003, #24) |
 | Allowed package dependency graph | [`docs/architecture/dependency-graph.md`](docs/architecture/dependency-graph.md) (FOUND-005, #7) |
 | Epics and features | [`EPICS.md`](docs/architecture/EPICS.md), [`FEATURE_LIST.md`](docs/architecture/FEATURE_LIST.md) |
 | Vulnerability reporting | [`SECURITY.md`](SECURITY.md) |
