@@ -56,8 +56,16 @@ export const SOC_CONTACT_STATUSES = ['active', 'disabled'] as const;
 export const socContactStatusSchema = z.enum(SOC_CONTACT_STATUSES);
 export type SocContactStatus = z.infer<typeof socContactStatusSchema>;
 
-/** Counts of what a kill touched (`kill_events.affected`). */
+/** Per-identity result of the egress block stage (KILL-004), keyed `run:<id>` or `principal:<tc_..role_..>`. */
+export const KILL_EGRESS_OUTCOMES = ['blocked', 'already_blocked', 'failed'] as const;
+export const killEgressOutcomeSchema = z.enum(KILL_EGRESS_OUTCOMES);
+export type KillEgressOutcome = z.infer<typeof killEgressOutcomeSchema>;
+
+/** Counts of what a kill touched (`kill_events.affected`), plus the per-identity egress outcome. */
 export const killAffectedSchema = z.strictObject({
+  egress: z
+    .array(z.strictObject({ identity: z.string().min(1).max(LIMITS.subjectMax), outcome: killEgressOutcomeSchema }))
+    .optional(),
   runs: z.int().nonnegative().optional(),
   sessions: z.int().nonnegative().optional(),
   sandboxes: z.int().nonnegative().optional(),

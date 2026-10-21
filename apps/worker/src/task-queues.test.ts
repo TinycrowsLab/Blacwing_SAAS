@@ -25,8 +25,9 @@ describe('TASK_QUEUES', () => {
       RETENTION: 'retention',
       SCHEDULER: 'scheduler',
       OUTBOX_RELAY: 'outbox-relay',
+      KILL: 'kill',
     });
-    expect(ALL_TASK_QUEUES).toHaveLength(9);
+    expect(ALL_TASK_QUEUES).toHaveLength(10);
   });
 
   it('is immutable', () => {

@@ -11,6 +11,8 @@ export const TASK_QUEUES = Object.freeze({
   RETENTION: 'retention',
   SCHEDULER: 'scheduler',
   OUTBOX_RELAY: 'outbox-relay',
+  /** Kill propagation coordinator (KILL-004). Its own queue so a busy queue can never delay a kill. */
+  KILL: 'kill',
 } as const);
 
 /** A task-queue name, e.g. `'run-orchestration'`. */

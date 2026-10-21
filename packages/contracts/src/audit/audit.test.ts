@@ -58,6 +58,7 @@ const RELEASED_ACTIONS = [
   'connector.configured',
   'kill.triggered',
   'kill.forbidden',
+  'kill.egress_blocked',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

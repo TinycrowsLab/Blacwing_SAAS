@@ -2,6 +2,8 @@
 // import only `@temporalio/workflow` and pure modules here, never Node built-ins or the client.
 // ORCH and SCHED add their workflows by re-exporting them from this file.
 
+export { KillPropagationWorkflow } from './kill-propagation.js';
+
 /** Trivial workflow proving the worker end to end. It is not a product workflow. */
 export function noopWorkflow(): Promise<void> {
   return Promise.resolve();

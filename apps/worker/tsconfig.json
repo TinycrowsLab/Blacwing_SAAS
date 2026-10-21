@@ -9,6 +9,7 @@
   "references": [
     { "path": "../../packages/errors" },
     { "path": "../../packages/config" },
+    { "path": "../../packages/contracts" },
     { "path": "../../packages/logger" },
     { "path": "../../packages/workflow-shared" }
   ]

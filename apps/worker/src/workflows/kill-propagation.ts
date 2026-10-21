@@ -1,0 +1,59 @@
+import {
+  condition,
+  defineQuery,
+  defineSignal,
+  proxyActivities,
+  setHandler,
+} from '@temporalio/workflow';
+
+import { runKillPropagation } from '../kill/propagate.js';
+import {
+  EGRESS_DEADLINE_MS,
+  KILL_PROGRESS_QUERY,
+  KILL_TARGETS_SIGNAL,
+  type KillActivities,
+  type KillLaterStage,
+  type KillProgress,
+  type KillPropagationRequest,
+  type KillWorkflowInput,
+} from '../kill/types.js';
+
+const ACTIVITY_SLACK_MS = 3_000;
+
+const targetsSignal = defineSignal<[KillPropagationRequest]>(KILL_TARGETS_SIGNAL);
+const progressQuery = defineQuery<KillProgress>(KILL_PROGRESS_QUERY);
+
+// The egress stage owns its 2 s deadline and retries inside the activity; Temporal's retry only covers
+// a worker crash mid-stage, and every activity is idempotent (compare-and-set timestamps).
+const acts = proxyActivities<KillActivities>({
+  startToCloseTimeout: `${String(EGRESS_DEADLINE_MS + ACTIVITY_SLACK_MS)} milliseconds`,
+  retry: { initialInterval: '100 milliseconds', backoffCoefficient: 2, maximumAttempts: 4 },
+});
+
+/** KILL-005 and KILL-006 append their stages here, in §8.5 order. */
+const LATER_STAGES: readonly KillLaterStage[] = [];
+
+/**
+ * KILL-004: executes one kill in the mandated order (egress block first). One workflow per kill event
+ * (the workflow id derives from the event id). Re-signalling or re-running it for the same event is
+ * safe: every activity is a compare-and-set, so nothing is blocked twice and no timestamp is reset.
+ * `killProgress` is the reconciler query.
+ */
+export async function KillPropagationWorkflow(input: KillWorkflowInput): Promise<void> {
+  let request: KillPropagationRequest | undefined;
+  const progress: { current: KillProgress } = {
+    current: { received: false, stage: 'waiting', egress: null, completed: false },
+  };
+  setHandler(targetsSignal, (signalled) => {
+    // Only the first signal for this event counts; a retried enqueue is a no-op.
+    if (request === undefined && signalled.killEventId === input.killEventId) {
+      request = signalled;
+      progress.current = { ...progress.current, received: true };
+    }
+  });
+  setHandler(progressQuery, () => progress.current);
+
+  await condition(() => request !== undefined);
+  if (request === undefined) return;
+  await runKillPropagation(request, acts, LATER_STAGES, progress);
+}

@@ -47,7 +47,8 @@
         "config.changed",
         "connector.configured",
         "kill.triggered",
-        "kill.forbidden"
+        "kill.forbidden",
+        "kill.egress_blocked"
       ]
     },
     "severity": {

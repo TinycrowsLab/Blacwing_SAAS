@@ -268,6 +268,14 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'kill',
     description: 'A kill request was refused by the RBAC or Cedar check (outcome denied).',
   },
+  // kill propagation (KILL-004): appended, so the released order above is untouched
+  {
+    action: 'kill.egress_blocked',
+    defaultSeverity: 'critical',
+    isAlwaysAudited: true,
+    actionClass: 'kill',
+    description: 'Kill stage 1: the egress gateway was told to block the identities of a kill.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */
