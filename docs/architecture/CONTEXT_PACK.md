@@ -367,7 +367,7 @@ Rules:
    - one action stops every agent in scope (run/asset/tenant/global);
    - the egress gateway blocks first (target: < 2 s p99), then sandboxes are terminated (< 10 s p99), virtual model keys are revoked and Temporal workflows are cancelled;
    - halt time is measured, shown and audited.
-6. **Tenant isolation everywhere:** DB RLS, Neo4j tenantId guard, S3 prefixes + per-tenant encryption context, Valkey key prefixes, per-run sandboxes, per-tenant memory (no cross-tenant retrieval). Cross-tenant access tests are mandatory for every data-access module.
+6. **Tenant isolation everywhere:** DB RLS, Neo4j tenantId guard, S3 prefixes + per-tenant encryption context, Valkey key prefixes, per-run sandboxes, per-tenant memory (no cross-tenant retrieval). Cross-tenant access tests are mandatory for every data-access module. Copy `packages/db/src/examples/widget.cross-tenant.int.test.ts` (the template).
 7. **Secrets never reach the model, the logs or the sandbox in plaintext.**
    - Credentials are used by reference: the session manager and egress gateway inject them.
    - Known secret values are redacted from tool output before it reaches the model (PostToolUse) and in the model gateway.

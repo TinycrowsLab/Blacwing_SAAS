@@ -96,7 +96,8 @@ In short:
 - **Reuse before you add.** Use the existing packages and the stack in §5. Do not add alternatives. Respect the
   dependency graph: apps never import other apps, and deep imports (`@blackwing/x/src/...`) are not allowed.
 - **Data access** goes through `withTenant` (RLS, `SET LOCAL app.tenant_id`). A missing tenant context fails closed.
-  Every data-access module needs cross-tenant tests.
+  Every data-access module needs cross-tenant tests: build repositories on `BaseRepository` and copy the template
+  `packages/db/src/examples/widget.cross-tenant.int.test.ts` (pattern in `packages/db/README.md`).
 - **GUI follows `design/`.** Any change to `apps/web`, `packages/ui`, the SOC or emergency pages, or report and
   e-mail templates must match [`design/`](design/README.md). Use its tokens via `packages/ui` (never hard-coded hex),
   its components and states, and its screen layouts. Where the design is silent, compose from its system.

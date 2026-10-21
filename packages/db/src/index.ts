@@ -83,3 +83,25 @@ export {
   TENANT_COLUMN,
   toTenantIsolationError,
 } from './rls.js';
+export {
+  type AuditEmitter,
+  BaseRepository,
+  ConcurrencyError,
+  CursorInvalidError,
+  decodeCursor,
+  DEFAULT_PAGE_LIMIT,
+  encodeCursor,
+  ForeignKeyError,
+  type CursorPosition,
+  type ListOptions,
+  MAX_PAGE_LIMIT,
+  type RepositoryAuditEvent,
+  type RepositoryConfig,
+  type RepositoryOp,
+  type RepositoryPage,
+  type RepositoryTable,
+  type RepositoryTracer,
+  type RowOf,
+  type TenantContextSource,
+} from './repository.js';
+export { type TenantTx, withTenant } from './with-tenant.js';
