@@ -24,6 +24,8 @@ import unicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+import { blackwingPlugin } from './scripts/eslint-rules/index.mjs';
+
 /** Files that hold tests (Vitest in members, node:test under scripts/). */
 export const TEST_FILES = ['**/*.test.{ts,tsx,mts,mjs}', '**/*.spec.{ts,tsx,mts,mjs}'];
 
@@ -64,6 +66,8 @@ export const IGNORES = [
   '**/*.generated.*',
   '**/*.gen.*',
   'scripts/fixtures/eslint/**',
+  // Fixtures of the blackwing/no-raw-tenant-db rule tests: deliberately raw tenant queries.
+  'scripts/fixtures/tenant-db/**',
   // Compile-fail fixtures for the strict tsconfig flags (FOUND-003): deliberately wrong code.
   'packages/testing/typefixtures/**',
   // Design-tool exports (see design/README.md), not hand-written code.
@@ -239,6 +243,16 @@ export default defineConfig(
       // Expected values in assertions are literal by nature.
       '@typescript-eslint/no-magic-numbers': 'off',
     },
+  },
+
+  {
+    // TENANT-002: tenant tables are reached only through withTenant's handle (see
+    // docs/architecture/tenant-data-access.md). Migrations, the owner pool and withSystem opt out
+    // per query with `// blackwing:allow-raw-tenant-db <reason>`, never by turning the rule off.
+    name: 'blackwing/tenant-data-access',
+    files: ['**/*.{ts,tsx,mts}'],
+    plugins: { blackwing: blackwingPlugin },
+    rules: { 'blackwing/no-raw-tenant-db': 'error' },
   },
 
   {

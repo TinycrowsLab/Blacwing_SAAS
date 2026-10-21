@@ -30,3 +30,7 @@ packages/audit/**         @TinycrowsLab/blackwing-security-owners
 /SECURITY.md              @TinycrowsLab/blackwing-security-owners
 /.gitleaks.toml           @TinycrowsLab/blackwing-security-owners
 /.trivyignore             @TinycrowsLab/blackwing-security-owners
+
+# Tenant data access: new files here must use withTenant and TenantScopedDb (TENANT-002, §8.6;
+# docs/architecture/tenant-data-access.md).
+packages/db/src/**        @TinycrowsLab/blackwing-security-owners

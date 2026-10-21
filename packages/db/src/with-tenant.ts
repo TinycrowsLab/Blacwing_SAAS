@@ -182,7 +182,7 @@ function loggerOf(options: TxOptions): TxLogger {
 }
 
 /** A short, non-reversible tenant label for logs (§8.7). */
-function hashTenant(tenantId: string): string {
+export function hashTenant(tenantId: string): string {
   return createHash('sha256').update(tenantId).digest('hex').slice(0, TENANT_HASH_LENGTH);
 }
 

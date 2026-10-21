@@ -188,6 +188,7 @@ describe('sample table from all mixins', () => {
       retention_until: null,
     });
     const orm = drizzle({ client: db.ownerPool });
+    // blackwing:allow-raw-tenant-db owner-pool inspection in a test, bypassing RLS on purpose
     const [row] = await orm.insert(widgets).values({ tenantId: tenantA, name: 'orm' }).returning();
     expect(isUuidV7(row?.id)).toBe(true);
   });
@@ -236,6 +237,7 @@ describe('state_version', () => {
       { name: 'lost' },
     );
     expect(stale).toBeUndefined();
+    // blackwing:allow-raw-tenant-db owner-pool inspection in a test, bypassing RLS on purpose
     const [row] = await orm.select().from(widgets).where(eq(widgets.id, id));
     expect(row).toMatchObject({ name: 'v2', stateVersion: 2 });
   });
@@ -281,6 +283,7 @@ describe('soft delete', () => {
     expect(viaView).not.toContain(gone);
     expect(viaView).not.toContain(other);
 
+    // blackwing:allow-raw-tenant-db test-harness db.withTenant hands a plain pg client, already tenant-bound
     const viaFilter = await db.withTenant(tenantA, (tx) =>
       drizzle({ client: tx }).select({ id: widgets.id }).from(widgets).where(isActive(widgets)),
     );
@@ -300,10 +303,12 @@ describe('retention and public ids', () => {
   it('stores retention_until and legal_hold', async () => {
     const id = await insertWidget(db.ownerPool, tenantA);
     const orm = drizzle({ client: db.ownerPool });
+    // blackwing:allow-raw-tenant-db owner-pool inspection in a test, bypassing RLS on purpose
     await orm
       .update(widgets)
       .set({ retentionUntil: new Date('2030-01-01T00:00:00.000Z'), legalHold: true })
       .where(eq(widgets.id, id));
+    // blackwing:allow-raw-tenant-db owner-pool inspection in a test, bypassing RLS on purpose
     const [row] = await orm.select().from(widgets).where(eq(widgets.id, id));
     expect(row?.retentionUntil?.toISOString()).toBe('2030-01-01T00:00:00.000Z');
     expect(row?.legalHold).toBe(true);

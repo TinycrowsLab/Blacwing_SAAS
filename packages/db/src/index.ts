@@ -89,6 +89,11 @@ export {
   withTenant,
   type WithSystemOptions,
 } from './with-tenant.js';
+export {
+  assertTenantScope,
+  type AssertTenantScopeOptions,
+  type TenantScopedDb,
+} from './tenant-scope.js';
 export * from './schema/index.js';
 export * from './columns.js';
 export * from './vector.js';

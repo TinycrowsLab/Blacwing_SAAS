@@ -23,6 +23,13 @@ Drizzle schema, SQL migrations and tenant-scoped (RLS) data access. See
   maintenance. It sets no tenant, so RLS keeps tenant tables closed to it.
 - Queries on another client or pool inside `fn` run outside the transaction and are unsupported.
 
+## The tenant choke point (TENANT-002)
+
+Tenant tables are reached only through `withTenant`. Type repository handles as `TenantScopedDb`,
+let the `blackwing/no-raw-tenant-db` lint rule catch raw `db` or pool queries, and call
+`assertTenantScope` for a runtime check. See `docs/architecture/tenant-data-access.md` and the
+CODEOWNERS entry for `packages/db/src/**`.
+
 ## The repository pattern (DB-007)
 
 Every domain module reads and writes through a repository built on `BaseRepository`
