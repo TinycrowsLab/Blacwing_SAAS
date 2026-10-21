@@ -49,6 +49,23 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [tenantId],
     );
   },
+  secrets: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO secrets (id, tenant_id, name, envelope) VALUES ($1, $2, 'iso-secret', '{"ct":"x"}')`,
+      [newId(), tenantId],
+    );
+  },
+  secret_versions: async (tx, tenantId) => {
+    const secretId = newId();
+    await tx.query(
+      `INSERT INTO secrets (id, tenant_id, name, envelope) VALUES ($1, $2, 'iso-versioned', '{"ct":"x"}')`,
+      [secretId, tenantId],
+    );
+    await tx.query(
+      `INSERT INTO secret_versions (tenant_id, secret_id, version, envelope) VALUES ($1, $2, 1, '{"ct":"x"}')`,
+      [tenantId, secretId],
+    );
+  },
   soc_contacts: async (tx, tenantId) => {
     await tx.query(
       `INSERT INTO soc_contacts (id, tenant_id, name, email) VALUES ($1, $2, 'SOC desk', 'soc@example.test')`,

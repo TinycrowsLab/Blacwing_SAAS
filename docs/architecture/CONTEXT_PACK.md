@@ -347,6 +347,7 @@ CLAUDE.md  README.md  SECURITY.md  LICENSE (proprietary notice)
 - **oob_correlations**: `token`, `run_id`, `test_case_id`, `expires_at`; **oob_interactions**.
 - **audit_events**: append-only hash chain per tenant.
 - **outbox**: transactional outbox, written in the same transaction as the domain change by `withOutbox` (`packages/db`). `type(audit.event|notify.send|temporal.signal)`, `payload` (jsonb ≤ 64 KiB, references never secrets), `dedupe_key` (unique per tenant), `status(pending|dispatched|failed)`, `attempts`, `available_at` (DB clock), `last_error`. Delivered at least once by the relay (WORKFLOW-012).
+- **secrets**, **secret_versions**: encrypted secret records; every other table references one by the opaque `secret_ref` URI `bw-secret://{tenantId}/{secretId}[?v={version}]` (`parseSecretRef`/`formatSecretRef` in `@blackwing/contracts`), never plaintext. `secrets`: `name` (NFC, unique per tenant), `type`, `purpose`, `backend(openbao|aws_kms|vault|aws_secrets_manager|azure_kv)`, `envelope` (SECRETS-002) or `external_locator` (required for external backends), `current_version`, `status(active|rotating|disabled|shredded)`. `secret_versions`: rotation history. Consumers resolve refs via the Secrets Service (SECRETS-006), never read these tables.
 - **connectors**, **ticket_links**, **notification_channels**, **schedules**, **blackout_windows**, **retention_policies**, **cost_ledger**, **price_tables** (versioned), **kill_events** (halt timings), **eval_runs**.
 
 Rules:

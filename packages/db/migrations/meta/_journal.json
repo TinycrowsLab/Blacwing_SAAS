@@ -43,6 +43,13 @@
       "when": 1792571520508,
       "tag": "20261021083200_pgvector_pgcrypto",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792573534598,
+      "tag": "20261021090534_secrets",
+      "breakpoints": true
     }
   ]
 }

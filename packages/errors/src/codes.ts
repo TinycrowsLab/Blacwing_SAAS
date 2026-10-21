@@ -92,6 +92,8 @@ const DEFINITIONS = {
     title: 'Draft prompt forbidden in production',
     retryable: false,
   },
+  // `secret_ref` URI grammar (SECRETS-003, §8.7): a malformed reference is invalid input, rejected at parse time.
+  INVALID_SECRET_REF: { status: 422, title: 'Invalid secret reference', retryable: false },
   CONFIG_INVALID: { status: 500, title: 'Invalid configuration', retryable: false },
   // Temporal connection (WORKFLOW-001). Misconfiguration is a server fault (500, never retried);
   // an unreachable server is a dependency outage (503, retryable).
