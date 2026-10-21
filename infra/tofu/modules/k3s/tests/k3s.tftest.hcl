@@ -122,6 +122,19 @@ run "every_pool_is_labelled_and_pins_the_same_k3s_version" {
   }
 }
 
+run "only_sandbox_nodes_are_tainted" {
+  command = apply
+
+  assert {
+    condition = (
+      strcontains(base64decode(aws_launch_template.agent["sandbox"].user_data), "blackwing.io/sandbox=true:NoSchedule") &&
+      !strcontains(base64decode(aws_launch_template.agent["egress"].user_data), "blackwing.io/sandbox") &&
+      !strcontains(base64decode(aws_launch_template.control_plane.user_data), "blackwing.io/sandbox")
+    )
+    error_message = "Sandbox nodes carry the blackwing.io/sandbox=true:NoSchedule taint; no other pool does."
+  }
+}
+
 run "user_data_carries_no_secret" {
   command = apply
 

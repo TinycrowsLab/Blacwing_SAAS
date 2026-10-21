@@ -250,7 +250,22 @@ install_k3s() {
     die k3s_install_failed "could not install the k3s air-gap images"
 }
 
-# gVisor prerequisites on sandbox nodes; the RuntimeClass and containerd wiring are INFRA-005.
+# Register the runsc handler in k3s's containerd (INFRA-005). The template is rewritten on every
+# boot, so a reboot or replaced node always re-applies it; it extends k3s's own base config.
+write_containerd_runsc() {
+  local dir="$ROOT/var/lib/rancher/k3s/agent/etc/containerd"
+  mkdir -p "$dir"
+  cat >"$dir/config-v3.toml.tmpl.tmp" <<'TOML'
+{{ template "base" . }}
+
+# Blackwing (INFRA-005): gVisor as the `runsc` handler behind RuntimeClass gvisor.
+[plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runsc]
+  runtime_type = "io.containerd.runsc.v1"
+TOML
+  mv -f "$dir/config-v3.toml.tmpl.tmp" "$dir/config-v3.toml.tmpl"
+}
+
+# gVisor on sandbox nodes: binaries (pinned, sha512-verified) plus the containerd handler.
 install_runsc() {
   [[ "${BW_INSTALL_RUNSC:-false}" == "true" ]] || return 0
   local bundle="$ROOT/var/lib/blackwing/gvisor-$BW_RUNSC_VERSION.tar.bz2" staged="$WORK/gvisor" bin
@@ -262,7 +277,8 @@ install_runsc() {
     [[ -f "$staged/$bin" ]] || die runsc_install_failed "gVisor bundle has no $bin"
     install -m 0755 "$staged/$bin" "$BIN_DIR/$bin"
   done
-  log info runsc_installed "gVisor $BW_RUNSC_VERSION installed (RuntimeClass: INFRA-005)"
+  write_containerd_runsc
+  log info runsc_installed "gVisor $BW_RUNSC_VERSION installed, containerd runsc handler registered"
 }
 
 write_secret_file() {

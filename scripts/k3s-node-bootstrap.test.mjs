@@ -349,6 +349,24 @@ describe('k3s node bootstrap: agents', () => {
     assert.ok(!existsSync(path.join(egress.root, 'usr/local/bin/runsc')));
   });
 
+  it('registers the runsc containerd handler on sandbox nodes only, and re-applies it on every boot', () => {
+    const tmpl = 'var/lib/rancher/k3s/agent/etc/containerd/config-v3.toml.tmpl';
+    const sandbox = makeNode({ role: 'agent', pool: 'sandbox' });
+    sandbox.seedSsm({ [SSM.agent]: 'e'.repeat(64), [SSM.version]: VERSION });
+    assert.equal(sandbox.run().status, 0);
+    const text = readFileSync(path.join(sandbox.root, tmpl), 'utf8');
+    assert.match(text, /\{\{ template "base" \. \}\}/);
+    assert.match(text, /runtimes\.runsc\]\s+runtime_type = "io\.containerd\.runsc\.v1"/);
+    // Node reboot loses the config: the next boot restores it.
+    rmSync(path.join(sandbox.root, tmpl));
+    assert.equal(sandbox.run().status, 0);
+    assert.equal(readFileSync(path.join(sandbox.root, tmpl), 'utf8'), text);
+    const egress = makeNode({ role: 'agent', pool: 'egress' });
+    egress.seedSsm({ [SSM.agent]: 'e'.repeat(64), [SSM.version]: VERSION });
+    assert.equal(egress.run().status, 0);
+    assert.ok(!existsSync(path.join(egress.root, tmpl)));
+  });
+
   it('blocks a version-drifted join: a server reporting another k3s version is refused and the failure is shipped', () => {
     const node = makeNode({ role: 'agent', pool: 'sandbox' });
     node.seedSsm({ [SSM.agent]: 'f'.repeat(64), [SSM.version]: 'v1.36.0+k3s1' });

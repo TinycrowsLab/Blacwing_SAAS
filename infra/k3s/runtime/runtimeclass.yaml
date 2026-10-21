@@ -1,0 +1,21 @@
+# gVisor RuntimeClass for the cloud sandbox pool (INFRA-005, CONTEXT_PACK §4.1/§5).
+# Same name and handler as the dev manifest (../manifests/00-runtimeclass.yaml), plus
+# scheduling: the API server merges `scheduling` into every Pod using this class, so a
+# sandbox Pod gets the pool nodeSelector and the sandbox toleration automatically and can
+# only land on sandbox nodes. Apply this INSTEAD of the dev manifest on the EC2 cluster.
+# There is deliberately no fallback class: sandboxes never run under runc.
+apiVersion: node.k8s.io/v1
+kind: RuntimeClass
+metadata:
+  name: gvisor
+  labels:
+    app.kubernetes.io/part-of: blackwing
+handler: runsc
+scheduling:
+  nodeSelector:
+    blackwing.io/pool: sandbox
+  tolerations:
+    - key: blackwing.io/sandbox
+      operator: Equal
+      value: 'true'
+      effect: NoSchedule

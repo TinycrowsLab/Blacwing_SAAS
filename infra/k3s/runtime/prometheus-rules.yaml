@@ -1,0 +1,24 @@
+# Runtime-class observability (INFRA-005). Needs kube-state-metrics (kube_pod_runtimeclass_name_info).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: blackwing-sandbox-runtime
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: blackwing
+spec:
+  groups:
+    - name: blackwing.sandbox-runtime
+      rules:
+        - record: blackwing:pods_by_runtime_class:count
+          expr: count by (runtime_class_name) (kube_pod_runtimeclass_name_info)
+        - alert: SandboxPodNotUnderGvisor
+          expr: >-
+            count by (namespace, pod) (kube_pod_info{namespace="sandbox"})
+            unless count by (namespace, pod) (kube_pod_runtimeclass_name_info{namespace="sandbox",runtime_class_name="gvisor"})
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'Sandbox pod {{ $labels.pod }} is not running under the gvisor RuntimeClass'
+            description: 'Sandboxes must never use the default runtime (runc). Kill the pod and investigate how it was admitted.'

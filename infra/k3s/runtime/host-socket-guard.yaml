@@ -1,0 +1,60 @@
+# Cluster-wide host-socket and privilege guard (INFRA-005, CONTEXT_PACK §1.1, §8 #6).
+# No Pod outside kube-system may mount the host Docker/containerd socket (or a directory
+# that contains one), run privileged, or share the host PID/IPC namespaces. Complements the
+# sandbox-namespace policy in ../manifests/20-admission.yaml. failurePolicy Fail: a broken
+# policy rejects rather than admits. Denials land in the API audit log (validationActions
+# Audit), which the audit pipeline ships.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: blackwing-host-socket-guard
+  labels:
+    app.kubernetes.io/part-of: blackwing
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources: ['pods', 'pods/ephemeralcontainers']
+  variables:
+    - name: containers
+      expression: >-
+        object.spec.containers
+        + (has(object.spec.initContainers) ? object.spec.initContainers : [])
+        + (has(object.spec.ephemeralContainers) ? object.spec.ephemeralContainers : [])
+  validations:
+    - expression: >-
+        !has(object.spec.volumes) || object.spec.volumes.all(v, !has(v.hostPath)
+        || !(v.hostPath.path.matches('(docker|containerd|cri-dockerd|crio)')
+        || v.hostPath.path.matches('^/(var/)?run(/|$)')
+        || v.hostPath.path.matches('^/var/lib/rancher(/|$)')
+        || v.hostPath.path == '/'))
+      message: 'mounting the host Docker/containerd socket (or its directory) into a Pod is forbidden'
+      reason: Forbidden
+    - expression: >-
+        variables.containers.all(c, !has(c.securityContext) || !has(c.securityContext.privileged)
+        || c.securityContext.privileged == false)
+      message: 'privileged containers are forbidden'
+      reason: Forbidden
+    - expression: >-
+        !(has(object.spec.hostPID) && object.spec.hostPID) && !(has(object.spec.hostIPC) && object.spec.hostIPC)
+      message: 'host PID/IPC namespaces are forbidden'
+      reason: Forbidden
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: blackwing-host-socket-guard
+  labels:
+    app.kubernetes.io/part-of: blackwing
+spec:
+  policyName: blackwing-host-socket-guard
+  validationActions: [Deny, Audit]
+  matchResources:
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: [kube-system]

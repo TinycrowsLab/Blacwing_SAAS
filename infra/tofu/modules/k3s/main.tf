@@ -107,6 +107,8 @@ locals {
       "token-file"  = "/etc/rancher/k3s/agent-token"
       "node-label"  = local.node_labels[pool]
       "kubelet-arg" = local.kubelet_args[pool]
+      # Only pods that tolerate the taint (sandbox pods, via RuntimeClass gvisor) land on sandbox nodes.
+      "node-taint" = pool == "sandbox" ? ["blackwing.io/sandbox=true:NoSchedule"] : []
     }
   }
 
