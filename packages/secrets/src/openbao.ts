@@ -61,6 +61,7 @@ export interface OpenBaoClientDeps {
 
 const HTTP_OK = 200;
 const HTTP_MULTIPLE_CHOICES = 300;
+const HTTP_BAD_REQUEST = 400;
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
@@ -69,6 +70,14 @@ const DEFAULT_LOGIN_ATTEMPTS = 4;
 const DEFAULT_TIMEOUT_MS = 10_000;
 const LOGIN_BACKOFF_MS = 200;
 const MS_PER_S = 1000;
+
+// Transit answers 400 with this text for a ciphertext wrapped by a version below min_decryption_version
+// (crypto-shredded). Only the matched fact is used; the body is never copied into an error.
+const DISABLED_VERSION = /disallowed by policy|version is (disabled|too old)/i;
+const errorsOf = (json: unknown): string => {
+  const errors = (json as { errors?: unknown } | undefined)?.errors;
+  return Array.isArray(errors) ? errors.filter((e) => typeof e === 'string').join(' ') : '';
+};
 
 const unavailable = (message: string, cause?: unknown): AppError =>
   new AppError('KEK_UNAVAILABLE', message, { cause, detail: 'The key service is unavailable.' });
@@ -178,6 +187,12 @@ export function createOpenBaoClient(
       }
       if (status === HTTP_NOT_FOUND) return { status, data: undefined };
       if (status >= HTTP_SERVER_ERROR) throw unavailable(`OpenBao unavailable (status ${status})`);
+      if (status === HTTP_BAD_REQUEST && DISABLED_VERSION.test(errorsOf(json))) {
+        throw new AppError(
+          'KEK_DISABLED',
+          `OpenBao refused a disabled key version (${method} ${path})`,
+        );
+      }
       if (status === HTTP_UNAUTHORIZED || status === HTTP_FORBIDDEN) {
         throw new AppError('FORBIDDEN', `OpenBao denied ${method} ${path}`);
       }

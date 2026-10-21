@@ -43,6 +43,11 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   PERSONA_INVALID: 422,
   PROMPT_INVALID: 422,
   PROMPT_HASH_MISMATCH: 500,
+  AAD_MISMATCH: 403,
+  SECRET_TOO_LARGE: 413,
+  KEK_DISABLED: 409,
+  ENVELOPE_INVALID: 422,
+  SECRET_DECRYPT_FAILED: 500,
   PROMPT_NO_RELEASED_VERSION: 404,
   PROMPT_DRAFT_FORBIDDEN: 403,
   CONFIG_INVALID: 500,
@@ -82,7 +87,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(54);
+    expect(ERROR_CODE_LIST).toHaveLength(59);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -199,6 +204,11 @@ describe('error-code registry', () => {
       | 'PERSONA_INVALID'
       | 'PROMPT_INVALID'
       | 'PROMPT_HASH_MISMATCH'
+      | 'AAD_MISMATCH'
+      | 'SECRET_TOO_LARGE'
+      | 'KEK_DISABLED'
+      | 'ENVELOPE_INVALID'
+      | 'SECRET_DECRYPT_FAILED'
       | 'PROMPT_NO_RELEASED_VERSION'
       | 'PROMPT_DRAFT_FORBIDDEN'
       | 'CONFIG_INVALID'

@@ -1028,6 +1028,9 @@ importers:
 
   packages/secrets:
     dependencies:
+      '@blackwing/crypto':
+        specifier: workspace:*
+        version: link:../crypto
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../errors
@@ -1038,6 +1041,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+      fast-check:
+        specifier: 'catalog:'
+        version: 4.10.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

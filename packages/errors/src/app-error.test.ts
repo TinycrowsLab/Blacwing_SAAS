@@ -107,6 +107,12 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'PROMPT_HASH_MISMATCH',
   'PROMPT_NO_RELEASED_VERSION',
   'PROMPT_DRAFT_FORBIDDEN',
+  // EnvelopeError, @blackwing/secrets (SECRETS-002).
+  'AAD_MISMATCH',
+  'SECRET_TOO_LARGE',
+  'KEK_DISABLED',
+  'ENVELOPE_INVALID',
+  'SECRET_DECRYPT_FAILED',
   // IntrusivenessError, @blackwing/contracts (SCOPE-003): contracts is the root of the dependency
   // graph and cannot import this package, so its error carries the registered code instead.
   'SCOPE_INTRUSIVENESS_EXCEEDS_CEILING',

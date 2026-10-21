@@ -183,6 +183,15 @@ describe('createOpenBaoClient', () => {
     await expect(client.request('POST', 'x', {})).rejects.toMatchObject({ code: 'INTERNAL' });
   });
 
+  it('maps a disallowed (shredded) key version to KEK_DISABLED without echoing the body', async () => {
+    const body = { errors: ['ciphertext or signature version is disallowed by policy (too old)'] };
+    const { fakeFetch } = scripted([login(), json(400, body)]);
+    const client = createOpenBaoClient(config, { fetch: fakeFetch });
+    const error = await client.request('POST', 'transit/decrypt/k', {}).catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: 'KEK_DISABLED' });
+    expect((error as Error).message).not.toMatch(/too old/);
+  });
+
   it('shares one login between concurrent requests', async () => {
     const { calls, fakeFetch } = scripted([login(), json(200, {}), json(200, {})]);
     const client = createOpenBaoClient(config, { fetch: fakeFetch });

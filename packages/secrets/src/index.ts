@@ -24,3 +24,15 @@ export {
   type TenantKekService,
   type TenantKekServiceDeps,
 } from './kek.js';
+
+// Envelope encryption: AES-256-GCM data, DEK wrapped by the tenant KEK (SECRETS-002, §8.7).
+export {
+  createEnvelopeCrypto,
+  type Envelope,
+  type EnvelopeContext,
+  type EnvelopeCrypto,
+  type EnvelopeCryptoOptions,
+  EnvelopeError,
+  type EnvelopeMetrics,
+} from './envelope.js';
+export { createTransit, type TransitClient } from './transit.js';

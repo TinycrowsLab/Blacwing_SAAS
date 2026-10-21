@@ -72,6 +72,13 @@ const DEFINITIONS = {
   PERSONA_FORBIDDEN_TOOL: { status: 422, title: 'Forbidden tool in persona', retryable: false },
   PERSONA_INVALID: { status: 422, title: 'Invalid persona definition', retryable: false },
   // `@blackwing/config` (FOUND-007) refuses to start on an invalid environment: a server fault.
+  // Envelope encryption (SECRETS-002, §8.6/§8.7). Every failure fails closed: a tenant/purpose mismatch
+  // is a refusal (403); a shredded KEK version is permanent (409).
+  AAD_MISMATCH: { status: 403, title: 'Secret context mismatch', retryable: false },
+  SECRET_TOO_LARGE: { status: 413, title: 'Secret too large', retryable: false },
+  KEK_DISABLED: { status: 409, title: 'Key version disabled', retryable: false },
+  ENVELOPE_INVALID: { status: 422, title: 'Invalid secret envelope', retryable: false },
+  SECRET_DECRYPT_FAILED: { status: 500, title: 'Secret decryption failed', retryable: false },
   // Prompt registry (REGISTRY-002, §8.9): a prompt that fails its pinned hash is never served.
   PROMPT_INVALID: { status: 422, title: 'Invalid prompt file', retryable: false },
   PROMPT_HASH_MISMATCH: { status: 500, title: 'Prompt hash mismatch', retryable: false },
