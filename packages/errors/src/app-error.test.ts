@@ -125,6 +125,9 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'KILL_GLOBAL_NOT_ALLOWED_HERE',
   'IDEMPOTENCY_KEY_REQUIRED',
   'IDEMPOTENCY_KEY_MISMATCH',
+  // Raised by apps/api's Run Broker (API-014) as plain AppErrors.
+  'NOT_IMPLEMENTED',
+  'RUN_NOT_ACTIVE',
 ];
 
 describe('AppError subclasses', () => {

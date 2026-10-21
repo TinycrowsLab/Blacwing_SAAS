@@ -55,6 +55,8 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   KILL_REF_REQUIRED: 422,
   KILL_FORBIDDEN: 403,
   KILL_GLOBAL_NOT_ALLOWED_HERE: 403,
+  NOT_IMPLEMENTED: 501,
+  RUN_NOT_ACTIVE: 409,
   IDEMPOTENCY_KEY_REQUIRED: 400,
   IDEMPOTENCY_KEY_MISMATCH: 422,
   INTERNAL: 500,
@@ -199,6 +201,8 @@ describe('error-code registry', () => {
       | 'KILL_GLOBAL_NOT_ALLOWED_HERE'
       | 'IDEMPOTENCY_KEY_REQUIRED'
       | 'IDEMPOTENCY_KEY_MISMATCH'
+      | 'NOT_IMPLEMENTED'
+      | 'RUN_NOT_ACTIVE'
       | 'INTERNAL'
     >();
     expectTypeOf<HttpStatusOf<'NOT_FOUND'>>().toEqualTypeOf<404>();

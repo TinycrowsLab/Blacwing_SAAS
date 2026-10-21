@@ -56,3 +56,15 @@ and `Page<T>` (`{ items, nextCursor, hasMore }`). `PageQuerySchema` and `Page<T>
   are compared at millisecond precision (`date_trunc('milliseconds', col)`; add a matching expression index
   for hot lists). Forward-only. Rows inserted between pages appear only if they sort after the cursor.
 - Metrics: `list_page_size`, `list_requests_total{route}` (`createListMetrics`).
+## Internal Run Broker API (API-014)
+
+`/internal/broker/runs/{runId}/{candidates|evidence|journal|state}` is mounted by `registerBrokerRoutes`
+(`src/broker`), outside `/v1` and outside the public OpenAPI document (`brokerOpenApiDocument()` is its own
+internal spec). Per request, in order: source guard (socket CIDR in `BROKER_ALLOWED_CIDRS` AND the mesh
+identity header in `BROKER_MESH_IDENTITIES`; `X-Forwarded-For` is never trusted; anything missing refuses with
+403), `Authorization: Bearer bwrun_...` token (401), revocation, per-run-session rate limit (429), then scope,
+path/body run binding (403, never revealing other runs), body validation (422), a second revocation check, the
+tenant-scoped run lookup and the run state (`409 run_not_active` for writes on a terminal run). Valid calls
+answer `501 not_implemented` until FINDING, EVIDENCE, REVERSAL and ORCH implement them. Tokens are minted by
+`signBrokerToken` (issuance wiring: RUNTIME/SANDBOX). Metrics: `broker_requests_total`,
+`broker_auth_failures_total`. In-memory stores are offline stubs (online-porting #895).

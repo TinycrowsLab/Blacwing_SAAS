@@ -120,6 +120,10 @@ const DEFINITIONS = {
     title: 'Idempotency key reused with a different request',
     retryable: false,
   },
+  // Run Broker API (API-014, #66). A stub endpoint owned by a later epic answers 501; a broker write for
+  // a run that is no longer active is refused with 409 (the run is terminal, §3.3).
+  NOT_IMPLEMENTED: { status: 501, title: 'Not implemented', retryable: false },
+  RUN_NOT_ACTIVE: { status: 409, title: 'Run is not active', retryable: false },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 
