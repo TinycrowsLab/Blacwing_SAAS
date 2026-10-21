@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="./README.html">Architecture decision records</a></li>
+<li><a href="./template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="./0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="./0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="./0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="./0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="./0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="./0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="./0007-cedar-policy-decision-point.html" aria-current="page">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="./0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="./0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="./0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="./0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="adr-0007-use-cedar-as-the-policy-decision-point-shared-between-typescript-and-go">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</h1>
+<p>Date: 2026-10-20</p>
+<h2 id="status">Status</h2>
+<p>Accepted</p>
+<h2 id="context">Context</h2>
+<p>Authorisation decisions are made in two languages and many places: API resource checks, the <code>PreToolUse</code> hook
+that evaluates every Bash command and target-interaction tool call against the approved run envelope, and the
+Go egress gateway that evaluates every outbound connection. Customers also own a policy layer of their own on
+top of a platform baseline that they cannot override. If the TypeScript and Go sides evaluated policy
+differently, an action denied in the agent runtime could still be allowed on the wire.</p>
+<h2 id="decision">Decision</h2>
+<ul>
+<li><strong>Cedar</strong> is the single policy language: <code>@cedar-policy/cedar-wasm</code> in TypeScript (<code>packages/policy</code>) and
+<code>github.com/cedar-policy/cedar-go</code> in the egress gateway.</li>
+<li>Both sides use <strong>one shared Cedar schema and one shared set of test vectors</strong>, so the two evaluators are
+proven to agree on every vector.</li>
+<li>The <strong>platform baseline policy</strong> is non-overridable: it hard-blocks the destructive intrusiveness class and
+anything else the platform forbids. Tenant policy sets are versioned (version, sha256, author) and cannot
+override the baseline.</li>
+<li>The policy hash is pinned per run. A failure to evaluate policy is a deny.</li>
+</ul>
+<h2 id="consequences">Consequences</h2>
+<ul>
+<li>One policy, two evaluators: any change to the schema or to the baseline must pass the shared vectors on
+both sides before it ships.</li>
+<li>Policy is data, not code, so customers can review and own their layer without code changes, and auditors can
+read the exact policy a run used.</li>
+<li>Model output never decides authorisation; the PDP does, deterministically.</li>
+</ul>
+<h2 id="references">References</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html#31-layers-from-the-component-diagram-and-where-each-lives">Context Pack §3.1 Layers</a>:
+row &quot;Policy Decision Point&quot;.</li>
+<li><a href="../architecture/CONTEXT_PACK.html#5-technology-stack-fixed-for-v1-all-freeopen-source-except-the-aws-account-and-the-anthropicclaude-usage">Context Pack §5 Technology stack</a>:
+row &quot;Policy&quot;.</li>
+<li><a href="../architecture/CONTEXT_PACK.html#43-mandatory-sdk-options-for-every-blackwing-session-appsagent-runtimesrcsessionoptionsts">Context Pack §4.3 Mandatory SDK options</a>:
+the <code>PreToolUse</code> policy check.</li>
+<li><a href="../architecture/CONTEXT_PACK.html#7-core-domain-model-tables-in-packagesdb-all-tenant-tables-have-tenant_id-uuid-not-null--rls">Context Pack §7 Core domain model</a>:
+<code>policies</code> and the non-overridable baseline.</li>
+<li><a href="../architecture/CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">Context Pack §8 Security invariants</a>:
+§8.3 (destructive class never allowed), §8.9 (policy hash pinned) and §8.11 (deterministic enforcement).</li>
+</ul>
+</main>
+</div>
+</body>
+</html>

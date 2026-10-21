@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Database migrations | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./db-migrations.html" aria-current="page">Database migrations</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="./code-owners.html">Code owners</a></li>
+<li><a href="./codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="./db-migrations.html" aria-current="page">Database migrations</a></li>
+<li><a href="./dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="./dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="./dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="./dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./drift-checks.html">Drift checks</a></li>
+<li><a href="./e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="database-migrations">Database migrations</h1>
+<p>How schema changes reach Postgres (DB-002, #69; CONTEXT_PACK §5 &quot;SQL migrations committed and reviewed;
+forward-only in prod&quot;, §7 &quot;migrations run as a separate owner role&quot;).</p>
+<h2 id="workflow">Workflow</h2>
+<ol>
+<li>Change the Drizzle schema in <code>packages/db/src/schema/**</code>.</li>
+<li><code>pnpm db:generate</code> (drizzle-kit, config <code>packages/db/src/drizzle.config.ts</code>) writes a timestamped
+<code>packages/db/migrations/&lt;yyyymmddhhmmss&gt;_&lt;name&gt;.sql</code>, its snapshot under <code>migrations/meta/</code> and a journal entry.
+No database is needed.</li>
+<li>Review the SQL. Hand-written additions (FORCE ROW LEVEL SECURITY, grants, RLS policies from DB-003) go at the
+end of the generated file under a <code>-- Hand-written below</code> comment. Never put credentials in SQL.</li>
+<li><code>pnpm db:check</code> (needs Docker) and commit the SQL, snapshot and journal together. The PR review covers the SQL.</li>
+<li><code>pnpm db:migrate</code> applies pending migrations to the database in <code>.env</code> (<code>PG*</code> and <code>PG_OWNER_*</code>).</li>
+</ol>
+<p>Applied migrations are immutable: fix a mistake with a new migration. The <code>drift</code> workflow rejects edits to
+migrations that exist on the base branch (see <a href="./drift-checks.html">drift-checks.md</a>).</p>
+<h2 id="the-runner-pnpm-dbmigrate">The runner (<code>pnpm db:migrate</code>)</h2>
+<p><code>packages/db/src/migrate-main.ts</code> connects with the owner pool (<code>@blackwing/db/owner</code>, role <code>bw_owner</code>) and calls
+<code>migrateDatabase</code>:</p>
+<ul>
+<li>every pending migration runs in <strong>one transaction</strong> under an advisory lock, so a crash or a failing statement
+leaves the database at the previous version and two concurrent deploys cannot interleave;</li>
+<li>applied versions are recorded in <code>drizzle.__drizzle_migrations</code> (drizzle-kit&#39;s table and format);</li>
+<li>logs <code>db.migrate.start</code>, then <code>db.migrate.skipped {version}</code> or <code>db.migrate.applied {version, durationMs}</code> per
+migration and <code>db.migrate.done</code>. No connection details or data are logged;</li>
+<li>re-running is a no-op;</li>
+<li>the runtime role <code>bw_app</code> cannot migrate: it lacks the privileges and the run fails with <code>42501</code>.</li>
+</ul>
+<p>Statements that cannot run inside a transaction are not allowed (<code>CONCURRENTLY</code>, <code>VACUUM</code>, <code>CREATE DATABASE</code>,
+<code>ALTER SYSTEM</code>). Statements that are not rolled back cleanly everywhere must be idempotent:
+<code>CREATE EXTENSION IF NOT EXISTS</code>, <code>ALTER TYPE ... ADD VALUE IF NOT EXISTS</code>. <code>pnpm db:check</code> enforces both.</p>
+<h2 id="forward-only-in-production">Forward-only in production</h2>
+<p>With <code>NODE_ENV=production</code> the runner refuses, before applying anything:</p>
+<ul>
+<li>an up migration containing a destructive statement: <code>DROP TABLE|SCHEMA|DATABASE|TYPE|DOMAIN|SEQUENCE|EXTENSION| COLUMN|OWNED|MATERIALIZED VIEW</code>, <code>TRUNCATE</code>, <code>DELETE FROM</code>, or an RLS-weakening statement
+(<code>DISABLE</code>/<code>NO FORCE ROW LEVEL SECURITY</code>, <code>BYPASSRLS</code>);</li>
+<li>any down migration (<code>pnpm db:migrate:down</code>).</li>
+</ul>
+<p>A reviewed exception needs <code>ALLOW_DESTRUCTIVE_MIGRATION=1</code> (exactly <code>1</code>; unset by default) on that one run.
+Prefer expand/contract: add the new shape, migrate the data, drop the old shape in a later release.</p>
+<p><code>packages/db/migrations/down/&lt;tag&gt;.sql</code> holds optional, <strong>dev-only</strong> down migrations. <code>pnpm db:migrate:down</code>
+reverts the latest applied migration with its down file and removes its record.</p>
+<h2 id="drift-check-pnpm-dbcheck-ci-job-db-drift">Drift check (<code>pnpm db:check</code>, CI job <code>db-drift</code>)</h2>
+<p><code>packages/db/src/check/drift.int.test.ts</code>, run on every PR by the <code>db-drift</code> job in <code>.github/workflows/drift.yml</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Fails when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Journal</td>
+<td>Journal indexes are not contiguous; two migrations share a prefix; a migration is not newer than the one before it; snapshots fork (two share a parent); a <code>.sql</code> file is missing from the journal; the SQL lint above fails</td>
+</tr>
+<tr>
+<td>Schema vs migrations</td>
+<td><code>drizzle-kit generate</code>, run on a temporary copy of <code>migrations/</code>, would emit a migration (a schema edit without its committed migration)</td>
+</tr>
+<tr>
+<td>Migrations vs snapshot</td>
+<td>A scratch Postgres 16 + pgvector (Testcontainers, image pinned by digest in <code>infra/images.lock</code>) built from the migrations differs from the latest snapshot: tables, columns and types, nullability, indexes, constraints, policies, RLS, enums</td>
+</tr>
+<tr>
+<td>Idempotency</td>
+<td>Re-running the migrations on that database applies anything</td>
+</tr>
+</tbody></table>
+<p>On failure the job uploads <code>db-drift.md</code> (the missing SQL or the catalogue diff, <code>-</code> snapshot only, <code>+</code> database
+only) as the <code>db-drift</code> artifact and adds it to the step summary.</p>
+<h3 id="two-prs-added-migrations-at-once">Two PRs added migrations at once</h3>
+<p>The second PR to merge fails <code>db-drift</code> with a journal problem (&quot;share the prefix&quot;, &quot;same parent&quot; or &quot;not newer
+than&quot;). Fix: rebase on <code>main</code>, delete your generated migration (its <code>.sql</code>, its <code>meta/&lt;prefix&gt;_snapshot.json</code>
+and its journal entry), run <code>pnpm db:generate</code> again and commit the result. Do not rename files by hand: the
+snapshot chain and the journal timestamps must stay consistent.</p>
+<h2 id="deploy">Deploy</h2>
+<p>The <code>migrate</code> workflow (<code>.github/workflows/migrate.yml</code>) runs <code>pnpm db:migrate</code> with <code>NODE_ENV=production</code> before
+a rollout, with owner credentials loaded from the secret store at run time. It is gated off until the online
+environment exists (online-porting #893); the deploy pipeline then also emits the config-change audit event.</p>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Runbook: SES email (INFRA-008) | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./ses-email.html" aria-current="page">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="./code-owners.html">Code owners</a></li>
+<li><a href="./codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="./dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="./dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="./dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./drift-checks.html">Drift checks</a></li>
+<li><a href="./e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="./ses-email.html" aria-current="page">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="runbook-ses-email-infra-008">Runbook: SES email (INFRA-008)</h1>
+<p>Production mail is sent through Amazon SES SMTP by Nodemailer (CONTEXT_PACK §5). Dev uses Mailpit and never
+touches SES. Code: <code>infra/tofu/modules/email</code>, wired per environment in <code>environments/&lt;env&gt;/email.tf</code>.</p>
+<h2 id="what-the-module-creates">What the module creates</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Domain identity</td>
+<td><code>aws_ses_domain_identity</code> for the environment domain, verified by a <code>_amazonses</code> TXT record, with a waiter (<code>aws_ses_domain_identity_verification</code>, 15 min).</td>
+</tr>
+<tr>
+<td>Easy DKIM</td>
+<td>Three <code>&lt;token&gt;._domainkey</code> CNAMEs written to the INFRA-007 app zone.</td>
+</tr>
+<tr>
+<td>MAIL FROM</td>
+<td><code>mail.&lt;domain&gt;</code> with MX to <code>feedback-smtp.&lt;region&gt;.amazonses.com</code> and its own SPF TXT.</td>
+</tr>
+<tr>
+<td>SPF</td>
+<td><code>v=spf1 include:amazonses.com -all</code> at the apex.</td>
+</tr>
+<tr>
+<td>DMARC</td>
+<td><code>_dmarc.&lt;domain&gt;</code>: <code>p=quarantine</code> in prod (<code>p=none</code> in dev and staging), <code>rua=mailto:dmarc@&lt;domain&gt;</code>, strict alignment.</td>
+</tr>
+<tr>
+<td>Configuration set</td>
+<td><code>&lt;prefix&gt;-default</code>: reputation metrics, TLS required, events to CloudWatch (send, delivery, bounce, complaint, reject) and to the SNS topic <code>&lt;prefix&gt;-ses-events</code> (bounce, complaint, reject).</td>
+</tr>
+<tr>
+<td>Suppression</td>
+<td>Account-level suppression list for <code>BOUNCE</code> and <code>COMPLAINT</code>.</td>
+</tr>
+<tr>
+<td>Alarms</td>
+<td><code>Reputation.BounceRate</code> (default 4%) and <code>Reputation.ComplaintRate</code> (default 0.05%), notifying the events topic.</td>
+</tr>
+<tr>
+<td>SMTP credentials</td>
+<td>IAM user <code>&lt;prefix&gt;-ses-smtp</code> allowed only <code>ses:SendRawEmail</code> from <code>*@&lt;domain&gt;</code>; the SMTP username and password are SSM SecureString parameters under <code>/blackwing/&lt;env&gt;/email/</code>.</td>
+</tr>
+</tbody></table>
+<p>Outputs for app config: <code>email_smtp_host</code>, <code>email_smtp_port</code> (587, STARTTLS), <code>email_configuration_set</code>,
+<code>email_from_address</code>, and the SSM parameter names. The values never appear as outputs.</p>
+<h2 id="before-the-first-apply">Before the first apply</h2>
+<ol>
+<li>DNS delegation is done (<code>dns-delegation.md</code>): the app zone must answer publicly or verification times out.</li>
+<li>Create the <code>dmarc@&lt;domain&gt;</code> mailbox or alias (a human-monitored inbox). DMARC aggregate reports go there.</li>
+<li>Set <code>TF_VAR_aws_account_id</code>. Never apply from a laptop without review.</li>
+</ol>
+<h2 id="sandbox-exit-manual-long-lead-time">Sandbox exit (manual, long lead time)</h2>
+<p>A new SES account is sandboxed: only verified recipients, 200 messages/day. <strong>Request production access early</strong> (AWS
+Console, SES, Account dashboard, &quot;Request production access&quot;, per region): state the use case (transactional mail:
+verification, invitations, SOC notices, gate notifications), the bounce/complaint handling above, and the expected
+volume. AWS answers in about 24 hours but can ask follow-ups, so file it weeks before launch. Until it is
+granted, prod must not send to unverified recipients: keep the prod mail feature flag off, and verify test recipients
+individually.</p>
+<h2 id="verifying-a-deployment">Verifying a deployment</h2>
+<pre><code>aws ses get-identity-verification-attributes --identities &lt;domain&gt;      # VerificationStatus = Success
+aws ses get-identity-dkim-attributes --identities &lt;domain&gt;              # DkimVerificationStatus = Success
+dig +short TXT _dmarc.&lt;domain&gt;
+dig +short TXT &lt;domain&gt;                                                  # contains v=spf1 include:amazonses.com
+dig +short MX mail.&lt;domain&gt;
+</code></pre>
+<p>Send a test message through SMTP (587, STARTTLS, credentials read from SSM), with the header
+<code>X-SES-Configuration-Set: &lt;prefix&gt;-default</code>, to a mailbox you control and read the headers: expect <code>dkim=pass</code>,
+<code>spf=pass</code> and <code>dmarc=pass</code>. To prove event delivery, send to <code>bounce@simulator.amazonses.com</code> and
+<code>complaint@simulator.amazonses.com</code> (allowed in the sandbox) and confirm the events appear on the SNS topic and
+in the CloudWatch metrics.</p>
+<p>DKIM propagation can take minutes. If apply times out in the verification step, re-run it: the step re-checks.</p>
+<h2 id="reading-the-credentials">Reading the credentials</h2>
+<pre><code>aws ssm get-parameter --with-decryption --name /blackwing/&lt;env&gt;/email/smtp-password --query Parameter.Value --output text
+</code></pre>
+<p>Only operators and the workload role granted <code>ssm:GetParameter</code> plus <code>kms:Decrypt</code> on the key can read them.
+OpenBao (SECRETS epic) syncs them by reference. The tofu state also contains the password (an IAM access-key
+attribute), so the state bucket stays KMS encrypted with restricted access.</p>
+<h2 id="rotating-the-smtp-credentials-without-downtime">Rotating the SMTP credentials without downtime</h2>
+<p>IAM allows two keys per user, so rotation overlaps old and new:</p>
+<ol>
+<li>Set <code>rotation_overlap = true</code> on the module and apply. A second key appears, stored as <code>smtp-username-next</code> and
+<code>smtp-password-next</code>.</li>
+<li>Roll the application to the <code>-next</code> parameters and confirm sending works.</li>
+<li>Taint the old key (<code>tofu apply -replace=&#39;module.email.aws_iam_access_key.smtp&#39;</code>) so the primary parameters get a
+fresh key, point the application back at the primary parameters, then set <code>rotation_overlap = false</code> to delete the
+second key.</li>
+</ol>
+<p>Never delete the key in use before step 2 is confirmed.</p>
+<h2 id="bounce-and-complaint-spikes">Bounce and complaint spikes</h2>
+<p>An alarm means sender reputation is at risk (SES reviews from 5% bounce and 0.1% complaint). Pause the sending
+feature, review the SNS events for the offending flow, fix the list source and keep the suppression list intact. Do
+not remove entries from the suppression list to retry delivery.</p>
+<h2 id="privacy">Privacy</h2>
+<p>Recipient addresses are PII. Application logs must redact them (<code>@blackwing/logger</code> redaction, CONTEXT_PACK §5); the
+SNS event payloads contain addresses, so the topic has no subscribers beyond the NOTIFY handler and the alarms.
+CloudTrail records IAM and SES changes.</p>
+</main>
+</div>
+</body>
+</html>

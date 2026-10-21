@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contributing to the documentation | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="./index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="./user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="./user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="./user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="./runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="./runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="./runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="./runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="./api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="./runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="./runbooks/code-owners.html">Code owners</a></li>
+<li><a href="./runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="./runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="./runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="./runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="./runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="./runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="./runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="./runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="./runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="./runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="./runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="./runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="./runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="./runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="./architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="./architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="./architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="./architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="./architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="./architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="./architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="./architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="./architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="./architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="./adr/README.html">Architecture decision records</a></li>
+<li><a href="./adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="./adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="./adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="./adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="./adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="./adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="./adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="./adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="./adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="./adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="./adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="./adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="./labels.html">Label catalogue</a></li>
+<li><a href="./CONTRIBUTING-docs.html" aria-current="page">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="contributing-to-the-documentation">Contributing to the documentation</h1>
+<p>The docs under <code>docs/</code> are built into a static site by <code>pnpm docs:build</code> (DOCS-001, #813). The build fails on a
+broken internal link, and CI runs the same check (<code>pnpm docs:check</code>) on every pull request that touches <code>docs/**</code>.
+Merges to <code>main</code> publish the <code>main</code> version of the site.</p>
+<h2 id="where-a-page-goes">Where a page goes</h2>
+<table>
+<thead>
+<tr>
+<th>Folder</th>
+<th>What belongs there</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>user/</code></td>
+<td>Guides for people who use the product.</td>
+</tr>
+<tr>
+<td><code>runbooks/</code></td>
+<td>Step-by-step operating procedures. Operator-facing pages also appear in the Admin Guide section.</td>
+</tr>
+<tr>
+<td><code>api/</code></td>
+<td>API reference material. The generated OpenAPI files are committed here.</td>
+</tr>
+<tr>
+<td><code>architecture/</code></td>
+<td>Design documents, including the Context Pack.</td>
+</tr>
+<tr>
+<td><code>adr/</code></td>
+<td>Architecture decision records, following <a href="./adr/template.html"><code>adr/template.md</code></a>.</td>
+</tr>
+</tbody></table>
+<p>A new page must be added to a section in <a href="./site.json"><code>site.json</code></a>. The build fails when a page is missing from the
+navigation, and when a navigation entry names a file that does not exist.</p>
+<h2 id="style">Style</h2>
+<ul>
+<li><p><strong>One H1 per page</strong>, at the top. Use H2 and H3 for sections. Heading anchors are generated from the heading text, so
+keep headings unique within a page.</p>
+</li>
+<li><p><strong>Short sentences in the imperative</strong> for procedures. Put one action in each numbered step.</p>
+</li>
+<li><p><strong>Callouts</strong> use a blockquote that starts with the kind in bold, or with a GitHub-style alert marker:</p>
+<aside class="callout callout-warning" role="note"><p class="callout-title">Warning</p>
+<p>the kill switch stops every running assessment. Confirm the scope before you use it.</p>
+</aside>
+<p>Kinds: <code>Note</code>, <code>Tip</code>, <code>Important</code>, <code>Warning</code>, <code>Caution</code>.</p>
+</li>
+<li><p><strong>Language:</strong> English only in v1. Do not add translations or mixed-language pages.</p>
+</li>
+<li><p><strong>Code and commands</strong> go in fenced blocks with a language tag. Use inline code for file names, env keys and IDs.</p>
+</li>
+</ul>
+<h2 id="links">Links</h2>
+<ul>
+<li>Link to another page with a relative path, for example <code>../runbooks/release.md</code>. Use the <code>.md</code> name; the build
+rewrites it to the page&#39;s HTML address.</li>
+<li>Link to a file elsewhere in the repository with a relative path (for example <code>../../CLAUDE.md</code>) or a root-relative
+path (<code>/CLAUDE.md</code>). The build links it to the repository on GitHub.</li>
+<li>Anchors must match a heading on the target page. The link check reports a missing heading as a broken link.</li>
+<li>External links are not fetched in CI. <code>pnpm docs:check --external</code> fetches them and reports failures as warnings only.</li>
+</ul>
+<h2 id="images-and-screenshots">Images and screenshots</h2>
+<ul>
+<li>Keep images below about 1600 px wide, and optimise PNGs before you commit them. The site lazy-loads images.</li>
+<li>Give every image alt text that describes what the reader needs to see.</li>
+</ul>
+<h2 id="security-and-privacy-checklist-context_pack-87">Security and privacy checklist (CONTEXT_PACK §8.7)</h2>
+<p>Before you open a documentation pull request, confirm that the page and its screenshots contain none of:</p>
+<ul>
+<li><input disabled="" type="checkbox"> secrets, tokens, passwords, API keys, private keys or connection strings;</li>
+<li><input disabled="" type="checkbox"> internal hostnames, private IP addresses, AWS account IDs or internal ARNs;</li>
+<li><input disabled="" type="checkbox"> real customer names, asset addresses or finding data;</li>
+<li><input disabled="" type="checkbox"> the product described as &quot;Claude Code&quot; (it is &quot;Blackwing&quot;, optionally &quot;Powered by Claude&quot;).</li>
+</ul>
+<p>Screenshots must be taken from the demo tenant, and any window that shows an address bar or a terminal prompt must be
+cropped or redacted first.</p>
+<h2 id="versions">Versions</h2>
+<p>Each release publishes its own version of the site (for example <code>v1.4.0/</code>), so a customer can read the documentation
+that matches their version. Unreleased changes appear under <code>main/</code>. The version list is <code>versions.json</code> at the root of
+the published site.</p>
+<h2 id="check-locally">Check locally</h2>
+<pre><code class="language-sh">pnpm docs:check            # navigation and internal links
+pnpm docs:build --out dist/docs --version main
+</code></pre>
+<p>Open <code>dist/docs/main/index.html</code> in a browser to review the rendered site.</p>
+</main>
+</div>
+</body>
+</html>

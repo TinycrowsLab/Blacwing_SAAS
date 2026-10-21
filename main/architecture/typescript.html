@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TypeScript configuration and project references | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="./CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="./EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="./FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="./REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="./workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="./workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="./dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="./egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="./storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="./typescript.html" aria-current="page">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="typescript-configuration-and-project-references">TypeScript configuration and project references</h1>
+<p>Every TypeScript workspace member (9 apps, 25 packages) compiles under one strict base config and
+is wired into a single incremental <code>tsc -b</code> build through project references. This page is the
+reference for that setup (FOUND-003); CONTEXT_PACK §5 sets the conventions it enforces.</p>
+<h2 id="files">Files</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tsconfig.base.json</code></td>
+<td>The only place compiler options are defined. Holds options only: no <code>files</code>, <code>include</code> or <code>references</code>.</td>
+</tr>
+<tr>
+<td><code>tsconfig.json</code> (root)</td>
+<td>Solution file: <code>&quot;files&quot;: []</code> plus a reference to every member, so <code>tsc -b</code> builds the whole workspace in dependency order.</td>
+</tr>
+<tr>
+<td><code>&lt;member&gt;/tsconfig.json</code></td>
+<td><code>extends: &quot;../../tsconfig.base.json&quot;</code>, <code>rootDir: src</code>, <code>outDir: dist</code>, <code>tsBuildInfoFile: dist/.tsbuildinfo</code>, <code>include: [&quot;src&quot;]</code>, <code>references</code> to its workspace dependencies.</td>
+</tr>
+<tr>
+<td><code>packages/testing/typefixtures/tsconfig.json</code></td>
+<td>Nested project with the compile-fail fixtures (see <a href="#proving-the-flags">Proving the flags</a>), referenced from <code>packages/testing/tsconfig.json</code>.</td>
+</tr>
+<tr>
+<td><code>scripts/check-tsconfig.mjs</code></td>
+<td>Structural guard, run by <code>pnpm typecheck</code> (the Turborepo root task <code>//#check:tsconfig</code>, which every member&#39;s <code>typecheck</code> waits for) and by <code>pnpm check:tsconfig</code>.</td>
+</tr>
+</tbody></table>
+<p><code>outDir</code>, <code>rootDir</code> and <code>tsBuildInfoFile</code> are set in each member, not in the base: relative paths in
+an extended config resolve against the file that declares them.</p>
+<h2 id="commands">Commands</h2>
+<pre><code class="language-bash">pnpm typecheck                              # turbo: check-tsconfig, then tsc -b per member in dependency order (cached)
+pnpm --filter @blackwing/&lt;name&gt; typecheck   # tsc -b --pretty false for one member (+ its references)
+pnpm check:tsconfig                         # structural check only, JSON summary on stdout
+pnpm exec tsc -b --verbose                  # explain build order and up-to-date decisions
+pnpm exec tsc -b --clean                    # remove every member&#39;s dist/ outputs
+</code></pre>
+<p>Every member&#39;s <code>typecheck</code> script is exactly <code>tsc -b --pretty false</code> (plain, CI-annotatable output).
+Build info lives in <code>&lt;member&gt;/dist/.tsbuildinfo</code> and is gitignored with the rest of <code>dist/</code>, so
+unchanged members are skipped on the next run.</p>
+<h2 id="compiler-options">Compiler options</h2>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Value</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>target</code> / <code>lib</code></td>
+<td><code>ES2023</code> / <code>[&quot;ES2023&quot;]</code></td>
+<td>Node 22 baseline. No DOM and no newer libraries in server code.</td>
+</tr>
+<tr>
+<td><code>module</code> / <code>moduleResolution</code></td>
+<td><code>NodeNext</code></td>
+<td>Node&#39;s own ESM rules: relative imports carry <code>.js</code> extensions, <code>package.json</code> <code>exports</code> are honoured.</td>
+</tr>
+<tr>
+<td><code>moduleDetection</code></td>
+<td><code>force</code></td>
+<td>Every file is a module, so nothing leaks into global scope.</td>
+</tr>
+<tr>
+<td><code>types</code></td>
+<td><code>[&quot;node&quot;]</code></td>
+<td>Only Node typings are ambient. Each member lists <code>@types/node</code> explicitly.</td>
+</tr>
+<tr>
+<td><code>strict</code></td>
+<td><code>true</code></td>
+<td>The whole strict family. No member may switch a family flag (<code>noImplicitAny</code>, <code>strictNullChecks</code>, <code>useUnknownInCatchVariables</code>, ...) back off.</td>
+</tr>
+<tr>
+<td><code>noUncheckedIndexedAccess</code></td>
+<td><code>true</code></td>
+<td>Index signatures and array elements are <code>T | undefined</code>.</td>
+</tr>
+<tr>
+<td><code>exactOptionalPropertyTypes</code></td>
+<td><code>true</code></td>
+<td><code>a?: string</code> means &quot;may be absent&quot;, not &quot;may be <code>undefined</code>&quot;.</td>
+</tr>
+<tr>
+<td><code>noImplicitOverride</code>, <code>noImplicitReturns</code>, <code>noFallthroughCasesInSwitch</code></td>
+<td><code>true</code></td>
+<td>Catch silent control-flow and inheritance mistakes.</td>
+</tr>
+<tr>
+<td><code>allowUnreachableCode</code>, <code>allowUnusedLabels</code></td>
+<td><code>false</code></td>
+<td>Turn these from editor hints into errors.</td>
+</tr>
+<tr>
+<td><code>forceConsistentCasingInFileNames</code></td>
+<td><code>true</code></td>
+<td>Imports behave the same on case-insensitive filesystems (macOS, Windows).</td>
+</tr>
+<tr>
+<td><code>verbatimModuleSyntax</code>, <code>isolatedModules</code></td>
+<td><code>true</code></td>
+<td>Each file can be transpiled on its own (Vitest, SWC in Next.js, esbuild), and type-only imports are always explicit.</td>
+</tr>
+<tr>
+<td><code>allowJs</code></td>
+<td><code>false</code></td>
+<td>All source is TypeScript. JavaScript can never slip in unchecked.</td>
+</tr>
+<tr>
+<td><code>composite</code>, <code>incremental</code>, <code>declaration</code>, <code>declarationMap</code>, <code>sourceMap</code></td>
+<td><code>true</code></td>
+<td>Required for project references. Editors jump to source across packages, and stack traces map back.</td>
+</tr>
+<tr>
+<td><code>noEmitOnError</code></td>
+<td><code>true</code></td>
+<td>A broken member never leaves stale <code>.d.ts</code> files for its dependents.</td>
+</tr>
+<tr>
+<td><code>skipLibCheck</code></td>
+<td><code>true</code></td>
+<td>Skips checking <code>.d.ts</code> files only (mostly <code>node_modules</code>). Some third-party typings break under <code>exactOptionalPropertyTypes</code>. App code is never relaxed to work around that.</td>
+</tr>
+</tbody></table>
+<p>Two rules sit beyond the compiler, in ESLint (FOUND-004, <a href="https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/eslint.config.mjs"><code>eslint.config.mjs</code></a>): no <code>any</code>,
+explicit or implicit, and no non-null assertions (<code>value!</code>). The base config does nothing that weakens them: no <code>allowJs</code>, no
+loose libraries, no relaxed strict flags.</p>
+<h3 id="sanctioned-exception-appsweb">Sanctioned exception: <code>apps/web</code></h3>
+<p>Next.js compiles the console with its own bundler (SWC), so <code>apps/web/tsconfig.json</code> overrides only
+the module system and environment:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th><code>apps/web</code></th>
+<th>Base</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>module</code></td>
+<td><code>ESNext</code></td>
+<td><code>NodeNext</code></td>
+</tr>
+<tr>
+<td><code>moduleResolution</code></td>
+<td><code>Bundler</code></td>
+<td><code>NodeNext</code></td>
+</tr>
+<tr>
+<td><code>lib</code></td>
+<td><code>[&quot;ES2023&quot;, &quot;DOM&quot;, &quot;DOM.Iterable&quot;]</code></td>
+<td><code>[&quot;ES2023&quot;]</code></td>
+</tr>
+<tr>
+<td><code>jsx</code></td>
+<td><code>preserve</code></td>
+<td>unset</td>
+</tr>
+</tbody></table>
+<p>Every strict option still applies, and the web project is still a composite member of the <code>tsc -b</code>
+build. The web epic adds the Next.js specifics on top of this file: the <code>next</code> plugin,
+<code>next-env.d.ts</code>, <code>.next/types</code> and path aliases. If Next.js ever needs a config that cannot be
+composite (for example <code>noEmit</code>), give it a separate file through <code>typescript.tsconfigPath</code> in
+<code>next.config</code>, and keep <code>tsconfig.json</code> as the strict composite project. No other member may deviate.
+<code>check-tsconfig</code> holds <code>apps/web</code> to exactly these values and every other member to the base.</p>
+<h3 id="why-there-is-no-tsconfigbuildjson">Why there is no <code>tsconfig.build.json</code></h3>
+<p>Every Node member emits the same way it typechecks: <code>src/</code> → <code>dist/</code> with declarations. A separate
+build config would only duplicate the reference graph. Tests in <code>src/</code> are compiled too, so they are
+typechecked under the same rules. Vitest never runs their <code>dist/</code> copies, because its default
+exclude list contains <code>**/dist/**</code>. If a member later needs different emit (a bundled CLI binary, a
+Next.js build), add a <code>tsconfig.build.json</code> next to its <code>tsconfig.json</code> that extends it. Leave the
+strict options untouched in that file.</p>
+<h2 id="module-syntax-import-type-and-esmcjs-interop">Module syntax: <code>import type</code> and ESM/CJS interop</h2>
+<p>Every package is ESM (<code>&quot;type&quot;: &quot;module&quot;</code>). With <code>verbatimModuleSyntax</code>, TypeScript emits each import
+as written, so:</p>
+<pre><code class="language-ts">import type { RunState } from &quot;@blackwing/contracts&quot;;        // type-only: erased from output
+import { runStateSchema, type RunId } from &quot;@blackwing/contracts&quot;; // value + inline type modifier
+export type { RunState } from &quot;./run-state.js&quot;;               // re-exporting a type needs `export type`
+import { helper } from &quot;./helper.js&quot;;                         // relative imports use the .js extension
+</code></pre>
+<p>Importing a type without <code>type</code> fails with TS1484. Re-exporting one without <code>export type</code> fails
+with TS1205. CommonJS dependencies are consumed with a default import (<code>import ts from &quot;typescript&quot;</code>),
+which <code>NodeNext</code> allows for <code>module.exports</code> packages. Named imports from CJS only work when Node can
+detect them statically. Never use <code>require</code> in TypeScript source.</p>
+<h2 id="project-references-and-the-dependency-dag">Project references and the dependency DAG</h2>
+<p>A member declares a workspace dependency in two places, and both must agree:</p>
+<ol>
+<li><code>package.json</code>: <code>&quot;@blackwing/&lt;dep&gt;&quot;: &quot;workspace:*&quot;</code> (in <code>dependencies</code>, <code>devDependencies</code>,
+<code>peerDependencies</code> or <code>optionalDependencies</code>);</li>
+<li><code>tsconfig.json</code>: <code>{ &quot;path&quot;: &quot;../../&lt;apps|packages&gt;/&lt;dep&gt;&quot; }</code> in <code>references</code>.</li>
+</ol>
+<p><code>check-tsconfig</code> fails when a dependency has no reference, or when a reference has no dependency.
+<code>tsc -b</code> fails as well (TS6307) if source from an unreferenced package is pulled into a project.
+That way every edge in the build graph is declared. Each epic adds edges as it adds real imports. The
+first edges are <code>packages/ids -&gt; packages/errors</code> (<code>IdValidationError</code> extends <code>ValidationError</code>) and
+<code>packages/config -&gt; packages/errors</code> (<code>ConfigValidationError</code> extends <code>AppError</code>), then
+<code>packages/logger -&gt; packages/config</code> (the logger reads the secret-redaction registry and <code>LOG_LEVEL</code>
+types, FOUND-008) and <code>packages/logger -&gt; packages/errors</code> (built-in credential patterns and error
+serialisation), and
+<code>packages/testing -&gt; packages/contracts, packages/ids, packages/time</code> (factories validated by the
+entity contracts, FOUND-012).</p>
+<p>Edges must follow the allowed layering. <code>pnpm boundaries:check</code> (FOUND-005, #7) enforces it on every
+import and every declared workspace dependency; the generated
+<a href="./dependency-graph.html"><code>dependency-graph.md</code></a> is the authoritative description. In short:</p>
+<pre><code>contracts            -&gt; (nothing internal)
+shared libs          -&gt; contracts, other shared libs   (config, errors, ids, logger, time, telemetry, crypto, testing, workflow-shared)
+domain, policy       -&gt; contracts, shared libs
+service libs         -&gt; contracts, shared libs, domain, policy, other service libs   (db, audit, agents, ...)
+apps/*               -&gt; any package, never another app
+apps/egress-gateway  -&gt; (nothing internal; Go module)
+test code            -&gt; may also use @blackwing/testing (production code never does)
+</code></pre>
+<p>Cycles are not allowed. <code>tsc -b</code> rejects circular references with TS6202, and <code>check-tsconfig</code>
+names the cycle (for example <code>packages/contracts -&gt; packages/logger -&gt; packages/contracts</code>). To find
+the edge that breaks the build order, use <code>pnpm exec tsc -b --verbose</code>.</p>
+<h3 id="adding-a-new-typescript-member">Adding a new TypeScript member</h3>
+<ol>
+<li>Create <code>&lt;group&gt;/&lt;name&gt;/tsconfig.json</code> from any existing member (keep <code>extends</code>, <code>rootDir</code>,
+<code>outDir</code>, <code>tsBuildInfoFile</code>, <code>include</code>).</li>
+<li>Add <code>&quot;typecheck&quot;: &quot;tsc -b --pretty false&quot;</code>, plus <code>typescript</code> and <code>@types/node</code> (<code>catalog:</code>) to
+<code>devDependencies</code>.</li>
+<li>Add <code>{ &quot;path&quot;: &quot;&lt;group&gt;/&lt;name&gt;&quot; }</code> to the root <code>tsconfig.json</code>.</li>
+<li>Run <code>pnpm check:tsconfig &amp;&amp; pnpm typecheck</code>.</li>
+</ol>
+<h2 id="proving-the-flags">Proving the flags</h2>
+<p><code>packages/testing/typefixtures/*.ts</code> holds one compile-fail fixture per strict option. Each
+violation is marked <code>// @ts-expect-error TS&lt;code&gt; &lt;option&gt;: &lt;reason&gt;</code>. The fixture project is built
+by every <code>tsc -b</code>, so relaxing an option makes the marked line compile, leaves the directive unused
+(TS2578) and fails <code>pnpm typecheck</code>. <code>packages/testing/src/typefixtures.test.ts</code> also verifies that:</p>
+<ul>
+<li>the fixtures compile with no diagnostics as written;</li>
+<li>with the directives removed, exactly the declared error code is reported on each marked line;</li>
+<li>relaxing each option turns that option&#39;s directives into TS2578 errors;</li>
+<li>every covered option has a fixture.</li>
+</ul>
+<p><code>packages/testing/src/project-references.test.ts</code> builds throwaway projects that extend the real base
+config. It shows that circular references are rejected (TS6202), that an unreferenced cross-package
+import fails (TS6307), and that a declared reference builds the dependency first.</p>
+<p><code>forceConsistentCasingInFileNames</code> only takes effect on case-insensitive filesystems, so it is
+asserted structurally (base value and effective value per member) rather than with a fixture.</p>
+</main>
+</div>
+</body>
+</html>

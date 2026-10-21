@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blackwing — Feature List (v1) | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="./CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="./EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="./FEATURE_LIST.html" aria-current="page">Blackwing — Feature List (v1)</a></li>
+<li><a href="./REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="./workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="./workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="./dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="./egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="./storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="./typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="blackwing--feature-list-v1">Blackwing — Feature List (v1)</h1>
+<blockquote>
+<p>Source: customer feature list. SaaS-edition overrides are recorded in <code>CONTEXT_PACK.md</code> §1.1.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Area</th>
+<th>Feature</th>
+<th>What it does</th>
+<th>Release</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Scoping and authorisation</td>
+<td>Scoping form</td>
+<td>Structured form for assets, mode, scope, intrusiveness and budget. Not a chat.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Scoping and authorisation</td>
+<td>Editable test plan</td>
+<td>Planner proposes test cases. The user can add, remove or edit them before the run.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Scoping and authorisation</td>
+<td>Standing authorisation</td>
+<td>Signed approval per asset with an expiry date. Tests inside it need no new approval.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Scoping and authorisation</td>
+<td>Intrusiveness class</td>
+<td>Each test is tagged passive, active-safe or state-changing. Destructive tests are not in v1.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Scoping and authorisation</td>
+<td>Request budget per test case</td>
+<td>Caps requests per test case so the target is not overloaded.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Scoping and authorisation</td>
+<td>Environment attestation</td>
+<td>Asset owner confirms the environment type and any shared database or login service.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Testing</td>
+<td>Three assessment modes</td>
+<td>Black, grey and white box. Grey box is the main mode. Recon is skipped where context is supplied.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Testing</td>
+<td>Grey-box web and API testing</td>
+<td>Runs with customer-provided logins for two or more roles.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Testing</td>
+<td>Multi-role authorisation matrix</td>
+<td>Tests every role against every function and compares expected access with actual access.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Testing</td>
+<td>Session manager</td>
+<td>Keeps logins alive and checks the session is still valid during a run.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Testing</td>
+<td>Scoped egress proxy</td>
+<td>The only route to a target. Scope and request budget are enforced here.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Testing</td>
+<td>Agent team</td>
+<td>Orchestrator, planner, sub-planner, recon, threat intel, specialists, exploit developer, mentor and reflector.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Testing</td>
+<td>Runtime exception gate (Gate 2)</td>
+<td>Action outside the approved scope pauses that branch and pages on-call. No reply means denied.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Validation</td>
+<td>Validator agent</td>
+<td>Replays each finding against a check declared before the test ran.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Validation</td>
+<td>Out-of-band listener</td>
+<td>Own callback server to prove blind and delayed bugs such as blind SSRF.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Validation</td>
+<td>Negative controls</td>
+<td>Runs a harmless version of the request to confirm the result is not a false positive.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Validation</td>
+<td>Confirmed and Suspected lists</td>
+<td>Only evidence-backed findings are Confirmed. The rest stay in Suspected.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Validation</td>
+<td>Standalone repro artifact</td>
+<td>Each confirmed finding ships with steps that can be replayed offline.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>19</td>
+<td>Validation</td>
+<td>Coverage manifest</td>
+<td>Lists what was tested and what was not. A report cannot be exported without it.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Validation</td>
+<td>Reversal journal</td>
+<td>Records every change made to the target so it can be undone.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>21</td>
+<td>Findings and triage</td>
+<td>Triage gate (Gate 3)</td>
+<td>A person reviews findings before the report is released.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>22</td>
+<td>Findings and triage</td>
+<td>Dedup and fingerprinting</td>
+<td>Gives each finding a stable ID so repeat runs do not create duplicates.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>23</td>
+<td>Findings and triage</td>
+<td>Baseline run</td>
+<td>First run becomes the reference. Later runs show new, open, fixed and returned findings.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>24</td>
+<td>Findings and triage</td>
+<td>One-click retest</td>
+<td>Re-checks a single finding after a fix.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>25</td>
+<td>Reporting and integrations</td>
+<td>Report export</td>
+<td>PDF, JSON and SARIF.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>26</td>
+<td>Reporting and integrations</td>
+<td>OWASP and CWE mapping</td>
+<td>Every finding is tagged with OWASP category and CWE ID.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>27</td>
+<td>Reporting and integrations</td>
+<td>Jira and GitHub or GitLab push</td>
+<td>Creates and updates one ticket or issue per finding.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>28</td>
+<td>Reporting and integrations</td>
+<td>Vulnerability dashboard</td>
+<td>Findings by severity, asset and status, with trend across runs.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>29</td>
+<td>Platform, access and governance</td>
+<td>One web console</td>
+<td>Same web UI for developers and security engineers, separated by roles.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>30</td>
+<td>Platform, access and governance</td>
+<td>SSO</td>
+<td>Sign in with the customer&#39;s identity provider (Microsoft, Google, GitHub, Slack).</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>31</td>
+<td>Platform, access and governance</td>
+<td>Separation of duties</td>
+<td>The person who requests a test cannot be the one who approves it.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>32</td>
+<td>Platform, access and governance</td>
+<td>Customer-owned policy layer</td>
+<td>Customer sets its own rules for allowed targets, actions and hours.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>33</td>
+<td>Platform, access and governance</td>
+<td>Kill switch</td>
+<td>Stops all agents at once. Halt time is measured and shown.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>34</td>
+<td>Platform, access and governance</td>
+<td>Audit ledger</td>
+<td>Append-only record of every login, approval, tool action and release.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>35</td>
+<td>Platform, access and governance</td>
+<td>Secrets on customer key store</td>
+<td>Credentials stay in the customer&#39;s own KMS or vault.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>36</td>
+<td>Platform, access and governance</td>
+<td>Bring your own model</td>
+<td>Azure OpenAI, AWS Bedrock, GCP or a custom endpoint. No data goes to other providers.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>37</td>
+<td>Platform, access and governance</td>
+<td>Pinned versions</td>
+<td>Model, prompt and tool versions are fixed per run and recorded.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>38</td>
+<td>Platform, access and governance</td>
+<td>Cost cap</td>
+<td>Maximum model spend per run.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>39</td>
+<td>Platform, access and governance</td>
+<td>Retention</td>
+<td>Customer sets how long findings, evidence and logs are kept.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>40</td>
+<td>Platform, access and governance</td>
+<td>Evaluation harness</td>
+<td>Fixed set of known-vulnerable targets re-run after any model, prompt or tool change.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>41</td>
+<td>Platform, access and governance</td>
+<td>Single-node deployment</td>
+<td>Installs in the customer&#39;s own Azure or AWS subscription. Single tenant. Host Docker socket is not exposed.</td>
+<td>v1</td>
+</tr>
+<tr>
+<td>42</td>
+<td>Later</td>
+<td>Bitbucket, Azure DevOps and ServiceNow integrations</td>
+<td>Push findings to more ticketing and source-control tools.</td>
+<td>Later</td>
+</tr>
+<tr>
+<td>43</td>
+<td>Later</td>
+<td>Diff-driven continuous assessment</td>
+<td>Test only what changed in each release.</td>
+<td>Later</td>
+</tr>
+<tr>
+<td>44</td>
+<td>Later</td>
+<td>Auto-release lane in triage</td>
+<td>Low-risk, repeatedly confirmed finding types skip manual release.</td>
+<td>Later</td>
+</tr>
+</tbody></table>
+<h2 id="explicitly-not-in-v1">Explicitly NOT in v1</h2>
+<ul>
+<li>Destructive tests</li>
+<li>SAST and SCA scanning</li>
+<li>Build gating in CI stop vuln code to get released </li>
+<li>SLA tracking</li>
+<li>Multi-tenant platform</li>
+<li>Chat-based scoping</li>
+<li>Second UI for developers</li>
+</ul>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blackwing admin guide | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="./onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="./egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="./admin-guide.html" aria-current="page">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<hr>
+<h2 id="last_reviewed-2026-10-21">last_reviewed: 2026-10-21</h2>
+<h1 id="blackwing-admin-guide">Blackwing admin guide</h1>
+<p>This guide is for the <strong>Org Owner/Admin</strong> of a Blackwing tenant (the <code>org_admin</code> role). It explains how to
+connect single sign-on, assign roles, author tenant policy, store secrets and bring your own keys, choose a model
+provider and set retention. It also explains the safety controls you cannot switch off, so you can govern your tenant with
+confidence.</p>
+<p>It does not cover the end-user journeys (scope, plan, run, triage and retest), the public API or operator runbooks.</p>
+<h2 id="status-of-each-area">Status of each area</h2>
+<p>Each area below is either <strong>live</strong> in the current build or <strong>planned</strong>. Planned sections describe the intended configuration so
+you can prepare. Do not rely on a planned feature until your Blackwing contact confirms it is
+available on your tenant.</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Role model and permission matrix</td>
+<td>Live</td>
+<td>Enforced in the platform&#39;s permission catalogue. Role assignment is planned.</td>
+</tr>
+<tr>
+<td>Separation of duties on gate decisions and scope exceptions</td>
+<td>Live</td>
+<td>Enforced by the platform policy baseline (see <a href="#separation-of-duties">Separation of duties</a>).</td>
+</tr>
+<tr>
+<td>Platform policy baseline (non-overridable)</td>
+<td>Live</td>
+<td>Shipped and tested.</td>
+</tr>
+<tr>
+<td>Tenant policy authoring and activation</td>
+<td>Planned</td>
+<td>The policy compiler exists. The authoring and activation screens are not yet shipped.</td>
+</tr>
+<tr>
+<td>SSO through Keycloak (Entra ID, Google, GitHub, Slack, OIDC, SAML)</td>
+<td>Planned</td>
+<td>The reference realm has brute-force protection on, but no identity providers are configured yet.</td>
+</tr>
+<tr>
+<td>Blackwing-managed secrets store (OpenBao)</td>
+<td>Planned</td>
+<td>Accepted design (<a href="../adr/0009-openbao-secrets-byok.html">ADR-0009</a>).</td>
+</tr>
+<tr>
+<td>Bring-your-own key and vault adapters</td>
+<td>Planned</td>
+<td>Same design as above.</td>
+</tr>
+<tr>
+<td>Model provider: Blackwing-managed Anthropic API</td>
+<td>Live</td>
+<td>Default provider.</td>
+</tr>
+<tr>
+<td>Model provider: your own Anthropic API key, Amazon Bedrock, Google Vertex AI, Microsoft Foundry</td>
+<td>Planned</td>
+<td>Per-tenant credentials are not yet resolved from the secrets store.</td>
+</tr>
+<tr>
+<td>Retention settings per data class and legal hold</td>
+<td>Planned</td>
+<td>The retention fields exist on evidence records. The retention job and settings are not yet shipped.</td>
+</tr>
+<tr>
+<td>Tenant deletion (crypto-shredding)</td>
+<td>Planned</td>
+<td>Not yet shipped.</td>
+</tr>
+</tbody></table>
+<h2 id="before-you-start">Before you start</h2>
+<p>You need:</p>
+<ul>
+<li>An account with the <code>org_admin</code> role on your tenant. Keep a separate account for administration (see <a href="#separation-of-duties">Separation of
+duties</a>).</li>
+<li>The contact details of your Blackwing operator, who gives you your Keycloak host name (shown below as <code>&lt;keycloak-host&gt;</code>)
+and your tenant&#39;s realm details.</li>
+<li>Administrator access to your identity provider, your cloud account or your key store, depending on the sections you
+configure.</li>
+</ul>
+<p>Never paste a secret, password, token, private key or customer credential into a ticket, a chat or a configuration field
+other than the secret store. Blackwing shows secret values only once, when you enter them, and never again. Examples in this
+guide use placeholders only.</p>
+<h2 id="1-single-sign-on-sso">1. Single sign-on (SSO)</h2>
+<p>Users sign in to the Blackwing console through Keycloak 26, using OpenID Connect with PKCE through the console&#39;s server side.
+Keycloak brokers the sign-in to your identity provider (IdP). Keycloak organisations map the users of your IdP to your
+tenant, so a user from another organisation cannot join your tenant by signing in.</p>
+<p>Four rules apply to every IdP:</p>
+<ul>
+<li><strong>Enforce MFA at the IdP.</strong> Blackwing relies on your IdP&#39;s MFA policy. Keycloak brute-force detection is on for every
+login, but it does not replace MFA.</li>
+<li><strong>Unmapped users have no access.</strong> A user who is in no mapped group gets no tenant role. A role that is unknown or removed
+grants nothing (fail closed).</li>
+<li><strong>Map only the groups you need.</strong> Give each Blackwing role its own narrow group. Do not map a broad group such as &quot;All
+staff&quot;.</li>
+<li><strong>Agree a break-glass method with your Blackwing operator.</strong> Plan how an administrator signs in if your IdP is unavailable.</li>
+</ul>
+<h3 id="11-choose-a-protocol-and-an-idp">1.1 Choose a protocol and an IdP</h3>
+<table>
+<thead>
+<tr>
+<th>IdP</th>
+<th>Protocol</th>
+<th>Groups in the sign-in token</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Microsoft Entra ID</td>
+<td>OpenID Connect</td>
+<td>Yes, as a group claim</td>
+<td>Use group object IDs for large groups (see below).</td>
+</tr>
+<tr>
+<td>Google</td>
+<td>OpenID Connect</td>
+<td>Not by default</td>
+<td>Group membership needs Google Cloud Identity groups. Otherwise assign roles directly.</td>
+</tr>
+<tr>
+<td>GitHub</td>
+<td>OAuth 2.0 identity provider</td>
+<td>Only if your mapper reads team membership</td>
+<td>Enforce two-factor authentication in your GitHub organisation.</td>
+</tr>
+<tr>
+<td>Slack</td>
+<td>OpenID Connect (&quot;Sign in with Slack&quot;)</td>
+<td>No</td>
+<td>Assign roles directly.</td>
+</tr>
+<tr>
+<td>Generic OIDC</td>
+<td>OpenID Connect</td>
+<td>Depends on your provider</td>
+<td>Ask for a <code>groups</code> claim.</td>
+</tr>
+<tr>
+<td>Generic SAML 2.0</td>
+<td>SAML</td>
+<td>Yes, as an attribute statement</td>
+<td>Requires signing-certificate and metadata exchange (see 1.4).</td>
+</tr>
+</tbody></table>
+<h3 id="12-redirect-callback-address">1.2 Redirect (callback) address</h3>
+<p>Register this address with every IdP. Keycloak derives it from the realm and the provider alias you choose:</p>
+<pre><code>https://&lt;keycloak-host&gt;/realms/blackwing/broker/&lt;alias&gt;/endpoint
+</code></pre>
+<p>Use a short lowercase alias such as <code>entra</code>, <code>google</code>, <code>github</code>, <code>slack</code>, <code>oidc</code> or <code>saml</code>. The alias must match the address
+exactly. A mismatch is the most common cause of a &quot;redirect URI&quot; error at sign-in.</p>
+<h3 id="13-microsoft-entra-id-openid-connect">1.3 Microsoft Entra ID (OpenID Connect)</h3>
+<ol>
+<li>In the Entra admin centre, register an application (single tenant, or multi-tenant if you sign in users from several
+directories). Add a <strong>Web</strong> redirect URI from 1.2.</li>
+<li>Under <strong>Certificates and secrets</strong>, create a client secret. Record its expiry date. Store the secret value in the Blackwing
+secret store (section 4), never in a document. An expired secret stops sign-in for every user.</li>
+<li>Under <strong>Token configuration</strong>, add the <strong>groups</strong> claim for security groups. If a user is in more than 200 groups, Entra
+sends an overage indicator instead of the list. In that case, select <strong>Group ID</strong> and map by group object ID.</li>
+<li>In the Blackwing SSO settings, enter:<ul>
+<li>issuer <code>https://login.microsoftonline.com/&lt;tenant-id&gt;/v2.0</code>;</li>
+<li>client ID (the application ID);</li>
+<li>the client secret reference;</li>
+<li>the group claim name (<code>groups</code>).</li>
+</ul>
+</li>
+<li>Map each Entra group to one Blackwing role (section 2).</li>
+</ol>
+<h3 id="14-google-github-slack-and-generic-oidc">1.4 Google, GitHub, Slack and generic OIDC</h3>
+<ul>
+<li><strong>Google:</strong> create an OAuth client in Google Cloud for a web application and add the redirect address. Use issuer
+<code>https://accounts.google.com</code>. Restrict sign-in to your Google Workspace domain. Assign roles directly unless you use
+Cloud Identity groups.</li>
+<li><strong>GitHub:</strong> create an OAuth app for your organisation, set the callback to the address from 1.2, and enter the client ID
+and secret reference. Require two-factor authentication for the organisation.</li>
+<li><strong>Slack:</strong> create a Slack app with the OpenID Connect sign-in scope and the redirect address. Use issuer <code>https://slack.com</code>.
+Slack does not send groups, so assign roles directly.</li>
+<li><strong>Generic OIDC:</strong> enter the issuer URL, client ID, client secret reference and the claim that carries groups.</li>
+</ul>
+<h3 id="15-saml-20-differences-from-oidc">1.5 SAML 2.0 (differences from OIDC)</h3>
+<p>SAML differs from OIDC in four ways:</p>
+<ol>
+<li><strong>Metadata, not an issuer URL.</strong> Exchange metadata with your operator. Keycloak publishes the service-provider metadata for the
+realm, and your IdP needs it. The assertion consumer address is the one from 1.2 (<code>.../broker/&lt;alias&gt;/endpoint</code>).</li>
+<li><strong>Signing certificate.</strong> Give Blackwing your IdP&#39;s signing certificate, and rotate it before it expires. Keep assertion
+signing on. Unsigned assertions must never be accepted.</li>
+<li><strong>Attribute, not claim.</strong> Send groups as a multi-value attribute statement, and name it exactly as you configure the
+mapping in section 2.</li>
+<li><strong>Clock skew.</strong> SAML assertions carry a validity window. A badly synchronised clock makes valid sign-ins fail. Keep the IdP&#39;s
+time synchronised with NTP.</li>
+</ol>
+<h3 id="16-troubleshooting-sign-in">1.6 Troubleshooting sign-in</h3>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&quot;Invalid redirect URI&quot;</td>
+<td>Alias or host differs from the registered address</td>
+<td>Compare 1.2 with the registration exactly, including the trailing <code>/endpoint</code>.</td>
+</tr>
+<tr>
+<td>Sign-in succeeds but the user sees no workspace</td>
+<td>No mapped group, or the group is not in the token</td>
+<td>Check the group mapping (section 2) and the group claim name.</td>
+</tr>
+<tr>
+<td>Sign-in fails after months</td>
+<td>Expired client secret or signing certificate</td>
+<td>Renew it, store the new value, and retest with a test user.</td>
+</tr>
+<tr>
+<td>Entra user missing groups</td>
+<td>More than 200 groups (overage)</td>
+<td>Switch the claim to group object IDs (1.3, step 3).</td>
+</tr>
+<tr>
+<td>SAML sign-in fails intermittently</td>
+<td>Clock skew</td>
+<td>Synchronise the IdP and Blackwing clocks.</td>
+</tr>
+</tbody></table>
+<h2 id="2-roles-and-the-permission-matrix">2. Roles and the permission matrix</h2>
+<p>Each user holds one or more of six tenant roles. A user&#39;s permissions are the union of the permissions of their roles.</p>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Purpose</th>
+<th>Can do</th>
+<th>Cannot do</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>org_admin</code></td>
+<td>Administers the tenant</td>
+<td>Manage SSO, members, tenant policies (read and write), connectors, secret references, tenant settings (retention and model endpoint), access tokens, the kill switch, and read the audit ledger.</td>
+<td>Create or cancel runs, edit test plans, approve authorisations or gates, triage or release findings.</td>
+</tr>
+<tr>
+<td><code>appsec_engineer</code></td>
+<td>Operates assessments</td>
+<td>Manage assets and verify ownership, create authorisations, create and cancel runs, edit test plans, triage and release findings, export reports, trigger the kill switch.</td>
+<td>Approve authorisations, approve test plans, decide gates.</td>
+</tr>
+<tr>
+<td><code>asset_owner</code></td>
+<td>Authorises testing of their assets</td>
+<td>Manage and verify their assets, create, approve and revoke authorisations, approve test plans, decide Gate 1 and Gate 2, cancel runs, trigger the kill switch.</td>
+<td>Manage tenant settings, policies, members or secrets.</td>
+</tr>
+<tr>
+<td><code>developer</code></td>
+<td>Consumes findings</td>
+<td>Read assets, authorisations, runs, test plans, findings, reports and coverage. Trigger pre-production runs and retests on assets assigned to them.</td>
+<td>Release findings, approve anything, change settings.</td>
+</tr>
+<tr>
+<td><code>auditor</code></td>
+<td>Read-only oversight</td>
+<td>Read assets, authorisations, runs, test plans, gates, findings, reports, coverage, tenant policies and the audit ledger.</td>
+<td>Any write.</td>
+</tr>
+<tr>
+<td><code>ci_pipeline</code></td>
+<td>Unattended pipeline runs</td>
+<td>Read, and create runs inside a standing authorisation, using a scoped CI token.</td>
+<td>Approve, triage, release or change anything.</td>
+</tr>
+</tbody></table>
+<p>Role assignment is planned. Until it ships, your operator assigns roles for you. Give each person the smallest role that
+does their job.</p>
+<h3 id="mapping-idp-groups-to-roles">Mapping IdP groups to roles</h3>
+<p>Map one narrow group per role. For example:</p>
+<table>
+<thead>
+<tr>
+<th>IdP group (example name)</th>
+<th>Blackwing role</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bw-tenant-admins</code></td>
+<td><code>org_admin</code></td>
+</tr>
+<tr>
+<td><code>bw-appsec</code></td>
+<td><code>appsec_engineer</code></td>
+</tr>
+<tr>
+<td><code>bw-asset-owners</code></td>
+<td><code>asset_owner</code></td>
+</tr>
+<tr>
+<td><code>bw-developers</code></td>
+<td><code>developer</code></td>
+</tr>
+<tr>
+<td><code>bw-auditors</code></td>
+<td><code>auditor</code></td>
+</tr>
+</tbody></table>
+<p>Group names are examples. Use your own. A user in several groups receives the union of those roles, so avoid putting the same
+person in both <code>bw-tenant-admins</code> and <code>bw-asset-owners</code>.</p>
+<p>Reference realm role names use hyphens (for example <code>org-admin</code>). Blackwing role identifiers use underscores (for example
+<code>org_admin</code>). Map to the Blackwing identifiers in the SSO settings.</p>
+<h3 id="separation-of-duties">Separation of duties</h3>
+<p>Three decisions must come from someone other than the person who asked for them:</p>
+<ul>
+<li><strong>Authorisation (standing authorisation, SA):</strong> the requester cannot approve their own request. Approval belongs only to
+<code>asset_owner</code>. <code>org_admin</code> cannot approve authorisations, and this is by design.</li>
+<li><strong>Gate 1 (scope and test-plan approval):</strong> a user cannot decide a gate request they raised. The platform policy baseline
+enforces this on every decision.</li>
+<li><strong>Gate 2 (runtime exception):</strong> a scope exception&#39;s approver can never be its requester. The platform policy baseline
+enforces this on every request. A request with no reply is denied.</li>
+</ul>
+<p>Practical rules:</p>
+<ul>
+<li>Do not give <code>org_admin</code> to the people who approve authorisations or gates.</li>
+<li>Give administrators a separate account from their day-to-day operating or approving account.</li>
+<li>Do not map the same person to both <code>appsec_engineer</code> and <code>asset_owner</code> unless you accept that they can raise a request
+under one role and approve a different request under the other. Separate the roles where you can.</li>
+</ul>
+<h2 id="3-tenant-policy-layer">3. Tenant policy layer</h2>
+<p>Your tenant policies narrow what agents may do. They sit on top of a platform baseline that you cannot change.</p>
+<h3 id="31-the-platform-baseline-non-overridable">3.1 The platform baseline (non-overridable)</h3>
+<p>The baseline is a set of Cedar <code>forbid</code> rules that Blackwing ships and every tenant inherits. In Cedar, a <code>forbid</code> always
+overrides a <code>permit</code>, so no tenant policy can allow what the baseline forbids. The baseline covers:</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Destructive class (<code>destructive</code>)</td>
+<td>Denied for egress, tool use and scope exceptions, whether the class comes from the request or from the test case. This is a hard block.</td>
+</tr>
+<tr>
+<td>Envelope validity</td>
+<td>Traffic is denied before the authorisation starts, at its expiry, and while the testing window is closed.</td>
+</tr>
+<tr>
+<td>Intrusiveness ceiling</td>
+<td>Traffic and tools may not exceed the authorisation&#39;s maximum or the agent&#39;s ceiling.</td>
+</tr>
+<tr>
+<td>Out of scope</td>
+<td>A target that is not in scope is unreachable (default deny).</td>
+</tr>
+<tr>
+<td>Private and metadata ranges</td>
+<td>Denied unless the target is in scope and the authorisation names that range.</td>
+</tr>
+<tr>
+<td>Scope hash</td>
+<td>The authorisation&#39;s scope hash must match the hash pinned on the run.</td>
+</tr>
+<tr>
+<td>Separation of duties</td>
+<td>Gate decisions and scope exceptions as described in section 2.</td>
+</tr>
+<tr>
+<td>Tenant isolation</td>
+<td>Principal, resource and request must belong to the same tenant.</td>
+</tr>
+<tr>
+<td>State-changing class</td>
+<td>Needs a prior reversal-journal entry and an authorisation ceiling that allows it.</td>
+</tr>
+</tbody></table>
+<p>If you try to write a tenant policy that allows a baseline-forbidden action, the action is still denied. A tenant policy that
+uses a reserved <code>baseline.</code> identifier, or the reserved annotation, is rejected for the whole policy set. Nothing from the
+rejected set is loaded.</p>
+<h3 id="32-authoring-tenant-policies">3.2 Authoring tenant policies</h3>
+<p>Tenant policies use Cedar. Blackwing validates every policy against its strict schema before activation. Unknown actions,
+entity types or attributes are rejected, so you cannot redefine the model. A missing attribute fails closed.</p>
+<p>The main entity types are <code>Blackwing::Target</code> (a destination, with <code>host</code>, <code>port</code>, <code>path</code>, <code>method</code> and <code>inScope</code>),
+<code>Blackwing::TestCase</code>, <code>Blackwing::Asset</code>, <code>Blackwing::Run</code>, <code>Blackwing::User</code>, <code>Blackwing::ServiceAccount</code> and
+<code>Blackwing::AgentSession</code>. The main actions are <code>Egress::Action::&quot;httpRequest&quot;</code>, <code>Egress::Action::&quot;tcpConnect&quot;</code>,
+<code>Egress::Action::&quot;dnsResolve&quot;</code>, <code>Tool::Action::&quot;invoke&quot;</code>, <code>Scope::Action::&quot;requestException&quot;</code>, <code>Gate::Action::&quot;decide&quot;</code> and
+<code>Policy::Action::&quot;edit&quot;</code>.</p>
+<p>A tenant policy that blocks traffic to one host pattern looks like this:</p>
+<pre><code class="language-cedar">forbid (
+  principal,
+  action in [Egress::Action::&quot;httpRequest&quot;],
+  resource is Blackwing::Target
+)
+when {
+  resource.host like &quot;*.payments.example.com&quot;
+};
+</code></pre>
+<p>Use <code>forbid</code> to narrow. Use <code>permit</code> only where the baseline allows the action and you want an explicit grant; a <code>permit</code> never
+widens the baseline.</p>
+<h3 id="33-versions-and-activation">3.3 Versions and activation</h3>
+<ul>
+<li>Every policy change is a new version. The change and its author are written to the audit ledger (section 8).</li>
+<li>Each run records the hash of the policy set it started with, so a run never silently changes its rules. A new version applies
+to runs started after you activate it.</li>
+<li>To roll back, activate a previous version. Rollback is audited the same way.</li>
+<li>Only <code>org_admin</code> can write tenant policies. <code>appsec_engineer</code>, <code>asset_owner</code> and <code>auditor</code> can read them.</li>
+</ul>
+<h2 id="4-secrets-and-bring-your-own-key-byok">4. Secrets and bring-your-own key (BYOK)</h2>
+<p>Blackwing never stores a credential in plaintext in a configuration table. You store a <strong>secret reference</strong> in the tenant, and
+the secret value stays in a secret store:</p>
+<ul>
+<li>The session manager and the egress gateway inject the credential when a request needs it.</li>
+<li>Agents, the model and the logs never see the plaintext value. Known secret values are redacted from tool output before the model
+receives it.</li>
+<li>Every add, change or delete of a secret reference is audited. Values are never displayed after entry.</li>
+</ul>
+<h3 id="41-choose-where-the-key-lives">4.1 Choose where the key lives</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Who holds the key</th>
+<th>Use when</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Blackwing-managed OpenBao (default)</td>
+<td>Blackwing, with a separate key per tenant (envelope encryption)</td>
+<td>You do not need to hold keys yourself.</td>
+</tr>
+<tr>
+<td>Your AWS KMS key (cross-account)</td>
+<td>You</td>
+<td>You need key control and can revoke Blackwing&#39;s access.</td>
+</tr>
+<tr>
+<td>Your HashiCorp Vault or OpenBao</td>
+<td>You</td>
+<td>You already run a Vault or OpenBao estate.</td>
+</tr>
+<tr>
+<td>AWS Secrets Manager</td>
+<td>You</td>
+<td>Your secrets live in AWS Secrets Manager.</td>
+</tr>
+<tr>
+<td>Azure Key Vault</td>
+<td>You</td>
+<td>Your secrets live in Azure Key Vault.</td>
+</tr>
+</tbody></table>
+<p>If you revoke Blackwing&#39;s access to a BYOK key, Blackwing operations that need it fail. They do not fall back to a weaker store.</p>
+<h3 id="42-granting-blackwing-access-to-your-aws-kms-key">4.2 Granting Blackwing access to your AWS KMS key</h3>
+<p>Add a statement to the key policy that allows only the Blackwing role for your tenant, and only the operations the envelope
+encryption needs. Restrict the statement to this one key, never to <code>*</code>:</p>
+<pre><code class="language-json">{
+  &quot;Sid&quot;: &quot;BlackwingTenantEnvelopeEncryption&quot;,
+  &quot;Effect&quot;: &quot;Allow&quot;,
+  &quot;Principal&quot;: { &quot;AWS&quot;: &quot;arn:aws:iam::&lt;blackwing-account-id&gt;:role/&lt;blackwing-tenant-role&gt;&quot; },
+  &quot;Action&quot;: [&quot;kms:Encrypt&quot;, &quot;kms:Decrypt&quot;, &quot;kms:GenerateDataKey&quot;, &quot;kms:DescribeKey&quot;],
+  &quot;Resource&quot;: &quot;*&quot;
+}
+</code></pre>
+<p>In a key policy the resource is always the key the policy is attached to, so <code>&quot;Resource&quot;: &quot;*&quot;</code> scopes the statement to this key
+only. Your Blackwing operator gives you the exact role ARN for your tenant. Keep the key enabled and out of a pending-deletion
+state, and create it in the region your Blackwing environment runs in.</p>
+<h3 id="43-other-vaults">4.3 Other vaults</h3>
+<ul>
+<li><strong>Vault or OpenBao:</strong> mount a KV v2 or Transit engine for Blackwing only, and grant a policy that covers only that mount.</li>
+<li><strong>AWS Secrets Manager:</strong> attach a resource policy that allows the Blackwing role to read only the secrets you name.</li>
+<li><strong>Azure Key Vault:</strong> assign the Blackwing service principal a built-in role scoped to the vault (for example Key Vault Secrets
+User for secrets, or Key Vault Crypto User for keys). Role assignments can take several minutes to take effect.</li>
+</ul>
+<h3 id="44-registering-a-secret-reference">4.4 Registering a secret reference</h3>
+<p>Enter a reference name you choose (for example <code>target-admin-credentials</code>), the option from 4.1, and the location in your store
+(for example the vault path or the secret ARN). Do not enter the value into the reference field. Blackwing stores only the
+reference.</p>
+<p>Rotate a credential in your own store. Blackwing picks up the new value on the next use. Rotate immediately if a value has been
+exposed anywhere.</p>
+<h3 id="45-byok-troubleshooting">4.5 BYOK troubleshooting</h3>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Access denied when Blackwing reads or writes a secret</td>
+<td>The key policy, resource policy or role assignment does not grant the Blackwing role</td>
+<td>Compare 4.2 or 4.3 with your policy. Check the Blackwing role ARN or service principal.</td>
+</tr>
+<tr>
+<td>Operations fail after a key change</td>
+<td>The key is disabled, pending deletion or in another region</td>
+<td>Re-enable the key, or point the reference at the key in the correct region.</td>
+</tr>
+<tr>
+<td>Operations fail after a vault restart or seal</td>
+<td>The vault is sealed or unreachable</td>
+<td>Unseal the vault. Blackwing does not fall back to another store.</td>
+</tr>
+<tr>
+<td>Access worked yesterday and fails today</td>
+<td>A role or policy was removed or changed</td>
+<td>Restore the grant. Check your change history and the audit ledger.</td>
+</tr>
+<tr>
+<td>Failures start after a rotation</td>
+<td>The reference points at the old version</td>
+<td>Update the reference to the new version or path.</td>
+</tr>
+</tbody></table>
+<h2 id="5-model-providers">5. Model providers</h2>
+<p>Blackwing&#39;s agents run on Claude only. Each run&#39;s model calls go through the Blackwing model gateway, which routes them to one
+provider. A run never sends data to a second provider.</p>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Blackwing-managed Anthropic API</td>
+<td>Live</td>
+<td>Default. Blackwing holds the provider credential.</td>
+</tr>
+<tr>
+<td>Your own Anthropic API key</td>
+<td>Planned</td>
+<td>Your key is held as a secret reference (section 4).</td>
+</tr>
+<tr>
+<td>Amazon Bedrock (your Claude deployment)</td>
+<td>Planned</td>
+<td>Uses your AWS account and IAM.</td>
+</tr>
+<tr>
+<td>Google Vertex AI (your Claude deployment)</td>
+<td>Planned</td>
+<td>Uses your Google Cloud project and IAM.</td>
+</tr>
+<tr>
+<td>Microsoft Foundry (your Claude deployment)</td>
+<td>Planned</td>
+<td>Uses your Foundry deployment.</td>
+</tr>
+</tbody></table>
+<p>Not supported: Azure OpenAI and GPT models, and any other model family. &quot;Bring your own model&quot; on Blackwing means bring your own
+<strong>Claude</strong> endpoint. A Claude.ai subscription login is never accepted for customer runs. Only a developer platform API key or a
+supported cloud deployment can power a run.</p>
+<h3 id="selecting-a-provider">Selecting a provider</h3>
+<p>Select the provider in the tenant&#39;s model endpoint settings (<code>org_admin</code>). The change applies to runs started after you save it.
+Every change is audited.</p>
+<h3 id="pinning-and-reproducibility">Pinning and reproducibility</h3>
+<p>Every run records the model IDs it used, along with the agent prompt versions, the SDK and CLI versions, and the policy hash.
+Runs never silently pick up a newer model. To move to a new model, change the setting for future runs and keep the old runs&#39;
+records.</p>
+<h3 id="failover-and-outages">Failover and outages</h3>
+<ul>
+<li><strong>No cross-provider failover.</strong> If your provider is unavailable, runs pause or fail. Blackwing does not send the run to another
+provider.</li>
+<li><strong>Fallback model.</strong> A fallback model is used only if your provider policy allows it, and it stays on the same provider.</li>
+<li><strong>Check first.</strong> When a run stops, check its status in the console, then your provider&#39;s status page. Resume the run when the
+provider recovers.</li>
+</ul>
+<h2 id="6-retention">6. Retention</h2>
+<p>Retention decides how long Blackwing keeps each class of data. It is set per data class and must stay within the platform
+floor, which Blackwing operates. You can extend retention for a class. You cannot shorten it below the floor.</p>
+<table>
+<thead>
+<tr>
+<th>Data class</th>
+<th>Platform default (reference)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Evidence artefacts (screenshots, traces, repro artefacts)</td>
+<td>30 days in object-lock COMPLIANCE mode</td>
+<td>Locked versions cannot be deleted or shortened by anyone, including Blackwing staff.</td>
+</tr>
+<tr>
+<td>Reports and exports</td>
+<td>90 days</td>
+<td></td>
+</tr>
+<tr>
+<td>Agent transcripts</td>
+<td>180 days</td>
+<td></td>
+</tr>
+<tr>
+<td>Backups</td>
+<td>35 days</td>
+<td>Operated by Blackwing.</td>
+</tr>
+</tbody></table>
+<p>The defaults above come from the platform storage design. Your tenant&#39;s effective values are in the retention settings.</p>
+<h3 id="legal-hold">Legal hold</h3>
+<p>A legal hold stops evidence from being deleted when its retention date passes, until the hold is released. Holds apply per
+evidence item. Setting or releasing a hold is an audited change. Use holds for investigations or litigation, and release them
+when they end, or your data will be kept longer than you intend.</p>
+<h3 id="object-lock-and-deletion">Object lock and deletion</h3>
+<p>Evidence is stored in object-lock COMPLIANCE mode. Within the lock period nobody can shorten it or delete a locked version,
+including Blackwing staff. Retention is enforced by server time, not by client clocks.</p>
+<h3 id="tenant-deletion-crypto-shredding">Tenant deletion (crypto-shredding)</h3>
+<p>When a tenant is deleted, Blackwing destroys the tenant&#39;s encryption keys. Stored data then cannot be read, including in backups.
+Data still under object lock remains in storage until its retention date, but it is unreadable once the keys are gone. If you
+hold your own key (section 4), revoking Blackwing&#39;s access to it stops Blackwing from reading the data under that key.</p>
+<p>Tenant deletion is not reversible. Export anything you need before you start it.</p>
+<h2 id="7-tenant-settings-checklist">7. Tenant settings checklist</h2>
+<p>Work through this list before you invite users to a live tenant:</p>
+<ol>
+<li>Configure SSO with MFA enforced at the IdP, and test sign-in with a test user from each group.</li>
+<li>Map one narrow group to each role. Confirm that an unmapped test user has no access.</li>
+<li>Keep administrator accounts separate from approving accounts.</li>
+<li>Register secret references for every credential, and confirm that no value appears in any configuration field, ticket or chat.</li>
+<li>If you use BYOK, grant only the Blackwing role on the one key or vault, and test a read and a write.</li>
+<li>Choose a model provider, and confirm that it is the one you expect in the tenant settings.</li>
+<li>Set retention per data class, and decide who may place and release legal holds.</li>
+<li>Add a tenant policy only where you need one, and confirm that it does not conflict with the platform baseline.</li>
+<li>Confirm that your audit ledger shows the changes you just made.</li>
+</ol>
+<h2 id="8-audit-and-the-kill-switch">8. Audit and the kill switch</h2>
+<p>Every login, approval, gate decision, tool action, finding release, export, kill and configuration change is written to the
+append-only audit ledger. Your <code>auditor</code> and <code>org_admin</code> roles can read it. Audit events cannot be edited or deleted, and no
+retention setting can remove them.</p>
+<p>Any role with <code>kill:trigger</code> can stop agents in scope at run, asset, or tenant level. The kill switch blocks egress first, then
+terminates sandboxes and cancels workflows. Your SOC can trigger it through a link that does not need a Blackwing account. Halt
+time is measured and shown.</p>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blackwing SaaS v1: Engineering Context Pack | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="./CONTEXT_PACK.html" aria-current="page">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="./EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="./FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="./REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="./workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="./workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="./dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="./egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="./storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="./typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="blackwing-saas-v1-engineering-context-pack">Blackwing SaaS v1: Engineering Context Pack</h1>
+<blockquote>
+<p>Source of truth for every GitHub issue in <code>TinycrowsLab/Blacwing_SAAS</code>. An engineer or a Claude Code session picking up any issue can rely on the decisions below without asking for more context. Where an issue and this pack disagree, the issue&#39;s explicit text wins for that issue only, and the issue must say so.</p>
+</blockquote>
+<hr>
+<h2 id="1-product-in-one-paragraph">1. Product in one paragraph</h2>
+<p><strong>Blackwing</strong> is an autonomous security-assessment platform that runs <strong>under human authorisation</strong>. Customers register assets (web apps, APIs, hosts/network ranges, source repositories) and authorise testing with a signed, expiring <strong>standing authorisation</strong>. They then request assessments in <strong>black-box, grey-box (primary mode) or white-box</strong> mode. A team of AI agents runs recon, plans test cases, executes them inside disposable sandboxes and reaches targets <strong>only through a scoped egress gateway</strong>. Every candidate finding is proven by a deterministic <strong>validator</strong> with negative controls, and a human releases findings (<strong>Gate 3</strong>) before they reach reports and trackers. Three human gates exist:</p>
+<ul>
+<li><strong>Gate 1:</strong> scope/test-plan approval.</li>
+<li><strong>Gate 2:</strong> runtime exception, when an action falls outside the envelope.</li>
+<li><strong>Gate 3:</strong> triage and release.</li>
+</ul>
+<p>A <strong>kill switch</strong>, held by the customer&#39;s SOC, stops everything.</p>
+<h3 id="11-what-changed-versus-the-original-feature-list-deliberate-overrides">1.1 What changed versus the original feature list (deliberate overrides)</h3>
+<p>The original feature list (F1–F44) was written for a <strong>single-tenant on-prem</strong> product. This repository builds the <strong>SaaS edition first</strong>; an on-prem edition comes later. Overrides:</p>
+<table>
+<thead>
+<tr>
+<th>Original</th>
+<th>SaaS v1 decision</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&quot;Multi-tenant platform: not in v1&quot;</td>
+<td><strong>Reversed.</strong> SaaS is multi-tenant: organisations are tenants, with strict isolation (Postgres RLS, per-tenant keys, per-run sandboxes, per-tenant egress policy).</td>
+</tr>
+<tr>
+<td>F41 &quot;Single-node deployment in customer&#39;s Azure/AWS&quot;</td>
+<td>Replaced by <strong>Blackwing-operated SaaS on AWS EC2 (k3s)</strong>. Keep the invariant &quot;<strong>host Docker socket is never exposed to sandboxes</strong>&quot;. Keep deployment portable for a future on-prem mode (Later epic).</td>
+</tr>
+<tr>
+<td>F36 &quot;Bring your own model: Azure OpenAI, Bedrock, GCP, custom endpoint&quot;</td>
+<td>The agent runtime is <strong>Claude Code (Claude Agent SDK)</strong>, so models are <strong>Claude only</strong>. &quot;Bring your own model&quot; becomes <strong>bring your own Claude endpoint</strong>: Blackwing-managed Anthropic API (default), the customer&#39;s own Anthropic API key, the customer&#39;s <strong>Amazon Bedrock</strong>, <strong>Google Vertex AI</strong> or <strong>Microsoft Foundry</strong> Claude deployment. The guarantee &quot;no data goes to other providers&quot; is enforced by the model gateway. Azure OpenAI/GPT is <strong>not supported</strong>.</td>
+</tr>
+<tr>
+<td>F35 &quot;Secrets on customer key store&quot;</td>
+<td>Per-tenant envelope encryption via <strong>OpenBao</strong> (Blackwing-managed), with <strong>BYOK/BYO-vault references</strong>: customer AWS KMS (cross-account), customer HashiCorp Vault/OpenBao, AWS Secrets Manager, Azure Key Vault.</td>
+</tr>
+<tr>
+<td>&quot;PentAGI&quot;</td>
+<td><strong>Not used.</strong> Everything is built from scratch.</td>
+</tr>
+</tbody></table>
+<p>Still <strong>NOT in v1</strong> (do not build; reject scope creep): destructive tests, standalone SAST/SCA scanning products (white-box <em>uses</em> source to guide runtime tests; it does not ship SAST findings), build gating in CI (no &quot;fail the build&quot; feature), SLA tracking, chat-based scoping (the scoping form is structured), a second UI for developers (one console separated by roles), mobile app testing, billing/payments (plans and quotas only).</p>
+<h3 id="12-personas-humans-and-systems">1.2 Personas (humans and systems)</h3>
+<ul>
+<li><strong>AppSec Engineer:</strong> operates runs, edits test plans, triages findings (Gate 3), manages assets.</li>
+<li><strong>Asset Owner:</strong> authorises testing of an asset (signs the standing authorisation), approves Gate 1/Gate 2 for their assets, attests the environment.</li>
+<li><strong>Developer:</strong> triggers pre-prod runs on assets assigned to them, consumes released findings, fixes them, triggers one-click retest.</li>
+<li><strong>CI/CD Pipeline:</strong> unattended runs inside a standing authorisation, using scoped CI tokens.</li>
+<li><strong>Customer SOC:</strong> receives test-window notices, holds the kill switch (no Blackwing account needed for the emergency kill link).</li>
+<li><strong>Auditor:</strong> read-only access to the audit ledger, reports and coverage.</li>
+<li><strong>Org Owner/Admin:</strong> SSO, roles, policies, connectors, secrets, retention and model settings.</li>
+<li><strong>Blackwing Platform Operator (Tinycrows staff):</strong> tenant support, ownership-verification review queue, global kill switch, release management of models/prompts/tools. Fully separate from tenant roles, and every action is audited.</li>
+</ul>
+<hr>
+<h2 id="2-feature-catalogue-ids-used-in-issues">2. Feature catalogue (IDs used in issues)</h2>
+<p><code>F1</code> Scoping form · <code>F2</code> Editable test plan · <code>F3</code> Standing authorisation · <code>F4</code> Intrusiveness class (passive / active-safe / state-changing; destructive not in v1) · <code>F5</code> Request budget per test case · <code>F6</code> Environment attestation · <code>F7</code> Three assessment modes (grey box primary; recon skipped where context supplied) · <code>F8</code> Grey-box web &amp; API testing with ≥2 roles · <code>F9</code> Multi-role authorisation matrix · <code>F10</code> Session manager · <code>F11</code> Scoped egress proxy · <code>F12</code> Agent team · <code>F13</code> Runtime exception gate (Gate 2; no reply = denied) · <code>F14</code> Validator agent (replay against a check declared before the test ran) · <code>F15</code> Out-of-band listener · <code>F16</code> Negative controls · <code>F17</code> Confirmed and Suspected lists · <code>F18</code> Standalone repro artifact · <code>F19</code> Coverage manifest (report cannot export without it) · <code>F20</code> Reversal journal · <code>F21</code> Triage gate (Gate 3) · <code>F22</code> Dedup &amp; fingerprinting · <code>F23</code> Baseline run (new/open/fixed/returned) · <code>F24</code> One-click retest · <code>F25</code> Report export PDF/JSON/SARIF (+CSV/XML P2) · <code>F26</code> OWASP &amp; CWE mapping · <code>F27</code> Jira and GitHub/GitLab push · <code>F28</code> Vulnerability dashboard · <code>F29</code> One web console (roles) · <code>F30</code> SSO (Microsoft, Google, GitHub, Slack) · <code>F31</code> Separation of duties · <code>F32</code> Customer-owned policy layer · <code>F33</code> Kill switch (halt time measured and shown) · <code>F34</code> Audit ledger · <code>F35</code> Secrets on customer key store · <code>F36</code> Bring your own (Claude) model · <code>F37</code> Pinned versions · <code>F38</code> Cost cap · <code>F39</code> Retention · <code>F40</code> Evaluation harness · <code>F41</code> Deployment (SaaS on AWS) · Later: <code>F42</code> Bitbucket/Azure DevOps/ServiceNow · <code>F43</code> Diff-driven continuous assessment · <code>F44</code> Auto-release lane in triage.</p>
+<hr>
+<h2 id="3-architecture-saas">3. Architecture (SaaS)</h2>
+<h3 id="31-layers-from-the-component-diagram-and-where-each-lives">3.1 Layers (from the component diagram) and where each lives</h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Component</th>
+<th>Implementation (repo path)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Access</td>
+<td>Web Console</td>
+<td><code>apps/web</code> (Next.js)</td>
+</tr>
+<tr>
+<td>Access</td>
+<td>REST &amp; GraphQL API (service accounts, scoped CI tokens)</td>
+<td><code>apps/api</code> (NestJS/Fastify)</td>
+</tr>
+<tr>
+<td>Access</td>
+<td>Identity &amp; SSO</td>
+<td>Keycloak 26 (Organizations, IdP brokering) + <code>apps/api</code> auth module</td>
+</tr>
+<tr>
+<td>Authorisation &amp; Policy</td>
+<td>Standing Authorisation Register</td>
+<td><code>apps/api</code> module <code>authorisations</code> + <code>packages/crypto</code></td>
+</tr>
+<tr>
+<td>Authorisation &amp; Policy</td>
+<td>Scope &amp; Test-Case Service</td>
+<td><code>apps/api</code> modules <code>scoping</code>, <code>test-plans</code></td>
+</tr>
+<tr>
+<td>Authorisation &amp; Policy</td>
+<td>Policy Decision Point</td>
+<td><code>packages/policy</code> (Cedar via <code>@cedar-policy/cedar-wasm</code>), Go mirror in <code>apps/egress-gateway</code> (<code>cedar-go</code>)</td>
+</tr>
+<tr>
+<td>Agent Runtime</td>
+<td>Orchestrator, Planner, Sub-planner, Agent Registry</td>
+<td><code>apps/worker</code> (Temporal run workflow) + <code>apps/agent-runtime</code> (Claude Agent SDK host) + <code>packages/agents</code></td>
+</tr>
+<tr>
+<td>Model &amp; Memory</td>
+<td>Model Gateway</td>
+<td><code>apps/model-gateway</code> (Anthropic-compatible proxy)</td>
+</tr>
+<tr>
+<td>Model &amp; Memory</td>
+<td>Context Manager; Memory &amp; Knowledge</td>
+<td><code>apps/agent-runtime</code> + <code>packages/memory</code> (Neo4j asset graph, pgvector)</td>
+</tr>
+<tr>
+<td>Execution Sandbox</td>
+<td>Scoped Egress Proxy</td>
+<td><code>apps/egress-gateway</code> (Go)</td>
+</tr>
+<tr>
+<td>Execution Sandbox</td>
+<td>Session &amp; Credential Manager</td>
+<td><code>apps/session-manager</code> (TS service, also runs inside run network)</td>
+</tr>
+<tr>
+<td>Execution Sandbox</td>
+<td>Tool Runtime &amp; Browser</td>
+<td><code>infra/docker/sandbox</code> image + <code>apps/sandbox-controller</code></td>
+</tr>
+<tr>
+<td>Validation &amp; Findings</td>
+<td>Validator</td>
+<td><code>apps/worker</code> validation activities + <code>packages/replay</code> (deterministic engine)</td>
+</tr>
+<tr>
+<td>Validation &amp; Findings</td>
+<td>Out-of-band Listener</td>
+<td>interactsh-server (self-hosted) + <code>packages/oob</code> client</td>
+</tr>
+<tr>
+<td>Validation &amp; Findings</td>
+<td>Dedup &amp; Fingerprinting</td>
+<td><code>packages/domain/findings</code></td>
+</tr>
+<tr>
+<td>Triage &amp; Delivery</td>
+<td>Triage &amp; Release; Report &amp; Export; Connectors &amp; Notifications</td>
+<td><code>apps/api</code> modules + <code>packages/reporting</code>, <code>packages/connectors</code>, <code>packages/notify</code></td>
+</tr>
+<tr>
+<td>Platform Services</td>
+<td>Secrets Service; Scheduler; Audit Ledger</td>
+<td>OpenBao + <code>packages/secrets</code>; Temporal Schedules; <code>packages/audit</code></td>
+</tr>
+<tr>
+<td>Data &amp; Evidence</td>
+<td>Postgres+pgvector; Graph DB; Evidence Store; Redis</td>
+<td>Postgres 16; Neo4j 5 Community; S3 (Object Lock) / MinIO in dev; Valkey 8</td>
+</tr>
+<tr>
+<td>Observability</td>
+<td>Telemetry Collector; Token &amp; Cost Tracking</td>
+<td>OpenTelemetry Collector → Prometheus/Loki/Tempo/Grafana; <code>packages/cost</code></td>
+</tr>
+</tbody></table>
+<h3 id="32-request--result-data-flow-agent-organisation">3.2 Request → result data flow (agent organisation)</h3>
+<ol>
+<li><strong>Assessment Request</strong> (target asset(s), objective, mode, standing authorisation ID, budgets) is created via console, API or CI.</li>
+<li><strong>Mode &amp; Input Manifest</strong> decides which recon agents run:<ul>
+<li>black box → Passive Recon + OSINT + Active Recon + Threat Intel;</li>
+<li>grey box → Active Recon (confirm supplied surface) + Threat Intel + Source &amp; Spec Ingestion + Session Setup;</li>
+<li>white box → Source &amp; Spec Ingestion + Threat Intel + Session Setup + minimal Active Recon to confirm the deployed surface.</li>
+</ul>
+</li>
+<li><strong>Preflight checks</strong>:<ul>
+<li>targets resolve and are in scope;</li>
+<li>credentials log in per role;</li>
+<li>lockout exemption attested;</li>
+<li>test window open;</li>
+<li>SOC notice delivered;</li>
+<li>budgets available;</li>
+<li>model provider reachable.</li>
+</ul>
+</li>
+<li><strong>Recon</strong> runs inside the standing authorisation (passive and active-safe only) and writes the <strong>surface model</strong> (Neo4j + Postgres).</li>
+<li><strong>Planner</strong> turns the surface model into <strong>proposed test cases</strong>. Each test case carries:<ul>
+<li>intrusiveness class;</li>
+<li>request budget;</li>
+<li>declared validation oracle;</li>
+<li>OWASP/WSTG/ASVS reference;</li>
+<li>target endpoints;</li>
+<li>the roles used.</li>
+</ul>
+</li>
+<li><strong>Gate 1:</strong> a human (not the requester; SoD) reviews, edits and approves the plan. That approval produces the <strong>approved run envelope</strong>. Auto-approval is allowed only when every test case is inside the standing authorisation&#39;s pre-approved classes and budgets. The decision is recorded as &quot;approved under SA-xxx&quot;.</li>
+<li><strong>Sub-planner</strong> breaks approved test cases into subtasks. The <strong>Orchestrator agent</strong> delegates subtasks to <strong>Assessment Specialists</strong> (web &amp; API, auth &amp; logic, infrastructure, code), helped by the <strong>Exploit Developer &amp; Tooling</strong> persona. <strong>Mentor &amp; Reflector</strong> intervene on stalls.</li>
+<li>Any action outside the envelope triggers <strong>Gate 2</strong>: the branch pauses, on-call is paged, and no reply by the timeout means <strong>denied</strong>.</li>
+<li>Specialists submit <strong>candidate findings</strong>. The <strong>Validator</strong> replays each one deterministically in a fresh sandbox against its pre-declared oracle, with <strong>negative controls</strong>:<ul>
+<li>pass → <strong>Confirmed</strong> (evidence + standalone repro artifact);</li>
+<li>fail → <strong>Suspected</strong> queue (analyst-only).</li>
+</ul>
+</li>
+<li><strong>Gate 3:</strong> an analyst releases confirmed findings. Then the <strong>Reporter</strong> writes findings up (OWASP/CWE/compliance mapping) and <strong>Remediation</strong> produces fix guidance, raises tickets and schedules retest. Findings are tracked to closure on the dashboard and in trackers.</li>
+</ol>
+<h3 id="33-run-state-machine-authoritative-implement-in-packagesdomainrun">3.3 Run state machine (authoritative; implement in <code>packages/domain/run</code>)</h3>
+<p><code>draft → preflight → recon → planning → awaiting_gate1 → approved → executing ⇄ paused (gate2_pending | cost_cap | operator_pause) → validating → awaiting_gate3 → released → reporting → completed</code></p>
+<p>Terminal states: <code>cancelled</code>, <code>killed</code>, <code>failed</code>, <code>expired</code> (standing authorisation expired mid-run → stop all traffic immediately).</p>
+<ul>
+<li>Every transition is a guarded function: actor, preconditions, audit event.</li>
+<li>Illegal transitions throw <code>IllegalRunTransitionError</code>.</li>
+<li>State is stored in Postgres (<code>runs.state</code>, with <code>state_version</code> used for optimistic concurrency) and driven by the Temporal <code>AssessmentRunWorkflow</code>.</li>
+</ul>
+<h3 id="34-finding-lifecycle">3.4 Finding lifecycle</h3>
+<ul>
+<li><strong>Validation:</strong> <code>candidate → validating → confirmed | suspected</code>.</li>
+<li><strong>Triage:</strong> <code>confirmed → released | rejected_false_positive | duplicate | accepted_risk</code> (accepted risk requires a reason + expiry).</li>
+<li><strong>Remediation:</strong> <code>released → fixed</code> (a retest passes) <code>→ returned</code> (fixed then re-detected). <code>suspected</code> can be promoted only by a successful re-validation.</li>
+<li><strong>Baseline diff per asset:</strong> <code>new | open | fixed | returned | not_retested</code>. A finding counts as <code>fixed</code> <strong>only</strong> if the coverage manifest shows the relevant test executed.</li>
+</ul>
+<h3 id="35-intrusiveness-classes-f4">3.5 Intrusiveness classes (F4)</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Meaning</th>
+<th>v1</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>passive</code></td>
+<td>No crafted traffic to the target: OSINT, third-party sources, observing normal responses</td>
+<td>allowed</td>
+</tr>
+<tr>
+<td><code>active_safe</code></td>
+<td>Crafted requests not expected to change state (probing, injection detection with benign payloads, auth checks with GET)</td>
+<td>allowed</td>
+</tr>
+<tr>
+<td><code>state_changing</code></td>
+<td>Creates or modifies data in a reversible way. <strong>Must</strong> write a reversal-journal entry <em>before</em> executing</td>
+<td>allowed only if the SA and Gate 1 explicitly include it</td>
+</tr>
+<tr>
+<td><code>destructive</code></td>
+<td>Irreversible or availability-impacting (DoS, deleting others&#39; data, mass account lockout)</td>
+<td><strong>hard-blocked by the platform baseline policy</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="4-claude-code-as-the-agent-runtime-critical-design">4. Claude Code as the agent runtime (critical design)</h2>
+<p>The product&#39;s agents run on the <strong>Claude Agent SDK (TypeScript, <code>@anthropic-ai/claude-agent-sdk</code>)</strong>, which is Claude Code packaged as a library. Pin an exact SDK version in <code>apps/agent-runtime/package.json</code>; the SDK bundles the matching Claude Code binary.</p>
+<h3 id="41-topology">4.1 Topology</h3>
+<ul>
+<li>One <strong>run</strong> gets one isolated <strong>run network</strong>, its own egress-gateway policy instance (an identity on the shared gateway, keyed by run), and N <strong>agent sandboxes</strong>.</li>
+<li>Every <strong>agent session</strong> (one persona working one task) runs in its <strong>own disposable sandbox container</strong>: image <code>bw-sandbox</code>, gVisor <code>runsc</code>, non-root, read-only rootfs, tmpfs workspace, <code>--cap-drop ALL</code>, <code>no-new-privileges</code>, seccomp, pids/memory/CPU limits.</li>
+<li>The container runs <code>apps/agent-runtime</code>, which calls <code>query()</code> and hosts Blackwing MCP tools in-process (<code>createSdkMcpServer</code>).</li>
+<li>Sandbox egress is allowed to exactly three destinations: (1) the <strong>egress gateway</strong> (for target traffic), (2) the <strong>model gateway</strong> (for Claude), (3) the <strong>Run Broker API</strong> (internal API for tool backends, run-scoped token). Everything else is denied (Kubernetes NetworkPolicy plus host firewall). No internet, no cloud metadata endpoint (169.254.169.254 blocked), no access to other runs.</li>
+<li>Claude Code reaches Claude via <code>ANTHROPIC_BASE_URL=http://model-gateway…</code> and a <strong>per-session virtual key</strong> (<code>ANTHROPIC_API_KEY=bwk_…</code>, short-lived, scoped to run+session, revoked on kill). The real provider credentials never enter the sandbox.</li>
+<li>Target traffic uses <code>HTTP_PROXY/HTTPS_PROXY/ALL_PROXY</code> → egress gateway, plus a per-run MITM CA in the trust store (<code>NODE_EXTRA_CA_CERTS</code>, <code>SSL_CERT_FILE</code>, <code>REQUESTS_CA_BUNDLE</code>). Tools that ignore proxy env run under <code>proxychains-ng</code>.</li>
+<li>Proxy credentials encode <strong>run/session/test-case/role</strong> (<code>http://tc_&lt;testCaseId&gt;.role_&lt;roleId&gt;:&lt;token&gt;@egress:3128</code>), which is how budgets and role-session injection work.</li>
+</ul>
+<h3 id="42-hybrid-orchestration-why-and-how">4.2 Hybrid orchestration (why and how)</h3>
+<ul>
+<li>The <strong>Run Controller</strong> is a deterministic Temporal workflow (<code>AssessmentRunWorkflow</code> in <code>apps/worker</code>). It owns phases, gates, budgets, kill, timeouts and retries. <strong>LLMs decide; code enforces.</strong></li>
+<li>The <strong>Orchestrator</strong> is a long-running Claude Code session (persona <code>orchestrator</code>) with Blackwing MCP tools such as:<ul>
+<li><code>get_engagement_state</code></li>
+<li><code>list_open_subtasks</code></li>
+<li><code>dispatch_subtask(persona, subtaskId, brief)</code></li>
+<li><code>get_subtask_result</code></li>
+<li><code>request_mentor_review</code></li>
+<li><code>mark_test_case_status</code></li>
+<li><code>request_scope_exception</code></li>
+</ul>
+</li>
+<li><code>dispatch_subtask</code> does <strong>not</strong> use the in-process Agent tool. It signals the Run Controller, which starts a <strong>new specialist session in a new sandbox</strong> (Temporal child workflow <code>AgentSessionWorkflow</code>). This gives each specialist its own egress identity, budget, kill handle and resource limits, and scales across hosts.</li>
+<li><strong>Inside</strong> a specialist session, native Claude Code subagents (<code>agents</code> option, <code>Agent</code> tool) are allowed for light helpers (e.g. <code>payload-crafter</code>, <code>response-differ</code>). Set <code>CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1</code> and <code>CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS=4</code>, and remember helpers share the specialist&#39;s sandbox and egress identity.</li>
+<li><strong>Sub-planner</strong> is a short structured-output session (<code>outputFormat: {type:&#39;json_schema&#39;, schema}</code>) that converts approved test cases into subtasks.</li>
+</ul>
+<h3 id="43-mandatory-sdk-options-for-every-blackwing-session-appsagent-runtimesrcsessionoptionsts">4.3 Mandatory SDK options for every Blackwing session (<code>apps/agent-runtime/src/session/options.ts</code>)</h3>
+<ul>
+<li><code>settingSources: []</code>, <code>env: { ...minimalEnv, CLAUDE_CONFIG_DIR: &lt;per-session dir&gt;, CLAUDE_CODE_DISABLE_AUTO_MEMORY: &#39;1&#39;, CLAUDE_CODE_ENABLE_TELEMETRY: &#39;1&#39;, OTEL_* }</code>. Never inherit host env wholesale; the TS SDK <code>env</code> <em>replaces</em> the subprocess env.</li>
+<li><code>cwd: /workspace/&lt;sessionId&gt;</code> (tmpfs).</li>
+<li><code>model</code> comes from the run manifest; <code>fallbackModel</code> is only set if the tenant&#39;s provider policy allows it.</li>
+<li><code>effort</code> per persona; <code>maxTurns</code> per persona (step ceiling); <code>maxBudgetUsd</code> = remaining session budget (secondary guard; the gateway is primary).</li>
+<li><code>permissionMode: &#39;default&#39;</code>, <strong>never</strong> <code>bypassPermissions</code>.</li>
+<li><code>allowedTools</code> = the persona&#39;s allowlist. <code>disallowedTools</code> always includes <code>WebFetch</code>, <code>WebSearch</code> and other networked built-ins: those bypass or obscure the egress path, and OSINT uses Blackwing tools routed through the gateway&#39;s intelligence allowlist.</li>
+<li><code>canUseTool</code> denies anything not explicitly allowed. There are no interactive prompts in sandboxes.</li>
+<li><code>hooks</code>:<ul>
+<li><code>PreToolUse</code>: policy check through the PDP.<ul>
+<li>Every Bash command and every MCP target-interaction tool call is evaluated against the envelope and the customer policy.</li>
+<li>Out-of-envelope calls create a <strong>Gate 2 exception</strong>. If the turn has a single tool call, the hook returns <code>permissionDecision:&#39;defer&#39;</code> (the session ends with <code>stop_reason:&#39;tool_deferred&#39;</code> and <code>deferred_tool_use</code>). The Run Controller waits for the human decision (timeout ⇒ deny), resumes the session with <code>resume: sessionId</code>, and the hook then returns <code>allow</code> or <code>deny</code>.</li>
+<li>If the call was part of a parallel batch (<code>defer</code> is ignored for batches), the hook returns <code>deny</code> with a reason, and the runtime pauses that branch.</li>
+<li><code>state_changing</code> calls without a prior reversal-journal entry are denied.</li>
+</ul>
+</li>
+<li><code>PostToolUse</code>: audit, evidence capture, redaction of known secret values (<code>updatedToolOutput</code>), output truncation with pointer-to-evidence.</li>
+<li><code>PreCompact</code>: archive the full transcript.</li>
+<li><code>SessionStart</code> / <code>SessionEnd</code>, <code>SubagentStart</code> / <code>SubagentStop</code>: lifecycle telemetry.</li>
+<li><code>Stop</code>: completion check, e.g. the subtask result must have been submitted.</li>
+</ul>
+</li>
+<li><code>outputFormat</code> (JSON schema) for planner, sub-planner, validator-assistant and reporter personas.</li>
+<li><code>sessionStore</code>: a Postgres/S3-backed adapter so sessions survive pod loss and can be resumed for Gate 2 and Mentor interventions.</li>
+<li><code>abortController</code>: wired to the kill switch. <code>query.interrupt()</code> is used on operator pause.</li>
+<li><code>includePartialMessages: true</code> for the live run view.</li>
+</ul>
+<h3 id="44-result-handling">4.4 Result handling</h3>
+<p>Read <code>SDKResultMessage</code> for these fields:</p>
+<ul>
+<li><code>subtype</code>: <code>success</code>, <code>error_max_turns</code>, <code>error_max_budget_usd</code>, <code>error_during_execution</code> or <code>error_max_structured_output_retries</code>;</li>
+<li><code>stop_reason</code>, including <code>tool_deferred</code>;</li>
+<li><code>total_cost_usd</code>, <code>modelUsage</code> (per model; prefer it for accounting), <code>usage</code>, <code>num_turns</code>, <code>duration_ms</code>;</li>
+<li><code>permission_denials</code>;</li>
+<li><code>structured_output</code>.</li>
+</ul>
+<p>Each outcome maps to a subtask status. <strong>Model refusals:</strong> if the model declines (refusal stop reason surfaced through the SDK/gateway), mark the subtask <code>model_declined</code> and record it in the coverage manifest. Never attempt to rephrase or evade; humans review. The eval harness tracks the refusal rate.</p>
+<h3 id="45-policy--terms-constraints-must-follow">4.5 Policy &amp; terms constraints (must follow)</h3>
+<ul>
+<li>The production runtime authenticates with an <strong>Anthropic API key</strong> (Claude Developer Platform) or a cloud provider (<strong>Amazon Bedrock</strong>, Vertex AI, Microsoft Foundry). <strong>Claude.ai subscription login must not power customer runs</strong> (Agent SDK terms). Developers may use their Claude Code subscription only for <em>building</em> Blackwing.</li>
+<li>Branding: the product is &quot;Blackwing&quot; (optionally &quot;Powered by Claude&quot;). Never call the product &quot;Claude Code&quot;.</li>
+<li>Every agent session&#39;s system prompt includes the <strong>signed authorisation context</strong>:<ul>
+<li>asset;</li>
+<li>scope;</li>
+<li>window;</li>
+<li>allowed intrusiveness;</li>
+<li>the approving identity.
+This truthfully establishes that testing is authorised. Agents must stay within it.</li>
+</ul>
+</li>
+<li><strong>Prompt injection:</strong> all target content (HTTP bodies, source code, DNS records, OSINT) is <strong>untrusted data</strong>. Enforcement never depends on model compliance: the PDP hook, egress gateway, budgets and kill switch are deterministic.</li>
+</ul>
+<h3 id="46-persona-roster-agent-registry-packagesagentspersonasts-prompts-in-packagesagentspromptspersonasemvermd">4.6 Persona roster (Agent Registry; <code>packages/agents/personas/*.ts</code>, prompts in <code>packages/agents/prompts/&lt;persona&gt;/&lt;semver&gt;.md</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Persona</th>
+<th>Purpose</th>
+<th>Default model tier</th>
+<th>Key tools</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>orchestrator</td>
+<td>Engagement state, delegation, completion</td>
+<td>deep</td>
+<td>engagement MCP tools only (no Bash)</td>
+</tr>
+<tr>
+<td>planner</td>
+<td>Surface model → test cases (structured)</td>
+<td>deep</td>
+<td>read surface model, test-case library</td>
+</tr>
+<tr>
+<td>sub-planner</td>
+<td>Test case → subtasks (structured)</td>
+<td>standard</td>
+<td>read-only</td>
+</tr>
+<tr>
+<td>passive-recon</td>
+<td>Black box only: DNS, certificate transparency, archives, tech fingerprint from third-party sources</td>
+<td>standard</td>
+<td><code>intel_*</code> tools via gateway allowlist</td>
+</tr>
+<tr>
+<td>osint</td>
+<td>Black box only: org footprint, leaked creds metadata (no credential use), code leaks</td>
+<td>standard</td>
+<td><code>intel_*</code> tools</td>
+</tr>
+<tr>
+<td>active-recon</td>
+<td>Black and grey box: crawl, port/service discovery, endpoint and parameter discovery inside scope</td>
+<td>standard</td>
+<td>Bash (httpx, naabu, katana, ffuf, dnsx), <code>http_request</code>, browser</td>
+</tr>
+<tr>
+<td>threat-intel</td>
+<td>All modes: CVE/KEV/EPSS/GHSA/OSV enrichment for detected components</td>
+<td>standard</td>
+<td><code>intel_*</code> tools</td>
+</tr>
+<tr>
+<td>source-spec-ingestion</td>
+<td>Grey/white: OpenAPI/Postman/GraphQL/HAR/source → surface model</td>
+<td>deep</td>
+<td>Read/Grep/Glob on mounted inputs, parsers</td>
+</tr>
+<tr>
+<td>session-setup</td>
+<td>Any authenticated test: record/verify login per role</td>
+<td>standard</td>
+<td>session-manager tools, browser</td>
+</tr>
+<tr>
+<td>web-api-specialist</td>
+<td>Injection, XSS, SSRF, XXE, SSTI, path traversal, CORS, headers, GraphQL, mass assignment, file upload (safe), etc.</td>
+<td>deep</td>
+<td>Bash, <code>http_request</code>, browser, oob, journal, submit_candidate</td>
+</tr>
+<tr>
+<td>auth-logic-specialist</td>
+<td>Multi-role authorisation matrix, BOLA/BFLA/IDOR, privilege escalation, workflow/business-logic abuse, race conditions (state-changing only if approved)</td>
+<td>deep</td>
+<td>same + role-switching</td>
+</tr>
+<tr>
+<td>infrastructure-specialist</td>
+<td>Network services, TLS, exposed admin interfaces, known-vulnerable versions (proof at runtime)</td>
+<td>standard</td>
+<td>Bash (naabu, fingerprintx, testssl.sh, nuclei pinned templates), <code>tcp_probe</code></td>
+</tr>
+<tr>
+<td>code-specialist</td>
+<td>White box: trace sources→sinks in code, prove at runtime, exposed secrets, dependency risk proven at runtime</td>
+<td>deep</td>
+<td>Read/Grep/Glob, opengrep, gitleaks, <code>http_request</code></td>
+</tr>
+<tr>
+<td>exploit-developer</td>
+<td>Payloads, PoC scripts, harnesses, tool provisioning inside sandbox; never destructive</td>
+<td>deep</td>
+<td>Bash, Write/Edit in workspace</td>
+</tr>
+<tr>
+<td>mentor</td>
+<td>Detect stalls/loops, propose recovery strategy</td>
+<td>standard</td>
+<td>read transcript summary</td>
+</tr>
+<tr>
+<td>reflector</td>
+<td>Post-failure analysis, adjust plan, avoid repeated failures</td>
+<td>standard</td>
+<td>read-only</td>
+</tr>
+<tr>
+<td>validator-assistant</td>
+<td>Normalise candidate into a deterministic replay spec + oracle binding (does NOT judge)</td>
+<td>deep</td>
+<td>read-only + replay-spec schema</td>
+</tr>
+<tr>
+<td>reporter</td>
+<td>Finding write-up, impact, remediation, compliance mapping (structured)</td>
+<td>deep</td>
+<td>read-only</td>
+</tr>
+<tr>
+<td>remediation</td>
+<td>Fix guidance (code-level in white box), ticket text, retest plan</td>
+<td>standard</td>
+<td>read-only</td>
+</tr>
+</tbody></table>
+<p>Model tier aliases resolve per tenant provider: <code>deep</code> → <code>claude-opus-5-5</code>, <code>standard</code> → <code>claude-opus-5-5</code> (may be lowered to <code>claude-sonnet-5-5</code> per eval results), <code>fast</code> → <code>claude-haiku-5-5</code>. Use exact model IDs, with no date suffixes. On Bedrock the IDs are prefixed with <code>anthropic.</code>. Default effort: <code>high</code> for deep personas, <code>medium</code> otherwise. Resolved values are pinned per run (F37).</p>
+<hr>
+<h2 id="5-technology-stack-fixed-for-v1-all-freeopen-source-except-the-aws-account-and-the-anthropicclaude-usage">5. Technology stack (fixed for v1; all free/open-source except the AWS account and the Anthropic/Claude usage)</h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Choice</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Languages</td>
+<td>TypeScript 5.x on <strong>Node.js 22 LTS</strong> (all apps except the egress gateway); <strong>Go 1.23+</strong> for <code>apps/egress-gateway</code></td>
+</tr>
+<tr>
+<td>Monorepo</td>
+<td><strong>pnpm</strong> workspaces + <strong>Turborepo</strong>; Go module under <code>apps/egress-gateway</code></td>
+</tr>
+<tr>
+<td>Web</td>
+<td><strong>Next.js 15</strong> (App Router, RSC) + React 19, <strong>Tailwind CSS 4</strong>, <strong>shadcn/ui</strong> (Radix), TanStack Query + Table, React Hook Form + Zod, Recharts, <code>next-intl</code>-ready strings (English only v1)</td>
+</tr>
+<tr>
+<td>API</td>
+<td><strong>NestJS 11</strong> with Fastify adapter; REST with OpenAPI 3.1 generated from Zod (<code>nestjs-zod</code>/<code>zod-openapi</code>); <strong>GraphQL</strong> via <code>@nestjs/graphql</code> code-first + Mercurius (read-focused queries for console/dashboard; mutations stay REST)</td>
+</tr>
+<tr>
+<td>Contracts</td>
+<td><strong>Zod</strong> schemas in <code>packages/contracts</code> shared by api, web, worker, runtime, cli</td>
+</tr>
+<tr>
+<td>DB</td>
+<td><strong>PostgreSQL 16</strong> + <code>pgvector</code> + <code>pgcrypto</code>; <strong>Row-Level Security</strong> on every tenant table</td>
+</tr>
+<tr>
+<td>ORM / migrations</td>
+<td><strong>Drizzle ORM</strong> + drizzle-kit; SQL migrations committed and reviewed; forward-only in prod</td>
+</tr>
+<tr>
+<td>Graph</td>
+<td><strong>Neo4j 5 Community</strong> (asset/surface graph); tenant isolation by mandatory <code>tenantId</code> property enforced by the repository layer</td>
+</tr>
+<tr>
+<td>Durable workflows</td>
+<td><strong>Temporal</strong> (self-hosted, TS SDK): run lifecycle, gates (signals), timers (gate timeouts, windows), schedules (F-scheduler), retries</td>
+</tr>
+<tr>
+<td>Queue / cache / pub-sub</td>
+<td><strong>Valkey 8</strong> (Redis-compatible, BSD) + <strong>BullMQ</strong> for short jobs; Redis Streams for live run events</td>
+</tr>
+<tr>
+<td>Object storage</td>
+<td><strong>AWS S3 with Object Lock</strong> (staging/prod); <strong>MinIO</strong> with object locking (dev); access via AWS SDK v3 S3 client only</td>
+</tr>
+<tr>
+<td>Secrets/KMS</td>
+<td><strong>OpenBao</strong> (Transit for envelope encryption, KV v2 for platform secrets); BYOK adapters (AWS KMS, external Vault/OpenBao, AWS Secrets Manager, Azure Key Vault)</td>
+</tr>
+<tr>
+<td>Identity</td>
+<td><strong>Keycloak 26</strong> (Organizations, identity brokering: Microsoft Entra ID, Google, GitHub, Slack (OIDC), generic OIDC/SAML; MFA; brute-force detection). Console uses OIDC Auth Code + PKCE through a Next.js BFF with httpOnly cookies</td>
+</tr>
+<tr>
+<td>Policy</td>
+<td><strong>Cedar</strong> (<code>@cedar-policy/cedar-wasm</code> in TS, <code>github.com/cedar-policy/cedar-go</code> in Go) with a shared schema and shared test vectors</td>
+</tr>
+<tr>
+<td>Agents</td>
+<td><strong>Claude Agent SDK (TS)</strong>; models via <strong>Blackwing Model Gateway</strong> to Anthropic API / Amazon Bedrock (<code>@anthropic-ai/bedrock-sdk</code> Mantle client) / Vertex (<code>@anthropic-ai/vertex-sdk</code>) / Foundry (<code>@anthropic-ai/foundry-sdk</code>)</td>
+</tr>
+<tr>
+<td>Embeddings (free)</td>
+<td>Local <strong>transformers.js</strong> (<code>@huggingface/transformers</code>) with <code>bge-small-en-v1.5</code> (ONNX, CPU) → pgvector(384)</td>
+</tr>
+<tr>
+<td>Sandbox isolation</td>
+<td><strong>gVisor (<code>runsc</code>)</strong> RuntimeClass on <strong>k3s</strong> (staging/prod) and Docker+<code>runsc</code> driver (dev &amp; future on-prem)</td>
+</tr>
+<tr>
+<td>Orchestration</td>
+<td><strong>k3s</strong> on EC2 (free) + <strong>Helm</strong>; Traefik ingress (k3s default) + <strong>cert-manager</strong> (Let&#39;s Encrypt)</td>
+</tr>
+<tr>
+<td>IaC</td>
+<td><strong>OpenTofu</strong> (AWS provider) + cloud-init; no click-ops</td>
+</tr>
+<tr>
+<td>Egress gateway</td>
+<td>Go: <code>elazarl/goproxy</code> (MITM HTTP/1.1, HTTPS via per-run CA) + <code>things-go/go-socks5</code> (TCP) + <code>miekg/dns</code> (scoped DNS) + <code>cedar-go</code></td>
+</tr>
+<tr>
+<td>OOB</td>
+<td><strong>interactsh-server</strong> (projectdiscovery, MIT) self-hosted on a dedicated domain + TS client in <code>packages/oob</code></td>
+</tr>
+<tr>
+<td>Browser</td>
+<td><strong>Playwright</strong> + headless Chromium in sandbox; exposed to agents via <strong><code>@playwright/mcp</code></strong> (proxy-configured)</td>
+</tr>
+<tr>
+<td>Security toolchain in sandbox</td>
+<td>projectdiscovery <code>subfinder</code>, <code>dnsx</code>, <code>httpx</code>, <code>naabu</code>, <code>katana</code>, <code>nuclei</code> (+ pinned templates), <code>ffuf</code>, <code>sqlmap</code> (safe flags only), <code>testssl.sh</code>, <code>fingerprintx</code>, <code>gitleaks</code>, <code>opengrep</code>, <code>jq</code>, <code>proxychains-ng</code>, Python 3 stdlib. <strong>License review gate</strong>: nmap (NPSL) and Semgrep registry rules are NOT bundled unless legal sign-off</td>
+</tr>
+<tr>
+<td>PDF</td>
+<td>HTML templates rendered by Playwright/Chromium print-to-PDF (<code>packages/reporting</code>)</td>
+</tr>
+<tr>
+<td>SARIF</td>
+<td>2.1.0, validated with Ajv against the official schema</td>
+</tr>
+<tr>
+<td>Observability</td>
+<td>OpenTelemetry SDK + Collector, <strong>Prometheus</strong>, <strong>Loki</strong>, <strong>Tempo</strong>, <strong>Grafana</strong>, Alertmanager. Claude Code OTel export (<code>CLAUDE_CODE_ENABLE_TELEMETRY=1</code>, <code>OTEL_*</code>)</td>
+</tr>
+<tr>
+<td>Email</td>
+<td>Nodemailer via SMTP (Amazon SES SMTP in prod, <strong>Mailpit</strong> in dev)</td>
+</tr>
+<tr>
+<td>Testing</td>
+<td><strong>Vitest</strong> (unit), <strong>Testcontainers</strong> (integration), <strong>Playwright</strong> (e2e), Go <code>testing</code> + testify, <strong>k6</strong> (load), <code>@fast-check</code> property tests where useful</td>
+</tr>
+<tr>
+<td>Quality</td>
+<td>ESLint 9 flat config + typescript-eslint (strict), Prettier, golangci-lint, commitlint (Conventional Commits), Husky + lint-staged, <code>knip</code> for dead code</td>
+</tr>
+<tr>
+<td>CI</td>
+<td><strong>GitHub Actions</strong> (free for this public repo); images on <strong>GHCR</strong>; <strong>cosign</strong> keyless signing; <strong>Syft</strong> SBOM; <strong>Trivy</strong> scan; Renovate for deps</td>
+</tr>
+<tr>
+<td>Eval targets</td>
+<td>OWASP Juice Shop, crAPI, VAmPI, DVGA (Damn Vulnerable GraphQL App), DVWA, WebGoat, plus Blackwing&#39;s own synthetic labs</td>
+</tr>
+</tbody></table>
+<p>TypeScript conventions:</p>
+<ul>
+<li><code>strict: true</code>, <code>noUncheckedIndexedAccess: true</code> and <code>exactOptionalPropertyTypes: true</code>; no <code>any</code> (lint error); no non-null assertions.</li>
+<li>Every external input is validated with Zod at the boundary.</li>
+<li>Errors use a typed <code>AppError</code> hierarchy with stable <code>code</code>s.</li>
+<li>Logging uses pino structured JSON; no secrets or PII in logs (redaction paths configured).</li>
+<li>Dates are ISO-8601 UTC; IDs are <strong>UUIDv7</strong> stored as <code>uuid</code>, plus human-friendly prefixed public IDs where shown (e.g. <code>run_01J…</code>, <code>fnd_…</code>).</li>
+</ul>
+<hr>
+<h2 id="6-repository-layout-create-exactly-this">6. Repository layout (create exactly this)</h2>
+<pre><code>apps/
+  web/                 Next.js console (+ BFF route handlers for auth)
+  api/                 NestJS control-plane API (REST /v1 + GraphQL /graphql); Run Broker API under /internal/broker
+  worker/              Temporal workers: run orchestration, validation, scheduler, retention, exports, connectors, notifications
+  agent-runtime/       In-sandbox Claude Agent SDK host + in-process Blackwing MCP tool servers
+  sandbox-controller/  Creates/destroys sandboxes (KubernetesDriver, DockerDriver), run networks, CA material
+  model-gateway/       Anthropic-Messages-compatible gateway: auth (virtual keys), routing, redaction, cost metering &amp; caps, pinning
+  egress-gateway/      Go: scoped egress proxy (HTTP(S) MITM, SOCKS5, DNS), budgets, capture, kill, fail-closed
+  session-manager/     Multi-role login/keep-alive/validity/lockout guard; injects sessions at the egress gateway
+  cli/                 `blackwing` CLI (CI usage)
+packages/
+  contracts/  db/  domain/  policy/  agents/  mcp-tools/  memory/  replay/  oob/  evidence/  crypto/
+  secrets/  audit/  events/  notify/  connectors/  reporting/  cost/  config/  logger/  ids/  time/  errors/  telemetry/  workflow-shared/  ui/  testing/
+infra/
+  tofu/  helm/  k3s/  docker/ (Dockerfiles; sandbox image)  compose/ (docker-compose.dev.yml)  keycloak/ (realm as code)
+  bootstrap.sh  versions.env (idempotent dev-host bootstrap and its pinned toolchain versions)
+  images.lock (digest-pinned data-service images shared by Testcontainers, dev compose and the CI integration job)
+eval/
+  targets/  ground-truth/  harness/
+docs/
+  adr/  architecture/  runbooks/  api/  user/  labels.md (label catalogue)  site.json (docs site navigation and link-check settings)  CONTRIBUTING-docs.md (docs style and contribution guide)
+design/               Claude Design export: UI source of truth for every GUI (design system, screens, tokens.json); see design/README.md
+.github/ (workflows, actions (reusable composite actions, e.g. setup), ISSUE_TEMPLATE, PULL_REQUEST_TEMPLATE.md, CODEOWNERS, labels.yml, dependency-review-config.yml, codeql-config.yml, required-checks.json, rulesets)
+CLAUDE.md  README.md  SECURITY.md  LICENSE (proprietary notice)
+</code></pre>
+<hr>
+<h2 id="7-core-domain-model-tables-in-packagesdb-all-tenant-tables-have-tenant_id-uuid-not-null--rls">7. Core domain model (tables in <code>packages/db</code>; all tenant tables have <code>tenant_id uuid not null</code> + RLS)</h2>
+<ul>
+<li><strong>tenants</strong> (organisations): <code>id, slug, name, status(active|suspended|deleted), region, plan, created_at</code>. <strong>users</strong>: <code>id, keycloak_sub, email, name, status</code>. <strong>memberships</strong>: <code>tenant_id, user_id, roles[]</code>.</li>
+<li><strong>service_accounts</strong> / <strong>api_tokens</strong>:<ul>
+<li>token: <code>bw_pat_…</code> / <code>bw_ci_…</code>, stored as a SHA-256 hash with prefix lookup;</li>
+<li>scopes, plus an optional constraint: an <code>asset_ids[]</code> / <code>standing_authorisation_id</code> binding;</li>
+<li><code>expires_at</code>, <code>last_used_at</code>, <code>revoked_at</code>.</li>
+</ul>
+</li>
+<li><strong>assets</strong>:<ul>
+<li><code>type(web_app|api|host|network_range|source_repo)</code>;</li>
+<li><code>identifiers</code> (hostnames/URLs/CIDRs/repo URL);</li>
+<li><code>environment(prod|staging|dev|test)</code>, <code>owner_user_id</code>;</li>
+<li><code>verification_status(unverified|pending|verified|rejected)</code>, <code>verification_method(dns_txt|http_file|manual_letter)</code>;</li>
+<li>attestation (F6: env type, shared DB, shared login service/SSO, third-party hosting, lockout exemption, contacts).</li>
+</ul>
+</li>
+<li><strong>asset_credentials</strong>: <code>role_name</code>, <code>secret_ref</code> (never plaintext), login recipe, MFA type.</li>
+<li><strong>role_matrices</strong>: roles × functions → expected access (F9).</li>
+<li><strong>standing_authorisations (SA)</strong>:<ul>
+<li><code>asset_ids</code>, <code>scope_rules</code> (include/exclude hosts, paths, ports, methods);</li>
+<li><code>max_intrusiveness</code>, <code>pre_approved_test_classes</code>, <code>default_budgets</code>;</li>
+<li><code>test_windows</code> (cron-like with timezone), <code>valid_from</code>, <code>expires_at</code>;</li>
+<li><code>requester_id</code>, <code>approver_id</code> (≠ requester), <code>signature</code> (JWS over the JCS-canonical body), <code>signing_key_id</code>;</li>
+<li><code>status(draft|pending_approval|active|expired|revoked)</code>, <code>revocation_reason</code>.</li>
+</ul>
+</li>
+<li><strong>policies</strong>: tenant Cedar policy sets, versioned (<code>version</code>, <code>sha256</code>, <code>author</code>, <code>active</code>); the platform <strong>baseline policy</strong> is non-overridable.</li>
+<li><strong>assessment_requests / runs</strong>:<ul>
+<li><code>mode(black|grey|white)</code>, <code>objective</code>, <code>asset_ids</code>, <code>sa_id</code>;</li>
+<li><code>input_manifest_id</code>, <code>state</code>, <code>state_version</code>;</li>
+<li><code>run_manifest</code> (pins), <code>budgets</code> (cost cap USD, max requests, max duration);</li>
+<li><code>requested_by</code>, <code>trigger(console|api|ci|schedule|retest)</code>, <code>created_at</code>, <code>started_at</code>, <code>ended_at</code>.</li>
+</ul>
+</li>
+<li><strong>input_manifests</strong>: supplied URLs/CIDRs, credentials refs per role, specs (OpenAPI/Postman/GraphQL SDL/HAR) object keys, source repo ref, config/deploy manifests, role matrix id.</li>
+<li><strong>test_plans</strong> (versioned) → <strong>test_cases</strong>:<ul>
+<li><code>class(intrusiveness)</code>, <code>title</code>, <code>owasp/wstg/asvs refs</code>, <code>cwe_candidates</code>;</li>
+<li><code>targets</code>, <code>roles</code>;</li>
+<li><code>budget(max_requests, max_rps, max_concurrency, max_bytes)</code>;</li>
+<li><strong><code>oracle</code></strong> (declared validation check: type + params);</li>
+<li><code>negative_control</code>;</li>
+<li><code>status(proposed|approved|removed|executing|executed|skipped|blocked|failed|model_declined|not_applicable)</code>, <code>status_reason</code>.</li>
+</ul>
+</li>
+<li><strong>gate_decisions</strong>: gate (1|2|3), subject, decision, actor, reason, <code>decided_at</code>, <code>timeout_at</code>, <code>auto</code> flag.</li>
+<li><strong>subtasks</strong>: <code>test_case_id</code>, <code>persona</code>, <code>brief</code>, <code>session_id</code>, <code>sandbox_id</code>, <code>status</code>, <code>result</code>, <code>cost</code>.</li>
+<li><strong>agent_sessions</strong>: <code>persona</code>, <code>persona_version</code>, <code>prompt_sha256</code>, <code>model</code>, <code>effort</code>, <code>sdk_version</code>, <code>claude_code_version</code>, <code>session_id</code>, <code>sandbox_id</code>, <code>status</code>, <code>num_turns</code>, <code>total_cost_usd</code>, <code>model_usage jsonb</code>, transcript object key.</li>
+<li><strong>findings</strong>:<ul>
+<li><code>fingerprint</code>, <code>title</code>, <code>class</code>, <code>cwe_id</code>, <code>owasp_category</code>;</li>
+<li><code>severity</code> (CVSS v4.0 vector + score, with a 3.1 vector optional);</li>
+<li><code>asset_id</code>, <code>location</code> (method, URL template, parameter, file:line for white box);</li>
+<li><code>status</code> (lifecycle above), <code>baseline_status</code>;</li>
+<li><code>run_id</code>, <code>first_seen_run_id</code>, <code>last_seen_run_id</code>;</li>
+<li><code>confidence</code>, <code>released_by</code>, <code>released_at</code>.</li>
+</ul>
+</li>
+<li><strong>finding_occurrences</strong> (per run).</li>
+<li><strong>evidence_items</strong>: <code>kind(request|response|har|pcap|screenshot|dom|replay_script|oob_interaction|transcript_excerpt|log)</code>, <code>object_key</code>, <code>sha256</code>, <code>size</code>, <code>content_type</code>, <code>captured_at</code>, <code>chain</code> (prev hash), <code>retention_until</code>, <code>legal_hold</code>.</li>
+<li><strong>repro_artifacts</strong>: bundle key + sha256 + format version.</li>
+<li><strong>coverage_manifests</strong>: per run; immutable once finalised; required for export.</li>
+<li><strong>reversal_journal_entries</strong>: <code>test_case_id</code>, <code>action</code>, <code>target</code>, <code>undo_instructions</code>, <code>undo_status(pending|undone|not_needed|failed)</code>, <code>created_at</code>.</li>
+<li><strong>oob_correlations</strong>: <code>token</code>, <code>run_id</code>, <code>test_case_id</code>, <code>expires_at</code>; <strong>oob_interactions</strong>.</li>
+<li><strong>audit_events</strong>: append-only hash chain per tenant.</li>
+<li><strong>outbox</strong>: transactional outbox, written in the same transaction as the domain change by <code>withOutbox</code> (<code>packages/db</code>). <code>type(audit.event|notify.send|temporal.signal)</code>, <code>payload</code> (jsonb ≤ 64 KiB, references never secrets), <code>dedupe_key</code> (unique per tenant), <code>status(pending|dispatched|failed)</code>, <code>attempts</code>, <code>available_at</code> (DB clock), <code>last_error</code>. Delivered at least once by the relay (WORKFLOW-012).</li>
+<li><strong>connectors</strong>, <strong>ticket_links</strong>, <strong>notification_channels</strong>, <strong>schedules</strong>, <strong>blackout_windows</strong>, <strong>retention_policies</strong>, <strong>cost_ledger</strong>, <strong>price_tables</strong> (versioned), <strong>kill_events</strong> (halt timings), <strong>eval_runs</strong>.</li>
+</ul>
+<p>Rules:</p>
+<ul>
+<li>Every table has <code>created_at</code>/<code>updated_at</code>, uses soft-delete only where stated, and puts foreign keys and indexes on all lookup columns.</li>
+<li><strong>RLS policy:</strong> <code>USING (tenant_id = current_setting(&#39;app.tenant_id&#39;)::uuid)</code>. The app DB role has no <code>BYPASSRLS</code>, and migrations run as a separate owner role.</li>
+<li>Every request sets <code>app.tenant_id</code> with <code>SET LOCAL</code> inside a transaction (<code>withTenant(db, tenantId, fn)</code> helper in <code>packages/db</code>, which owns the BEGIN/COMMIT; the only bypass is the explicit, audited <code>withSystem</code>). A request without a tenant context <strong>fails closed</strong>.</li>
+</ul>
+<hr>
+<h2 id="8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">8. Security invariants (every issue must preserve these; tests must prove the ones they touch)</h2>
+<ol>
+<li><strong>No target traffic without a valid, unexpired, signature-verified envelope.</strong> The egress gateway re-verifies on load and on every policy refresh; expiry mid-run ⇒ immediate block.</li>
+<li><strong>Egress fails closed:</strong><ul>
+<li>if the gateway cannot evaluate policy, reach its config or write capture, it blocks;</li>
+<li>redirects and DNS answers to out-of-scope destinations are blocked (anti-rebinding: resolve once, pin IP, re-check);</li>
+<li>private/link-local/metadata ranges are blocked unless explicitly in scope.</li>
+</ul>
+</li>
+<li><strong>Destructive class is never allowed.</strong> <code>state_changing</code> requires an SA + Gate 1 approval and a prior reversal-journal entry.</li>
+<li><strong>Separation of duties:</strong> requester ≠ approver for SA, Gate 1 and Gate 2. Enforcement happens in service code + Cedar + DB check constraint/trigger.</li>
+<li><strong>Kill switch:</strong><ul>
+<li>one action stops every agent in scope (run/asset/tenant/global);</li>
+<li>the egress gateway blocks first (target: &lt; 2 s p99), then sandboxes are terminated (&lt; 10 s p99), virtual model keys are revoked and Temporal workflows are cancelled;</li>
+<li>halt time is measured, shown and audited.</li>
+</ul>
+</li>
+<li><strong>Tenant isolation everywhere:</strong> DB RLS, Neo4j tenantId guard, S3 prefixes + per-tenant encryption context, Valkey key prefixes, per-run sandboxes, per-tenant memory (no cross-tenant retrieval). Cross-tenant access tests are mandatory for every data-access module. Copy <code>packages/db/src/examples/widget.cross-tenant.int.test.ts</code> (the template).</li>
+<li><strong>Secrets never reach the model, the logs or the sandbox in plaintext.</strong><ul>
+<li>Credentials are used by reference: the session manager and egress gateway inject them.</li>
+<li>Known secret values are redacted from tool output before it reaches the model (PostToolUse) and in the model gateway.</li>
+</ul>
+</li>
+<li><strong>Audit ledger is append-only and tamper-evident.</strong> Every login, approval, gate decision, tool action, finding release, export, kill and config change writes an event.</li>
+<li><strong>Pinned versions:</strong> every run records model IDs, persona/prompt versions + hashes, SDK + Claude Code versions, sandbox image digest, tool versions, nuclei template commit, policy hash, envelope hash and price table version. Runs never silently float.</li>
+<li><strong>Ownership verification:</strong> an unverified asset can never be targeted (SaaS abuse prevention).</li>
+<li><strong>No model-dependent safety:</strong> every safety property is enforced by deterministic code.</li>
+</ol>
+<hr>
+<h2 id="9-api-conventions">9. API conventions</h2>
+<ul>
+<li>REST base <code>/v1</code>, JSON, camelCase.</li>
+<li>Errors use RFC 9457 problem+json: <code>type</code>, <code>title</code>, <code>status</code>, <code>detail</code>, <code>code</code>, <code>traceId</code>.</li>
+<li>Pagination is cursor-based (<code>?cursor=&amp;limit=</code>, max 200).</li>
+<li><code>Idempotency-Key</code> header is required on POST that creates runs/exports/tickets.</li>
+<li>Optimistic concurrency via <code>If-Match</code>/ETag on mutable resources.</li>
+<li>Rate limits per token (429 + <code>Retry-After</code>).</li>
+<li>Authn: session cookie (console via BFF) or <code>Authorization: Bearer bw_pat_/bw_ci_</code>.</li>
+<li>Authz: RBAC permission check + Cedar resource check.</li>
+<li>Every endpoint is in the OpenAPI spec, with examples and error codes.</li>
+<li>GraphQL is read-optimised for console dashboards, with persisted queries in prod, depth/complexity limits and DataLoader batching.</li>
+<li>Internal <strong>Run Broker API</strong> (<code>/internal/broker/*</code>) is only reachable from the sandbox network, uses run-scoped tokens and covers tool backends: submit candidate, record evidence metadata, journal, state reads.</li>
+</ul>
+<hr>
+<h2 id="10-development-environment--workflow">10. Development environment &amp; workflow</h2>
+<ul>
+<li><strong>Development host:</strong> an <strong>AWS EC2 instance</strong> (Ubuntu 24.04 LTS, ≥ 8 vCPU / 32 GB RAM / 200 GB gp3 recommended) running Docker Engine + <code>runsc</code>, Node 22, pnpm, Go, OpenTofu, kubectl/helm, k3s (single node) and Claude Code (developer&#39;s own subscription is fine for <em>building</em>).</li>
+<li><code>pnpm dev:deps</code> starts <code>infra/compose/docker-compose.dev.yml</code>: postgres(+pgvector), valkey, neo4j, temporal (+ui), keycloak (realm import), openbao (dev), minio (object lock), mailpit, interactsh (local), otel-collector, grafana stack (profile <code>obs</code>).</li>
+<li><code>pnpm dev</code> runs apps with hot reload. <code>pnpm test</code>, <code>pnpm test:int</code> (Testcontainers), <code>pnpm test:e2e</code> (Playwright against compose stack + a local Juice Shop target).</li>
+<li>Seed data: <code>pnpm db:seed</code> creates demo tenant <code>acme</code>, users per role (password login only in dev), a verified demo asset pointing to the local Juice Shop, an active SA, and a role matrix.</li>
+<li>Branch per issue (<code>&lt;key&gt;-&lt;slug&gt;</code>, e.g. <code>egress-004-request-budgets</code>), Conventional Commits, PR closes the issue (<code>Closes #N</code>); PR template includes the acceptance-criteria checklist copied from the issue.</li>
+</ul>
+<h3 id="definition-of-done-applies-to-every-issue">Definition of Done (applies to every issue)</h3>
+<ul>
+<li><input disabled="" type="checkbox"> All acceptance criteria met and demonstrably tested (unit + integration where IO is involved; e2e for user-visible flows).</li>
+<li><input disabled="" type="checkbox"> Edge cases listed in the issue have explicit tests.</li>
+<li><input disabled="" type="checkbox"> Lint/typecheck/tests green in CI; no <code>any</code>, no skipped tests, no TODOs without a linked issue.</li>
+<li><input disabled="" type="checkbox"> Tenant isolation, authz and audit events covered where the change touches data or actions.</li>
+<li><input disabled="" type="checkbox"> OpenAPI/GraphQL schema, Zod contracts, migrations and docs updated in the same PR.</li>
+<li><input disabled="" type="checkbox"> Observability: structured logs, metrics and traces for new paths; no secrets in logs.</li>
+<li><input disabled="" type="checkbox"> Security invariants (§8) preserved; threat considerations noted in the PR.</li>
+</ul>
+<hr>
+<h2 id="11-issue-writing-standard-for-generators">11. Issue-writing standard (for generators)</h2>
+<ul>
+<li><strong>One issue = one PR-sized unit</strong> a Claude Code session can complete in one sitting (≈ 0.5–2 days of work). Split anything bigger; never mix unrelated concerns.</li>
+<li><strong>Title format:</strong> imperative and specific, e.g. <code>Enforce per-test-case request budgets in the egress gateway</code>. The creation script adds the key prefix <code>[EGRESS-004]</code>.</li>
+<li><strong>Body sections, in order (Markdown):</strong><ol>
+<li><code>## Summary</code>: 2–4 sentences on what and why.</li>
+<li><code>## Context</code>: where it sits in the architecture, related features (F-ids), personas, and the exact relevant decisions copied from this pack (stack, paths, names) so the issue stands alone.</li>
+<li><code>## Scope</code>: <strong>In scope</strong> bullets / <strong>Out of scope</strong> bullets (point to the issue keys that own them).</li>
+<li><code>## Detailed requirements</code>: numbered, testable statements. Include exact names:<ul>
+<li>file paths;</li>
+<li>module/class/function names;</li>
+<li>DB tables/columns with types;</li>
+<li>API routes with request/response shapes (TypeScript/Zod snippets welcome);</li>
+<li>event names;</li>
+<li>config keys with defaults;</li>
+<li>error codes;</li>
+<li>UI routes/components.</li>
+</ul>
+</li>
+<li><code>## Acceptance criteria</code>: <code>- [ ]</code> checklist; each item objectively verifiable (command, test name or observable behaviour).</li>
+<li><code>## Edge cases &amp; failure modes</code>: an exhaustive bullet list with the required behaviour for each. Cover:<ul>
+<li>null/empty/oversized input, unicode, timezones/DST;</li>
+<li>concurrency/races, retries/idempotency, partial failure, timeouts;</li>
+<li>permission denied, cross-tenant access attempts;</li>
+<li>expired/revoked authorisation, kill switch during the operation;</li>
+<li>downstream outage, malformed upstream data, and so on, as relevant.</li>
+</ul>
+</li>
+<li><code>## Security, privacy &amp; audit</code>: threats, authz rules, audit events emitted, redaction.</li>
+<li><code>## Observability</code>: logs, metrics (names), traces/spans.</li>
+<li><code>## Test plan</code>: unit/integration/e2e cases, named.</li>
+<li><code>## Dependencies</code>: <code>Blocked by:</code> issue <strong>keys</strong> (e.g. <code>DB-003</code>); <code>Related:</code> keys.</li>
+<li><code>## Implementation notes for Claude Code</code>: suggested steps, commands to run, pitfalls, files to read first.</li>
+</ol>
+</li>
+<li>Metadata per issue (JSON fields, not in body):<ul>
+<li><code>key</code>, <code>title</code>, <code>type</code>, <code>priority</code> (P0 = needed for the first end-to-end grey-box run; P1 = v1 must-have; P2 = v1 should-have; P3 = nice-to-have/Later);</li>
+<li><code>size</code> (XS &lt; 2h, S ≤ 0.5d, M ≤ 1d, L ≤ 2d; <strong>no XL</strong>: split it);</li>
+<li><code>milestone</code>, <code>labels</code>, <code>features</code>, <code>depends_on</code>.</li>
+</ul>
+</li>
+<li>Be concrete and decisive. Do not write &quot;consider X or Y&quot;: pick one, per this pack. Never contradict §5 or §8.</li>
+</ul>
+</main>
+</div>
+</body>
+</html>

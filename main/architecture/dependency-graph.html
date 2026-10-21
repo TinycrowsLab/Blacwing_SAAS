@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allowed package dependency graph | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="./CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="./EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="./FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="./REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="./workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="./workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="./dependency-graph.html" aria-current="page">Allowed package dependency graph</a></li>
+<li><a href="./egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="./storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="./typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="allowed-package-dependency-graph">Allowed package dependency graph</h1>
+<!-- Generated by `pnpm boundaries:docs` from scripts/check-boundaries.mjs. Do not edit by hand:
+     `pnpm boundaries:check` fails when this file differs from the generated text. -->
+
+<p>Every workspace member belongs to exactly one element type. <code>pnpm boundaries:check</code> (FOUND-005, #7)
+enforces the edges below on every import, including type-only imports (<code>import type</code>,
+<code>export type ... from</code>), dynamic <code>import()</code> and <code>require</code>, and on the workspace dependencies
+declared in each <code>package.json</code>. Imports resolve through the pnpm workspace symlinks to the real
+member paths; an import that cannot be resolved (for example an undeclared <code>@blackwing/*</code>
+dependency) is matched by its package name and also reported as unresolvable.</p>
+<p>The model lives in <code>scripts/check-boundaries.mjs</code> (<code>ELEMENT_TYPES</code>). To change the graph, edit it,
+run <code>pnpm boundaries:docs</code> and commit both files with an explanation of the new edge.</p>
+<h2 id="element-types">Element types</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>May import</th>
+<th>Members</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>contracts</code></td>
+<td>nothing internal</td>
+<td><code>packages/contracts</code></td>
+<td>Zod schemas shared by every layer (CONTEXT_PACK §5). The root of the graph.</td>
+</tr>
+<tr>
+<td><code>shared-lib</code></td>
+<td><code>contracts</code>, <code>shared-lib</code></td>
+<td><code>packages/config</code>, <code>packages/crypto</code>, <code>packages/errors</code>, <code>packages/ids</code>, <code>packages/logger</code>, <code>packages/telemetry</code>, <code>packages/testing</code>, <code>packages/time</code>, <code>packages/workflow-shared</code></td>
+<td>Cross-cutting foundation libraries: config, errors, ids, logging, time, telemetry, crypto primitives, test helpers.</td>
+</tr>
+<tr>
+<td><code>domain</code></td>
+<td><code>contracts</code>, <code>shared-lib</code></td>
+<td><code>packages/domain</code></td>
+<td>Pure domain logic: run state machine, finding lifecycle, dedup and fingerprinting.</td>
+</tr>
+<tr>
+<td><code>policy</code></td>
+<td><code>contracts</code>, <code>shared-lib</code></td>
+<td><code>packages/policy</code></td>
+<td>Deterministic policy decision point (Cedar). Kept free of app and service coupling (CONTEXT_PACK §8.11).</td>
+</tr>
+<tr>
+<td><code>service-lib</code></td>
+<td><code>contracts</code>, <code>shared-lib</code>, <code>domain</code>, <code>policy</code>, <code>service-lib</code></td>
+<td><code>packages/agents</code>, <code>packages/audit</code>, <code>packages/connectors</code>, <code>packages/cost</code>, <code>packages/db</code>, <code>packages/events</code>, <code>packages/evidence</code>, <code>packages/mcp-tools</code>, <code>packages/memory</code>, <code>packages/notify</code>, <code>packages/oob</code>, <code>packages/replay</code>, <code>packages/reporting</code>, <code>packages/secrets</code>, <code>packages/ui</code></td>
+<td>Platform, data-access and integration libraries used by the apps.</td>
+</tr>
+<tr>
+<td><code>app</code></td>
+<td><code>contracts</code>, <code>shared-lib</code>, <code>domain</code>, <code>policy</code>, <code>service-lib</code></td>
+<td><code>apps/agent-runtime</code>, <code>apps/api</code>, <code>apps/cli</code>, <code>apps/model-gateway</code>, <code>apps/sandbox-controller</code>, <code>apps/session-manager</code>, <code>apps/web</code>, <code>apps/worker</code></td>
+<td>TypeScript deployables. They compose packages and never reach into another app.</td>
+</tr>
+<tr>
+<td><code>go-service</code></td>
+<td>nothing internal</td>
+<td><code>apps/egress-gateway</code></td>
+<td>The Go egress gateway. Its TypeScript stub imports nothing internal; its Go module stays self-contained.</td>
+</tr>
+</tbody></table>
+<p>Members of <code>shared-lib</code> may depend on each other (for example <code>packages/config -&gt; packages/errors</code>
+and <code>packages/logger -&gt; packages/config</code>), and so may members of <code>service-lib</code>, but never in a
+cycle.</p>
+<h2 id="graph">Graph</h2>
+<pre><code class="language-mermaid">flowchart BT
+  contracts[&quot;contracts&quot;]
+  shared_lib[&quot;shared-lib&quot;]
+  domain[&quot;domain&quot;]
+  policy[&quot;policy&quot;]
+  service_lib[&quot;service-lib&quot;]
+  app[&quot;app&quot;]
+  go_service[&quot;go-service&quot;]
+  shared_lib --&gt; contracts
+  shared_lib --&gt; shared_lib
+  domain --&gt; contracts
+  domain --&gt; shared_lib
+  policy --&gt; contracts
+  policy --&gt; shared_lib
+  service_lib --&gt; contracts
+  service_lib --&gt; shared_lib
+  service_lib --&gt; domain
+  service_lib --&gt; policy
+  service_lib --&gt; service_lib
+  app --&gt; contracts
+  app --&gt; shared_lib
+  app --&gt; domain
+  app --&gt; policy
+  app --&gt; service_lib
+</code></pre>
+<p>An arrow means &quot;may import&quot;. Anything without an arrow is rejected.</p>
+<h2 id="matrix">Matrix</h2>
+<table>
+<thead>
+<tr>
+<th>from \ to</th>
+<th align="center"><code>contracts</code></th>
+<th align="center"><code>shared-lib</code></th>
+<th align="center"><code>domain</code></th>
+<th align="center"><code>policy</code></th>
+<th align="center"><code>service-lib</code></th>
+<th align="center"><code>app</code></th>
+<th align="center"><code>go-service</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>contracts</code></td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+</tr>
+<tr>
+<td><code>shared-lib</code></td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+</tr>
+<tr>
+<td><code>domain</code></td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+</tr>
+<tr>
+<td><code>policy</code></td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+</tr>
+<tr>
+<td><code>service-lib</code></td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+<td align="center">no</td>
+<td align="center">no</td>
+</tr>
+<tr>
+<td><code>app</code></td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+<td align="center">yes</td>
+<td align="center">no</td>
+<td align="center">no</td>
+</tr>
+<tr>
+<td><code>go-service</code></td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+<td align="center">no</td>
+</tr>
+</tbody></table>
+<p>A member never counts as a dependency of itself, so <code>app -&gt; app</code> means &quot;another app&quot;.</p>
+<h2 id="additional-rules">Additional rules</h2>
+<ul>
+<li><strong>Test code may also import <code>@blackwing/testing</code>, and only test code may.</strong> Test code is any <code>*.test.*</code> or <code>*.spec.*</code> file, anything under a <code>test/</code>, <code>tests/</code>, <code>__tests__/</code>, <code>__fixtures__/</code>, <code>e2e/</code>, <code>testdata/</code> or <code>typefixtures/</code> directory, and <code>vitest.config.*</code> / <code>vitest.int.config.*</code> / <code>playwright.config.*</code> (<code>TEST_CODE_PATTERN</code>). In <code>package.json</code>, <code>@blackwing/testing</code> belongs in <code>devDependencies</code>. Test code gets no other exemption.</li>
+<li><strong>No deep imports.</strong> Import another member only through its public entry points (the targets of its <code>package.json</code> <code>exports</code>): <code>@blackwing/config</code>, never <code>@blackwing/config/src/...</code> and never a relative path into another member. An <code>exports</code> map must not expose a <code>./src/...</code> subpath.</li>
+<li><strong>Sandbox code stays away from server-only packages.</strong> <code>apps/agent-runtime</code> and <code>packages/mcp-tools</code> run inside agent sandboxes, which reach only the egress gateway, the model gateway and the Run Broker API (CONTEXT_PACK §4.1). Their production code must not reach <code>packages/audit</code>, <code>packages/connectors</code>, <code>packages/db</code>, <code>packages/notify</code>, <code>packages/secrets</code>, directly or through another package (§8.6, §8.7).</li>
+<li><strong>The owner database pool stays with the migrate job.</strong> <code>@blackwing/db/owner</code> (<code>packages/db/src/owner.ts</code>) holds the owner-role pool that runs migrations. Only <code>packages/db</code> and test code may import it; runtime code uses the app-role pool from <code>@blackwing/db</code> and never loads owner credentials (CONTEXT_PACK §7, §8.6).</li>
+<li><strong>The Go service stays self-contained.</strong> <code>apps/egress-gateway/go.mod</code> must not <code>replace</code> a module with a path outside the module, and its Go code must not import other paths of this repository.</li>
+<li><strong>No cycles.</strong> Package cycles (from imports and declared dependencies) and module cycles inside one package are reported separately from boundary violations.</li>
+<li><strong>Every member is classified.</strong> A new app or package fails the check until it is added to <code>ELEMENT_TYPES</code>.</li>
+</ul>
+<h2 id="commands-and-report">Commands and report</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pnpm boundaries:check</code></td>
+<td>Checks the whole workspace and this file. Exits 1 and names each offending edge on violation.</td>
+</tr>
+<tr>
+<td><code>pnpm boundaries:report</code></td>
+<td>Same check, and also writes <code>boundaries-report.json</code> for CI annotation.</td>
+</tr>
+<tr>
+<td><code>pnpm boundaries:docs</code></td>
+<td>Regenerates this file from the model.</td>
+</tr>
+</tbody></table>
+<p>The JSON report has <code>ok</code>, <code>summary</code>, <code>violations</code> and <code>cycles</code>. Each violation carries <code>kind</code>
+(<code>unclassified</code>, <code>boundary</code>, <code>test-only</code>, <code>server-only</code>, <code>deep-import</code>, <code>unresolvable</code>, <code>go</code>, <code>docs</code>), <code>rule</code>, <code>from</code>, <code>to</code>,
+<code>specifier</code> (the import as written), <code>fromMember</code>, <code>fromType</code>, <code>toMember</code>, <code>toType</code>, <code>via</code> (for
+transitive violations) and <code>message</code>.
+Each cycle carries <code>kind</code> (<code>package-cycle</code> or <code>module-cycle</code>), <code>rule</code>, <code>path</code> and <code>message</code>. Under
+GitHub Actions every problem is also printed as an <code>::error</code> annotation.</p>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workflow determinism | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="./CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="./EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="./FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="./REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="./workflow-determinism.html" aria-current="page">Workflow determinism</a></li>
+<li><a href="./workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="./dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="./egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="./storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="./typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="workflow-determinism">Workflow determinism</h1>
+<p>Temporal replays workflow code from its recorded history whenever a worker restarts or a workflow is resumed.
+A replay must make the same decisions as the original run. Any code that reads the wall clock, randomness,
+the environment or the network can take a different branch on replay. That corrupts run history and breaks the
+kill and resume guarantees in <a href="./CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">CONTEXT_PACK §8.5 and §8.11</a>.</p>
+<p>These rules apply to <code>apps/worker/src/workflows/</code>. The mechanical ones are enforced by ESLint (<code>pnpm lint</code>,
+override <code>blackwing/workflow-determinism</code> in <code>eslint.config.mjs</code>). The rest are review rules. Versioning and
+patching are a separate policy (WORKFLOW-007).</p>
+<h2 id="allowed-and-banned-apis-in-a-workflow">Allowed and banned APIs in a workflow</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use in a workflow</th>
+<th>Banned in a workflow</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Current time</td>
+<td><code>workflowInfo().startTime</code>, or an activity that reads the clock and returns the value (recorded in history)</td>
+<td><code>Date.now()</code>, <code>new Date()</code>, <code>Date()</code></td>
+<td>The sandbox overrides <code>Date</code> with workflow time. Authors must not depend on that override. <code>new Date(value)</code> with an explicit value is fine.</td>
+</tr>
+<tr>
+<td>Delay or timeout</td>
+<td><code>sleep()</code> from <code>@temporalio/workflow</code>, <code>condition()</code> with a timeout</td>
+<td><code>setTimeout</code>, <code>setInterval</code>, <code>setImmediate</code></td>
+<td>Only SDK timers are recorded in history and replay.</td>
+</tr>
+<tr>
+<td>Randomness and IDs</td>
+<td><code>uuid4()</code> from <code>@temporalio/workflow</code></td>
+<td><code>Math.random</code>, <code>crypto</code> (the global and <code>node:crypto</code>)</td>
+<td><code>uuid4()</code> is derived from the workflow&#39;s deterministic random source.</td>
+</tr>
+<tr>
+<td>Configuration and environment</td>
+<td>Workflow input, or read it inside an activity through <code>@blackwing/config</code></td>
+<td><code>process</code>, <code>process.env</code>, <code>node:process</code></td>
+<td>Workers differ in their environment, so replays would differ.</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>An activity, called through <code>proxyActivities</code></td>
+<td><code>fetch</code>, Node built-ins such as <code>node:http</code>, <code>node:net</code>, <code>node:dns</code></td>
+<td>Network access is I/O.</td>
+</tr>
+<tr>
+<td>Filesystem and subprocesses</td>
+<td>An activity</td>
+<td><code>node:fs</code>, <code>node:child_process</code> and every other Node built-in</td>
+<td>I/O.</td>
+</tr>
+<tr>
+<td>Database, Redis, Temporal client</td>
+<td>An activity (database access goes through <code>withTenant</code>)</td>
+<td><code>pg</code>, <code>ioredis</code>, <code>@temporalio/client</code></td>
+<td>I/O. A workflow never starts or signals workflows.</td>
+</tr>
+</tbody></table>
+<p>Type-only imports are always allowed (<code>import type { … }</code>). They are erased at build time and cannot run.</p>
+<h2 id="ordering">Ordering</h2>
+<ul>
+<li>Build the input array of each <code>Promise.all</code> in a fixed order. Sort an unordered source (a <code>Set</code>, object keys
+from input) before fanning out.</li>
+<li>Read results by input index, never by completion order.</li>
+<li>Do not decide anything from which promise settles first. Only the order of Temporal events is deterministic.</li>
+</ul>
+<h2 id="side-effects-belong-in-activities">Side effects belong in activities</h2>
+<p>Any effect outside the workflow happens in an activity: sending a request, writing a row, reading the clock
+for a stored decision, or calling a connector. Activities retry, so they must be idempotent (compare-and-set,
+as in the kill coordinator). The workflow only schedules them and reads their recorded results.</p>
+<h2 id="shared-modules-split-pure-from-impure">Shared modules: split pure from impure</h2>
+<p>A helper used by both workflows and activities is split in two:</p>
+<ul>
+<li>a pure module (types, constants, pure functions) that workflows may import, and</li>
+<li>an impure module (I/O, clients, clock reads) that only activities import.</li>
+</ul>
+<p>The workflow override matches files under <code>apps/worker/src/workflows/</code>. A module outside that folder is not
+linted with these rules when a workflow imports it, so keep modules reached from a workflow pure. The bundle
+entry <code>apps/worker/src/workflows/index.ts</code> is where that graph starts and is reviewed.</p>
+<h2 id="example-a-timer-that-fails-lint-and-its-fix">Example: a timer that fails lint, and its fix</h2>
+<pre><code class="language-ts">// Before: `Date.now()` and `setTimeout` both fail `pnpm lint` in a workflow file.
+const deadline = Date.now() + input.ttlMs;
+await new Promise((resolve) =&gt; setTimeout(resolve, input.ttlMs));
+
+// After: the SDK timer is recorded in history and replays exactly. No wall-clock deadline is needed.
+await sleep(input.ttlMs);
+</code></pre>
+<p>The same two calls are fine in an activity file (for example <code>apps/worker/src/kill/activities.ts</code>), which is
+where a clock read or a timer belongs when its effect is real.</p>
+<h2 id="enforcement">Enforcement</h2>
+<ul>
+<li><code>pnpm lint</code> fails on any banned call in <code>apps/worker/src/workflows/**/*.ts</code>. The rules run with type information.</li>
+<li><code>scripts/lint-config.test.mjs</code> (<code>workflow determinism</code>) proves that each banned call fails in a workflow
+file and passes in an activity file, and that <code>import type</code> and <code>uuid4()</code> pass.</li>
+<li>Do not add an <code>eslint-disable</code> comment to get past a workflow rule. If a rule is wrong, change the rule and
+this document in the same change, and link the issue that justifies it.</li>
+</ul>
+</main>
+</div>
+</body>
+</html>

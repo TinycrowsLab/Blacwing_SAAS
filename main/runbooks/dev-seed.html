@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dev seed data (`pnpm db:seed`) | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="./code-owners.html">Code owners</a></li>
+<li><a href="./codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="./dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="./dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="./dev-seed.html" aria-current="page">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./drift-checks.html">Drift checks</a></li>
+<li><a href="./e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="dev-seed-data-pnpm-dbseed">Dev seed data (<code>pnpm db:seed</code>)</h1>
+<p>DEVENV-011 (#165). Seeds the local database with the minimum data for a first grey-box run against the
+local Juice Shop. Development and test only: the command refuses <code>NODE_ENV=staging|production</code>.</p>
+<h2 id="run-it">Run it</h2>
+<pre><code class="language-sh">pnpm dev:deps          # Postgres, Keycloak, OpenBao, ...
+pnpm db:migrate        # the seed never creates tables
+pnpm db:seed           # idempotent: run it as often as you like
+pnpm db:seed:reset     # delete the seeded tenant rows, then seed again
+</code></pre>
+<p>It reads <code>.env</code> at the repository root: <code>DATABASE_URL</code> (app role, RLS applies), <code>MIGRATION_DATABASE_URL</code>
+(owner role, platform rows only), <code>BW_TARGET_JUICE_SHOP_URL</code> (default <code>http://127.0.0.1:13000</code>) and,
+optionally, <code>BW_DEV_KEYCLOAK_PUBLIC_URL</code>, <code>BW_DEV_KEYCLOAK_REALM</code>, <code>BW_DEV_KEYCLOAK_ADMIN_USER</code> and
+<code>BW_DEV_KEYCLOAK_ADMIN_PASSWORD</code>. <code>${VAR}</code> references in <code>.env</code> are expanded.</p>
+<h2 id="what-it-writes">What it writes</h2>
+<table>
+<thead>
+<tr>
+<th>Entity</th>
+<th>Rows</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tenants</code></td>
+<td><code>acme</code> (<code>active</code>, <code>eu-west-1</code>, plan <code>dev</code>)</td>
+</tr>
+<tr>
+<td><code>users</code></td>
+<td>one per Keycloak test user (DEVENV-004): appsec, owner, dev, admin, auditor, operator</td>
+</tr>
+<tr>
+<td><code>memberships</code></td>
+<td>five. The Platform Operator is deliberately not a member of <code>acme</code>.</td>
+</tr>
+<tr>
+<td><code>assets</code></td>
+<td>one <code>web_app</code> at the Juice Shop URL, <code>environment=dev</code>, owned by the Asset Owner, <code>verified</code> via <code>manual_letter</code>, with an F6 attestation (lockout exemption)</td>
+</tr>
+<tr>
+<td><code>asset_credentials</code></td>
+<td><code>customer</code> and <code>admin</code>: <code>secret_ref = openbao://secret/data/tenants/acme/assets/juice-shop/credentials/&lt;role&gt;</code> plus a JSON login recipe. No plaintext ever.</td>
+</tr>
+<tr>
+<td><code>standing_authorisations</code></td>
+<td>one <code>active</code> SA, <code>active_safe</code>, valid from the seed time for 90 days (re-seeding renews it), requested by AppSec and approved by the Asset Owner</td>
+</tr>
+<tr>
+<td><code>role_matrices</code></td>
+<td>Juice Shop functions × <code>anonymous</code>/<code>customer</code>/<code>admin</code>, giving the expected access (F9)</td>
+</tr>
+</tbody></table>
+<p>Rows use deterministic UUIDv7 keys and upserts, so a re-run, or a run after a partial one, converges
+without duplicates. Every tenant-scoped row is written as the app role inside a transaction that sets
+<code>SET LOCAL app.tenant_id</code>. After writing, the seed counts what it can see under <code>acme</code> and checks that a
+random other tenant sees nothing. It fails if any seeded row leaks.</p>
+<h2 id="safety-notes">Safety notes</h2>
+<ul>
+<li><strong>Missing schema.</strong> Before writing anything, the seed compares the catalogue with
+<code>SEED_SCHEMA_CONTRACT</code> (<code>packages/db/src/seed/schema-contract.ts</code>). It stops on the first run and names
+each missing table or column. The tables belong to the DB/domain epics (tenancy #94 and later issues).
+Until those migrations land, the integration test uses a test-only fixture
+(<code>src/seed/__fixtures__/seed-tables.sql</code>) that follows the §7 RLS pattern.</li>
+<li><strong>Separation of duties (§8.4).</strong> A plan where the requester is also the approver is rejected before any
+write.</li>
+<li><strong>Keycloak subjects.</strong> With admin credentials set, the seed looks up each user&#39;s <code>sub</code> in the dev realm.
+A user that is absent, or a Keycloak that cannot be reached, only produces a warning. The user then
+keeps a <code>pending:&lt;username&gt;</code> subject, and a subject that was confirmed earlier is never overwritten.</li>
+<li><strong>SA signature.</strong> The SA carries a dev EdDSA JWS whose key is generated for the run and then thrown away.
+No trust store holds that key, so the envelope verifier (#375) rejects the signature until the signing
+service exists. A seeded SA cannot pass §8.1 verification by accident.</li>
+<li><strong>Audit.</strong> <code>packages/audit</code> has no ledger writer yet, so the seed writes no audit events. Production
+tenants are provisioned through onboarding, which audits, and are never seeded.</li>
+<li><strong>Secrets.</strong> OpenBao secrets are referenced, never written. The log summary contains counts and names
+only.</li>
+</ul>
+</main>
+</div>
+</body>
+</html>

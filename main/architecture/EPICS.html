@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blackwing SaaS v1 — Epic Catalogue | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="./CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="./EPICS.html" aria-current="page">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="./FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="./REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="./workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="./workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="./dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="./egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="./storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="./typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="blackwing-saas-v1--epic-catalogue">Blackwing SaaS v1 — Epic Catalogue</h1>
+<p>69 epics, 626 seed issues across 11 milestones. Each epic is a GitHub issue (<code>type:epic</code>) with child task issues (sub-issues). See <code>CONTEXT_PACK.md</code> for the full design.</p>
+<h2 id="m0---foundations--dev-environment">M0 - Foundations &amp; Dev Environment</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Epic</th>
+<th>Area</th>
+<th>Priority</th>
+<th>Seeds</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>FOUND</code></td>
+<td>Monorepo, shared libraries &amp; engineering conventions</td>
+<td>Foundations</td>
+<td>P0</td>
+<td>15</td>
+<td></td>
+</tr>
+<tr>
+<td><code>DEVENV</code></td>
+<td>Developer environment on AWS EC2 and local dependency stack</td>
+<td>Foundations</td>
+<td>P0</td>
+<td>11</td>
+<td>F41</td>
+</tr>
+<tr>
+<td><code>CI</code></td>
+<td>CI/CD pipelines, supply-chain security &amp; release engineering</td>
+<td>Foundations</td>
+<td>P0</td>
+<td>13</td>
+<td>F37</td>
+</tr>
+<tr>
+<td><code>INFRA</code></td>
+<td>AWS infrastructure (OpenTofu), k3s cluster, networking, DNS &amp; TLS</td>
+<td>Infrastructure</td>
+<td>P1</td>
+<td>16</td>
+<td>F41 F11</td>
+</tr>
+</tbody></table>
+<h2 id="m1---platform-core-tenancy-identity-data-audit-secrets">M1 - Platform Core (Tenancy, Identity, Data, Audit, Secrets)</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Epic</th>
+<th>Area</th>
+<th>Priority</th>
+<th>Seeds</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>TENANT</code></td>
+<td>Multi-tenant SaaS core: organisations, onboarding &amp; isolation</td>
+<td>Tenancy</td>
+<td>P0</td>
+<td>11</td>
+<td>F29 F41</td>
+</tr>
+<tr>
+<td><code>IAM</code></td>
+<td>Identity, SSO (Keycloak) &amp; session management</td>
+<td>Access Layer</td>
+<td>P0</td>
+<td>11</td>
+<td>F30 F29</td>
+</tr>
+<tr>
+<td><code>RBAC</code></td>
+<td>Roles, permissions, service accounts &amp; scoped CI tokens</td>
+<td>Access Layer</td>
+<td>P0</td>
+<td>10</td>
+<td>F29 F31</td>
+</tr>
+<tr>
+<td><code>API</code></td>
+<td>API platform: REST &amp; GraphQL conventions</td>
+<td>Access Layer</td>
+<td>P0</td>
+<td>14</td>
+<td>F29</td>
+</tr>
+<tr>
+<td><code>DB</code></td>
+<td>PostgreSQL schema, migrations, RLS &amp; data-access layer</td>
+<td>Tenancy</td>
+<td>P0</td>
+<td>10</td>
+<td>F34 F39</td>
+</tr>
+<tr>
+<td><code>GRAPH</code></td>
+<td>Asset &amp; surface graph (Neo4j)</td>
+<td>Tenancy</td>
+<td>P1</td>
+<td>8</td>
+<td>F7 F12</td>
+</tr>
+<tr>
+<td><code>WORKFLOW</code></td>
+<td>Durable workflow &amp; job infrastructure (Temporal, queues, events)</td>
+<td>Platform Services</td>
+<td>P0</td>
+<td>9</td>
+<td>F12 F13</td>
+</tr>
+<tr>
+<td><code>AUDIT</code></td>
+<td>Audit ledger &amp; SIEM export</td>
+<td>Platform Services</td>
+<td>P0</td>
+<td>11</td>
+<td>F34</td>
+</tr>
+<tr>
+<td><code>SECRETS</code></td>
+<td>Secrets service, envelope encryption &amp; customer key stores</td>
+<td>Platform Services</td>
+<td>P0</td>
+<td>12</td>
+<td>F35</td>
+</tr>
+<tr>
+<td><code>NOTIFY</code></td>
+<td>Notification service: email, chat, webhooks &amp; paging</td>
+<td>Platform Services</td>
+<td>P1</td>
+<td>9</td>
+<td>F13 F33</td>
+</tr>
+</tbody></table>
+<h2 id="m2---assets-scoping-authorisation--policy">M2 - Assets, Scoping, Authorisation &amp; Policy</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Epic</th>
+<th>Area</th>
+<th>Priority</th>
+<th>Seeds</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ASSET</code></td>
+<td>Asset inventory, ownership verification &amp; environment attestation</td>
+<td>Authorisation &amp; Policy</td>
+<td>P0</td>
+<td>12</td>
+<td>F6 F1 F7</td>
+</tr>
+<tr>
+<td><code>SCOPE</code></td>
+<td>Scoping form, mode &amp; input manifest, intrusiveness &amp; request budgets</td>
+<td>Authorisation &amp; Policy</td>
+<td>P0</td>
+<td>11</td>
+<td>F1 F4 F5 F7</td>
+</tr>
+<tr>
+<td><code>AUTHZ</code></td>
+<td>Standing authorisation register &amp; separation of duties</td>
+<td>Authorisation &amp; Policy</td>
+<td>P0</td>
+<td>11</td>
+<td>F3 F31 F6</td>
+</tr>
+<tr>
+<td><code>POLICY</code></td>
+<td>Policy decision point &amp; customer-owned policy layer (Cedar)</td>
+<td>Authorisation &amp; Policy</td>
+<td>P0</td>
+<td>10</td>
+<td>F32 F4 F11 F13</td>
+</tr>
+<tr>
+<td><code>PLAN</code></td>
+<td>Test-plan model, editable plan &amp; Gate 1 approval</td>
+<td>Authorisation &amp; Policy</td>
+<td>P0</td>
+<td>10</td>
+<td>F2 F4 F5 F14 F16 F31</td>
+</tr>
+</tbody></table>
+<h2 id="m3---execution-sandbox--egress-control">M3 - Execution Sandbox &amp; Egress Control</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Epic</th>
+<th>Area</th>
+<th>Priority</th>
+<th>Seeds</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SANDBOX</code></td>
+<td>Sandbox controller &amp; disposable run sandboxes</td>
+<td>Execution Sandbox</td>
+<td>P0</td>
+<td>11</td>
+<td>F41 F11 F12</td>
+</tr>
+<tr>
+<td><code>IMAGE</code></td>
+<td>Sandbox image &amp; security toolchain</td>
+<td>Execution Sandbox</td>
+<td>P1</td>
+<td>11</td>
+<td>F37 F12</td>
+</tr>
+<tr>
+<td><code>EGRESS</code></td>
+<td>Scoped egress gateway (Go): allowlist, budgets, capture, fail-closed</td>
+<td>Execution Sandbox</td>
+<td>P0</td>
+<td>16</td>
+<td>F11 F5 F4 F33 F20</td>
+</tr>
+<tr>
+<td><code>SESSION</code></td>
+<td>Session &amp; credential manager: multi-role logins, keep-alive, lockout guard</td>
+<td>Execution Sandbox</td>
+<td>P0</td>
+<td>12</td>
+<td>F8 F10 F35</td>
+</tr>
+<tr>
+<td><code>BROWSER</code></td>
+<td>Browser automation runtime (Playwright)</td>
+<td>Execution Sandbox</td>
+<td>P1</td>
+<td>7</td>
+<td>F12 F8</td>
+</tr>
+<tr>
+<td><code>OOB</code></td>
+<td>Out-of-band listener (interactsh) &amp; correlation</td>
+<td>Validation &amp; Findings</td>
+<td>P1</td>
+<td>7</td>
+<td>F15 F14</td>
+</tr>
+<tr>
+<td><code>KILL</code></td>
+<td>Kill switch, test-window notices &amp; Customer SOC access</td>
+<td>Authorisation &amp; Policy</td>
+<td>P0</td>
+<td>11</td>
+<td>F33</td>
+</tr>
+</tbody></table>
+<h2 id="m4---agent-runtime-on-claude-code">M4 - Agent Runtime on Claude Code</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Epic</th>
+<th>Area</th>
+<th>Priority</th>
+<th>Seeds</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GATEWAY</code></td>
+<td>Model gateway: Claude routing, virtual keys, redaction, cost caps &amp; pinning</td>
+<td>Model &amp; Memory</td>
+<td>P0</td>
+<td>15</td>
+<td>F36 F38 F37</td>
+</tr>
+<tr>
+<td><code>RUNTIME</code></td>
+<td>Agent runtime host on the Claude Agent SDK</td>
+<td>Agent Runtime</td>
+<td>P0</td>
+<td>14</td>
+<td>F12 F13 F37 F38</td>
+</tr>
+<tr>
+<td><code>ORCH</code></td>
+<td>Run orchestration: Temporal run workflow &amp; orchestrator agent</td>
+<td>Agent Runtime</td>
+<td>P0</td>
+<td>14</td>
+<td>F12 F7 F13 F17 F21</td>
+</tr>
+<tr>
+<td><code>REGISTRY</code></td>
+<td>Agent registry, personas, prompt versioning &amp; model tiers</td>
+<td>Agent Runtime</td>
+<td>P0</td>
+<td>15</td>
+<td>F12 F37</td>
+</tr>
+<tr>
+<td><code>MCP</code></td>
+<td>Blackwing MCP tool layer for agents</td>
+<td>Agent Runtime</td>
+<td>P0</td>
+<td>14</td>
+<td>F11 F14 F15 F17 F20</td>
+</tr>
+<tr>
+<td><code>MEMORY</code></td>
+<td>Context manager, engagement journal &amp; memory/knowledge</td>
+<td>Model &amp; Memory</td>
+<td>P1</td>
+<td>9</td>
+<td>F12</td>
+</tr>
+<tr>
+<td><code>GATE2</code></td>
+<td>Runtime exception gate (Gate 2) &amp; on-call paging</td>
+<td>Authorisation &amp; Policy</td>
+<td>P0</td>
+<td>9</td>
+<td>F13 F31</td>
+</tr>
+</tbody></table>
+<h2 id="m5---recon-planning--assessment-specialists">M5 - Recon, Planning &amp; Assessment Specialists</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Epic</th>
+<th>Area</th>
+<th>Priority</th>
+<th>Seeds</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MENTOR</code></td>
+<td>Mentor &amp; Reflector (stall detection &amp; recovery)</td>
+<td>Agent Runtime</td>
+<td>P2</td>
+<td>6</td>
+<td>F12</td>
+</tr>
+<tr>
+<td><code>RECON</code></td>
+<td>Recon agents: passive recon, OSINT, active recon &amp; session setup</td>
+<td>Recon &amp; Specialists</td>
+<td>P0</td>
+<td>11</td>
+<td>F7 F12 F8 F10</td>
+</tr>
+<tr>
+<td><code>INTEL</code></td>
+<td>Threat intelligence &amp; enrichment</td>
+<td>Recon &amp; Specialists</td>
+<td>P1</td>
+<td>9</td>
+<td>F12 F26</td>
+</tr>
+<tr>
+<td><code>INGEST</code></td>
+<td>Source &amp; spec ingestion (grey/white box)</td>
+<td>Recon &amp; Specialists</td>
+<td>P1</td>
+<td>10</td>
+<td>F7 F8 F12</td>
+</tr>
+<tr>
+<td><code>PLANNER</code></td>
+<td>Planner &amp; sub-planner agents</td>
+<td>Agent Runtime</td>
+<td>P0</td>
+<td>8</td>
+<td>F2 F4 F5 F14 F16 F7</td>
+</tr>
+<tr>
+<td><code>WEBAPI</code></td>
+<td>Web &amp; API assessment specialist</td>
+<td>Recon &amp; Specialists</td>
+<td>P1</td>
+<td>11</td>
+<td>F8 F12 F14 F16 F26</td>
+</tr>
+<tr>
+<td><code>AUTHLOGIC</code></td>
+<td>Authorisation, access-control &amp; business-logic specialist</td>
+<td>Recon &amp; Specialists</td>
+<td>P1</td>
+<td>9</td>
+<td>F9 F8 F12 F14 F16</td>
+</tr>
+<tr>
+<td><code>INFRASPEC</code></td>
+<td>Infrastructure &amp; configuration specialist</td>
+<td>Recon &amp; Specialists</td>
+<td>P2</td>
+<td>7</td>
+<td>F12 F14 F26</td>
+</tr>
+<tr>
+<td><code>CODESPEC</code></td>
+<td>Code (white-box) specialist</td>
+<td>Recon &amp; Specialists</td>
+<td>P2</td>
+<td>7</td>
+<td>F12 F14 F26</td>
+</tr>
+<tr>
+<td><code>EXPLOIT</code></td>
+<td>Exploit developer &amp; tooling support (sandbox-only, non-destructive)</td>
+<td>Recon &amp; Specialists</td>
+<td>P2</td>
+<td>5</td>
+<td>F12</td>
+</tr>
+</tbody></table>
+<h2 id="m6---validation-evidence--findings">M6 - Validation, Evidence &amp; Findings</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Epic</th>
+<th>Area</th>
+<th>Priority</th>
+<th>Seeds</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>VALIDATE</code></td>
+<td>Validator: deterministic replay, negative controls &amp; confirmed/suspected</td>
+<td>Validation &amp; Findings</td>
+<td>P0</td>
+<td>9</td>
+<td>F14 F16 F17 F18</td>
+</tr>
+<tr>
+<td><code>EVIDENCE</code></td>
+<td>Evidence store (write-once, hashed) &amp; chain of custody</td>
+<td>Validation &amp; Findings</td>
+<td>P0</td>
+<td>7</td>
+<td>F18 F34 F39</td>
+</tr>
+<tr>
+<td><code>FINDING</code></td>
+<td>Findings model, dedup &amp; fingerprinting, severity &amp; mapping</td>
+<td>Validation &amp; Findings</td>
+<td>P0</td>
+<td>7</td>
+<td>F17 F22 F26 F23</td>
+</tr>
+<tr>
+<td><code>COVERAGE</code></td>
+<td>Coverage manifest &amp; export gate</td>
+<td>Validation &amp; Findings</td>
+<td>P0</td>
+<td>6</td>
+<td>F19</td>
+</tr>
+<tr>
+<td><code>REVERSAL</code></td>
+<td>Reversal journal (undo of state changes)</td>
+<td>Validation &amp; Findings</td>
+<td>P1</td>
+<td>6</td>
+<td>F20 F4</td>
+</tr>
+<tr>
+<td><code>REPRO</code></td>
+<td>Standalone repro artifacts</td>
+<td>Validation &amp; Findings</td>
+<td>P1</td>
+<td>5</td>
+<td>F18</td>
+</tr>
+</tbody></table>
+<h2 id="m7---triage-reporting--integrations">M7 - Triage, Reporting &amp; Integrations</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Epic</th>
+<th>Area</th>
+<th>Priority</th>
+<th>Seeds</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>TRIAGE</code></td>
+<td>Triage &amp; release (Gate 3) &amp; auto-release lanes</td>
+<td>Triage &amp; Delivery</td>
+<td>P0</td>
+<td>6</td>
+<td>F21 F17 F31 F44</td>
+</tr>
+<tr>
+<td><code>REPORT</code></td>
+<td>Report generation &amp; export (PDF/JSON/SARIF)</td>
+<td>Triage &amp; Delivery</td>
+<td>P0</td>
+<td>7</td>
+<td>F25 F26 F19 F18</td>
+</tr>
+<tr>
+<td><code>CONNECT</code></td>
+<td>Issue-tracker &amp; SCM integrations (Jira, GitHub/GitLab)</td>
+<td>Triage &amp; Delivery</td>
+<td>P1</td>
+<td>8</td>
+<td>F27 F42</td>
+</tr>
+<tr>
+<td><code>REMEDIATE</code></td>
+<td>Remediation guidance &amp; one-click retest</td>
+<td>Triage &amp; Delivery</td>
+<td>P1</td>
+<td>5</td>
+<td>F24 F23 F27</td>
+</tr>
+<tr>
+<td><code>BASELINE</code></td>
+<td>Baseline runs &amp; diff (new/open/fixed/returned)</td>
+<td>Triage &amp; Delivery</td>
+<td>P1</td>
+<td>5</td>
+<td>F23 F22</td>
+</tr>
+</tbody></table>
+<h2 id="m8---console--dashboards">M8 - Console &amp; Dashboards</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Epic</th>
+<th>Area</th>
+<th>Priority</th>
+<th>Seeds</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>CONSOLE</code></td>
+<td>Web console shell, navigation &amp; design system</td>
+<td>Console</td>
+<td>P0</td>
+<td>7</td>
+<td>F29</td>
+</tr>
+<tr>
+<td><code>LIVERUN</code></td>
+<td>Live run view &amp; run management</td>
+<td>Console</td>
+<td>P1</td>
+<td>6</td>
+<td>F12 F13 F33 F17</td>
+</tr>
+<tr>
+<td><code>DASH</code></td>
+<td>Vulnerability dashboard &amp; reporting views</td>
+<td>Console</td>
+<td>P1</td>
+<td>6</td>
+<td>F28 F26 F23</td>
+</tr>
+<tr>
+<td><code>ADMIN</code></td>
+<td>Organisation administration &amp; platform-operator console</td>
+<td>Console</td>
+<td>P1</td>
+<td>9</td>
+<td>F29 F30 F31 F32 F34 F35 F36 F39</td>
+</tr>
+<tr>
+<td><code>SOCUI</code></td>
+<td>Customer SOC portal</td>
+<td>Console</td>
+<td>P2</td>
+<td>4</td>
+<td>F33</td>
+</tr>
+</tbody></table>
+<h2 id="m9---production-readiness--launch">M9 - Production Readiness &amp; Launch</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Epic</th>
+<th>Area</th>
+<th>Priority</th>
+<th>Seeds</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>OBS</code></td>
+<td>Observability: telemetry, metrics, logs, traces &amp; alerting</td>
+<td>Production Readiness</td>
+<td>P1</td>
+<td>8</td>
+<td>F34 F38</td>
+</tr>
+<tr>
+<td><code>COST</code></td>
+<td>Token &amp; cost tracking, budgets &amp; spend caps</td>
+<td>Production Readiness</td>
+<td>P1</td>
+<td>5</td>
+<td>F38</td>
+</tr>
+<tr>
+<td><code>SCHED</code></td>
+<td>Scheduler: recurring runs &amp; blackout windows</td>
+<td>Production Readiness</td>
+<td>P2</td>
+<td>5</td>
+<td>F43</td>
+</tr>
+<tr>
+<td><code>RETAIN</code></td>
+<td>Retention, data lifecycle &amp; deletion</td>
+<td>Production Readiness</td>
+<td>P1</td>
+<td>5</td>
+<td>F39 F35 F34</td>
+</tr>
+<tr>
+<td><code>EVAL</code></td>
+<td>Evaluation harness &amp; regression gate</td>
+<td>Production Readiness</td>
+<td>P1</td>
+<td>6</td>
+<td>F40 F37</td>
+</tr>
+<tr>
+<td><code>SECREVIEW</code></td>
+<td>Security hardening, threat model &amp; pre-launch review</td>
+<td>Production Readiness</td>
+<td>P0</td>
+<td>7</td>
+<td>F31 F34 F35 F11</td>
+</tr>
+<tr>
+<td><code>PERF</code></td>
+<td>Performance, load &amp; resilience testing</td>
+<td>Production Readiness</td>
+<td>P2</td>
+<td>6</td>
+<td>F11 F33</td>
+</tr>
+<tr>
+<td><code>DOCS</code></td>
+<td>Documentation, runbooks &amp; onboarding</td>
+<td>Production Readiness</td>
+<td>P2</td>
+<td>6</td>
+<td></td>
+</tr>
+<tr>
+<td><code>LAUNCH</code></td>
+<td>End-to-end integration, UAT &amp; launch readiness</td>
+<td>Production Readiness</td>
+<td>P0</td>
+<td>5</td>
+<td>F7 F8 F9</td>
+</tr>
+</tbody></table>
+<h2 id="later---post-v1-backlog">Later - Post-v1 Backlog</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Epic</th>
+<th>Area</th>
+<th>Priority</th>
+<th>Seeds</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>LATER</code></td>
+<td>Post-v1 backlog (tracked, not built in v1)</td>
+<td>Backlog</td>
+<td>P3</td>
+<td>8</td>
+<td>F42 F43 F44</td>
+</tr>
+</tbody></table>
+</main>
+</div>
+</body>
+</html>

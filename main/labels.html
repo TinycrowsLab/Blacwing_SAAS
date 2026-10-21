@@ -1,0 +1,1164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Label catalogue | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="./index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="./user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="./user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="./user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="./runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="./runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="./runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="./runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="./api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="./runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="./runbooks/code-owners.html">Code owners</a></li>
+<li><a href="./runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="./runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="./runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="./runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="./runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="./runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="./runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="./runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="./runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="./runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="./runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="./runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="./runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="./runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="./architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="./architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="./architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="./architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="./architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="./architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="./architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="./architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="./architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="./architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="./adr/README.html">Architecture decision records</a></li>
+<li><a href="./adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="./adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="./adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="./adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="./adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="./adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="./adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="./adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="./adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="./adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="./adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="./adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="./labels.html" aria-current="page">Label catalogue</a></li>
+<li><a href="./CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="label-catalogue">Label catalogue</h1>
+<p>Every GitHub label in this repository is defined in <a href="https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/.github/labels.yml"><code>.github/labels.yml</code></a>. That file is
+the single source of truth: change labels there, never in the GitHub UI. This page explains when to apply each
+group. The tables at the end are generated from the file.</p>
+<h2 id="how-labels-are-applied">How labels are applied</h2>
+<p>A planned issue (written to <a href="./architecture/CONTEXT_PACK.html#11-issue-writing-standard-for-generators">CONTEXT_PACK §11</a>)
+carries these labels:</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>How many</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>type:*</code></td>
+<td>exactly 1</td>
+<td><code>type:task</code> for a PR-sized unit, <code>type:epic</code> for an epic&#39;s parent issue, <code>type:spike</code> for a time-boxed investigation. Bug reports carry <code>bug</code> instead.</td>
+</tr>
+<tr>
+<td><code>priority:*</code></td>
+<td>exactly 1 on tasks and epics</td>
+<td><code>P0</code> is needed for the first end-to-end grey-box run, <code>P1</code> is a v1 must-have, <code>P2</code> a v1 should-have, <code>P3</code> nice-to-have or Later.</td>
+</tr>
+<tr>
+<td><code>size:*</code></td>
+<td>exactly 1 on tasks</td>
+<td><code>XS</code> &lt; 2 h, <code>S</code> ≤ 0.5 d, <code>M</code> ≤ 1 d, <code>L</code> ≤ 2 d. There is no XL: split the issue.</td>
+</tr>
+<tr>
+<td><code>area:*</code></td>
+<td>exactly 1 on tasks and epics</td>
+<td>The epic&#39;s Area in <a href="./architecture/EPICS.html">EPICS.md</a>.</td>
+</tr>
+<tr>
+<td><code>epic:*</code></td>
+<td>exactly 1 on tasks and epics</td>
+<td>The epic key in <a href="./architecture/EPICS.html">EPICS.md</a>. A task&#39;s key starts with it (<code>EGRESS-004</code> → <code>epic:EGRESS</code>).</td>
+</tr>
+<tr>
+<td>Functional (<code>security</code>, <code>gate</code>, <code>agent</code>, <code>infra</code>)</td>
+<td>0 or more</td>
+<td>Apply each one the change touches. <code>security</code> means a <a href="./architecture/CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8</a> invariant or a security-owned path (<a href="./runbooks/code-owners.html">code owners</a>) is involved, and the PR needs security review.</td>
+</tr>
+<tr>
+<td>Feature (<code>F1</code> … <code>F44</code>)</td>
+<td>0 or more</td>
+<td>Each feature from <a href="./architecture/FEATURE_LIST.html">FEATURE_LIST.md</a> the issue implements.</td>
+</tr>
+<tr>
+<td>Workflow</td>
+<td>0 or more</td>
+<td><code>v1</code> / <code>later</code> for release scope. <code>discovered</code> for work raised while building another issue. <code>online-porting</code> + <code>offline-stub</code> for work that used a local substitute and must be ported online before go-live.</td>
+</tr>
+<tr>
+<td>GitHub defaults</td>
+<td>as needed</td>
+<td><code>bug</code> (set by the bug template), <code>duplicate</code>, <code>invalid</code>, <code>wontfix</code>, <code>question</code> and so on for triage.</td>
+</tr>
+</tbody></table>
+<p>The <a href="https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/.github/ISSUE_TEMPLATE">issue templates</a> ask for the key, epic, area, priority, size, features and
+dependencies. Issue forms can only set fixed labels, so the Task template sets <code>type:task</code> and the Bug template
+sets <code>bug</code>. Whoever triages the issue applies the other labels from those fields. Each dropdown in the templates
+lists exactly the values of its label group, and <code>scripts/check-github.mjs</code> fails when they drift apart.</p>
+<h2 id="changing-labels">Changing labels</h2>
+<ol>
+<li><p>Edit <a href="https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/.github/labels.yml"><code>.github/labels.yml</code></a>. Names are unique ignoring case (GitHub compares label names
+case-insensitively), at most 50 characters, with no commas. Colors are 6 hex digits without <code>#</code>, quoted (an
+unquoted <code>000000</code> would be read as a number). Descriptions are 1-100 characters. A label in a group with a
+<code>prefix</code> must start with it.</p>
+</li>
+<li><p><strong>Renaming:</strong> change <code>name</code> and add the old name under <code>previously:</code>. The sync then renames the label in place,
+so every issue keeps it, instead of creating a second label. Remove the <code>previously:</code> entry once the rename has
+been applied.</p>
+</li>
+<li><p>Regenerate the tables on this page with <code>node scripts/sync-labels.mjs --write-docs</code>. <code>pnpm labels:check</code> (and
+<code>pnpm test</code>) fail while this page is out of date.</p>
+</li>
+<li><p>Preview the change against the live labels without touching them:</p>
+<pre><code class="language-sh">gh label list --repo TinycrowsLab/Blacwing_SAAS --json name,color,description --limit 500 &gt; /tmp/labels.json
+node scripts/sync-labels.mjs --dry-run --current /tmp/labels.json
+</code></pre>
+</li>
+</ol>
+<h2 id="the-sync-script">The sync script</h2>
+<p><code>scripts/sync-labels.mjs</code> validates the catalogue and reconciles a repository&#39;s labels with it. The CI label-sync
+job (#844) runs it. It is idempotent: a second run right after a successful one changes nothing.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>node scripts/sync-labels.mjs --dry-run</code></td>
+<td>Validates the catalogue and lists every label. Writes nothing.</td>
+</tr>
+<tr>
+<td><code>… --dry-run --current &lt;file.json&gt;</code></td>
+<td>Also prints the diff against a snapshot (<code>gh label list --json name,color,description</code> format).</td>
+</tr>
+<tr>
+<td><code>… --dry-run --repo OWNER/NAME</code></td>
+<td>Reads the live labels through the GitHub API (<code>GITHUB_TOKEN</code> or <code>GH_TOKEN</code>) and prints the diff.</td>
+</tr>
+<tr>
+<td><code>… --repo OWNER/NAME</code></td>
+<td>Applies the diff, then re-reads the labels and fails unless nothing is left to change.</td>
+</tr>
+<tr>
+<td><code>--prune</code></td>
+<td>Also deletes labels that are not in the catalogue. Without it they are reported as <code>extra</code> and kept.</td>
+</tr>
+<tr>
+<td><code>--fail-on-diff</code></td>
+<td>Exits 1 when the diff is not empty (drift check).</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Prints a machine-readable report.</td>
+</tr>
+<tr>
+<td><code>--write-docs</code> / <code>--check-docs</code></td>
+<td>Regenerates / checks the tables below.</td>
+</tr>
+</tbody></table>
+<p>The diff lists each label as <code>create</code>, <code>update</code> (color, description or a case-only name change), <code>rename</code> (found
+under a <code>previously:</code> name), <code>delete</code> (only with <code>--prune</code>), <code>unchanged</code> or <code>extra</code>. If a label and one of its
+previous names both exist, the script updates the label, keeps the old one and prints a warning, because the old
+label&#39;s issues have to be moved by hand first. A failed API call stops the run and reports what was applied
+already. Re-running continues from there, because the diff is recomputed each time. The token is only sent in the
+<code>Authorization</code> header and never printed.</p>
+<h2 id="catalogue">Catalogue</h2>
+<!-- BEGIN GENERATED LABEL CATALOGUE: node scripts/sync-labels.mjs --write-docs -->
+
+<p><em>Generated from <code>.github/labels.yml</code>: 158 labels in 9 groups. Do not edit by hand.</em></p>
+<h3 id="type-type-3">Type (<code>type</code>, 3)</h3>
+<p>What kind of planned work an issue is. Every planned issue carries exactly one; bug reports carry <code>bug</code> instead.</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Color</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>type:epic</code></td>
+<td><code>#5319E7</code></td>
+<td>Epic: parent issue that groups the task issues of one epic (docs/architecture/EPICS.md)</td>
+</tr>
+<tr>
+<td><code>type:task</code></td>
+<td><code>#1D76DB</code></td>
+<td>Task: one PR-sized unit of work written to the CONTEXT_PACK §11 standard</td>
+</tr>
+<tr>
+<td><code>type:spike</code></td>
+<td><code>#C5DEF5</code></td>
+<td>Spike: time-boxed investigation that ends in a decision or an ADR</td>
+</tr>
+</tbody></table>
+<h3 id="priority-priority-4">Priority (<code>priority</code>, 4)</h3>
+<p>Delivery priority (CONTEXT_PACK §11). Every planned task and epic carries exactly one.</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Color</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>priority:P0</code></td>
+<td><code>#B60205</code></td>
+<td>P0: needed for the first end-to-end grey-box run</td>
+</tr>
+<tr>
+<td><code>priority:P1</code></td>
+<td><code>#D93F0B</code></td>
+<td>P1: v1 must-have</td>
+</tr>
+<tr>
+<td><code>priority:P2</code></td>
+<td><code>#FBCA04</code></td>
+<td>P2: v1 should-have</td>
+</tr>
+<tr>
+<td><code>priority:P3</code></td>
+<td><code>#0E8A16</code></td>
+<td>P3: nice-to-have or Later</td>
+</tr>
+</tbody></table>
+<h3 id="size-size-4">Size (<code>size</code>, 4)</h3>
+<p>Effort estimate (CONTEXT_PACK §11). Every planned task carries exactly one; there is no XL, split the issue instead.</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Color</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>size:XS</code></td>
+<td><code>#C2E0C6</code></td>
+<td>Size XS: under 2 hours</td>
+</tr>
+<tr>
+<td><code>size:S</code></td>
+<td><code>#BFDADC</code></td>
+<td>Size S: up to half a day</td>
+</tr>
+<tr>
+<td><code>size:M</code></td>
+<td><code>#BFD4F2</code></td>
+<td>Size M: up to one day</td>
+</tr>
+<tr>
+<td><code>size:L</code></td>
+<td><code>#D4C5F9</code></td>
+<td>Size L: up to two days (anything larger must be split)</td>
+</tr>
+</tbody></table>
+<h3 id="area-area-15">Area (<code>area</code>, 15)</h3>
+<p>Architecture area the work belongs to, as listed in the Area column of docs/architecture/EPICS.md. Every planned task and epic carries exactly one.</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Color</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>area:foundations</code></td>
+<td><code>#D93F0B</code></td>
+<td>Architecture area: Foundations</td>
+</tr>
+<tr>
+<td><code>area:infrastructure</code></td>
+<td><code>#5B2C6F</code></td>
+<td>Architecture area: Infrastructure</td>
+</tr>
+<tr>
+<td><code>area:tenancy</code></td>
+<td><code>#4527A0</code></td>
+<td>Architecture area: Tenancy</td>
+</tr>
+<tr>
+<td><code>area:access-layer</code></td>
+<td><code>#0366D6</code></td>
+<td>Architecture area: Access Layer</td>
+</tr>
+<tr>
+<td><code>area:platform-services</code></td>
+<td><code>#00838F</code></td>
+<td>Architecture area: Platform Services</td>
+</tr>
+<tr>
+<td><code>area:authorisation-policy</code></td>
+<td><code>#006B75</code></td>
+<td>Architecture area: Authorisation &amp; Policy</td>
+</tr>
+<tr>
+<td><code>area:execution-sandbox</code></td>
+<td><code>#0E8A16</code></td>
+<td>Architecture area: Execution Sandbox</td>
+</tr>
+<tr>
+<td><code>area:validation-findings</code></td>
+<td><code>#BF360C</code></td>
+<td>Architecture area: Validation &amp; Findings</td>
+</tr>
+<tr>
+<td><code>area:model-memory</code></td>
+<td><code>#795548</code></td>
+<td>Architecture area: Model &amp; Memory</td>
+</tr>
+<tr>
+<td><code>area:agent-runtime</code></td>
+<td><code>#5319E7</code></td>
+<td>Architecture area: Agent Runtime</td>
+</tr>
+<tr>
+<td><code>area:recon-specialists</code></td>
+<td><code>#2E7D32</code></td>
+<td>Architecture area: Recon &amp; Specialists</td>
+</tr>
+<tr>
+<td><code>area:triage-delivery</code></td>
+<td><code>#37474F</code></td>
+<td>Architecture area: Triage &amp; Delivery</td>
+</tr>
+<tr>
+<td><code>area:console</code></td>
+<td><code>#B60205</code></td>
+<td>Architecture area: Console</td>
+</tr>
+<tr>
+<td><code>area:production-readiness</code></td>
+<td><code>#AD1457</code></td>
+<td>Architecture area: Production Readiness</td>
+</tr>
+<tr>
+<td><code>area:backlog</code></td>
+<td><code>#1D76DB</code></td>
+<td>Architecture area: Backlog</td>
+</tr>
+</tbody></table>
+<h3 id="epic-epic-69">Epic (<code>epic</code>, 69)</h3>
+<p>Epic the issue belongs to, keyed by the epic key in docs/architecture/EPICS.md. Every planned task and epic carries exactly one.</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Color</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>epic:FOUND</code></td>
+<td><code>#0E4429</code></td>
+<td>FOUND - Monorepo, shared libraries &amp; engineering conventions</td>
+</tr>
+<tr>
+<td><code>epic:DEVENV</code></td>
+<td><code>#0E4429</code></td>
+<td>DEVENV - Developer environment on AWS EC2 and local dependency stack</td>
+</tr>
+<tr>
+<td><code>epic:CI</code></td>
+<td><code>#0E4429</code></td>
+<td>CI - CI/CD pipelines, supply-chain security &amp; release engineering</td>
+</tr>
+<tr>
+<td><code>epic:INFRA</code></td>
+<td><code>#0E4429</code></td>
+<td>INFRA - AWS infrastructure (OpenTofu), k3s cluster, networking, DNS &amp; TLS</td>
+</tr>
+<tr>
+<td><code>epic:TENANT</code></td>
+<td><code>#0E4429</code></td>
+<td>TENANT - Multi-tenant SaaS core: organisations, onboarding &amp; isolation</td>
+</tr>
+<tr>
+<td><code>epic:IAM</code></td>
+<td><code>#0E4429</code></td>
+<td>IAM - Identity, SSO (Keycloak) &amp; session management</td>
+</tr>
+<tr>
+<td><code>epic:RBAC</code></td>
+<td><code>#0E4429</code></td>
+<td>RBAC - Roles, permissions, service accounts &amp; scoped CI tokens</td>
+</tr>
+<tr>
+<td><code>epic:API</code></td>
+<td><code>#0E4429</code></td>
+<td>API - API platform: REST &amp; GraphQL conventions</td>
+</tr>
+<tr>
+<td><code>epic:DB</code></td>
+<td><code>#0E4429</code></td>
+<td>DB - PostgreSQL schema, migrations, RLS &amp; data-access layer</td>
+</tr>
+<tr>
+<td><code>epic:GRAPH</code></td>
+<td><code>#0E4429</code></td>
+<td>GRAPH - Asset &amp; surface graph (Neo4j)</td>
+</tr>
+<tr>
+<td><code>epic:WORKFLOW</code></td>
+<td><code>#0E4429</code></td>
+<td>WORKFLOW - Durable workflow &amp; job infrastructure (Temporal, queues, events)</td>
+</tr>
+<tr>
+<td><code>epic:AUDIT</code></td>
+<td><code>#0E4429</code></td>
+<td>AUDIT - Audit ledger &amp; SIEM export</td>
+</tr>
+<tr>
+<td><code>epic:SECRETS</code></td>
+<td><code>#0E4429</code></td>
+<td>SECRETS - Secrets service, envelope encryption &amp; customer key stores</td>
+</tr>
+<tr>
+<td><code>epic:NOTIFY</code></td>
+<td><code>#0E4429</code></td>
+<td>NOTIFY - Notification service: email, chat, webhooks &amp; paging</td>
+</tr>
+<tr>
+<td><code>epic:ASSET</code></td>
+<td><code>#0E4429</code></td>
+<td>ASSET - Asset inventory, ownership verification &amp; environment attestation</td>
+</tr>
+<tr>
+<td><code>epic:SCOPE</code></td>
+<td><code>#0E4429</code></td>
+<td>SCOPE - Scoping form, mode &amp; input manifest, intrusiveness &amp; request budgets</td>
+</tr>
+<tr>
+<td><code>epic:AUTHZ</code></td>
+<td><code>#0E4429</code></td>
+<td>AUTHZ - Standing authorisation register &amp; separation of duties</td>
+</tr>
+<tr>
+<td><code>epic:POLICY</code></td>
+<td><code>#0E4429</code></td>
+<td>POLICY - Policy decision point &amp; customer-owned policy layer (Cedar)</td>
+</tr>
+<tr>
+<td><code>epic:PLAN</code></td>
+<td><code>#0E4429</code></td>
+<td>PLAN - Test-plan model, editable plan &amp; Gate 1 approval</td>
+</tr>
+<tr>
+<td><code>epic:SANDBOX</code></td>
+<td><code>#0E4429</code></td>
+<td>SANDBOX - Sandbox controller &amp; disposable run sandboxes</td>
+</tr>
+<tr>
+<td><code>epic:IMAGE</code></td>
+<td><code>#0E4429</code></td>
+<td>IMAGE - Sandbox image &amp; security toolchain</td>
+</tr>
+<tr>
+<td><code>epic:EGRESS</code></td>
+<td><code>#0E4429</code></td>
+<td>EGRESS - Scoped egress gateway (Go): allowlist, budgets, capture, fail-closed</td>
+</tr>
+<tr>
+<td><code>epic:SESSION</code></td>
+<td><code>#0E4429</code></td>
+<td>SESSION - Session &amp; credential manager: multi-role logins, keep-alive, lockout guard</td>
+</tr>
+<tr>
+<td><code>epic:BROWSER</code></td>
+<td><code>#0E4429</code></td>
+<td>BROWSER - Browser automation runtime (Playwright)</td>
+</tr>
+<tr>
+<td><code>epic:OOB</code></td>
+<td><code>#0E4429</code></td>
+<td>OOB - Out-of-band listener (interactsh) &amp; correlation</td>
+</tr>
+<tr>
+<td><code>epic:KILL</code></td>
+<td><code>#0E4429</code></td>
+<td>KILL - Kill switch, test-window notices &amp; Customer SOC access</td>
+</tr>
+<tr>
+<td><code>epic:GATEWAY</code></td>
+<td><code>#0E4429</code></td>
+<td>GATEWAY - Model gateway: Claude routing, virtual keys, redaction, cost caps &amp; pinning</td>
+</tr>
+<tr>
+<td><code>epic:RUNTIME</code></td>
+<td><code>#0E4429</code></td>
+<td>RUNTIME - Agent runtime host on the Claude Agent SDK</td>
+</tr>
+<tr>
+<td><code>epic:ORCH</code></td>
+<td><code>#0E4429</code></td>
+<td>ORCH - Run orchestration: Temporal run workflow &amp; orchestrator agent</td>
+</tr>
+<tr>
+<td><code>epic:REGISTRY</code></td>
+<td><code>#0E4429</code></td>
+<td>REGISTRY - Agent registry, personas, prompt versioning &amp; model tiers</td>
+</tr>
+<tr>
+<td><code>epic:MCP</code></td>
+<td><code>#0E4429</code></td>
+<td>MCP - Blackwing MCP tool layer for agents</td>
+</tr>
+<tr>
+<td><code>epic:MEMORY</code></td>
+<td><code>#0E4429</code></td>
+<td>MEMORY - Context manager, engagement journal &amp; memory/knowledge</td>
+</tr>
+<tr>
+<td><code>epic:GATE2</code></td>
+<td><code>#0E4429</code></td>
+<td>GATE2 - Runtime exception gate (Gate 2) &amp; on-call paging</td>
+</tr>
+<tr>
+<td><code>epic:MENTOR</code></td>
+<td><code>#0E4429</code></td>
+<td>MENTOR - Mentor &amp; Reflector (stall detection &amp; recovery)</td>
+</tr>
+<tr>
+<td><code>epic:RECON</code></td>
+<td><code>#0E4429</code></td>
+<td>RECON - Recon agents: passive recon, OSINT, active recon &amp; session setup</td>
+</tr>
+<tr>
+<td><code>epic:INTEL</code></td>
+<td><code>#0E4429</code></td>
+<td>INTEL - Threat intelligence &amp; enrichment</td>
+</tr>
+<tr>
+<td><code>epic:INGEST</code></td>
+<td><code>#0E4429</code></td>
+<td>INGEST - Source &amp; spec ingestion (grey/white box)</td>
+</tr>
+<tr>
+<td><code>epic:PLANNER</code></td>
+<td><code>#0E4429</code></td>
+<td>PLANNER - Planner &amp; sub-planner agents</td>
+</tr>
+<tr>
+<td><code>epic:WEBAPI</code></td>
+<td><code>#0E4429</code></td>
+<td>WEBAPI - Web &amp; API assessment specialist</td>
+</tr>
+<tr>
+<td><code>epic:AUTHLOGIC</code></td>
+<td><code>#0E4429</code></td>
+<td>AUTHLOGIC - Authorisation, access-control &amp; business-logic specialist</td>
+</tr>
+<tr>
+<td><code>epic:INFRASPEC</code></td>
+<td><code>#0E4429</code></td>
+<td>INFRASPEC - Infrastructure &amp; configuration specialist</td>
+</tr>
+<tr>
+<td><code>epic:CODESPEC</code></td>
+<td><code>#0E4429</code></td>
+<td>CODESPEC - Code (white-box) specialist</td>
+</tr>
+<tr>
+<td><code>epic:EXPLOIT</code></td>
+<td><code>#0E4429</code></td>
+<td>EXPLOIT - Exploit developer &amp; tooling support (sandbox-only, non-destructive)</td>
+</tr>
+<tr>
+<td><code>epic:VALIDATE</code></td>
+<td><code>#0E4429</code></td>
+<td>VALIDATE - Validator: deterministic replay, negative controls &amp; confirmed/suspected</td>
+</tr>
+<tr>
+<td><code>epic:EVIDENCE</code></td>
+<td><code>#0E4429</code></td>
+<td>EVIDENCE - Evidence store (write-once, hashed) &amp; chain of custody</td>
+</tr>
+<tr>
+<td><code>epic:FINDING</code></td>
+<td><code>#0E4429</code></td>
+<td>FINDING - Findings model, dedup &amp; fingerprinting, severity &amp; mapping</td>
+</tr>
+<tr>
+<td><code>epic:COVERAGE</code></td>
+<td><code>#0E4429</code></td>
+<td>COVERAGE - Coverage manifest &amp; export gate</td>
+</tr>
+<tr>
+<td><code>epic:REVERSAL</code></td>
+<td><code>#0E4429</code></td>
+<td>REVERSAL - Reversal journal (undo of state changes)</td>
+</tr>
+<tr>
+<td><code>epic:REPRO</code></td>
+<td><code>#0E4429</code></td>
+<td>REPRO - Standalone repro artifacts</td>
+</tr>
+<tr>
+<td><code>epic:TRIAGE</code></td>
+<td><code>#0E4429</code></td>
+<td>TRIAGE - Triage &amp; release (Gate 3) &amp; auto-release lanes</td>
+</tr>
+<tr>
+<td><code>epic:REPORT</code></td>
+<td><code>#0E4429</code></td>
+<td>REPORT - Report generation &amp; export (PDF/JSON/SARIF)</td>
+</tr>
+<tr>
+<td><code>epic:CONNECT</code></td>
+<td><code>#0E4429</code></td>
+<td>CONNECT - Issue-tracker &amp; SCM integrations (Jira, GitHub/GitLab)</td>
+</tr>
+<tr>
+<td><code>epic:REMEDIATE</code></td>
+<td><code>#0E4429</code></td>
+<td>REMEDIATE - Remediation guidance &amp; one-click retest</td>
+</tr>
+<tr>
+<td><code>epic:BASELINE</code></td>
+<td><code>#0E4429</code></td>
+<td>BASELINE - Baseline runs &amp; diff (new/open/fixed/returned)</td>
+</tr>
+<tr>
+<td><code>epic:CONSOLE</code></td>
+<td><code>#0E4429</code></td>
+<td>CONSOLE - Web console shell, navigation &amp; design system</td>
+</tr>
+<tr>
+<td><code>epic:LIVERUN</code></td>
+<td><code>#0E4429</code></td>
+<td>LIVERUN - Live run view &amp; run management</td>
+</tr>
+<tr>
+<td><code>epic:DASH</code></td>
+<td><code>#0E4429</code></td>
+<td>DASH - Vulnerability dashboard &amp; reporting views</td>
+</tr>
+<tr>
+<td><code>epic:ADMIN</code></td>
+<td><code>#0E4429</code></td>
+<td>ADMIN - Organisation administration &amp; platform-operator console</td>
+</tr>
+<tr>
+<td><code>epic:SOCUI</code></td>
+<td><code>#0E4429</code></td>
+<td>SOCUI - Customer SOC portal</td>
+</tr>
+<tr>
+<td><code>epic:OBS</code></td>
+<td><code>#0E4429</code></td>
+<td>OBS - Observability: telemetry, metrics, logs, traces &amp; alerting</td>
+</tr>
+<tr>
+<td><code>epic:COST</code></td>
+<td><code>#0E4429</code></td>
+<td>COST - Token &amp; cost tracking, budgets &amp; spend caps</td>
+</tr>
+<tr>
+<td><code>epic:SCHED</code></td>
+<td><code>#0E4429</code></td>
+<td>SCHED - Scheduler: recurring runs &amp; blackout windows</td>
+</tr>
+<tr>
+<td><code>epic:RETAIN</code></td>
+<td><code>#0E4429</code></td>
+<td>RETAIN - Retention, data lifecycle &amp; deletion</td>
+</tr>
+<tr>
+<td><code>epic:EVAL</code></td>
+<td><code>#0E4429</code></td>
+<td>EVAL - Evaluation harness &amp; regression gate</td>
+</tr>
+<tr>
+<td><code>epic:SECREVIEW</code></td>
+<td><code>#0E4429</code></td>
+<td>SECREVIEW - Security hardening, threat model &amp; pre-launch review</td>
+</tr>
+<tr>
+<td><code>epic:PERF</code></td>
+<td><code>#0E4429</code></td>
+<td>PERF - Performance, load &amp; resilience testing</td>
+</tr>
+<tr>
+<td><code>epic:DOCS</code></td>
+<td><code>#0E4429</code></td>
+<td>DOCS - Documentation, runbooks &amp; onboarding</td>
+</tr>
+<tr>
+<td><code>epic:LAUNCH</code></td>
+<td><code>#0E4429</code></td>
+<td>LAUNCH - End-to-end integration, UAT &amp; launch readiness</td>
+</tr>
+<tr>
+<td><code>epic:LATER</code></td>
+<td><code>#0E4429</code></td>
+<td>LATER - Post-v1 backlog (tracked, not built in v1)</td>
+</tr>
+</tbody></table>
+<h3 id="functional-functional-4">Functional (<code>functional</code>, 4)</h3>
+<p>Cross-cutting concerns the issue touches; apply every one that fits (zero or more).</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Color</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>security</code></td>
+<td><code>#B60205</code></td>
+<td>Touches a CONTEXT_PACK §8 security invariant or a security-owned path; needs security review</td>
+</tr>
+<tr>
+<td><code>gate</code></td>
+<td><code>#0052CC</code></td>
+<td>Touches a human approval gate (scope, Gate 1, Gate 2 or Gate 3) or separation of duties</td>
+</tr>
+<tr>
+<td><code>agent</code></td>
+<td><code>#6F42C1</code></td>
+<td>Touches the agent runtime, personas, prompts or the Blackwing MCP tools</td>
+</tr>
+<tr>
+<td><code>infra</code></td>
+<td><code>#455A64</code></td>
+<td>Touches infrastructure, CI/CD, the dev stack or repository tooling</td>
+</tr>
+</tbody></table>
+<h3 id="feature-feature-44">Feature (<code>feature</code>, 44)</h3>
+<p>Feature IDs from docs/architecture/FEATURE_LIST.md the issue implements; apply every one that fits (zero or more).</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Color</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>F1</code></td>
+<td><code>#EDEDED</code></td>
+<td>F1 Scoping form</td>
+</tr>
+<tr>
+<td><code>F2</code></td>
+<td><code>#EDEDED</code></td>
+<td>F2 Editable test plan</td>
+</tr>
+<tr>
+<td><code>F3</code></td>
+<td><code>#EDEDED</code></td>
+<td>F3 Standing authorisation</td>
+</tr>
+<tr>
+<td><code>F4</code></td>
+<td><code>#EDEDED</code></td>
+<td>F4 Intrusiveness class</td>
+</tr>
+<tr>
+<td><code>F5</code></td>
+<td><code>#EDEDED</code></td>
+<td>F5 Request budget per test case</td>
+</tr>
+<tr>
+<td><code>F6</code></td>
+<td><code>#EDEDED</code></td>
+<td>F6 Environment attestation</td>
+</tr>
+<tr>
+<td><code>F7</code></td>
+<td><code>#EDEDED</code></td>
+<td>F7 Three assessment modes</td>
+</tr>
+<tr>
+<td><code>F8</code></td>
+<td><code>#EDEDED</code></td>
+<td>F8 Grey-box web and API testing</td>
+</tr>
+<tr>
+<td><code>F9</code></td>
+<td><code>#EDEDED</code></td>
+<td>F9 Multi-role authorisation matrix</td>
+</tr>
+<tr>
+<td><code>F10</code></td>
+<td><code>#EDEDED</code></td>
+<td>F10 Session manager</td>
+</tr>
+<tr>
+<td><code>F11</code></td>
+<td><code>#EDEDED</code></td>
+<td>F11 Scoped egress proxy</td>
+</tr>
+<tr>
+<td><code>F12</code></td>
+<td><code>#EDEDED</code></td>
+<td>F12 Agent team</td>
+</tr>
+<tr>
+<td><code>F13</code></td>
+<td><code>#EDEDED</code></td>
+<td>F13 Runtime exception gate (Gate 2)</td>
+</tr>
+<tr>
+<td><code>F14</code></td>
+<td><code>#EDEDED</code></td>
+<td>F14 Validator agent</td>
+</tr>
+<tr>
+<td><code>F15</code></td>
+<td><code>#EDEDED</code></td>
+<td>F15 Out-of-band listener</td>
+</tr>
+<tr>
+<td><code>F16</code></td>
+<td><code>#EDEDED</code></td>
+<td>F16 Negative controls</td>
+</tr>
+<tr>
+<td><code>F17</code></td>
+<td><code>#EDEDED</code></td>
+<td>F17 Confirmed and Suspected lists</td>
+</tr>
+<tr>
+<td><code>F18</code></td>
+<td><code>#EDEDED</code></td>
+<td>F18 Standalone repro artifact</td>
+</tr>
+<tr>
+<td><code>F19</code></td>
+<td><code>#EDEDED</code></td>
+<td>F19 Coverage manifest</td>
+</tr>
+<tr>
+<td><code>F20</code></td>
+<td><code>#EDEDED</code></td>
+<td>F20 Reversal journal</td>
+</tr>
+<tr>
+<td><code>F21</code></td>
+<td><code>#EDEDED</code></td>
+<td>F21 Triage gate (Gate 3)</td>
+</tr>
+<tr>
+<td><code>F22</code></td>
+<td><code>#EDEDED</code></td>
+<td>F22 Dedup and fingerprinting</td>
+</tr>
+<tr>
+<td><code>F23</code></td>
+<td><code>#EDEDED</code></td>
+<td>F23 Baseline run</td>
+</tr>
+<tr>
+<td><code>F24</code></td>
+<td><code>#EDEDED</code></td>
+<td>F24 One-click retest</td>
+</tr>
+<tr>
+<td><code>F25</code></td>
+<td><code>#EDEDED</code></td>
+<td>F25 Report export</td>
+</tr>
+<tr>
+<td><code>F26</code></td>
+<td><code>#EDEDED</code></td>
+<td>F26 OWASP and CWE mapping</td>
+</tr>
+<tr>
+<td><code>F27</code></td>
+<td><code>#EDEDED</code></td>
+<td>F27 Jira and GitHub or GitLab push</td>
+</tr>
+<tr>
+<td><code>F28</code></td>
+<td><code>#EDEDED</code></td>
+<td>F28 Vulnerability dashboard</td>
+</tr>
+<tr>
+<td><code>F29</code></td>
+<td><code>#EDEDED</code></td>
+<td>F29 One web console</td>
+</tr>
+<tr>
+<td><code>F30</code></td>
+<td><code>#EDEDED</code></td>
+<td>F30 SSO</td>
+</tr>
+<tr>
+<td><code>F31</code></td>
+<td><code>#EDEDED</code></td>
+<td>F31 Separation of duties</td>
+</tr>
+<tr>
+<td><code>F32</code></td>
+<td><code>#EDEDED</code></td>
+<td>F32 Customer-owned policy layer</td>
+</tr>
+<tr>
+<td><code>F33</code></td>
+<td><code>#EDEDED</code></td>
+<td>F33 Kill switch</td>
+</tr>
+<tr>
+<td><code>F34</code></td>
+<td><code>#EDEDED</code></td>
+<td>F34 Audit ledger</td>
+</tr>
+<tr>
+<td><code>F35</code></td>
+<td><code>#EDEDED</code></td>
+<td>F35 Secrets on customer key store</td>
+</tr>
+<tr>
+<td><code>F36</code></td>
+<td><code>#EDEDED</code></td>
+<td>F36 Bring your own model</td>
+</tr>
+<tr>
+<td><code>F37</code></td>
+<td><code>#EDEDED</code></td>
+<td>F37 Pinned versions</td>
+</tr>
+<tr>
+<td><code>F38</code></td>
+<td><code>#EDEDED</code></td>
+<td>F38 Cost cap</td>
+</tr>
+<tr>
+<td><code>F39</code></td>
+<td><code>#EDEDED</code></td>
+<td>F39 Retention</td>
+</tr>
+<tr>
+<td><code>F40</code></td>
+<td><code>#EDEDED</code></td>
+<td>F40 Evaluation harness</td>
+</tr>
+<tr>
+<td><code>F41</code></td>
+<td><code>#EDEDED</code></td>
+<td>F41 Single-node deployment</td>
+</tr>
+<tr>
+<td><code>F42</code></td>
+<td><code>#EDEDED</code></td>
+<td>F42 Bitbucket, Azure DevOps and ServiceNow integrations (Later)</td>
+</tr>
+<tr>
+<td><code>F43</code></td>
+<td><code>#EDEDED</code></td>
+<td>F43 Diff-driven continuous assessment (Later)</td>
+</tr>
+<tr>
+<td><code>F44</code></td>
+<td><code>#EDEDED</code></td>
+<td>F44 Auto-release lane in triage (Later)</td>
+</tr>
+</tbody></table>
+<h3 id="workflow-workflow-6">Workflow (<code>workflow</code>, 6)</h3>
+<p>Build-process markers used by the issue workflow and the release plan.</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Color</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>v1</code></td>
+<td><code>#0E8A16</code></td>
+<td>In the v1 release scope</td>
+</tr>
+<tr>
+<td><code>later</code></td>
+<td><code>#CFD3D7</code></td>
+<td>Post-v1 backlog: tracked, not built in v1</td>
+</tr>
+<tr>
+<td><code>discovered</code></td>
+<td><code>#FBCA04</code></td>
+<td>Raised by the build agents while implementing another issue</td>
+</tr>
+<tr>
+<td><code>online-porting</code></td>
+<td><code>#1D76DB</code></td>
+<td>Work stubbed while building offline; port to the online/cloud equivalent before go-live</td>
+</tr>
+<tr>
+<td><code>offline-stub</code></td>
+<td><code>#FBCA04</code></td>
+<td>A code path using an offline/local substitute for a cloud/online dependency</td>
+</tr>
+<tr>
+<td><code>migration-squash</code></td>
+<td><code>#B60205</code></td>
+<td>Deliberate baseline migration squash: exempts the PR from the forward-only drift check</td>
+</tr>
+</tbody></table>
+<h3 id="github-defaults-github-9">GitHub defaults (<code>github</code>, 9)</h3>
+<p>GitHub default labels, kept so external reports and the bug template have stable labels.</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Color</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bug</code></td>
+<td><code>#D73A4A</code></td>
+<td>Something isn&#39;t working: a defect in behaviour that has already landed</td>
+</tr>
+<tr>
+<td><code>documentation</code></td>
+<td><code>#0075CA</code></td>
+<td>Improvements or additions to documentation</td>
+</tr>
+<tr>
+<td><code>duplicate</code></td>
+<td><code>#CFD3D7</code></td>
+<td>This issue or pull request already exists</td>
+</tr>
+<tr>
+<td><code>enhancement</code></td>
+<td><code>#A2EEEF</code></td>
+<td>New feature or request (triage into a type:task before building)</td>
+</tr>
+<tr>
+<td><code>good first issue</code></td>
+<td><code>#7057FF</code></td>
+<td>Good for newcomers</td>
+</tr>
+<tr>
+<td><code>help wanted</code></td>
+<td><code>#008672</code></td>
+<td>Extra attention is needed</td>
+</tr>
+<tr>
+<td><code>invalid</code></td>
+<td><code>#E4E669</code></td>
+<td>This doesn&#39;t seem right</td>
+</tr>
+<tr>
+<td><code>question</code></td>
+<td><code>#D876E3</code></td>
+<td>Further information is requested</td>
+</tr>
+<tr>
+<td><code>wontfix</code></td>
+<td><code>#FFFFFF</code></td>
+<td>This will not be worked on</td>
+</tr>
+</tbody></table>
+<!-- END GENERATED LABEL CATALOGUE -->
+</main>
+</div>
+</body>
+</html>

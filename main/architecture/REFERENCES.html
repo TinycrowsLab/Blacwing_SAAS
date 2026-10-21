@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="./CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="./EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="./FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="./REFERENCES.html" aria-current="page">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="./workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="./workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="./dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="./egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="./storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="./typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="blackwing-references-prior-art-patterns-sdk-facts--standards">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</h1>
+<blockquote>
+<p><strong>What this file is.</strong> A grounding catalogue for issue-authors writing GitHub issues for <strong>Blackwing</strong> (authorised, human-gated autonomous security-assessment SaaS; agent runtime = Claude Code / Claude Agent SDK). It maps established open-source prior art, agent-orchestration patterns, Claude Agent SDK facts, the MCP ecosystem, the open-source security toolchain, and the standards/data sources every issue should cite — onto the Blackwing architecture in <code>CONTEXT_PACK.md</code> (personas §4.6, stack §5, domain §7, invariants §8).</p>
+<p><strong>How to use it.</strong> Cite names by identifier in issues (standard IDs, repo names, pattern names, persona template). This file is <em>prior art and vocabulary</em>, not an implementation spec — where it and <code>CONTEXT_PACK.md</code> disagree, the pack wins.</p>
+<p><strong>Altitude rule (mandatory, mirrors AUTHOR_BRIEF §&quot;Content safety &amp; altitude&quot;).</strong> Everything here is at engineering/functional altitude: capabilities, architecture patterns, tool <em>purposes</em>, standards <em>by identifier</em>. <strong>No exploit payloads, no step-by-step attack walkthroughs, no bypass recipes.</strong> Verified against official sources on 2026-10-19.</p>
+</blockquote>
+<hr>
+<h2 id="1-prior-art-autonomous--ai-pentest--security-agent-projects">1. Prior-art autonomous / AI pentest &amp; security-agent projects</h2>
+<p>Study these for <em>architecture ideas</em> (task decomposition, tool use, memory, validation) — <strong>not</strong> code to copy. Per <code>CONTEXT_PACK §1.1</code>, Blackwing is built from scratch and <strong>does not use PentAGI</strong>; the entry below is for architectural comparison only.</p>
+<table>
+<thead>
+<tr>
+<th>Project (repo)</th>
+<th>What it is</th>
+<th>What Blackwing should borrow / how issues use it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>PentAGI</strong> (<code>vxcontrol/pentagi</code>, MIT)</td>
+<td>Open-source autonomous pentest system: an orchestrator coordinating researcher / developer / executor specialists in sandboxed Docker; work modelled as flows→tasks→subtasks→actions; per-agent long-term vector + episodic memory on Postgres/pgvector; multi-provider LLM backends.</td>
+<td>The <strong>flows→tasks→subtasks→actions</strong> decomposition and orchestrator↔specialist split validate Blackwing&#39;s Orchestrator + sub-planner + specialist model. <strong>Do not adopt it as a dependency</strong> (<code>§1.1</code>). Borrow the <em>shape</em> only; Blackwing replaces its Docker sandbox with gVisor per-session sandboxes and its free-for-all egress with the scoped gateway.</td>
+</tr>
+<tr>
+<td><strong>CAI — Cybersecurity AI</strong> (<code>aliasrobotics/cai</code>, pip <code>cai-framework</code>)</td>
+<td>Lightweight open framework for building offensive/defensive security agents; specialized agents with <strong>handoff</strong> between them; 300+ model backends; built-in recon/exploitation tool wrappers; paper <em>&quot;CAI: An Open, Bug Bounty-Ready Cybersecurity AI&quot;</em> (arXiv 2504.06017).</td>
+<td>The <strong>agent-handoff</strong> primitive maps to Blackwing&#39;s <code>dispatch_subtask</code> + Orchestrator delegation. Borrow the idea that specialists are narrow and composable; cite as prior art that specialized-agent pipelines are a recognised pattern. (Confirm its LICENSE before quoting terms — metadata is inconsistent.)</td>
+</tr>
+<tr>
+<td><strong>HackingBuddyGPT</strong> (<code>ipa-lab/hackingBuddyGPT</code>, TU Wien)</td>
+<td>Minimal framework (&quot;agent in ~50 lines&quot;); <code>UseCase</code> base class + connection handlers (SSH/local); Linux priv-esc and web use cases; priv-esc benchmark set; paper <em>&quot;Getting pwn&#39;d by AI&quot;</em> (arXiv 2310.11409).</td>
+<td>Borrow the <strong>benchmark/eval mindset</strong> (reusable scored scenarios) for Blackwing&#39;s <code>eval/</code> harness (F40). Its blunt &quot;LLM emits shell commands, framework runs them&quot; loop is exactly what Blackwing constrains — contrast it in issues to motivate the PDP hook + egress gateway. Use the <em>official</em> ipa-lab repo (forks carry scam text).</td>
+</tr>
+<tr>
+<td><strong>Strix</strong> (<code>usestrix/strix</code>, Apache-2.0)</td>
+<td>Autonomous security-testing agents that run code dynamically, find vulns, and <strong>validate them with real PoCs</strong>; HTTP-proxy request/response manipulation, browser automation, terminal + Python exploit sandbox; reports link to the exact PoC; CI/CD integration.</td>
+<td>Strongest validation prior art: <strong>&quot;prove it with a reproducing PoC, report the PoC.&quot;</strong> Directly supports Blackwing&#39;s Validator + standalone repro artifact (F14, F18) and Confirmed-vs-Suspected split (F17). Its proxy/browser/terminal tool surface mirrors Blackwing&#39;s <code>http_request</code> / Playwright / Bash specialist tools.</td>
+</tr>
+<tr>
+<td><strong>Vulnhuntr</strong> (<code>protectai/vulnhuntr</code>)</td>
+<td>Python static analyzer that uses Claude to trace <strong>source→sink</strong> call chains across chunked code (to fit context), emitting reasoning + <strong>confidence score</strong> + PoC; found 0-days in Langflow/FastChat/LLaVA; explicitly non-deterministic (different results per run) and cost-sensitive.</td>
+<td>Borrow <strong>source→sink call-chain tracing</strong> for the <code>code-specialist</code> persona (white-box), and the <strong>confidence-score → triage-threshold</strong> idea for finding <code>confidence</code>. Its own caveat — <em>LLM results are non-deterministic</em> — is the entire reason Blackwing requires a <strong>deterministic replay validator</strong> (F14, <code>packages/replay</code>). Cite it when an issue justifies deterministic confirmation.</td>
+</tr>
+<tr>
+<td><strong>Nebula</strong> (<code>berylliumsec/nebula</code>, pip <code>nebula-ai</code>)</td>
+<td>CLI &quot;AI layer around existing scanners&quot; — recon support, note-taking, smart analysis of external tool output (e.g. nmap); local-model friendly (Ollama); explicit disclaimer that output may be inaccurate and commands should be reviewed before running.</td>
+<td>Validates the <strong>&quot;AI wraps real tools, human reviews before execution&quot;</strong> posture. Supports Blackwing&#39;s design where specialists <em>call</em> vetted tools (subfinder/httpx/nuclei…) rather than invent commands, and where Gate 1/Gate 2 keep a human in the loop.</td>
+</tr>
+<tr>
+<td><strong>Villager</strong> (Cyberspike, PyPI <code>villager</code>)</td>
+<td>China-origin AI pentest framework; <strong>MCP client</strong> wiring Kali toolsets + LangChain + DeepSeek; spins up ephemeral Kali containers (auto-destroyed ~24h). Flagged by researchers (Straiker) as dual-use/abuse-prone (&quot;Cobalt-Strike trajectory&quot;), with RAT-adjacent plugins in the wider suite.</td>
+<td>Two lessons: (1) the <strong>MCP-client-driving-toolsets</strong> pattern is now standard — Blackwing uses in-process SDK MCP tools instead; (2) it is the <strong>abuse cautionary tale</strong> that justifies Blackwing&#39;s authorisation gates, ownership verification (§8.10), scoped egress, and kill switch. Cite when an issue motivates abuse-prevention controls. <strong>Do not install or run it.</strong></td>
+</tr>
+<tr>
+<td><strong>PentestGPT</strong> (<code>GreyDGL/PentestGPT</code>; Deng et al., USENIX Security &#39;24, arXiv 2308.06782)</td>
+<td>Interactive LLM pentest assistant structured as <strong>Reasoning / Generation / Parsing</strong> modules around a <strong>Pentesting Task Tree (PTT)</strong> — an attributed tree (derived from attack trees) rendered to natural language to keep the model oriented and mitigate context loss.</td>
+<td>The <strong>PTT</strong> is the canonical citation for Blackwing&#39;s test-plan/subtask tree and the &quot;shared task listing&quot; (§8 below). Its documented failure modes (context loss, recency bias, hallucinated commands in long sessions) justify Blackwing&#39;s deterministic Run Controller, step ceilings (<code>maxTurns</code>), and mentor/reflector personas.</td>
+</tr>
+</tbody></table>
+<p><em>Other current context (cite sparingly, verify before quoting):</em> academic benchmarks like <strong>PentestEval</strong> (arXiv 2512.14233) and surveys such as <em>&quot;Hackers or Hallucinators?&quot;</em> (arXiv 2604.05719) catalogue LLM-pentest capability and over-claiming — useful when an issue needs to justify the eval harness (F40) or the refusal/false-positive tracking.</p>
+<hr>
+<h2 id="2-llm-agent-orchestration-patterns--blackwing-mechanisms">2. LLM agent orchestration patterns → Blackwing mechanisms</h2>
+<p>Each pattern below has published prior art; map it to a Blackwing persona or deterministic mechanism so issues use the right vocabulary.</p>
+<table>
+<thead>
+<tr>
+<th>Pattern (origin)</th>
+<th>One-line</th>
+<th>Blackwing mapping</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Orchestrator–worker</strong> (Anthropic, <em>Building Effective Agents</em>, 2024; <em>multi-agent research system</em>, 2025)</td>
+<td>A lead agent decomposes a goal and dispatches subtasks to workers, then synthesises.</td>
+<td>The <strong>Orchestrator</strong> persona (<code>§4.6</code>) + <code>dispatch_subtask</code> → Run Controller starts a <strong>specialist session in a new sandbox</strong> (<code>§4.2</code>). &quot;LLMs decide; code enforces.&quot;</td>
+</tr>
+<tr>
+<td><strong>Planner / sub-planner</strong> (classic hierarchical planning; LangChain <em>plan-and-execute</em>)</td>
+<td>Separate the agent that makes the plan from the agent(s) that execute steps.</td>
+<td><strong>planner</strong> (surface model → test cases, structured output) and <strong>sub-planner</strong> (test case → subtasks, JSON-schema output) personas (<code>§4.2</code>, <code>§4.6</code>).</td>
+</tr>
+<tr>
+<td><strong>ReAct</strong> (Yao et al., 2022/23)</td>
+<td>Interleave reasoning traces with tool actions and observations in a loop.</td>
+<td>The native agent loop of every specialist Claude Code session: think → call a Blackwing MCP/Bash tool → observe gateway-captured response → continue, bounded by <code>maxTurns</code>.</td>
+</tr>
+<tr>
+<td><strong>Reflexion / self-reflection</strong> (Shinn et al., 2023)</td>
+<td>An actor acts, an evaluator scores, a self-reflection step writes verbal feedback to memory to improve the next attempt.</td>
+<td>The <strong>reflector</strong> persona (post-failure analysis, adjust plan, avoid repeating failures) and <strong>mentor</strong> (stall/loop detection) (<code>§4.6</code>). Reflection output is read-only advice, never a safety control (<code>§8.11</code>).</td>
+</tr>
+<tr>
+<td><strong>Plan-and-execute / Plan-and-Solve</strong> (Wang et al., 2023)</td>
+<td>Commit to a full plan up front, then execute deterministically, re-planning only on failure.</td>
+<td>Mirrors the run state machine: <code>planning → awaiting_gate1 → approved → executing</code> (<code>§3.3</code>). The approved plan is frozen into the <strong>approved run envelope</strong> before any execution.</td>
+</tr>
+<tr>
+<td><strong>Tree-of-Thought / Pentest Task Tree (PTT)</strong> (Yao et al., 2023; PentestGPT)</td>
+<td>Represent the search space as a tree of candidate states/subtasks that can be expanded breadth- or depth-first.</td>
+<td>The <strong>test-plan → test-cases → subtasks</strong> hierarchy (<code>test_plans</code>/<code>test_cases</code>/<code>subtasks</code> tables, §7). The orchestrator explores the open-subtask frontier; PTT is the citation.</td>
+</tr>
+<tr>
+<td><strong>Blackboard / shared task list</strong> (classic AI; Hearsay-II)</td>
+<td>Independent specialists read and write a shared evolving workspace; a controller decides what to work on next.</td>
+<td>The <strong>engagement journal / shared task listing</strong> the Orchestrator reads via <code>get_engagement_state</code> / <code>list_open_subtasks</code> (<code>§4.2</code>); backed by Postgres <code>subtasks</code> + Neo4j surface model + Redis Streams live events. See §8.</td>
+</tr>
+<tr>
+<td><strong>Mentor / critic / LLM-as-judge</strong> (CRITIC, Gou et al. 2023; constitutional/critique chains)</td>
+<td>A second model critiques or verifies the primary agent&#39;s output rather than trusting it blindly.</td>
+<td><strong>mentor</strong> + <strong>reflector</strong> personas intervene on stalls; the <strong>validator-assistant</strong> normalises candidates into a replay spec but <strong>does not judge</strong> — judgement is the deterministic Validator. Enforces §8.11 (no model-dependent safety).</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="3-claude-agent-sdk-facts-for-the-runtime">3. Claude Agent SDK facts for the runtime</h2>
+<p>Package: <strong><code>@anthropic-ai/claude-agent-sdk</code></strong> (TypeScript) — Claude Code packaged as a library; pin an exact version (<code>CONTEXT_PACK §4</code>). Verified against <strong>code.claude.com/docs/en/agent-sdk</strong> (typescript, subagents, approvals, hooks, env-vars) on 2026-10-19.</p>
+<h3 id="31-query-options-names-confirmed-in-the-ts-reference">3.1 <code>query()</code> options (names confirmed in the TS reference)</h3>
+<ul>
+<li><code>model</code> (alias or full ID); <code>fallbackModel</code> (used on primary failure; accepts comma-separated list — only set if tenant provider policy allows, <code>§4.3</code>).</li>
+<li><code>maxTurns</code> (agentic turn ceiling = persona step ceiling); <code>maxBudgetUsd</code> (client-side estimate cap; <strong>can overshoot</strong> — gateway is the primary budget guard, <code>§4.3</code>); <code>thinking</code> (replaces deprecated <code>maxThinkingTokens</code>); <code>effort</code> per persona (on <code>AgentDefinition</code>: <code>&#39;low&#39;|&#39;medium&#39;|&#39;high&#39;|&#39;xhigh&#39;|&#39;max&#39;|number</code>).</li>
+<li><code>permissionMode</code>: one of <code>default | acceptEdits | bypassPermissions | plan | dontAsk | auto</code>. <strong>Blackwing uses <code>&#39;default&#39;</code>, never <code>bypassPermissions</code></strong> (<code>§4.3</code>, §8.11).</li>
+<li><code>allowedTools</code> (auto-approves listed tools; does <strong>not</strong> restrict Claude to only them) and <code>disallowedTools</code> (a bare name removes the tool from context; a scoped rule like <code>&quot;Bash(rm *)&quot;</code> denies matching calls in <em>every</em> mode including bypass). Blackwing always disallows <code>WebFetch</code>/<code>WebSearch</code> and networked built-ins (<code>§4.3</code>).</li>
+<li><code>canUseTool</code> (callback; fires only when the permission flow falls through to a prompt — <strong>not</strong> for auto-approved tools, and for <code>AskUserQuestion</code>). Blackwing has no interactive prompts in sandboxes, so enforcement lives in the <strong>PreToolUse hook</strong>, which runs <em>before</em> the rest of the flow and can allow/deny/modify every call.</li>
+<li><code>hooks</code> (per-event callbacks), <code>agents</code> (programmatic subagents, see §3.2), <code>mcpServers</code> (see §4 of this file).</li>
+<li><code>settingSources: []</code> to skip filesystem settings (Blackwing sets <code>[]</code>, <code>§4.3</code>).</li>
+<li><code>env</code> — <strong>the TS SDK <em>replaces</em> the subprocess environment</strong> (spread <code>process.env</code> to keep <code>PATH</code>). Blackwing passes a minimal env with <code>CLAUDE_CONFIG_DIR</code>, <code>CLAUDE_CODE_DISABLE_AUTO_MEMORY=1</code>, telemetry vars (<code>§4.3</code>).</li>
+<li><code>cwd</code>, <code>includePartialMessages: true</code> (live run view), <code>resume</code> (session ID to resume — used for Gate 2 / mentor), <code>outputFormat: { type: &#39;json_schema&#39;, schema }</code> (planner/sub-planner/validator-assistant/reporter), <code>abortController</code> (wired to kill switch; <code>query.interrupt()</code> on operator pause).</li>
+<li>Custom tools: <strong><code>createSdkMcpServer({ name, version?, instructions?, tools, alwaysLoad?, timeout? })</code></strong> runs in-process; <strong><code>tool(name, description, inputSchema /*Zod*/, handler, extras?)</code></strong> where <code>extras.annotations</code> carries MCP hints (<code>readOnlyHint</code>, <code>openWorldHint</code>) and <code>alwaysLoad</code> keeps the schema in the initial prompt.</li>
+</ul>
+<h3 id="32-subagents-native-inside-a-specialist-session-only--42">3.2 Subagents (native, <em>inside</em> a specialist session only — <code>§4.2</code>)</h3>
+<ul>
+<li>Defined programmatically via the <strong><code>agents</code></strong> option (<code>AgentDefinition</code>: <code>description</code>, <code>prompt</code>, <code>tools</code>, <code>disallowedTools</code>, <code>model</code> (<code>inherit</code>/alias/full), <code>maxTurns</code>, <code>effort</code>, <code>permissionMode</code>, <code>background</code>, <code>skills</code>, …). Claude invokes them through the <strong><code>Agent</code></strong> tool (appears as <code>&quot;Task&quot;</code> in the <code>system:init</code> tools list; match both names).</li>
+<li>Benefits: context isolation (only the final message returns to the parent), parallelization, specialized prompts, tool restrictions.</li>
+<li><strong>Caps (set via <code>env</code>):</strong> <code>CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH</code> (default <strong>3</strong>; Blackwing sets <strong>1</strong> so helpers can&#39;t nest), <code>CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS</code> (default <strong>20</strong>; Blackwing sets <strong>4</strong>), plus <code>maxBudgetUsd</code> (spend cap; <code>error_max_budget_usd</code> subtype at the limit). Helpers <strong>share the specialist&#39;s sandbox and egress identity</strong> (<code>§4.2</code>) — so cross-sandbox scaling uses <code>dispatch_subtask</code> + Temporal child workflow, <em>not</em> the Agent tool.</li>
+<li>Blackwing specialist helpers: e.g. <code>payload-crafter</code>, <code>response-differ</code> (<code>§4.2</code>).</li>
+</ul>
+<h3 id="33-hooks-deterministic-enforcement--811">3.3 Hooks (deterministic enforcement — §8.11)</h3>
+<ul>
+<li><strong><code>PreToolUse</code></strong>: policy check through the PDP. Returns a permission decision in <code>hookSpecificOutput</code> with <code>permissionDecision</code> ∈ <strong>allow | deny | ask | defer</strong> plus <code>permissionDecisionReason</code>. Hooks run <strong>before</strong> permission modes, so a <code>deny</code> holds even under <code>bypassPermissions</code>.<ul>
+<li><strong>Deferred-tool mechanism</strong> (for human Gate 2, verified on the approvals/hooks pages): if a decision may take longer than the process can stay up, the hook returns <strong><code>defer</code></strong> → the session ends with <code>stop_reason: &#39;tool_deferred&#39;</code> and the pending call surfaces as <strong><code>deferred_tool_use</code></strong>. The Run Controller waits for the human (timeout ⇒ deny, <code>§4.2</code>/F13), then <strong><code>resume</code>s the session</strong> and the hook returns <code>allow</code>/<code>deny</code>. Note (<code>§4.2</code>): <code>defer</code> is <strong>ignored for a parallel tool batch</strong> → there, deny with a reason and pause the branch.</li>
+</ul>
+</li>
+<li><strong><code>PostToolUse</code></strong>: audit, evidence capture, redaction of known secret values (<code>updatedToolOutput</code>), output truncation with pointer-to-evidence (<code>§4.3</code>, §8.7).</li>
+<li>Other lifecycle hooks Blackwing uses: <code>PreCompact</code> (archive transcript), <code>SessionStart</code>/<code>SessionEnd</code>, <code>SubagentStart</code>/<code>SubagentStop</code> (telemetry), <code>Stop</code> (completion check — subtask result must be submitted). <code>PermissionRequest</code> hook can fire external notifications when approval is pending.</li>
+</ul>
+<h3 id="34-sdkresultmessage--subtask-status-44">3.4 <code>SDKResultMessage</code> → subtask status (<code>§4.4</code>)</h3>
+<p>Read these fields: <code>subtype</code> ∈ <strong><code>success</code> | <code>error_max_turns</code> | <code>error_max_budget_usd</code> | <code>error_during_execution</code> | <code>error_max_structured_output_retries</code></strong>; <code>stop_reason</code> (incl. <strong><code>tool_deferred</code></strong>); <code>total_cost_usd</code>; <strong><code>modelUsage</code></strong> (per-model — prefer it for accounting); <code>usage</code>; <code>num_turns</code>; <code>duration_ms</code>; <strong><code>permission_denials</code></strong>; <code>structured_output</code>; <code>session_id</code>. <strong>Model refusals</strong> → mark subtask <code>model_declined</code>, record in coverage manifest, never rephrase/evade; the eval harness tracks refusal rate (<code>§4.4</code>).</p>
+<h3 id="35-session-persistence-gateway--providers">3.5 Session persistence, gateway &amp; providers</h3>
+<ul>
+<li><strong><code>sessionStore</code></strong>: Postgres/S3-backed adapter so sessions survive pod loss and can be resumed for Gate 2 / Mentor (<code>§4.3</code>).</li>
+<li><strong>Model access via gateway</strong>: Claude Code reaches Claude through <strong><code>ANTHROPIC_BASE_URL</code></strong> pointed at the Blackwing <strong>model-gateway</strong>, authenticated with a short-lived <strong>per-session virtual key</strong> (<code>ANTHROPIC_API_KEY=bwk_…</code>). Real provider credentials never enter the sandbox (<code>§4.1</code>).</li>
+<li><strong>Providers</strong>: Anthropic API (default), <strong>Amazon Bedrock</strong> (<code>@anthropic-ai/bedrock-sdk</code>; model IDs prefixed <code>anthropic.</code>), <strong>Google Vertex AI</strong> (<code>@anthropic-ai/vertex-sdk</code>), <strong>Microsoft Foundry</strong> (<code>@anthropic-ai/foundry-sdk</code>).</li>
+<li><strong>Policy (hard rule, <code>§4.5</code>):</strong> production/customer runs authenticate with an <strong>Anthropic API key or a cloud provider (Bedrock/Vertex/Foundry)</strong>. <strong>A claude.ai subscription login must NOT power third-party product runs</strong> (Agent SDK terms). Developers may use their own Claude Code subscription only for <em>building</em> Blackwing. Azure OpenAI / GPT is not supported (<code>§1.1</code>).</li>
+<li><strong>Scaling note:</strong> for jobs coordinating dozens–hundreds of agents the SDK offers the <strong><code>Workflow</code></strong> tool (orchestration moved into a script outside conversation context). Blackwing&#39;s cross-sandbox scaling is Temporal child workflows (<code>§4.2</code>); treat <code>Workflow</code> as an alternative to evaluate, not a current dependency.</li>
+</ul>
+<hr>
+<h2 id="4-mcp-model-context-protocol-ecosystem-for-security--automation">4. MCP (Model Context Protocol) ecosystem for security &amp; automation</h2>
+<ul>
+<li><strong>Pattern Blackwing uses (primary):</strong> wrap every internal capability as an <strong>in-process SDK MCP server</strong> via <code>createSdkMcpServer</code> + <code>tool()</code> (<code>§3.1</code> above, <code>CONTEXT_PACK §4.1</code>). This keeps tool backends inside <code>apps/agent-runtime</code>, reachable only through the Run Broker API, with no extra network surface. Prefer this over spawning external MCP server processes.</li>
+<li><strong><code>@playwright/mcp</code></strong> (Microsoft, official) — browser automation MCP server. Drives Chromium/Firefox/WebKit/Edge via the <strong>accessibility tree</strong> (structured snapshot + element <code>ref</code> IDs, not screenshots/vision → far cheaper tokens). Supports navigation, forms, uploads, dialogs, console/network inspection, screenshots, JS eval; persistent vs isolated sessions, storage-state reuse, device emulation. Blackwing exposes it to specialists <strong>proxy-configured</strong> through the egress gateway (<code>CONTEXT_PACK §5</code> &quot;Browser&quot;). Issues: route it through <code>HTTP_PROXY/HTTPS_PROXY</code> + per-run CA; never give it direct internet.</li>
+<li><strong>Villager</strong> (§1) is a notable <em>security-relevant</em> MCP client (MCP driving Kali toolsets) — cite as the pattern precedent and the abuse cautionary tale; do not use.</li>
+<li><strong>Tool-naming conventions (follow in issues):</strong><ul>
+<li>MCP tools surface to Claude as <code>mcp__&lt;server&gt;__&lt;tool&gt;</code> (e.g. <code>mcp__blackwing__dispatch_subtask</code>). Use snake_case verb-first tool names.</li>
+<li>Blackwing engagement/MCP tool names are already fixed in <code>§4.2</code>: <code>get_engagement_state</code>, <code>list_open_subtasks</code>, <code>dispatch_subtask</code>, <code>get_subtask_result</code>, <code>request_mentor_review</code>, <code>mark_test_case_status</code>, <code>request_scope_exception</code>; plus specialist tools <code>http_request</code>, <code>tcp_probe</code>, <code>submit_candidate</code>, journal/oob/session-manager tools, <code>intel_*</code> (gateway-allowlisted OSINT).</li>
+<li>Mark read-only tools with the <code>readOnlyHint</code> annotation so the planner/PDP can reason about intrusiveness.</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="5-open-source-security-toolchain-by-phase-with-licences">5. Open-source security toolchain by phase (with licences)</h2>
+<p>All run <strong>inside the <code>bw-sandbox</code> image</strong>, traffic forced through the egress gateway (<code>CONTEXT_PACK §4.1</code>, §5). <strong>Pin every tool version + nuclei template commit</strong> (§8.9). Verify a tool&#39;s current licence in its repo before an issue assumes bundling is allowed.</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Tool (project)</th>
+<th>Licence</th>
+<th>Purpose (one line)</th>
+<th>Notes for issues</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Recon/discovery</td>
+<td><strong>subfinder</strong> (projectdiscovery)</td>
+<td>MIT</td>
+<td>Passive subdomain enumeration</td>
+<td>passive-recon; gateway intel allowlist for third-party sources.</td>
+</tr>
+<tr>
+<td>Recon/discovery</td>
+<td><strong>dnsx</strong> (projectdiscovery)</td>
+<td>MIT</td>
+<td>Fast DNS toolkit/resolver</td>
+<td>respect anti-rebinding (resolve-once, pin IP) at the gateway (§8.2).</td>
+</tr>
+<tr>
+<td>Recon/discovery</td>
+<td><strong>httpx</strong> (projectdiscovery)</td>
+<td>MIT</td>
+<td>HTTP probing / tech + status/title detection</td>
+<td>active-recon surface confirmation.</td>
+</tr>
+<tr>
+<td>Recon/discovery</td>
+<td><strong>naabu</strong> (projectdiscovery)</td>
+<td>MIT</td>
+<td>Fast port scanner (SYN/CONNECT)</td>
+<td>active-recon / infra; <code>active_safe</code> class, in-scope ports only.</td>
+</tr>
+<tr>
+<td>Recon/discovery</td>
+<td><strong>katana</strong> (projectdiscovery)</td>
+<td>MIT</td>
+<td>Crawler / endpoint &amp; parameter discovery</td>
+<td>active-recon; proxy-routed.</td>
+</tr>
+<tr>
+<td>Recon/discovery</td>
+<td><strong>ffuf</strong> (ffuf)</td>
+<td>MIT</td>
+<td>Content/parameter fuzzing (wordlist)</td>
+<td>active-recon/web; budget-bounded via proxy creds.</td>
+</tr>
+<tr>
+<td>Fingerprint</td>
+<td><strong>fingerprintx</strong> (praetorian)</td>
+<td>MIT</td>
+<td>Service fingerprinting over raw ports</td>
+<td>infrastructure-specialist.</td>
+</tr>
+<tr>
+<td>Fingerprint/vuln</td>
+<td><strong>nuclei</strong> (projectdiscovery)</td>
+<td>MIT (engine)</td>
+<td>Template-driven detection engine</td>
+<td><strong>nuclei-templates</strong> also MIT but <strong>pin the template commit</strong> (§8.9); use safe/non-intrusive templates; proof at runtime.</td>
+</tr>
+<tr>
+<td>TLS/config</td>
+<td><strong>testssl.sh</strong></td>
+<td><strong>GPLv2</strong></td>
+<td>TLS/SSL configuration &amp; cipher assessment</td>
+<td>infra-specialist; GPLv2 → invoke as a separate binary, do not statically link into proprietary code.</td>
+</tr>
+<tr>
+<td>OOB / OAST</td>
+<td><strong>interactsh</strong> (projectdiscovery; server + client)</td>
+<td>MIT</td>
+<td>Out-of-band interaction (DNS/HTTP/SMTP) listener for blind-vuln confirmation</td>
+<td>self-hosted <code>interactsh-server</code> + <code>packages/oob</code>; the OOB oracle for F15 (see §7).</td>
+</tr>
+<tr>
+<td>Secrets/code</td>
+<td><strong>gitleaks</strong></td>
+<td>MIT</td>
+<td>Secret detection in source/git history</td>
+<td>code-specialist (white box); findings proven at runtime, not shipped as SAST (<code>§1.1</code>).</td>
+</tr>
+<tr>
+<td>Secrets/code (SAST-style)</td>
+<td><strong>opengrep</strong></td>
+<td><strong>LGPL-2.1 (engine)</strong></td>
+<td>Pattern-based static analysis; community fork of Semgrep CE</td>
+<td><strong>Use Opengrep, not Semgrep</strong>, to stay clear of Semgrep&#39;s registry-rule licence (below). Author your own rules or use clearly open rules.</td>
+</tr>
+<tr>
+<td>Secrets/code (SCA/containers)</td>
+<td><strong>trivy</strong> (Aqua)</td>
+<td>Apache-2.0</td>
+<td>Vulnerability/misconfig/secret scanner for deps, images, IaC</td>
+<td>used in CI (SBOM/scan) and for dependency-risk leads proven at runtime.</td>
+</tr>
+<tr>
+<td>HTTP/crawl/browser</td>
+<td><strong>Playwright</strong> + Chromium</td>
+<td>Apache-2.0</td>
+<td>Headless browser automation</td>
+<td>via <code>@playwright/mcp</code> (§4), proxy-configured.</td>
+</tr>
+<tr>
+<td>Misc</td>
+<td><strong>jq</strong> (MIT), <strong>proxychains-ng</strong> (GPLv2), <strong>sqlmap</strong> (GPLv2, <strong>safe flags only</strong>), <strong>Python 3 stdlib</strong></td>
+<td>mixed</td>
+<td>JSON processing; force proxy for non-proxy-aware tools; injection detection with benign probes</td>
+<td>sqlmap/proxychains GPLv2 → separate processes only.</td>
+</tr>
+</tbody></table>
+<p><strong>Restrictive-licence watch-list — do NOT bundle without legal sign-off (<code>CONTEXT_PACK §5</code> &quot;License review gate&quot;):</strong></p>
+<ul>
+<li><strong>nmap</strong> — <strong>NPSL (Nmap Public Source License)</strong>, a modified GPLv2 that forbids embedding in proprietary products (stand-alone redistribution, appliance, <strong>docker container, VM</strong> all counted; reading <code>nmap-service-probes</code>/<code>nmap-os-db</code> makes you a derivative). <strong>Not bundled.</strong> Use naabu + fingerprintx instead.</li>
+<li><strong>Semgrep registry rules</strong> — the <strong>Semgrep Rules License</strong> limits use to internal, non-competing, <strong>non-SaaS</strong> contexts (changed Dec 2024). Semgrep CE <em>engine</em> is LGPL-2.1, but the <strong>rules are the problem for a SaaS</strong>. <strong>Not bundled</strong> — use Opengrep + own rules.</li>
+<li>Any <strong>GPL/LGPL</strong> CLI (testssl.sh, sqlmap, proxychains-ng, nuclei is MIT so fine) → invoke as separate processes; never statically link into Blackwing&#39;s proprietary code.</li>
+</ul>
+<hr>
+<h2 id="6-standards--data-sources-to-cite-in-issues-by-identifier">6. Standards &amp; data sources to cite in issues (by identifier)</h2>
+<p>Issues should map every finding/test to a standard ID. Use these exact identifiers.</p>
+<p><strong>OWASP Web Security Testing Guide (WSTG v4.2)</strong> — top-level categories (cite the subtest, e.g. <code>WSTG-INPV-05</code>):</p>
+<ul>
+<li><code>WSTG-INFO</code> Information Gathering · <code>WSTG-CONF</code> Configuration &amp; Deployment Management · <code>WSTG-IDNT</code> Identity Management · <code>WSTG-ATHN</code> Authentication · <code>WSTG-ATHZ</code> Authorization · <code>WSTG-SESS</code> Session Management · <code>WSTG-INPV</code> Input Validation · <code>WSTG-ERRH</code> Error Handling · <code>WSTG-CRYP</code> Cryptography · <code>WSTG-BUSL</code> Business Logic · <code>WSTG-CLNT</code> Client-side · <code>WSTG-APIT</code> API Testing.</li>
+</ul>
+<p><strong>OWASP Top 10 2021</strong> — <code>A01</code> Broken Access Control · <code>A02</code> Cryptographic Failures · <code>A03</code> Injection · <code>A04</code> Insecure Design · <code>A05</code> Security Misconfiguration · <code>A06</code> Vulnerable &amp; Outdated Components · <code>A07</code> Identification &amp; Authentication Failures · <code>A08</code> Software &amp; Data Integrity Failures · <code>A09</code> Security Logging &amp; Monitoring Failures · <code>A10</code> Server-Side Request Forgery (SSRF).</p>
+<p><strong>OWASP API Security Top 10 2023</strong> — <code>API1</code> Broken Object Level Authorization (BOLA) · <code>API2</code> Broken Authentication · <code>API3</code> Broken Object Property Level Authorization (BOPLA) · <code>API4</code> Unrestricted Resource Consumption · <code>API5</code> Broken Function Level Authorization (BFLA) · <code>API6</code> Unrestricted Access to Sensitive Business Flows · <code>API7</code> Server-Side Request Forgery · <code>API8</code> Security Misconfiguration · <code>API9</code> Improper Inventory Management · <code>API10</code> Unsafe Consumption of APIs.</p>
+<p><strong>OWASP ASVS</strong> — current <strong>v5.0.0</strong> (released 30 May 2025; ~350 reqs across 17 chapters; CC BY-SA 4.0). Cite requirements as <code>v5.0.0-&lt;chapter&gt;.&lt;section&gt;.&lt;req&gt;</code> (e.g. <code>v5.0.0-1.2.5</code>). v4.0.3 mapping exists for legacy references; auth/session/input-validation issues should cite the ASVS requirement they verify.</p>
+<p><strong>MITRE CWE</strong> — cite class as <code>CWE-&lt;id&gt;</code> (e.g. <code>CWE-89</code> SQL Injection, <code>CWE-79</code> XSS, <code>CWE-918</code> SSRF, <code>CWE-639</code>/<code>CWE-862</code> authorization). <strong>CWE Top 25 (2025 edition)</strong> is the latest (XSS <code>CWE-79</code> #1, SQLi <code>CWE-89</code> #2, CSRF <code>CWE-352</code> #3; built from ~39,080 CVEs Jun-2024→Jun-2025; 113 of them in CISA KEV). Store on findings as <code>cwe_id</code> (§7 domain model).</p>
+<p><strong>FIRST CVSS v4.0</strong> — current scoring standard (FIRST, released Nov 2023). Metric groups: Base / Threat / Environmental / Supplemental; nomenclature <code>CVSS-B</code>, <code>CVSS-BT</code>, <code>CVSS-BTE</code>. Blackwing stores a <strong>CVSS v4.0 vector + score</strong> on <code>findings.severity</code>, with a v3.1 vector optional (§7). Do not invent scores — derive from the vector.</p>
+<p><strong>Vulnerability intelligence data sources</strong> (threat-intel persona, <code>intel_*</code> tools; §4.6):</p>
+<ul>
+<li><strong>NVD CVE API 2.0</strong> (<code>services.nvd.nist.gov/rest/json/cves/2.0</code>) — authoritative CVE records/CPE/CVSS; rate-limited (API key recommended).</li>
+<li><strong>CISA KEV</strong> (Known Exploited Vulnerabilities catalogue) — vulns with confirmed in-the-wild exploitation; use to raise priority.</li>
+<li><strong>FIRST EPSS</strong> — probability (0–1) a CVE is exploited in the next 30 days; use alongside CVSS/KEV for prioritisation, never as the sole severity input.</li>
+<li><strong>OSV.dev</strong> (Google) + <strong>GitHub Advisory Database (GHSA)</strong> — package-ecosystem advisories with affected-version ranges; <code>GHSA-xxxx-xxxx-xxxx</code> / <code>OSV</code> IDs for dependency-risk findings (proven at runtime, not shipped as SCA, <code>§1.1</code>).</li>
+</ul>
+<p><strong>SARIF 2.1.0</strong> — OASIS Standard (approved 27 Mar 2020; <strong>Errata 01</strong> 28 Aug 2023 is the current text). Common static-analysis results interchange format; Blackwing&#39;s F25 export is SARIF <strong>2.1.0</strong>, validated with <strong>Ajv against the official schema</strong> (<code>CONTEXT_PACK §5</code>). Map finding → SARIF <code>result</code> with <code>ruleId</code>, <code>level</code>, <code>locations</code>, and taxonomy references (CWE/OWASP) in <code>taxa</code>.</p>
+<hr>
+<h2 id="7-validation--false-positive-reduction-prior-art">7. Validation / false-positive-reduction prior art</h2>
+<p>Blackwing&#39;s confirm-before-report discipline (F14–F18, §3.2 step 9) draws on established ideas. Every specialist-finding issue must require these.</p>
+<table>
+<thead>
+<tr>
+<th>Technique</th>
+<th>Where it comes from</th>
+<th>How issues must require it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Negative controls</strong></td>
+<td>Experimental design / controlled-experiment methodology; mirrored in scanner &quot;sanity&quot;/baseline checks.</td>
+<td>Each test case declares a <strong><code>negative_control</code></strong> (§7 <code>test_cases.negative_control</code>): a parallel benign/known-safe case that must <strong>not</strong> trigger the oracle. A candidate is confirmable only if the positive fires <strong>and</strong> the negative does not (F16).</td>
+</tr>
+<tr>
+<td><strong>Out-of-band (OAST) confirmation</strong></td>
+<td>PortSwigger <strong>Burp Collaborator</strong> / OAST concept; implemented open-source via <strong>interactsh</strong>.</td>
+<td>Blind/second-order classes (e.g. SSRF, blind injection, XXE OOB) bind to the <strong>OOB listener oracle</strong> (F15, <code>oob_correlations</code>/<code>oob_interactions</code>, §7): confirmation = a correlated inbound interaction on the per-test token, not a model&#39;s say-so.</td>
+</tr>
+<tr>
+<td><strong>Deterministic replay</strong></td>
+<td>Record-and-replay testing; reproducibility practice; motivated by LLM non-determinism (Vulnhuntr&#39;s own caveat, §1).</td>
+<td>The <strong>Validator</strong> replays each candidate in a <strong>fresh sandbox</strong> against its <strong>pre-declared oracle</strong> via <code>packages/replay</code> (F14). The oracle (<code>test_cases.oracle</code>: type + params) is declared <strong>before</strong> the test runs; post-hoc oracles are invalid.</td>
+</tr>
+<tr>
+<td><strong>Confirmed vs Suspected separation</strong></td>
+<td>Scanner confidence tiers (e.g. Burp certain/firm/tentative; Nessus/Nuclei confidence); Strix &quot;prove with PoC&quot;; Vulnhuntr confidence score.</td>
+<td>Validator pass → <strong>Confirmed</strong> (evidence + standalone repro artifact, F18); fail → <strong>Suspected</strong> queue (analyst-only, F17). A finding is <code>fixed</code> only if the coverage manifest shows the relevant test executed (§3.4). Promotion of <code>suspected</code> requires a successful <strong>re-validation</strong>, never manual flip.</td>
+</tr>
+</tbody></table>
+<p>Cross-cut: all of the above are <strong>deterministic code</strong>, not model judgement (§8.11). The <code>validator-assistant</code> persona only <em>normalises</em> a candidate into a replay spec; it does not decide pass/fail.</p>
+<hr>
+<h2 id="8-persona-design-convention--the-shared-task-listing">8. Persona design convention + the shared task listing</h2>
+<h3 id="81-persona-issue-template-every-agent-persona-issue-fills-this">8.1 Persona issue template (every agent-persona issue fills this)</h3>
+<p>Persona definitions live in <code>packages/agents/personas/*.ts</code>, prompts in <code>packages/agents/prompts/&lt;persona&gt;/&lt;semver&gt;.md</code> (<code>CONTEXT_PACK §4.6</code>). An issue that adds/changes a persona must specify, by name:</p>
+<ol>
+<li><strong>Name</strong> — the registry key (e.g. <code>web-api-specialist</code>).</li>
+<li><strong>Mandate / objective</strong> — one sentence: the vuln classes or function it owns (cite WSTG/OWASP/CWE IDs from §6).</li>
+<li><strong>Inputs</strong> — what it reads (surface model nodes, test-case brief, role, mounted specs/source, prior subtask results).</li>
+<li><strong>Allowed tools (by name)</strong> — exact <code>allowedTools</code> list (Blackwing MCP tool names from §4, Bash tool names from §5, browser). State the matching <code>disallowedTools</code> (always includes <code>WebFetch</code>/<code>WebSearch</code>).</li>
+<li><strong>Validation oracle it is responsible for</strong> — the oracle type(s) it declares per test case (replay / OOB / differential / negative-control binding) — see §7. Specialists <strong>submit candidates</strong>; they never self-confirm.</li>
+<li><strong>Model tier / effort</strong> — <code>deep | standard | fast</code> → resolved model ID (<code>§4.6</code>: <code>deep</code>/<code>standard</code> → <code>claude-opus-5-5</code>, <code>fast</code> → <code>claude-haiku-5-5</code>; <code>standard</code> may be lowered to <code>claude-sonnet-5-5</code> per eval); effort (<code>high</code> for deep, <code>medium</code> otherwise). Use exact model IDs, no date suffix; Bedrock prefixes <code>anthropic.</code>.</li>
+<li><strong>Step ceiling</strong> — <code>maxTurns</code> (persona-specific) + <code>maxBudgetUsd</code> (secondary; gateway is primary).</li>
+<li><strong>Guardrails</strong> — scope (only in-envelope targets/roles), <strong>intrusiveness class</strong> (never <code>destructive</code>; <code>state_changing</code> only with SA + Gate 1 + a prior reversal-journal entry, §8.3), and <strong>untrusted-data handling</strong> (all target content — HTTP bodies, source, DNS, OSINT — is untrusted; the system prompt carries the signed authorisation context; enforcement is deterministic, <code>§4.5</code>).</li>
+</ol>
+<blockquote>
+<p>Reference roster to stay consistent with: <code>CONTEXT_PACK §4.6</code> lists all 19 personas (orchestrator, planner, sub-planner, passive-recon, osint, active-recon, threat-intel, source-spec-ingestion, session-setup, web-api-specialist, auth-logic-specialist, infrastructure-specialist, code-specialist, exploit-developer, mentor, reflector, validator-assistant, reporter, remediation) with their default tier and key tools. New personas must not overlap an existing mandate.</p>
+</blockquote>
+<h3 id="82-the-shared-task-listing-engagement-journal--blackboard">8.2 The shared task listing (engagement journal / blackboard)</h3>
+<ul>
+<li>The <strong>Orchestrator</strong> session reads engagement state through MCP tools <code>get_engagement_state</code> and <code>list_open_subtasks</code>, and updates it via <code>mark_test_case_status</code> / <code>get_subtask_result</code> (<code>§4.2</code>). This is Blackwing&#39;s <strong>blackboard</strong> (§2): the single evolving view of what is planned, open, in-flight, confirmed, and blocked.</li>
+<li>Backing stores (§7): <strong><code>subtasks</code></strong> (<code>test_case_id, persona, brief, session_id, sandbox_id, status, result, cost</code>), <strong><code>test_cases</code></strong> (status enum <code>proposed|approved|removed|executing|executed|skipped|blocked|failed|model_declined|not_applicable</code>), the <strong>Neo4j surface model</strong> (asset/endpoint graph), and <strong>Redis Streams</strong> for live run events.</li>
+<li><strong>Subtask dispatch (critical, <code>§4.2</code>):</strong> <code>dispatch_subtask(persona, subtaskId, brief)</code> does <strong>not</strong> use the in-process <code>Agent</code> tool. It <strong>signals the deterministic Run Controller</strong> (Temporal <code>AssessmentRunWorkflow</code>), which starts a <strong>new specialist session in a new sandbox</strong> (child workflow <code>AgentSessionWorkflow</code>). Each specialist therefore gets its <strong>own egress identity, budget, kill handle, and resource limits</strong>, and work scales across hosts. Native SDK subagents are reserved for in-session light helpers only (§3.2).</li>
+<li>The brief passed to a specialist must be self-contained (the subagent/child session starts fresh — only the prompt string crosses the boundary, §3.2): include target endpoints, role, intrusiveness class, declared oracle, negative control, budget, and the relevant WSTG/CWE IDs.</li>
+</ul>
+<hr>
+<h2 id="how-author-agents-should-use-this-file">How author-agents should use this file</h2>
+<ul>
+<li><strong>Cite by identifier, always.</strong> In a specialist issue, name the vulnerability <strong>class + standard ID</strong> (e.g. &quot;detect SSRF-class issues — <code>CWE-918</code>, <code>WSTG-INPV-19</code>, OWASP <code>A10</code>/<code>API7</code> — bind each candidate to a declared oracle (§7) and a negative control; capture request/response evidence via the gateway&quot;). Never write payload strings, attack walkthroughs, or bypass recipes (AUTHOR_BRIEF §&quot;Content safety &amp; altitude&quot;).</li>
+<li><strong>Reuse the vocabulary.</strong> Use the exact pattern names (§2: orchestrator–worker, ReAct, Reflexion, plan-and-execute, PTT, blackboard, mentor/critic), the exact SDK field/option names (§3), the exact tool names and licences (§5), and the standard IDs (§6). This keeps issues consistent and self-contained.</li>
+<li><strong>Ground design claims in prior art.</strong> When an issue justifies a design (deterministic validator, confirm-vs-suspect, OOB confirmation, source→sink tracing, task-tree planning), cite the project/paper here (§1, §7) rather than re-arguing it.</li>
+<li><strong>Fill the persona template (§8.1) in full</strong> for any persona issue, and treat the <strong>shared task listing + <code>dispatch_subtask</code>→Run Controller</strong> flow (§8.2) as fixed — do not let a persona spawn cross-sandbox work via the native <code>Agent</code> tool.</li>
+<li><strong>Respect the licence watch-list (§5):</strong> never propose bundling nmap (NPSL) or Semgrep registry rules; use the named open alternatives.</li>
+<li><strong>Where this file and <code>CONTEXT_PACK.md</code> differ, the pack wins</strong> — this file is prior art and vocabulary, not a source of architectural decisions.</li>
+</ul>
+</main>
+</div>
+</body>
+</html>

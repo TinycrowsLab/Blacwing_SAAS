@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Developer onboarding and troubleshooting | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="./onboarding.html" aria-current="page">Developer onboarding and troubleshooting</a></li>
+<li><a href="./egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="./admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="developer-onboarding-and-troubleshooting">Developer onboarding and troubleshooting</h1>
+<p>DEVENV-015 (#169). The human-facing guide from a bare host to a running dev stack and a <code>pnpm test:e2e</code> run. It
+links to the detailed runbooks instead of copying them. The Claude-Code-facing index is
+<a href="https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/CLAUDE.md">CLAUDE.md</a>; the rules every change must follow are in the
+<a href="../architecture/CONTEXT_PACK.html">Context Pack</a> (stack <a href="../architecture/CONTEXT_PACK.html#5-technology-stack-fixed-for-v1-all-freeopen-source-except-the-aws-account-and-the-anthropicclaude-usage">§5</a>,
+invariants <a href="../architecture/CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8</a>,
+workflow <a href="../architecture/CONTEXT_PACK.html#10-development-environment--workflow">§10</a>).</p>
+<p>Blackwing is an authorised, human-gated security testing platform. Everything here runs on your machine against
+deliberately vulnerable training targets, never against anything you do not own.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Host</td>
+<td>Ubuntu 24.04 LTS (AWS EC2 dev instance, laptop or VM). 8 vCPU / 16 GB RAM is the practical minimum; 8 vCPU / 32 GB / 200 GB is recommended.</td>
+</tr>
+<tr>
+<td>Access</td>
+<td>A user with <code>sudo</code> rights for the one-time bootstrap.</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>Internet access to pull packages, npm modules and container images.</td>
+</tr>
+<tr>
+<td>Tools</td>
+<td>Installed for you by <code>infra/bootstrap.sh</code>: Docker Engine + compose, gVisor <code>runsc</code>, Node 22, pnpm, Go, OpenTofu, kubectl, helm, mkcert, jq. Versions are pinned in <a href="https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/infra/versions.env"><code>infra/versions.env</code></a>.</td>
+</tr>
+</tbody></table>
+<p>Other operating systems:</p>
+<ul>
+<li><strong>macOS:</strong> the bootstrap supports Ubuntu only. Install Docker Desktop, Node 22, pnpm (<code>corepack enable</code>) and
+mkcert yourself at the pinned versions, then continue from step 2. There is no gVisor on macOS: use the Docker
+driver with <code>runc</code> (allowed in <code>BW_ENV=dev</code> only) and <code>BW_K3S_SKIP=1</code>.</li>
+<li><strong>Linux, hostnames:</strong> <code>*.localhost</code> resolves to loopback on most distributions. If it does not, run
+<code>infra/compose/tls/setup-tls.sh --print-hosts</code> and append the printed line to <code>/etc/hosts</code>.</li>
+<li><strong>Linux, Docker group:</strong> after the bootstrap adds you to the <code>docker</code> group, run <code>newgrp docker</code> or log out and in.</li>
+<li><strong>WSL2:</strong> works for everything except real gVisor; see <a href="../runbooks/dev-k3s.html#k3d-substitute-hosts-without-gvisor-eg-wsl2">dev-k3s.md</a>.</li>
+</ul>
+<h2 id="quick-start">Quick start</h2>
+<pre><code class="language-bash"># 1. One-time host setup (Ubuntu 24.04). Idempotent; --dry-run shows what would change.
+infra/bootstrap.sh
+newgrp docker                 # only if the script says the docker group is not active yet
+infra/bootstrap.sh --check    # expected-versus-actual table; must exit 0
+
+# 2. Dependencies and environment
+pnpm install
+cp .env.example .env          # optional: pnpm dev:deps creates it and fills random dev passwords itself
+pnpm dev:deps                 # postgres, valkey, neo4j, temporal, keycloak, openbao, minio, mailpit, ...
+pnpm db:migrate               # the seed never creates tables
+pnpm db:seed                  # demo tenant &quot;acme&quot;, test users, Juice Shop asset, standing authorisation
+
+# 3. Targets, apps, tests
+pnpm targets:up               # OWASP Juice Shop on http://127.0.0.1:13000 (the default target)
+pnpm dev                      # runs dev:doctor first, then every app with hot reload
+pnpm test:e2e                 # Playwright suites against the stack and Juice Shop
+</code></pre>
+<p>Notes:</p>
+<ul>
+<li><code>pnpm dev:deps</code> creates <code>.env</code> from <code>.env.example</code> when it is missing, generates a random value for every empty
+<code>*_PASSWORD</code>, <code>*_SECRET</code> and <code>*_TOKEN</code>, and never overwrites an existing value. <code>*_CLIENT_SECRET</code> values (for
+example the Google SSO client) are issued externally and filled by hand.</li>
+<li>Run <code>pnpm dev:doctor</code> at any time. It lists missing <code>.env</code> keys, the health of every service and the endpoints.
+It prints key names and URLs, never values.</li>
+<li><code>pnpm test:e2e</code> runs the Playwright suite in <code>apps/web/e2e</code> (CI-006, #140) against the stack and Juice Shop
+(<code>pnpm targets:up</code>); see <a href="../runbooks/e2e.html"><code>docs/runbooks/e2e.md</code></a>. Unit tests are <code>pnpm test</code>;
+integration tests (<code>pnpm test:int</code>) use Testcontainers on random ports and need no running stack.</li>
+<li>Optional pieces: <code>pnpm dev:tls</code> (HTTPS on <code>*.bw.localhost</code>), <code>pnpm dev:deps:obs</code> (Grafana stack),
+<code>pnpm targets:up --all</code> (every training target), the k3s/gVisor sandbox runtime (<a href="../runbooks/dev-k3s.html">dev-k3s.md</a>).</li>
+</ul>
+<h3 id="minimal-path-for-constrained-laptops">Minimal path for constrained laptops</h3>
+<p>Skip everything optional. Run <code>pnpm dev:deps</code>, <code>pnpm db:migrate</code>, <code>pnpm db:seed</code>, <code>pnpm targets:up</code> (Juice Shop
+only), <code>pnpm dev</code>. Do not start <code>dev:deps:obs</code>, <code>dev:tls</code> or the other targets. Set <code>BW_K3S_SKIP=1</code> so
+<code>infra/k3s/install-dev.sh</code> exits 0 and sandboxes use the Docker driver with <code>runsc</code> instead of k3s.</p>
+<h2 id="dev-endpoints">Dev endpoints</h2>
+<p>All ports bind <code>127.0.0.1</code> only. Ports come from <code>.env</code> (defaults in <a href="https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/.env.example"><code>.env.example</code></a>); the
+compose file is <a href="https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/infra/compose/docker-compose.dev.yml"><code>infra/compose/docker-compose.dev.yml</code></a>.</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>URL</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Console (web)</td>
+<td><code>http://localhost:3000</code></td>
+<td>Next.js dev server. Over HTTPS (after <code>pnpm dev:tls</code>): <code>https://app.bw.localhost:18443</code></td>
+</tr>
+<tr>
+<td>API</td>
+<td><code>http://localhost:13400</code></td>
+<td>Over HTTPS: <code>https://api.bw.localhost:18443</code></td>
+</tr>
+<tr>
+<td>Keycloak</td>
+<td><code>http://localhost:18080</code></td>
+<td>Realm <code>blackwing-dev</code>. Admin console user <code>BW_DEV_KEYCLOAK_ADMIN_USER</code>. Over HTTPS: <code>https://auth.bw.localhost:18443</code></td>
+</tr>
+<tr>
+<td>Temporal UI</td>
+<td><code>http://localhost:18233</code></td>
+<td>Namespace <code>blackwing-dev</code>; gRPC on <code>localhost:17233</code></td>
+</tr>
+<tr>
+<td>MinIO console</td>
+<td><code>http://localhost:19001</code></td>
+<td>S3 API on <code>http://localhost:19000</code>; root user <code>BW_DEV_MINIO_ROOT_USER</code></td>
+</tr>
+<tr>
+<td>Mailpit</td>
+<td><code>http://localhost:18025</code></td>
+<td>SMTP on <code>localhost:11025</code></td>
+</tr>
+<tr>
+<td>OpenBao</td>
+<td><code>http://localhost:18200</code></td>
+<td>Token in <code>.bw-dev/openbao/app-token</code></td>
+</tr>
+<tr>
+<td>Grafana (<code>obs</code> profile)</td>
+<td><code>http://localhost:13001</code></td>
+<td>User <code>admin</code>; also Prometheus <code>19090</code>, Loki <code>13100</code>, Tempo <code>13200</code></td>
+</tr>
+<tr>
+<td>Postgres / Valkey / Neo4j</td>
+<td><code>15432</code> / <code>16379</code> / <code>17474</code> (bolt <code>17687</code>)</td>
+<td>Credentials in <code>.env</code></td>
+</tr>
+<tr>
+<td>Juice Shop (target)</td>
+<td><code>http://localhost:13000</code></td>
+<td><code>https://juice.bw.localhost:18443</code> with <code>pnpm targets:up --tls</code></td>
+</tr>
+</tbody></table>
+<p>Other targets (<code>pnpm targets:up --all</code>): crAPI 13010, VAmPI 13020, DVGA 13030, DVWA 13040, WebGoat 13050.</p>
+<h3 id="dev-login-users">Dev login users</h3>
+<p>Realm <code>blackwing-dev</code> (<a href="https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/infra/compose/keycloak/realm-export.json"><code>realm-export.json</code></a>, the single source).
+Every user shares the password in <code>BW_DEV_KEYCLOAK_TEST_USER_PASSWORD</code> in your <code>.env</code>. <code>pnpm db:seed</code> creates the
+matching application users in tenant <code>acme</code>.</p>
+<table>
+<thead>
+<tr>
+<th>User</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>appsec@acme.test</code></td>
+<td>AppSec engineer</td>
+</tr>
+<tr>
+<td><code>owner@acme.test</code></td>
+<td>Asset owner</td>
+</tr>
+<tr>
+<td><code>dev@acme.test</code></td>
+<td>Developer</td>
+</tr>
+<tr>
+<td><code>admin@acme.test</code></td>
+<td>Org admin</td>
+</tr>
+<tr>
+<td><code>auditor@acme.test</code></td>
+<td>Auditor</td>
+</tr>
+<tr>
+<td><code>operator@blackwing.test</code></td>
+<td>Platform operator (not a member of <code>acme</code>)</td>
+</tr>
+</tbody></table>
+<p><code>pnpm dev:keycloak:check</code> verifies the realm export against the running Keycloak. The table above is cross-checked
+against the realm export, <code>.env.example</code> and the compose file by <code>pnpm check:onboarding</code> (see
+<a href="#keeping-this-guide-honest">Keeping this guide honest</a>).</p>
+<h2 id="dev-only-shortcuts-never-in-staging-or-production">Dev-only shortcuts: never in staging or production</h2>
+<ul>
+<li><strong>Password login</strong> for the test users above, and the shared test-user password. Staging and production use SSO
+only (Keycloak brokering to the customer IdP).</li>
+<li><strong>The mkcert dev CA</strong> behind <code>*.bw.localhost</code>. Never install or ship its root certificate anywhere else.</li>
+<li><strong><code>runc</code> sandboxes</strong> (<code>BW_ENV=dev|test</code> only) and the <strong>k3d</strong> <code>gvisor</code> RuntimeClass mapped to <code>runc</code>.</li>
+<li><strong>OpenBao in dev mode</strong>, the MinIO root user, and every generated value in <code>.env</code>.</li>
+<li><strong>The seed</strong> refuses <code>NODE_ENV=staging|production</code>. Do not work around that.</li>
+</ul>
+<p><code>.env</code> is untracked, mode <code>0600</code>, and never contains real customer secrets. Never paste a secret into an issue,
+commit, log or test fixture (§8.7).</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p>Start with <code>pnpm dev:doctor</code>. It names the unhealthy service and the fix. For service logs:
+<code>docker compose -p bwdev --env-file .env -f infra/compose/docker-compose.dev.yml logs -f &lt;service&gt;</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Cause and remedy</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Docker or <code>runsc</code> not ready: <code>Cannot connect to the Docker daemon</code>, <code>permission denied</code> on the socket, <code>unknown runtime specified runsc</code></td>
+<td>Daemon down: <code>sudo systemctl start docker</code>. Group not active: <code>newgrp docker</code>, or log out and in. Runtime missing: <code>infra/bootstrap.sh --check</code>, then <code>infra/bootstrap.sh</code>. Verify <code>docker run --rm --runtime=runsc --network=none hello-world</code>. WSL2 and old kernels cannot run gVisor: see <a href="../runbooks/dev-host-bootstrap.html#failure-modes">dev-host-bootstrap.md</a>.</td>
+</tr>
+<tr>
+<td>Node version mismatch: <code>Unsupported engine</code> or the <code>preinstall</code> script aborts</td>
+<td>Node must be <code>&gt;=22 &lt;23</code> and pnpm <code>&gt;=9 &lt;10</code>. Run <code>node -v</code>, then <code>corepack enable &amp;&amp; corepack prepare --activate</code> (the version is pinned by <code>packageManager</code>), or rerun <code>infra/bootstrap.sh</code>.</td>
+</tr>
+<tr>
+<td>Ports in use: <code>port is already allocated</code>, <code>address already in use</code></td>
+<td>Find the owner: <code>ss -ltnp | grep :&lt;port&gt;</code>. Stop your own process, or change the <code>BW_DEV_*_PORT</code> value in <code>.env</code> and rerun <code>pnpm dev:deps</code>. Never stop containers you did not start.</td>
+</tr>
+<tr>
+<td>A service is unhealthy or <code>pnpm dev:deps</code> times out</td>
+<td><code>pnpm dev:doctor</code>, then the service log (command above). Retry <code>pnpm dev:deps</code>; it is idempotent and only waits for what is not healthy. Low memory is the usual cause: close other stacks or use the minimal path.</td>
+</tr>
+<tr>
+<td>Missing <code>.env</code> key: <code>check-env</code> or <code>dev:doctor</code> lists empty keys, compose says <code>required variable ... is missing</code></td>
+<td><code>pnpm dev:deps</code> adds missing keys and fills empty passwords. Fill <code>*_CLIENT_SECRET</code> by hand if you use it. Compare with <code>pnpm check-env</code>.</td>
+</tr>
+<tr>
+<td>Keycloak <code>Invalid parameter: redirect_uri</code></td>
+<td>The console must run on an origin registered for client <code>bw-console-bff</code>: <code>http://localhost:3000</code>, <code>https://app.bw.localhost</code> or <code>https://app.bw.localhost:18443</code>. Do not use <code>127.0.0.1:3000</code>. Verify with <code>pnpm dev:keycloak:check</code>; restore the realm with <code>pnpm dev:keycloak:reset</code>.</td>
+</tr>
+<tr>
+<td>Login fails for a seeded user</td>
+<td>The password is <code>BW_DEV_KEYCLOAK_TEST_USER_PASSWORD</code> from <code>.env</code>. If you changed it after the first start, run <code>pnpm dev:keycloak:reset</code>.</td>
+</tr>
+<tr>
+<td>Stale volumes or a half-initialised stack (bootstrap loops, wrong passwords after editing <code>.env</code>)</td>
+<td><code>pnpm dev:deps:reset --yes</code> drops the shared <code>bwdev</code> stack and its volumes and recreates it. Then <code>pnpm db:migrate &amp;&amp; pnpm db:seed</code>. It affects every worktree that uses the stack.</td>
+</tr>
+<tr>
+<td><code>temporal</code> or <code>keycloak</code> unhealthy with <code>password authentication failed</code> in a second checkout or worktree</td>
+<td>Every checkout shares the one <code>bwdev</code> stack and its volumes, but <code>pnpm dev:deps</code> generates new passwords for a fresh <code>.env</code>. Copy <code>.env</code> from the checkout that first created the stack (<code>cp ../&lt;first-checkout&gt;/.env .env</code>), then rerun <code>pnpm dev:deps</code>. Use <code>pnpm dev:deps:reset --yes</code> only if nobody else is using the stack.</td>
+</tr>
+<tr>
+<td><code>pnpm db:seed</code> fails with a missing-schema message</td>
+<td>Migrations are not applied. Run <code>pnpm db:migrate</code>, then <code>pnpm db:seed</code>. See <a href="../runbooks/dev-seed.html#safety-notes">dev-seed.md</a>. <code>pnpm db:seed:reset</code> re-creates the seeded rows.</td>
+</tr>
+<tr>
+<td>Browser warns about the certificate, or Node says <code>unable to verify the first certificate</code></td>
+<td>The mkcert CA is not trusted. Rerun <code>pnpm dev:tls</code> (it runs <code>mkcert -install</code>). Firefox and Java keep their own stores: restart them. For Node clients: <code>export NODE_EXTRA_CA_CERTS=infra/compose/tls/certs/rootCA.pem</code>.</td>
+</tr>
+<tr>
+<td><code>app.bw.localhost</code> does not resolve</td>
+<td>Run <code>infra/compose/tls/setup-tls.sh --print-hosts</code> and add the line to <code>/etc/hosts</code>.</td>
+</tr>
+<tr>
+<td>k3s or gVisor problems: pods stuck <code>ContainerCreating</code>, <code>RuntimeClass gvisor not found</code>, <code>verify.sh</code> failures</td>
+<td>Run <code>infra/k3s/verify.sh</code> and read <a href="../runbooks/dev-k3s.html">dev-k3s.md</a>. Hosts without gVisor: <code>infra/k3s/install-dev.sh --k3d</code> (the gVisor checks report NOT VERIFIED). Constrained laptops: <code>BW_K3S_SKIP=1</code>.</td>
+</tr>
+<tr>
+<td>Juice Shop is not reachable on 13000</td>
+<td><code>pnpm targets:smoke</code>, then <code>pnpm targets:reset juice-shop</code>. DVWA needs its one-time setup page after the first start.</td>
+</tr>
+<tr>
+<td>Observability stack missing in Grafana</td>
+<td>It is opt-in: <code>pnpm dev:deps:obs</code>, then <code>pnpm dev:deps:obs:smoke</code>.</td>
+</tr>
+</tbody></table>
+<h2 id="contribution-workflow">Contribution workflow</h2>
+<p>The rules are <a href="../architecture/CONTEXT_PACK.html#10-development-environment--workflow">CONTEXT_PACK §10</a>; CLAUDE.md
+summarises them for agents.</p>
+<ol>
+<li><strong>Branch per issue</strong>, named <code>&lt;key&gt;-&lt;slug&gt;</code>, for example <code>egress-004-request-budgets</code>.</li>
+<li><strong>Conventional Commits</strong> (<code>feat(scope): ...</code>, <code>fix(scope): ...</code>, <code>docs: ...</code>). Valid scopes: <code>pnpm commit:scopes</code>.
+The commit hook enforces the format.</li>
+<li><strong>Pull request</strong> titled like the commit, with <code>Closes #N</code> and the issue&#39;s acceptance-criteria checklist copied
+into the PR template and ticked as you prove each item.</li>
+<li><strong>Definition of Done</strong> (all must hold before review):<ul>
+<li>All acceptance criteria met and tested (unit plus integration where IO is involved; e2e for user-visible flows).</li>
+<li>Every edge case in the issue has an explicit test.</li>
+<li>Lint, typecheck and tests green in CI; no <code>any</code>, no skipped tests, no TODO without a linked issue.</li>
+<li>Tenant isolation, authz and audit events covered wherever data or actions are touched.</li>
+<li>OpenAPI/GraphQL schema, Zod contracts, migrations and docs updated in the same PR.</li>
+<li>Structured logs, metrics and traces for new paths; no secrets in logs.</li>
+<li>Security invariants (§8) preserved, with threat considerations noted in the PR.</li>
+</ul>
+</li>
+</ol>
+<p>Before you push: <code>pnpm lint</code>, <code>pnpm typecheck</code>, <code>pnpm test</code>, <code>pnpm format:check</code>.</p>
+<h2 id="walkthrough-record">Walkthrough record</h2>
+<p>2026-10-20, WSL2 dev host (not a bare Ubuntu host): <code>pnpm install</code>, <code>pnpm dev:doctor</code> (reports the stopped stack and
+names the fix) and <code>pnpm dev:deps</code> (creates <code>.env</code>) behave as described. Starting a second worktree against
+existing <code>bwdev</code> volumes failed with the Temporal password error now listed under troubleshooting. The full
+bare-Ubuntu run to <code>pnpm test:e2e</code> (bootstrap needs <code>sudo</code>) is still a manual check; record it here when it is done.</p>
+<h2 id="keeping-this-guide-honest">Keeping this guide honest</h2>
+<p><code>pnpm check:onboarding</code> (run by <code>pnpm test:scripts</code> in CI) fails when:</p>
+<ul>
+<li>a relative link or <code>#anchor</code> in <code>docs/user/*.md</code> does not resolve;</li>
+<li>a <code>pnpm &lt;script&gt;</code> command shown here is not a script in the root <code>package.json</code>;</li>
+<li>a login user, Keycloak redirect origin, or port in the tables disagrees with
+<code>infra/compose/keycloak/realm-export.json</code> or <code>.env.example</code>.</li>
+</ul>
+<p>When you change the stack, update the single source first (compose file, <code>.env.example</code> or the realm export),
+then this guide. Related: <a href="../runbooks/dev-host-bootstrap.html">dev-host-bootstrap.md</a>,
+<a href="../runbooks/dev-seed.html">dev-seed.md</a>, <a href="../runbooks/dev-k3s.html">dev-k3s.md</a>,
+<a href="https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/infra/compose/README.md">compose README</a>, DEVENV-010 (#164), DEVENV-011 (#165), DEVENV-012 (#166),
+DEVENV-013 (#167), DEVENV-014 (#168).</p>
+</main>
+</div>
+</body>
+</html>

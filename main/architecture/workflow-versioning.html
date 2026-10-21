@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workflow versioning and patching | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="./CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="./EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="./FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="./REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="./workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="./workflow-versioning.html" aria-current="page">Workflow versioning and patching</a></li>
+<li><a href="./dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="./egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="./storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="./typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="workflow-versioning-and-patching">Workflow versioning and patching</h1>
+<p>Assessment runs last hours (recon to report), so a run started on Monday can still be open when Wednesday&#39;s worker
+ships. Temporal replays a workflow&#39;s recorded history on every restart, eviction and resume. If the code no longer
+issues the same commands in the same order, the workflow fails with a non-determinism error. This page is the
+policy that keeps in-flight histories safe. It applies to <code>AssessmentRunWorkflow</code> and every other workflow in
+<code>apps/worker</code>. It implements <a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005</a> and the replay discipline in
+<a href="./CONTEXT_PACK.html#33-run-state-machine-authoritative-implement-in-packagesdomainrun">Context Pack §3.3</a>. Data-layer
+migrations are a separate policy (forward-only, see the DB epic).</p>
+<p>The worked example is <code>apps/worker/src/workflows/examples/versioned-example.ts</code>. Its replay proof is
+<code>apps/worker/src/workflows/examples/versioned-example.replay.test.ts</code>, which runs in <code>pnpm test</code> and therefore in CI.</p>
+<h2 id="rules">Rules</h2>
+<ol>
+<li><strong>Never reorder, insert or remove a command behind an existing history.</strong> A command is an activity, timer, child
+workflow, signal or local-activity call. Order matters, not only the set of calls.</li>
+<li><strong>Gate every behavioural change with <code>patched(&#39;&lt;change-id&gt;&#39;)</code>.</strong> Use a stable, descriptive change id, for example
+<code>assessment-run-review-gate</code>. Call <code>patched()</code> unconditionally, in code order, at the point where the old and new
+behaviour diverge. Wrap the branches, never the call: <code>if (patched(id)) { new } else { old }</code> is correct, and
+<code>if (cond) { patched(id) }</code> is not, because the marker is then recorded conditionally.</li>
+<li><strong>Retire a patch only after the drain.</strong> Once no open history predates the patch, replace <code>patched(id)</code> with
+<code>deprecatePatch(id)</code> and keep the new branch only. Remove <code>deprecatePatch</code> after the next drain. Before the first
+step, check that the open histories are gone. The release gate is the metric
+<code>workflow_task_failed{reason=NonDeterminismError}</code>: it must stay at zero for the whole soak. Before the patch is
+retired, list the open executions of each affected workflow type and confirm that none started before the patch
+was deployed.</li>
+<li><strong>Prefer additive signals and queries.</strong> A new signal handler or query is safe to add. Changing an existing
+signal&#39;s payload is not, because a buffered signal from an old client is replayed against the new code.</li>
+<li><strong>Activity signature change means a new activity name.</strong> Do not mutate <code>recordReview(input)</code> into a different
+contract under the same name. Add <code>recordReviewV2</code>, call it behind a patch, and retire the old name with the patch.</li>
+<li><strong>Do not use non-deterministic APIs in workflow code.</strong> Clocks, randomness, IO and globals belong in activities.
+The determinism rules are part of ADR-0005. The enforcing lint rule is tracked by WORKFLOW-003 (#24).</li>
+</ol>
+<h3 id="failure-modes-to-avoid">Failure modes to avoid</h3>
+<ul>
+<li><strong>Removing a patch too early.</strong> Histories that are still in flight need the old branch. Rule 3 mandates a drain and
+a metric check first.</li>
+<li><strong>Editing a shipped branch in place.</strong> Changing what the old branch does, without a new patch id, makes the old
+histories non-deterministic. Add a new patch instead.</li>
+</ul>
+<h2 id="worker-build-ids-worker-versioning">Worker Build IDs (Worker Versioning)</h2>
+<p>Patches cover small changes. For a large migration, pin a worker build to the runs that started on it, so that
+the new build never executes their histories.</p>
+<ul>
+<li>The worker declares its deployment version with <code>workerDeploymentOptions</code> (<code>version.deploymentName</code>,
+<code>version.buildId</code>, <code>useWorkerVersioning: true</code>, <code>defaultVersioningBehavior</code>). The older <code>buildId</code> and
+<code>useVersioning</code> options are deprecated in <code>@temporalio/worker</code> 1.13.</li>
+<li><code>PINNED</code> keeps a workflow on the build it started on until an operator moves it. <code>AUTO_UPGRADE</code> moves it to the
+latest build at its next task. Use <code>PINNED</code> for long migrations and <code>AUTO_UPGRADE</code> for short, patched changes.</li>
+<li>Pin a worker to a build id for a long migration when the change cannot be patched safely: the activity contract
+changed, a whole sub-workflow was replaced, or the drain is measured in days. Keep the old build running until its
+pinned runs complete, then retire it.</li>
+<li>The build id is an identity, not a secret. Derive it from the release version (and never from a host name).</li>
+</ul>
+<h2 id="capturing-a-fixture">Capturing a fixture</h2>
+<p>Replay tests need a real history, not a hand-written one. To capture a new fixture:</p>
+<ol>
+<li>Start the dev stack (<code>pnpm dev:deps</code>). The Temporal server listens on <code>127.0.0.1:17233</code> (<code>TEMPORAL_ADDRESS</code>).</li>
+<li>Run the previous version of the workflow on a worker against the <code>blackwing-dev</code> namespace, and let it complete.</li>
+<li>Export the history with <code>temporal workflow show --workflow-id &lt;id&gt; --output json</code> and save it under
+<code>apps/worker/src/workflows/examples/fixtures/</code> (or the matching <code>fixtures/</code> directory of the workflow).</li>
+<li>Redact <code>identity</code> fields and sticky task-queue names, which contain host names. Do not commit anything else that
+is not needed for replay. The payloads must contain no tenant data, credentials or PII.</li>
+<li>Add the replay test. It must replay the fixture against the new code and must also prove a negative control: the
+same fixture fails when a command is reordered without a patch.</li>
+</ol>
+<h2 id="related">Related</h2>
+<ul>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows</a></li>
+<li><a href="./dependency-graph.html"><code>dependency-graph.md</code></a> for what workflow code may import.</li>
+<li><a href="./CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">Context Pack §8.5 and §8.11</a>:
+resume for the kill switch and gates must survive versioning, and no safety property may depend on the model.</li>
+</ul>
+</main>
+</div>
+</body>
+</html>
