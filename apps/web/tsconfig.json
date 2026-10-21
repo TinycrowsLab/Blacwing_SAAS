@@ -13,6 +13,9 @@
   "references": [
     {
       "path": "e2e"
+    },
+    {
+      "path": "../../packages/ui"
     }
   ]
 }

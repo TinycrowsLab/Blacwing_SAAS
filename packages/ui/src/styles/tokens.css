@@ -1,0 +1,95 @@
+/*
+ * Blackwing design tokens (CONSOLE-002). Single source of truth for theme values; colours mirror
+ * design/tokens.json (checked by src/tokens.test.ts). Tailwind maps them in styles/theme.css.
+ * Change --radius to restyle every component. Dark theme = `.dark` on an ancestor (CONSOLE-003).
+ */
+:root {
+  --radius: 0.5rem;
+  --spacing: 0.25rem;
+  --font-family-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+  --font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #16171d;
+  --card: #ffffff;
+  --card-foreground: #16171d;
+  --popover: #ffffff;
+  --popover-foreground: #16171d;
+  --muted: #f4f4f5;
+  --muted-foreground: #5a5e69;
+  --border: #e6e7ea;
+  --input: #cdd0d6;
+  --primary: #004777;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #16171d;
+  --accent: #e5eef4;
+  --accent-foreground: #004777;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --ring: rgba(0, 71, 119, 0.3);
+  --success: #157a3a;
+  --success-soft: #e8f4ec;
+  --warning: #9a4d00;
+  --warning-soft: #fcf2e4;
+  --danger: #b42318;
+  --danger-soft: #fbecea;
+  --kill: #b01a2d;
+  --kill-foreground: #ffffff;
+  --critical: #6e1520;
+  --critical-foreground: #ffffff;
+  --sev-high: #b42318;
+  --sev-high-soft: #fbecea;
+  --sev-medium: #a8450a;
+  --sev-medium-soft: #fdf1e7;
+  --sev-low: #7a5600;
+  --sev-low-soft: #faf3de;
+  --sev-info: #4b5160;
+  --sev-info-soft: #f0f1f3;
+  --code: #fafafa;
+  --navy: #00304f;
+}
+
+.dark {
+  --background: #16171d;
+  --foreground: #ececee;
+  --card: #1e1f26;
+  --card-foreground: #ececee;
+  --popover: #1e1f26;
+  --popover-foreground: #ececee;
+  --muted: #26282f;
+  --muted-foreground: #a0a3ac;
+  --border: #30323a;
+  --input: #41444e;
+  --primary: #6cb4e4;
+  --primary-foreground: #04131f;
+  --secondary: #26282f;
+  --secondary-foreground: #ececee;
+  --accent: #122c3e;
+  --accent-foreground: #6cb4e4;
+  --destructive: #f2776b;
+  --destructive-foreground: #04131f;
+  --ring: rgba(108, 180, 228, 0.4);
+  --success: #4cc27a;
+  --success-soft: #132a1c;
+  --warning: #f0a83a;
+  --warning-soft: #2e2210;
+  --danger: #f2776b;
+  --danger-soft: #351a18;
+  --kill: #c8243a;
+  --kill-foreground: #ffffff;
+  --critical: #4a0e16;
+  --critical-foreground: #ffb4bd;
+  --sev-high: #f2776b;
+  --sev-high-soft: #351a18;
+  --sev-medium: #f59a5a;
+  --sev-medium-soft: #352312;
+  --sev-low: #e3c04d;
+  --sev-low-soft: #2e2812;
+  --sev-info: #a8aeba;
+  --sev-info-soft: #2a2c33;
+  --code: #191a20;
+  --navy: #0f4c75;
+}
