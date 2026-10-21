@@ -1,0 +1,39 @@
+{{- include "bw-ingress.validate" . -}}
+{{- $acme := .Values.acme -}}
+{{- $email := required "acme.email is required" $acme.email -}}
+{{- $zone := required "acme.route53.hostedZoneID is required (tofu output dns_app_zone_id)" $acme.route53.hostedZoneID -}}
+{{- range $name, $server := dict "letsencrypt-staging" $acme.staging.server "letsencrypt-prod" $acme.prod.server }}
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "bw-ingress.labels" $ | nindent 4 }}
+spec:
+  acme:
+    email: {{ $email | quote }}
+    server: {{ $server | quote }}
+    privateKeySecretRef:
+      # The ACME account key lives in a Secret in the cert-manager namespace, never in git.
+      name: {{ $name }}-account-key
+    solvers:
+      # DNS-01 through Route53: works for wildcards and for load balancers that are not
+      # reachable from the Internet on port 80. Permissions: tofu output
+      # dns_cert_manager_policy_arn (TXT _acme-challenge records in the app zone only).
+      - dns01:
+          route53:
+            region: {{ $acme.route53.region | quote }}
+            hostedZoneID: {{ $zone | quote }}
+            {{- if $acme.route53.credentialsSecret }}
+            accessKeyIDSecretRef:
+              name: {{ $acme.route53.credentialsSecret | quote }}
+              key: {{ $acme.route53.accessKeyIDKey | quote }}
+            secretAccessKeySecretRef:
+              name: {{ $acme.route53.credentialsSecret | quote }}
+              key: {{ $acme.route53.secretAccessKeySecretKey | quote }}
+            {{- end }}
+        selector:
+          dnsZones:
+            - {{ include "bw-ingress.domain" $ | quote }}
+{{- end }}

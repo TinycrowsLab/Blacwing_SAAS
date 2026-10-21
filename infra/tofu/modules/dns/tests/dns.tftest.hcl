@@ -236,3 +236,25 @@ run "query_logging_and_volume_metrics_are_enabled" {
     error_message = "A query-volume metric for the OOB subdomain must exist."
   }
 }
+
+run "cert_manager_policy_is_limited_to_acme_challenge_txt" {
+  command = plan
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  assert {
+    condition     = length([for s in data.aws_iam_policy_document.cert_manager.statement : s if s.sid == "ChangeAcmeChallengeTxtOnly" && !contains(s.resources, "*")]) == 1
+    error_message = "ChangeResourceRecordSets must be scoped to the app zone, not '*'."
+  }
+
+  assert {
+    condition = alltrue([
+      for s in data.aws_iam_policy_document.cert_manager.statement :
+      !contains(s.actions, "route53:*") && (s.sid != "ChangeAcmeChallengeTxtOnly" || contains([for c in s.condition : c.variable], "route53:ChangeResourceRecordSetsRecordTypes"))
+    ])
+    error_message = "cert-manager must not get wildcard Route53 actions and may change TXT records only."
+  }
+}

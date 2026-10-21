@@ -1,0 +1,71 @@
+{{- include "bw-ingress.validate" . -}}
+{{- if .Values.alerts.prometheusRule }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: bw-ingress
+  labels:
+    {{- include "bw-ingress.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: bw-ingress-certificates
+      rules:
+        - alert: BlackwingCertificateExpiringSoon
+          expr: (certmanager_certificate_expiration_timestamp_seconds - time()) < {{ mul (int .Values.alerts.certExpiryWarningDays) 86400 }}
+          for: 15m
+          labels:
+            severity: page
+          annotations:
+            summary: Certificate {{ "{{ $labels.name }}" }} expires in less than {{ .Values.alerts.certExpiryWarningDays }} days
+            description: cert-manager should have renewed it already; renewal is failing. Check `kubectl describe certificate`, the Order and Challenge, and Route53 permissions.
+        - alert: BlackwingCertificateNotReady
+          expr: certmanager_certificate_ready_status{condition="False"} == 1
+          for: 30m
+          labels:
+            severity: page
+          annotations:
+            summary: Certificate {{ "{{ $labels.name }}" }} is not Ready
+            description: Issuance or renewal is failing (DNS-01 propagation, rate limit or credentials). The public host serves a stale or default certificate.
+        - alert: BlackwingAcmeRequestErrors
+          expr: sum by (scheme, host) (rate(certmanager_http_acme_client_request_count{status!~"2.."}[15m])) > 0
+          for: 30m
+          labels:
+            severity: ticket
+          annotations:
+            summary: ACME requests are failing
+            description: cert-manager gets non-2xx answers from the ACME server.
+    - name: bw-ingress-traffic
+      rules:
+        - alert: BlackwingPublicIngress5xx
+          expr: sum by (router) (rate(traefik_router_requests_total{code=~"5.."}[5m])) / sum by (router) (rate(traefik_router_requests_total[5m])) > 0.05
+          for: 10m
+          labels:
+            severity: ticket
+          annotations:
+            summary: Router {{ "{{ $labels.router }}" }} returns more than 5% 5xx
+{{- end }}
+{{- if .Values.alerts.lokiRule }}
+---
+# Loki ruler rule: ANY request to the Run Broker path through the public ingress is an incident,
+# even though it is answered 404. Traefik metrics carry no path, so this reads the JSON access log.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bw-ingress-loki-rules
+  labels:
+    {{ .Values.alerts.lokiRuleLabel }}: "1"
+    {{- include "bw-ingress.labels" . | nindent 4 }}
+data:
+  bw-ingress.yaml: |
+    groups:
+      - name: bw-ingress-broker-path
+        rules:
+          - alert: BlackwingBrokerPathRequestedViaIngress
+            expr: sum(count_over_time({app_kubernetes_io_name="traefik"} | json | RequestPath =~ "(?i)^/internal(/.*)?$" [5m])) > 0
+            for: 0m
+            labels:
+              severity: page
+            annotations:
+              summary: A request for /internal/* reached the public ingress
+              description: The Run Broker is never routed publicly. Someone is probing it or a route was misconfigured.
+{{- end }}

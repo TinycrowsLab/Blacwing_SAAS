@@ -1,0 +1,7 @@
+# Staging renewal drill: a staging certificate lives 90 days, so renewing it "early" means setting
+# renewBefore just under the lifetime. cert-manager then renews within minutes and the
+# Renewing/Issuing events can be observed. Never combine with letsencrypt-prod.
+tls:
+  issuer: letsencrypt-staging
+  duration: 2160h
+  renewBefore: 2159h

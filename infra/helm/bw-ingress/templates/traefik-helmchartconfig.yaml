@@ -1,0 +1,47 @@
+{{- include "bw-ingress.validate" . -}}
+{{- if .Values.traefik.helmChartConfig }}
+# Cluster-wide Traefik defaults for the k3s-packaged Traefik (chart "traefik" in kube-system).
+#  - HTTP -> HTTPS permanent redirect on the web entry point;
+#  - secure-headers and the strong TLS options on EVERY websecure router (no header downgrade
+#    when a route forgets them);
+#  - Prometheus metrics (per router/service requests, latency, 4xx/5xx) and JSON access logs.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+  labels:
+    {{- include "bw-ingress.labels" . | nindent 4 }}
+spec:
+  valuesContent: |-
+    ports:
+      web:
+        http:
+          redirections:
+            entryPoint:
+              to: websecure
+              scheme: https
+              permanent: true
+      websecure:
+        http:
+          middlewares:
+            - {{ .Release.Namespace }}-secure-headers@kubernetescrd
+          tls:
+            enabled: true
+            options: {{ .Release.Namespace }}-bw-tls@kubernetescrd
+    metrics:
+      prometheus:
+        entryPoint: metrics
+        addEntryPointsLabels: true
+        addRoutersLabels: true
+        addServicesLabels: true
+    {{- if .Values.traefik.accessLog }}
+    logs:
+      access:
+        enabled: true
+        format: json
+        fields:
+          headers:
+            defaultmode: drop
+    {{- end }}
+{{- end }}

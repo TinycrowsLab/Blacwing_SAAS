@@ -133,3 +133,50 @@ resource "aws_cloudwatch_log_metric_filter" "oob_queries" {
     value     = "1"
   }
 }
+
+# cert-manager DNS-01 solver permissions (INFRA-012). Least privilege: it may only create and
+# delete TXT records named _acme-challenge.* in THIS zone, read the change status and look the
+# zone up by name. It cannot touch A/NS records (including the oob delegation) or other zones.
+data "aws_iam_policy_document" "cert_manager" {
+  statement {
+    sid       = "ReadChangeStatus"
+    actions   = ["route53:GetChange"]
+    resources = ["arn:aws:route53:::change/*"]
+  }
+
+  statement {
+    sid       = "ListZoneRecords"
+    actions   = ["route53:ListResourceRecordSets"]
+    resources = [aws_route53_zone.app.arn]
+  }
+
+  statement {
+    sid       = "ChangeAcmeChallengeTxtOnly"
+    actions   = ["route53:ChangeResourceRecordSets"]
+    resources = [aws_route53_zone.app.arn]
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "route53:ChangeResourceRecordSetsRecordTypes"
+      values   = ["TXT"]
+    }
+
+    condition {
+      test     = "ForAllValues:StringLike"
+      variable = "route53:ChangeResourceRecordSetsNormalizedRecordNames"
+      values   = ["_acme-challenge.${var.domain_name}", "_acme-challenge.*.${var.domain_name}"]
+    }
+  }
+
+  statement {
+    sid       = "FindZoneByName"
+    actions   = ["route53:ListHostedZonesByName"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "cert_manager" {
+  name        = "${var.name_prefix}-cert-manager-dns01"
+  description = "cert-manager DNS-01 (Route53) for the application zone: _acme-challenge TXT records only."
+  policy      = data.aws_iam_policy_document.cert_manager.json
+}

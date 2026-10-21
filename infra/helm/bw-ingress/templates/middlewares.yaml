@@ -1,0 +1,77 @@
+{{- include "bw-ingress.validate" . -}}
+apiVersion: traefik.io/v1alpha1
+kind: TLSOption
+metadata:
+  name: bw-tls
+  labels:
+    {{- include "bw-ingress.labels" . | nindent 4 }}
+spec:
+  minVersion: {{ .Values.tls.minVersion }}
+  cipherSuites:
+    {{- toYaml .Values.tls.cipherSuites | nindent 4 }}
+  sniStrict: true
+  alpnProtocols:
+    - h2
+    - http/1.1
+---
+# Applied to EVERY route on the websecure entry point by the Traefik HelmChartConfig, so a route
+# that forgets to list it still gets the headers (no header downgrade). Routes also reference it
+# through the public-chain below.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: secure-headers
+  labels:
+    {{- include "bw-ingress.labels" . | nindent 4 }}
+spec:
+  headers:
+    stsSeconds: {{ .Values.headers.stsSeconds }}
+    stsIncludeSubdomains: {{ .Values.headers.stsIncludeSubdomains }}
+    stsPreload: {{ .Values.headers.stsPreload }}
+    forceSTSHeader: true
+    contentTypeNosniff: true
+    frameDeny: true
+    referrerPolicy: {{ .Values.headers.referrerPolicy | quote }}
+    permissionsPolicy: {{ .Values.headers.permissionsPolicy | quote }}
+    {{- if .Values.headers.contentSecurityPolicy }}
+    contentSecurityPolicy: {{ .Values.headers.contentSecurityPolicy | quote }}
+    {{- end }}
+    customResponseHeaders:
+      # An empty value removes the header.
+      Server: ""
+      X-Powered-By: ""
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit
+  labels:
+    {{- include "bw-ingress.labels" . | nindent 4 }}
+spec:
+  rateLimit:
+    average: {{ .Values.rateLimit.average }}
+    period: {{ .Values.rateLimit.period }}
+    burst: {{ .Values.rateLimit.burst }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: inflight
+  labels:
+    {{- include "bw-ingress.labels" . | nindent 4 }}
+spec:
+  inFlightReq:
+    amount: {{ .Values.inflight.amount }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: public-chain
+  labels:
+    {{- include "bw-ingress.labels" . | nindent 4 }}
+spec:
+  chain:
+    middlewares:
+      - name: secure-headers
+      - name: rate-limit
+      - name: inflight

@@ -22,3 +22,8 @@ output "dns_oob_ns_set" {
   description = "Name servers the OOB subdomain is delegated to."
   value       = module.dns.oob_ns_set
 }
+
+output "dns_cert_manager_policy_arn" {
+  description = "IAM policy for the cert-manager DNS-01 solver (INFRA-012; infra/k3s/cert-manager/README.md)."
+  value       = module.dns.cert_manager_policy_arn
+}

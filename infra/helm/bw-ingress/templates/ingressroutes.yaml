@@ -1,0 +1,88 @@
+{{- include "bw-ingress.validate" . -}}
+{{- $webHost := include "bw-ingress.webHost" . -}}
+{{- $apiHost := include "bw-ingress.apiHost" . -}}
+{{- /* Only two public surfaces. There is deliberately no route for /internal/* (Run Broker):
+       it is served by a separate ClusterIP Service that no IngressRoute references. */ -}}
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: web
+  labels:
+    {{- include "bw-ingress.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`{{ $webHost }}`)
+      middlewares:
+        - name: public-chain
+      services:
+        - name: {{ .Values.web.service.name }}
+          port: {{ .Values.web.service.port }}
+  tls:
+    secretName: app-tls
+    options:
+      name: bw-tls
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: api
+  labels:
+    {{- include "bw-ingress.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`{{ $apiHost }}`) && ({{ range $i, $p := .Values.api.publicPaths }}{{ if $i }} || {{ end }}PathPrefix(`{{ $p }}`){{ end }})
+      middlewares:
+        - name: public-chain
+      services:
+        - name: {{ .Values.api.service.name }}
+          port: {{ .Values.api.service.port }}
+  tls:
+    secretName: api-tls
+    options:
+      name: bw-tls
+{{- range $name, $ui := .Values.internalUis }}
+{{- if $ui.enabled }}
+---
+# Internal UI published only behind an IP allowlist AND an authenticating middleware.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $name }}-ip-allow
+  labels:
+    {{- include "bw-ingress.labels" $ | nindent 4 }}
+spec:
+  ipAllowList:
+    sourceRange:
+      {{- toYaml $ui.ipAllowList | nindent 6 }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "bw-ingress.labels" $ | nindent 4 }}
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`{{ $ui.host }}.{{ include "bw-ingress.domain" $ }}`)
+      middlewares:
+        - name: {{ $name }}-ip-allow
+        - name: {{ $ui.authMiddleware }}
+        - name: public-chain
+      services:
+        - name: {{ $ui.service.name }}
+          port: {{ $ui.service.port }}
+  tls:
+    secretName: {{ $name }}-tls
+    options:
+      name: bw-tls
+{{- end }}
+{{- end }}

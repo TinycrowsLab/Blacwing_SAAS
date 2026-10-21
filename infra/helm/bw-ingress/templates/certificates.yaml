@@ -1,0 +1,35 @@
+{{- include "bw-ingress.validate" . -}}
+{{- /* One Certificate per public host. cert-manager renews automatically at renewBefore. */ -}}
+{{- $hosts := dict "app-tls" (include "bw-ingress.webHost" .) "api-tls" (include "bw-ingress.apiHost" .) -}}
+{{- range $name, $ui := .Values.internalUis -}}
+{{- if $ui.enabled -}}
+{{- $_ := set $hosts (printf "%s-tls" $name) (printf "%s.%s" $ui.host (include "bw-ingress.domain" $)) -}}
+{{- end -}}
+{{- end -}}
+{{- range $secret, $host := $hosts }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $secret }}
+  labels:
+    {{- include "bw-ingress.labels" $ | nindent 4 }}
+spec:
+  secretName: {{ $secret }}
+  dnsNames:
+    - {{ $host | quote }}
+  issuerRef:
+    kind: ClusterIssuer
+    name: {{ $.Values.tls.issuer }}
+  duration: {{ $.Values.tls.duration }}
+  renewBefore: {{ $.Values.tls.renewBefore }}
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    # A fresh key on every renewal.
+    rotationPolicy: Always
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+{{- end }}

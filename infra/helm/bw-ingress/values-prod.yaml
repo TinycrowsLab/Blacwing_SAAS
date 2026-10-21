@@ -1,0 +1,3 @@
+# Production issuance. Use only after the same release passed on staging.
+tls:
+  issuer: letsencrypt-prod

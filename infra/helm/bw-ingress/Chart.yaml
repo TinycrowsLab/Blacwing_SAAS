@@ -1,0 +1,6 @@
+apiVersion: v2
+name: bw-ingress
+description: Blackwing public ingress (INFRA-012) - cert-manager issuers and certificates, hardened Traefik TLS options, security-header, rate-limit and inflight middlewares, and IngressRoutes for the web console and the public API only.
+type: application
+version: 0.1.0
+appVersion: '0.1.0'

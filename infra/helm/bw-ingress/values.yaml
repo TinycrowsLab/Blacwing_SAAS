@@ -1,0 +1,107 @@
+# OFFLINE-STUB(online-porting #896): rendered and linted offline only; applied to a real cluster in the porting issue.
+# bw-ingress values (INFRA-012). Install into the namespace that holds the web and api
+# Services (bw-system): Traefik does not route across namespaces by default.
+#
+# Defaults are safe: certificates are issued by Let's Encrypt STAGING. Production issuance is
+# opt-in with values-prod.yaml, so iteration never burns Let's Encrypt production rate limits.
+
+# Public application domain (the Route53 zone from INFRA-007). Required.
+domain: ''
+
+web:
+  host: app # app.<domain>
+  service:
+    name: web
+    port: 3000
+
+api:
+  host: api # api.<domain>
+  service:
+    name: api
+    port: 13400
+  # The ONLY paths routed publicly on api.<domain>. /internal/* (Run Broker) is never listed
+  # here; the chart refuses to render if a path reaches into /internal or names the broker.
+  publicPaths:
+    - /v1
+    - /graphql
+
+tls:
+  # letsencrypt-staging | letsencrypt-prod
+  issuer: letsencrypt-staging
+  # 90 days, renewed 30 days before expiry. For the staging renewal drill set renewBefore close
+  # to duration (see values-renewal-drill.yaml and infra/k3s/cert-manager/README.md).
+  duration: 2160h
+  renewBefore: 720h
+  # Traefik TLS options (applied to every public router and as the cluster default).
+  minVersion: VersionTLS12
+  # TLS 1.2 suites: ECDHE + AEAD only. TLS 1.3 suites are fixed by Go and always strong.
+  cipherSuites:
+    - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+    - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+    - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+    - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+    - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+    - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+
+acme:
+  # Contact for expiry notices. Required.
+  email: ''
+  staging:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+  prod:
+    server: https://acme-v02.api.letsencrypt.org/directory
+  route53:
+    region: us-east-1
+    # Hosted zone id of the app zone (tofu output dns_app_zone_id). Required.
+    hostedZoneID: ''
+    # Static solver credentials are NOT used by default: cert-manager picks up its ambient AWS
+    # identity (see infra/k3s/cert-manager/README.md). Set this to the name of a Secret holding
+    # `access-key-id` / `secret-access-key` in the cert-manager namespace only as a fallback.
+    credentialsSecret: ''
+    accessKeyIDKey: access-key-id
+    secretAccessKeySecretKey: secret-access-key
+
+headers:
+  # Must stay >= 15552000 (180 days). Read the HSTS notes in infra/k3s/cert-manager/README.md
+  # before enabling includeSubdomains on a shared domain.
+  stsSeconds: 31536000
+  stsIncludeSubdomains: true
+  stsPreload: false
+  referrerPolicy: strict-origin-when-cross-origin
+  permissionsPolicy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  # Empty = leave the application's own CSP alone. X-Frame-Options: DENY is always set.
+  contentSecurityPolicy: ''
+
+rateLimit:
+  # Coarse per-source-IP limits. Per-token limits live in the application layer (CONTEXT_PACK 9).
+  average: 100
+  period: 1s
+  burst: 200
+
+inflight:
+  amount: 100
+
+# Internal UIs (Temporal UI, Grafana, OpenBao UI) are cluster-internal by default. An entry may
+# be published only behind BOTH an IP allowlist and an authenticating middleware (for example a
+# forward-auth in front of Keycloak); the chart refuses to render otherwise. Never anonymous.
+internalUis: {}
+# internalUis:
+#   grafana:
+#     enabled: true
+#     host: grafana # grafana.<domain>
+#     service: { name: grafana, port: 3000 }
+#     ipAllowList: ['203.0.113.0/24']
+#     authMiddleware: grafana-forward-auth # name of an existing Middleware in this namespace
+
+alerts:
+  # PrometheusRule (needs the Prometheus operator CRDs).
+  prometheusRule: true
+  # Loki ruler rule (ConfigMap picked up by the rules sidecar) for requests to the broker path.
+  lokiRule: true
+  lokiRuleLabel: loki_rule
+  certExpiryWarningDays: 14
+
+# Overrides for the k3s-packaged Traefik (kube-system HelmChartConfig).
+traefik:
+  helmChartConfig: true
+  accessLog: true

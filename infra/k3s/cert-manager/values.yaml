@@ -1,0 +1,50 @@
+# cert-manager Helm values (INFRA-012). Chart version: infra/k3s/cert-manager/versions.env.
+crds:
+  enabled: true
+  # Never delete CRDs (and with them every Certificate) on helm uninstall.
+  keep: true
+
+# DNS-01 propagation: check the challenge TXT record only against public resolvers, not the
+# cluster DNS (split-horizon or caching resolvers delay or hide it). cert-manager keeps
+# retrying with back-off while Route53 propagates.
+extraArgs:
+  - --dns01-recursive-nameservers-only
+  - --dns01-recursive-nameservers=1.1.1.1:53,8.8.8.8:53
+
+# Metrics for the certificate-expiry and renewal alerts (templates/alerts.yaml of bw-ingress).
+prometheus:
+  enabled: true
+  servicemonitor:
+    enabled: false
+
+# Namespace is Pod Security "restricted": every component runs non-root with no capabilities.
+securityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+containerSecurityContext: &hardened
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+webhook:
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext: *hardened
+cainjector:
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext: *hardened
+startupapicheck:
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext: *hardened
+
+# Solver credentials. cert-manager reaches Route53 through its ambient AWS identity; the
+# policy is tofu output dns_cert_manager_policy_arn. Nothing secret is set in this file.

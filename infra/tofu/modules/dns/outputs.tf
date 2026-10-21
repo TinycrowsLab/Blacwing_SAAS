@@ -46,6 +46,11 @@ output "ses_dns_placeholder" {
   }
 }
 
+output "cert_manager_policy_arn" {
+  description = "IAM policy for the cert-manager Route53 DNS-01 solver (attach to its node or workload role)."
+  value       = aws_iam_policy.cert_manager.arn
+}
+
 output "query_log_group_name" {
   description = "CloudWatch log group (us-east-1) receiving the zone's query log."
   value       = aws_cloudwatch_log_group.query.name
