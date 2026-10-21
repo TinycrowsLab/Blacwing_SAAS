@@ -1,0 +1,27 @@
+{
+  "$comment": "The single list of required status checks on main (CI-015, #153). `context` must equal a job name in `workflow`; scripts/apply-branch-protection.mjs --verify enforces that. `required-checks` and `go` are always-running aggregators, so path-conditional or skipped jobs never deadlock a merge.",
+  "required": [
+    { "context": "required-checks", "workflow": "pr.yml" },
+    { "context": "lint", "workflow": "pr.yml" },
+    { "context": "typecheck", "workflow": "pr.yml" },
+    { "context": "commitlint", "workflow": "pr.yml" },
+    { "context": "unit", "workflow": "test.yml" },
+    { "context": "integration", "workflow": "test.yml" },
+    { "context": "go", "workflow": "go.yml" },
+    { "context": "gitleaks", "workflow": "secret-scan.yml" },
+    { "context": "drift", "workflow": "drift.yml" },
+    { "context": "dependency-review", "workflow": "dependency-review.yml" }
+  ],
+  "notRequired": [
+    {
+      "context": "analyze (javascript-typescript)",
+      "workflow": "codeql.yml",
+      "reason": "Skipped on docs-only changes; gated by the code-scanning ruleset (porting #875)."
+    },
+    {
+      "context": "analyze (go)",
+      "workflow": "codeql.yml",
+      "reason": "Skipped on docs-only changes; gated by the code-scanning ruleset (porting #875)."
+    }
+  ]
+}
