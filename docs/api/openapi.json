@@ -214,7 +214,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, RUN_NOT_ACTIVE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -238,6 +238,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_ACTIVE": {
+                    "summary": "Run is not active",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+                      "title": "Run is not active",
+                      "status": 409,
+                      "code": "RUN_NOT_ACTIVE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -511,7 +521,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, RUN_NOT_ACTIVE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -535,6 +545,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_ACTIVE": {
+                    "summary": "Run is not active",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+                      "title": "Run is not active",
+                      "status": 409,
+                      "code": "RUN_NOT_ACTIVE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
