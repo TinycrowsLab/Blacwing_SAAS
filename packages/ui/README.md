@@ -32,7 +32,7 @@ Tailwind is pinned to 4.x: tokens live in CSS, there is no `tailwind.config` the
 ## Components
 
 Button, Input, Label, FormField, Select, Dialog, Sheet, DropdownMenu, Tooltip, Tabs, Table, Badge, Card,
-Toast, Skeleton, Avatar, Separator, Breadcrumb. Variants use `class-variance-authority`
+Toast, Skeleton, Avatar, Separator, Breadcrumb, HelpPopover, FirstRunChecklist. Variants use `class-variance-authority`
 (`buttonVariants`, `badgeVariants`, `toastVariants`). All forward refs and are typed without `any`.
 Interactive primitives are Radix underneath (roles, focus trap, keyboard) and marked `'use client'`;
 Button, Input, Badge, Card, Table, Skeleton, Breadcrumb are server-safe.
@@ -47,6 +47,16 @@ copy per error kind plus the `code` and a copyable `traceId`, never `message` or
 sanitises `detail`, and backs Retry off (1s, 2s, 4s, capped at 30s) while disabling it during a refetch. A 403
 always renders `PermissionDenied`, a reflection of the server decision, never a client guess. The error
 boundaries live in `apps/web` (`components/errors/route-error-boundary.tsx`, `app/(console)/error.tsx`).
+
+## Help and first-run components (CONSOLE help, #819)
+
+`HelpPopover` is an icon button that opens a short explanation of one concept (`HELP_TOPICS`: intrusiveness,
+approval gates, separation of duties, confirmed vs suspected, coverage, baseline states, budgets) with a deep link
+to the versioned guide. `resolveDocsLink` builds that link and returns `null` for anything but an `https` origin or
+a same-origin path, so the summary still shows when the link cannot be built. `FirstRunChecklist` renders ordered
+steps with their completion; the caller derives `done` from tenant data and decides visibility. Copy stays free of
+customer data and secrets (`help-topics.test.ts`). Empty-state copy and role-aware CTAs live in `apps/web`
+(`src/lib/empty-states.ts`) because they depend on the RBAC matrix.
 
 ## Bundle budget
 

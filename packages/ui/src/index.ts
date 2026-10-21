@@ -48,6 +48,20 @@ export {
   DropdownMenuTrigger,
 } from './components/dropdown-menu';
 export { FormField, type FormFieldProps } from './components/form-field';
+export {
+  FirstRunChecklist,
+  type FirstRunChecklistProps,
+  type FirstRunStep,
+} from './components/help/first-run-checklist';
+export { HelpPopover, type HelpPopoverProps } from './components/help/help-popover';
+export {
+  HELP_TOPIC_IDS,
+  HELP_TOPICS,
+  isHelpTopicId,
+  type HelpTopic,
+  type HelpTopicId,
+} from './components/help/help-topics';
+export { resolveDocsLink, type DocsLinkInput } from './components/help/resolve-docs-link';
 export { Input, type InputProps } from './components/input';
 export { Label } from './components/label';
 export {

@@ -1,6 +1,11 @@
 /** Client-side counters the console emits. Names match the issue's observability contract. */
 export type ClientEventName =
-  'error_boundary_trip' | 'permission_denied_view' | 'kill_requested' | 'gate_panel_rendered';
+  | 'error_boundary_trip'
+  | 'permission_denied_view'
+  | 'kill_requested'
+  | 'gate_panel_rendered'
+  | 'help_popover_opened'
+  | 'empty_state_cta_click';
 
 /** Redaction-safe payload: event, route name and the two support identifiers. Nothing else can be added. */
 export interface ClientEvent {
@@ -14,6 +19,8 @@ export interface ClientEvent {
   readonly idempotencyKey?: string;
   /** Gate number (1-3) of a rendered gate prompt panel. */
   readonly gate?: number;
+  /** Low-cardinality label: a help topic id or an empty-state kind. */
+  readonly topic?: string;
 }
 
 export type ClientEventSink = (event: ClientEvent) => void;
@@ -59,6 +66,7 @@ export function emitClientEvent(
     runId?: string | undefined;
     idempotencyKey?: string | undefined;
     gate?: number | undefined;
+    topic?: string | undefined;
   } = {},
 ): void {
   const payload: ClientEvent = {
@@ -71,6 +79,7 @@ export function emitClientEvent(
       ? { idempotencyKey: ids.idempotencyKey }
       : {}),
     ...(ids.gate !== undefined && GATE_NUMBERS.includes(ids.gate) ? { gate: ids.gate } : {}),
+    ...(ids.topic !== undefined && SAFE_TOKEN.test(ids.topic) ? { topic: ids.topic } : {}),
   };
   try {
     sink(payload);
