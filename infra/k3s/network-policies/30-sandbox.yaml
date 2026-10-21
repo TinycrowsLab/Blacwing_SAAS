@@ -1,0 +1,59 @@
+# Sandbox egress (INFRA-011 req 2, CONTEXT_PACK §4.1, §8.2): a pod labelled
+# blackwing.io/component=sandbox may reach exactly the egress gateway, the model
+# gateway and the Run Broker API, plus kube-dns on 53. Nothing else: no ipBlock, so
+# the internet, 169.254.0.0/16 (cloud metadata), fd00:ec2::254 and every IPv6 range are
+# unreachable. A pod without the label matches no allow and stays default-denied
+# (fail closed). Cross-run isolation: the sandbox namespace has no pod-to-pod allow;
+# run-isolation.template.yaml opens traffic only between pods of the SAME run.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sandbox-egress
+  namespace: sandbox
+  labels:
+    app.kubernetes.io/part-of: blackwing
+spec:
+  podSelector:
+    matchLabels:
+      blackwing.io/component: sandbox
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: bw-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: egress-gateway
+      ports:
+        - { protocol: TCP, port: 13128 }
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: bw-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: model-gateway
+      ports:
+        - { protocol: TCP, port: 13500 }
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: bw-system
+          podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [api, run-broker]
+      ports:
+        - { protocol: TCP, port: 13400 }
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }

@@ -1,0 +1,30 @@
+# Per-run policy, rendered by apply.sh --render-run (and the sandbox controller) for each
+# run: __RUN_ID__ is replaced by a DNS-label-safe run id. Pods of one run may talk to
+# each other. Pods of any other run cannot: the default-deny ingress already blocks
+# them, and this rule matches only the same blackwing.io/run value on both ends.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: run-__RUN_ID__-isolation
+  namespace: sandbox
+  labels:
+    app.kubernetes.io/part-of: blackwing
+    blackwing.io/run: __RUN_ID__
+spec:
+  podSelector:
+    matchLabels:
+      blackwing.io/component: sandbox
+      blackwing.io/run: __RUN_ID__
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              blackwing.io/component: sandbox
+              blackwing.io/run: __RUN_ID__
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              blackwing.io/component: sandbox
+              blackwing.io/run: __RUN_ID__

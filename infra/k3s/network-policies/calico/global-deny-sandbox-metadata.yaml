@@ -1,0 +1,19 @@
+# Calico GlobalNetworkPolicy (INFRA-011 req 6): explicit Deny of cloud metadata,
+# link-local and all IPv6 egress from sandbox pods. order 10 is evaluated before
+# Kubernetes NetworkPolicy (default tier, order 1000), so even a future broader allow
+# cannot open these ranges. Defence in depth with the IMDS hop-limit of 1 (INFRA-003).
+# Needs the Calico CRDs, so calico/install.sh applies it, not apply.sh.
+# Denied connections show up in Calico flow logs (felix FlowLogsFileEnabled), which feed
+# the sandbox denied-egress alert in prometheus-rules.yaml.
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: deny-sandbox-metadata-linklocal-ipv6
+spec:
+  order: 10
+  selector: projectcalico.org/namespace == 'sandbox'
+  types: [Egress]
+  egress:
+    - action: Deny
+      destination:
+        nets: [169.254.0.0/16, 169.254.169.254/32, fd00:ec2::254/128, fe80::/10, '::/0']

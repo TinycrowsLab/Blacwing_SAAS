@@ -1,0 +1,24 @@
+# Default-deny ingress AND egress in every Blackwing namespace (INFRA-011, CONTEXT_PACK
+# §4.1, §8.2, §8.6). apply.sh applies this file BEFORE any allow. A pod that no allow
+# rule selects, for example one with a mistyped label, gets no traffic at all.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: bw-system
+  labels:
+    app.kubernetes.io/part-of: blackwing
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: sandbox
+  labels:
+    app.kubernetes.io/part-of: blackwing
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]

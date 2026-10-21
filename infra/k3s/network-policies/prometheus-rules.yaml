@@ -1,0 +1,24 @@
+# Denied sandbox egress (INFRA-011 observability). Source: Calico denied-packet metrics
+# (calico-node / felix prometheus endpoint, cloud CNI). Denied connections from sandbox
+# pods are expected to be rare: the gateways are the only intended destinations.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: blackwing-sandbox-network
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: blackwing
+spec:
+  groups:
+    - name: blackwing.sandbox-network
+      rules:
+        - record: blackwing:sandbox_denied_egress:rate5m
+          expr: sum(rate(calico_denied_packets{policy=~".*sandbox.*|default-deny.*"}[5m]))
+        - alert: SandboxDeniedEgress
+          expr: blackwing:sandbox_denied_egress:rate5m > 0
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Sandbox pods are attempting egress to destinations outside the three allowed ones'
+            description: 'NetworkPolicy denied sandbox traffic. Check Calico flow logs for the source run and destination; metadata or link-local targets are a security event.'

@@ -1,0 +1,30 @@
+# Run Broker API ingress (INFRA-011 req 4, CONTEXT_PACK §4.1). The broker is served by
+# the api (dev placeholder: run-broker) on 13400. It accepts connections from sandbox
+# pods only (namespace sandbox, component=sandbox) on this rule; the api's platform
+# callers have their own narrow rules in 10-bw-system-apps.yaml, and the public
+# internet and other namespaces have none. L3/L4 cannot restrict the HTTP path, so the
+# api authenticates /internal/broker per run (broker issues).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-run-broker-from-sandbox
+  namespace: bw-system
+  labels:
+    app.kubernetes.io/part-of: blackwing
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [api, run-broker]
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: sandbox
+          podSelector:
+            matchLabels:
+              blackwing.io/component: sandbox
+      ports:
+        - { protocol: TCP, port: 13400 }
