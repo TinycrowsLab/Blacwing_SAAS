@@ -1,6 +1,15 @@
 import { SpanStatusCode, trace } from '@opentelemetry/api';
 
 import {
+  computeKillHalt,
+  type KillEgressIdentity,
+  type KillEgressOutcome,
+  type KillKeyOutcome,
+  type KillSandboxOutcome,
+  type KillWorkflowOutcome,
+} from '@blackwing/contracts';
+
+import {
   EGRESS_BACKOFF_BASE_MS,
   EGRESS_DEADLINE_MS,
   EGRESS_MAX_ATTEMPTS,
@@ -32,13 +41,6 @@ import type {
   SandboxControlClient,
   WorkflowControlClient,
 } from './ports.js';
-import type {
-  KillEgressIdentity,
-  KillEgressOutcome,
-  KillKeyOutcome,
-  KillSandboxOutcome,
-  KillWorkflowOutcome,
-} from '@blackwing/contracts';
 import type { Logger } from '@blackwing/logger';
 
 export interface KillActivityDeps {
@@ -634,15 +636,19 @@ export function createKillActivities(deps: KillActivityDeps): KillActivities {
         return { completed: false };
       }
       const completedAt = now();
+      const timings = computeKillHalt({ ...event, completedAt });
       const clean = event.egressBlockedAt !== null && event.status !== 'partially_halted';
       // Server timestamps only: the halt time is never taken from a client or from the signal payload.
-      const haltMs = Math.max(0, completedAt.getTime() - event.triggeredAt.getTime());
+      const haltMs = timings.haltMs ?? 0;
       const won = await repo.complete(tenantId, killEventId, {
         status: clean ? 'halted' : 'partially_halted',
         completedAt,
         haltMs,
       });
       if (won) deps.metrics.haltMs(haltMs);
+      if (timings.clamped) {
+        deps.log.warn({ killEventId }, 'kill timestamps went backwards; halt delta clamped');
+      }
       return { completed: true };
     },
 

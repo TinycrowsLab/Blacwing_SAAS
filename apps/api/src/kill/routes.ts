@@ -95,7 +95,7 @@ export function registerKillRoutes(app: FastifyInstance, options: KillRoutesOpti
       const principal = await options.authenticate(request);
       const params = idParamsSchema.safeParse(request.params);
       if (!params.success) throw new NotFoundError('kill event not found');
-      const event = await options.service.get(principal, params.data.id);
+      const event = await options.service.getView(principal, params.data.id);
       const { id, ...rest } = event;
       return reply
         .status(HTTP_OK)
