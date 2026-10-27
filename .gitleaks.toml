@@ -130,6 +130,9 @@ paths = [
   # named "secret". Found on unmerged branches, scanned because CI checks out all branches.
   '''^docs/api/openapi\.json$''',
   '''^apps/api/src/secrets/secrets\.service\.test\.ts$''',
+  # The OIDC config test loads a placeholder KEYCLOAK_CLIENT_SECRET literal ('client-secret-value')
+  # and asserts the loader reads it. A placeholder, not a credential.
+  '''^apps/web/src/lib/auth/config\.test\.ts$''',
   # Lockfile integrity hashes look high-entropy to generic rules.
   '''^pnpm-lock\.yaml$''',
 ]
