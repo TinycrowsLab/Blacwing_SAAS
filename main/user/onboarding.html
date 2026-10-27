@@ -382,8 +382,8 @@ commit, log or test fixture (§8.7).</p>
 <td>Every checkout shares the one <code>bwdev</code> stack and its volumes, but <code>pnpm dev:deps</code> generates new passwords for a fresh <code>.env</code>. Copy <code>.env</code> from the checkout that first created the stack (<code>cp ../&lt;first-checkout&gt;/.env .env</code>), then rerun <code>pnpm dev:deps</code>. Use <code>pnpm dev:deps:reset --yes</code> only if nobody else is using the stack.</td>
 </tr>
 <tr>
-<td><code>pnpm db:seed</code> fails with a missing-schema message</td>
-<td>Migrations are not applied. Run <code>pnpm db:migrate</code>, then <code>pnpm db:seed</code>. See <a href="../runbooks/dev-seed.html#safety-notes">dev-seed.md</a>. <code>pnpm db:seed:reset</code> re-creates the seeded rows.</td>
+<td><code>pnpm db:seed</code> logs <code>seed.skipped</code> for some steps</td>
+<td>Migrations for those tables are not applied. The log line names the missing table. Run <code>pnpm db:migrate</code>, then <code>pnpm db:seed</code>. See <a href="../runbooks/dev-seed.html#safety-notes">dev-seed.md</a>. <code>pnpm db:seed:reset</code> re-creates the seeded rows.</td>
 </tr>
 <tr>
 <td>Browser warns about the certificate, or Node says <code>unable to verify the first certificate</code></td>

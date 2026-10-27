@@ -145,13 +145,21 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <main class="content">
 <h1 id="dev-seed-data-pnpm-dbseed">Dev seed data (<code>pnpm db:seed</code>)</h1>
 <p>DEVENV-011 (#165). Seeds the local database with the minimum data for a first grey-box run against the
-local Juice Shop. Development and test only: the command refuses <code>NODE_ENV=staging|production</code>.</p>
+local Juice Shop. Development and test only: the command refuses every <code>NODE_ENV</code> except <code>development</code> and <code>test</code> (error code
+<code>SEED_FORBIDDEN_IN_PROD</code>), before it reads any config or opens a connection.</p>
 <h2 id="run-it">Run it</h2>
 <pre><code class="language-sh">pnpm dev:deps          # Postgres, Keycloak, OpenBao, ...
 pnpm db:migrate        # the seed never creates tables
 pnpm db:seed           # idempotent: run it as often as you like
 pnpm db:seed:reset     # delete the seeded tenant rows, then seed again
+pnpm db:seed --only=assets,credentials   # run only the named steps (see &quot;Steps&quot;)
 </code></pre>
+<h2 id="steps">Steps</h2>
+<p>The run is a list of named steps, in order. <code>tenant</code> (the tenant <code>acme</code> and its users) always runs. The
+others write tenant-scoped rows: <code>memberships</code>, <code>assets</code>, <code>credentials</code>, <code>standing-authorisations</code> and
+<code>role-matrices</code>. <code>--only=&lt;a,b&gt;</code> runs just the named steps. An unknown or empty name is refused before anything
+is written. A step left out by <code>--only</code> is not reported as skipped. <code>--reset</code> clears every seeded row first,
+whatever <code>--only</code> says, so a reset never leaves a child row behind its deleted asset.</p>
 <p>It reads <code>.env</code> at the repository root: <code>DATABASE_URL</code> (app role, RLS applies), <code>MIGRATION_DATABASE_URL</code>
 (owner role, platform rows only), <code>BW_TARGET_JUICE_SHOP_URL</code> (default <code>http://127.0.0.1:13000</code>) and,
 optionally, <code>BW_DEV_KEYCLOAK_PUBLIC_URL</code>, <code>BW_DEV_KEYCLOAK_REALM</code>, <code>BW_DEV_KEYCLOAK_ADMIN_USER</code> and
@@ -199,11 +207,12 @@ without duplicates. Every tenant-scoped row is written as the app role inside a 
 random other tenant sees nothing. It fails if any seeded row leaks.</p>
 <h2 id="safety-notes">Safety notes</h2>
 <ul>
-<li><strong>Missing schema.</strong> Before writing anything, the seed compares the catalogue with
-<code>SEED_SCHEMA_CONTRACT</code> (<code>packages/db/src/seed/schema-contract.ts</code>). It stops on the first run and names
-each missing table or column. The tables belong to the DB/domain epics (tenancy #94 and later issues).
-Until those migrations land, the integration test uses a test-only fixture
-(<code>src/seed/__fixtures__/seed-tables.sql</code>) that follows the §7 RLS pattern.</li>
+<li><strong>Missing schema.</strong> The seed compares the catalogue with <code>SEED_SCHEMA_CONTRACT</code>
+(<code>packages/db/src/seed/schema-contract.ts</code>). The platform tables (<code>tenants</code>, <code>users</code>) must exist, or the run
+stops before writing anything and names what is missing. A tenant-scoped step whose tables are missing (or
+whose dependency was skipped) is skipped and logged as <code>seed.skipped</code> with the missing table or column, and
+the rest of the seed still runs. Run <code>pnpm db:migrate</code> to create them. The integration test uses a test-only
+fixture (<code>src/seed/__fixtures__/seed-tables.sql</code>) that follows the §7 RLS pattern.</li>
 <li><strong>Separation of duties (§8.4).</strong> A plan where the requester is also the approver is rejected before any
 write.</li>
 <li><strong>Keycloak subjects.</strong> With admin credentials set, the seed looks up each user&#39;s <code>sub</code> in the dev realm.
@@ -212,8 +221,9 @@ keeps a <code>pending:&lt;username&gt;</code> subject, and a subject that was co
 <li><strong>SA signature.</strong> The SA carries a dev EdDSA JWS whose key is generated for the run and then thrown away.
 No trust store holds that key, so the envelope verifier (#375) rejects the signature until the signing
 service exists. A seeded SA cannot pass §8.1 verification by accident.</li>
-<li><strong>Audit.</strong> <code>packages/audit</code> has no ledger writer yet, so the seed writes no audit events. Production
-tenants are provisioned through onboarding, which audits, and are never seeded.</li>
+<li><strong>Audit.</strong> The seed writes no audit event. <code>@blackwing/audit</code> depends on <code>@blackwing/db</code>, so this package
+cannot call the ledger emitter, and a raw insert would bypass the hash chain. The run logs <code>seed.complete</code>
+instead. Production tenants are provisioned through onboarding, which audits, and are never seeded.</li>
 <li><strong>Secrets.</strong> OpenBao secrets are referenced, never written. The log summary contains counts and names
 only.</li>
 </ul>
