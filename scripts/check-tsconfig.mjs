@@ -103,6 +103,13 @@ export const EXCEPTIONS = Object.freeze({
     lib: Object.freeze(['lib.es2023.d.ts', 'lib.dom.d.ts', 'lib.dom.iterable.d.ts']),
     jsx: ts.JsxEmit.Preserve,
   }),
+  // The UI kit is a browser (React) library consumed by apps/web through its bundler.
+  'packages/ui': Object.freeze({
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    lib: Object.freeze(['lib.es2023.d.ts', 'lib.dom.d.ts', 'lib.dom.iterable.d.ts']),
+    jsx: ts.JsxEmit.ReactJSX,
+  }),
 });
 
 const DEFAULT_SETTINGS = Object.freeze({

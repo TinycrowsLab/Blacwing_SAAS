@@ -72,7 +72,8 @@ build. The web epic adds the Next.js specifics on top of this file: the `next` p
 `next-env.d.ts`, `.next/types` and path aliases. If Next.js ever needs a config that cannot be
 composite (for example `noEmit`), give it a separate file through `typescript.tsconfigPath` in
 `next.config`, and keep `tsconfig.json` as the strict composite project. No other member may deviate.
-`check-tsconfig` holds `apps/web` to exactly these values and every other member to the base.
+`packages/ui` (the React kit that `apps/web` bundles) takes the same module settings with `jsx: react-jsx`.
+`check-tsconfig` holds `apps/web` and `packages/ui` to exactly these values and every other member to the base.
 
 ### Why there is no `tsconfig.build.json`
 
