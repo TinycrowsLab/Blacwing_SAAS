@@ -19,7 +19,9 @@
   "paths": {
     "/kill": {
       "post": {
-        "tags": ["kill"],
+        "tags": [
+          "kill"
+        ],
         "operationId": "triggerKill",
         "summary": "Trigger the kill switch for a run, asset or the whole tenant",
         "description": "Requires kill:trigger and the Cedar Kill::trigger resource check. An asset_owner may kill only assets they own; only org_admin may kill the tenant. Propagation is asynchronous: poll the Location.",
@@ -376,7 +378,9 @@
     },
     "/kill/{id}": {
       "get": {
-        "tags": ["kill"],
+        "tags": [
+          "kill"
+        ],
         "operationId": "getKillEvent",
         "summary": "A kill event with its halt timings",
         "security": [
@@ -916,7 +920,12 @@
           },
           "scope": {
             "type": "string",
-            "enum": ["run", "asset", "tenant", "global"]
+            "enum": [
+              "run",
+              "asset",
+              "tenant",
+              "global"
+            ]
           },
           "scopeRefId": {
             "anyOf": [
@@ -931,7 +940,13 @@
           },
           "source": {
             "type": "string",
-            "enum": ["console", "api", "soc_link", "operator", "system"]
+            "enum": [
+              "console",
+              "api",
+              "soc_link",
+              "operator",
+              "system"
+            ]
           },
           "actorType": {
             "type": "string",
@@ -949,7 +964,13 @@
           },
           "status": {
             "type": "string",
-            "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
+            "enum": [
+              "initiated",
+              "propagating",
+              "halted",
+              "partially_halted",
+              "failed"
+            ]
           },
           "triggeredAt": {
             "type": "string",
@@ -1043,10 +1064,17 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": ["blocked", "already_blocked", "failed"]
+                      "enum": [
+                        "blocked",
+                        "already_blocked",
+                        "failed"
+                      ]
                     }
                   },
-                  "required": ["identity", "outcome"],
+                  "required": [
+                    "identity",
+                    "outcome"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -1077,10 +1105,18 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": ["terminated", "already_gone", "terminating", "failed"]
+                      "enum": [
+                        "terminated",
+                        "already_gone",
+                        "terminating",
+                        "failed"
+                      ]
                     }
                   },
-                  "required": ["sandboxId", "outcome"],
+                  "required": [
+                    "sandboxId",
+                    "outcome"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -1101,10 +1137,17 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": ["revoked", "already_revoked", "failed"]
+                      "enum": [
+                        "revoked",
+                        "already_revoked",
+                        "failed"
+                      ]
                     }
                   },
-                  "required": ["keyId", "outcome"],
+                  "required": [
+                    "keyId",
+                    "outcome"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -1125,10 +1168,18 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": ["cancelled", "already_closed", "not_found", "failed"]
+                      "enum": [
+                        "cancelled",
+                        "already_closed",
+                        "not_found",
+                        "failed"
+                      ]
                     }
                   },
-                  "required": ["workflowId", "outcome"],
+                  "required": [
+                    "workflowId",
+                    "outcome"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -1204,7 +1255,11 @@
         "properties": {
           "scope": {
             "type": "string",
-            "enum": ["run", "asset", "tenant"]
+            "enum": [
+              "run",
+              "asset",
+              "tenant"
+            ]
           },
           "scopeRefId": {
             "type": "string",
@@ -1215,7 +1270,10 @@
             "maxLength": 2000
           }
         },
-        "required": ["scope", "reason"],
+        "required": [
+          "scope",
+          "reason"
+        ],
         "additionalProperties": false
       },
       "KillTriggerResponse": {
@@ -1227,7 +1285,13 @@
           },
           "status": {
             "type": "string",
-            "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
+            "enum": [
+              "initiated",
+              "propagating",
+              "halted",
+              "partially_halted",
+              "failed"
+            ]
           },
           "triggeredAt": {
             "type": "string",
@@ -1235,7 +1299,11 @@
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
           }
         },
-        "required": ["killEventId", "status", "triggeredAt"],
+        "required": [
+          "killEventId",
+          "status",
+          "triggeredAt"
+        ],
         "additionalProperties": false
       },
       "Problem": {
@@ -1277,12 +1345,22 @@
                   "type": "string"
                 }
               },
-              "required": ["path", "message", "code"],
+              "required": [
+                "path",
+                "message",
+                "code"
+              ],
               "additionalProperties": false
             }
           }
         },
-        "required": ["type", "title", "status", "code", "traceId"],
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code",
+          "traceId"
+        ],
         "additionalProperties": false
       }
     }
