@@ -28,8 +28,9 @@ describe('temporal dev service', () => {
   });
 
   afterAll(async () => {
-    await connection.close();
-    await native.close();
+    // Unset when beforeAll failed to connect; keep the real connect error as the only failure.
+    await (connection as Connection | undefined)?.close();
+    await (native as NativeConnection | undefined)?.close();
   });
 
   it('has the blackwing-dev namespace with the configured retention', async () => {

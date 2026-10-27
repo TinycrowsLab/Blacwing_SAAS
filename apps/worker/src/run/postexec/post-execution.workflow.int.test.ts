@@ -46,8 +46,9 @@ describe('PostExecutionWorkflow on Temporal', () => {
   });
 
   afterAll(async () => {
-    await connection.close();
-    await native.close();
+    // Unset when beforeAll failed to connect; keep the real connect error as the only failure.
+    await (connection as Connection | undefined)?.close();
+    await (native as NativeConnection | undefined)?.close();
   });
 
   /** Runs the workflow, waits for Gate 3, sends `signals`, and returns the outcome (or the failure). */

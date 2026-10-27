@@ -101,6 +101,16 @@ jobs:
               sleep $((attempt * 5))
             done
           done < infra/images.lock
+      # apps/worker integration tests talk to Temporal on 127.0.0.1:17233 in the blackwing-dev namespace
+      # (not Testcontainers). Start the same compose services `pnpm dev:deps` uses (pinned digests in
+      # infra/compose), then run temporal-bootstrap to create the namespace and search attributes.
+      - name: Start Temporal dev stack
+        run: |
+          set -euo pipefail
+          node scripts/dev-deps.mjs config
+          compose() { docker compose -p bwdev --env-file .env -f infra/compose/docker-compose.dev.yml "$@"; }
+          compose up -d --wait --wait-timeout 300 temporal
+          compose up --exit-code-from temporal-bootstrap temporal-bootstrap
       - name: Integration tests (includes cross-tenant RLS denial, 8.6)
         run: pnpm test:int:ci
       - name: Dump container logs on failure

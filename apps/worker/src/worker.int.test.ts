@@ -53,7 +53,7 @@ describe('worker process', () => {
 
   afterAll(async () => {
     await worker?.shutdown('test cleanup');
-    await connection.close();
+    await (connection as Connection | undefined)?.close();
   });
 
   it('serves /healthz and completes noopWorkflow through the client', async () => {

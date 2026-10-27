@@ -43,8 +43,9 @@ describe('custom search attributes (dev Temporal)', () => {
   });
 
   afterAll(async () => {
-    await connection.close();
-    await native.close();
+    // Unset when beforeAll failed to connect; keep the real connect error as the only failure.
+    await (connection as Connection | undefined)?.close();
+    await (native as NativeConnection | undefined)?.close();
   });
 
   it('registers the three attributes, and a second registration changes nothing', async () => {
