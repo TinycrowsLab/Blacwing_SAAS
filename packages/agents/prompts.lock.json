@@ -34,5 +34,8 @@
   },
   "validator-assistant": {
     "1.0.0": "e72c6750e2cde43d8b19e87a96a85ccd7978a88a4208a991ef5d0247efd77d31"
+  },
+  "web-api-specialist": {
+    "1.0.0": "2d49c671fbf3eadbaeb30e3533b6629077df179a518679a50c579a5d276335cf"
   }
 }
