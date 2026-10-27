@@ -7,7 +7,7 @@ the check name).
 
 | Check | Runs | Fails when |
 |---|---|---|
-| `lint` | `pnpm lint` (ESLint 9, `--max-warnings=0` in every member and in `lint:root`), then `pnpm format:check` | any ESLint error or warning (for example an `any`), or a file Prettier would rewrite |
+| `lint` | `pnpm lint` (ESLint 9, `--max-warnings=0` in every member and in `lint:root`), then `pnpm format:check`, then `pnpm lint:prompts` | any ESLint error or warning (for example an `any`), a file Prettier would rewrite, or a persona prompt that fails the prompt lint (`packages/agents/lint/README.md`) |
 | `typecheck` | `pnpm typecheck` (`tsc -b` per member through Turborepo, cached) | any type error |
 | `commitlint` | `node scripts/ci-pr.mjs commitlint` | any commit in the range is not a Conventional Commit |
 | `boundaries` | `pnpm boundaries:report` (dependency-cruiser, FOUND-005) | a forbidden import, a cycle or a stale `docs/architecture/dependency-graph.md`; never skipped, even for docs-only changes; uploads `boundaries-report.json` |
@@ -41,7 +41,7 @@ the check name).
 ## Reproducing a failure locally
 
 ```sh
-pnpm lint && pnpm format:check                      # lint
+pnpm lint && pnpm format:check && pnpm lint:prompts   # lint
 pnpm typecheck                                      # typecheck
 node scripts/ci-pr.mjs commitlint                   # commitlint over origin/main..HEAD
 pnpm typecheck 2>&1 | node scripts/ci-annotate.mjs --task typecheck   # the annotated output CI shows

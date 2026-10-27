@@ -1,0 +1,148 @@
+{
+  "rules": [
+    {
+      "id": "sqli-tautology",
+      "description": "SQL injection tautology",
+      "pattern": "['\"]\\s*or\\s+['\"]?\\w+['\"]?\\s*=\\s*['\"]?\\w+"
+    },
+    {
+      "id": "sqli-union-select",
+      "description": "SQL injection UNION SELECT",
+      "pattern": "\\bunion\\b(\\s+all)?\\s+select\\b"
+    },
+    {
+      "id": "sqli-stacked-statement",
+      "description": "SQL injection stacked statement",
+      "pattern": ";\\s*(drop\\s+table|truncate\\s+table|delete\\s+from|xp_cmdshell)\\b"
+    },
+    {
+      "id": "sqli-time-based",
+      "description": "time-based SQL injection function",
+      "pattern": "\\bwaitfor\\s+delay\\b|\\bpg_sleep\\s*\\(|\\bsleep\\s*\\(\\s*\\d"
+    },
+    {
+      "id": "xss-script-element",
+      "description": "script element",
+      "pattern": "<\\s*/?\\s*script\\b"
+    },
+    {
+      "id": "xss-event-handler",
+      "description": "inline event handler attribute",
+      "pattern": "\\bon(error|load|mouseover|focus|toggle)\\s*="
+    },
+    {
+      "id": "xss-script-sink",
+      "description": "script sink call such as alert(1)",
+      "pattern": "\\b(alert|prompt|confirm)\\s*\\(\\s*(['\"`\\d]|document\\.)"
+    },
+    {
+      "id": "xss-javascript-uri",
+      "description": "javascript: URI with a call",
+      "pattern": "javascript:\\s*[\\w.]+\\s*\\("
+    },
+    {
+      "id": "path-traversal",
+      "description": "path traversal sequence",
+      "pattern": "(\\.\\.[\\\\/]){2,}|%2e%2e(%2f|%5c|/|\\\\)|%252e%252e"
+    },
+    {
+      "id": "sensitive-file-read",
+      "description": "reference to a system credential or configuration file",
+      "pattern": "/etc/(passwd|shadow)\\b|\\b(boot|win)\\.ini\\b"
+    },
+    {
+      "id": "shell-substitution",
+      "description": "shell command substitution",
+      "pattern": "\\$\\(\\s*(id|whoami|uname|cat|curl|wget|bash|sh)\\b|`\\s*(id|whoami|uname|curl|wget)\\s*`"
+    },
+    {
+      "id": "shell-chaining",
+      "description": "shell command chained after ; or &",
+      "pattern": "[;&]\\s*(cat|id|whoami|uname|nc|bash|sh|wget|curl)\\s+[-/\\w]"
+    },
+    {
+      "id": "shell-download-execute",
+      "description": "download piped into a shell",
+      "pattern": "\\b(curl|wget)\\b[^|\\n]*\\|\\s*(sudo\\s+)?(ba|z|da)?sh\\b"
+    },
+    {
+      "id": "reverse-shell",
+      "description": "reverse shell construct",
+      "pattern": "/dev/tcp/|\\bbash\\s+-i\\b|\\bnc(at)?\\s+(-\\w+\\s+)*-e\\b"
+    },
+    {
+      "id": "offensive-tool-flags",
+      "description": "offensive tool invoked with flags",
+      "pattern": "\\b(sqlmap|hydra|msfvenom|msfconsole)\\b\\s+-{1,2}[a-z]"
+    },
+    {
+      "id": "template-injection",
+      "description": "server-side template or expression-language injection probe",
+      "pattern": "\\{\\{\\s*\\d+\\s*[*+]\\s*\\d+\\s*\\}\\}|\\$\\{\\s*\\d+\\s*\\*\\s*\\d+\\s*\\}|\\$\\{\\s*jndi:"
+    },
+    {
+      "id": "prototype-pollution",
+      "description": "prototype pollution gadget",
+      "pattern": "__proto__|\\bconstructor\\.prototype\\b"
+    },
+    {
+      "id": "cloud-metadata-endpoint",
+      "description": "cloud instance metadata endpoint",
+      "pattern": "169\\.254\\.169\\.254|metadata\\.google\\.internal|/latest/meta-data"
+    },
+    {
+      "id": "raw-http-request",
+      "description": "raw HTTP request line",
+      "pattern": "^\\s*(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\\s+\\S+\\s+HTTP/\\d(\\.\\d)?",
+      "flags": ""
+    },
+    {
+      "id": "encoded-payload",
+      "description": "percent-encoded or byte-sequence payload",
+      "pattern": "%3c\\s*script|%27(%20|\\s)*or\\b|%3cimg|%0d%0a|(\\\\x[0-9a-f]{2}){8,}"
+    },
+    {
+      "id": "xml-external-entity",
+      "description": "XML entity or DOCTYPE declaration",
+      "pattern": "<!ENTITY\\b|<!DOCTYPE[^>]*\\["
+    }
+  ],
+  "allowlist": [
+    {
+      "rule": "standard-id",
+      "file": "packages/agents/prompts/reporter/1.0.0.md",
+      "token": "A0x",
+      "reason": "Format description of identifiers in the reporter prompt, not a citation."
+    },
+    {
+      "rule": "standard-id",
+      "file": "packages/agents/prompts/reporter/1.0.0.md",
+      "token": "API0x",
+      "reason": "Format description of identifiers in the reporter prompt, not a citation."
+    },
+    {
+      "rule": "standard-id",
+      "file": "packages/agents/prompts/reporter/1.0.0.md",
+      "token": "CWE-###",
+      "reason": "Format description of identifiers in the reporter prompt, not a citation."
+    },
+    {
+      "rule": "standard-id",
+      "file": "packages/agents/prompts/reporter/1.0.0.md",
+      "token": "ASVS v5.0.0-*",
+      "reason": "Format description of identifiers in the reporter prompt, not a citation."
+    },
+    {
+      "rule": "standard-id",
+      "file": "packages/agents/prompts/web-api-specialist/1.0.0.md",
+      "token": "API7",
+      "reason": "Tracked debt: released web-api-specialist@1.0.0 (hash-locked) cites a non-padded ID. Correcting it needs a new prompt version through the release process (REGISTRY-008). Remove this entry with that fix."
+    },
+    {
+      "rule": "standard-id",
+      "file": "packages/agents/prompts/web-api-specialist/1.0.0.md",
+      "token": "API3",
+      "reason": "Tracked debt: released web-api-specialist@1.0.0 (hash-locked) cites a non-padded ID. Correcting it needs a new prompt version through the release process (REGISTRY-008). Remove this entry with that fix."
+    }
+  ]
+}

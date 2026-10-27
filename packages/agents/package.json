@@ -11,7 +11,8 @@
   "scripts": {
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
-    "typecheck": "tsc -b --pretty false"
+    "typecheck": "tsc -b --pretty false",
+    "lint:prompts": "tsx src/prompt-lint-cli.ts"
   },
   "dependencies": {
     "@blackwing/contracts": "workspace:*",
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "fast-check": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

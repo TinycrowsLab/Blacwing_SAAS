@@ -84,6 +84,11 @@ jobs:
       - name: Prettier check
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: pnpm format:check
+      # Prompt lint (#652): structure, forbidden content, standard IDs and placeholders of every persona
+      # prompt and the base preamble. Not skipped for docs-only change sets: prompts are .md files.
+      - name: Prompt lint
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: pnpm lint:prompts
 
   typecheck:
     name: typecheck
