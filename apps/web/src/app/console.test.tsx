@@ -10,10 +10,13 @@ const REDIRECT = 'NEXT_REDIRECT';
 const redirect = vi.fn((to: string): never => {
   throw new Error(`${REDIRECT}:${to}`);
 });
-vi.mock('next/navigation', () => ({ redirect: (to: string) => redirect(to) }));
+vi.mock('next/navigation', () => ({
+  redirect: (to: string) => redirect(to),
+  usePathname: () => '/runs',
+}));
 
 const { default: ConsoleLayout } = await import('./(console)/layout');
-const { AppShell } = await import('./(console)/app-shell');
+const { AppShell } = await import('../components/shell/app-shell');
 const { Providers } = await import('./providers');
 
 const session: Session = {
@@ -44,8 +47,7 @@ describe('(console) layout', () => {
     getSession.mockResolvedValue(session);
     const html = renderToString(await ConsoleLayout({ children: <p>page body</p> }));
     expect(html).toContain('data-testid="app-shell"');
-    expect(html).toContain('Owner');
-    expect(html).toContain('owner, analyst');
+    expect(html).toContain('>O<');
     expect(html).toContain('page body');
   });
 
@@ -59,15 +61,14 @@ describe('(console) layout', () => {
 });
 
 describe('AppShell', () => {
-  it('falls back to the email when the name is empty and renders the nav slot', () => {
+  it('falls back to the email initial when the name is empty', () => {
     const html = renderToString(
-      <AppShell user={{ ...session.user, name: '' }} roles={[]} nav={<nav>nav slot</nav>}>
+      <AppShell user={{ ...session.user, name: '' }} roles={[]}>
         c
       </AppShell>,
     );
-    expect(html).toContain('owner@acme.test');
-    expect(html).toContain('nav slot');
-    expect(html).not.toContain('()');
+    expect(html).toContain('>O<');
+    expect(html).toContain('id="main-content"');
   });
 });
 

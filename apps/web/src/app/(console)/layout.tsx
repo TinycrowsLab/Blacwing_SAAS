@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-import { AppShell } from './app-shell';
+import { AppShell } from '../../components/shell/app-shell';
 import { getSession } from '../../lib/session';
 
 import type { ReactNode } from 'react';
