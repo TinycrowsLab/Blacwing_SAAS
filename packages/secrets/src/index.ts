@@ -56,3 +56,49 @@ export {
   redactionRunToken,
   type RedactionHandlerDeps,
 } from './redaction-endpoint.js';
+
+// Internal resolve API: the single audited read path for secret values (SECRETS-006, §8.7).
+export {
+  createSecretResolver,
+  DEFAULT_SERVICE_MATRIX,
+  SECRET_PURPOSES,
+  type ExternalSecretFetcher,
+  type ResolveAuthorizationQuery,
+  type ResolveCaller,
+  type ResolveInput,
+  type ResolveLogEntry,
+  type ResolveMetrics,
+  type ResolvedSecret,
+  type RunStanding,
+  type RunStandingReader,
+  type SecretRecord,
+  type SecretResolver,
+  type SecretResolverDeps,
+  type SecretStore,
+  type ServiceGrant,
+} from './resolve.js';
+export {
+  createSecretResolveHandler,
+  resolveRequestSchema,
+  SECRET_RESOLVE_PATH,
+  type SecretResolveHandlerDeps,
+} from './resolve-endpoint.js';
+export {
+  DEFAULT_RESOLVE_RATE_LIMIT_PER_MINUTE,
+  MAX_RESOLVE_CACHE_TTL_MS,
+  resolveConfigFromEnv,
+  type ResolveConfig,
+} from './resolve-config.js';
+export { createPgSecretStore, type RunInTenant, type TenantSql } from './resolve-store.js';
+export {
+  createServiceTokenVerifier,
+  SECRET_SERVICES,
+  ServiceAuthError,
+  signServiceToken,
+  type SecretService,
+  type ServiceAuthFailure,
+  type ServiceIdentity,
+  type ServiceTokenRevocations,
+  type ServiceTokenVerifier,
+  type SignServiceTokenInput,
+} from './service-auth.js';

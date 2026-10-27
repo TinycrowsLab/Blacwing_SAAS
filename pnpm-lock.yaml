@@ -1079,12 +1079,21 @@ importers:
 
   packages/secrets:
     dependencies:
+      '@blackwing/audit':
+        specifier: workspace:*
+        version: link:../audit
+      '@blackwing/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@blackwing/crypto':
         specifier: workspace:*
         version: link:../crypto
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../errors
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@blackwing/testing':
         specifier: workspace:*

@@ -54,6 +54,7 @@
         "runbooks/renovate.md",
         "runbooks/search-attributes.md",
         "runbooks/secret-scanning.md",
+        "runbooks/secrets-resolve.md",
         "runbooks/ses-email.md",
         "runbooks/trivy.md"
       ]

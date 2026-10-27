@@ -78,6 +78,14 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   IDEMPOTENCY_KEY_MISMATCH: 422,
   AUDIT_EVENT_INVALID: 422,
   KEK_UNAVAILABLE: 503,
+  SERVICE_AUTH_FAILED: 401,
+  TENANT_MISMATCH: 403,
+  SECRET_PURPOSE_DENIED: 403,
+  SECRET_NOT_FOUND: 404,
+  SECRET_DISABLED: 409,
+  SECRET_SHREDDED: 410,
+  RUN_KILLED: 423,
+  EXTERNAL_BACKEND_UNAVAILABLE: 503,
   INTERNAL: 500,
 };
 
@@ -91,7 +99,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(63);
+    expect(ERROR_CODE_LIST).toHaveLength(71);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -116,7 +124,7 @@ describe('error-code registry', () => {
     );
   });
 
-  it('marks only RATE_LIMITED, TX_RETRY_EXHAUSTED, TEMPORAL_UNAVAILABLE, DB_UNAVAILABLE, SBX_DRIVER_UNAVAILABLE and KEK_UNAVAILABLE as retryable', () => {
+  it('marks only RATE_LIMITED, TX_RETRY_EXHAUSTED, TEMPORAL_UNAVAILABLE, DB_UNAVAILABLE, SBX_DRIVER_UNAVAILABLE, KEK_UNAVAILABLE and EXTERNAL_BACKEND_UNAVAILABLE as retryable', () => {
     expect(ERROR_CODE_LIST.filter((code) => ERROR_CODES[code].retryable)).toEqual([
       'RATE_LIMITED',
       'TX_RETRY_EXHAUSTED',
@@ -124,6 +132,7 @@ describe('error-code registry', () => {
       'DB_UNAVAILABLE',
       'SBX_DRIVER_UNAVAILABLE',
       'KEK_UNAVAILABLE',
+      'EXTERNAL_BACKEND_UNAVAILABLE',
     ]);
   });
 
@@ -243,6 +252,14 @@ describe('error-code registry', () => {
       | 'RUN_NOT_ACTIVE'
       | 'AUDIT_EVENT_INVALID'
       | 'KEK_UNAVAILABLE'
+      | 'SERVICE_AUTH_FAILED'
+      | 'TENANT_MISMATCH'
+      | 'SECRET_PURPOSE_DENIED'
+      | 'SECRET_NOT_FOUND'
+      | 'SECRET_DISABLED'
+      | 'SECRET_SHREDDED'
+      | 'RUN_KILLED'
+      | 'EXTERNAL_BACKEND_UNAVAILABLE'
       | 'INTERNAL'
     >();
     expectTypeOf<HttpStatusOf<'NOT_FOUND'>>().toEqualTypeOf<404>();

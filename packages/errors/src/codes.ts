@@ -176,6 +176,22 @@ const DEFINITIONS = {
   // Per-tenant KEK (SECRETS-001): OpenBao sealed, unreachable or the AppRole login failed. Fail closed:
   // no shared-key fallback; the caller retries later.
   KEK_UNAVAILABLE: { status: 503, title: 'Tenant key unavailable', retryable: true },
+  // Internal secret resolve API (SECRETS-006, §8.6/§8.7/§8.8). Every refusal fails closed and names only the
+  // coarse reason: an unknown or revoked service identity (401), a tenant that does not match the run or
+  // the reference (403), a service asking for a purpose outside its matrix (403), a secret that is gone or
+  // switched off (404/410/409), a killed or inactive run (423/409) and an unreachable customer-owned store (503).
+  SERVICE_AUTH_FAILED: { status: 401, title: 'Service authentication failed', retryable: false },
+  TENANT_MISMATCH: { status: 403, title: 'Tenant mismatch', retryable: false },
+  SECRET_PURPOSE_DENIED: { status: 403, title: 'Secret purpose not permitted', retryable: false },
+  SECRET_NOT_FOUND: { status: 404, title: 'Secret not found', retryable: false },
+  SECRET_DISABLED: { status: 409, title: 'Secret disabled', retryable: false },
+  SECRET_SHREDDED: { status: 410, title: 'Secret shredded', retryable: false },
+  RUN_KILLED: { status: 423, title: 'Run killed', retryable: false },
+  EXTERNAL_BACKEND_UNAVAILABLE: {
+    status: 503,
+    title: 'External secret backend unavailable',
+    retryable: true,
+  },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

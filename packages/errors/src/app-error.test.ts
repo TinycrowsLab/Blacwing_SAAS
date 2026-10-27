@@ -162,6 +162,15 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'AUDIT_EVENT_INVALID',
   // Raised by @blackwing/secrets (SECRETS-001) as a plain AppError.
   'KEK_UNAVAILABLE',
+  // Raised by @blackwing/secrets' internal resolve API (SECRETS-006) as plain AppErrors.
+  'SERVICE_AUTH_FAILED',
+  'TENANT_MISMATCH',
+  'SECRET_PURPOSE_DENIED',
+  'SECRET_NOT_FOUND',
+  'SECRET_DISABLED',
+  'SECRET_SHREDDED',
+  'RUN_KILLED',
+  'EXTERNAL_BACKEND_UNAVAILABLE',
 ];
 
 describe('AppError subclasses', () => {

@@ -214,7 +214,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE, SECRET_DISABLED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -258,6 +258,16 @@
                       "title": "Run is not active",
                       "status": 409,
                       "code": "RUN_NOT_ACTIVE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_DISABLED": {
+                    "summary": "Secret disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+                      "title": "Secret disabled",
+                      "status": 409,
+                      "code": "SECRET_DISABLED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -531,7 +541,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE, SECRET_DISABLED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -577,13 +587,23 @@
                       "code": "RUN_NOT_ACTIVE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
+                  },
+                  "SECRET_DISABLED": {
+                    "summary": "Secret disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+                      "title": "Secret disabled",
+                      "status": 409,
+                      "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
                   }
                 }
               }
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -677,6 +697,16 @@
                       "title": "Invalid prompt file",
                       "status": 422,
                       "code": "PROMPT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PROMPT_PLACEHOLDER_MISSING": {
+                    "summary": "Prompt placeholder unfilled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
+                      "title": "Prompt placeholder unfilled",
+                      "status": 422,
+                      "code": "PROMPT_PLACEHOLDER_MISSING",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
