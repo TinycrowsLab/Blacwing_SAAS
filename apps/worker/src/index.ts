@@ -86,3 +86,11 @@ export { createOtelSessionMetrics } from './agent-session/metrics.js';
 export { runAgentSessionLifecycle, SandboxProvisionError } from './agent-session/lifecycle.js';
 export type * from './agent-session/ports.js';
 export * from './agent-session/types.js';
+export { createReconActivities, type ReconActivityDeps } from './run/recon/activities.js';
+export { createOtelReconMetrics } from './run/recon/metrics.js';
+export {
+  allFailed as allReconSessionsFailed,
+  runSessions as runReconSessions,
+} from './run/recon/orchestrate.js';
+export type * from './run/recon/ports.js';
+export * from './run/recon/types.js';

@@ -6,6 +6,7 @@ export { AgentSessionWorkflow } from './agent-session.workflow.js';
 export { KillPropagationWorkflow } from './kill-propagation.js';
 export { PostExecutionWorkflow } from './post-execution.js';
 export { PreflightWorkflow } from './preflight.js';
+export { ReconWorkflow } from './recon.js';
 export { SaTimeBoundsWorkflow } from './sa-time-bounds.js';
 
 /** Trivial workflow proving the worker end to end. It is not a product workflow. */

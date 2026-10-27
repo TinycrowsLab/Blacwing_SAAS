@@ -112,3 +112,16 @@ export {
   WEBAPI_CATALOGUE_METRIC_LABELS,
   webApiCatalogueMetricSamples,
 } from './testcases/webapi.js';
+
+export {
+  RECON_BUDGET_SHARE,
+  RECON_INTRUSIVENESS_CEILING,
+  RECON_PERSONAS,
+  type ReconIntrusiveness,
+  type ReconManifest,
+  type ReconManifestEntry,
+  type ReconManifestWarning,
+  type ReconPersona,
+  type ResolveReconManifestOptions,
+  resolveReconManifest,
+} from './recon/manifest.js';
