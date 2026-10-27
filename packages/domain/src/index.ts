@@ -69,6 +69,7 @@ export {
 } from './surface/fingerprint.js';
 export { normaliseUrlTemplate, parseSurfaceUrl, type SurfaceUrl } from './surface/normalise.js';
 export {
+  addressRules,
   SURFACE_MAX_EDGES,
   SURFACE_MAX_NODES,
   SURFACE_WRITE_METRIC,

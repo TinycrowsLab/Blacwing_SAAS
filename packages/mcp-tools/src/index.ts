@@ -46,3 +46,31 @@ export {
   spawnHttpx,
   type TechSignal,
 } from './recon/httpx.js';
+export { isNonPublicIp } from './recon/addresses.js';
+export {
+  COMMON_PORTS,
+  type DiscoverDeps,
+  type DiscoverResult,
+  type DiscoverServicesInput,
+  discoverServices,
+  discoverServicesInputSchema,
+  discoverServicesOutputSchema,
+  type ProbeAuditEvent,
+  type ReconBudget,
+} from './recon/discover.js';
+export {
+  createSpawnExecutor,
+  type ReconExecutor,
+  type ReconRunOptions,
+  type ReconTool,
+  type SpawnExecutorOptions,
+} from './recon/exec.js';
+export { createReconMetrics, type ReconMetrics } from './recon/metrics.js';
+export {
+  type DnsxRecord,
+  type NaabuResult,
+  type Parsed,
+  parseDnsx,
+  parseNaabu,
+} from './recon/parse.js';
+export { createDiscoverServicesTool, type DiscoverServicesSession } from './recon/tool.js';

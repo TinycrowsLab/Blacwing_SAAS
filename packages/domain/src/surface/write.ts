@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import {
   isoDateTimeSchema,
+  normaliseIp,
+  type ScopeRule,
   type ScopeRules,
   type ScopeTarget,
   uuidV7Schema,
@@ -40,11 +42,20 @@ const SHORT_MAX = 64;
 
 const str = (max: number): z.ZodString => z.string().min(1).max(max);
 const assetId = uuidV7Schema;
+const ipAddress = z
+  .string()
+  .refine((value) => normaliseIp(value) !== null, 'must be an IPv4 or IPv6 address');
 const keyHex = z.string().regex(/^[0-9a-f]{64}$/, 'must be a lowercase hex SHA-256 key');
 
 /** Recon-side view of a surface node; the fingerprint key is derived, never supplied. */
 export const surfaceNodeSchema = z.discriminatedUnion('type', [
-  z.strictObject({ type: z.literal('host'), assetId, address: str(ADDRESS_MAX) }),
+  z.strictObject({
+    type: z.literal('host'),
+    assetId,
+    address: str(ADDRESS_MAX),
+    /** The single IP a hostname resolved to and was pinned to (anti-rebinding, §8.2); not part of the key. */
+    pinnedIp: ipAddress.optional(),
+  }),
   z.strictObject({
     type: z.literal('service'),
     assetId,
@@ -125,6 +136,30 @@ export function surfaceNodeKey(node: SurfaceNode): string {
     case 'role':
       return roleKey(node.assetId, node.roleName);
   }
+}
+
+/**
+ * The rules as they apply to a node that names an address but no port, path or method (host, technology).
+ * An include counts for the address whatever it constrains further; an exclude only counts when it excludes the
+ * whole address. Without this a port-restricted scope (`include host, ports [80, 443]`) would reject every host
+ * node, because the matcher never lets a missing port satisfy an include. Probes and service/endpoint nodes keep
+ * the full check. Also used to decide whether a name may be resolved at all.
+ */
+export function addressRules(scope: ScopeRules): ScopeRules {
+  return {
+    rules: scope.rules.flatMap((rule): ScopeRule[] => {
+      const constrained =
+        rule.ports !== undefined || rule.paths !== undefined || rule.methods !== undefined;
+      if (rule.effect === 'exclude' && constrained) return [];
+      return [
+        {
+          effect: rule.effect,
+          ...(rule.host === undefined ? {} : { host: rule.host }),
+          ...(rule.cidr === undefined ? {} : { cidr: rule.cidr }),
+        },
+      ];
+    }),
+  };
 }
 
 function addressTarget(address: string): ScopeTarget {
@@ -248,7 +283,8 @@ export async function writeSurface(
   for (const node of request.nodes) {
     const target = scopeTarget(node);
     if (target !== null) {
-      const decision = matchScope(target, ctx.scope);
+      const addressOnly = node.type === 'host' || node.type === 'technology';
+      const decision = matchScope(target, addressOnly ? addressRules(ctx.scope) : ctx.scope);
       if (!decision.inScope) {
         await ctx.audit({
           action: 'recon.surface_write.denied',

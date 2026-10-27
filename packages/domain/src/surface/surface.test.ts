@@ -177,6 +177,19 @@ describe('SurfaceWriteRequest schema', () => {
     ).toBe(false);
   });
 
+  it('accepts a pinned IP on a host node without changing its key', () => {
+    const parse = (pinnedIp: string) =>
+      surfaceWriteRequestSchema.safeParse({
+        nodes: [{ ...hostNode, pinnedIp }],
+        edges: [],
+        provenance,
+      }).success;
+    expect(parse('203.0.113.7')).toBe(true);
+    expect(parse('2001:db8::1')).toBe(true);
+    expect(parse('not-an-ip')).toBe(false);
+    expect(surfaceNodeKey({ ...hostNode, pinnedIp: '203.0.113.7' })).toBe(surfaceNodeKey(hostNode));
+  });
+
   it('bounds confidence and requires an ISO instant', () => {
     const p = (o: object) =>
       surfaceWriteRequestSchema.safeParse({
@@ -249,6 +262,54 @@ describe('writeSurface', () => {
       (m.mock.calls[0] as [string, { request: { nodes: { key: string }[] } }])[1].request.nodes[0]
         ?.key;
     expect(key(a.callTool)).toBe(key(b.callTool));
+  });
+
+  it('checks host and technology nodes at address level when the scope restricts ports', async () => {
+    const restricted = parseScopeRules({
+      rules: [
+        { effect: 'include', host: '*.a.example', ports: [80, 443] },
+        { effect: 'exclude', host: 'db.a.example', ports: [3306] },
+        { effect: 'exclude', host: 'secret.a.example' },
+      ],
+    });
+    const tech = { type: 'technology', assetId: A, address: 'www.a.example', product: 'nginx' };
+    const ok = ctx({ scope: restricted });
+    await writeSurface(ok.c, { nodes: [hostNode, tech], edges: [], provenance });
+    expect(ok.callTool).toHaveBeenCalledTimes(1);
+    // A port-scoped exclude does not exclude the host itself; a whole-host exclude does.
+    await writeSurface(ok.c, {
+      nodes: [{ ...hostNode, address: 'db.a.example' }],
+      edges: [],
+      provenance,
+    });
+    const denied = ctx({ scope: restricted });
+    await expect(
+      writeSurface(denied.c, {
+        nodes: [{ ...hostNode, address: 'secret.a.example' }],
+        edges: [],
+        provenance,
+      }),
+    ).rejects.toBeInstanceOf(ScopeViolationError);
+    await expect(
+      writeSurface(denied.c, {
+        nodes: [{ ...hostNode, address: 'www.other.example' }],
+        edges: [],
+        provenance,
+      }),
+    ).rejects.toBeInstanceOf(ScopeViolationError);
+    // Services keep the full check, port included.
+    const service = (port: number) => ({
+      type: 'service',
+      assetId: A,
+      address: 'www.a.example',
+      port,
+      proto: 'tcp',
+    });
+    await writeSurface(ok.c, { nodes: [service(443)], edges: [], provenance });
+    await expect(
+      writeSurface(denied.c, { nodes: [service(22)], edges: [], provenance }),
+    ).rejects.toBeInstanceOf(ScopeViolationError);
+    expect(denied.callTool).not.toHaveBeenCalled();
   });
 
   it('empty arrays are a no-op success', async () => {
