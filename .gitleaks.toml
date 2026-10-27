@@ -105,6 +105,19 @@ paths = [
   # Redaction / parsing unit tests use fake, never-issued tokens to prove the logger, error and id
   # packages strip Blackwing credential formats (§8.7). They are not credentials.
   '''^packages/(?:logger|errors|ids|config)/src/[^/]+\.test\.ts$''',
+  # Redaction, idempotency and audit tests plant fake, never-issued credentials (bwk_live_ keys,
+  # the AWS documentation-style AKIA key, a dummy JWT and Bearer header) to prove the audit trail
+  # and idempotency store redact them (§8.7). One exact path per file, never a directory glob.
+  '''^packages/audit/src/(?:emit|redact)\.test\.ts$''',
+  '''^apps/api/src/idempotency/(?:fixtures\.test-helpers|idempotency\.http\.test)\.ts$''',
+  # A fake bwk_live_ key in a worker test (file since removed; its history still carries it), and a
+  # random UUID literal used as a dummy secret value in a contracts redaction test.
+  '''^apps/worker/src/agent-session/activities\.test\.ts$''',
+  '''^packages/contracts/src/secrets\.test\.ts$''',
+  # A KMS key id UUID (an identifier, not a credential) in the tofu backend-lock test, and an
+  # assertion on the name/type of an SSM parameter (no password value) in the email module test.
+  '''^infra/tofu/tests/backend-lock/run\.sh$''',
+  '''^infra/tofu/modules/email/tests/email\.tftest\.hcl$''',
   # Lockfile integrity hashes look high-entropy to generic rules.
   '''^pnpm-lock\.yaml$''',
 ]
