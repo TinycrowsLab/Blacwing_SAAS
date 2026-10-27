@@ -225,6 +225,13 @@ importers:
         version: 2.9.1
 
   apps/agent-runtime:
+    dependencies:
+      '@blackwing/agents':
+        specifier: workspace:*
+        version: link:../../packages/agents
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

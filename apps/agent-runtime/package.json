@@ -17,5 +17,9 @@
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@blackwing/agents": "workspace:*",
+    "zod": "catalog:"
   }
 }
