@@ -291,7 +291,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-409">Response 409</h4>
-<p>Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE, SECRET_DISABLED.</p>
+<p>Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Conflict.</p>
 <pre><code class="language-json">{
@@ -317,6 +317,24 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Key version disabled&quot;,
   &quot;status&quot;: 409,
   &quot;code&quot;: &quot;KEK_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Database serialization conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Database serialization conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Kill already in progress.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS&quot;,
+  &quot;title&quot;: &quot;Kill already in progress&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KILL_ALREADY_IN_PROGRESS&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -517,7 +535,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-409-1">Response 409</h4>
-<p>Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE, SECRET_DISABLED.</p>
+<p>Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Conflict.</p>
 <pre><code class="language-json">{
@@ -543,6 +561,24 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Key version disabled&quot;,
   &quot;status&quot;: 409,
   &quot;code&quot;: &quot;KEK_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Database serialization conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Database serialization conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Kill already in progress.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS&quot;,
+  &quot;title&quot;: &quot;Kill already in progress&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KILL_ALREADY_IN_PROGRESS&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>

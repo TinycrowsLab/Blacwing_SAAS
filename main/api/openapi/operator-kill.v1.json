@@ -1,0 +1,1117 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Blackwing operator API: global kill control",
+    "version": "1.0.0",
+    "description": "Platform-operator kill (F33, §1.2, §8.5). Triggers the deterministic kill path and reports what it measured. Operator-only: a tenant session is refused with NOT_OPERATOR."
+  },
+  "paths": {
+    "/operator/v1/kill/blast-radius": {
+      "get": {
+        "operationId": "previewOperatorKill",
+        "summary": "What a global or tenant kill would stop right now",
+        "description": "Audited as operator.kill_previewed. tenantSlug is present for scope=tenant.",
+        "security": [
+          {
+            "operatorSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["global", "tenant"]
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "query",
+            "required": false,
+            "description": "Required for scope=tenant; forbidden for scope=global.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The blast radius.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorBlastRadius"
+                },
+                "example": {
+                  "runsAffected": 3,
+                  "sandboxesAffected": 5,
+                  "tenantsAffected": 2,
+                  "sessionsAffected": 4
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of NOT_OPERATOR.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_OPERATOR": {
+                    "summary": "Platform operator required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+                      "title": "Platform operator required",
+                      "status": 403,
+                      "code": "NOT_OPERATOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operator/v1/kill": {
+      "post": {
+        "operationId": "fireOperatorKill",
+        "summary": "Fire a global or tenant kill",
+        "description": "Propagation is asynchronous: poll the Location. A repeat of the same Idempotency-Key replays the first answer; another kill for a scope that already has one open is KILL_ALREADY_IN_PROGRESS. Audited as operator.kill_fired in the operator and affected-tenant streams.",
+        "security": [
+          {
+            "operatorSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255,
+              "pattern": "^[\\x21-\\x7e]+$"
+            },
+            "example": "opkill-7f3c2a9e-1"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperatorKillRequest"
+              },
+              "examples": {
+                "global": {
+                  "value": {
+                    "scope": "global",
+                    "reason": "platform incident"
+                  }
+                },
+                "tenant": {
+                  "value": {
+                    "scope": "tenant",
+                    "tenantId": "01890a5d-ac96-774b-bcce-b302099a8058",
+                    "reason": "customer request"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Kill accepted. status is halted when nothing in scope was running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KillTriggerResponse"
+                },
+                "example": {
+                  "killEventId": "01890a5d-ac96-774b-bcce-b302099a8057",
+                  "status": "initiated",
+                  "triggeredAt": "2026-10-20T10:00:00.000Z"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "URL of the kill event, /operator/v1/kill/events/{killEventId}.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of NOT_OPERATOR.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_OPERATOR": {
+                    "summary": "Platform operator required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+                      "title": "Platform operator required",
+                      "status": 403,
+                      "code": "NOT_OPERATOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of KILL_ALREADY_IN_PROGRESS.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "KILL_ALREADY_IN_PROGRESS": {
+                    "summary": "Kill already in progress",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+                      "title": "Kill already in progress",
+                      "status": 409,
+                      "code": "KILL_ALREADY_IN_PROGRESS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED, IDEMPOTENCY_KEY_MISMATCH.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_MISMATCH": {
+                    "summary": "Idempotency key reused with a different request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+                      "title": "Idempotency key reused with a different request",
+                      "status": 422,
+                      "code": "IDEMPOTENCY_KEY_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "424": {
+            "description": "Problem details; code is one of KILL_PARTIAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "KILL_PARTIAL": {
+                    "summary": "Kill only partly completed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_PARTIAL",
+                      "title": "Kill only partly completed",
+                      "status": 424,
+                      "code": "KILL_PARTIAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Problem details; code is one of TEMPORAL_UNAVAILABLE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "TEMPORAL_UNAVAILABLE": {
+                    "summary": "Temporal unavailable",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TEMPORAL_UNAVAILABLE",
+                      "title": "Temporal unavailable",
+                      "status": 503,
+                      "code": "TEMPORAL_UNAVAILABLE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operator/v1/kill/events": {
+      "get": {
+        "operationId": "listOperatorKillEvents",
+        "summary": "Prior operator kills, newest first (at most 50)",
+        "security": [
+          {
+            "operatorSession": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The kill history.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorKillEventList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of NOT_OPERATOR.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_OPERATOR": {
+                    "summary": "Platform operator required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+                      "title": "Platform operator required",
+                      "status": 403,
+                      "code": "NOT_OPERATOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operator/v1/kill/events/{id}": {
+      "get": {
+        "operationId": "getOperatorKillEvent",
+        "summary": "One kill with its measured phases and per-component results",
+        "description": "A phase timestamp is null until the kill path confirmed it. status partially_halted or failed means components are still running; affected names them.",
+        "security": [
+          {
+            "operatorSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The kill event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorKillEventDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of NOT_OPERATOR.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_OPERATOR": {
+                    "summary": "Platform operator required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+                      "title": "Platform operator required",
+                      "status": 403,
+                      "code": "NOT_OPERATOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "operatorSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "bw_operator_session"
+      }
+    },
+    "schemas": {
+      "OperatorBlastRadius": {
+        "type": "object",
+        "properties": {
+          "runsAffected": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sandboxesAffected": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "tenantsAffected": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sessionsAffected": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "tenantSlug": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 63,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          }
+        },
+        "required": ["runsAffected", "sandboxesAffected", "tenantsAffected", "sessionsAffected"],
+        "additionalProperties": false
+      },
+      "OperatorKillRequest": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": ["global", "tenant"]
+          },
+          "tenantId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["scope", "reason"],
+        "additionalProperties": false
+      },
+      "KillTriggerResponse": {
+        "type": "object",
+        "properties": {
+          "killEventId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
+          },
+          "triggeredAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+          }
+        },
+        "required": ["killEventId", "status", "triggeredAt"],
+        "additionalProperties": false
+      },
+      "OperatorKillEventList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "scope": {
+                  "type": "string",
+                  "enum": ["global", "tenant"]
+                },
+                "tenantId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "actor": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "firedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+                },
+                "haltMs": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
+                }
+              },
+              "required": [
+                "id",
+                "scope",
+                "tenantId",
+                "actor",
+                "reason",
+                "firedAt",
+                "haltMs",
+                "status"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["items"],
+        "additionalProperties": false
+      },
+      "OperatorKillEventDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "scope": {
+            "type": "string",
+            "enum": ["global", "tenant"]
+          },
+          "tenantId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "firedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+          },
+          "haltMs": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
+          },
+          "egressBlockedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sandboxesTerminatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "keysRevokedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "workflowsCancelledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "affected": {
+            "type": "object",
+            "properties": {
+              "egress": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "identity": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 255
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": ["blocked", "already_blocked", "failed"]
+                    }
+                  },
+                  "required": ["identity", "outcome"],
+                  "additionalProperties": false
+                }
+              },
+              "runs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "sessions": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "sandboxes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "sandboxResults": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "sandboxId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 255
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": ["terminated", "already_gone", "terminating", "failed"]
+                    }
+                  },
+                  "required": ["sandboxId", "outcome"],
+                  "additionalProperties": false
+                }
+              },
+              "keys": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "keyResults": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "keyId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 255
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": ["revoked", "already_revoked", "failed"]
+                    }
+                  },
+                  "required": ["keyId", "outcome"],
+                  "additionalProperties": false
+                }
+              },
+              "workflows": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "workflowResults": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "workflowId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 255
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": ["cancelled", "already_closed", "not_found", "failed"]
+                    }
+                  },
+                  "required": ["workflowId", "outcome"],
+                  "additionalProperties": false
+                }
+              },
+              "reversalsFlagged": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "scope",
+          "tenantId",
+          "actor",
+          "reason",
+          "firedAt",
+          "haltMs",
+          "status",
+          "egressBlockedAt",
+          "sandboxesTerminatedAt",
+          "keysRevokedAt",
+          "workflowsCancelledAt",
+          "completedAt",
+          "affected"
+        ],
+        "additionalProperties": false
+      },
+      "Problem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "detail": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "traceId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                }
+              },
+              "required": ["path", "message", "code"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["type", "title", "status", "code", "traceId"],
+        "additionalProperties": false
+      }
+    }
+  }
+}

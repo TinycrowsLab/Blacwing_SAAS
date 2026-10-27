@@ -231,14 +231,24 @@ run needs a fresh authorisation review.</p>
 </tr>
 <tr>
 <td><code>global</code></td>
-<td><strong>no.</strong> The domain model has the scope, but <code>KILL_API_SCOPES</code> excludes it and the API rejects it.</td>
-<td><code>platform:global_kill</code> (exists in RBAC, no route uses it yet)</td>
+<td>no. The tenant endpoint rejects it with <code>KILL_GLOBAL_NOT_ALLOWED_HERE</code>. Operators use <code>POST /operator/v1/kill</code> (see below).</td>
+<td><code>platform:global_kill</code></td>
 <td>-</td>
 </tr>
 </tbody></table>
-<p>So an operator <strong>cannot yet trigger a global kill</strong> through the product. A platform-wide stop today means one
-<code>tenant</code> kill per tenant, or an infrastructure action (see <a href="./incident-response.html">incident-response.md</a>, common
-incident &quot;runaway agents&quot;). Treat this as a known gap for the launch review.</p>
+<p><strong>Platform operators</strong> fire a <code>global</code> or <code>tenant</code> kill from the console page <code>/operator/kill</code>, which calls
+<code>/operator/v1/kill</code>. The page previews the blast radius (<code>GET /operator/v1/kill/blast-radius?scope=&amp;tenantId=</code>,
+audited as <code>operator.kill_previewed</code>), requires the phrase <code>GLOBAL</code> (or <code>KILL &lt;tenant slug&gt;</code>) plus a reason, then
+follows the kill (<code>GET /operator/v1/kill/events/&lt;id&gt;</code>) and shows each phase and the measured halt time, flagging a
+gateway block over 2 s or a sandbox stop over 10 s. A tenant session is refused with <code>403 NOT_OPERATOR</code>. A second
+kill for a scope that already has one open is <code>409 KILL_ALREADY_IN_PROGRESS</code>. A kill that ended <code>partially_halted</code> or
+<code>failed</code> is shown as partial, with the components that did not stop, and a replay of its <code>Idempotency-Key</code> answers
+<code>424 KILL_PARTIAL</code>. Never read a missing phase as stopped.</p>
+<p>The operator route records the kill and hands the target set to the kill path through the <code>OperatorKillSignaler</code>
+port. The worker-side global propagation adapter (a <code>KillPropagationWorkflow</code> start with no tenant) is not part of
+this change, so until it is wired a global kill stays <code>initiated</code>. Check <code>bw_operator_kill_fired_total</code> and the kill
+event status, and fall back to one <code>tenant</code> kill per tenant (see <a href="./incident-response.html">incident-response.md</a>,
+common incident &quot;runaway agents&quot;).</p>
 <h2 id="3-triggering-a-kill">3. Triggering a kill</h2>
 <p>Every kill is audited (§8.8). Requests need a session (console, via the BFF) or a <code>bw_pat_</code> / <code>bw_ci_</code> bearer token (§9).</p>
 <pre><code class="language-http">POST /v1/kill
@@ -315,6 +325,21 @@ telemetry that exists today:</p>
 <td>Kill events</td>
 <td><code>bw_kill_events_total{scope,source,status}</code></td>
 <td>Kill events by scope and status</td>
+</tr>
+<tr>
+<td>Operator kills</td>
+<td><code>bw_operator_kill_fired_total{scope,result}</code></td>
+<td>Operator kill attempts (<code>accepted</code>, <code>forbidden</code>, <code>invalid</code>, <code>in_progress</code>, <code>partial</code>, <code>error</code>)</td>
+</tr>
+<tr>
+<td>Operator halt time</td>
+<td><code>bw_operator_kill_halt_ms</code></td>
+<td>Measured halt time of operator kills, once per kill</td>
+</tr>
+<tr>
+<td>Operator SLA breach</td>
+<td><code>bw_operator_kill_sla_breach_total{target}</code></td>
+<td>Kills over the gateway (2 s) or sandbox (10 s) target</td>
 </tr>
 <tr>
 <td>Enqueue failures</td>
