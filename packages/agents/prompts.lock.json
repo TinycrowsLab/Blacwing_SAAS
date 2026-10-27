@@ -5,6 +5,12 @@
   "active-recon": {
     "1.0.0": "6d73f8ca6f0523df9991012e0e312ed14f8b4889d2a72de0191bf80f3ef6c478"
   },
+  "code-specialist": {
+    "1.0.0": "003ebf3892ff2716c5b81b78315eaa9aa1af94f9d2052c0d75e69f482cbd99cb"
+  },
+  "infrastructure-specialist": {
+    "1.0.0": "583b4ff6b9426970b0da719d294f8fa7a7678d29c2da7be036b753c3caaa2c26"
+  },
   "orchestrator": {
     "1.0.0": "99f659a41b67d49950b30ebec76edd49dcb24427dbe39132d2e0a0cced5bdcae"
   },
