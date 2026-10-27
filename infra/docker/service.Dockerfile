@@ -19,7 +19,7 @@ ENV CI=true \
     npm_config_ignore_scripts=true
 WORKDIR /repo
 # pnpm comes from the root package.json "packageManager" field via Corepack, never "latest".
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY scripts ./scripts
 COPY apps ./apps
 COPY packages ./packages
