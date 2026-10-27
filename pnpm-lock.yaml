@@ -241,6 +241,9 @@ importers:
       '@blackwing/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@blackwing/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
       '@blackwing/db':
         specifier: workspace:*
         version: link:../../packages/db

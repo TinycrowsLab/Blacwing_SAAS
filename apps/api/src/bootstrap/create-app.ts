@@ -94,6 +94,8 @@ export async function createApiApp(options: CreateApiAppOptions): Promise<ApiApp
   const adapter = new FastifyAdapter({
     logger: false,
     bodyLimit: config.API_BODY_LIMIT_BYTES,
+    // The public SOC kill link carries a ~450-character signed token as a path segment (KILL-007).
+    routerOptions: { maxParamLength: 1024 },
     trustProxy: config.API_TRUST_PROXY,
     // Fastify must not adopt a client `x-request-id` on its own: deriveTraceId validates it first.
     requestIdHeader: false,

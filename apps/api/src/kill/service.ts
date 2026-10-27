@@ -36,7 +36,9 @@ import type { Logger } from '@blackwing/logger';
 
 export const KILL_TRIGGER_SPAN = 'kill.trigger';
 const TRACER_NAME = '@blackwing/api/kill';
+export const SOC_KILL_TRIGGER_SPAN = 'soc_kill.trigger';
 const SOURCE = 'api';
+const SOC_KILL_REASON = 'Stopped by the customer SOC through a kill link';
 
 export interface KillServiceDeps {
   readonly store: KillEventStore;
@@ -64,6 +66,32 @@ export interface KillTriggerResult {
   readonly response: KillTriggerResponse;
   /** True when this request created the event (false: idempotent replay or joined an open kill). */
   readonly created: boolean;
+}
+
+/** A SOC-link kill (KILL-007): the verified token's scope, and the key that dedupes this use. */
+export interface SocKillTriggerInput {
+  readonly tenantId: string;
+  readonly scope: 'run' | 'asset';
+  readonly scopeRefId: string;
+  /** `soc_kill_tokens.id` (the token's `jti`): the event's actorRef. Never the raw token. */
+  readonly tokenId: string;
+  /** Unique per token use, so a retried request cannot create a second event. */
+  readonly idempotencyKey: string;
+  readonly traceId: string | null;
+}
+
+/** What differs between a console/API kill and a SOC-link kill once the caller is authorised. */
+interface KillExecution {
+  readonly tenantId: string;
+  readonly request: ParsedKill;
+  readonly key: string;
+  readonly source: 'api' | 'soc_link';
+  readonly actorType: string;
+  readonly actorRef: string;
+  readonly auditAction: 'kill.triggered' | 'soc_kill.triggered';
+  readonly auditActor: AuditActor;
+  readonly auditMetadata: Readonly<Record<string, string>>;
+  readonly traceId: string | null;
 }
 
 interface ParsedKill {
@@ -216,10 +244,65 @@ export class KillService {
 
     await this.authorise(principal, tenantId, request, input.traceId);
 
+    const result = await this.execute(
+      {
+        tenantId,
+        request,
+        key,
+        source: SOURCE,
+        actorType: principal.type,
+        actorRef: principal.id,
+        auditAction: 'kill.triggered',
+        auditActor: actorOf(principal),
+        auditMetadata: {},
+        traceId: input.traceId,
+      },
+      span,
+    );
+    return { scope: request.scope, result };
+  }
+
+  /**
+   * The login-free SOC kill (KILL-007). The caller has already verified the signed link, so there is
+   * no RBAC/Cedar step: possession of a live link IS the authority, and a kill is always permitted
+   * (never blocked by asset verification or scope). Everything after authorisation is the same path
+   * as {@link trigger}: resolve, persist (one open kill per scope), signal, audit.
+   */
+  async triggerFromSocLink(input: SocKillTriggerInput): Promise<KillTriggerResult> {
+    return this.tracer.startActiveSpan(SOC_KILL_TRIGGER_SPAN, async (span) => {
+      try {
+        span.setAttributes({ 'bw.kill.scope': input.scope, 'bw.tenant_id': input.tenantId });
+        return await this.execute(
+          {
+            tenantId: input.tenantId,
+            request: { scope: input.scope, scopeRefId: input.scopeRefId, reason: SOC_KILL_REASON },
+            key: input.idempotencyKey,
+            source: 'soc_link',
+            actorType: 'soc_link',
+            actorRef: input.tokenId,
+            auditAction: 'soc_kill.triggered',
+            auditActor: { type: 'anonymous' },
+            auditMetadata: { tokenId: input.tokenId },
+            traceId: input.traceId,
+          },
+          span,
+        );
+      } catch (err) {
+        span.recordException(err instanceof Error ? err : new Error(String(err)));
+        span.setStatus({ code: SpanStatusCode.ERROR });
+        throw err;
+      } finally {
+        span.end();
+      }
+    });
+  }
+
+  private async execute(exec: KillExecution, span: Span): Promise<KillTriggerResult> {
+    const { tenantId, request, key } = exec;
     const fingerprint = killRequestFingerprint(request);
     const previous = await this.deps.store.findByIdempotencyKey(tenantId, key);
     if (previous !== null) {
-      return { scope: request.scope, result: this.replay(previous, fingerprint) };
+      return this.replay(previous, fingerprint);
     }
 
     const targets = await this.tracer.startActiveSpan(KILL_RESOLVE_SPAN, async (child) => {
@@ -239,9 +322,9 @@ export class KillService {
       tenantId,
       scope: request.scope,
       scopeRefId: request.scopeRefId,
-      source: SOURCE,
-      actorType: principal.type,
-      actorRef: principal.id,
+      source: exec.source,
+      actorType: exec.actorType,
+      actorRef: exec.actorRef,
       reason: request.reason,
       // Nothing in scope is running: the kill is already complete, in zero time (edge case 1).
       status: nothingToStop ? 'halted' : 'initiated',
@@ -264,7 +347,7 @@ export class KillService {
       idempotency: { key, fingerprint },
     });
     if (inserted.kind === 'idempotent_replay') {
-      return { scope: request.scope, result: this.replay(inserted, fingerprint) };
+      return this.replay(inserted, fingerprint);
     }
     const event = inserted.event;
     const created = inserted.kind === 'created';
@@ -274,23 +357,28 @@ export class KillService {
       await this.enqueue(event, request, tenantId, targets);
     }
     if (created) {
-      this.deps.metrics.events.inc({ scope: event.scope, source: SOURCE, status: event.status });
+      this.deps.metrics.events.inc({
+        scope: event.scope,
+        source: exec.source,
+        status: event.status,
+      });
     }
 
     await this.writeAudit({
-      action: 'kill.triggered',
+      action: exec.auditAction,
       severity: 'critical',
       outcome: 'success',
       tenantId,
-      actor: actorOf(principal),
+      actor: exec.auditActor,
       target: targetOf(request, tenantId),
       occurredAt: now,
-      traceId: input.traceId,
+      traceId: exec.traceId,
       metadata: {
+        ...exec.auditMetadata,
         killEventId: event.id,
         scope: request.scope,
         scopeRefId: request.scopeRefId,
-        source: SOURCE,
+        source: exec.source,
         status: event.status,
         joinedOpenKill: !created,
         reasonLength: request.reason.length,
@@ -305,7 +393,8 @@ export class KillService {
         killEventId: event.id,
         scope: request.scope,
         scopeRefId: request.scopeRefId,
-        actorRef: principal.id,
+        actorRef: exec.actorRef,
+        source: exec.source,
         targetCounts: targetCounts(targets),
         reasonLength: request.reason.length,
         status: event.status,
@@ -315,11 +404,8 @@ export class KillService {
     );
 
     return {
-      scope: request.scope,
-      result: {
-        response: { killEventId: event.id, status: event.status, triggeredAt: event.triggeredAt },
-        created,
-      },
+      response: { killEventId: event.id, status: event.status, triggeredAt: event.triggeredAt },
+      created,
     };
   }
 

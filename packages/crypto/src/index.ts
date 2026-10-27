@@ -5,3 +5,4 @@ export const name = '@blackwing/crypto';
 export const version = '0.0.0';
 
 export { jcs } from './jcs.js';
+export { type JwsKeyResolver, type JwsSigner, publicKeyOf, signJws, verifyJws } from './jws.js';

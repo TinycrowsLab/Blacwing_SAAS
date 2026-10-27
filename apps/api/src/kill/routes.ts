@@ -15,7 +15,7 @@ import {
 
 import type { KillPrincipal } from './ports.js';
 import type { KillService } from './service.js';
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 export const KILL_ROUTE = '/v1/kill';
 
@@ -41,6 +41,27 @@ export interface KillRoutesOptions {
 
 const idParamsSchema = z.strictObject({ id: uuidV7Schema });
 
+/** Maps any thrown error to RFC 9457 problem+json (shared by the kill and SOC kill routes). */
+export function problemErrorHandler(
+  problems: ProblemDetailsMapper,
+): (error: unknown, request: FastifyRequest, reply: FastifyReply) => void {
+  return (error, _request, reply) => {
+    const mapped = isAppError(error)
+      ? error
+      : (error as { code?: unknown }).code === 'FST_ERR_CTP_INVALID_JSON' ||
+          (error as { code?: unknown }).code === 'FST_ERR_CTP_EMPTY_JSON_BODY'
+        ? new ValidationError('request body is not valid JSON', {
+            detail: 'request body is not valid JSON',
+          })
+        : error;
+    const response = problems.toProblemResponse(mapped, traceIdOf());
+    void reply
+      .status(response.status)
+      .headers({ ...response.headers })
+      .send(response.body);
+  };
+}
+
 function traceIdOf(): string {
   const ctx = trace.getActiveSpan()?.spanContext();
   return ctx?.traceId ?? randomBytes(TRACE_ID_BYTES).toString('hex');
@@ -59,21 +80,7 @@ export function registerKillRoutes(app: FastifyInstance, options: KillRoutesOpti
     );
 
   void app.register((scope, _opts, done) => {
-    scope.setErrorHandler((error: unknown, _request, reply) => {
-      const mapped = isAppError(error)
-        ? error
-        : (error as { code?: unknown }).code === 'FST_ERR_CTP_INVALID_JSON' ||
-            (error as { code?: unknown }).code === 'FST_ERR_CTP_EMPTY_JSON_BODY'
-          ? new ValidationError('request body is not valid JSON', {
-              detail: 'request body is not valid JSON',
-            })
-          : error;
-      const response = problems.toProblemResponse(mapped, traceIdOf());
-      void reply
-        .status(response.status)
-        .headers({ ...response.headers })
-        .send(response.body);
-    });
+    scope.setErrorHandler(problemErrorHandler(problems));
 
     scope.post(KILL_ROUTE, async (request, reply) => {
       const principal = await options.authenticate(request);

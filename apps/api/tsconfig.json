@@ -10,6 +10,7 @@
   "references": [
     { "path": "../../packages/config" },
     { "path": "../../packages/contracts" },
+    { "path": "../../packages/crypto" },
     { "path": "../../packages/db" },
     { "path": "../../packages/domain" },
     { "path": "../../packages/errors" },

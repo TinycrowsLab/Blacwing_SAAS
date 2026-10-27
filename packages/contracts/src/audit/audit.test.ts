@@ -73,6 +73,9 @@ const RELEASED_ACTIONS = [
   'workflow.failed',
   'workflow.cancelled',
   'workflow.continued_as_new',
+  'soc_kill.link_minted',
+  'soc_kill.triggered',
+  'soc_kill.rejected',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

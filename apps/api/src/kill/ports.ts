@@ -96,9 +96,13 @@ export interface KillPropagationSignaler {
   signal(request: KillPropagationRequest): Promise<void>;
 }
 
+/** Audit actions of the SOC kill link (KILL-007). */
+export type SocKillAuditAction =
+  'soc_kill.link_minted' | 'soc_kill.triggered' | 'soc_kill.rejected';
+
 /** An audit event before the ledger assigns its sequence number and hash (AUDIT-002). */
 export interface KillAuditRecord {
-  readonly action: 'kill.triggered' | 'kill.forbidden';
+  readonly action: 'kill.triggered' | 'kill.forbidden' | SocKillAuditAction;
   readonly severity: AuditSeverity;
   readonly outcome: AuditOutcome;
   readonly tenantId: string;
