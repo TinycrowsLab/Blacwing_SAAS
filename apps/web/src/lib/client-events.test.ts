@@ -59,3 +59,17 @@ describe('emitClientEvent', () => {
     restore();
   });
 });
+
+describe('emitClientEvent gate', () => {
+  it('carries a valid gate number and drops others', () => {
+    const seen: ClientEvent[] = [];
+    const restore = setClientEventSink((e) => seen.push(e));
+    emitClientEvent('gate_panel_rendered', '/runs/9', { runId: 'run_abc', gate: 2 });
+    emitClientEvent('gate_panel_rendered', '/runs/9', { gate: 9 });
+    restore();
+    expect(seen).toEqual([
+      { event: 'gate_panel_rendered', route: '/runs/:id', runId: 'run_abc', gate: 2 },
+      { event: 'gate_panel_rendered', route: '/runs/:id' },
+    ]);
+  });
+});
