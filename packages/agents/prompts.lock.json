@@ -29,8 +29,14 @@
   "reporter": {
     "1.0.0": "264393aea9b5832686edac65edadbbbb30981fd748de9ed08046d4ca212398e5"
   },
+  "source-spec-ingestion": {
+    "1.0.0": "496ac9ce553d63702f81910ed85b707380ac2eb07c4ce6d7fb0cb1123e9a4f00"
+  },
   "sub-planner": {
     "1.0.0": "4ad656fae63c9c832f645665cd6b2563a67dc2ddd361b7210843447e46688957"
+  },
+  "threat-intel": {
+    "1.0.0": "175b414bf750b007388f0c895e323af4bfb51eb79ca9cc9c470bc052860ae39a"
   },
   "validator-assistant": {
     "1.0.0": "e72c6750e2cde43d8b19e87a96a85ccd7978a88a4208a991ef5d0247efd77d31"
