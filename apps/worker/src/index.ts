@@ -94,3 +94,17 @@ export {
 } from './run/recon/orchestrate.js';
 export type * from './run/recon/ports.js';
 export * from './run/recon/types.js';
+export {
+  createExecutionActivities,
+  type ExecutionActivityDeps,
+} from './run/execution/activities.js';
+export { temporalActivityRuntime } from './run/execution/activity-context.js';
+export {
+  classifyOutOfEnvelope,
+  isExhausted,
+  nextIntervention,
+  sanitiseSummary,
+} from './run/execution/frontier.js';
+export { createOtelExecutionMetrics } from './run/execution/metrics.js';
+export type * from './run/execution/ports.js';
+export * from './run/execution/types.js';

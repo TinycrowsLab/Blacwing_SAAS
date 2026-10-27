@@ -29,7 +29,7 @@ export const orchestratorPersona = registerPersona({
   maxTurns: 200,
   maxBudgetUsdDefault: 25,
   allowedTools: ORCHESTRATOR_ALLOWED_TOOLS,
-  disallowedTools: ['Bash', 'WebFetch', 'WebSearch', 'Agent'],
+  disallowedTools: ['Bash', 'WebFetch', 'WebSearch', 'Agent', 'mcp__blackwing__http_request'],
   declaredOracleTypes: [],
   inputs: [
     'engagement_state',

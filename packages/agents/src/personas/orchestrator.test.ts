@@ -30,6 +30,23 @@ describe('orchestrator persona', () => {
     }
   });
 
+  it('has no Bash and no target or recon tool: only engagement tools are allowed (ORCH-008)', () => {
+    const engagement = new Set([
+      'get_engagement_state',
+      'list_open_subtasks',
+      'dispatch_subtask',
+      'get_subtask_result',
+      'request_mentor_review',
+      'mark_test_case_status',
+      'request_scope_exception',
+    ]);
+    expect(orchestratorPersona.allowedTools.map((t) => t.replace(/^mcp__[a-z_]+__/, ''))).toEqual([
+      ...engagement,
+    ]);
+    expect(orchestratorPersona.allowedTools).not.toContain('Bash');
+    expect(orchestratorPersona.disallowedTools).toContain('mcp__blackwing__http_request');
+  });
+
   it('declares no oracle and no submission, passive ceiling, deep/high, 200 turns', () => {
     expect(orchestratorPersona.requiresSubmission).toBe(false);
     expect(orchestratorPersona.declaredOracleTypes).toEqual([]);

@@ -29,6 +29,7 @@
     "@blackwing/time": "workspace:*",
     "@blackwing/workflow-shared": "workspace:*",
     "@opentelemetry/api": "catalog:",
+    "@temporalio/activity": "catalog:",
     "@temporalio/worker": "catalog:",
     "@temporalio/workflow": "catalog:",
     "bullmq": "5.58.0",
