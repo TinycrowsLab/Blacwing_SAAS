@@ -7,6 +7,9 @@ import { fileURLToPath } from 'node:url';
 import { Client, Connection } from '@temporalio/client';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { runWithWorkflowContext } from '@blackwing/telemetry';
+import { createContextClientInterceptor } from '@blackwing/workflow-shared';
+
 import { startWorkerProcess, type WorkerProcess } from './bootstrap.js';
 import { TASK_QUEUES } from './task-queues.js';
 
@@ -48,7 +51,11 @@ describe('worker process', () => {
 
   beforeAll(async () => {
     connection = await Connection.connect({ address });
-    client = new Client({ connection, namespace });
+    client = new Client({
+      connection,
+      namespace,
+      interceptors: { workflow: [createContextClientInterceptor()] },
+    });
   });
 
   afterAll(async () => {
@@ -67,10 +74,13 @@ describe('worker process', () => {
       workers: [{ taskQueue: TASK_QUEUES.RETENTION, state: 'RUNNING' }],
     });
 
-    const handle = await client.workflow.start<typeof noopWorkflow>('noopWorkflow', {
-      taskQueue: TASK_QUEUES.RETENTION,
-      workflowId: `noop-${randomUUID()}`,
-    });
+    // Every workflow carries a tenant context (#25); a platform workflow says SYSTEM explicitly.
+    const handle = await runWithWorkflowContext({ tenantId: 'SYSTEM' }, () =>
+      client.workflow.start<typeof noopWorkflow>('noopWorkflow', {
+        taskQueue: TASK_QUEUES.RETENTION,
+        workflowId: `noop-${randomUUID()}`,
+      }),
+    );
     await expect(handle.result()).resolves.toBeUndefined();
   });
 

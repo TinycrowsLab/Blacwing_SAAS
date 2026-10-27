@@ -9,7 +9,9 @@
   "references": [
     { "path": "../errors" },
     { "path": "../config" },
+    { "path": "../contracts" },
     { "path": "../logger" },
+    { "path": "../telemetry" },
     { "path": "../testing" }
   ]
 }

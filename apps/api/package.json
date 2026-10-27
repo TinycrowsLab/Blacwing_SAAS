@@ -28,6 +28,7 @@
     "@blackwing/errors": "workspace:*",
     "@blackwing/ids": "workspace:*",
     "@blackwing/logger": "workspace:*",
+    "@blackwing/telemetry": "workspace:*",
     "@blackwing/time": "workspace:*",
     "@cedar-policy/cedar-wasm": "catalog:",
     "@fastify/cors": "catalog:",

@@ -1,3 +1,5 @@
+import { runWithWorkflowContext } from '@blackwing/telemetry';
+
 import type { KillPropagationRequest, KillPropagationSignaler } from './ports.js';
 
 /** Workflow type KILL-004 (#174) registers on the worker. */
@@ -35,13 +37,17 @@ export function createTemporalKillSignaler(
 ): KillPropagationSignaler {
   return {
     async signal(request) {
-      await client.signalWithStart(KILL_PROPAGATION_WORKFLOW, {
-        workflowId: killPropagationWorkflowId(request.killEventId),
-        taskQueue,
-        signal: KILL_TARGETS_SIGNAL,
-        signalArgs: [request],
-        args: [{ killEventId: request.killEventId, tenantId: request.tenantId }],
-      });
+      // The Temporal client stamps the ambient tenant context on the start and the signal, and the
+      // worker refuses a workflow or signal without it (#25, §8.6).
+      await runWithWorkflowContext({ tenantId: request.tenantId }, () =>
+        client.signalWithStart(KILL_PROPAGATION_WORKFLOW, {
+          workflowId: killPropagationWorkflowId(request.killEventId),
+          taskQueue,
+          signal: KILL_TARGETS_SIGNAL,
+          signalArgs: [request],
+          args: [{ killEventId: request.killEventId, tenantId: request.tenantId }],
+        }),
+      );
     },
   };
 }

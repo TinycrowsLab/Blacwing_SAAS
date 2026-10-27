@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { getActivityContext } from '@blackwing/telemetry';
+
 import { DONE_RUN, harness, LIVE_RUN, principal, TENANT_A } from './fixtures.test-helpers.js';
 import { InMemoryKillAuditSink } from './memory.js';
 import {
@@ -262,5 +264,31 @@ describe('Temporal kill signaler', () => {
         },
       ],
     ]);
+  });
+
+  it('runs the signal-with-start under the request tenant context', async () => {
+    let seen: string | undefined;
+    const client: SignalWithStartClient = {
+      signalWithStart: () => {
+        seen = getActivityContext().tenantId;
+        return Promise.resolve({});
+      },
+    };
+    await createTemporalKillSignaler(client).signal({
+      killEventId: 'k2',
+      tenantId: TENANT_A,
+      scope: 'run',
+      scopeRefId: LIVE_RUN,
+      targets: {
+        runIds: [LIVE_RUN],
+        sessionIds: [],
+        sandboxIds: [],
+        virtualKeyIds: [],
+        egressIdentities: [],
+        workflowIds: [],
+      },
+      triggeredAt: '2026-10-20T10:00:00.000Z',
+    });
+    expect(seen).toBe(TENANT_A);
   });
 });

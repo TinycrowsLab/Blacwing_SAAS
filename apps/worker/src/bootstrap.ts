@@ -12,6 +12,7 @@ import { closeTemporal, createDataConverter } from '@blackwing/workflow-shared';
 import { activities } from './activities/index.js';
 import { parseWorkerConfig } from './config.js';
 import { createHealthServer } from './health.js';
+import { createContextWorkerOptions, WORKFLOW_INTERCEPTOR_MODULE } from './interceptors/context.js';
 import { WorkerRuntime } from './runtime.js';
 import { createSdkLogger } from './sdk-logger.js';
 
@@ -71,9 +72,14 @@ export async function startWorkerProcess(env: EnvSource = process.env): Promise<
 
       Runtime.install({ logger: createSdkLogger(log) });
       // Built once per start, in memory: there is no cached bundle that could go stale.
-      const { code } = await bundleWorkflowCode({ workflowsPath: WORKFLOWS_PATH });
+      const { code } = await bundleWorkflowCode({
+        workflowsPath: WORKFLOWS_PATH,
+        // Tenant and trace propagation (#25, §8.6) runs inside every workflow.
+        workflowInterceptorModules: [WORKFLOW_INTERCEPTOR_MODULE],
+      });
       const connection = await nativeConnect(temporal);
       const dataConverter = createDataConverter();
+      const contextOptions = createContextWorkerOptions(log);
 
       const runtime = new WorkerRuntime({
         config,
@@ -89,6 +95,8 @@ export async function startWorkerProcess(env: EnvSource = process.env): Promise<
             maxConcurrentActivityTaskExecutions: config.maxConcurrentActivityTaskExecutions,
             maxConcurrentWorkflowTaskExecutions: config.maxConcurrentWorkflowTaskExecutions,
             shutdownGraceTime: config.shutdownGraceMs,
+            interceptors: contextOptions.interceptors,
+            sinks: contextOptions.sinks,
           }),
         closeConnections: async () => {
           await connection.close();

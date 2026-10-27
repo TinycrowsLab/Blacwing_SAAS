@@ -14,6 +14,7 @@
     { "path": "../../packages/db" },
     { "path": "../../packages/domain" },
     { "path": "../../packages/logger" },
+    { "path": "../../packages/telemetry" },
     { "path": "../../packages/time" },
     { "path": "../../packages/workflow-shared" },
     { "path": "./scripts" }

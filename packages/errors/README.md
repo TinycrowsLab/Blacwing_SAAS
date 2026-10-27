@@ -36,6 +36,9 @@ frozen. Codes are public API: never rename or reuse one, add a new one instead.
 | `ILLEGAL_RUN_TRANSITION` | 409 | `IllegalRunTransitionError(from, to)` | no |
 | `TENANT_CONTEXT_MISSING` | 403 | `TenantContextMissingError` (fails closed, §7/§8.6) | no |
 | `CROSS_TENANT_DENIED` | 403 | `CrossTenantAccessError` (a resource of another tenant; audited, §8.6) | no |
+| `MISSING_TENANT_CONTEXT` | 500 | plain `AppError` (durable-execution call without a tenant header, fails closed, §8.6) | no |
+| `INVALID_TENANT_CONTEXT` | 500 | plain `AppError` (tenant header not a UUID or `SYSTEM`, bad trace id) | no |
+| `TENANT_CONTEXT_MISMATCH` | 403 | plain `AppError` (signal, query or update names another tenant than the running workflow) | no |
 | `KILL_SWITCH_ACTIVE` | 423 | `KillSwitchActiveError` (`scope`: run/asset/tenant/global) | no |
 | `SCOPE_VIOLATION` | 403 | `ScopeViolationError` | no |
 | `SCOPE_INTRUSIVENESS_EXCEEDS_CEILING` | 403 | `IntrusivenessError` (in `@blackwing/contracts`, SCOPE-003) | no |

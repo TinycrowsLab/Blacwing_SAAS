@@ -7,6 +7,7 @@ import { parseTemporalConfig, type TemporalConfig } from '@blackwing/config';
 import { AppError } from '@blackwing/errors';
 import { createLogger } from '@blackwing/logger';
 
+import { createContextClientInterceptor } from './context-interceptor.js';
 import { createDataConverter } from './data-converter.js';
 
 import type { DataConverter } from '@temporalio/common';
@@ -194,7 +195,10 @@ function ensure(options: TemporalClientOptions): Cached {
   return entry;
 }
 
-/** A `Client` bound to the configured namespace, over the shared connection. */
+/**
+ * A `Client` bound to the configured namespace, over the shared connection. Workflow calls must run inside
+ * `runWithWorkflowContext` (`@blackwing/telemetry`); without a tenant context they throw `MISSING_TENANT_CONTEXT`.
+ */
 export function getTemporalClient(options: TemporalClientOptions = {}): Promise<Client> {
   const entry = ensure(options);
   entry.client ??= entry.connection.then((connection) => {
@@ -203,6 +207,8 @@ export function getTemporalClient(options: TemporalClientOptions = {}): Promise<
       connection,
       namespace: config.namespace,
       dataConverter: options.dataConverter ?? createDataConverter(),
+      // Every start, signal, query and update carries the tenant and trace context, or fails closed (#25).
+      interceptors: { workflow: [createContextClientInterceptor()] },
     });
   });
   return entry.client;

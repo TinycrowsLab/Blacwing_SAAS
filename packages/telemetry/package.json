@@ -14,8 +14,14 @@
     "typecheck": "tsc -b --pretty false"
   },
   "devDependencies": {
+    "@opentelemetry/context-async-hooks": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@blackwing/contracts": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@opentelemetry/api": "catalog:"
   }
 }

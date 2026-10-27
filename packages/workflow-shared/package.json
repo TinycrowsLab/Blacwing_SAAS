@@ -16,8 +16,10 @@
   },
   "dependencies": {
     "@blackwing/config": "workspace:*",
+    "@blackwing/contracts": "workspace:*",
     "@blackwing/errors": "workspace:*",
     "@blackwing/logger": "workspace:*",
+    "@blackwing/telemetry": "workspace:*",
     "@opentelemetry/api": "catalog:",
     "@temporalio/client": "catalog:",
     "@temporalio/common": "catalog:"

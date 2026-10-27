@@ -39,6 +39,12 @@ const DEFINITIONS = {
   // deadlocks is a transient overload (503, retryable).
   TENANT_CONTEXT_CONFLICT: { status: 500, title: 'Tenant context conflict', retryable: false },
   TX_RETRY_EXHAUSTED: { status: 503, title: 'Transaction retries exhausted', retryable: true },
+  // Durable-execution tenant context (#25, §8.6). A workflow, activity or client call without a
+  // valid tenant header is a server defect and is refused outright (500, fail closed); a signal, query or
+  // update that names another tenant than the running workflow is a cross-tenant attempt (403).
+  MISSING_TENANT_CONTEXT: { status: 500, title: 'Missing tenant context', retryable: false },
+  INVALID_TENANT_CONTEXT: { status: 500, title: 'Invalid tenant context', retryable: false },
+  TENANT_CONTEXT_MISMATCH: { status: 403, title: 'Tenant context mismatch', retryable: false },
   KILL_SWITCH_ACTIVE: { status: 423, title: 'Kill switch active', retryable: false },
   SCOPE_VIOLATION: { status: 403, title: 'Out of authorised scope', retryable: false },
   // Intrusiveness-class validation (SCOPE-003, §3.5/§8.3). Exceeding a ceiling or naming

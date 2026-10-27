@@ -25,6 +25,7 @@
     "@blackwing/domain": "workspace:*",
     "@blackwing/errors": "workspace:*",
     "@blackwing/logger": "workspace:*",
+    "@blackwing/telemetry": "workspace:*",
     "@blackwing/time": "workspace:*",
     "@blackwing/workflow-shared": "workspace:*",
     "@opentelemetry/api": "catalog:",
@@ -35,6 +36,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@opentelemetry/context-async-hooks": "catalog:",
+    "@opentelemetry/sdk-trace-base": "catalog:",
     "@temporalio/client": "catalog:",
     "@temporalio/proto": "catalog:",
     "@types/node": "catalog:",

@@ -29,6 +29,9 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   CROSS_TENANT_DENIED: 403,
   TENANT_CONTEXT_CONFLICT: 500,
   TX_RETRY_EXHAUSTED: 503,
+  MISSING_TENANT_CONTEXT: 500,
+  INVALID_TENANT_CONTEXT: 500,
+  TENANT_CONTEXT_MISMATCH: 403,
   KILL_SWITCH_ACTIVE: 423,
   SCOPE_VIOLATION: 403,
   SCOPE_INTRUSIVENESS_EXCEEDS_CEILING: 403,
@@ -99,7 +102,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(71);
+    expect(ERROR_CODE_LIST).toHaveLength(74);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -203,6 +206,9 @@ describe('error-code registry', () => {
       | 'CROSS_TENANT_DENIED'
       | 'TENANT_CONTEXT_CONFLICT'
       | 'TX_RETRY_EXHAUSTED'
+      | 'MISSING_TENANT_CONTEXT'
+      | 'INVALID_TENANT_CONTEXT'
+      | 'TENANT_CONTEXT_MISMATCH'
       | 'KILL_SWITCH_ACTIVE'
       | 'SCOPE_VIOLATION'
       | 'SCOPE_INTRUSIVENESS_EXCEEDS_CEILING'
