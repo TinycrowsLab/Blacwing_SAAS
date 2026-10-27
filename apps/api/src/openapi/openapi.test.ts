@@ -104,7 +104,9 @@ describe('public OpenAPI document', () => {
     for (const item of Object.values(at(doc, 'paths'))) {
       for (const operation of Object.values(item as Json) as Json[]) {
         ids.push(operation.operationId as string);
-        expect(operation.tags).toEqual(['kill']);
+        const tags = operation.tags as string[];
+        expect(tags).toHaveLength(1);
+        expect(['kill', 'audit']).toContain(tags[0]);
         const refs = Object.entries(operation.responses as Json)
           .filter(([status]) => Number(status) >= 400)
           .map(([, r]) => at(r, 'content', 'application/problem+json', 'schema').$ref);
@@ -112,8 +114,8 @@ describe('public OpenAPI document', () => {
         expect(new Set(refs)).toEqual(new Set(['#/components/schemas/Problem']));
       }
     }
-    expect(ids).toEqual(['triggerKill', 'getKillEvent']);
-    expect(countOperations(doc)).toBe(2);
+    expect(ids).toEqual(['triggerKill', 'getKillEvent', 'listAuditEvents']);
+    expect(countOperations(doc)).toBe(3);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -167,7 +169,7 @@ describe('public OpenAPI document', () => {
   });
 
   it('exposes every module from publicOpenApiModules', () => {
-    expect(publicOpenApiModules().map((m) => m.tag)).toEqual(['kill']);
+    expect(publicOpenApiModules().map((m) => m.tag)).toEqual(['kill', 'audit']);
   });
 });
 
@@ -226,7 +228,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(2);
+    expect(result.operations).toBe(3);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

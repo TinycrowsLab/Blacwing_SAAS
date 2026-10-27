@@ -190,3 +190,5 @@ export {
   type OutboxClaim,
   withOutboxClaim,
 } from './outbox-relay.js';
+
+export { type AuditSqlTxLike, toAuditSqlTx } from './audit-sql-tx.js';

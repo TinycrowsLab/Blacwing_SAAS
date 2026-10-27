@@ -2,6 +2,7 @@ import { idempotencyKeySchema, problemSchema } from '@blackwing/contracts';
 import { ERROR_CODES, type ErrorCode } from '@blackwing/errors';
 
 import { errorResponses, type JsonObject, jsonSchema } from './schema.js';
+import { auditOpenApiPaths, auditOpenApiSchemas } from '../audit-query/openapi.js';
 import { killOpenApiDocument } from '../kill/openapi.js';
 
 /** Largest page a client may request (§9). */
@@ -38,9 +39,19 @@ export function killOpenApiModule(): OpenApiModule {
   };
 }
 
+/** The audit query API (#86) as a module of the combined document. */
+function auditOpenApiModule(): OpenApiModule {
+  return {
+    tag: 'audit',
+    description: 'Audit ledger search: read-only, tenant-scoped, cursor-paginated (F34, §8.8).',
+    paths: auditOpenApiPaths(),
+    schemas: auditOpenApiSchemas(),
+  };
+}
+
 /** Every module published in the public spec. Internal routers (`/internal/broker`) are deliberately absent. */
 export function publicOpenApiModules(): readonly OpenApiModule[] {
-  return [killOpenApiModule()];
+  return [killOpenApiModule(), auditOpenApiModule()];
 }
 
 function commonParameters(): JsonObject {

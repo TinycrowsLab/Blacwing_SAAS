@@ -20,6 +20,8 @@ export interface ErrorCodeSpec {
 
 const DEFINITIONS = {
   VALIDATION_FAILED: { status: 422, title: 'Validation failed', retryable: false },
+  // A cursor that is malformed, forged, or issued for other filters (audit query API, #86). Never retried as is.
+  INVALID_CURSOR: { status: 400, title: 'Invalid cursor', retryable: false },
   UNAUTHENTICATED: { status: 401, title: 'Authentication required', retryable: false },
   FORBIDDEN: { status: 403, title: 'Forbidden', retryable: false },
   NOT_FOUND: { status: 404, title: 'Resource not found', retryable: false },

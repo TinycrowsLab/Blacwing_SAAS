@@ -430,6 +430,14 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'A platform operator fired a global or tenant kill; metadata records scope, tenant, reason and status.',
   },
+  // audit query API (#86): appended, so the released order above is untouched
+  {
+    action: 'audit.queried',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description:
+      'An auditor queried the audit ledger; metadata records the filter keys and page size, never the filter values.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

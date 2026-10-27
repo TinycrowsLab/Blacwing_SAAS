@@ -70,7 +70,8 @@
         "scope.request.created",
         "scope.request.status_changed",
         "operator.kill_previewed",
-        "operator.kill_fired"
+        "operator.kill_fired",
+        "audit.queried"
       ]
     },
     "severity": {

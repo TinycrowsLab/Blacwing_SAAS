@@ -21,6 +21,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "@blackwing/audit": "workspace:*",
     "@blackwing/config": "workspace:*",
     "@blackwing/contracts": "workspace:*",
     "@blackwing/crypto": "workspace:*",

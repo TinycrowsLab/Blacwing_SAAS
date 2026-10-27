@@ -1,9 +1,9 @@
 import { PgDialect } from 'drizzle-orm/pg-core';
 import { describe, expect, it } from 'vitest';
 
-import { toAuditSqlTx } from './audit-tx.js';
+import { toAuditSqlTx } from './audit-sql-tx.js';
 
-import type { TenantTx } from '@blackwing/db';
+import type { TenantTx } from './with-tenant.js';
 import type { SQL } from 'drizzle-orm';
 
 const dialect = new PgDialect();

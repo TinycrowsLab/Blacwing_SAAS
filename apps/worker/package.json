@@ -34,7 +34,6 @@
     "@temporalio/workflow": "catalog:",
     "bullmq": "5.58.0",
     "croner": "9.1.0",
-    "drizzle-orm": "0.45.3",
     "fastify": "catalog:",
     "zod": "catalog:"
   },

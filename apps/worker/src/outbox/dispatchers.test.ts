@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@blackwing/db', () => ({
   withTenant: mocks.withTenant,
+  toAuditSqlTx: (tx: unknown) => tx,
 }));
 vi.mock('@blackwing/audit', () => ({ appendAuditOutboxPayload: mocks.append }));
 

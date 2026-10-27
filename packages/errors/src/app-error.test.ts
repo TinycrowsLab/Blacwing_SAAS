@@ -94,6 +94,8 @@ const SUBCLASSES: readonly (readonly [
 /** Codes whose subclass lives in the package that owns the failure, not here. */
 const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'CONFIG_INVALID', // ConfigValidationError, @blackwing/config
+  // Raised as a plain AppError by the audit query API (apps/api audit-query, #86).
+  'INVALID_CURSOR',
   // TxRetryExhaustedError and TenantContextMismatchError, @blackwing/db (DB-004).
   'TX_RETRY_EXHAUSTED',
   'TENANT_CONTEXT_CONFLICT',
