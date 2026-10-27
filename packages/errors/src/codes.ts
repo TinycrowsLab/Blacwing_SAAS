@@ -71,6 +71,8 @@ const DEFINITIONS = {
   PERSONA_NOT_DEFINED: { status: 404, title: 'Persona not defined', retryable: false },
   PERSONA_FORBIDDEN_TOOL: { status: 422, title: 'Forbidden tool in persona', retryable: false },
   PERSONA_INVALID: { status: 422, title: 'Invalid persona definition', retryable: false },
+  // Model-tier resolution (REGISTRY-003, §8.9): a provider/model outside the gateway allowlist is refused.
+  MODEL_NOT_ALLOWED: { status: 403, title: 'Model not allowed', retryable: false },
   // `@blackwing/config` (FOUND-007) refuses to start on an invalid environment: a server fault.
   // Envelope encryption (SECRETS-002, §8.6/§8.7). Every failure fails closed: a tenant/purpose mismatch
   // is a refusal (403); a shredded KEK version is permanent (409).

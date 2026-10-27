@@ -102,6 +102,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'PERSONA_NOT_DEFINED',
   'PERSONA_FORBIDDEN_TOOL',
   'PERSONA_INVALID',
+  // TierError, @blackwing/agents (REGISTRY-003).
+  'MODEL_NOT_ALLOWED',
   // PromptError, @blackwing/agents (REGISTRY-002).
   'PROMPT_INVALID',
   'PROMPT_HASH_MISMATCH',

@@ -42,6 +42,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   PERSONA_NOT_DEFINED: 404,
   PERSONA_FORBIDDEN_TOOL: 422,
   PERSONA_INVALID: 422,
+  MODEL_NOT_ALLOWED: 403,
   PROMPT_INVALID: 422,
   PROMPT_HASH_MISMATCH: 500,
   AAD_MISMATCH: 403,
@@ -90,7 +91,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(62);
+    expect(ERROR_CODE_LIST).toHaveLength(63);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -206,6 +207,7 @@ describe('error-code registry', () => {
       | 'PERSONA_NOT_DEFINED'
       | 'PERSONA_FORBIDDEN_TOOL'
       | 'PERSONA_INVALID'
+      | 'MODEL_NOT_ALLOWED'
       | 'PROMPT_INVALID'
       | 'PROMPT_HASH_MISMATCH'
       | 'AAD_MISMATCH'
