@@ -68,7 +68,11 @@ beforeAll(async () => {
 }, 240_000);
 
 afterAll(async () => {
-  await Promise.all([real.stop(), scratch.stop()]);
+  // beforeAll may have failed before the handles existed; do not mask that error with a teardown TypeError.
+  await Promise.all([
+    (real as PostgresHandle | undefined)?.stop(),
+    (scratch as PostgresHandle | undefined)?.stop(),
+  ]);
 });
 
 describe('pnpm db:migrate on a fresh database', () => {

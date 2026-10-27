@@ -53,8 +53,9 @@ beforeAll(async () => {
 }, 180_000);
 
 afterAll(async () => {
-  await app.close();
-  await handle.stop();
+  await (app as AppDatabase | undefined)?.close();
+  // beforeAll may have failed before the handle existed; do not mask that error with a teardown TypeError.
+  await (handle as PostgresHandle | undefined)?.stop();
 });
 
 describe('app role (bw_app)', () => {

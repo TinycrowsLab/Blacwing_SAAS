@@ -76,7 +76,8 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await handle.stop();
+  // beforeAll may have failed before the handle existed; do not mask that error with a teardown TypeError.
+  await (handle as PostgresHandle | undefined)?.stop();
 });
 
 describe('isolation and context lifetime', () => {

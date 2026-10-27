@@ -53,7 +53,8 @@ beforeAll(async () => {
 }, 180_000);
 
 afterAll(async () => {
-  await handle.stop();
+  // beforeAll may have failed before the handle existed; do not mask that error with a teardown TypeError.
+  await (handle as PostgresHandle | undefined)?.stop();
 });
 
 async function insert(tenant: string, embedding: number[]): Promise<string> {

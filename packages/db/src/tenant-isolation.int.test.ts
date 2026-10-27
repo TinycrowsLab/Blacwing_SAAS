@@ -90,7 +90,8 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await db.stop();
+  // beforeAll may have failed before the handle existed; do not mask that error with a teardown TypeError.
+  await (db as PostgresHandle | undefined)?.stop();
 });
 
 describe('every tenant table', () => {
