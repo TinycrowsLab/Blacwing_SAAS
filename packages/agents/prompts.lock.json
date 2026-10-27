@@ -17,6 +17,12 @@
   "planner": {
     "1.0.0": "6b116181efa8fbba5f2ccea5d59707bb815c234035255e585fe17f91872fcc28"
   },
+  "remediation": {
+    "1.0.0": "17894080b8122273a1c471cb6b888d422b4b1638ba3d859daced387ac520ac40"
+  },
+  "reporter": {
+    "1.0.0": "264393aea9b5832686edac65edadbbbb30981fd748de9ed08046d4ca212398e5"
+  },
   "sub-planner": {
     "1.0.0": "4ad656fae63c9c832f645665cd6b2563a67dc2ddd361b7210843447e46688957"
   },
