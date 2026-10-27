@@ -41,6 +41,9 @@
   "source-spec-ingestion": {
     "1.0.0": "496ac9ce553d63702f81910ed85b707380ac2eb07c4ce6d7fb0cb1123e9a4f00"
   },
+  "session-setup": {
+    "1.0.0": "fd91b1973c744f84010126c9571b6993f4ca95d23b2e364ad689c97fc877364a"
+  },
   "sub-planner": {
     "1.0.0": "4ad656fae63c9c832f645665cd6b2563a67dc2ddd361b7210843447e46688957"
   },

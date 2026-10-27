@@ -13,6 +13,7 @@ export * from './reporter.js';
 export * from './oracles.js';
 export { plannerPersona, SURFACE_QUERY_TOOL, TEST_CASE_LIBRARY_READ_TOOL } from './planner.js';
 export { sourceSpecIngestionPersona, SURFACE_UPSERT_TOOL } from './source-spec-ingestion.js';
+export * from './session-setup.js';
 export { subPlannerPersona } from './sub-planner.js';
 export { threatIntelPersona } from './threat-intel.js';
 export { validatorAssistantPersona } from './validator-assistant.js';
