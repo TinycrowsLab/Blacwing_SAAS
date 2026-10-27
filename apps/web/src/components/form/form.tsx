@@ -19,6 +19,7 @@ import { FORM_ERROR_KEY, mapServerErrorsToForm } from './map-server-errors';
 import { NavigationGuardDialog } from './navigation-guard-dialog';
 import { useUnsavedChangesGuard } from './use-unsaved-changes-guard';
 import { isApiError } from '../../lib/api-error.js';
+import { t } from '../../lib/i18n';
 
 import type { FormNotify } from './notify';
 
@@ -87,21 +88,21 @@ export function Form<TInput extends FieldValues, TOutput>({
         if (isApiError(error)) {
           if (error.status === HTTP_PRECONDITION_FAILED) {
             notify?.({
-              title: 'Changed elsewhere',
-              description: 'Someone else updated this record. Reload to get the latest version.',
+              title: t('toast.changedElsewhere.title'),
+              description: t('toast.changedElsewhere.description'),
               variant: 'destructive',
-              ...(onRefetch ? { action: { label: 'Reload', run: onRefetch } } : {}),
+              ...(onRefetch ? { action: { label: t('toast.reload'), run: onRefetch } } : {}),
             });
           } else {
             mapServerErrorsToForm(error, form, { notify });
           }
         } else {
           notify?.({
-            title: 'Could not save',
-            description: 'Check your connection and try again. Your changes are kept.',
+            title: t('toast.couldNotSave.title'),
+            description: t('toast.couldNotSave.description'),
             variant: 'destructive',
             action: {
-              label: 'Retry',
+              label: t('toast.retry'),
               run: () => {
                 void submit();
               },

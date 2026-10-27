@@ -17,14 +17,25 @@ import {
 
 import { hasPermission } from '@blackwing/domain';
 
+import type { MessageKey } from './i18n';
 import type { Permission } from '@blackwing/contracts';
 
 const NAV_SECTIONS = ['Runs', 'Assets', 'Findings', 'Dashboards', 'Admin'] as const;
 export type NavSection = (typeof NAV_SECTIONS)[number];
 
+/** Catalogue key of each section heading (apps/web/src/messages/en.json). */
+export const NAV_SECTION_LABEL_KEYS: Readonly<Record<NavSection, MessageKey>> = {
+  Runs: 'nav.section.runs',
+  Assets: 'nav.section.assets',
+  Findings: 'nav.section.findings',
+  Dashboards: 'nav.section.dashboards',
+  Admin: 'nav.section.admin',
+};
+
 export interface NavItem {
   readonly key: string;
-  readonly label: string;
+  /** Catalogue key of the visible label; render it with `t()`. */
+  readonly labelKey: MessageKey;
   readonly href: string;
   readonly icon: LucideIcon;
   /** Omit for items every signed-in user may see. */
@@ -35,7 +46,7 @@ export interface NavItem {
 export const NAV_ITEMS: readonly NavItem[] = [
   {
     key: 'runs',
-    label: 'Runs',
+    labelKey: 'nav.item.runs',
     href: '/runs',
     icon: Activity,
     requiredPermission: 'run:read',
@@ -43,7 +54,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     key: 'assets',
-    label: 'Assets',
+    labelKey: 'nav.item.assets',
     href: '/assets',
     icon: Target,
     requiredPermission: 'asset:read',
@@ -51,7 +62,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     key: 'authorisations',
-    label: 'Authorisations',
+    labelKey: 'nav.item.authorisations',
     href: '/authorisations',
     icon: ShieldCheck,
     requiredPermission: 'sa:read',
@@ -59,16 +70,22 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     key: 'findings',
-    label: 'Findings',
+    labelKey: 'nav.item.findings',
     href: '/findings',
     icon: FileSearch,
     requiredPermission: 'finding:read',
     section: 'Findings',
   },
-  { key: 'overview', label: 'Overview', href: '/', icon: LayoutDashboard, section: 'Dashboards' },
+  {
+    key: 'overview',
+    labelKey: 'nav.item.overview',
+    href: '/',
+    icon: LayoutDashboard,
+    section: 'Dashboards',
+  },
   {
     key: 'coverage',
-    label: 'Coverage',
+    labelKey: 'nav.item.coverage',
     href: '/coverage',
     icon: Gauge,
     requiredPermission: 'coverage:read',
@@ -76,7 +93,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     key: 'members',
-    label: 'Members',
+    labelKey: 'nav.item.members',
     href: '/admin/members',
     icon: Users,
     requiredPermission: 'member:read',
@@ -84,7 +101,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     key: 'settings',
-    label: 'Settings',
+    labelKey: 'nav.item.settings',
     href: '/admin/settings',
     icon: Settings,
     requiredPermission: 'settings:read',
@@ -92,7 +109,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
   {
     key: 'audit',
-    label: 'Audit log',
+    labelKey: 'nav.item.audit',
     href: '/admin/audit',
     icon: ScrollText,
     requiredPermission: 'audit:read',

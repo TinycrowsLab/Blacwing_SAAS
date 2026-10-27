@@ -25,6 +25,11 @@ describe('breadcrumbsFor', () => {
     expect(breadcrumbsFor('/assets/42')[1]?.label).toBe('Details');
   });
 
+  it('never resolves inherited object properties as segment labels', () => {
+    expect(breadcrumbsFor('/constructor')[0]?.label).toBe('Constructor');
+    expect(breadcrumbsFor('/__proto__')[0]?.label).toBe('Proto');
+  });
+
   it('uses a loader-resolved label for an href when given', () => {
     expect(
       breadcrumbsFor('/runs/run_01HZXABCDEF', { '/runs/run_01HZXABCDEF': 'Nightly scan' })[1]

@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation';
 
 import { cn } from '@blackwing/ui';
 
-import { isActive, visibleNav } from '../../lib/nav';
+import { t } from '../../lib/i18n';
+import { isActive, NAV_SECTION_LABEL_KEYS, visibleNav } from '../../lib/nav';
 
 import type { ReactNode } from 'react';
 
@@ -19,16 +20,16 @@ export function NavList({
 }): ReactNode {
   const pathname = usePathname();
   return (
-    <nav aria-label="Primary" className="flex flex-col gap-4">
+    <nav aria-label={t('common.primaryNavigation')} className="flex flex-col gap-4">
       {visibleNav(roles).map(({ section, items }) => (
-        <section key={section} aria-label={section}>
+        <section key={section} aria-label={t(NAV_SECTION_LABEL_KEYS[section])}>
           <h2
             className={cn(
               'px-2 pb-1 text-xs font-semibold uppercase text-muted-foreground',
               collapsed && 'sr-only',
             )}
           >
-            {section}
+            {t(NAV_SECTION_LABEL_KEYS[section])}
           </h2>
           <ul className="flex flex-col gap-0.5">
             {items.map((item) => {
@@ -37,7 +38,7 @@ export function NavList({
                 <li key={item.key}>
                   <Link
                     href={item.href}
-                    title={item.label}
+                    title={t(item.labelKey)}
                     aria-current={active ? 'page' : undefined}
                     className={cn(
                       'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -45,7 +46,9 @@ export function NavList({
                     )}
                   >
                     <item.icon aria-hidden="true" className="size-4 shrink-0" />
-                    <span className={cn('truncate', collapsed && 'sr-only')}>{item.label}</span>
+                    <span className={cn('truncate', collapsed && 'sr-only')}>
+                      {t(item.labelKey)}
+                    </span>
                   </Link>
                 </li>
               );

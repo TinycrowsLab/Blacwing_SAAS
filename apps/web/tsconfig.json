@@ -5,11 +5,12 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "jsx": "preserve",
+    "resolveJsonModule": true,
     "rootDir": "src",
     "outDir": "dist",
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
-  "include": ["src"],
+  "include": ["src", "src/**/*.json"],
   "references": [
     {
       "path": "e2e"

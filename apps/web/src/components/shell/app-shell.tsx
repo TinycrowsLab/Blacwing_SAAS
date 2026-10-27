@@ -21,6 +21,7 @@ import {
 
 import { Breadcrumbs } from './breadcrumbs';
 import { NavList } from './nav-list';
+import { t } from '../../lib/i18n';
 
 import type { ReactNode } from 'react';
 
@@ -76,14 +77,14 @@ export function AppShell({ user, roles, children }: AppShellProps): ReactNode {
                 variant="ghost"
                 size="icon"
                 className="md:hidden"
-                aria-label="Open navigation"
+                aria-label={t('common.openNavigation')}
               >
                 <Menu aria-hidden="true" className="size-4" />
               </Button>
             </SheetTrigger>
             <SheetContent side="left">
-              <SheetTitle>Navigation</SheetTitle>
-              <SheetDescription className="sr-only">Console sections</SheetDescription>
+              <SheetTitle>{t('common.navigation')}</SheetTitle>
+              <SheetDescription className="sr-only">{t('common.consoleSections')}</SheetDescription>
               <div
                 onClick={(event) => {
                   if (event.target instanceof Element && event.target.closest('a') !== null) {
@@ -99,7 +100,7 @@ export function AppShell({ user, roles, children }: AppShellProps): ReactNode {
             variant="ghost"
             size="icon"
             className="hidden md:inline-flex"
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={collapsed ? t('common.expandSidebar') : t('common.collapseSidebar')}
             aria-expanded={!collapsed}
             onClick={toggleCollapsed}
           >
@@ -109,7 +110,7 @@ export function AppShell({ user, roles, children }: AppShellProps): ReactNode {
               <PanelLeftClose aria-hidden="true" className="size-4" />
             )}
           </Button>
-          <span className="font-semibold">Blackwing</span>
+          <span className="font-semibold">{t('common.appName')}</span>
           <div className="ml-4 min-w-0 flex-1">
             <Breadcrumbs />
           </div>
@@ -119,7 +120,7 @@ export function AppShell({ user, roles, children }: AppShellProps): ReactNode {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="User menu"
+                aria-label={t('common.userMenu')}
                 data-testid="app-shell-user"
               >
                 <Avatar className="size-7">

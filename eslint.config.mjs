@@ -299,6 +299,15 @@ export default defineConfig(
   },
 
   {
+    name: 'blackwing/shell-ui-strings',
+    files: ['apps/web/src/components/shell/**/*.tsx'],
+    // Test files render fixture text on purpose; the guard covers shipped components only.
+    ignores: TEST_FILES,
+    plugins: { blackwing: blackwingPlugin },
+    rules: { 'blackwing/no-literal-ui-strings': 'error' },
+  },
+
+  {
     name: 'blackwing/console-allowed',
     files: CONSOLE_ALLOWED_FILES,
     rules: {
