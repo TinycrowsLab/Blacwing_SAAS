@@ -18,6 +18,11 @@ import { PERSONA_NAMES, type PersonaName } from './persona.js';
  * `prompts.lock.json`; any mismatch fails closed. The lock is updated only by the release process.
  */
 
+/** Directory key of the base preamble prepended to every persona prompt (REGISTRY-003). */
+export const BASE_PROMPT_KEY = '_base';
+export type PromptKey = PersonaName | typeof BASE_PROMPT_KEY;
+export const PROMPT_KEYS: readonly PromptKey[] = [...PERSONA_NAMES, BASE_PROMPT_KEY];
+
 export type PromptMode = 'production' | 'dev' | 'eval';
 export const PROMPT_STATUSES = ['draft', 'released', 'deprecated'] as const;
 export type PromptStatus = (typeof PROMPT_STATUSES)[number];
@@ -47,7 +52,7 @@ export function compareSemver(a: string, b: string): number {
 }
 
 export const promptFrontMatterSchema = z.strictObject({
-  persona: z.enum(PERSONA_NAMES),
+  persona: z.enum([...PERSONA_NAMES, BASE_PROMPT_KEY]),
   version: z.string().regex(SEMVER, 'must be a semver (x.y.z)'),
   status: z.enum(PROMPT_STATUSES),
   changelog: z.string().trim().min(1).max(LIMIT.changelog),
@@ -147,7 +152,7 @@ export const promptLockSchema = z.record(
 export type PromptLock = z.infer<typeof promptLockSchema>;
 
 export interface LoadedPrompt {
-  readonly persona: PersonaName;
+  readonly persona: PromptKey;
   readonly body: string;
   readonly version: string;
   readonly sha256: string;
@@ -190,7 +195,7 @@ function listVersions(dir: string, persona: string): string[] {
     .sort(compareSemver);
 }
 
-function readOne(dir: string, persona: PersonaName, version: string): ParsedPrompt {
+function readOne(dir: string, persona: PromptKey, version: string): ParsedPrompt {
   const file = join(dir, persona, `${version}.md`);
   if (!existsSync(file)) {
     throw new PromptError(
@@ -211,11 +216,11 @@ function readOne(dir: string, persona: PersonaName, version: string): ParsedProm
  * lock (a missing entry counts as a mismatch). Fails closed with a {@link PromptError}.
  */
 export function loadPrompt(
-  persona: PersonaName,
+  persona: PromptKey,
   version?: string,
   opts: PromptLoaderOptions = {},
 ): LoadedPrompt {
-  if (!(PERSONA_NAMES as readonly string[]).includes(persona)) {
+  if (!PROMPT_KEYS.includes(persona)) {
     throw invalid(`unknown persona ${persona}`);
   }
   const dir = opts.promptsDir ?? join(PKG_ROOT, 'prompts');
