@@ -68,7 +68,9 @@
         "soc_kill.rejected",
         "outbox.delivery_failed",
         "scope.request.created",
-        "scope.request.status_changed"
+        "scope.request.status_changed",
+        "operator.kill_previewed",
+        "operator.kill_fired"
       ]
     },
     "severity": {

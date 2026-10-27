@@ -38,11 +38,22 @@ run needs a fresh authorisation review.
 | `run` | yes | `scopeRefId` = the run id | `kill:trigger` |
 | `asset` | yes | `scopeRefId` = the asset id | `kill:trigger` |
 | `tenant` | yes | no `scopeRefId`; the caller's own tenant | `kill:trigger` |
-| `global` | **no.** The domain model has the scope, but `KILL_API_SCOPES` excludes it and the API rejects it. | `platform:global_kill` (exists in RBAC, no route uses it yet) | - |
+| `global` | no. The tenant endpoint rejects it with `KILL_GLOBAL_NOT_ALLOWED_HERE`. Operators use `POST /operator/v1/kill` (see below). | `platform:global_kill` | - |
 
-So an operator **cannot yet trigger a global kill** through the product. A platform-wide stop today means one
-`tenant` kill per tenant, or an infrastructure action (see [incident-response.md](incident-response.md), common
-incident "runaway agents"). Treat this as a known gap for the launch review.
+**Platform operators** fire a `global` or `tenant` kill from the console page `/operator/kill`, which calls
+`/operator/v1/kill`. The page previews the blast radius (`GET /operator/v1/kill/blast-radius?scope=&tenantId=`,
+audited as `operator.kill_previewed`), requires the phrase `GLOBAL` (or `KILL <tenant slug>`) plus a reason, then
+follows the kill (`GET /operator/v1/kill/events/<id>`) and shows each phase and the measured halt time, flagging a
+gateway block over 2 s or a sandbox stop over 10 s. A tenant session is refused with `403 NOT_OPERATOR`. A second
+kill for a scope that already has one open is `409 KILL_ALREADY_IN_PROGRESS`. A kill that ended `partially_halted` or
+`failed` is shown as partial, with the components that did not stop, and a replay of its `Idempotency-Key` answers
+`424 KILL_PARTIAL`. Never read a missing phase as stopped.
+
+The operator route records the kill and hands the target set to the kill path through the `OperatorKillSignaler`
+port. The worker-side global propagation adapter (a `KillPropagationWorkflow` start with no tenant) is not part of
+this change, so until it is wired a global kill stays `initiated`. Check `bw_operator_kill_fired_total` and the kill
+event status, and fall back to one `tenant` kill per tenant (see [incident-response.md](incident-response.md),
+common incident "runaway agents").
 
 ## 3. Triggering a kill
 
@@ -100,6 +111,9 @@ telemetry that exists today:
 | Partial halt | `bw_kill_partial_halt_total{stage}` | Any increase means a partially halted kill; page |
 | Sandboxes stopped | `bw_kill_sandboxes_terminated_total` | Sandboxes confirmed gone |
 | Kill events | `bw_kill_events_total{scope,source,status}` | Kill events by scope and status |
+| Operator kills | `bw_operator_kill_fired_total{scope,result}` | Operator kill attempts (`accepted`, `forbidden`, `invalid`, `in_progress`, `partial`, `error`) |
+| Operator halt time | `bw_operator_kill_halt_ms` | Measured halt time of operator kills, once per kill |
+| Operator SLA breach | `bw_operator_kill_sla_breach_total{target}` | Kills over the gateway (2 s) or sandbox (10 s) target |
 | Enqueue failures | `bw_kill_enqueue_failures_total{scope}` | The reconciler retries these; any sustained rise is an incident |
 | Audit failures | `bw_kill_audit_failures_total{action}` | The kill goes on, but the ledger is missing an event; page |
 | Egress readiness | `egress_ready`, `egress_up` | Gateway health (fail-closed signals) |

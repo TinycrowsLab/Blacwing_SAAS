@@ -67,6 +67,29 @@ function traceIdOf(): string {
   return ctx?.traceId ?? randomBytes(TRACE_ID_BYTES).toString('hex');
 }
 
+/** Maps every error thrown inside `scope` to RFC 9457 problem+json (§9); bad JSON bodies become 422. */
+export function useProblemErrorHandler(
+  scope: FastifyInstance,
+  problems: ProblemDetailsMapper,
+): void {
+  scope.setErrorHandler((error: unknown, _request, reply) => {
+    const mapped = isAppError(error)
+      ? error
+      : (error as { code?: unknown }).code === 'FST_ERR_CTP_INVALID_JSON_BODY' ||
+          (error as { code?: unknown }).code === 'FST_ERR_CTP_INVALID_JSON' ||
+          (error as { code?: unknown }).code === 'FST_ERR_CTP_EMPTY_JSON_BODY'
+        ? new ValidationError('request body is not valid JSON', {
+            detail: 'request body is not valid JSON',
+          })
+        : error;
+    const response = problems.toProblemResponse(mapped, traceIdOf());
+    void reply
+      .status(response.status)
+      .headers({ ...response.headers })
+      .send(response.body);
+  });
+}
+
 /**
  * Registers `POST /v1/kill` and `GET /v1/kill/:id` on a Fastify instance (the NestJS Fastify adapter's
  * instance once the API bootstrap lands, #53). Thin handlers: authenticate, hand to the service,

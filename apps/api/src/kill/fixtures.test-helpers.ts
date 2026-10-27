@@ -111,7 +111,7 @@ export interface Harness {
 
 let tracingReady: InMemorySpanExporter | null = null;
 /** One global in-memory tracer for the test process (spans are asserted by name). */
-function tracing(): InMemorySpanExporter {
+export function tracing(): InMemorySpanExporter {
   if (tracingReady !== null) return tracingReady;
   const exporter = new InMemorySpanExporter();
   const provider = new BasicTracerProvider({ spanProcessors: [new SimpleSpanProcessor(exporter)] });

@@ -173,6 +173,13 @@ const DEFINITIONS = {
     title: 'Global kill is not allowed on this endpoint',
     retryable: false,
   },
+  // Operator global/tenant kill (KILL-013 / OPSUI kill control, F33/§1.2/§8.5). A caller who is not the
+  // platform operator is refused (403). A kill for a scope that already has an open one answers 409 and
+  // never starts a second. A kill that ended with some component still running is 424: surfaced, never
+  // reported as a success.
+  NOT_OPERATOR: { status: 403, title: 'Platform operator required', retryable: false },
+  KILL_ALREADY_IN_PROGRESS: { status: 409, title: 'Kill already in progress', retryable: false },
+  KILL_PARTIAL: { status: 424, title: 'Kill only partly completed', retryable: false },
   // Idempotency-Key handling (§9): a missing key on a creating POST is a malformed request (400);
   // reusing a key with a different body is refused (422) instead of replaying the wrong result.
   IDEMPOTENCY_KEY_REQUIRED: { status: 400, title: 'Idempotency key required', retryable: false },

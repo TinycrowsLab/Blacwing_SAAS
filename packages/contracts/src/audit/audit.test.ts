@@ -79,6 +79,8 @@ const RELEASED_ACTIONS = [
   'outbox.delivery_failed',
   'scope.request.created',
   'scope.request.status_changed',
+  'operator.kill_previewed',
+  'operator.kill_fired',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

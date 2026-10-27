@@ -414,6 +414,22 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     isAlwaysAudited: true,
     description: 'An assessment request changed status; metadata records from, to and the actor.',
   },
+  // operator kill control (F33, §1.2): appended, so the released order above is untouched
+  {
+    action: 'operator.kill_previewed',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'kill',
+    description: 'A platform operator previewed the blast radius of a global or tenant kill.',
+  },
+  {
+    action: 'operator.kill_fired',
+    defaultSeverity: 'critical',
+    isAlwaysAudited: true,
+    actionClass: 'kill',
+    description:
+      'A platform operator fired a global or tenant kill; metadata records scope, tenant, reason and status.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

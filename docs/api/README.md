@@ -11,6 +11,7 @@ committed and checked for drift in CI.
 | [`reference.md`](reference.md) | The API reference: every operation, parameter, request and response, schema and example, generated from `openapi.json`. |
 | [`conventions.md`](conventions.md) | Base URL, errors (problem+json and error codes), pagination, idempotency, ETag/If-Match and rate limits. |
 | [`auth.md`](auth.md) | Session cookies, personal access tokens (`bw_pat_`), CI tokens (`bw_ci_`), scopes and safe handling. |
+| [`openapi/operator-kill.v1.json`](openapi/operator-kill.v1.json) | The platform-operator global and tenant kill control (`/operator/v1/kill`). |
 
 Regenerate with `pnpm openapi:generate`, which also writes `reference.md` (`pnpm api-reference:check` fails when it is
 stale). `pnpm check:drift` fails when a generated file is stale. The docs site (`pnpm docs:build`) publishes these pages.

@@ -160,6 +160,10 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'KILL_REF_REQUIRED',
   'KILL_FORBIDDEN',
   'KILL_GLOBAL_NOT_ALLOWED_HERE',
+  // Raised by apps/api's operator kill module as OperatorKillError.
+  'NOT_OPERATOR',
+  'KILL_ALREADY_IN_PROGRESS',
+  'KILL_PARTIAL',
   'IDEMPOTENCY_KEY_REQUIRED',
   'IDEMPOTENCY_KEY_MISMATCH',
   // Raised by apps/api's Run Broker (API-014) as plain AppErrors.
