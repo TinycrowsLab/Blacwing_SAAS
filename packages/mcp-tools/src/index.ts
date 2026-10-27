@@ -31,3 +31,18 @@ export {
   type ToolSpec,
 } from './tool.js';
 export { type EvidenceSink } from './truncate.js';
+export {
+  buildHttpxArgs,
+  createHttpxMetrics,
+  type HttpEndpointRecord,
+  type HttpProbeContext,
+  type HttpProbeResult,
+  type HttpxMetrics,
+  HTTPX_DEFAULTS,
+  parseTech,
+  probeHttp,
+  type RedirectRecord,
+  type SkippedTarget,
+  spawnHttpx,
+  type TechSignal,
+} from './recon/httpx.js';

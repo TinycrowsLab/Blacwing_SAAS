@@ -16,6 +16,7 @@
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "catalog:",
     "@blackwing/contracts": "workspace:*",
+    "@blackwing/domain": "workspace:*",
     "@blackwing/errors": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
     "@opentelemetry/api": "catalog:",

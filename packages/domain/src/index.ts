@@ -67,7 +67,7 @@ export {
   serviceKey,
   technologyKey,
 } from './surface/fingerprint.js';
-export { normaliseUrlTemplate } from './surface/normalise.js';
+export { normaliseUrlTemplate, parseSurfaceUrl, type SurfaceUrl } from './surface/normalise.js';
 export {
   SURFACE_MAX_EDGES,
   SURFACE_MAX_NODES,
