@@ -1,5 +1,6 @@
 export * from './active-recon.js';
 export * from './code-specialist.js';
+export * from './exploit-developer.js';
 export * from './infrastructure-specialist.js';
 export * from './orchestrator.js';
 export * from './osint.js';

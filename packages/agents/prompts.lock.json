@@ -11,6 +11,9 @@
   "infrastructure-specialist": {
     "1.0.0": "583b4ff6b9426970b0da719d294f8fa7a7678d29c2da7be036b753c3caaa2c26"
   },
+  "exploit-developer": {
+    "1.0.0": "de935fdc1d870a73946efe865f35751c899627388e8944cfb0d4c1c6f59c4379"
+  },
   "orchestrator": {
     "1.0.0": "99f659a41b67d49950b30ebec76edd49dcb24427dbe39132d2e0a0cced5bdcae"
   },
