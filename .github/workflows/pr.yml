@@ -175,3 +175,25 @@ jobs:
           path: boundaries-report.json
           if-no-files-found: warn
           retention-days: 14
+
+  # Always-running aggregator and the single required status check for this workflow
+  # (.github/required-checks.json). `if: always()` makes it report even when a needed job fails or
+  # is skipped, so a skipped job can never leave a required check pending. Skipped counts as
+  # passing (the docs-only classifier skips lint/typecheck on purpose); failed or cancelled does not.
+  required-checks:
+    name: required-checks
+    if: ${{ always() }}
+    needs: [changes, lint, typecheck, commitlint, boundaries]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every pull-request job passed or was skipped
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | node -e '
+            const needs = JSON.parse(require("fs").readFileSync(0, "utf8"));
+            const bad = Object.entries(needs).filter(([, n]) => !["success", "skipped"].includes(n.result));
+            for (const [name, n] of bad) console.log(`::error::${name} finished with result ${n.result}`);
+            process.exit(bad.length ? 1 : 0);
+          '

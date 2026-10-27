@@ -3,12 +3,13 @@ name: go
 # Go build, test, vet and golangci-lint (incl. gosec) for apps/egress-gateway (CI-005, #139).
 # Every step calls the Makefile target developers run locally, with the committed
 # .golangci.yml, so local and CI results agree. -race stays on (§8.1/§8.2 critical code).
+#
+# The job is named `go` because that is the required status check (.github/required-checks.json).
+# There is deliberately no `paths` filter: a path-filtered workflow never reports a status on an
+# unrelated pull request, and a required check that never reports blocks the merge forever.
 
 on:
   pull_request:
-    paths:
-      - apps/egress-gateway/**
-      - .github/workflows/go.yml
   push:
     branches: [main]
   workflow_dispatch:
@@ -25,7 +26,8 @@ defaults:
     working-directory: apps/egress-gateway
 
 jobs:
-  egress-gateway:
+  go:
+    name: go
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
