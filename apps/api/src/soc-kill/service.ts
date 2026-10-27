@@ -6,7 +6,6 @@ import { z } from 'zod';
 import {
   type KillTriggerResponse,
   LIMITS,
-  type SocKillTokenScope,
   socKillTokenScopeSchema,
   uuidV7Schema,
 } from '@blackwing/contracts';
@@ -54,10 +53,14 @@ export const SOC_KILL_LIMITS = Object.freeze({
 const DEFAULT_ASSET_MAX_USES = 3;
 const DEFAULT_RUN_MAX_USES = 1;
 
+/** A link stops one asset or one run; a whole-tenant kill is console-only (it is not a SOC power). */
+const linkScopeSchema = socKillTokenScopeSchema.exclude(['tenant']);
+type SocKillTokenScope = z.infer<typeof linkScopeSchema>;
+
 /** The signed claims of a kill link (JWS payload). */
 const claimsSchema = z.strictObject({
   tenantId: uuidV7Schema,
-  scope: socKillTokenScopeSchema,
+  scope: linkScopeSchema,
   scopeRefId: uuidV7Schema,
   jti: uuidV7Schema,
   /** Epoch seconds. */
