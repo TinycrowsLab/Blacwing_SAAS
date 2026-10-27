@@ -28,7 +28,15 @@ export function createOtelKillMetrics(): KillStageMetrics {
   const workflows = meter.createCounter('bw_kill_workflows_cancelled_total', {
     description: 'Temporal workflows confirmed cancelled by the kill workflow stage',
   });
+  const halt = meter.createHistogram('bw_kill_halt_ms', {
+    description: 'Kill halt time in milliseconds, from trigger to completion (server timestamps)',
+    unit: 'ms',
+    advice: { explicitBucketBoundaries: LATENCY_BUCKETS },
+  });
   return {
+    haltMs: (ms) => {
+      halt.record(ms);
+    },
     keysRevoked: (count) => {
       keys.add(count);
     },

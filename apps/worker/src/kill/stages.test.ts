@@ -224,3 +224,76 @@ describe('halt time over all four stages', () => {
     }
   });
 });
+
+describe('kill completion (finalise, audit, metric)', () => {
+  it('records halt_ms once, emits bw_kill_halt_ms and audits kill.completed with the measured time', async () => {
+    const { acts, repo, advance, audits, metrics } = setup();
+    await acts.blockEgress({ ...ref, identities: [runIdentity(RUN_ID)] });
+    advance(250);
+    await acts.terminateSandboxes({ ...ref, sandboxIds: ['sbx'] });
+    await acts.revokeKeys({ ...ref, keyIds: KEYS });
+    await acts.cancelWorkflows({ ...ref, workflowIds: WFS, runIds: [RUN_ID] });
+    await acts.auditKillCompleted(ref);
+    expect(audits).toHaveLength(0);
+
+    await acts.finalizeKill(ref);
+    expect(repo.event.status).toBe('halted');
+    expect(metrics.halts).toEqual([250]);
+
+    await acts.auditKillCompleted(ref);
+    expect(audits).toHaveLength(1);
+    expect(audits[0]).toMatchObject({
+      action: 'kill.completed',
+      severity: 'critical',
+      outcome: 'success',
+      tenantId: TENANT,
+      killEventId: KILL_ID,
+      metadata: { status: 'halted', haltMs: 250 },
+    });
+  });
+
+  it('a re-run is a no-op: no second metric, no timestamp or halt_ms reset', async () => {
+    const { acts, repo, advance, metrics } = setup();
+    await acts.blockEgress({ ...ref, identities: [runIdentity(RUN_ID)] });
+    await acts.terminateSandboxes({ ...ref, sandboxIds: ['sbx'] });
+    await acts.revokeKeys({ ...ref, keyIds: KEYS });
+    await acts.cancelWorkflows({ ...ref, workflowIds: WFS, runIds: [RUN_ID] });
+    await acts.finalizeKill(ref);
+    const snapshot = { ...repo.event };
+    const haltMs = repo.haltMs;
+    advance(5_000);
+    await acts.revokeKeys({ ...ref, keyIds: KEYS });
+    await acts.cancelWorkflows({ ...ref, workflowIds: WFS, runIds: [RUN_ID] });
+    await acts.finalizeKill(ref);
+    expect(repo.event).toEqual(snapshot);
+    expect(repo.haltMs).toBe(haltMs);
+    expect(metrics.halts).toHaveLength(1);
+  });
+
+  it('gateway unreachable for revoke: completes partially_halted and audits the failure', async () => {
+    const { acts, repo, audits, metrics } = setup({
+      keys: new FakeKeyGateway(() => new Error('gateway down')),
+      keyDeadlineMs: 1_000,
+    });
+    await acts.blockEgress({ ...ref, identities: [runIdentity(RUN_ID)] });
+    await acts.terminateSandboxes({ ...ref, sandboxIds: ['sbx'] });
+    const keys = await acts.revokeKeys({ ...ref, keyIds: KEYS });
+    expect(keys.outcome).toBe('partially_halted');
+    await acts.cancelWorkflows({ ...ref, workflowIds: WFS, runIds: [RUN_ID] });
+    await acts.finalizeKill(ref);
+    expect(repo.event.status).toBe('partially_halted');
+    expect(metrics.halts).toHaveLength(1);
+    await acts.auditKillCompleted(ref);
+    expect(audits[0]).toMatchObject({
+      outcome: 'failure',
+      metadata: { status: 'partially_halted' },
+    });
+  });
+
+  it('empty kill emits halt 0 once', async () => {
+    const { acts, metrics } = setup();
+    await acts.completeEmptyKill(ref);
+    await acts.completeEmptyKill(ref);
+    expect(metrics.halts).toEqual([0]);
+  });
+});

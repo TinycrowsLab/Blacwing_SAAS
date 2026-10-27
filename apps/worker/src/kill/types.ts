@@ -167,6 +167,11 @@ export interface KillActivities {
     readonly killEventId: string;
     readonly result: WorkflowStageResult;
   }): Promise<void>;
+  /** Appends `kill.completed` (with the measured halt time) once the event has completed. No-op while open. */
+  auditKillCompleted(input: {
+    readonly tenantId: string;
+    readonly killEventId: string;
+  }): Promise<void>;
   /** Empty target set: `status=halted`, `halt_ms=0`. */
   completeEmptyKill(input: {
     readonly tenantId: string;

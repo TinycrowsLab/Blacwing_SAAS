@@ -38,8 +38,17 @@ export async function runKillPropagation(
     progress.current = { ...progress.current, ...patch };
   };
 
+  const auditCompleted = async (): Promise<void> => {
+    try {
+      await acts.auditKillCompleted(ref);
+    } catch {
+      // Retried by Temporal; the event is already complete, so the halt stands either way.
+    }
+  };
+
   if (isEmptyTargetSet(request)) {
     await acts.completeEmptyKill(ref);
+    await auditCompleted();
     set({ stage: 'done', completed: true });
     return;
   }
@@ -72,5 +81,6 @@ export async function runKillPropagation(
 
   set({ stage: 'finalizing' });
   const { completed } = await acts.finalizeKill(ref);
+  if (completed) await auditCompleted();
   set({ stage: 'done', completed });
 }

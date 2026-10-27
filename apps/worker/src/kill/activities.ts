@@ -613,11 +613,12 @@ export function createKillActivities(deps: KillActivityDeps): KillActivities {
     async completeEmptyKill({ tenantId, killEventId }) {
       const event = await requireEvent(repo, tenantId, killEventId);
       if (event.completedAt !== null) return;
-      await repo.complete(tenantId, killEventId, {
+      const won = await repo.complete(tenantId, killEventId, {
         status: 'halted',
         completedAt: now(),
         haltMs: 0,
       });
+      if (won) deps.metrics.haltMs(0);
       deps.metrics.stageResult('egress', 'nothing_to_stop');
     },
 
@@ -634,12 +635,32 @@ export function createKillActivities(deps: KillActivityDeps): KillActivities {
       }
       const completedAt = now();
       const clean = event.egressBlockedAt !== null && event.status !== 'partially_halted';
-      await repo.complete(tenantId, killEventId, {
+      // Server timestamps only: the halt time is never taken from a client or from the signal payload.
+      const haltMs = Math.max(0, completedAt.getTime() - event.triggeredAt.getTime());
+      const won = await repo.complete(tenantId, killEventId, {
         status: clean ? 'halted' : 'partially_halted',
         completedAt,
-        haltMs: Math.max(0, completedAt.getTime() - event.triggeredAt.getTime()),
+        haltMs,
       });
+      if (won) deps.metrics.haltMs(haltMs);
       return { completed: true };
+    },
+
+    async auditKillCompleted({ tenantId, killEventId }) {
+      const event = await requireEvent(repo, tenantId, killEventId);
+      if (event.completedAt === null) return;
+      await deps.audit.append({
+        action: 'kill.completed',
+        severity: 'critical',
+        outcome: event.status === 'halted' ? 'success' : 'failure',
+        tenantId,
+        killEventId,
+        occurredAt: event.completedAt.toISOString(),
+        metadata: {
+          status: event.status,
+          haltMs: Math.max(0, event.completedAt.getTime() - event.triggeredAt.getTime()),
+        },
+      });
     },
   };
 }

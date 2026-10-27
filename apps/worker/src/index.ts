@@ -11,6 +11,7 @@ export {
   type KillActivityDeps,
 } from './kill/activities.js';
 export { createHttpEgressControlClient, EGRESS_KILL_PATH } from './kill/egress-client.js';
+export { createHttpKeyControlClient, KEYS_REVOKE_PATH } from './kill/key-client.js';
 export {
   createHttpSandboxControlClient,
   SANDBOX_TERMINATE_PATH,

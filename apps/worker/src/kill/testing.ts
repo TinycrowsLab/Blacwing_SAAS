@@ -214,6 +214,10 @@ export class RecordingMetrics implements KillStageMetrics {
   partialHalt(): void {
     this.partial += 1;
   }
+  halts: number[] = [];
+  haltMs(ms: number): void {
+    this.halts.push(ms);
+  }
 }
 
 /** Deps wired to fakes with a virtual clock: `sleep` advances time instead of waiting. */

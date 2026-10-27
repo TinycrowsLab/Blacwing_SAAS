@@ -34,6 +34,10 @@ function recorder(overrides: Partial<KillActivities> = {}) {
         latencyMs: 1,
       }),
     auditWorkflowsCancelled: () => Promise.resolve(),
+    auditKillCompleted: () => {
+      calls.push('audit-completed');
+      return Promise.resolve();
+    },
     completeEmptyKill: () => {
       calls.push('empty');
       return Promise.resolve();
@@ -68,11 +72,37 @@ describe('runKillPropagation', () => {
     expect(calls).toEqual(['egress', 'audit', 'sandbox', 'keys', 'workflows', 'finalize']);
   });
 
+  it('audits kill.completed only once finalize reports the event complete', async () => {
+    const open = recorder();
+    await runKillPropagation(request, open.acts, [], fresh());
+    expect(open.calls).not.toContain('audit-completed');
+
+    const done = recorder({
+      finalizeKill: () => {
+        done.calls.push('finalize');
+        return Promise.resolve({ completed: true });
+      },
+    });
+    await runKillPropagation(request, done.acts, [], fresh());
+    expect(done.calls.at(-1)).toBe('audit-completed');
+    expect(done.calls.at(-2)).toBe('finalize');
+  });
+
+  it('a kill.completed audit failure does not undo the completed kill', async () => {
+    const { acts } = recorder({
+      finalizeKill: () => Promise.resolve({ completed: true }),
+      auditKillCompleted: () => Promise.reject(new Error('ledger down')),
+    });
+    const progress = fresh();
+    await runKillPropagation(request, acts, [], progress);
+    expect(progress.current).toMatchObject({ stage: 'done', completed: true });
+  });
+
   it('an empty target set completes immediately without touching the gateway', async () => {
     const { calls, acts } = recorder();
     const progress = fresh();
     await runKillPropagation(makeRequest([]), acts, [], progress);
-    expect(calls).toEqual(['empty']);
+    expect(calls).toEqual(['empty', 'audit-completed']);
     expect(progress.current).toMatchObject({ stage: 'done', completed: true });
     expect(isEmptyTargetSet(makeRequest([]))).toBe(true);
     expect(isEmptyTargetSet(request)).toBe(false);

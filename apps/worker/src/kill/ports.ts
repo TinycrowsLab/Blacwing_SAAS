@@ -126,7 +126,8 @@ export interface KillStageAuditRecord {
     | 'kill.egress_blocked'
     | 'kill.sandboxes_terminated'
     | 'kill.keys_revoked'
-    | 'kill.workflows_cancelled';
+    | 'kill.workflows_cancelled'
+    | 'kill.completed';
   readonly severity: 'critical';
   readonly outcome: 'success' | 'failure';
   readonly tenantId: string;
@@ -152,4 +153,6 @@ export interface KillStageMetrics {
   keysRevoked(count: number): void;
   /** Workflows confirmed cancelled (or already closed) by the workflow stage. */
   workflowsCancelled(count: number): void;
+  /** `bw_kill_halt_ms`: trigger-to-completion, measured once when the event completes. */
+  haltMs(ms: number): void;
 }
