@@ -45,6 +45,8 @@ const FIXTURE_FILES = [
   'scripts/tsconfig.json',
   'scripts/commit-scopes.mjs',
   'scripts/check-layout.mjs',
+  'scripts/eslint-rules/index.mjs',
+  'scripts/eslint-rules/no-raw-tenant-db.mjs',
   'scripts/sync-labels.mjs',
   MANIFEST_PATH,
 ];

@@ -200,8 +200,13 @@ describe('design tokens', () => {
     for (const [cssName, key] of pairs) {
       const entry = tokens.color[key];
       expect(entry).toBeDefined();
-      expect(block(':root')).toContain(`--${cssName}: ${entry?.light ?? ''};`);
-      expect(block('.dark')).toContain(`--${cssName}: ${entry?.dark ?? ''};`);
+      // Hex case is not significant (the formatter may normalise it).
+      expect(block(':root').toLowerCase()).toContain(
+        `--${cssName}: ${entry?.light ?? ''};`.toLowerCase(),
+      );
+      expect(block('.dark').toLowerCase()).toContain(
+        `--${cssName}: ${entry?.dark ?? ''};`.toLowerCase(),
+      );
     }
   });
 
