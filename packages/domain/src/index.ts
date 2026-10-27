@@ -57,3 +57,31 @@ export {
   transitions,
   type TransitionResult,
 } from './run/state.js';
+
+export {
+  Gate2AlreadyDecidedError,
+  Gate2DestructiveForbiddenError,
+  Gate2SeparationOfDutiesError,
+  IllegalGate2TransitionError,
+} from './gate2/errors.js';
+export {
+  applyGate2Event,
+  describeGate2Transition,
+  GATE2_EVENT_TYPES,
+  GATE2_EXCEPTIONS_METRIC,
+  GATE2_EXCEPTIONS_METRIC_LABELS,
+  GATE2_TRANSITION_LOG,
+  GATE2_TRANSITIONS,
+  type Gate2Actor,
+  type Gate2AuditIntent,
+  type Gate2DecisionRecord,
+  type Gate2Event,
+  type Gate2EventType,
+  type Gate2State,
+  type Gate2Status,
+  type Gate2TransitionContext,
+  type Gate2TransitionResult,
+  gate2Allows,
+  isGate2Terminal,
+  nextGate2Version,
+} from './gate2/state.js';

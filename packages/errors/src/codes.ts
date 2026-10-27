@@ -165,6 +165,28 @@ const DEFINITIONS = {
   // Per-tenant KEK (SECRETS-001): OpenBao sealed, unreachable or the AppRole login failed. Fail closed:
   // no shared-key fallback; the caller retries later.
   KEK_UNAVAILABLE: { status: 503, title: 'Tenant key unavailable', retryable: true },
+  // Gate 2 runtime exceptions (GATE2-001, F13/F31, §8.3/§8.4). A double decision or a refused
+  // transition is a conflict (409); separation of duties and the destructive block are refusals (403).
+  GATE2_ILLEGAL_TRANSITION: {
+    status: 409,
+    title: 'Illegal Gate 2 exception transition',
+    retryable: false,
+  },
+  GATE2_ALREADY_DECIDED: {
+    status: 409,
+    title: 'Gate 2 exception already decided',
+    retryable: false,
+  },
+  GATE2_SOD_VIOLATION: {
+    status: 403,
+    title: 'Separation of duties violated',
+    retryable: false,
+  },
+  GATE2_DESTRUCTIVE_FORBIDDEN: {
+    status: 403,
+    title: 'Destructive actions cannot be approved',
+    retryable: false,
+  },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

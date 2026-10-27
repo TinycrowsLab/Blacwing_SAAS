@@ -155,6 +155,11 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'AUDIT_EVENT_INVALID',
   // Raised by @blackwing/secrets (SECRETS-001) as a plain AppError.
   'KEK_UNAVAILABLE',
+  // Subclassed by @blackwing/domain's Gate 2 state machine (GATE2-001).
+  'GATE2_ILLEGAL_TRANSITION',
+  'GATE2_ALREADY_DECIDED',
+  'GATE2_SOD_VIOLATION',
+  'GATE2_DESTRUCTIVE_FORBIDDEN',
 ];
 
 describe('AppError subclasses', () => {

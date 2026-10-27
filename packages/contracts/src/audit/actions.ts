@@ -320,6 +320,23 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'Kill stage 4: the Temporal workflows of a kill were cancelled and pending reversal entries flagged.',
   },
+  // Gate 2 exceptions (GATE2-001, F13): appended, so the released order above is untouched
+  {
+    action: 'gate2.exception.created',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'gate_decision',
+    description:
+      'A tool call fell outside the approved envelope and a Gate 2 exception was opened (pending, default deny).',
+  },
+  {
+    action: 'gate2.decision.recorded',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'gate_decision',
+    description:
+      'A Gate 2 exception reached a terminal state: approved once, denied, timed out (denied) or superseded (denied).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

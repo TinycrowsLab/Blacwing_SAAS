@@ -1,0 +1,1496 @@
+{
+  "id": "d23edd74-fc91-415f-bb61-4a1f1dd79f0b",
+  "prevId": "72cacd0e-41b0-450b-b669-91bff94cc734",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.kill_events": {
+      "name": "kill_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope_ref_id": {
+          "name": "scope_ref_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_type": {
+          "name": "actor_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_ref": {
+          "name": "actor_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'initiated'"
+        },
+        "triggered_at": {
+          "name": "triggered_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "egress_blocked_at": {
+          "name": "egress_blocked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sandboxes_terminated_at": {
+          "name": "sandboxes_terminated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "keys_revoked_at": {
+          "name": "keys_revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "workflows_cancelled_at": {
+          "name": "workflows_cancelled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "halt_ms": {
+          "name": "halt_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "affected": {
+          "name": "affected",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "reenabled_at": {
+          "name": "reenabled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reenabled_by": {
+          "name": "reenabled_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "kill_events_tenant_scope_ref_idx": {
+          "name": "kill_events_tenant_scope_ref_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope_ref_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "kill_events_tenant_triggered_at_idx": {
+          "name": "kill_events_tenant_triggered_at_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "triggered_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "kill_events_tenant_isolation": {
+          "name": "kill_events_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "bw_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        },
+        "kill_events_operator_global": {
+          "name": "kill_events_operator_global",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "bw_operator"
+          ],
+          "using": "tenant_id IS NULL AND scope = 'global'",
+          "withCheck": "tenant_id IS NULL AND scope = 'global'"
+        }
+      },
+      "checkConstraints": {
+        "kill_events_scope_check": {
+          "name": "kill_events_scope_check",
+          "value": "\"kill_events\".\"scope\" IN ('run', 'asset', 'tenant', 'global')"
+        },
+        "kill_events_source_check": {
+          "name": "kill_events_source_check",
+          "value": "\"kill_events\".\"source\" IN ('console', 'api', 'soc_link', 'operator', 'system')"
+        },
+        "kill_events_status_check": {
+          "name": "kill_events_status_check",
+          "value": "\"kill_events\".\"status\" IN ('initiated', 'propagating', 'halted', 'partially_halted', 'failed')"
+        },
+        "kill_events_scope_ref_check": {
+          "name": "kill_events_scope_ref_check",
+          "value": "(\"kill_events\".\"scope\" IN ('run', 'asset')) = (\"kill_events\".\"scope_ref_id\" IS NOT NULL)"
+        },
+        "kill_events_tenant_check": {
+          "name": "kill_events_tenant_check",
+          "value": "\"kill_events\".\"tenant_id\" IS NOT NULL OR \"kill_events\".\"scope\" = 'global'"
+        },
+        "kill_events_reason_check": {
+          "name": "kill_events_reason_check",
+          "value": "length(btrim(\"kill_events\".\"reason\")) > 0"
+        },
+        "kill_events_halt_ms_check": {
+          "name": "kill_events_halt_ms_check",
+          "value": "\"kill_events\".\"halt_ms\" IS NULL OR \"kill_events\".\"halt_ms\" >= 0"
+        },
+        "kill_events_affected_check": {
+          "name": "kill_events_affected_check",
+          "value": "jsonb_typeof(\"kill_events\".\"affected\") = 'object'"
+        },
+        "kill_events_reenabled_check": {
+          "name": "kill_events_reenabled_check",
+          "value": "(\"kill_events\".\"reenabled_at\" IS NULL) = (\"kill_events\".\"reenabled_by\" IS NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.soc_contacts": {
+      "name": "soc_contacts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset_id": {
+          "name": "asset_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "citext",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notify_prewindow": {
+          "name": "notify_prewindow",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "notify_start": {
+          "name": "notify_start",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "notify_end": {
+          "name": "notify_end",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'en'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "soc_contacts_tenant_asset_idx": {
+          "name": "soc_contacts_tenant_asset_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "asset_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "soc_contacts_tenant_id_id_key": {
+          "name": "soc_contacts_tenant_id_id_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "tenant_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {
+        "soc_contacts_tenant_isolation": {
+          "name": "soc_contacts_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "soc_contacts_status_check": {
+          "name": "soc_contacts_status_check",
+          "value": "\"soc_contacts\".\"status\" IN ('active', 'disabled')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.soc_kill_tokens": {
+      "name": "soc_kill_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope_ref_id": {
+          "name": "scope_ref_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_sha256": {
+          "name": "token_sha256",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_uses": {
+          "name": "max_uses",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "use_count": {
+          "name": "use_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "soc_kill_tokens_tenant_scope_ref_idx": {
+          "name": "soc_kill_tokens_tenant_scope_ref_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope_ref_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "soc_kill_tokens_tenant_contact_idx": {
+          "name": "soc_kill_tokens_tenant_contact_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "contact_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "soc_kill_tokens_contact_fk": {
+          "name": "soc_kill_tokens_contact_fk",
+          "tableFrom": "soc_kill_tokens",
+          "tableTo": "soc_contacts",
+          "columnsFrom": [
+            "tenant_id",
+            "contact_id"
+          ],
+          "columnsTo": [
+            "tenant_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "soc_kill_tokens_token_sha256_key": {
+          "name": "soc_kill_tokens_token_sha256_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token_sha256"
+          ]
+        }
+      },
+      "policies": {
+        "soc_kill_tokens_tenant_isolation": {
+          "name": "soc_kill_tokens_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "soc_kill_tokens_scope_check": {
+          "name": "soc_kill_tokens_scope_check",
+          "value": "\"soc_kill_tokens\".\"scope\" IN ('run', 'asset', 'tenant')"
+        },
+        "soc_kill_tokens_scope_ref_check": {
+          "name": "soc_kill_tokens_scope_ref_check",
+          "value": "(\"soc_kill_tokens\".\"scope\" IN ('run', 'asset')) = (\"soc_kill_tokens\".\"scope_ref_id\" IS NOT NULL)"
+        },
+        "soc_kill_tokens_sha256_length_check": {
+          "name": "soc_kill_tokens_sha256_length_check",
+          "value": "octet_length(\"soc_kill_tokens\".\"token_sha256\") = 32"
+        },
+        "soc_kill_tokens_uses_check": {
+          "name": "soc_kill_tokens_uses_check",
+          "value": "\"soc_kill_tokens\".\"max_uses\" >= 1 AND \"soc_kill_tokens\".\"use_count\" >= 0 AND \"soc_kill_tokens\".\"use_count\" <= \"soc_kill_tokens\".\"max_uses\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.audit_events": {
+      "name": "audit_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seq": {
+          "name": "seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "severity": {
+          "name": "severity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor": {
+          "name": "actor",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target": {
+          "name": "target",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "metadata_ref": {
+          "name": "metadata_ref",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "run_id": {
+          "name": "run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ip": {
+          "name": "ip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prev_hash": {
+          "name": "prev_hash",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hash": {
+          "name": "hash",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "audit_events_tenant_occurred_at_idx": {
+          "name": "audit_events_tenant_occurred_at_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_events_tenant_action_idx": {
+          "name": "audit_events_tenant_action_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "action",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_events_run_id_idx": {
+          "name": "audit_events_run_id_idx",
+          "columns": [
+            {
+              "expression": "run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "audit_events_tenant_seq_key": {
+          "name": "audit_events_tenant_seq_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "tenant_id",
+            "seq"
+          ]
+        }
+      },
+      "policies": {
+        "audit_events_tenant_isolation": {
+          "name": "audit_events_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "audit_events_seq_check": {
+          "name": "audit_events_seq_check",
+          "value": "\"audit_events\".\"seq\" >= 1"
+        },
+        "audit_events_severity_check": {
+          "name": "audit_events_severity_check",
+          "value": "\"audit_events\".\"severity\" IN ('info', 'notice', 'warning', 'critical')"
+        },
+        "audit_events_outcome_check": {
+          "name": "audit_events_outcome_check",
+          "value": "\"audit_events\".\"outcome\" IN ('success', 'failure', 'denied')"
+        },
+        "audit_events_hash_length_check": {
+          "name": "audit_events_hash_length_check",
+          "value": "octet_length(\"audit_events\".\"hash\") = 32"
+        },
+        "audit_events_prev_hash_check": {
+          "name": "audit_events_prev_hash_check",
+          "value": "(\"audit_events\".\"seq\" = 1) = (\"audit_events\".\"prev_hash\" IS NULL) AND (\"audit_events\".\"prev_hash\" IS NULL OR octet_length(\"audit_events\".\"prev_hash\") = 32)"
+        },
+        "audit_events_actor_check": {
+          "name": "audit_events_actor_check",
+          "value": "jsonb_typeof(\"audit_events\".\"actor\") = 'object'"
+        },
+        "audit_events_target_check": {
+          "name": "audit_events_target_check",
+          "value": "jsonb_typeof(\"audit_events\".\"target\") = 'object'"
+        },
+        "audit_events_metadata_check": {
+          "name": "audit_events_metadata_check",
+          "value": "jsonb_typeof(\"audit_events\".\"metadata\") = 'object'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.outbox": {
+      "name": "outbox",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aggregate_type": {
+          "name": "aggregate_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aggregate_id": {
+          "name": "aggregate_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dedupe_key": {
+          "name": "dedupe_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "available_at": {
+          "name": "available_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "dispatched_at": {
+          "name": "dispatched_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "outbox_status_available_at_idx": {
+          "name": "outbox_status_available_at_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "available_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "outbox_tenant_dedupe_key_idx": {
+          "name": "outbox_tenant_dedupe_key_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "dedupe_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"outbox\".\"dedupe_key\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "outbox_tenant_isolation": {
+          "name": "outbox_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "outbox_type_check": {
+          "name": "outbox_type_check",
+          "value": "\"outbox\".\"type\" IN ('audit.event', 'notify.send', 'temporal.signal')"
+        },
+        "outbox_status_check": {
+          "name": "outbox_status_check",
+          "value": "\"outbox\".\"status\" IN ('pending', 'dispatched', 'failed')"
+        },
+        "outbox_payload_object_check": {
+          "name": "outbox_payload_object_check",
+          "value": "jsonb_typeof(\"outbox\".\"payload\") = 'object'"
+        },
+        "outbox_payload_size_check": {
+          "name": "outbox_payload_size_check",
+          "value": "octet_length(\"outbox\".\"payload\"::text) <= 65536"
+        },
+        "outbox_dedupe_key_check": {
+          "name": "outbox_dedupe_key_check",
+          "value": "\"outbox\".\"dedupe_key\" IS NULL OR length(\"outbox\".\"dedupe_key\") BETWEEN 1 AND 255"
+        },
+        "outbox_attempts_check": {
+          "name": "outbox_attempts_check",
+          "value": "\"outbox\".\"attempts\" >= 0"
+        },
+        "outbox_dispatched_check": {
+          "name": "outbox_dispatched_check",
+          "value": "\"outbox\".\"status\" <> 'dispatched' OR \"outbox\".\"dispatched_at\" IS NOT NULL"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.gate2_exceptions": {
+      "name": "gate2_exceptions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "run_id": {
+          "name": "run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subtask_id": {
+          "name": "subtask_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "test_case_id": {
+          "name": "test_case_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tool_name": {
+          "name": "tool_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "proposed_action": {
+          "name": "proposed_action",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "envelope_reason": {
+          "name": "envelope_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "intrusiveness": {
+          "name": "intrusiveness",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "batch": {
+          "name": "batch",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "state_version": {
+          "name": "state_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "requester_id": {
+          "name": "requester_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "plan_approver_id": {
+          "name": "plan_approver_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decided_by": {
+          "name": "decided_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decided_at": {
+          "name": "decided_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timeout_at": {
+          "name": "timeout_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "gate2_exceptions_tenant_run_state_idx": {
+          "name": "gate2_exceptions_tenant_run_state_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "state",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "gate2_exceptions_tenant_idempotency_key": {
+          "name": "gate2_exceptions_tenant_idempotency_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "tenant_id",
+            "idempotency_key"
+          ]
+        }
+      },
+      "policies": {
+        "gate2_exceptions_tenant_isolation": {
+          "name": "gate2_exceptions_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "gate2_exceptions_state_check": {
+          "name": "gate2_exceptions_state_check",
+          "value": "\"gate2_exceptions\".\"state\" IN ('pending', 'approved_once', 'denied', 'timed_out', 'superseded')"
+        },
+        "gate2_exceptions_intrusiveness_check": {
+          "name": "gate2_exceptions_intrusiveness_check",
+          "value": "\"gate2_exceptions\".\"intrusiveness\" IN ('passive', 'active_safe', 'state_changing', 'destructive')"
+        },
+        "gate2_exceptions_state_version_check": {
+          "name": "gate2_exceptions_state_version_check",
+          "value": "\"gate2_exceptions\".\"state_version\" >= 0"
+        },
+        "gate2_exceptions_tool_name_check": {
+          "name": "gate2_exceptions_tool_name_check",
+          "value": "length(btrim(\"gate2_exceptions\".\"tool_name\")) > 0"
+        },
+        "gate2_exceptions_envelope_reason_check": {
+          "name": "gate2_exceptions_envelope_reason_check",
+          "value": "length(btrim(\"gate2_exceptions\".\"envelope_reason\")) > 0"
+        },
+        "gate2_exceptions_session_id_check": {
+          "name": "gate2_exceptions_session_id_check",
+          "value": "length(btrim(\"gate2_exceptions\".\"session_id\")) > 0"
+        },
+        "gate2_exceptions_idempotency_key_check": {
+          "name": "gate2_exceptions_idempotency_key_check",
+          "value": "length(\"gate2_exceptions\".\"idempotency_key\") BETWEEN 1 AND 255"
+        },
+        "gate2_exceptions_proposed_action_check": {
+          "name": "gate2_exceptions_proposed_action_check",
+          "value": "jsonb_typeof(\"gate2_exceptions\".\"proposed_action\") = 'object'"
+        },
+        "gate2_exceptions_timeout_check": {
+          "name": "gate2_exceptions_timeout_check",
+          "value": "\"gate2_exceptions\".\"timeout_at\" > \"gate2_exceptions\".\"created_at\""
+        },
+        "gate2_exceptions_decided_at_check": {
+          "name": "gate2_exceptions_decided_at_check",
+          "value": "(\"gate2_exceptions\".\"state\" = 'pending') = (\"gate2_exceptions\".\"decided_at\" IS NULL)"
+        },
+        "gate2_exceptions_decided_by_check": {
+          "name": "gate2_exceptions_decided_by_check",
+          "value": "(\"gate2_exceptions\".\"state\" IN ('approved_once', 'denied')) = (\"gate2_exceptions\".\"decided_by\" IS NOT NULL)"
+        },
+        "gate2_exceptions_sod_check": {
+          "name": "gate2_exceptions_sod_check",
+          "value": "\"gate2_exceptions\".\"state\" <> 'approved_once' OR (\"gate2_exceptions\".\"decided_by\" IS DISTINCT FROM \"gate2_exceptions\".\"requester_id\" AND \"gate2_exceptions\".\"decided_by\" IS DISTINCT FROM \"gate2_exceptions\".\"plan_approver_id\")"
+        },
+        "gate2_exceptions_no_destructive_approval_check": {
+          "name": "gate2_exceptions_no_destructive_approval_check",
+          "value": "NOT (\"gate2_exceptions\".\"state\" = 'approved_once' AND \"gate2_exceptions\".\"intrusiveness\" = 'destructive')"
+        },
+        "gate2_exceptions_approved_in_time_check": {
+          "name": "gate2_exceptions_approved_in_time_check",
+          "value": "\"gate2_exceptions\".\"state\" <> 'approved_once' OR \"gate2_exceptions\".\"decided_at\" < \"gate2_exceptions\".\"timeout_at\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.gate_decisions": {
+      "name": "gate_decisions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gate": {
+          "name": "gate",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject_type": {
+          "name": "subject_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject_id": {
+          "name": "subject_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "run_id": {
+          "name": "run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decision": {
+          "name": "decision",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_id": {
+          "name": "actor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "decided_at": {
+          "name": "decided_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "timeout_at": {
+          "name": "timeout_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "auto": {
+          "name": "auto",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "gate_decisions_tenant_subject_idx": {
+          "name": "gate_decisions_tenant_subject_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "subject_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "subject_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "gate_decisions_tenant_run_idx": {
+          "name": "gate_decisions_tenant_run_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "gate_decisions_gate2_subject_idx": {
+          "name": "gate_decisions_gate2_subject_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "subject_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "subject_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"gate_decisions\".\"gate\" = 2",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "gate_decisions_tenant_isolation": {
+          "name": "gate_decisions_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "gate_decisions_gate_check": {
+          "name": "gate_decisions_gate_check",
+          "value": "\"gate_decisions\".\"gate\" IN (1, 2, 3)"
+        },
+        "gate_decisions_subject_type_check": {
+          "name": "gate_decisions_subject_type_check",
+          "value": "\"gate_decisions\".\"subject_type\" IN ('plan', 'gate2_exception', 'finding_batch')"
+        },
+        "gate_decisions_decision_check": {
+          "name": "gate_decisions_decision_check",
+          "value": "\"gate_decisions\".\"decision\" IN ('approved', 'edited', 'denied')"
+        },
+        "gate_decisions_reason_check": {
+          "name": "gate_decisions_reason_check",
+          "value": "length(btrim(\"gate_decisions\".\"reason\")) > 0"
+        },
+        "gate_decisions_actor_check": {
+          "name": "gate_decisions_actor_check",
+          "value": "\"gate_decisions\".\"auto\" = (\"gate_decisions\".\"actor_id\" IS NULL)"
+        },
+        "gate_decisions_auto_denied_check": {
+          "name": "gate_decisions_auto_denied_check",
+          "value": "NOT \"gate_decisions\".\"auto\" OR \"gate_decisions\".\"decision\" = 'denied'"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

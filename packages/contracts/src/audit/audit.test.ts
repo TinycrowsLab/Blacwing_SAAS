@@ -65,6 +65,8 @@ const RELEASED_ACTIONS = [
   'secret.kek_disabled',
   'kill.keys_revoked',
   'kill.workflows_cancelled',
+  'gate2.exception.created',
+  'gate2.decision.recorded',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

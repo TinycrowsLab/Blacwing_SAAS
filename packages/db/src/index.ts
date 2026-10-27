@@ -160,3 +160,17 @@ export {
   withOutbox,
   type WithOutboxOptions,
 } from './outbox.js';
+export {
+  createGate2Service,
+  type Gate2AuditEvent,
+  type Gate2AuditSink,
+  type Gate2CreateResult,
+  type Gate2DecideResult,
+  type Gate2DecisionRequest,
+  type Gate2Metrics,
+  gate2Service,
+  type Gate2Service,
+  type Gate2ServiceOptions,
+  toGate2Exception,
+} from './gate2.js';
+export { drizzleGate2Store, type Gate2Store, type Gate2Transition } from './gate2-store.js';
