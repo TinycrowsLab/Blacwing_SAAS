@@ -200,15 +200,17 @@ func TestConfigLogValueListsFieldsExplicitly(t *testing.T) {
 	assert.Contains(t, buf.String(), `"config":{"env":"production","log_level":"error",`+
 		`"mgmt_addr":":9090","http_proxy_addr":":3128","socks_addr":":1080","dns_addr":":5353",`+
 		`"policy_snapshot_path":"/var/run/blackwing/policy.snapshot","valkey_url":"[REDACTED]",`+
-		`"otlp_export":false,"drain_timeout":"10s"}`)
+		`"otlp_export":false,"drain_timeout":"10s","read_timeout":"30s","write_timeout":"1m0s",`+
+		`"idle_timeout":"1m30s","max_header_bytes":65536,"mitm_enabled":true}`)
 }
 
 func TestKeysAreSortedAndComplete(t *testing.T) {
 	keys := config.Keys()
 	assert.Equal(t, []string{
 		"BW_ENV", "GATEWAY_DNS_ADDR", "GATEWAY_DRAIN_TIMEOUT", "GATEWAY_HTTP_PROXY_ADDR",
-		"GATEWAY_MGMT_ADDR", "GATEWAY_SOCKS_ADDR", "LOG_LEVEL", "OTEL_EXPORTER_OTLP_ENDPOINT",
-		"POLICY_SNAPSHOT_PATH", "VALKEY_URL",
+		"GATEWAY_IDLE_TIMEOUT", "GATEWAY_MAX_HEADER_BYTES", "GATEWAY_MGMT_ADDR", "GATEWAY_MITM_ENABLED",
+		"GATEWAY_READ_TIMEOUT", "GATEWAY_SOCKS_ADDR", "GATEWAY_WRITE_TIMEOUT", "LOG_LEVEL",
+		"OTEL_EXPORTER_OTLP_ENDPOINT", "POLICY_SNAPSHOT_PATH", "VALKEY_URL",
 	}, keys)
 	for i := 1; i < len(keys); i++ {
 		assert.True(t, strings.Compare(keys[i-1], keys[i]) < 0)

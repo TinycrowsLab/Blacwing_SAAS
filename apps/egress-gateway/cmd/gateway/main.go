@@ -4,9 +4,11 @@
 //
 // This build is the EGRESS-001 chassis: typed configuration, structured JSON logs,
 // Prometheus metrics, OpenTelemetry tracing, the management plane (/healthz,
-// /readyz, /metrics) and a graceful SIGTERM/SIGINT drain. No data-plane listener is
-// registered yet and the gateway is never ready until a verified policy snapshot
-// is loaded (EGRESS-003), so every egress attempt is denied.
+// /readyz, /metrics) and a graceful SIGTERM/SIGINT drain, plus the HTTP/1.1 forward
+// proxy (EGRESS-005) registered with a fail-closed token verifier and policy
+// evaluator until those land. The gateway is never ready, and so no data plane
+// starts, until a verified policy snapshot is loaded (EGRESS-003), so every egress
+// attempt is denied.
 //
 // Usage:
 //
@@ -30,6 +32,8 @@ import (
 	"time"
 
 	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/config"
+	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/httpproxy"
+	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/identity"
 	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/obs"
 	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/server"
 )
@@ -132,9 +136,10 @@ func cmdRun(ctx context.Context, lookup config.LookupFunc, logOut io.Writer) int
 		slog.Any("config_keys", config.Keys()),
 		slog.String("config_hash", cfg.Hash()),
 	)
-	// Fail closed: no data-plane listener is registered in this build, and data
-	// planes are only ever started after a verified policy snapshot is loaded.
-	boot.Warn("data plane not implemented in this build: no listeners bound, all egress denied",
+	// Fail closed: the HTTP proxy is registered but its token verifier and policy
+	// evaluator are not wired in this build (EGRESS-003/010), so it answers 407/403 to
+	// every request; data planes only start after a verified policy snapshot is loaded.
+	boot.Warn("token verifier and policy evaluator not wired in this build: all egress denied",
 		slog.String("posture", "deny_all"),
 	)
 
@@ -151,14 +156,38 @@ func cmdRun(ctx context.Context, lookup config.LookupFunc, logOut io.Writer) int
 		}
 	}()
 
+	metrics := obs.NewMetrics(version, commit)
+	auth, err := identity.NewAuthenticator(identity.Options{Logger: logger, Registerer: metrics.Registry, Tracer: tp.Tracer(obs.ServiceName)})
+	if err != nil {
+		boot.Error("identity setup failed: refusing to start", slog.String("error", err.Error()))
+		return exitError
+	}
+	httpPlane, err := httpproxy.New(httpproxy.Options{
+		Addr:           cfg.HTTPProxyAddr,
+		ReadTimeout:    cfg.ReadTimeout,
+		WriteTimeout:   cfg.WriteTimeout,
+		IdleTimeout:    cfg.IdleTimeout,
+		MaxHeaderBytes: cfg.MaxHeaderBytes,
+		MITMEnabled:    cfg.MITMEnabled,
+		Auth:           auth,
+		Logger:         logger,
+		Registerer:     metrics.Registry,
+		Tracer:         tp,
+	})
+	if err != nil {
+		boot.Error("http proxy setup failed: refusing to start", slog.String("error", err.Error()))
+		return exitError
+	}
+
 	gw, err := server.New(server.Options{
-		Config:    cfg,
-		Logger:    logger,
-		Metrics:   obs.NewMetrics(version, commit),
-		Version:   version,
-		Commit:    commit,
-		Tracer:    tp,
-		Telemetry: tp,
+		Config:     cfg,
+		Logger:     logger,
+		Metrics:    metrics,
+		DataPlanes: []server.DataPlane{httpPlane},
+		Version:    version,
+		Commit:     commit,
+		Tracer:     tp,
+		Telemetry:  tp,
 	})
 	if err != nil {
 		boot.Error("gateway setup failed: refusing to start", slog.String("error", err.Error()))
