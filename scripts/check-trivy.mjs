@@ -14,10 +14,13 @@
 //   node scripts/check-trivy.mjs wiring [--root <dir>]
 
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { parse } from 'yaml';
+// `yaml` is loaded lazily, only by the wiring check: the fs scan job runs `summary` without a
+// `pnpm install`, so a top-level import would fail there.
+const require = createRequire(import.meta.url);
 
 export const IGNORE_FILE = '.trivyignore';
 export const WORKFLOW = '.github/workflows/trivy.yml';
@@ -169,6 +172,8 @@ export function summaryLine(label, counts, total) {
 function load(file) {
   if (!existsSync(file)) return undefined;
   /** @type {unknown} */
+  /** @type {{ parse: (text: string) => unknown }} */
+  const { parse } = require('yaml');
   const doc = parse(readFileSync(file, 'utf8'));
   return isRecord(doc) ? doc : undefined;
 }
