@@ -8,3 +8,4 @@ export * from './compose.js';
 export * from './persona.js';
 export * from './prompt.js';
 export * from './base-preamble.js';
+export * from './personas/index.js';
