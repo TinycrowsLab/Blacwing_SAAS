@@ -108,3 +108,9 @@ export {
 export { createOtelExecutionMetrics } from './run/execution/metrics.js';
 export type * from './run/execution/ports.js';
 export * from './run/execution/types.js';
+export { createPlanningActivities, type PlanningActivityDeps } from './run/planning/activities.js';
+export { evaluateAutoApproval } from './run/planning/auto-approval.js';
+export { createOtelPlanningMetrics } from './run/planning/metrics.js';
+export { checkPlan } from './run/planning/plan-check.js';
+export type * from './run/planning/ports.js';
+export * from './run/planning/types.js';

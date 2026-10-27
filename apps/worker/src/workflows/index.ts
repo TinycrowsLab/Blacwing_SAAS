@@ -5,6 +5,7 @@
 export { AgentSessionWorkflow } from './agent-session.workflow.js';
 export { ExecutionWorkflow } from './execution.js';
 export { KillPropagationWorkflow } from './kill-propagation.js';
+export { PlanningWorkflow } from './planning.js';
 export { PostExecutionWorkflow } from './post-execution.js';
 export { PreflightWorkflow } from './preflight.js';
 export { ReconWorkflow } from './recon.js';

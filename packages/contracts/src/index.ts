@@ -171,8 +171,11 @@ export {
   TERMINAL_RUN_STATES,
 } from './entities/run.js';
 export {
+  MAX_PLAN_TEST_CASES,
   type Oracle,
   oracleSchema,
+  type PlannedTestCase,
+  plannedTestCaseSchema,
   type StandardsRefs,
   standardsRefsSchema,
   type TestCase,
@@ -182,6 +185,9 @@ export {
   type TestCaseStatus,
   testCaseStatusSchema,
   TEST_CASE_STATUSES_WITH_REASON,
+  type TestPlan,
+  testPlanJsonSchema,
+  testPlanSchema,
 } from './entities/test-case.js';
 export {
   type AcceptedRisk,

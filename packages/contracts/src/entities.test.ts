@@ -8,11 +8,14 @@ import {
   assetSchema,
   findingSchema,
   isoDateTimeSchema,
+  MAX_PLAN_TEST_CASES,
   runSchema,
   standingAuthorisationSchema,
   membershipSchema,
   tenantSchema,
   testCaseSchema,
+  testPlanJsonSchema,
+  testPlanSchema,
   userSchema,
   uuidV7Schema,
 } from './index.js';
@@ -350,6 +353,52 @@ describe('test case (§3.5, §8.3)', () => {
     expect(
       testCaseSchema.safeParse({ ...testCase, oracle: { type: 'Bad Type', params: {} } }).success,
     ).toBe(false);
+  });
+});
+
+describe('test plan (planner output, ORCH-005)', () => {
+  const proposed = {
+    class: testCase.class,
+    title: testCase.title,
+    refs: testCase.refs,
+    cweCandidates: testCase.cweCandidates,
+    targets: testCase.targets,
+    roles: testCase.roles,
+    budget: testCase.budget,
+    oracle: testCase.oracle,
+    negativeControl: testCase.negativeControl,
+  };
+
+  it('accepts the proposed fields of a test case, including the oracle and negative control', () => {
+    const parsed = testPlanSchema.parse({ testCases: [{ ...proposed, negativeControl: oracle }] });
+    expect(parsed.testCases[0]?.negativeControl).toEqual(oracle);
+  });
+
+  it('parses an empty plan so the orchestrator can fail it with PLAN_EMPTY', () => {
+    expect(testPlanSchema.safeParse({ testCases: [] }).success).toBe(true);
+  });
+
+  it('keeps the destructive class parseable: persistence rejects it, not the schema', () => {
+    expect(
+      testPlanSchema.safeParse({ testCases: [{ ...proposed, class: 'destructive' }] }).success,
+    ).toBe(true);
+  });
+
+  it('rejects a missing oracle, identity fields, unknown keys and an oversized plan', () => {
+    expect(
+      testPlanSchema.safeParse({ testCases: [{ ...proposed, oracle: undefined }] }).success,
+    ).toBe(false);
+    expect(
+      testPlanSchema.safeParse({ testCases: [{ ...proposed, status: 'approved' }] }).success,
+    ).toBe(false);
+    expect(testPlanSchema.safeParse({ testCases: [proposed], extra: 1 }).success).toBe(false);
+    const many = Array.from({ length: MAX_PLAN_TEST_CASES + 1 }, () => proposed);
+    expect(testPlanSchema.safeParse({ testCases: many }).success).toBe(false);
+  });
+
+  it('publishes a JSON Schema for the planner outputFormat', () => {
+    const schema = testPlanJsonSchema();
+    expect(schema).toMatchObject({ type: 'object', required: ['testCases'] });
   });
 });
 

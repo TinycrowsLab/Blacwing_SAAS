@@ -22,7 +22,8 @@ import { ForbiddenError, IllegalRunTransitionError, ValidationError } from '@bla
  * Error code: the registry code for a refused transition is `ILLEGAL_RUN_TRANSITION` (409), the
  * stable code the issue text calls `RUN_ILLEGAL_TRANSITION`.
  *
- * Assumptions (conservative, reversible): a rejected Gate 1 cancels the run; `cancel` is legal only
+ * Assumptions (conservative, reversible): a rejected Gate 1 cancels the run, unless the approver asks
+ * for a re-plan (`gate1_replan`, back to `planning` for a new plan version, ORCH-005); `cancel` is legal only
  * before execution starts and while waiting at Gate 3 (once agents may have acted, use `kill`);
  * `window_closed` stops a run that may be sending traffic (`failed`) and cancels one that has not
  * started executing.
@@ -49,6 +50,7 @@ export type SimpleRunEventType =
   | 'plan_proposed'
   | 'gate1_approved'
   | 'gate1_rejected'
+  | 'gate1_replan'
   | 'execution_started'
   | 'resume'
   | 'validation_started'
@@ -76,6 +78,7 @@ export const RUN_EVENT_TYPES: readonly RunEventType[] = Object.freeze<RunEventTy
   'plan_proposed',
   'gate1_approved',
   'gate1_rejected',
+  'gate1_replan',
   'execution_started',
   'pause',
   'resume',
@@ -181,6 +184,7 @@ export const transitions: Record<RunState, Row> = {
   awaiting_gate1: {
     gate1_approved: 'approved',
     gate1_rejected: 'cancelled',
+    gate1_replan: 'planning',
     cancel: 'cancelled',
     window_closed: 'cancelled',
     ...ANYTIME,
