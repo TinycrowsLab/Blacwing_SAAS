@@ -1,5 +1,5 @@
 /** Client-side counters the console emits. Names match the issue's observability contract. */
-export type ClientEventName = 'error_boundary_trip' | 'permission_denied_view';
+export type ClientEventName = 'error_boundary_trip' | 'permission_denied_view' | 'kill_requested';
 
 /** Redaction-safe payload: event, route name and the two support identifiers. Nothing else can be added. */
 export interface ClientEvent {
@@ -7,6 +7,10 @@ export interface ClientEvent {
   readonly route: string;
   readonly code?: string;
   readonly traceId?: string;
+  /** Public run id (`run_…`) of a kill request. */
+  readonly runId?: string;
+  /** Idempotency key of a kill request; a correlation token, not a secret. */
+  readonly idempotencyKey?: string;
 }
 
 export type ClientEventSink = (event: ClientEvent) => void;
@@ -43,13 +47,22 @@ export function setClientEventSink(next: ClientEventSink): () => void {
 export function emitClientEvent(
   event: ClientEventName,
   route: string,
-  ids: { code?: string | undefined; traceId?: string | undefined } = {},
+  ids: {
+    code?: string | undefined;
+    traceId?: string | undefined;
+    runId?: string | undefined;
+    idempotencyKey?: string | undefined;
+  } = {},
 ): void {
   const payload: ClientEvent = {
     event,
     route: routeName(route),
     ...(ids.code !== undefined && SAFE_TOKEN.test(ids.code) ? { code: ids.code } : {}),
     ...(ids.traceId !== undefined && SAFE_TOKEN.test(ids.traceId) ? { traceId: ids.traceId } : {}),
+    ...(ids.runId !== undefined && SAFE_TOKEN.test(ids.runId) ? { runId: ids.runId } : {}),
+    ...(ids.idempotencyKey !== undefined && SAFE_TOKEN.test(ids.idempotencyKey)
+      ? { idempotencyKey: ids.idempotencyKey }
+      : {}),
   };
   try {
     sink(payload);

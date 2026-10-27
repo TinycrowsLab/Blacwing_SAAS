@@ -26,6 +26,29 @@ describe('emitClientEvent', () => {
     ]);
   });
 
+  it('carries a kill request run id and idempotency key, dropping unsafe values', () => {
+    const seen: ClientEvent[] = [];
+    const restore = setClientEventSink((e) => seen.push(e));
+    emitClientEvent('kill_requested', '/assessments/run_x', {
+      runId: 'run_01jbz3k6w8f5r4t2n9q7x0m1ab',
+      idempotencyKey: '0190-abc',
+    });
+    emitClientEvent('kill_requested', '/assessments/x', {
+      runId: 'has spaces',
+      idempotencyKey: 'a=b;c',
+    });
+    restore();
+    expect(seen).toEqual([
+      {
+        event: 'kill_requested',
+        route: '/assessments/run_x',
+        runId: 'run_01jbz3k6w8f5r4t2n9q7x0m1ab',
+        idempotencyKey: '0190-abc',
+      },
+      { event: 'kill_requested', route: '/assessments/x' },
+    ]);
+  });
+
   it('never throws when the sink throws', () => {
     const restore = setClientEventSink(() => {
       throw new Error('boom');
