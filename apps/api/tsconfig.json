@@ -15,6 +15,7 @@
     { "path": "../../packages/errors" },
     { "path": "../../packages/ids" },
     { "path": "../../packages/logger" },
+    { "path": "../../packages/secrets" },
     { "path": "../../packages/testing" },
     { "path": "../../packages/time" }
   ]

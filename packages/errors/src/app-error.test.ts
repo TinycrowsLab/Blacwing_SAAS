@@ -171,6 +171,9 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'SECRET_SHREDDED',
   'RUN_KILLED',
   'EXTERNAL_BACKEND_UNAVAILABLE',
+  // Raised by apps/api's secrets module (SECRETS-004) as SecretApiError.
+  'SECRET_NAME_CONFLICT',
+  'SECRET_IN_USE',
 ];
 
 describe('AppError subclasses', () => {

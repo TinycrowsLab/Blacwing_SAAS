@@ -33,6 +33,7 @@ export {
   type EnvelopeCrypto,
   type EnvelopeCryptoOptions,
   EnvelopeError,
+  SECRET_VALUE_PURPOSE,
   type EnvelopeMetrics,
 } from './envelope.js';
 export { createTransit, type TransitClient } from './transit.js';

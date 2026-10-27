@@ -62,7 +62,10 @@
         "workflow.completed",
         "workflow.failed",
         "workflow.cancelled",
-        "workflow.continued_as_new"
+        "workflow.continued_as_new",
+        "secret.created",
+        "secret.updated",
+        "secret.deleted"
       ]
     },
     "severity": {

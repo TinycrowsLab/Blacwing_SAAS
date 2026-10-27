@@ -31,6 +31,12 @@ export class EnvelopeError extends AppError {
   }
 }
 
+/**
+ * The AAD `purpose` of a secret's stored value. The write API (SECRETS-004) encrypts with it and the
+ * resolver (SECRETS-006) must decrypt with the same, so a value envelope cannot be replayed as any other.
+ */
+export const SECRET_VALUE_PURPOSE = 'secret_value';
+
 /** What a ciphertext is bound to besides the tenant (the AAD is `jcs({tenantId, secretId?, purpose})`). */
 export interface EnvelopeContext {
   readonly secretId?: string;

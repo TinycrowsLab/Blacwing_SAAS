@@ -1,8 +1,9 @@
 import { idempotencyKeySchema, problemSchema } from '@blackwing/contracts';
 import { ERROR_CODES, type ErrorCode } from '@blackwing/errors';
 
-import { errorResponses, type JsonObject, jsonSchema } from './schema.js';
+import { errorResponses, type JsonObject, jsonSchema, type OpenApiModule } from './schema.js';
 import { killOpenApiDocument } from '../kill/openapi.js';
+import { secretsOpenApiModule } from '../secrets/openapi.js';
 
 /** Largest page a client may request (§9). */
 export const PAGE_LIMIT_MAX = 200;
@@ -12,15 +13,6 @@ const API_PREFIX = '/v1';
 const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'] as const;
 /** Paths under these prefixes are never part of the public spec (the sandbox-only Run Broker API). */
 const INTERNAL_PATH_PREFIXES = ['/internal'] as const;
-
-/** A feature module's contribution to the public API document. Paths are written as served (`/v1/...`). */
-export interface OpenApiModule {
-  readonly tag: string;
-  readonly description: string;
-  readonly paths: JsonObject;
-  /** Schemas under `components.schemas`; the shared `Problem` is added by the builder. */
-  readonly schemas: JsonObject;
-}
 
 /** The kill trigger API (KILL-003) as a module of the combined document. */
 export function killOpenApiModule(): OpenApiModule {
@@ -40,7 +32,7 @@ export function killOpenApiModule(): OpenApiModule {
 
 /** Every module published in the public spec. Internal routers (`/internal/broker`) are deliberately absent. */
 export function publicOpenApiModules(): readonly OpenApiModule[] {
-  return [killOpenApiModule()];
+  return [killOpenApiModule(), secretsOpenApiModule()];
 }
 
 function commonParameters(): JsonObject {

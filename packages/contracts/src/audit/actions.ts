@@ -371,6 +371,29 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     isAlwaysAudited: true,
     description: 'A Temporal workflow execution continued as new.',
   },
+  // write-only secrets API (SECRETS-004, §8.7/§8.8): the event records the secret id, never the value
+  {
+    action: 'secret.created',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'A secret was created through the write-only secrets API (the value is never recorded).',
+  },
+  {
+    action: 'secret.updated',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A secret value was replaced with a new version (the value is never recorded).',
+  },
+  {
+    action: 'secret.deleted',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A secret was disabled (soft delete); a secret still in use needs force.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

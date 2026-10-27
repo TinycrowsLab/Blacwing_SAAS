@@ -7,15 +7,10 @@ import { Validator } from '@seriousme/openapi-schema-validator';
 import { afterAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import {
-  buildOpenApiDocument,
-  countOperations,
-  type OpenApiModule,
-  publicOpenApiModules,
-} from './document.js';
+import { buildOpenApiDocument, countOperations, publicOpenApiModules } from './document.js';
 import { apiPackageVersion, currentOpenApiDocument, emitOpenApi, SPEC_FILE } from './emit.js';
 import { lintOpenApiDocument } from './lint.js';
-import { type JsonObject, registerSchema } from './schema.js';
+import { type JsonObject, type OpenApiModule, registerSchema } from './schema.js';
 
 type Json = Record<string, unknown>;
 const at = (value: unknown, ...keys: string[]): Json =>
@@ -104,7 +99,7 @@ describe('public OpenAPI document', () => {
     for (const item of Object.values(at(doc, 'paths'))) {
       for (const operation of Object.values(item as Json) as Json[]) {
         ids.push(operation.operationId as string);
-        expect(operation.tags).toEqual(['kill']);
+        expect(operation.tags).toEqual(['kill', 'secrets']);
         const refs = Object.entries(operation.responses as Json)
           .filter(([status]) => Number(status) >= 400)
           .map(([, r]) => at(r, 'content', 'application/problem+json', 'schema').$ref);
@@ -167,7 +162,7 @@ describe('public OpenAPI document', () => {
   });
 
   it('exposes every module from publicOpenApiModules', () => {
-    expect(publicOpenApiModules().map((m) => m.tag)).toEqual(['kill']);
+    expect(publicOpenApiModules().map((m) => m.tag)).toEqual(['kill', 'secrets']);
   });
 });
 

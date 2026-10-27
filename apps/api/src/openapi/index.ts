@@ -3,7 +3,6 @@ export {
   countOperations,
   countSchemas,
   killOpenApiModule,
-  type OpenApiModule,
   PAGE_LIMIT_DEFAULT,
   PAGE_LIMIT_MAX,
   publicOpenApiModules,
@@ -21,6 +20,7 @@ export {
   errorResponses,
   type JsonObject,
   jsonSchema,
+  type OpenApiModule,
   problemExamples,
   registerSchema,
 } from './schema.js';

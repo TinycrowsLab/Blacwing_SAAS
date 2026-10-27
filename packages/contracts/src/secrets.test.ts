@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  createSecretRequestSchema,
   EXTERNAL_SECRET_BACKENDS,
   formatSecretRef,
   isSecretRefError,
@@ -9,8 +10,12 @@ import {
   SECRET_BACKENDS,
   SECRET_NAME_MAX,
   SecretRefError,
+  secretMetadataSchema,
   secretNameSchema,
   secretRefSchema,
+  secretValueSchema,
+  secretWriteResponseSchema,
+  updateSecretRequestSchema,
 } from './secrets.js';
 
 const TENANT = '0190f6a2-7b1c-7d2e-8f3a-123456789abc';
@@ -148,5 +153,88 @@ describe('backends', () => {
   it('every external backend is a known backend, and openbao is the internal one', () => {
     for (const backend of EXTERNAL_SECRET_BACKENDS) expect(SECRET_BACKENDS).toContain(backend);
     expect(EXTERNAL_SECRET_BACKENDS as readonly string[]).not.toContain('openbao');
+  });
+});
+
+describe('secretValueSchema', () => {
+  it.each([' padded\n', 'a', '-----BEGIN-----\r\n\tx', '€', '😀'])(
+    'accepts %j unchanged',
+    (value) => {
+      expect(secretValueSchema.parse(value)).toBe(value);
+    },
+  );
+
+  it.each([
+    ['empty', ''],
+    ['NUL', 'a\u0000b'],
+    ['lone high surrogate', 'a\uD800b'],
+    ['lone low surrogate', '\uDC00'],
+    ['non-string', 1],
+  ])('rejects %s', (_why, value) => {
+    expect(secretValueSchema.safeParse(value).success).toBe(false);
+  });
+});
+
+describe('create and update request schemas', () => {
+  it('accept the documented members and reject any other (no envelope, status or id)', () => {
+    expect(
+      createSecretRequestSchema.safeParse({
+        name: 'n',
+        type: 'api_key',
+        purpose: 'p',
+        value: 'v',
+        backend: 'openbao',
+      }).success,
+    ).toBe(true);
+    for (const extra of ['envelope', 'status', 'id', 'secretId', 'currentVersion']) {
+      expect(
+        createSecretRequestSchema.safeParse({ name: 'n', value: 'v', [extra]: 1 }).success,
+      ).toBe(false);
+    }
+    expect(updateSecretRequestSchema.safeParse({ value: 'v' }).success).toBe(true);
+    expect(updateSecretRequestSchema.safeParse({ value: 'v', name: 'n' }).success).toBe(false);
+  });
+
+  it('NFC-normalises the name and rejects control characters', () => {
+    expect(createSecretRequestSchema.parse({ name: 'cafe\u0301', value: 'v' }).name).toBe(
+      'caf\u00e9',
+    );
+    expect(createSecretRequestSchema.safeParse({ name: 'a\nb', value: 'v' }).success).toBe(false);
+  });
+});
+
+describe('response schemas', () => {
+  const metadata = {
+    secretId: SECRET,
+    secretRef: `bw-secret://${TENANT}/${SECRET}`,
+    name: 'n',
+    type: null,
+    purpose: null,
+    backend: 'openbao',
+    status: 'active',
+    currentVersion: 1,
+    createdAt: '2026-10-22T10:00:00.000Z',
+    updatedAt: '2026-10-22T10:00:00.000Z',
+  };
+
+  it('cannot carry a value or an envelope: strict objects reject them', () => {
+    expect(secretMetadataSchema.safeParse(metadata).success).toBe(true);
+    expect(secretMetadataSchema.safeParse({ ...metadata, value: 'v' }).success).toBe(false);
+    expect(secretMetadataSchema.safeParse({ ...metadata, envelope: {} }).success).toBe(false);
+    expect(
+      secretWriteResponseSchema.safeParse({
+        secretId: SECRET,
+        secretRef: metadata.secretRef,
+        version: 1,
+      }).success,
+    ).toBe(true);
+    expect(
+      secretWriteResponseSchema.safeParse({
+        secretId: SECRET,
+        secretRef: metadata.secretRef,
+        version: 1,
+        value: 'v',
+      }).success,
+    ).toBe(false);
   });
 });

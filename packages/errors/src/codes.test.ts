@@ -86,6 +86,8 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   SECRET_SHREDDED: 410,
   RUN_KILLED: 423,
   EXTERNAL_BACKEND_UNAVAILABLE: 503,
+  SECRET_NAME_CONFLICT: 409,
+  SECRET_IN_USE: 409,
   INTERNAL: 500,
 };
 
@@ -99,7 +101,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(71);
+    expect(ERROR_CODE_LIST).toHaveLength(73);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -260,6 +262,8 @@ describe('error-code registry', () => {
       | 'SECRET_SHREDDED'
       | 'RUN_KILLED'
       | 'EXTERNAL_BACKEND_UNAVAILABLE'
+      | 'SECRET_NAME_CONFLICT'
+      | 'SECRET_IN_USE'
       | 'INTERNAL'
     >();
     expectTypeOf<HttpStatusOf<'NOT_FOUND'>>().toEqualTypeOf<404>();

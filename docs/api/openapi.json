@@ -14,12 +14,18 @@
     {
       "name": "kill",
       "description": "Kill switch: stop every agent in a run, asset or tenant scope."
+    },
+    {
+      "name": "secrets",
+      "description": "Write-only secrets: create, replace and disable; metadata is readable, a value never is."
     }
   ],
   "paths": {
     "/kill": {
       "post": {
-        "tags": ["kill"],
+        "tags": [
+          "kill"
+        ],
         "operationId": "triggerKill",
         "summary": "Trigger the kill switch for a run, asset or the whole tenant",
         "description": "Requires kill:trigger and the Cedar Kill::trigger resource check. An asset_owner may kill only assets they own; only org_admin may kill the tenant. Propagation is asynchronous: poll the Location.",
@@ -214,7 +220,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE, SECRET_DISABLED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE, SECRET_DISABLED, SECRET_NAME_CONFLICT, SECRET_IN_USE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -268,6 +274,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_NAME_CONFLICT": {
+                    "summary": "Secret name already exists",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_NAME_CONFLICT",
+                      "title": "Secret name already exists",
+                      "status": 409,
+                      "code": "SECRET_NAME_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_IN_USE": {
+                    "summary": "Secret is still in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_IN_USE",
+                      "title": "Secret is still in use",
+                      "status": 409,
+                      "code": "SECRET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -376,7 +402,9 @@
     },
     "/kill/{id}": {
       "get": {
-        "tags": ["kill"],
+        "tags": [
+          "kill"
+        ],
         "operationId": "getKillEvent",
         "summary": "A kill event with its halt timings",
         "security": [
@@ -541,7 +569,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE, SECRET_DISABLED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE, SECRET_DISABLED, SECRET_NAME_CONFLICT, SECRET_IN_USE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -595,6 +623,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_NAME_CONFLICT": {
+                    "summary": "Secret name already exists",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_NAME_CONFLICT",
+                      "title": "Secret name already exists",
+                      "status": 409,
+                      "code": "SECRET_NAME_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_IN_USE": {
+                    "summary": "Secret is still in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_IN_USE",
+                      "title": "Secret is still in use",
+                      "status": 409,
+                      "code": "SECRET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -820,6 +868,1575 @@
           }
         }
       }
+    },
+    "/secrets": {
+      "post": {
+        "tags": [
+          "secrets"
+        ],
+        "operationId": "createSecret",
+        "summary": "Create a secret",
+        "description": "Encrypts the value into the tenant envelope and answers with the secret_ref. The value is never returned and never logged. Idempotency-Key is required: a retry with the same key and body returns the first result.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255,
+              "pattern": "^[\\x21-\\x7e]+$"
+            },
+            "example": "secret-7f3c2a9e-1"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSecretRequest"
+              },
+              "examples": {
+                "apiKey": {
+                  "summary": "An API key",
+                  "value": {
+                    "name": "staging-api-key",
+                    "type": "api_key",
+                    "purpose": "Authenticated scans of staging",
+                    "value": "example-value-not-a-real-key"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created. The Location is the secret; no value is returned.",
+            "headers": {
+              "Location": {
+                "description": "URL of the secret.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretWriteResponse"
+                },
+                "examples": {
+                  "created": {
+                    "value": {
+                      "secretId": "01890a5d-ac96-774b-bcce-b302099a8057",
+                      "secretRef": "bw-secret://01890a5d-ac96-774b-bcce-b302099a8058/01890a5d-ac96-774b-bcce-b302099a8057",
+                      "version": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PERSONA_NOT_DEFINED": {
+                    "summary": "Persona not defined",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+                      "title": "Persona not defined",
+                      "status": 404,
+                      "code": "PERSONA_NOT_DEFINED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PROMPT_NO_RELEASED_VERSION": {
+                    "summary": "No released prompt version",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+                      "title": "No released prompt version",
+                      "status": 404,
+                      "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_NOT_FOUND": {
+                    "summary": "Secret not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+                      "title": "Secret not found",
+                      "status": 404,
+                      "code": "SECRET_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of SECRET_NAME_CONFLICT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "SECRET_NAME_CONFLICT": {
+                    "summary": "Secret name already exists",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_NAME_CONFLICT",
+                      "title": "Secret name already exists",
+                      "status": 409,
+                      "code": "SECRET_NAME_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Problem details; code is one of SECRET_TOO_LARGE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "SECRET_TOO_LARGE": {
+                    "summary": "Secret too large",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_TOO_LARGE",
+                      "title": "Secret too large",
+                      "status": 413,
+                      "code": "SECRET_TOO_LARGE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED, IDEMPOTENCY_KEY_MISMATCH.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_MISMATCH": {
+                    "summary": "Idempotency key reused with a different request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+                      "title": "Idempotency key reused with a different request",
+                      "status": 422,
+                      "code": "IDEMPOTENCY_KEY_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Problem details; code is one of KEK_UNAVAILABLE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "KEK_UNAVAILABLE": {
+                    "summary": "Tenant key unavailable",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEK_UNAVAILABLE",
+                      "title": "Tenant key unavailable",
+                      "status": 503,
+                      "code": "KEK_UNAVAILABLE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "secrets"
+        ],
+        "operationId": "listSecrets",
+        "summary": "List secret metadata",
+        "description": "Metadata only: never a value or an envelope. Cursor-paginated by creation order.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of secret metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretMetadataPage"
+                },
+                "examples": {
+                  "page": {
+                    "value": {
+                      "items": [
+                        {
+                          "secretId": "01890a5d-ac96-774b-bcce-b302099a8057",
+                          "secretRef": "bw-secret://01890a5d-ac96-774b-bcce-b302099a8058/01890a5d-ac96-774b-bcce-b302099a8057",
+                          "name": "staging-api-key",
+                          "type": "api_key",
+                          "purpose": "Authenticated scans of staging",
+                          "backend": "openbao",
+                          "status": "active",
+                          "currentVersion": 1,
+                          "createdAt": "2026-10-22T10:00:00.000Z",
+                          "updatedAt": "2026-10-22T10:00:00.000Z"
+                        }
+                      ],
+                      "nextCursor": null,
+                      "hasMore": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE, SECRET_DISABLED, SECRET_NAME_CONFLICT, SECRET_IN_USE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "CONFLICT": {
+                    "summary": "Conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONFLICT",
+                      "title": "Conflict",
+                      "status": 409,
+                      "code": "CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ILLEGAL_RUN_TRANSITION": {
+                    "summary": "Illegal run state transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+                      "title": "Illegal run state transition",
+                      "status": 409,
+                      "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEK_DISABLED": {
+                    "summary": "Key version disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEK_DISABLED",
+                      "title": "Key version disabled",
+                      "status": 409,
+                      "code": "KEK_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_ACTIVE": {
+                    "summary": "Run is not active",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+                      "title": "Run is not active",
+                      "status": 409,
+                      "code": "RUN_NOT_ACTIVE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_DISABLED": {
+                    "summary": "Secret disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+                      "title": "Secret disabled",
+                      "status": 409,
+                      "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_NAME_CONFLICT": {
+                    "summary": "Secret name already exists",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_NAME_CONFLICT",
+                      "title": "Secret name already exists",
+                      "status": 409,
+                      "code": "SECRET_NAME_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_IN_USE": {
+                    "summary": "Secret is still in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_IN_USE",
+                      "title": "Secret is still in use",
+                      "status": 409,
+                      "code": "SECRET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secrets/{id}": {
+      "get": {
+        "tags": [
+          "secrets"
+        ],
+        "operationId": "getSecret",
+        "summary": "Read secret metadata",
+        "description": "Metadata only: there is no way to read a value back.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The secret metadata.",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretMetadata"
+                },
+                "examples": {
+                  "metadata": {
+                    "value": {
+                      "secretId": "01890a5d-ac96-774b-bcce-b302099a8057",
+                      "secretRef": "bw-secret://01890a5d-ac96-774b-bcce-b302099a8058/01890a5d-ac96-774b-bcce-b302099a8057",
+                      "name": "staging-api-key",
+                      "type": "api_key",
+                      "purpose": "Authenticated scans of staging",
+                      "backend": "openbao",
+                      "status": "active",
+                      "currentVersion": 1,
+                      "createdAt": "2026-10-22T10:00:00.000Z",
+                      "updatedAt": "2026-10-22T10:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE, SECRET_DISABLED, SECRET_NAME_CONFLICT, SECRET_IN_USE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "CONFLICT": {
+                    "summary": "Conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONFLICT",
+                      "title": "Conflict",
+                      "status": 409,
+                      "code": "CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ILLEGAL_RUN_TRANSITION": {
+                    "summary": "Illegal run state transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+                      "title": "Illegal run state transition",
+                      "status": 409,
+                      "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEK_DISABLED": {
+                    "summary": "Key version disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEK_DISABLED",
+                      "title": "Key version disabled",
+                      "status": 409,
+                      "code": "KEK_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_ACTIVE": {
+                    "summary": "Run is not active",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+                      "title": "Run is not active",
+                      "status": 409,
+                      "code": "RUN_NOT_ACTIVE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_DISABLED": {
+                    "summary": "Secret disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+                      "title": "Secret disabled",
+                      "status": 409,
+                      "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_NAME_CONFLICT": {
+                    "summary": "Secret name already exists",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_NAME_CONFLICT",
+                      "title": "Secret name already exists",
+                      "status": 409,
+                      "code": "SECRET_NAME_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_IN_USE": {
+                    "summary": "Secret is still in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_IN_USE",
+                      "title": "Secret is still in use",
+                      "status": 409,
+                      "code": "SECRET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "secrets"
+        ],
+        "operationId": "updateSecret",
+        "summary": "Replace a secret value",
+        "description": "Stores the value as a new version and increments currentVersion. If-Match is optional: send the ETag of the version you read to fail with 412 when someone else updated first.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "description": "ETag of the version being replaced; a stale value answers 412.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "\"v1\""
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSecretRequest"
+              },
+              "examples": {
+                "replace": {
+                  "value": {
+                    "value": "another-example-value"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new version; no value is returned.",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretWriteResponse"
+                },
+                "examples": {
+                  "updated": {
+                    "value": {
+                      "secretId": "01890a5d-ac96-774b-bcce-b302099a8057",
+                      "secretRef": "bw-secret://01890a5d-ac96-774b-bcce-b302099a8058/01890a5d-ac96-774b-bcce-b302099a8057",
+                      "version": 2
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of CONFLICT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "CONFLICT": {
+                    "summary": "Conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONFLICT",
+                      "title": "Conflict",
+                      "status": 409,
+                      "code": "CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Problem details; code is one of PRECONDITION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PRECONDITION_FAILED": {
+                    "summary": "Precondition failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PRECONDITION_FAILED",
+                      "title": "Precondition failed",
+                      "status": 412,
+                      "code": "PRECONDITION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Problem details; code is one of SECRET_TOO_LARGE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "SECRET_TOO_LARGE": {
+                    "summary": "Secret too large",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_TOO_LARGE",
+                      "title": "Secret too large",
+                      "status": 413,
+                      "code": "SECRET_TOO_LARGE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Problem details; code is one of PRECONDITION_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PRECONDITION_REQUIRED": {
+                    "summary": "Precondition required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+                      "title": "Precondition required",
+                      "status": 428,
+                      "code": "PRECONDITION_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Problem details; code is one of KEK_UNAVAILABLE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "KEK_UNAVAILABLE": {
+                    "summary": "Tenant key unavailable",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEK_UNAVAILABLE",
+                      "title": "Tenant key unavailable",
+                      "status": 503,
+                      "code": "KEK_UNAVAILABLE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "secrets"
+        ],
+        "operationId": "deleteSecret",
+        "summary": "Disable a secret",
+        "description": "Soft delete: sets status to disabled. A secret that other resources still reference answers 409 SECRET_IN_USE, naming the resource types; repeat with force=true to disable it anyway. Hard delete only happens through the shred flow.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "required": false,
+            "description": "Disable even though the secret is still referenced.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "example": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The secret, now disabled (also when it already was).",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretMetadata"
+                },
+                "examples": {
+                  "disabled": {
+                    "value": {
+                      "secretId": "01890a5d-ac96-774b-bcce-b302099a8057",
+                      "secretRef": "bw-secret://01890a5d-ac96-774b-bcce-b302099a8058/01890a5d-ac96-774b-bcce-b302099a8057",
+                      "name": "staging-api-key",
+                      "type": "api_key",
+                      "purpose": "Authenticated scans of staging",
+                      "backend": "openbao",
+                      "status": "disabled",
+                      "currentVersion": 1,
+                      "createdAt": "2026-10-22T10:00:00.000Z",
+                      "updatedAt": "2026-10-22T10:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of SECRET_IN_USE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "SECRET_IN_USE": {
+                    "summary": "Secret is still in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_IN_USE",
+                      "title": "Secret is still in use",
+                      "status": 409,
+                      "code": "SECRET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -896,6 +2513,53 @@
       }
     },
     "schemas": {
+      "CreateSecretRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "password",
+              "api_key",
+              "token",
+              "certificate",
+              "ssh_key",
+              "webhook_secret",
+              "kms_ref",
+              "generic"
+            ]
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1
+          },
+          "backend": {
+            "type": "string",
+            "enum": [
+              "openbao",
+              "aws_kms",
+              "vault",
+              "aws_secrets_manager",
+              "azure_kv"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "value"
+        ],
+        "additionalProperties": false
+      },
       "KillEvent": {
         "type": "object",
         "properties": {
@@ -916,7 +2580,12 @@
           },
           "scope": {
             "type": "string",
-            "enum": ["run", "asset", "tenant", "global"]
+            "enum": [
+              "run",
+              "asset",
+              "tenant",
+              "global"
+            ]
           },
           "scopeRefId": {
             "anyOf": [
@@ -931,7 +2600,13 @@
           },
           "source": {
             "type": "string",
-            "enum": ["console", "api", "soc_link", "operator", "system"]
+            "enum": [
+              "console",
+              "api",
+              "soc_link",
+              "operator",
+              "system"
+            ]
           },
           "actorType": {
             "type": "string",
@@ -949,7 +2624,13 @@
           },
           "status": {
             "type": "string",
-            "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
+            "enum": [
+              "initiated",
+              "propagating",
+              "halted",
+              "partially_halted",
+              "failed"
+            ]
           },
           "triggeredAt": {
             "type": "string",
@@ -1043,10 +2724,17 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": ["blocked", "already_blocked", "failed"]
+                      "enum": [
+                        "blocked",
+                        "already_blocked",
+                        "failed"
+                      ]
                     }
                   },
-                  "required": ["identity", "outcome"],
+                  "required": [
+                    "identity",
+                    "outcome"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -1077,10 +2765,18 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": ["terminated", "already_gone", "terminating", "failed"]
+                      "enum": [
+                        "terminated",
+                        "already_gone",
+                        "terminating",
+                        "failed"
+                      ]
                     }
                   },
-                  "required": ["sandboxId", "outcome"],
+                  "required": [
+                    "sandboxId",
+                    "outcome"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -1101,10 +2797,17 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": ["revoked", "already_revoked", "failed"]
+                      "enum": [
+                        "revoked",
+                        "already_revoked",
+                        "failed"
+                      ]
                     }
                   },
-                  "required": ["keyId", "outcome"],
+                  "required": [
+                    "keyId",
+                    "outcome"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -1125,10 +2828,18 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": ["cancelled", "already_closed", "not_found", "failed"]
+                      "enum": [
+                        "cancelled",
+                        "already_closed",
+                        "not_found",
+                        "failed"
+                      ]
                     }
                   },
-                  "required": ["workflowId", "outcome"],
+                  "required": [
+                    "workflowId",
+                    "outcome"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -1204,7 +2915,11 @@
         "properties": {
           "scope": {
             "type": "string",
-            "enum": ["run", "asset", "tenant"]
+            "enum": [
+              "run",
+              "asset",
+              "tenant"
+            ]
           },
           "scopeRefId": {
             "type": "string",
@@ -1215,7 +2930,10 @@
             "maxLength": 2000
           }
         },
-        "required": ["scope", "reason"],
+        "required": [
+          "scope",
+          "reason"
+        ],
         "additionalProperties": false
       },
       "KillTriggerResponse": {
@@ -1227,7 +2945,13 @@
           },
           "status": {
             "type": "string",
-            "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
+            "enum": [
+              "initiated",
+              "propagating",
+              "halted",
+              "partially_halted",
+              "failed"
+            ]
           },
           "triggeredAt": {
             "type": "string",
@@ -1235,7 +2959,11 @@
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
           }
         },
-        "required": ["killEventId", "status", "triggeredAt"],
+        "required": [
+          "killEventId",
+          "status",
+          "triggeredAt"
+        ],
         "additionalProperties": false
       },
       "Problem": {
@@ -1277,12 +3005,257 @@
                   "type": "string"
                 }
               },
-              "required": ["path", "message", "code"],
+              "required": [
+                "path",
+                "message",
+                "code"
+              ],
               "additionalProperties": false
             }
           }
         },
-        "required": ["type", "title", "status", "code", "traceId"],
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code",
+          "traceId"
+        ],
+        "additionalProperties": false
+      },
+      "SecretMetadata": {
+        "type": "object",
+        "properties": {
+          "secretId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "secretRef": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "password",
+                  "api_key",
+                  "token",
+                  "certificate",
+                  "ssh_key",
+                  "webhook_secret",
+                  "kms_ref",
+                  "generic"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purpose": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "backend": {
+            "type": "string",
+            "enum": [
+              "openbao",
+              "aws_kms",
+              "vault",
+              "aws_secrets_manager",
+              "azure_kv"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "rotating",
+              "disabled",
+              "shredded"
+            ]
+          },
+          "currentVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+          }
+        },
+        "required": [
+          "secretId",
+          "secretRef",
+          "name",
+          "type",
+          "purpose",
+          "backend",
+          "status",
+          "currentVersion",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "SecretMetadataPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "secretId": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "secretRef": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "password",
+                        "api_key",
+                        "token",
+                        "certificate",
+                        "ssh_key",
+                        "webhook_secret",
+                        "kms_ref",
+                        "generic"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "purpose": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "backend": {
+                  "type": "string",
+                  "enum": [
+                    "openbao",
+                    "aws_kms",
+                    "vault",
+                    "aws_secrets_manager",
+                    "azure_kv"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "rotating",
+                    "disabled",
+                    "shredded"
+                  ]
+                },
+                "currentVersion": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+                }
+              },
+              "required": [
+                "secretId",
+                "secretRef",
+                "name",
+                "type",
+                "purpose",
+                "backend",
+                "status",
+                "currentVersion",
+                "createdAt",
+                "updatedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor",
+          "hasMore"
+        ],
+        "additionalProperties": false
+      },
+      "SecretWriteResponse": {
+        "type": "object",
+        "properties": {
+          "secretId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "secretRef": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "secretId",
+          "secretRef",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateSecretRequest": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "value"
+        ],
         "additionalProperties": false
       }
     }

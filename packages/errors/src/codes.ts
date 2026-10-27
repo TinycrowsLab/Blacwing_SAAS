@@ -192,6 +192,10 @@ const DEFINITIONS = {
     title: 'External secret backend unavailable',
     retryable: true,
   },
+  // Write-only secrets API (SECRETS-004): a duplicate name in the tenant, and a disable of a secret that
+  // other resources still reference (retry with `force`). Both are conflicts with the current state.
+  SECRET_NAME_CONFLICT: { status: 409, title: 'Secret name already exists', retryable: false },
+  SECRET_IN_USE: { status: 409, title: 'Secret is still in use', retryable: false },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

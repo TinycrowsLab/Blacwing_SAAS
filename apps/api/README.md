@@ -115,3 +115,31 @@ is never read. The Run Broker runs each request in its run token's tenant and an
 (audited as `tenant.cross_tenant_denied`) when a body or run record names another tenant. Worker activities get the
 same context from `createTenantActivityInterceptors` (`apps/worker/src/tenant`), which re-reads the run's tenant on
 every attempt. Metrics: `bw_tenant_context_missing_total`, `bw_cross_tenant_denied_total`.
+
+## Write-only secrets API (SECRETS-004)
+
+`src/secrets/` serves `POST/GET /v1/secrets` and `GET/PUT/DELETE /v1/secrets/{id}` (`registerSecretRoutes`, mounted
+through `createApiApp`'s `routes` hook like the kill routes). A value goes in on create and update and never comes
+out: responses carry `secretId`, `secretRef` (`bw-secret://{tenantId}/{secretId}`) and `version`, and reads return
+metadata only. The read side is built so it cannot leak ciphertext: the store port never returns an envelope, the
+output schemas are strict objects without `value`/`envelope`, and only the internal resolver (SECRETS-006) decrypts.
+
+- Authz: RBAC `secret:write` (create, update, delete) or `secret:read` (metadata), both Org Admin only, then the
+  Cedar `Secret::write` / `Secret::read_meta` tenant check. A refusal is `403`, audited as `authz.denied`; another
+  tenant's id is `404`.
+- Create needs `Idempotency-Key` (a retry returns the first answer with `Idempotency-Replayed: true`; the same key
+  with another request is `422 IDEMPOTENCY_KEY_MISMATCH`). The stored fingerprint is an HMAC keyed by the raw key,
+  so a database leak gives nothing to brute-force a weak password against. Duplicate (NFC) name is
+  `409 SECRET_NAME_CONFLICT`; a value over 64 KiB (UTF-8 bytes) is `413 SECRET_TOO_LARGE`; an empty value, NUL or
+  lone surrogate is `422`. Only the `openbao` backend is writable here.
+- Encryption is SECRETS-002 envelope encryption bound to `{tenantId, secretId, SECRET_VALUE_PURPOSE}`. If the tenant
+  KEK is unreachable the write is `503 KEK_UNAVAILABLE` and nothing is persisted.
+- `PUT` stores a new `secret_versions` row and increments `currentVersion`. `If-Match` (`"v{currentVersion}"`) is
+  optional; a stale one is `412`, a malformed one `428`. Only an `active` secret can be replaced (else `409`).
+- `DELETE` disables (soft delete). A secret that other resources still reference is `409 SECRET_IN_USE`, naming
+  the resource types, until `?force=true`. Hard delete only happens in the shred flow.
+- Audit: `secret.created|updated|deleted` (secret id and version, never the value) are written by the store in the
+  same transaction as the change. Metrics: `secret_write_total{op,result}`. Span: `secret.write`. Logs carry
+  `{tenantId, secretId, op}` only; the service never logs a request body.
+- Ports (`SecretStore`, `SecretUsageReader`, `SecretAuditSink`) have in-memory fakes. The Postgres adapter over the
+  SECRETS-003 tables and the usage reader land with the data-access and connector work.
