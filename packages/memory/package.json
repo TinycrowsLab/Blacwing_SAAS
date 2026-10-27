@@ -10,10 +10,20 @@
   },
   "scripts": {
     "lint": "eslint . --max-warnings=0",
-    "test": "vitest run",
+    "test": "vitest run --configLoader runner --config src/vitest.config.ts",
+    "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts",
     "typecheck": "tsc -b --pretty false"
   },
+  "dependencies": {
+    "@blackwing/config": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/logger": "workspace:*",
+    "@opentelemetry/api": "catalog:",
+    "neo4j-driver": "6.2.0",
+    "zod": "catalog:"
+  },
   "devDependencies": {
+    "@blackwing/testing": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

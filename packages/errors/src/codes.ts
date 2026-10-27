@@ -214,6 +214,10 @@ const DEFINITIONS = {
     title: 'External secret backend unavailable',
     retryable: true,
   },
+  // Neo4j driver (GRAPH-001, §5/§8.6). Missing or invalid graph config is a deployment defect, caught at boot
+  // (fail fast, 500). A saturated connection pool past its acquire timeout is a transient overload (503, retryable).
+  GRAPH_CONFIG_MISSING: { status: 500, title: 'Graph configuration missing', retryable: false },
+  GRAPH_POOL_TIMEOUT: { status: 503, title: 'Graph connection pool timed out', retryable: true },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

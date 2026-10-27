@@ -1085,7 +1085,29 @@ importers:
         version: 3.2.6(@types/node@22.20.5)(jiti@2.7.0)(jsdom@30.1.3)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   packages/memory:
+    dependencies:
+      '@blackwing/config':
+        specifier: workspace:*
+        version: link:../config
+      '@blackwing/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@blackwing/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@opentelemetry/api':
+        specifier: 'catalog:'
+        version: 1.9.1
+      neo4j-driver:
+        specifier: 6.2.0
+        version: 6.2.0
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
+      '@blackwing/testing':
+        specifier: workspace:*
+        version: link:../testing
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5

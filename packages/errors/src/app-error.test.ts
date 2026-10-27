@@ -182,6 +182,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'SECRET_SHREDDED',
   'RUN_KILLED',
   'EXTERNAL_BACKEND_UNAVAILABLE',
+  'GRAPH_CONFIG_MISSING',
+  'GRAPH_POOL_TIMEOUT',
 ];
 
 describe('AppError subclasses', () => {
