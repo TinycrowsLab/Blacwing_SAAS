@@ -1,11 +1,14 @@
 export * from './active-recon.js';
 export * from './code-specialist.js';
 export * from './exploit-developer.js';
+export * from './advisory.js';
 export * from './infrastructure-specialist.js';
+export * from './mentor.js';
 export * from './orchestrator.js';
 export * from './osint.js';
 export * from './passive-recon.js';
 export * from './remediation.js';
+export * from './reflector.js';
 export * from './reporter.js';
 export * from './oracles.js';
 export { plannerPersona, SURFACE_QUERY_TOOL, TEST_CASE_LIBRARY_READ_TOOL } from './planner.js';

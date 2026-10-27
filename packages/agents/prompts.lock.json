@@ -17,6 +17,9 @@
   "orchestrator": {
     "1.0.0": "99f659a41b67d49950b30ebec76edd49dcb24427dbe39132d2e0a0cced5bdcae"
   },
+  "mentor": {
+    "1.0.0": "2699e1e04ae867bd7991183c9a8e549f85d80d51d2730c35bdb740ceaaa0ee06"
+  },
   "osint": {
     "1.0.0": "18bd26fca457d0e3b19353c45215d1b8f8b4c49f01590fa5b33804f804812086"
   },
@@ -25,6 +28,9 @@
   },
   "planner": {
     "1.0.0": "6b116181efa8fbba5f2ccea5d59707bb815c234035255e585fe17f91872fcc28"
+  },
+  "reflector": {
+    "1.0.0": "5d6b5110c21c99f40d48474ce2c20f26eb3272c5d58a2871ff9b19853abc7882"
   },
   "remediation": {
     "1.0.0": "17894080b8122273a1c471cb6b888d422b4b1638ba3d859daced387ac520ac40"
