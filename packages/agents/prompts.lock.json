@@ -4,5 +4,11 @@
   },
   "orchestrator": {
     "1.0.0": "99f659a41b67d49950b30ebec76edd49dcb24427dbe39132d2e0a0cced5bdcae"
+  },
+  "osint": {
+    "1.0.0": "18bd26fca457d0e3b19353c45215d1b8f8b4c49f01590fa5b33804f804812086"
+  },
+  "passive-recon": {
+    "1.0.0": "e1a80fbf948b564857623ac8711a691a83f31a76ad2f76b2807cde2670ba74aa"
   }
 }
