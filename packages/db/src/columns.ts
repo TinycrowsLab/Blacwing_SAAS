@@ -11,6 +11,8 @@ import {
   index,
   type IndexBuilder,
   integer,
+  type PgDatabase,
+  type PgQueryResultHKT,
   type PgTable,
   timestamp,
   uuid,
@@ -18,10 +20,12 @@ import {
 
 import { type IdPrefix, newId, type PublicId, toPublicId, toUuid, type Uuid } from '@blackwing/ids';
 
-import type { Database } from './client.js';
-
-/** Anything that can run an update: the app `Database`, a tenant-scoped `Tx` or `drizzle({ client })`. */
-export type UpdateExecutor = Pick<Database, 'update'>;
+/**
+ * Anything that can run an update: the app `Database`, a tenant-scoped `Tx` or `drizzle({ client })`.
+ * Typed against Drizzle's driver-neutral base so this module never imports `client.ts` (which imports
+ * the schema, which imports this module).
+ */
+export type UpdateExecutor = Pick<PgDatabase<PgQueryResultHKT, Record<string, unknown>>, 'update'>;
 
 /**
  * `id uuid primary key`. UUIDv7 is generated app-side by the monotonic `@blackwing/ids` generator
