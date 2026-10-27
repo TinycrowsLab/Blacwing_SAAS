@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kill switch runbook (KILL, §8.5) | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="./code-owners.html">Code owners</a></li>
+<li><a href="./codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="./dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="./dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="./dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="./deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="./disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./drift-checks.html">Drift checks</a></li>
+<li><a href="./e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./incident-response.html">Incident response and on-call runbook (OBS, NOTIFY, KILL)</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./kill-switch.html" aria-current="page">Kill switch runbook (KILL, §8.5)</a></li>
+<li><a href="./node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./search-attributes.html">Temporal search attributes</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/tenant-data-access.html">Tenant data access</a></li>
+<li><a href="../architecture/tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="../architecture/third-party-notices.html">Third-party notices</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<hr>
+<h2 id="last_validated-never">last_validated: never</h2>
+<h1 id="kill-switch-runbook-kill-85">Kill switch runbook (KILL, §8.5)</h1>
+<p>Owner: KILL. Read with <a href="../architecture/CONTEXT_PACK.html#33-run-state-machine-authoritative-implement-in-packagesdomainrun">§3.3 (run states)</a>,
+<a href="../architecture/CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8.2 (egress fails closed)</a>
+and <a href="../architecture/CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8.5 (kill switch)</a>.</p>
+<blockquote>
+<p><strong>Status: not yet validated.</strong> <code>last_validated: never</code> is the truth until the kill drill in
+<a href="#validation">Validation</a> has run against staging and its record is filed. Steps below describe the code on
+<code>main</code>. Anything marked <strong>not implemented</strong> is absent from the product and must not be relied on.</p>
+</blockquote>
+<h2 id="1-what-a-kill-does">1. What a kill does</h2>
+<p>One kill event stops every agent in its scope. The order is fixed by §8.5 and implemented in
+<code>apps/worker/src/kill/propagate.ts</code> and <code>apps/worker/src/workflows/kill-propagation.ts</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Order</th>
+<th>Stage</th>
+<th>What happens</th>
+<th>Budget (§8.5)</th>
+<th>Code constant</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>egress</code></td>
+<td>The egress gateway blocks the run&#39;s egress identities first. Retries use exponential backoff, up to 5 attempts.</td>
+<td>p99 &lt; 2 s</td>
+<td><code>EGRESS_DEADLINE_MS</code> (2 000 ms), <code>EGRESS_MAX_ATTEMPTS</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>sandbox</code></td>
+<td>Target sandboxes are force-terminated. Termination is acknowledged before the stage is recorded as done.</td>
+<td>p99 &lt; 10 s</td>
+<td><code>SANDBOX_DEADLINE_MS</code> (10 000 ms), overridable with <code>KILL_SANDBOX_DEADLINE_MS</code> (capped at 60 s)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>virtual key revoke</td>
+<td><strong>Not implemented.</strong> KILL-006 adds it after the sandbox stage.</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Temporal workflow cancel</td>
+<td><strong>Not implemented.</strong> KILL-006 adds it.</td>
+<td>-</td>
+<td>-</td>
+</tr>
+</tbody></table>
+<p>If an egress block fails, the gateway already fails closed (§8.2), so the kill records <code>partially_halted</code> and the
+later stages still run. A later stage that throws does not skip the stages after it. An empty target set completes
+immediately with <code>status: halted</code>.</p>
+<p>Runs end in a terminal state (<code>killed</code>, §3.3). A killed run cannot be resumed. Recovery means a new run, and a new
+run needs a fresh authorisation review.</p>
+<h2 id="2-scopes">2. Scopes</h2>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>API accepts it</th>
+<th>Needs</th>
+<th>Reference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>run</code></td>
+<td>yes</td>
+<td><code>scopeRefId</code> = the run id</td>
+<td><code>kill:trigger</code></td>
+</tr>
+<tr>
+<td><code>asset</code></td>
+<td>yes</td>
+<td><code>scopeRefId</code> = the asset id</td>
+<td><code>kill:trigger</code></td>
+</tr>
+<tr>
+<td><code>tenant</code></td>
+<td>yes</td>
+<td>no <code>scopeRefId</code>; the caller&#39;s own tenant</td>
+<td><code>kill:trigger</code></td>
+</tr>
+<tr>
+<td><code>global</code></td>
+<td><strong>no.</strong> The domain model has the scope, but <code>KILL_API_SCOPES</code> excludes it and the API rejects it.</td>
+<td><code>platform:global_kill</code> (exists in RBAC, no route uses it yet)</td>
+<td>-</td>
+</tr>
+</tbody></table>
+<p>So an operator <strong>cannot yet trigger a global kill</strong> through the product. A platform-wide stop today means one
+<code>tenant</code> kill per tenant, or an infrastructure action (see <a href="./incident-response.html">incident-response.md</a>, common
+incident &quot;runaway agents&quot;). Treat this as a known gap for the launch review.</p>
+<h2 id="3-triggering-a-kill">3. Triggering a kill</h2>
+<p>Every kill is audited (§8.8). Requests need a session (console, via the BFF) or a <code>bw_pat_</code> / <code>bw_ci_</code> bearer token (§9).</p>
+<pre><code class="language-http">POST /v1/kill
+Idempotency-Key: &lt;client-generated unique key&gt;
+Content-Type: application/json
+
+{ &quot;scope&quot;: &quot;run&quot;, &quot;scopeRefId&quot;: &quot;&lt;run uuid v7&gt;&quot;, &quot;reason&quot;: &quot;SOC request INC-1234&quot; }
+</code></pre>
+<ul>
+<li><code>reason</code> is required, is at most <code>LIMITS.reasonMax</code> characters, and is at least 3 characters after trimming.</li>
+<li>The response is <code>202 Accepted</code>, with <code>Location: /v1/kill/&lt;killEventId&gt;</code> and <code>Cache-Control: no-store</code>. The
+propagation runs asynchronously, so <code>202</code> means the kill was <strong>recorded</strong>, not that it has finished.</li>
+<li>Re-sending the same <code>Idempotency-Key</code> does not create a second kill event.</li>
+<li>Errors are RFC 9457 problem+json. Use <code>traceId</code> from the response when you raise an incident.</li>
+</ul>
+<p>To read progress:</p>
+<pre><code class="language-http">GET /v1/kill/&lt;killEventId&gt;
+</code></pre>
+<p>The body gives the event <code>status</code>, the <code>egress</code> outcome (<code>blocked</code>, <code>already_blocked</code> or <code>failed</code>) and the
+<code>sandbox</code> outcome. Poll it until <code>status</code> is final.</p>
+<p><strong>SOC login-free link: not yet exposed.</strong> The data model (<code>soc_kill_tokens</code>, <code>soc_contacts</code>) and the contracts
+exist, but no route issues or redeems a signed link. Until that route ships, SOC staff use the console or ask an
+operator to trigger the kill.</p>
+<h2 id="4-halt-times-and-how-to-verify-them">4. Halt times and how to verify them</h2>
+<p>Expected halt time is the §8.5 target: egress block &lt; 2 s p99, sandbox stop &lt; 10 s p99. Verify it from the
+telemetry that exists today:</p>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Name</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Trigger latency</td>
+<td><code>bw_kill_trigger_latency_ms{scope}</code></td>
+<td>API request to 202 (not the halt time)</td>
+</tr>
+<tr>
+<td>Stage latency</td>
+<td><code>bw_kill_stage_latency_ms{stage}</code></td>
+<td>Stage start to recorded outcome (<code>egress</code>, <code>sandbox</code>); the halt-time signal</td>
+</tr>
+<tr>
+<td>Stage outcome</td>
+<td><code>bw_kill_stage_result_total{stage,result}</code></td>
+<td>Outcomes per stage</td>
+</tr>
+<tr>
+<td>Partial halt</td>
+<td><code>bw_kill_partial_halt_total{stage}</code></td>
+<td>Any increase means a partially halted kill; page</td>
+</tr>
+<tr>
+<td>Sandboxes stopped</td>
+<td><code>bw_kill_sandboxes_terminated_total</code></td>
+<td>Sandboxes confirmed gone</td>
+</tr>
+<tr>
+<td>Kill events</td>
+<td><code>bw_kill_events_total{scope,source,status}</code></td>
+<td>Kill events by scope and status</td>
+</tr>
+<tr>
+<td>Enqueue failures</td>
+<td><code>bw_kill_enqueue_failures_total{scope}</code></td>
+<td>The reconciler retries these; any sustained rise is an incident</td>
+</tr>
+<tr>
+<td>Audit failures</td>
+<td><code>bw_kill_audit_failures_total{action}</code></td>
+<td>The kill goes on, but the ledger is missing an event; page</td>
+</tr>
+<tr>
+<td>Egress readiness</td>
+<td><code>egress_ready</code>, <code>egress_up</code></td>
+<td>Gateway health (fail-closed signals)</td>
+</tr>
+</tbody></table>
+<p>Audit actions to find for a kill: <code>kill.fired</code> and <code>kill.completed</code> (§8.8).</p>
+<p><strong>Dashboards and alerts.</strong> The only Grafana dashboard in the repo is the starter <code>Blackwing overview</code>
+(uid <code>bw-overview</code>, <code>infra/compose/obs/grafana/dashboards/blackwing-overview.json</code>). Its runs-started and
+agent-sessions panels read placeholder metrics that the product does not export yet, so do not read them as
+evidence. There is <strong>no kill dashboard and no alert rule</strong> in the repo yet. The kill panels and the
+<code>bw_kill_partial_halt_total</code> alert belong to OBS and must exist before this runbook is validated.</p>
+<h2 id="5-procedure-running-a-kill">5. Procedure: running a kill</h2>
+<ol>
+<li>Confirm the scope with the requester, and record the reason in the ticket.</li>
+<li>Trigger the kill with <code>POST /v1/kill</code> (section 3). Note the <code>killEventId</code>.</li>
+<li>Poll <code>GET /v1/kill/&lt;killEventId&gt;</code> until it is final.</li>
+<li>Check the egress outcome is <code>blocked</code> or <code>already_blocked</code>, and the sandbox outcome shows every target
+terminated. If either is <code>failed</code>, go to section 6.</li>
+<li>Check <code>kill.completed</code> appears in the audit ledger for the event.</li>
+<li>Record the halt time from <code>bw_kill_stage_latency_ms</code> for the <code>egress</code> and <code>sandbox</code> stages on the incident
+record.</li>
+</ol>
+<h2 id="6-troubleshooting-a-partial-halt-or-a-breached-halt-time">6. Troubleshooting a partial halt or a breached halt time</h2>
+<p>Symptoms: <code>bw_kill_partial_halt_total</code> increments; a kill sits in <code>initiated</code>; an egress or sandbox outcome is
+<code>failed</code>; <code>bw_kill_stage_latency_ms</code> shows a value over 2 s (egress) or 10 s (sandbox).</p>
+<ol>
+<li>Find the failing stage with <code>GET /v1/kill/&lt;killEventId&gt;</code>.</li>
+<li><strong>Egress failed.</strong> The gateway still fails closed, so runs cannot reach targets. Check <code>egress_ready</code>
+and <code>egress_up</code>, then the gateway logs. Do not restart the gateway while a run may still be sending traffic
+without first confirming the block is in place.</li>
+<li><strong>Sandbox failed.</strong> Check the sandbox controller and the node that hosts the sandbox. Do not remove a
+sandbox by hand before its termination is recorded, because the audit trail needs the termination
+acknowledgement.</li>
+<li><strong>Enqueue failed</strong> (<code>bw_kill_enqueue_failures_total</code>). The kill event stays <code>initiated</code>, and the reconciler
+(KILL-004) re-enqueues it. Check the reconciler, and escalate if the event is still <code>initiated</code> after the
+reconciler interval.</li>
+<li><strong>Halt time breached but completed.</strong> Record the measured value, and raise a follow-up. A breach is a
+finding against §8.5, not a reason to change the target.</li>
+<li>If the halt cannot be confirmed, escalate to SEV1 (see <a href="./incident-response.html">incident-response.md</a>).</li>
+</ol>
+<h2 id="7-post-kill-recovery">7. Post-kill recovery</h2>
+<ul>
+<li>Killed runs stay killed. Do not try to resume them.</li>
+<li>Confirm no sandboxes for the scope remain and no egress identity is still allowed.</li>
+<li>The requester starts a new run through the normal authorisation flow.</li>
+<li>If the kill was a false alarm, it still stays in the audit ledger. Record the reason for the close in the
+ticket, and do not delete or edit the kill event.</li>
+</ul>
+<h2 id="validation">Validation</h2>
+<p>Before <code>last_validated</code> can change from <code>never</code>, all of the following must be done and their records filed:</p>
+<ol>
+<li><strong>Kill drill against §8.5</strong> (staging, real sandboxes and gateway): trigger a run kill and a tenant kill, then
+measure egress and sandbox stage latency. Pass when p99 is &lt; 2 s and &lt; 10 s over at least 30 kills. Record
+the numbers in the drill ticket.</li>
+<li><strong>Cross-check the KILL chaos test</strong> against these numbers. <strong>Not present in the repo yet.</strong> The drill is not
+complete until that test exists and passes.</li>
+<li><strong>Partial-halt drill:</strong> force one egress failure and confirm the kill still records <code>partially_halted</code> and
+the sandbox stage still runs.</li>
+<li><strong>Audit check:</strong> confirm <code>kill.fired</code> and <code>kill.completed</code> exist for every drill kill.</li>
+</ol>
+<p>When all four pass, set <code>last_validated</code> to the drill date and link the drill ticket here.</p>
+</main>
+</div>
+</body>
+</html>

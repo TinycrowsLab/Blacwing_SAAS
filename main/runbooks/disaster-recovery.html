@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disaster recovery runbook (INFRA, with DATA owners) | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="./code-owners.html">Code owners</a></li>
+<li><a href="./codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="./dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="./dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="./dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="./deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="./disaster-recovery.html" aria-current="page">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./drift-checks.html">Drift checks</a></li>
+<li><a href="./e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./incident-response.html">Incident response and on-call runbook (OBS, NOTIFY, KILL)</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
+<li><a href="./node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./search-attributes.html">Temporal search attributes</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/tenant-data-access.html">Tenant data access</a></li>
+<li><a href="../architecture/tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="../architecture/third-party-notices.html">Third-party notices</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<hr>
+<h2 id="last_validated-never">last_validated: never</h2>
+<h1 id="disaster-recovery-runbook-infra-with-data-owners">Disaster recovery runbook (INFRA, with DATA owners)</h1>
+<p>Owner: INFRA owns the backups and the DR skeleton. Read with
+<a href="../architecture/CONTEXT_PACK.html#6-repository-layout-create-exactly-this">§6 (repository layout)</a>,
+<a href="../architecture/CONTEXT_PACK.html#7-core-domain-model-tables-in-packagesdb-all-tenant-tables-have-tenant_id-uuid-not-null--rls">§7 (domain model)</a> and
+<a href="../architecture/CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8.6 and §8.8 (tenant isolation, append-only audit)</a>.
+The INFRA DR runbook skeleton is the authority for the mechanics once it lands. This document lists what must be
+restored, in what order, and how to prove the restore worked.</p>
+<blockquote>
+<p><strong>Status: not validated, and most backup mechanisms are not built.</strong> <code>last_validated: never</code> stays until a
+restore game-day has run in staging and its record is filed. The only backup mechanism in the repo is the S3
+storage module (INFRA-006). There is no database backup job, no Neo4j backup, no OpenBao snapshot and no
+restore tooling. Those are marked <strong>not implemented</strong>. Do not rely on this runbook to recover production until
+they exist and the game-day passes.</p>
+</blockquote>
+<h2 id="1-backup-inventory">1. Backup inventory</h2>
+<table>
+<thead>
+<tr>
+<th>Store</th>
+<th>What it holds</th>
+<th>Backup mechanism today</th>
+<th>Restore owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PostgreSQL (tenant data, runs, findings, audit ledger, kill events)</td>
+<td>System of record</td>
+<td><strong>Not implemented</strong> (no backup job or PITR config in the repo)</td>
+<td>INFRA, with the data owner</td>
+</tr>
+<tr>
+<td>Neo4j (attack graph and per-tenant memory)</td>
+<td>Tenant-scoped graph</td>
+<td><strong>Not implemented</strong></td>
+<td>INFRA</td>
+</tr>
+<tr>
+<td>S3 <code>*-evidence</code></td>
+<td>Evidence, under Object Lock COMPLIANCE, with a per-purpose KMS key</td>
+<td>Object Lock is the protection. Versioning and retention are set by INFRA-006</td>
+<td>Cannot be deleted before retention ends, so there is nothing to restore</td>
+</tr>
+<tr>
+<td>S3 <code>*-exports</code></td>
+<td>Customer exports</td>
+<td>Versioned bucket, with non-current versions expiring after <code>exports_retention_days</code></td>
+<td>INFRA</td>
+</tr>
+<tr>
+<td>S3 <code>*-backups</code></td>
+<td>Backup objects that the database and graph jobs will write</td>
+<td>The bucket exists. Expires after <code>backups_retention_days</code>. No job writes to it yet</td>
+<td>INFRA</td>
+</tr>
+<tr>
+<td>S3 <code>*-transcripts</code></td>
+<td>Agent transcripts</td>
+<td>Versioned, with expiry set by <code>transcripts_retention_days</code></td>
+<td>INFRA</td>
+</tr>
+<tr>
+<td>OpenBao</td>
+<td>Secrets and virtual-key material</td>
+<td><strong>Not implemented.</strong> Dev runs OpenBao in dev mode with no backup. Production needs an integrated-storage snapshot plan</td>
+<td>INFRA and the security owner</td>
+</tr>
+<tr>
+<td>Valkey</td>
+<td>Idempotency keys, rate limits, caches</td>
+<td>Not backed up. Losing it is an availability event, not a data loss, because it holds no system of record</td>
+<td>INFRA</td>
+</tr>
+</tbody></table>
+<p>Source for the buckets and their per-purpose KMS keys: <code>infra/tofu/modules/storage</code>.</p>
+<h2 id="2-rpo-and-rto">2. RPO and RTO</h2>
+<p><strong>No RPO or RTO targets are set in the repo yet.</strong> The INFRA DR runbook must set them. Until it does, use these
+<strong>proposed</strong> values for the game-day to test against. They are not commitments:</p>
+<table>
+<thead>
+<tr>
+<th>Store</th>
+<th>Proposed RPO</th>
+<th>Proposed RTO</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PostgreSQL</td>
+<td>15 min (needs PITR)</td>
+<td>4 h</td>
+</tr>
+<tr>
+<td>Neo4j</td>
+<td>24 h</td>
+<td>8 h</td>
+</tr>
+<tr>
+<td>S3 evidence and exports</td>
+<td>0 (versioned, Object Lock)</td>
+<td>Not applicable for restore</td>
+</tr>
+<tr>
+<td>OpenBao</td>
+<td>24 h</td>
+<td>4 h</td>
+</tr>
+</tbody></table>
+<p>If a store cannot meet its proposed target, record that as a gap for the launch review rather than changing the
+target to fit the mechanism.</p>
+<h2 id="3-restore-order">3. Restore order</h2>
+<p>Restore in dependency order so each step can be checked before the next:</p>
+<ol>
+<li><strong>OpenBao</strong>, so secrets are available. Secret values are never written to a ticket or a log.</li>
+<li><strong>PostgreSQL</strong>, to the newest consistent point. Apply forward-only migrations if the restored schema is behind
+the release record (see <a href="./db-migrations.html">db-migrations.md</a>). Never run a destructive migration during a restore.</li>
+<li><strong>Neo4j</strong>, from the matching point in time. Its tenant IDs must match PostgreSQL.</li>
+<li><strong>Application</strong>, from the release record digests (see <a href="./deploy-rollback.html">deploy-rollback.md</a>).</li>
+<li><strong>Kill switch and egress.</strong> Confirm both are healthy before any run is resumed. Restored runs that were active
+must be killed, not resumed (see <a href="./kill-switch.html">kill-switch.md</a>).</li>
+</ol>
+<h2 id="4-restore-validation-checklist">4. Restore validation checklist</h2>
+<p>A restore is not complete until every item passes. Partial restores are the common failure, so each item checks a
+different part of the data:</p>
+<ul>
+<li><input disabled="" type="checkbox"> PostgreSQL row counts for every tenant table match the backup manifest, within the expected point-in-time gap.</li>
+<li><input disabled="" type="checkbox"> Every tenant has rows, and no row has a <code>tenant_id</code> that is not in the tenant table (RLS and foreign keys hold).</li>
+<li><input disabled="" type="checkbox"> The audit ledger hash chain verifies from the first event to the restore point. Check against
+<code>bw_audit_chain_head</code> for the restored head. <strong>Note:</strong> there is no chain-verify command in the repo yet, so this
+check is manual until one exists.</li>
+<li><input disabled="" type="checkbox"> Kill events and their audit events are present for every event before the restore point.</li>
+<li><input disabled="" type="checkbox"> Neo4j node and edge counts per tenant match the manifest, and tenant-scoped queries return only that tenant&#39;s data.</li>
+<li><input disabled="" type="checkbox"> Evidence objects are present, and their Object Lock retention is still active.</li>
+<li><input disabled="" type="checkbox"> Application health checks pass, and <code>bw_tenant_context_missing_total</code> does not increase after cutover.</li>
+<li><input disabled="" type="checkbox"> The kill drill from <a href="./kill-switch.html">kill-switch.md</a> passes against the restored environment.</li>
+</ul>
+<h2 id="5-procedure-restore">5. Procedure: restore</h2>
+<ol>
+<li>Declare the incident and set the severity (see <a href="./incident-response.html">incident-response.md</a>).</li>
+<li>Freeze deploys and new run starts for the affected scope.</li>
+<li>Choose the restore point, and record it along with the backup manifest.</li>
+<li>Restore in the order in section 3, running the checks in section 4 after each store.</li>
+<li>If a check fails, stop and record which item failed. Do not continue to the next store on a partial restore.</li>
+<li>When all checks pass, unfreeze, and record the restore time against the RTO.</li>
+</ol>
+<h2 id="6-procedure-game-day">6. Procedure: game-day</h2>
+<p>Run this in <strong>staging</strong>, once the backups exist:</p>
+<ol>
+<li>Pick a restore point at least one hour in the past.</li>
+<li>Restore into an empty staging environment, following section 5.</li>
+<li>Run every item in section 4 and file the results.</li>
+<li>Record the measured RPO (the gap between the restore point and the last committed write) and RTO (the time from
+start to unfreeze).</li>
+<li>Fail the game-day if any check fails, or if a measured value is worse than the proposed target without an
+accepted gap.</li>
+</ol>
+<p>File the game-day record in a ticket and link it here. Then set <code>last_validated</code> to the game-day date.</p>
+<h2 id="7-partial-restore">7. Partial restore</h2>
+<p>A partial restore is any restore where one store succeeds and another does not, or where a check in section 4 fails.
+Treat it as a SEV1 (see <a href="./incident-response.html">incident-response.md</a>). Do not put the environment back into service
+until the failed check passes, and never patch data by hand to make a check pass. Record every manual change in the
+audit trail.</p>
+<h2 id="validation">Validation</h2>
+<p>Do not change <code>last_validated</code> until the game-day in section 6 has passed in staging. That needs real backups, a
+staging restore target and AWS access, so it cannot run offline. Record the game-day in a ticket with the restore
+point, every section 4 result and the measured RPO and RTO, then link it here and set <code>last_validated</code> to the
+game-day date.</p>
+</main>
+</div>
+</body>
+</html>

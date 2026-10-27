@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Temporal search attributes | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="./code-owners.html">Code owners</a></li>
+<li><a href="./codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="./dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="./dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="./dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="./deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="./disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./drift-checks.html">Drift checks</a></li>
+<li><a href="./e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./incident-response.html">Incident response and on-call runbook (OBS, NOTIFY, KILL)</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
+<li><a href="./node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./search-attributes.html" aria-current="page">Temporal search attributes</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/tenant-data-access.html">Tenant data access</a></li>
+<li><a href="../architecture/tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="../architecture/third-party-notices.html">Third-party notices</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="temporal-search-attributes">Temporal search attributes</h1>
+<p>Custom search attributes that make run workflows listable and filterable in Temporal visibility (WORKFLOW-003,
+CONTEXT_PACK §3.3, §8.5). Run state stays authoritative in Postgres. These attributes are a read-side index only.</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Type</th>
+<th>Set by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tenantId</code></td>
+<td>Keyword</td>
+<td><code>runStartSearchAttributes</code> when a run workflow starts</td>
+</tr>
+<tr>
+<td><code>runId</code></td>
+<td>Keyword</td>
+<td><code>runStartSearchAttributes</code> when a run workflow starts</td>
+</tr>
+<tr>
+<td><code>runState</code></td>
+<td>Keyword</td>
+<td><code>upsertRunSearchAttributes(state)</code> from workflow code on every state change</td>
+</tr>
+</tbody></table>
+<p><code>SEARCH_ATTRIBUTES</code> in <code>apps/worker/src/search-attributes.ts</code> is the single definition. Attributes are never
+dropped or retyped. Values are non-secret identifiers and run states only. No PII goes into an attribute.</p>
+<h2 id="registration">Registration</h2>
+<p>Registration is idempotent. Run it on every deploy and whenever the dev stack starts.</p>
+<ul>
+<li><strong>Dev stack:</strong> <code>pnpm dev:deps</code> runs the <code>temporal-bootstrap</code> job (<code>infra/compose/temporal/bootstrap.sh</code>). It creates
+the namespace and registers the attributes with the <code>temporal</code> CLI. Re-running it changes nothing that exists.</li>
+<li><strong>Deploy and any environment:</strong> <code>pnpm --filter @blackwing/worker register:search-attributes</code>. It reads
+<code>TEMPORAL_ADDRESS</code>, <code>TEMPORAL_NAMESPACE</code> and the TLS settings through <code>@blackwing/config</code>. It exits 0 when the
+attributes are present, whether created now or already there. It exits 1 on any failure.</li>
+</ul>
+<p>Results are logged, and each call records one <code>search_attribute_registration_total{result}</code> sample with
+<code>result</code> set to <code>created</code>, <code>unchanged</code>, <code>conflict</code> or <code>failed</code>.</p>
+<h3 id="type-conflict-search_attr_type_conflict">Type conflict (<code>SEARCH_ATTR_TYPE_CONFLICT</code>)</h3>
+<p>An attribute already registered with a different type (for example <code>tenantId</code> as <code>Int</code>) stops registration. Nothing
+is created, dropped or retyped, in either the script or the compose bootstrap. The error names the attribute and both
+types. To resolve it:</p>
+<ol>
+<li>Confirm which attribute is wrong: <code>temporal operator search-attribute list --namespace &lt;ns&gt;</code>.</li>
+<li>A custom attribute cannot be retyped in place. Coordinate with the owners of the workflows that write it, then
+decide on a new name or a migration. Do not delete it on your own.</li>
+</ol>
+<h3 id="concurrent-registration-multi-pod-deploy">Concurrent registration (multi-pod deploy)</h3>
+<p>Two pods can register at the same time. Registration lists, adds the missing attributes, and on any add failure lists
+again. If every attribute now exists with the right type, the add failure was a harmless race and the result is
+<code>unchanged</code>. If an attribute is still missing, the original add error is raised. This is idempotent without a
+separate lock. Registration never removes an attribute.</p>
+<h2 id="visibility-limitation">Visibility limitation</h2>
+<p>Custom search attributes need an advanced visibility store (Elasticsearch, or advanced SQL visibility as in the dev
+auto-setup image). On a standard-visibility server the add fails and the script exits 1. Run list queries on
+standard visibility are not possible for custom attributes. In that case, list runs from the Postgres <code>runs</code> table
+instead of Temporal visibility. Run state is always in Postgres, so nothing is lost.</p>
+<h2 id="querying">Querying</h2>
+<pre><code class="language-text">tenantId = &quot;t-acme&quot; and runState = &quot;executing&quot;
+</code></pre>
+<p>Visibility is eventually consistent: a state change may take a moment to appear. Keep an assertion in an integration
+test with a retry window, as <code>apps/worker/src/search-attributes.int.test.ts</code> does.</p>
+<h2 id="verification">Verification</h2>
+<ul>
+<li><code>pnpm --filter @blackwing/worker test</code> covers the planning, registration, conflict and race logic against a fake
+operator service, and the state validation.</li>
+<li><code>pnpm --filter @blackwing/worker test:int</code> needs the dev stack. It registers the attributes twice, runs a probe
+workflow and finds it by <code>tenantId</code> and <code>runState</code>, and checks that a conflicting attribute fails with
+<code>SEARCH_ATTR_TYPE_CONFLICT</code> without changing anything.</li>
+<li><code>scripts/temporal-bootstrap.test.mjs</code> covers the compose bootstrap, including its type-conflict path.</li>
+</ul>
+</main>
+</div>
+</body>
+</html>

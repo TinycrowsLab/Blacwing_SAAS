@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deploy, upgrade and rollback runbook (INFRA, LAUNCH) | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="./code-owners.html">Code owners</a></li>
+<li><a href="./codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="./dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="./dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="./dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="./deploy-rollback.html" aria-current="page">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="./disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./drift-checks.html">Drift checks</a></li>
+<li><a href="./e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./incident-response.html">Incident response and on-call runbook (OBS, NOTIFY, KILL)</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
+<li><a href="./node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./search-attributes.html">Temporal search attributes</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./trivy.html">Trivy scanning (CI-009)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/tenant-data-access.html">Tenant data access</a></li>
+<li><a href="../architecture/tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="../architecture/third-party-notices.html">Third-party notices</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<hr>
+<h2 id="last_validated-never">last_validated: never</h2>
+<h1 id="deploy-upgrade-and-rollback-runbook-infra-launch">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</h1>
+<p>Owner: INFRA (infrastructure and cluster), with LAUNCH for the cutover. Read with
+<a href="../architecture/CONTEXT_PACK.html#5-technology-stack-fixed-for-v1-all-freeopen-source-except-the-aws-account-and-the-anthropicclaude-usage">§5 (stack: k3s, Helm, OpenTofu, Traefik, cert-manager)</a>
+and <a href="../architecture/CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8.9 (pinned versions)</a>.
+Related: <a href="./release.html">release.md</a>, <a href="./db-migrations.html">db-migrations.md</a>, <a href="./image-verification.html">image-verification.md</a>,
+<a href="./ingress-tls.html">ingress-tls.md</a>.</p>
+<blockquote>
+<p><strong>Status: not yet validated, and the deploy step is not in the repo.</strong> <code>last_validated: never</code> stays until the
+staging drill in <a href="#validation">Validation</a> has run. The release, build, verify and migrate workflows exist on
+<code>main</code>. The deploy workflow (CI-017/CI-018), the application Helm chart and the staging cluster rollout do not.
+Steps that need them are marked <strong>not implemented</strong>.</p>
+</blockquote>
+<h2 id="1-the-pipeline-on-main">1. The pipeline on main</h2>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Workflow or tool</th>
+<th>What it does</th>
+<th>State on main</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Merge</td>
+<td><code>pr.yml</code></td>
+<td>Required checks (<code>lint</code>, <code>typecheck</code>, <code>commitlint</code>, <code>boundaries</code>)</td>
+<td>implemented</td>
+</tr>
+<tr>
+<td>Release</td>
+<td><code>release.yml</code></td>
+<td>semantic-release computes <code>vX.Y.Z</code> from Conventional Commits, tags it, creates the GitHub Release and dispatches the image build</td>
+<td>implemented</td>
+</tr>
+<tr>
+<td>Build</td>
+<td><code>build-images.yml</code></td>
+<td>Builds digest-pinned images, with SBOM, Trivy scan and signing. Writes an <code>images.json</code> artifact</td>
+<td>implemented</td>
+</tr>
+<tr>
+<td>Record</td>
+<td><code>release.yml</code> (&quot;Record release&quot;)</td>
+<td>Stores the release record: tag, commit and image digests</td>
+<td>implemented</td>
+</tr>
+<tr>
+<td>Verify</td>
+<td><code>verify-images.yml</code> (reusable)</td>
+<td>Deploy-time supply-chain gate. Fails closed on any signature, attestation, registry or timeout failure</td>
+<td>implemented, reusable only</td>
+</tr>
+<tr>
+<td>Migrate</td>
+<td><code>migrate.yml</code> (reusable)</td>
+<td>Forward-only database migrations, with the destructive-migration guard (<code>NODE_ENV=production</code>)</td>
+<td>implemented, but the secret-store step is a stub (online-porting #893) and fails on purpose</td>
+</tr>
+<tr>
+<td>Deploy</td>
+<td>CI-017/CI-018 deploy workflow</td>
+<td>Calls <code>verify-images</code> and <code>migrate</code>, then rolls out Helm releases</td>
+<td><strong>not implemented</strong></td>
+</tr>
+<tr>
+<td>Infrastructure</td>
+<td>OpenTofu under <code>infra/tofu/environments/{dev,staging,prod}</code></td>
+<td>AWS, k3s, storage (INFRA-006), DNS and email</td>
+<td>IaC on main. Applying it needs the AWS account (online)</td>
+</tr>
+</tbody></table>
+<p>Two rules hold regardless of stage:</p>
+<ul>
+<li><strong>Images are pinned by digest.</strong> A deploy names <code>image@sha256:...</code> from the release record, never a tag. Every
+run records these digests (§8.9).</li>
+<li><strong>Verification comes before rollout.</strong> The deploy job must <code>needs: verify-images</code>, so a failed verification
+aborts the deploy before any pod changes.</li>
+</ul>
+<h2 id="2-pre-deploy-checks">2. Pre-deploy checks</h2>
+<p>Run these on the target environment before any change:</p>
+<ol>
+<li>The release record for the version exists, with the commit and all digests (from the <code>release-record</code>
+artifact of <code>release.yml</code>).</li>
+<li><code>verify-images</code> is green for those digests.</li>
+<li><code>tofu validate</code> and <code>tofu plan</code> pass for the environment (<code>tofu -chdir=infra/tofu/environments/&lt;env&gt; plan</code>), and the plan shows only the expected changes. Never apply a plan you have not read.</li>
+<li>The migration plan is forward-only. Check the new migrations in <code>packages/db/migrations</code> against
+<a href="./db-migrations.html">db-migrations.md</a>. A destructive migration needs an approved exception before it runs
+in production.</li>
+<li>Confirm the kill switch works in the target environment before cutover (see
+<a href="./kill-switch.html">kill-switch.md</a>, section 4). A deploy must not go ahead while the kill path is unknown.</li>
+</ol>
+<h2 id="3-procedure-deploy-an-upgrade-once-the-deploy-workflow-exists">3. Procedure: deploy an upgrade (once the deploy workflow exists)</h2>
+<ol>
+<li><strong>Infrastructure first, if the plan changed it.</strong> <code>tofu plan</code> and <code>tofu apply</code> for the environment. Keep the
+saved plan file, and do not apply a plan from another commit.</li>
+<li><strong>Migrations.</strong> Run <code>migrate</code> (the reusable workflow). It is forward-only and must succeed before the new
+application version starts.</li>
+<li><strong>Verify, then roll out.</strong> Verification runs as a dependency of the rollout job. Helm upgrades each release
+to the pinned digests from the release record.</li>
+<li><strong>Watch the rollout.</strong> Check that pods are ready and that <code>up</code> is 1 for every scrape target on the starter
+dashboard (<code>bw-overview</code>). Confirm there are no new <code>bw_tenant_context_missing_total</code> increments (a missing
+tenant context fails closed, so a rise means a bug in the deploy).</li>
+<li><strong>Confirm the kill path and audit trail.</strong> Confirm <code>bw_audit_chain_head</code> is still advancing for the tenant
+set you are watching.</li>
+<li>Record the deploy in the release record: the environment, time, operator and digests.</li>
+</ol>
+<p>Helm releases are named by the chart. The only charts in the repo today are <code>infra/helm/bw-ingress</code> and
+<code>infra/helm/bw-keycloak-realm</code>. <strong>The application chart is not in the repo.</strong> Do not invent release names.</p>
+<h2 id="4-rollback">4. Rollback</h2>
+<p>Rollback means rolling the application back to the previous release record&#39;s digests. Schema is <strong>not</strong>
+rolled back, because migrations are forward-only.</p>
+<ol>
+<li>Pick the previous release record (the last healthy one).</li>
+<li>Confirm the previous application version runs against the <strong>current</strong> schema. A migration that removes or
+renames a column is not compatible with an old version. In that case rollback is not safe, and you move to
+a fix-forward or to <a href="./disaster-recovery.html">disaster-recovery.md</a> with the data owner&#39;s approval.</li>
+<li>Redeploy the previous digests through the deploy workflow (or <code>helm rollback</code> once the chart exists).
+Verification still runs, and it still fails closed.</li>
+<li>Re-run the post-deploy checks in section 3, step 4.</li>
+<li>Record the rollback, the cause, and the time. Open an incident if the rollback was triggered by a
+production symptom (see <a href="./incident-response.html">incident-response.md</a>).</li>
+</ol>
+<p>Ingress or certificate changes roll back through <code>infra/helm/bw-ingress</code> with the same steps, and the certificate
+issuers in <a href="./ingress-tls.html">ingress-tls.md</a> are unaffected.</p>
+<h2 id="5-cutover-launch">5. Cutover (LAUNCH)</h2>
+<p>Cutover is a planned deploy, with the rollback in section 4 ready beforehand. Before you start:</p>
+<ul>
+<li>The kill switch drill has passed in staging (<a href="./kill-switch.html">kill-switch.md</a>).</li>
+<li>The restore validation in <a href="./disaster-recovery.html">disaster-recovery.md</a> has passed at least once.</li>
+<li>The incident channel and on-call rota are set (see <a href="./incident-response.html">incident-response.md</a>).</li>
+</ul>
+<h2 id="validation">Validation</h2>
+<p>Do not change <code>last_validated</code> until these are done in the <strong>staging</strong> environment. They need AWS, a k3s cluster
+and the deploy workflow, so they cannot run offline.</p>
+<ol>
+<li><strong>Deploy drill:</strong> deploy the current release to staging from the release record, through the real deploy
+workflow. Pass when pods are ready, <code>verify-images</code> is green and the post-deploy checks pass.</li>
+<li><strong>Rollback drill:</strong> deploy the previous release record&#39;s digests on top of the current release. Pass when the
+previous version is healthy and the schema check in section 4 holds.</li>
+<li><strong>Negative drill:</strong> feed <code>verify-images</code> an unsigned or mismatched digest. Pass when the deploy aborts before
+any rollout.</li>
+</ol>
+<p>File the drill record (environment, versions, commands, results) in a ticket and link it here. Then set
+<code>last_validated</code> to the drill date.</p>
+</main>
+</div>
+</body>
+</html>

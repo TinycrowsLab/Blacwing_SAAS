@@ -86,16 +86,21 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
 <li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
 <li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="../runbooks/disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
 <li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
 <li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
 <li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
 <li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
 <li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
 <li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/incident-response.html">Incident response and on-call runbook (OBS, NOTIFY, KILL)</a></li>
 <li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
 <li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
 <li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
 <li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/search-attributes.html">Temporal search attributes</a></li>
 <li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
 <li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
 <li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
@@ -111,6 +116,9 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="./dependency-graph.html">Allowed package dependency graph</a></li>
 <li><a href="./egress-gateway.html">Egress gateway chassis</a></li>
 <li><a href="./storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="./tenant-data-access.html">Tenant data access</a></li>
+<li><a href="./tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="./third-party-notices.html">Third-party notices</a></li>
 <li><a href="./typescript.html">TypeScript configuration and project references</a></li>
 <li><a href="../adr/README.html">Architecture decision records</a></li>
 <li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
@@ -335,7 +343,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><strong>Gate 3:</strong> an analyst releases confirmed findings. Then the <strong>Reporter</strong> writes findings up (OWASP/CWE/compliance mapping) and <strong>Remediation</strong> produces fix guidance, raises tickets and schedules retest. Findings are tracked to closure on the dashboard and in trackers.</li>
 </ol>
 <h3 id="33-run-state-machine-authoritative-implement-in-packagesdomainrun">3.3 Run state machine (authoritative; implement in <code>packages/domain/run</code>)</h3>
-<p><code>draft → preflight → recon → planning → awaiting_gate1 → approved → executing ⇄ paused (gate2_pending | cost_cap | operator_pause) → validating → awaiting_gate3 → released → reporting → completed</code></p>
+<p><code>draft → preflight → recon → planning → awaiting_gate1 → approved → executing ⇄ paused (gate2_pending | cost_cap | operator_pause | window_closed) → validating → awaiting_gate3 → released → reporting → completed</code></p>
 <p>Terminal states: <code>cancelled</code>, <code>killed</code>, <code>failed</code>, <code>expired</code> (standing authorisation expired mid-run → stop all traffic immediately).</p>
 <ul>
 <li>Every transition is a guarded function: actor, preconditions, audit event.</li>
@@ -707,7 +715,7 @@ This truthfully establishes that testing is authorised. Agents must stay within 
 </tr>
 <tr>
 <td>Testing</td>
-<td><strong>Vitest</strong> (unit), <strong>Testcontainers</strong> (integration), <strong>Playwright</strong> (e2e), Go <code>testing</code> + testify, <strong>k6</strong> (load), <code>@fast-check</code> property tests where useful</td>
+<td><strong>Vitest</strong> (unit), <strong>Storybook</strong> 10 with the a11y addon and axe-core (design-system kit stories in <code>packages/ui</code>, #271), <strong>Testcontainers</strong> (integration), <strong>Playwright</strong> (e2e), Go <code>testing</code> + testify, <strong>k6</strong> (load), <code>@fast-check</code> property tests where useful</td>
 </tr>
 <tr>
 <td>Quality</td>
@@ -823,6 +831,7 @@ CLAUDE.md  README.md  SECURITY.md  LICENSE (proprietary notice)
 <li><strong>oob_correlations</strong>: <code>token</code>, <code>run_id</code>, <code>test_case_id</code>, <code>expires_at</code>; <strong>oob_interactions</strong>.</li>
 <li><strong>audit_events</strong>: append-only hash chain per tenant.</li>
 <li><strong>outbox</strong>: transactional outbox, written in the same transaction as the domain change by <code>withOutbox</code> (<code>packages/db</code>). <code>type(audit.event|notify.send|temporal.signal)</code>, <code>payload</code> (jsonb ≤ 64 KiB, references never secrets), <code>dedupe_key</code> (unique per tenant), <code>status(pending|dispatched|failed)</code>, <code>attempts</code>, <code>available_at</code> (DB clock), <code>last_error</code>. Delivered at least once by the relay (WORKFLOW-012).</li>
+<li><strong>secrets</strong>, <strong>secret_versions</strong>: encrypted secret records; every other table references one by the opaque <code>secret_ref</code> URI <code>bw-secret://{tenantId}/{secretId}[?v={version}]</code> (<code>parseSecretRef</code>/<code>formatSecretRef</code> in <code>@blackwing/contracts</code>), never plaintext. <code>secrets</code>: <code>name</code> (NFC, unique per tenant), <code>type</code>, <code>purpose</code>, <code>backend(openbao|aws_kms|vault|aws_secrets_manager|azure_kv)</code>, <code>envelope</code> (SECRETS-002) or <code>external_locator</code> (required for external backends), <code>current_version</code>, <code>status(active|rotating|disabled|shredded)</code>. <code>secret_versions</code>: rotation history. Consumers resolve refs via the Secrets Service (SECRETS-006), never read these tables.</li>
 <li><strong>connectors</strong>, <strong>ticket_links</strong>, <strong>notification_channels</strong>, <strong>schedules</strong>, <strong>blackout_windows</strong>, <strong>retention_policies</strong>, <strong>cost_ledger</strong>, <strong>price_tables</strong> (versioned), <strong>kill_events</strong> (halt timings), <strong>eval_runs</strong>.</li>
 </ul>
 <p>Rules:</p>

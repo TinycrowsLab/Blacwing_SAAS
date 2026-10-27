@@ -86,16 +86,21 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
 <li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
 <li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="../runbooks/disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
 <li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
 <li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
 <li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
 <li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
 <li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
 <li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/incident-response.html">Incident response and on-call runbook (OBS, NOTIFY, KILL)</a></li>
 <li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
 <li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
 <li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
 <li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/search-attributes.html">Temporal search attributes</a></li>
 <li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
 <li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
 <li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
@@ -111,6 +116,9 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="./dependency-graph.html">Allowed package dependency graph</a></li>
 <li><a href="./egress-gateway.html">Egress gateway chassis</a></li>
 <li><a href="./storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="./tenant-data-access.html">Tenant data access</a></li>
+<li><a href="./tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="./third-party-notices.html">Third-party notices</a></li>
 <li><a href="./typescript.html">TypeScript configuration and project references</a></li>
 <li><a href="../adr/README.html">Architecture decision records</a></li>
 <li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
@@ -225,6 +233,8 @@ where a clock read or a timer belongs when its effect is real.</p>
 <h2 id="enforcement">Enforcement</h2>
 <ul>
 <li><code>pnpm lint</code> fails on any banned call in <code>apps/worker/src/workflows/**/*.ts</code>. The rules run with type information.</li>
+<li>Test files (<code>*.test.ts</code>) are exempt. They run under Node, not in the sandbox, and are not part of the bundle
+entry. Replay tests use <code>node:fs</code> to read recorded histories.</li>
 <li><code>scripts/lint-config.test.mjs</code> (<code>workflow determinism</code>) proves that each banned call fails in a workflow
 file and passes in an activity file, and that <code>import type</code> and <code>uuid4()</code> pass.</li>
 <li>Do not add an <code>eslint-disable</code> comment to get past a workflow rule. If a rule is wrong, change the rule and
