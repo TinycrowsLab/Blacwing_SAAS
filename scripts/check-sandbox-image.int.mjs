@@ -12,7 +12,9 @@ import { after, before, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const TAG = `bw-sandbox:int-${randomBytes(4).toString('hex')}`;
+const TAG_ENTROPY_BYTES = 4;
+const EX_CONFIG = 78;
+const TAG = `bw-sandbox:int-${randomBytes(TAG_ENTROPY_BYTES).toString('hex')}`;
 const HARDEN = [
   '--read-only',
   '--cap-drop=ALL',
@@ -20,7 +22,9 @@ const HARDEN = [
   '--tmpfs=/workspace:uid=10001,gid=10001',
   '--tmpfs=/tmp:uid=10001,gid=10001',
 ];
+/** @param {string[]} args */
 const docker = (args) => spawnSync('docker', args, { cwd: ROOT, encoding: 'utf8' });
+/** @param {string[]} cmd @param {string[]} [extra] */
 const run = (cmd, extra = HARDEN) => docker(['run', '--rm', ...extra, TAG, ...cmd]);
 
 describe('bw-sandbox image', { timeout: 600_000 }, () => {
@@ -76,7 +80,7 @@ describe('bw-sandbox image', { timeout: 600_000 }, () => {
 
   it('fails clearly when /workspace is not a writable tmpfs', () => {
     const r = run(['true'], ['--read-only', '--cap-drop=ALL']);
-    assert.equal(r.status, 78);
+    assert.equal(r.status, EX_CONFIG);
     assert.match(r.stderr, /\/workspace is not writable/);
   });
 

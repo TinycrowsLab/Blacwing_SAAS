@@ -4,13 +4,15 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { after, describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { driftErrors, isNonPublic, load, main, validateDocument } from './check-egress-ips.mjs';
 
 const dir = mkdtempSync(path.join(tmpdir(), 'bw-egress-ips-'));
-after(() => rmSync(dir, { recursive: true, force: true }));
+after(() => {
+  rmSync(dir, { recursive: true, force: true });
+});
 
 const good = () => ({
   version: 1,
@@ -92,6 +94,7 @@ describe('driftErrors', () => {
 });
 
 describe('cli', () => {
+  /** @param {string} name @param {unknown} value */
   const write = (name, value) => {
     const file = path.join(dir, name);
     writeFileSync(file, JSON.stringify(value));

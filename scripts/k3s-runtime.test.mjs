@@ -9,6 +9,7 @@ import { describe, it } from 'node:test';
 
 import { REPO_ROOT } from './test-fixtures.mjs';
 
+/** @param {string} rel */
 const read = (rel) => readFileSync(path.join(REPO_ROOT, rel), 'utf8');
 const RUNTIME = 'infra/k3s/runtime';
 

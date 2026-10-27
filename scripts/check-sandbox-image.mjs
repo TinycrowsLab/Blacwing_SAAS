@@ -10,6 +10,8 @@ import { fileURLToPath } from 'node:url';
 export const SANDBOX_DOCKERFILE = 'infra/docker/sandbox/Dockerfile';
 export const SANDBOX_DOCKERIGNORE = 'infra/docker/sandbox/Dockerfile.dockerignore';
 const DIGEST = /@sha256:[0-9a-f]{64}/;
+const ARG_PREFIX_LENGTH = 4; // "ARG "
+const USER_PREFIX_LENGTH = 5; // "USER "
 
 /** @param {string} text */
 const instructions = (text) =>
@@ -27,9 +29,10 @@ const instructions = (text) =>
 export function checkSandboxDockerfile(dockerfile, dockerignore) {
   const errors = [];
   const lines = instructions(dockerfile);
+  /** @type {Map<string, string>} */
   const args = new Map();
   for (const l of lines.filter((x) => x.startsWith('ARG '))) {
-    const [k, ...v] = l.slice(4).split('=');
+    const [k = '', ...v] = l.slice(ARG_PREFIX_LENGTH).split('=');
     if (v.length > 0) args.set(k, v.join('='));
   }
 
@@ -40,7 +43,7 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
   if (froms.length !== 2) errors.push('expected exactly two stages (builder, runtime)');
   for (const f of froms) {
     const ref = f.split(/\s+/)[1] ?? '';
-    const resolved = ref.replace(/\$\{(\w+)\}/g, (_, k) => args.get(k) ?? '');
+    const resolved = ref.replace(/\$\{(\w+)\}/g, (_, /** @type {string} */ k) => args.get(k) ?? '');
     if (!DIGEST.test(resolved)) errors.push(`FROM ${ref} is not digest-pinned`);
     if (/:latest\b/.test(resolved)) errors.push(`FROM ${ref} uses a floating tag`);
   }
@@ -48,13 +51,12 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
   if (!/^FROM \S+ AS runtime$/m.test(dockerfile)) errors.push('missing runtime stage');
 
   const users = lines.filter((l) => l.startsWith('USER '));
-  const finalUser = users.at(-1)?.slice(5).trim() ?? '';
+  const finalUser = users.at(-1)?.slice(USER_PREFIX_LENGTH).trim() ?? '';
   if (!/^bw(:bw)?$/.test(finalUser)) errors.push(`final USER must be bw, got "${finalUser}"`);
-  const lastFrom =
-    lines
-      .map((l, i) => (l.startsWith('FROM ') ? i : -1))
-      .filter((i) => i >= 0)
-      .at(-1) ?? 0;
+  const lastFrom = Math.max(
+    lines.findLastIndex((l) => l.startsWith('FROM ')),
+    0,
+  );
   if (!lines.slice(lastFrom).some((l) => l.startsWith('USER ')))
     errors.push('runtime stage has no USER');
 
@@ -84,6 +86,7 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
 
 /** @param {string} root */
 export function checkRepo(root) {
+  /** @param {string} p */
   const read = (p) => readFileSync(path.join(root, p), 'utf8');
   return checkSandboxDockerfile(read(SANDBOX_DOCKERFILE), read(SANDBOX_DOCKERIGNORE));
 }

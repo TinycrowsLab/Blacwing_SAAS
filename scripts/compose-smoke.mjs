@@ -22,6 +22,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const CLIENT_ID_BYTES = 10;
 export const COMPOSE_FILE = path.join(ROOT, 'infra/compose/docker-compose.dev.yml');
 export const CORE_SERVICES = Object.freeze(['postgres', 'valkey', 'neo4j']);
 export const OBJECT_STORE_SERVICES = Object.freeze(['minio', 'minio-init']);
@@ -247,7 +248,7 @@ export function smoke(opts) {
     publicKeyEncoding: { type: 'spki', format: 'pem' },
     privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
   });
-  const cid = randomBytes(10).toString('hex');
+  const cid = randomBytes(CLIENT_ID_BYTES).toString('hex');
   const secret = randomUUID();
   // The token goes in over stdin (`-H @-`) so it never shows up in the process list.
   const ish = (/** @type {string[]} */ args) =>

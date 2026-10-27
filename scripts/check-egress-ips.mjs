@@ -15,12 +15,15 @@ import { fileURLToPath } from 'node:url';
 export const SCHEMA_VERSION = 1;
 const ISO_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 const CIDR32 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/32$/;
+const OCTET_END = 5;
+const OCTET_MAX = 255;
 const KEYS = ['version', 'lastUpdated', 'egressIps', 'notes'];
 
 /**
  * @param {number[]} o octets
  * @returns {boolean} true when the address is not publicly routable
  */
+/* eslint-disable @typescript-eslint/no-magic-numbers -- RFC 1122/1918/5735/6598 reserved IPv4 ranges are literal octets */
 export function isNonPublic(o) {
   const [a = 0, b = 0] = o;
   return (
@@ -34,6 +37,7 @@ export function isNonPublic(o) {
     (a === 192 && b === 168)
   );
 }
+/* eslint-enable @typescript-eslint/no-magic-numbers */
 
 /**
  * Validates a published document and returns the problems found (empty means valid).
@@ -50,13 +54,13 @@ export function validateDocument(doc) {
   for (const key of Object.keys(rec)) {
     if (!KEYS.includes(key)) errors.push(`unexpected field "${key}"`);
   }
-  if (rec['version'] !== SCHEMA_VERSION) errors.push(`version must be ${SCHEMA_VERSION}`);
-  const stamp = rec['lastUpdated'];
+  if (rec.version !== SCHEMA_VERSION) errors.push(`version must be ${SCHEMA_VERSION}`);
+  const stamp = rec.lastUpdated;
   if (typeof stamp !== 'string' || !ISO_UTC.test(stamp) || Number.isNaN(Date.parse(stamp))) {
     errors.push('lastUpdated must be an ISO-8601 UTC timestamp');
   }
-  if (typeof rec['notes'] !== 'string') errors.push('notes must be a string');
-  const ips = rec['egressIps'];
+  if (typeof rec.notes !== 'string') errors.push('notes must be a string');
+  const ips = rec.egressIps;
   if (!Array.isArray(ips) || ips.length === 0) {
     errors.push('egressIps must be a non-empty array');
     return errors;
@@ -68,8 +72,8 @@ export function validateDocument(doc) {
       errors.push(`egressIps entry ${JSON.stringify(entry)} must be an IPv4 /32 CIDR`);
       continue;
     }
-    const octets = m.slice(1, 5).map(Number);
-    if (octets.some((n) => n > 255)) {
+    const octets = m.slice(1, OCTET_END).map(Number);
+    if (octets.some((n) => n > OCTET_MAX)) {
       errors.push(`egressIps entry ${String(entry)} has an octet above 255`);
       continue;
     }
@@ -121,9 +125,11 @@ export async function load(source) {
     if (!res.ok) throw new Error(`GET ${source} returned ${res.status}`);
     const type = res.headers.get('content-type') ?? '';
     if (!type.startsWith('application/json')) throw new Error(`unexpected content-type "${type}"`);
-    return res.json();
+    return /** @type {unknown} */ (await res.json());
   }
-  return JSON.parse(readFileSync(source, 'utf8'));
+  /** @type {unknown} */
+  const parsed = JSON.parse(readFileSync(source, 'utf8'));
+  return parsed;
 }
 
 /**
