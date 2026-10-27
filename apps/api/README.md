@@ -115,3 +115,35 @@ is never read. The Run Broker runs each request in its run token's tenant and an
 (audited as `tenant.cross_tenant_denied`) when a body or run record names another tenant. Worker activities get the
 same context from `createTenantActivityInterceptors` (`apps/worker/src/tenant`), which re-reads the run's tenant on
 every attempt. Metrics: `bw_tenant_context_missing_total`, `bw_cross_tenant_denied_total`.
+
+## Rate limiting (CONTEXT_PACK §9, §8 #6)
+
+`src/rate-limit/` is the API's only rate limiter. `RateLimitGuard` is a global guard mounted after the tenant guard,
+so every tenant-scoped request is keyed by its resolved principal. Each request is charged against its buckets and
+must be admitted by all of them (the stricter wins):
+
+- Authenticated: the principal bucket `rl:{tenantId}:{tokenOrUserId}:{routeClass}` and the tenant ceiling
+  `rl:{tenantId}:_tenant:{routeClass}`.
+- Unauthenticated (public routes such as login): the client IP bucket `rl:_anon:ip:{ip}:{routeClass}`. The IP is
+  honoured from `X-Forwarded-For` only behind a trusted proxy (`API_TRUST_PROXY`).
+- Authentication runs first: an unauthenticated tenant route is `401` and charges nothing.
+
+Limit values: `RateLimitConfig.limitsFor({scope, routeClass, tenantId})` supplies per-plan and per-route-class values
+(TENANT-011). When it returns nothing, `RATE_LIMIT_DEFAULT_RPS` (10) and `RATE_LIMIT_BURST` (20) apply. `@RateLimit({
+routeClass, rps, burst })` overrides the principal or IP limit of one route; `@RateLimitExempt()` marks health probes.
+
+- Algorithm: a token bucket (refill at `rps`, capacity `burst`). A denied check consumes nothing. `Retry-After` is the
+  whole seconds until the next token; `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset` are sent on every
+  response. A refusal is `429 rate_limited` (problem+json).
+- Shared state: `ValkeyRateLimiter(client)` runs one Lua script per check. It reads the Valkey server clock (`TIME`),
+  refills, and charges every bucket in one atomic step, so a concurrent burst admits no more than `burst` plus the
+  refill. Keys carry a TTL, so idle buckets expire.
+- Outage: if the shared limiter fails, the check is decided by the in-process limiter (same arithmetic, per instance)
+  and `rate_limit.degraded` is logged; the API keeps serving and keeps limiting. The in-process limiter caps its
+  bucket map and refuses a new key at the cap rather than evicting busy buckets.
+- Metrics: `rate_limit_blocked_total{routeClass,scope}`, `rate_limit_degraded_total`,
+  `rate_limit_check_duration_seconds`. The blocked log line `rate_limit.blocked` carries `rl.tenant` (hashed),
+  `rl.principal`, `rl.routeClass`, `rl.remaining` and `rl.scope`, never a token.
+- Wiring: `createApiApp({ rateLimiter, rateLimitConfig })` takes the shared limiter and the per-plan config. Without a
+  limiter every instance uses the in-process one. The Valkey client is wired into the process entry point with the
+  API's connection setup, as for the idempotency store.

@@ -38,6 +38,8 @@ describe('loadApiConfig', () => {
     expect(config.API_IDEMPOTENCY_TTL_S).toBe(86_400);
     expect(config.API_IDEMPOTENCY_LOCK_TTL_S).toBe(120);
     expect(config.API_IDEMPOTENCY_MAX_BODY_BYTES).toBe(65_536);
+    expect(config.RATE_LIMIT_DEFAULT_RPS).toBe(10);
+    expect(config.RATE_LIMIT_BURST).toBe(20);
     expect(config.WEB_ORIGIN).toEqual(['http://localhost:3000']);
     expect(Object.isFrozen(config)).toBe(true);
   });
@@ -81,6 +83,10 @@ describe('loadApiConfig', () => {
     ['API_IDEMPOTENCY_TTL_S', '0'],
     ['API_IDEMPOTENCY_LOCK_TTL_S', '1.5'],
     ['API_IDEMPOTENCY_MAX_BODY_BYTES', '-1'],
+    ['RATE_LIMIT_DEFAULT_RPS', '0'],
+    ['RATE_LIMIT_DEFAULT_RPS', '2.5'],
+    ['RATE_LIMIT_BURST', '-3'],
+    ['RATE_LIMIT_BURST', '1000000'],
     ['WEB_ORIGIN', 'http://localhost:3000/app'],
     ['WEB_ORIGIN', 'http://localhost:3000/'],
     ['WEB_ORIGIN', 'ftp://localhost'],

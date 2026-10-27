@@ -20,6 +20,8 @@ import type { ApiConfig } from '../config.js';
 import type { SecurityEventSink } from '../errors/problem-filter.js';
 import type { HealthProbe } from '../health/health.types.js';
 import type { IdempotencyStore } from '../idempotency/ports.js';
+import type { RateLimiter } from '../rate-limit/limiter.js';
+import type { RateLimitConfig } from '../rate-limit/policy.js';
 import type { TenantPrincipalSource } from '../tenant/guard.js';
 import type { Logger } from '@blackwing/logger';
 import type { Tracer } from '@opentelemetry/api';
@@ -55,6 +57,10 @@ export interface CreateApiAppOptions {
   readonly tenantPrincipalSource?: TenantPrincipalSource;
   /** Receives security-relevant errors for auditing (see `SecurityEventSink`). */
   readonly securityEventSink?: SecurityEventSink;
+  /** Shared limiter of the rate-limit guard (Valkey); absent means an in-process limiter per instance. */
+  readonly rateLimiter?: RateLimiter;
+  /** Per-plan and per-route-class limit values (TENANT-011). */
+  readonly rateLimitConfig?: RateLimitConfig;
   /** Extra modules to mount (feature modules; test-only routes). */
   readonly imports?: NonNullable<ModuleMetadata['imports']>;
   /**
@@ -117,6 +123,10 @@ export async function createApiApp(options: CreateApiAppOptions): Promise<ApiApp
       ...(options.securityEventSink === undefined
         ? {}
         : { securityEventSink: options.securityEventSink }),
+      ...(options.rateLimiter === undefined ? {} : { rateLimiter: options.rateLimiter }),
+      ...(options.rateLimitConfig === undefined
+        ? {}
+        : { rateLimitConfig: options.rateLimitConfig }),
       imports: [ShutdownModule, ...(options.imports ?? [])],
     }),
     adapter,

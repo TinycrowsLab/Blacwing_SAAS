@@ -1,6 +1,7 @@
 import { Controller, Get, Inject, Res } from '@nestjs/common';
 
 import { HealthService } from './health.service.js';
+import { RateLimitExempt } from '../rate-limit/policy.js';
 import { PublicRoute } from '../tenant/public-route.js';
 
 import type { HealthReport } from './health.types.js';
@@ -10,6 +11,7 @@ const SERVICE_UNAVAILABLE = 503;
 
 /** Probe endpoints (API-011): unprefixed, unauthenticated, no audit, exempt from rate limiting. */
 @PublicRoute()
+@RateLimitExempt()
 @Controller('health')
 export class HealthController {
   constructor(@Inject(HealthService) private readonly health: HealthService) {}

@@ -110,6 +110,8 @@ async function boot(): Promise<{
     NODE_ENV: 'test',
     WEB_ORIGIN: 'http://localhost:3000',
     API_MAX_JSON_DEPTH: String(DEPTH),
+    // Many requests from one test IP; rate limiting has its own suite (rate-limit.http.test.ts).
+    RATE_LIMIT_BURST: '999999',
   });
   const { app, metrics } = await createApiApp({ config, logger, imports: [ThingsModule] });
   await app.getHttpAdapter().getInstance().ready();

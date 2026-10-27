@@ -24,6 +24,10 @@ export const DEFAULT_API_SHUTDOWN_GRACE_MS = 10_000;
 /** Deepest JSON nesting a request body may have (API-002, #54). */
 export const DEFAULT_API_MAX_JSON_DEPTH = 32;
 
+/** Rate limiting (mechanism fallback values; TENANT-011 supplies per-plan values). */
+const DEFAULT_API_RATE_LIMIT_RPS = 10;
+const DEFAULT_API_RATE_LIMIT_BURST = 20;
+
 /** Health probes (API-011, #63). */
 export const DEFAULT_API_HEALTH_CHECK_TIMEOUT_MS = 2000;
 export const DEFAULT_API_HEALTH_CACHE_MS = 1000;
@@ -42,6 +46,11 @@ const byteCount = z
 const seconds = z
   .string()
   .regex(/^[1-9][0-9]{0,8}$/, 'must be a positive integer number of seconds')
+  .transform(Number);
+
+const positiveRate = z
+  .string()
+  .regex(/^[1-9][0-9]{0,5}$/, 'must be a positive integer')
   .transform(Number);
 
 const positiveDuration = zDurationMs().refine((ms) => ms > 0, 'must be greater than zero');
@@ -84,6 +93,12 @@ export const apiEnvShape = {
   API_IDEMPOTENCY_LOCK_TTL_S: seconds.default(DEFAULT_API_IDEMPOTENCY_LOCK_TTL_S),
   /** Largest response body stored for replay; a bigger one is flagged and replays as `409 idempotency_result_too_large`. */
   API_IDEMPOTENCY_MAX_BODY_BYTES: byteCount.default(DEFAULT_API_IDEMPOTENCY_MAX_BODY_BYTES),
+  /**
+   * Rate-limit fallback (RATE_LIMIT_DEFAULT_RPS / RATE_LIMIT_BURST): the sustained requests per second and burst
+   * of every bucket that no configured per-plan value (TENANT-011) covers.
+   */
+  RATE_LIMIT_DEFAULT_RPS: positiveRate.default(DEFAULT_API_RATE_LIMIT_RPS),
+  RATE_LIMIT_BURST: positiveRate.default(DEFAULT_API_RATE_LIMIT_BURST),
   /** Release version and commit echoed by `/health`. Neither is a secret. */
   API_VERSION: z.string().min(1).default('0.0.0'),
   API_COMMIT: z.string().min(1).default('unknown'),

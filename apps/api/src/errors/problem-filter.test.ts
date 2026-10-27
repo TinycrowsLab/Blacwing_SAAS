@@ -180,6 +180,8 @@ async function harness(env: Record<string, string>): Promise<Harness> {
     NODE_ENV: 'test',
     WEB_ORIGIN: 'http://localhost:3000',
     API_BODY_LIMIT_BYTES: '256',
+    // These cases fire many requests from one test IP; rate limiting has its own suite (rate-limit.http.test.ts).
+    RATE_LIMIT_BURST: '999999',
     ...env,
   });
   const { app, metrics } = await createApiApp({

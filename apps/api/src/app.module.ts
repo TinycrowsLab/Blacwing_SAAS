@@ -11,6 +11,7 @@ import {
 import { ProblemJsonExceptionFilter, type SecurityEventSink } from './errors/problem-filter.js';
 import { HealthModule } from './health/health.module.js';
 import { IdempotencyModule } from './idempotency/module.js';
+import { RateLimitModule } from './rate-limit/module.js';
 import { SmokeController } from './smoke.controller.js';
 import { TenantContextModule } from './tenant/module.js';
 import { createValidationPipe } from './validation/zod-validation.pipe.js';
@@ -18,6 +19,8 @@ import { createValidationPipe } from './validation/zod-validation.pipe.js';
 import type { ApiConfig } from './config.js';
 import type { HealthProbe } from './health/health.types.js';
 import type { IdempotencyStore } from './idempotency/ports.js';
+import type { RateLimiter } from './rate-limit/limiter.js';
+import type { RateLimitConfig } from './rate-limit/policy.js';
 import type { TenantPrincipalSource } from './tenant/guard.js';
 import type { Logger } from '@blackwing/logger';
 
@@ -68,6 +71,12 @@ export interface AppModuleOptions {
   readonly tenantPrincipalSource?: TenantPrincipalSource;
   /** Receives security-relevant errors (`permission_denied`, `tenant_context_missing`); AUDIT wires `emitAudit`. */
   readonly securityEventSink?: SecurityEventSink;
+  /**
+   * Shared limiter behind the rate-limit guard (Valkey in production). Absent: an in-process limiter per instance.
+   */
+  readonly rateLimiter?: RateLimiter;
+  /** Per-plan and per-route-class limit values (TENANT-011). Absent: the env fallback applies. */
+  readonly rateLimitConfig?: RateLimitConfig;
   /** Extra modules to mount (feature modules of later issues; test-only routes). */
   readonly imports?: NonNullable<ModuleMetadata['imports']>;
 }
@@ -98,6 +107,12 @@ export class AppModule {
                 registry: metrics.registry,
               }),
             ]),
+        // After the tenant module: APP_GUARD order makes the limiter run once the tenant is resolved.
+        RateLimitModule.forRoot({
+          registry: metrics.registry,
+          ...(options.rateLimiter === undefined ? {} : { limiter: options.rateLimiter }),
+          ...(options.rateLimitConfig === undefined ? {} : { config: options.rateLimitConfig }),
+        }),
         ...(options.imports ?? []),
       ],
       providers: [
