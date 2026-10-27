@@ -224,7 +224,8 @@ export default defineConfig(
 
       // Curated unicorn rules: correctness and modern Node APIs, not taste.
       'unicorn/error-message': 'error',
-      'unicorn/filename-case': ['error', { case: 'kebabCase' }],
+      // Next.js dynamic route segments (`[runId]`) are dictated by the framework.
+      'unicorn/filename-case': ['error', { case: 'kebabCase', ignore: [/^\[\.{0,3}[A-Za-z]+\]$/] }],
       'unicorn/new-for-builtins': 'error',
       'unicorn/no-abusive-eslint-disable': 'error',
       'unicorn/no-array-callback-reference': 'error',
