@@ -50,7 +50,8 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await db.stop();
+  // beforeAll may have failed before the handle existed; do not mask that error with a teardown TypeError.
+  await (db as PostgresHandle | undefined)?.stop();
 });
 
 describe('secrets: round trip', () => {
@@ -85,11 +86,11 @@ describe('secrets: round trip', () => {
   it('bumps updated_at on update', async () => {
     const { rows } = await insertSecret(tenantA);
     const row = rows[0] as { id: string; updated_at: Date };
-    await db.withTenant(tenantA, (tx) =>
-      tx.query(`SELECT pg_sleep(0.01); UPDATE secrets SET status = 'rotating' WHERE id = $1`, [
-        row.id,
-      ]),
-    );
+    await db.withTenant(tenantA, async (tx) => {
+      // Two statements: the extended protocol (bind parameters) takes one command per query.
+      await tx.query('SELECT pg_sleep(0.01)');
+      await tx.query(`UPDATE secrets SET status = 'rotating' WHERE id = $1`, [row.id]);
+    });
     const after = await db.withTenant(tenantA, (tx) =>
       tx.query('SELECT updated_at FROM secrets WHERE id = $1', [row.id]),
     );

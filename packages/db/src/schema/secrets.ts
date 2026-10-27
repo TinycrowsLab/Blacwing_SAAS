@@ -10,6 +10,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
@@ -74,7 +75,8 @@ export const secrets = pgTable(
   },
   (t) => [
     // Also the target of secret_versions' composite FK, so a version can never name another tenant's secret.
-    uniqueIndex('secrets_tenant_id_id_idx').on(t.tenantId, t.id),
+    // A constraint (not a bare unique index) so Drizzle emits it inside CREATE TABLE, before the FK that needs it.
+    unique('secrets_tenant_id_id_unique').on(t.tenantId, t.id),
     uniqueIndex(SECRETS_NAME_INDEX).on(t.tenantId, t.name),
     check(
       'secrets_name_check',

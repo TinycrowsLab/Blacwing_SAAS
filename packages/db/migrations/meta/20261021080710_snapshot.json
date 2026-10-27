@@ -198,9 +198,7 @@
           "name": "kill_events_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "bw_app"
-          ],
+          "to": ["bw_app"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
         },
@@ -208,9 +206,7 @@
           "name": "kill_events_operator_global",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "bw_operator"
-          ],
+          "to": ["bw_operator"],
           "using": "tenant_id IS NULL AND scope = 'global'",
           "withCheck": "tenant_id IS NULL AND scope = 'global'"
         }
@@ -374,10 +370,7 @@
         "soc_contacts_tenant_id_id_key": {
           "name": "soc_contacts_tenant_id_id_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "tenant_id",
-            "id"
-          ]
+          "columns": ["tenant_id", "id"]
         }
       },
       "policies": {
@@ -385,9 +378,7 @@
           "name": "soc_contacts_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
         }
@@ -542,14 +533,8 @@
           "name": "soc_kill_tokens_contact_fk",
           "tableFrom": "soc_kill_tokens",
           "tableTo": "soc_contacts",
-          "columnsFrom": [
-            "tenant_id",
-            "contact_id"
-          ],
-          "columnsTo": [
-            "tenant_id",
-            "id"
-          ],
+          "columnsFrom": ["tenant_id", "contact_id"],
+          "columnsTo": ["tenant_id", "id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -559,9 +544,7 @@
         "soc_kill_tokens_token_sha256_key": {
           "name": "soc_kill_tokens_token_sha256_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "token_sha256"
-          ]
+          "columns": ["token_sha256"]
         }
       },
       "policies": {
@@ -569,9 +552,7 @@
           "name": "soc_kill_tokens_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
         }
@@ -782,10 +763,7 @@
         "audit_events_tenant_seq_key": {
           "name": "audit_events_tenant_seq_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "tenant_id",
-            "seq"
-          ]
+          "columns": ["tenant_id", "seq"]
         }
       },
       "policies": {
@@ -793,9 +771,7 @@
           "name": "audit_events_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
         }
@@ -984,9 +960,7 @@
           "name": "outbox_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
         }
