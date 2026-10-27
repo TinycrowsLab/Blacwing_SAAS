@@ -118,6 +118,7 @@ export const auditTargetTypeSchema = z.enum([
   'connector',
   'session',
   'platform',
+  'assessment_request',
 ]);
 export type AuditTargetType = z.infer<typeof auditTargetTypeSchema>;
 

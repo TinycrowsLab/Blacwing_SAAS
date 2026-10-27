@@ -2,6 +2,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import {
   ApiTokenId,
+  AssessmentRequestId,
   AssetId,
   EvidenceId,
   FindingId,
@@ -108,6 +109,7 @@ describe('entity constructors (runtime)', () => {
     [UserId, 'usr'],
     [OobId, 'oob'],
     [KillEventId, 'kill'],
+    [AssessmentRequestId, 'areq'],
   ];
 
   it('covers every registered prefix exactly once', () => {

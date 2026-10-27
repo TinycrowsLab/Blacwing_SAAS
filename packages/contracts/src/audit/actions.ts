@@ -401,6 +401,19 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'The outbox relay gave up delivering a message (retries exhausted, or its tenant is inactive); the row is marked failed and an alert is raised.',
   },
+  // assessment requests (SCOPE-001)
+  {
+    action: 'scope.request.created',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description: 'An assessment request was created as a draft.',
+  },
+  {
+    action: 'scope.request.status_changed',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description: 'An assessment request changed status; metadata records from, to and the actor.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

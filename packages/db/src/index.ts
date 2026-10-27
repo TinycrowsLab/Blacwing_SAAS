@@ -156,6 +156,16 @@ export {
   type TenantContextSource,
 } from './repository.js';
 export {
+  AssessmentRequestRepository,
+  type AssessmentRequestAuditEvent,
+  type AssessmentRequestAuditHook,
+  type AssessmentRequestCreate,
+  type AssessmentRequestMetrics,
+  type AssessmentRequestRepositoryOptions,
+  type AssessmentRequestRow,
+  type AssessmentRequestUpdate,
+} from './assessment-request.repository.js';
+export {
   OutboxDuplicateError,
   type OutboxMetrics,
   withOutbox,

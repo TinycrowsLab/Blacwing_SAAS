@@ -36,6 +36,20 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, createHash('sha256').update(randomBytes(8)).digest()],
     );
   },
+  assessment_requests: async (tx, tenantId) => {
+    const id = newId();
+    await tx.query(
+      `INSERT INTO assessment_requests (id, tenant_id, public_id, mode, objective, asset_ids, max_intrusiveness, budgets, trigger, requested_by)
+       VALUES ($1, $2, $3, 'black', 'iso objective', '{}', 'passive', '{}', 'console', $4)`,
+      [id, tenantId, `areq_${id.replaceAll('-', '')}`, newId()],
+    );
+  },
+  input_manifests: async (tx, tenantId) => {
+    await tx.query(`INSERT INTO input_manifests (id, tenant_id) VALUES ($1, $2)`, [
+      newId(),
+      tenantId,
+    ]);
+  },
   kill_events: async (tx, tenantId) => {
     await tx.query(
       `INSERT INTO kill_events (id, tenant_id, scope, scope_ref_id, source, actor_type, actor_ref, reason)

@@ -10,12 +10,14 @@ import {
 } from '../primitives.js';
 import { runBudgetsSchema } from './authorisation.js';
 
-/** Assessment mode (§7 `runs.mode`). */
-export const runModeSchema = z.enum(['black', 'grey', 'white']);
+/** Assessment modes (§7 `runs.mode`): a const tuple, so database enum columns can be typed from it. */
+export const RUN_MODES = ['black', 'grey', 'white'] as const;
+export const runModeSchema = z.enum(RUN_MODES);
 export type RunMode = z.infer<typeof runModeSchema>;
 
 /** What started the run (§7 `runs.trigger`). */
-export const runTriggerSchema = z.enum(['console', 'api', 'ci', 'schedule', 'retest']);
+export const RUN_TRIGGERS = ['console', 'api', 'ci', 'schedule', 'retest'] as const;
+export const runTriggerSchema = z.enum(RUN_TRIGGERS);
 export type RunTrigger = z.infer<typeof runTriggerSchema>;
 
 /**

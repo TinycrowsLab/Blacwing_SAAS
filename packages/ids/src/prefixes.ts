@@ -35,6 +35,8 @@ export const ID_PREFIXES = Object.freeze({
   oob: 'OobId',
   /** Kill events (`kill_events`). */
   kill: 'KillEventId',
+  /** Assessment requests (`assessment_requests`, SCOPE-001). */
+  areq: 'AssessmentRequestId',
 } as const);
 
 /** A registered public-id prefix. */

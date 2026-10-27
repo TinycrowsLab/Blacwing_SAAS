@@ -77,6 +77,8 @@ const RELEASED_ACTIONS = [
   'soc_kill.triggered',
   'soc_kill.rejected',
   'outbox.delivery_failed',
+  'scope.request.created',
+  'scope.request.status_changed',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */
@@ -321,8 +323,9 @@ describe('action catalogue', () => {
   it('has unique, well-formed names with metadata for every entry', () => {
     expect(new Set(AUDIT_ACTIONS).size).toBe(AUDIT_ACTIONS.length);
     for (const entry of AUDIT_ACTION_CATALOGUE) {
+      // `domain.name`, or a dotted sub-resource such as `scope.request.status_changed` (SCOPE-001).
       expect(entry.action).toMatch(
-        /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*\.[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/,
+        /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*(?:\.[a-z][a-z0-9]*(?:_[a-z0-9]+)*)+$/,
       );
       expect(auditSeveritySchema.safeParse(entry.defaultSeverity).success).toBe(true);
       expect(typeof entry.isAlwaysAudited).toBe('boolean');

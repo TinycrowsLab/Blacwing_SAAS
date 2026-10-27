@@ -12,8 +12,9 @@ export {
   type Base32DecodeError,
 } from './base32.js';
 export {
-  AssetId,
   ApiTokenId,
+  AssessmentRequestId,
+  AssetId,
   defineIdType,
   EvidenceId,
   FindingId,

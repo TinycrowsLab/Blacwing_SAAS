@@ -158,8 +158,17 @@ export {
   testWindowSchema,
 } from './entities/authorisation.js';
 export {
+  ASSESSMENT_REQUEST_STATUSES,
+  ASSESSMENT_REQUEST_TRANSITIONS,
+  type AssessmentRequestStatus,
+  assessmentRequestStatusSchema,
+  canTransitionAssessmentRequest,
+} from './entities/assessment-request.js';
+export {
   type Run,
   type RunMode,
+  RUN_MODES,
+  RUN_TRIGGERS,
   runModeSchema,
   type RunPauseReason,
   runPauseReasonSchema,

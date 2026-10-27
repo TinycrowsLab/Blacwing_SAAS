@@ -52,6 +52,7 @@ describe('prefix registry', () => {
   it("holds exactly the issue's prefixes", () => {
     expect([...ID_PREFIX_LIST].sort()).toEqual(
       [
+        'areq',
         'asset',
         'evd',
         'fnd',
