@@ -86,7 +86,7 @@ export interface CostLedger {
 }
 
 /** The coverage manifest: a refusal is recorded so reports show what was not tested. */
-export interface CoverageManifest {
+export interface SessionCoverageManifest {
   recordDeclined(record: CoverageDeclinedRecord): Promise<void>;
 }
 

@@ -7,7 +7,7 @@ import type {
   ActivityContextLike,
   AgentSessionRepo,
   CostLedger,
-  CoverageManifest,
+  SessionCoverageManifest,
   EvidenceFlusher,
   SandboxService,
   SessionAlerts,
@@ -26,7 +26,7 @@ export interface AgentSessionActivityDeps {
   readonly evidence: EvidenceFlusher;
   readonly sessions: AgentSessionRepo;
   readonly cost: CostLedger;
-  readonly coverage: CoverageManifest;
+  readonly coverage: SessionCoverageManifest;
   readonly audit: SessionAuditSink;
   readonly alerts: SessionAlerts;
   readonly metrics: SessionMetrics;
