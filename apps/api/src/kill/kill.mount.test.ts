@@ -67,12 +67,15 @@ describe('kill routes mounted on the API app', { timeout: 30_000 }, () => {
   });
 
   it('rejects an unauthenticated caller before the handler with problem+json', async () => {
-    const res = await app.getHttpAdapter().getInstance().inject({
-      method: 'POST',
-      url: '/v1/kill',
-      headers: { 'idempotency-key': 'mount-key-0002' },
-      payload: { scope: 'run', scopeRefId: LIVE_RUN, reason: 'mounted' },
-    });
+    const res = await app
+      .getHttpAdapter()
+      .getInstance()
+      .inject({
+        method: 'POST',
+        url: '/v1/kill',
+        headers: { 'idempotency-key': 'mount-key-0002' },
+        payload: { scope: 'run', scopeRefId: LIVE_RUN, reason: 'mounted' },
+      });
     expect(res.statusCode).toBe(401);
     expect(res.headers['content-type']).toContain('application/problem+json');
   });

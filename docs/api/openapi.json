@@ -214,7 +214,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, RUN_NOT_ACTIVE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -238,6 +238,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEK_DISABLED": {
+                    "summary": "Key version disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEK_DISABLED",
+                      "title": "Key version disabled",
+                      "status": 409,
+                      "code": "KEK_DISABLED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -521,7 +531,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, RUN_NOT_ACTIVE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -548,6 +558,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "KEK_DISABLED": {
+                    "summary": "Key version disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEK_DISABLED",
+                      "title": "Key version disabled",
+                      "status": 409,
+                      "code": "KEK_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "RUN_NOT_ACTIVE": {
                     "summary": "Run is not active",
                     "value": {
@@ -563,7 +583,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, PROMPT_INVALID, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -640,6 +660,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ENVELOPE_INVALID": {
+                    "summary": "Invalid secret envelope",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
+                      "title": "Invalid secret envelope",
+                      "status": 422,
+                      "code": "ENVELOPE_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "PROMPT_INVALID": {
                     "summary": "Invalid prompt file",
                     "value": {
@@ -647,6 +677,16 @@
                       "title": "Invalid prompt file",
                       "status": 422,
                       "code": "PROMPT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_SECRET_REF": {
+                    "summary": "Invalid secret reference",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
+                      "title": "Invalid secret reference",
+                      "status": 422,
+                      "code": "INVALID_SECRET_REF",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -1019,7 +1059,50 @@
                 "minimum": 0,
                 "maximum": 9007199254740991
               },
+              "keyResults": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "keyId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 255
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": ["revoked", "already_revoked", "failed"]
+                    }
+                  },
+                  "required": ["keyId", "outcome"],
+                  "additionalProperties": false
+                }
+              },
               "workflows": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "workflowResults": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "workflowId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 255
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": ["cancelled", "already_closed", "not_found", "failed"]
+                    }
+                  },
+                  "required": ["workflowId", "outcome"],
+                  "additionalProperties": false
+                }
+              },
+              "reversalsFlagged": {
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 9007199254740991
