@@ -447,7 +447,7 @@
       "sessionCookie": {
         "type": "apiKey",
         "in": "cookie",
-        "name": "bw_session"
+        "name": "__Host-bw_session"
       }
     },
     "schemas": {

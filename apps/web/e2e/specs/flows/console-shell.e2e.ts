@@ -22,7 +22,13 @@ test.describe('console shell', () => {
     context,
   }) => {
     await context.addCookies([
-      { name: 'bw_session', value: 'not-a-session', url: settings.webUrl.href, httpOnly: true },
+      {
+        name: '__Host-bw_session',
+        value: 'not-a-session',
+        url: settings.webUrl.href,
+        secure: true,
+        httpOnly: true,
+      },
     ]);
     await page.goto(new URL('/', settings.webUrl).href);
 

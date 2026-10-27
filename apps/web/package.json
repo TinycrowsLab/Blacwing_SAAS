@@ -12,6 +12,7 @@
     "dev": "next dev --hostname 127.0.0.1 --port 3000",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run --configLoader runner --config src/vitest.config.ts",
+    "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts",
     "test:e2e": "playwright test -c e2e/playwright.config.ts",
     "typecheck": "tsc -b --pretty false"
   },
@@ -30,12 +31,17 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@blackwing/config": "workspace:*",
     "@blackwing/contracts": "workspace:*",
     "@blackwing/domain": "workspace:*",
+    "@blackwing/logger": "workspace:*",
     "@blackwing/ui": "workspace:*",
     "@hookform/resolvers": "6.0.0",
+    "@opentelemetry/api": "catalog:",
     "@radix-ui/react-slot": "1.5.0",
     "@tanstack/react-query": "catalog:",
+    "ioredis": "5.11.1",
+    "jose": "6.2.13",
     "lucide-react": "1.61.0",
     "next": "15.5.28",
     "react": "19.3.1",

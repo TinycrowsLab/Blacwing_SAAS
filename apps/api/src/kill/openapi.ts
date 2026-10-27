@@ -183,7 +183,7 @@ export function killOpenApiDocument(): JsonObject {
     components: {
       securitySchemes: {
         bearerAuth: { type: 'http', scheme: 'bearer', description: 'bw_pat_ or bw_ci_ token' },
-        sessionCookie: { type: 'apiKey', in: 'cookie', name: 'bw_session' },
+        sessionCookie: { type: 'apiKey', in: 'cookie', name: '__Host-bw_session' },
       },
       schemas: {
         KillTriggerRequest: jsonSchema(killTriggerRequestSchema),

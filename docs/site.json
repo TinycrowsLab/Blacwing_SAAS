@@ -56,7 +56,8 @@
         "runbooks/secret-scanning.md",
         "runbooks/secrets-resolve.md",
         "runbooks/ses-email.md",
-        "runbooks/trivy.md"
+        "runbooks/trivy.md",
+        "runbooks/web-bff-auth.md"
       ]
     },
     {

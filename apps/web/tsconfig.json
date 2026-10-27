@@ -15,10 +15,16 @@
       "path": "e2e"
     },
     {
+      "path": "../../packages/config"
+    },
+    {
       "path": "../../packages/contracts"
     },
     {
       "path": "../../packages/domain"
+    },
+    {
+      "path": "../../packages/logger"
     },
     {
       "path": "../../packages/testing"

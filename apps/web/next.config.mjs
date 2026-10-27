@@ -1,4 +1,10 @@
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+
+// `next dev` only: the repository `.env` (written by `pnpm dev:deps`) feeds the BFF. Variables that are
+// already set win; builds and deployed environments never read the file.
+const rootEnv = fileURLToPath(new URL('../../.env', import.meta.url));
+if (process.env.NODE_ENV === 'development' && existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 
 /**
  * The slice of the webpack config and module this file touches (Next types both as `any`).
@@ -10,7 +16,16 @@ import { fileURLToPath } from 'node:url';
 const config = {
   reactStrictMode: true,
   poweredByHeader: false,
-  transpilePackages: ['@blackwing/ui'],
+  transpilePackages: [
+    '@blackwing/ui',
+    '@blackwing/config',
+    '@blackwing/errors',
+    '@blackwing/logger',
+  ],
+  // Keycloak redirects to the path registered in the realm (`/auth/callback`); the handler lives with
+  // the other BFF routes under /api/auth.
+  rewrites: () =>
+    Promise.resolve([{ source: '/auth/callback', destination: '/api/auth/callback' }]),
   // The workspace uses NodeNext-style `./x.js` specifiers for `.ts` sources.
   webpack(
     /** @type {WebpackConfig} */ webpackConfig,

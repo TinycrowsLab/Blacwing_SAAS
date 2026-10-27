@@ -490,24 +490,39 @@ importers:
 
   apps/web:
     dependencies:
+      '@blackwing/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@blackwing/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
       '@blackwing/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@blackwing/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@blackwing/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@hookform/resolvers':
         specifier: 6.0.0
         version: 6.0.0(ajv@8.20.0)(react-hook-form@7.90.0(@types/react@19.3.0)(react@19.3.1))(zod@4.6.7)
+      '@opentelemetry/api':
+        specifier: 'catalog:'
+        version: 1.9.1
       '@radix-ui/react-slot':
         specifier: 1.5.0
         version: 1.5.0(@types/react@19.3.0)(react@19.3.1)
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.104.3(react@19.3.1)
+      ioredis:
+        specifier: 5.11.1
+        version: 5.11.1
+      jose:
+        specifier: 6.2.13
+        version: 6.2.13
       lucide-react:
         specifier: 1.61.0
         version: 1.61.0(@types/react@19.3.0)(react@19.3.1)

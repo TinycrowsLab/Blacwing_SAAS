@@ -181,7 +181,7 @@ export function buildOpenApiDocument(options: {
           scheme: 'bearer',
           description: 'Personal access token (bw_pat_...) or CI token (bw_ci_...).',
         },
-        sessionCookie: { type: 'apiKey', in: 'cookie', name: 'bw_session' },
+        sessionCookie: { type: 'apiKey', in: 'cookie', name: '__Host-bw_session' },
       },
       parameters: commonParameters(),
       headers: {

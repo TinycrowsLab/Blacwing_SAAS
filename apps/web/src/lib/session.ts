@@ -7,8 +7,10 @@
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 
-/** Name of the httpOnly session cookie set by the BFF. */
-export const SESSION_COOKIE = 'bw_session';
+import { SESSION_COOKIE } from './auth/cookies.js';
+
+/** Name of the httpOnly, `__Host-` prefixed session cookie set by the BFF (defined in `auth/cookies`). */
+export { SESSION_COOKIE };
 /** Origin of the BFF that answers session lookups; server-side only, never a `NEXT_PUBLIC_` key. */
 const DEFAULT_BFF_ORIGIN = 'http://127.0.0.1:3000';
 /** BFF endpoint that resolves the session cookie into the public identity. */

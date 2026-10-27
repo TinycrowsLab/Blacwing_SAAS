@@ -37,7 +37,7 @@ describe('loadRun', () => {
     expect(await loadRun('run_01JABC7Q3M', d.value)).toEqual(run);
     const [url, init] = d.fetchMock.mock.calls[0] as unknown as [URL, RequestInit];
     expect(url.href).toBe('http://bff.test/v1/runs/run_01JABC7Q3M');
-    expect(init.headers).toEqual({ cookie: 'bw_session=c1', accept: 'application/json' });
+    expect(init.headers).toEqual({ cookie: '__Host-bw_session=c1', accept: 'application/json' });
   });
 
   it('fails closed for unknown, foreign, forbidden and unauthenticated (404/403/401)', async () => {
