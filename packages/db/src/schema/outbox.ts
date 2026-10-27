@@ -5,6 +5,7 @@ import {
   integer,
   jsonb,
   pgPolicy,
+  pgRole,
   pgTable,
   text,
   timestamp,
@@ -27,13 +28,20 @@ import { TENANT_PREDICATE } from './columns.js';
  * Transactional outbox (WORKFLOW-001 follow-up, F12, F34, CONTEXT_PACK §7, §8.6, §8.8). A domain write
  * and its side-effect intents (audit events, notifications, workflow signals) commit in one
  * transaction as rows here, so delivery is at least once with no dual-write race. `withOutbox`
- * (`../outbox.ts`) is the only writer; the relay that dispatches rows is WORKFLOW-012. The
+ * (`../outbox.ts`) is the only writer; the relay that dispatches rows is WORKFLOW-012 (`outbox-relay.ts`). The
  * forward-only migration in `migrations/` is generated from this file (`pnpm db:generate`) and then
  * reviewed; FORCE ROW LEVEL SECURITY, the grants and the `updated_at` trigger are
  * appended by hand because Drizzle does not model them.
  *
  * Every instant is the database clock (`now()`): `available_at` has no application-side source.
  */
+
+/**
+ * The outbox relay role (created NOLOGIN by `@blackwing/testing/sql/rls-roles.sql`). It is the only
+ * path that claims and marks rows across tenants; it can read them and update the delivery columns,
+ * nothing else (grants appended to the migration by hand).
+ */
+export const relayRole = pgRole('bw_relay').existing();
 
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' });
 
@@ -95,6 +103,20 @@ export const outbox = pgTable(
       to: 'public',
       using: TENANT_PREDICATE,
       withCheck: TENANT_PREDICATE,
+    }),
+    // Cross-tenant relay access (WORKFLOW-012): read everything, update only rows still pending.
+    pgPolicy('outbox_relay_select', {
+      as: 'permissive',
+      for: 'select',
+      to: relayRole,
+      using: sql`true`,
+    }),
+    pgPolicy('outbox_relay_update', {
+      as: 'permissive',
+      for: 'update',
+      to: relayRole,
+      using: sql`${t.status} = 'pending'`,
+      withCheck: sql`true`,
     }),
   ],
 );

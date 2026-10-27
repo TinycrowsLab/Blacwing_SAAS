@@ -31,17 +31,23 @@
     "@opentelemetry/api": "catalog:",
     "@temporalio/worker": "catalog:",
     "@temporalio/workflow": "catalog:",
+    "bullmq": "5.58.0",
     "croner": "9.1.0",
+    "drizzle-orm": "0.45.3",
     "fastify": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@opentelemetry/context-async-hooks": "catalog:",
     "@opentelemetry/sdk-trace-base": "catalog:",
+    "@blackwing/ids": "workspace:*",
+    "@blackwing/testing": "workspace:*",
     "@temporalio/client": "catalog:",
     "@temporalio/proto": "catalog:",
     "@types/node": "catalog:",
+    "@types/pg": "8.23.1",
     "long": "5.3.2",
+    "pg": "8.23.1",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

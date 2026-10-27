@@ -11,8 +11,12 @@
 --   bw_operator  The platform-operator path (KILL-001): the only role whose policy reaches global,
 --             tenant-less rows such as `kill_events` with scope 'global'. Not a superuser, no
 --             BYPASSRLS, NOINHERIT; bw_owner may SET ROLE to it, bw_app never.
+--   bw_relay  The outbox relay (WORKFLOW-012): the only role whose policies reach `outbox` rows across
+--             tenants (claim and mark them, nothing else). Not a superuser, no BYPASSRLS, NOINHERIT;
+--             bw_owner may SET ROLE to it (without inheriting it), bw_app never. The relay then
+--             dispatches each row under that row's own tenant context on the app role.
 --
--- Both are created NOLOGIN. Whoever provisions the database grants LOGIN and sets passwords (or
+-- All are created NOLOGIN. Whoever provisions the database grants LOGIN and sets passwords (or
 -- creates login roles that are members of these roles). No credential is ever stored in this file.
 
 DO $$
@@ -32,6 +36,11 @@ BEGIN
   EXCEPTION WHEN duplicate_object OR unique_violation THEN
     NULL;
   END;
+  BEGIN
+    CREATE ROLE bw_relay NOLOGIN;
+  EXCEPTION WHEN duplicate_object OR unique_violation THEN
+    NULL;
+  END;
 END
 $$;
 
@@ -39,6 +48,7 @@ $$;
 ALTER ROLE bw_owner NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS INHERIT;
 ALTER ROLE bw_app NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT;
 ALTER ROLE bw_operator NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT;
+ALTER ROLE bw_relay NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT;
 
 -- bw_app must never be able to act as the owner or the platform operator.
 DO $$
@@ -49,9 +59,15 @@ BEGIN
   IF pg_has_role('bw_app', 'bw_operator', 'MEMBER') THEN
     REVOKE bw_operator FROM bw_app;
   END IF;
+  IF pg_has_role('bw_app', 'bw_relay', 'MEMBER') THEN
+    REVOKE bw_relay FROM bw_app;
+  END IF;
   -- Platform-operator tooling runs as the owner and assumes bw_operator with SET ROLE.
   IF NOT pg_has_role('bw_owner', 'bw_operator', 'MEMBER') THEN
     GRANT bw_operator TO bw_owner;
   END IF;
+  -- SET only, no INHERIT: the owner can assume the relay role (tests and tooling do) but never gains
+  -- its policies by being the owner, so FORCE ROW LEVEL SECURITY keeps binding the owner on `outbox`.
+  GRANT bw_relay TO bw_owner WITH INHERIT FALSE, SET TRUE;
 END
 $$;

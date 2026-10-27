@@ -56,7 +56,7 @@ URL. The container-side ports never change.
 - `bw_admin`, the bootstrap superuser. Only the init scripts use it.
 
 `postgres/init/02-db-roles.sh` then applies `packages/db/src/roles.sql` (mounted read-only): it creates the
-NOLOGIN roles `bw_owner`, `bw_app` and `bw_operator` of the DB-001 role model, which the first migration
+NOLOGIN roles `bw_owner`, `bw_app`, `bw_operator` and `bw_relay` of the DB-001 role model, which the first migration
 requires, and makes `bw_migrator` a member of `bw_owner`. A volume created before this script existed lacks
 those roles; recreate it with `pnpm dev:deps:reset --yes`.
 

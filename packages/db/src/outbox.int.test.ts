@@ -20,7 +20,7 @@ import {
   withOutbox,
   withTenant,
 } from './index.js';
-import { assertRlsEnabled, rlsPolicySql } from './rls.js';
+import { readRlsState, rlsPolicySql } from './rls.js';
 
 let db: PostgresHandle;
 let app: Database;
@@ -219,8 +219,24 @@ describe('outbox: RLS isolation between tenants', () => {
     await asTenant(tenantB, (tx) => withOutbox(tx, [message('iso-b')], silent));
   });
 
-  it('is enabled, forced and has exactly the canonical tenant policy', async () => {
-    await expect(assertRlsEnabled(db.ownerPool, 'outbox')).resolves.toBeUndefined();
+  it('is enabled, forced and has the canonical tenant policy plus only the two relay policies', async () => {
+    const state = await readRlsState(db.ownerPool, 'outbox');
+    expect(state.enabled).toBe(true);
+    expect(state.forced).toBe(true);
+    expect(state.policies.map((policy) => policy.name)).toEqual([
+      'outbox_relay_select',
+      'outbox_relay_update',
+      'outbox_tenant_isolation',
+    ]);
+    const tenant = state.policies.find((policy) => policy.name === 'outbox_tenant_isolation');
+    const canonical = "tenant_id=(current_setting('app.tenant_id'::text))::uuid".replace(
+      /[\s()]/g,
+      '',
+    );
+    expect(tenant?.command).toBe('ALL');
+    for (const predicate of [tenant?.using ?? '', tenant?.withCheck ?? '']) {
+      expect(predicate.replace(/[\s()]/g, '').toLowerCase()).toBe(canonical.toLowerCase());
+    }
   });
 
   it('hides tenant A rows from tenant B selects (and A can read them)', async () => {
@@ -448,13 +464,14 @@ describe('outbox: privileges', () => {
     expect(operator[0]?.privileges.some(Boolean)).toBe(false);
     const { rows } = await db.ownerPool.query<{ grantee: string; privilege_type: string }>(
       `SELECT grantee, privilege_type FROM information_schema.role_table_grants
-        WHERE table_name = 'outbox' AND grantee <> 'bw_owner' ORDER BY privilege_type`,
+        WHERE table_name = 'outbox' AND grantee <> 'bw_owner' ORDER BY privilege_type, grantee`,
     );
-    expect(rows).toEqual(
-      ['DELETE', 'INSERT', 'SELECT', 'UPDATE'].map((privilege_type) => ({
-        grantee: 'bw_app',
-        privilege_type,
-      })),
-    );
+    // bw_relay (WORKFLOW-012) reads; its UPDATE is column-level (delivery columns only).
+    expect(rows).toEqual([
+      ...['DELETE', 'INSERT'].map((privilege_type) => ({ grantee: 'bw_app', privilege_type })),
+      { grantee: 'bw_app', privilege_type: 'SELECT' },
+      { grantee: 'bw_relay', privilege_type: 'SELECT' },
+      { grantee: 'bw_app', privilege_type: 'UPDATE' },
+    ]);
   });
 });

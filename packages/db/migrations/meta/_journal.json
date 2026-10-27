@@ -57,6 +57,13 @@
       "when": 1792575672976,
       "tag": "20261021094112_tenancy",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793127600000,
+      "tag": "20261027190000_outbox_relay",
+      "breakpoints": true
     }
   ]
 }

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # DB-001 role model on the dev stack: runs once, on an empty data volume, after 01-extensions-and-roles.sh.
 # Applies packages/db/src/roles.sql (mounted read-only at /bw/db/roles.sql), which creates the NOLOGIN
-# roles bw_owner, bw_app and bw_operator that the migrations require, then makes the dev login role
+# roles bw_owner, bw_app, bw_operator and bw_relay that the migrations require, then makes the dev login role
 # for migrations (`bw_migrator`) a member of bw_owner, as packages/db/src/env.ts expects. bw_app stays
-# NOINHERIT and is never a member of bw_owner or bw_operator (roles.sql revokes any such grant).
+# NOINHERIT and is never a member of bw_owner, bw_operator or bw_relay (roles.sql revokes any such grant).
 set -euo pipefail
 
 ROLES_SQL=/bw/db/roles.sql

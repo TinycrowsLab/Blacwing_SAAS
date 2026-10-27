@@ -161,3 +161,9 @@ export {
   withOutbox,
   type WithOutboxOptions,
 } from './outbox.js';
+export {
+  type ClaimedOutboxRow,
+  outboxBacklog,
+  type OutboxClaim,
+  withOutboxClaim,
+} from './outbox-relay.js';

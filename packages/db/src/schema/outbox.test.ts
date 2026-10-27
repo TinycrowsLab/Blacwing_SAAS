@@ -57,8 +57,12 @@ describe('outbox schema', () => {
     expect(dedupe?.where).toBeDefined();
   });
 
-  it('carries the canonical tenant policy', () => {
-    expect(config.policies.map((p) => p.name)).toEqual(['outbox_tenant_isolation']);
+  it('carries the canonical tenant policy and the two relay policies', () => {
+    expect(config.policies.map((p) => p.name).toSorted()).toEqual([
+      'outbox_relay_select',
+      'outbox_relay_update',
+      'outbox_tenant_isolation',
+    ]);
   });
 });
 
@@ -93,5 +97,31 @@ describe('outbox migration', () => {
 
   it('defaults available_at to the database clock', () => {
     expect(migration).toContain('"available_at" timestamp with time zone DEFAULT now() NOT NULL');
+  });
+});
+
+describe('outbox relay migration', () => {
+  const relayName = migrationNames().find((name) => name.endsWith('_outbox_relay')) ?? '';
+  const relay = readFileSync(`${MIGRATIONS_DIR}${relayName}.sql`, 'utf8');
+  const relayCode = stripSqlComments(relay);
+
+  it('is a later migration than the outbox table', () => {
+    expect(relayName).toMatch(/^\d{14}_outbox_relay$/);
+    expect(relayName > migrationName).toBe(true);
+  });
+
+  it('gives the relay role read access and update of the delivery columns only', () => {
+    expect(relayCode).toContain('REVOKE ALL ON "outbox" FROM bw_relay');
+    expect(relayCode).toContain('GRANT SELECT ON "outbox" TO bw_relay');
+    expect(relayCode).toContain(
+      'GRANT UPDATE ("status", "attempts", "available_at", "dispatched_at", "last_error") ON "outbox" TO bw_relay',
+    );
+    expect(relayCode).not.toMatch(/GRANT[^;]*\b(INSERT|DELETE|TRUNCATE|ALL)\b[^;]*TO bw_relay/i);
+    expect(relayCode).not.toMatch(/TO\s+(PUBLIC|bw_app)/i);
+  });
+
+  it('confines relay updates to pending rows and never weakens FORCE RLS', () => {
+    expect(relayCode).toContain('FOR UPDATE TO "bw_relay" USING ("outbox"."status" = \'pending\')');
+    expect(relayCode).not.toMatch(/NO\s+FORCE|DISABLE\s+ROW|BYPASSRLS|DROP\s+POLICY/i);
   });
 });

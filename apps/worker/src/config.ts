@@ -10,7 +10,7 @@ const DEFAULT_HEALTH_PORT = 13800;
 const DEFAULT_SHUTDOWN_GRACE_MS = 30_000;
 
 /** Positive integer from a string env value. Zero, signs, fractions and blanks are rejected. */
-const positiveInt = z
+export const positiveInt = z
   .string()
   .regex(/^[1-9][0-9]{0,5}$/, 'must be a positive integer')
   .transform(Number);

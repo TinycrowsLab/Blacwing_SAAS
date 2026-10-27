@@ -65,7 +65,8 @@
         "workflow.continued_as_new",
         "soc_kill.link_minted",
         "soc_kill.triggered",
-        "soc_kill.rejected"
+        "soc_kill.rejected",
+        "outbox.delivery_failed"
       ]
     },
     "severity": {

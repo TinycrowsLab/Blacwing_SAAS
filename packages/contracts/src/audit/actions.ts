@@ -393,6 +393,14 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'kill',
     description: 'A SOC kill link was refused (expired, revoked, used or tenant suspended).',
   },
+  // outbox relay (WORKFLOW-012)
+  {
+    action: 'outbox.delivery_failed',
+    defaultSeverity: 'critical',
+    isAlwaysAudited: true,
+    description:
+      'The outbox relay gave up delivering a message (retries exhausted, or its tenant is inactive); the row is marked failed and an alert is raised.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

@@ -22,12 +22,15 @@ GRANT USAGE ON SCHEMA public TO bw_app;
 -- The platform-operator path (KILL-001) only reaches what a migration grants it explicitly (global
 -- kill events); it gets no default table privileges.
 GRANT USAGE ON SCHEMA public TO bw_operator;
+-- The outbox relay (WORKFLOW-012) likewise only reaches what a migration grants it explicitly.
+GRANT USAGE ON SCHEMA public TO bw_relay;
 
 DO $$
 BEGIN
   EXECUTE format('REVOKE ALL ON DATABASE %I FROM PUBLIC', current_database());
   EXECUTE format('GRANT CONNECT, TEMPORARY ON DATABASE %I TO bw_owner', current_database());
   EXECUTE format('GRANT CONNECT ON DATABASE %I TO bw_app', current_database());
+  EXECUTE format('GRANT CONNECT ON DATABASE %I TO bw_relay', current_database());
 END
 $$;
 

@@ -13,8 +13,10 @@
     { "path": "../../packages/contracts" },
     { "path": "../../packages/db" },
     { "path": "../../packages/domain" },
+    { "path": "../../packages/ids" },
     { "path": "../../packages/logger" },
     { "path": "../../packages/telemetry" },
+    { "path": "../../packages/testing" },
     { "path": "../../packages/time" },
     { "path": "../../packages/workflow-shared" },
     { "path": "./scripts" }
