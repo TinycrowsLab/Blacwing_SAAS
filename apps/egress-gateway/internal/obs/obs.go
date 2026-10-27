@@ -45,6 +45,7 @@ const (
 	ComponentReadiness = "readiness"
 	ComponentMgmt      = "mgmt"
 	ComponentAudit     = "audit"
+	ComponentDNS       = "dns"
 )
 
 // NewLogger returns the service's structured JSON logger writing to w. The time

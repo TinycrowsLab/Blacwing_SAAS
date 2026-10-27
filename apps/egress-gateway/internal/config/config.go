@@ -47,6 +47,15 @@ const (
 	KeySOCKSAddr = "GATEWAY_SOCKS_ADDR"
 	// KeyDNSAddr is the scoped DNS data-plane listen address. Optional, defaults to ":5353".
 	KeyDNSAddr = "GATEWAY_DNS_ADDR"
+	// KeyDNSUpstream is the host:port of the upstream DNS server the scoped resolver
+	// queries. Optional; empty uses the system resolver.
+	KeyDNSUpstream = "GATEWAY_DNS_UPSTREAM"
+	// KeyDNSPinTTL is how long a resolved IP stays pinned (anti-rebinding). Optional,
+	// defaults to 120s; must be within (0, 1h].
+	KeyDNSPinTTL = "GATEWAY_DNS_PIN_TTL"
+	// KeyDNSStrictCNAME requires every name in a CNAME chain to be in scope. Optional,
+	// defaults to true; accepts only "true" or "false".
+	KeyDNSStrictCNAME = "GATEWAY_DNS_STRICT_CNAME"
 	// KeyPolicySnapshotPath is the file path of the signed policy snapshot. Required.
 	KeyPolicySnapshotPath = "POLICY_SNAPSHOT_PATH"
 	// KeyValkeyURL is the Valkey connection URL (redis://, rediss://, valkey://,
@@ -67,7 +76,9 @@ const (
 	DefaultSOCKSAddr     = ":1080"
 	DefaultDNSAddr       = ":5353"
 	DefaultDrainTimeout  = 10 * time.Second
+	DefaultDNSPinTTL     = 120 * time.Second
 	maxDrainTimeout      = 5 * time.Minute
+	maxDNSPinTTL         = time.Hour
 )
 
 // Environment is the deployment environment the gateway runs in.
@@ -110,6 +121,12 @@ type Config struct {
 	SOCKSAddr string
 	// DNSAddr is the scoped DNS listen address (GATEWAY_DNS_ADDR).
 	DNSAddr string
+	// DNSUpstream is the upstream DNS server (GATEWAY_DNS_UPSTREAM); empty means system.
+	DNSUpstream string
+	// DNSPinTTL is the resolved-IP pin lifetime (GATEWAY_DNS_PIN_TTL).
+	DNSPinTTL time.Duration
+	// DNSStrictCNAME requires CNAME chains to stay in scope (GATEWAY_DNS_STRICT_CNAME).
+	DNSStrictCNAME bool
 	// PolicySnapshotPath is the signed policy snapshot file (POLICY_SNAPSHOT_PATH).
 	PolicySnapshotPath string
 	// ValkeyURL is the Valkey connection URL (VALKEY_URL); it may carry credentials.
@@ -126,6 +143,7 @@ type Config struct {
 func Keys() []string {
 	keys := []string{
 		KeyEnv, KeyLogLevel, KeyMgmtAddr, KeyHTTPProxyAddr, KeySOCKSAddr, KeyDNSAddr,
+		KeyDNSUpstream, KeyDNSPinTTL, KeyDNSStrictCNAME,
 		KeyPolicySnapshotPath, KeyValkeyURL, KeyOTLPEndpoint, KeyDrainTimeout,
 	}
 	sort.Strings(keys)
@@ -143,6 +161,9 @@ func (c Config) LogValue() slog.Value {
 		slog.String("http_proxy_addr", c.HTTPProxyAddr),
 		slog.String("socks_addr", c.SOCKSAddr),
 		slog.String("dns_addr", c.DNSAddr),
+		slog.String("dns_upstream", c.DNSUpstream),
+		slog.String("dns_pin_ttl", c.DNSPinTTL.String()),
+		slog.Bool("dns_strict_cname", c.DNSStrictCNAME),
 		slog.String("policy_snapshot_path", c.PolicySnapshotPath),
 		slog.Any("valkey_url", c.ValkeyURL),
 		slog.Bool("otlp_export", c.OTLPEndpoint != ""),
@@ -162,6 +183,9 @@ func (c Config) Hash() string {
 		KeyHTTPProxyAddr + "=" + c.HTTPProxyAddr,
 		KeySOCKSAddr + "=" + c.SOCKSAddr,
 		KeyDNSAddr + "=" + c.DNSAddr,
+		KeyDNSUpstream + "=" + c.DNSUpstream,
+		KeyDNSPinTTL + "=" + c.DNSPinTTL.String(),
+		KeyDNSStrictCNAME + "=" + strconv.FormatBool(c.DNSStrictCNAME),
 		KeyPolicySnapshotPath + "=" + c.PolicySnapshotPath,
 		KeyValkeyURL + "=set:" + strconv.FormatBool(!c.ValkeyURL.IsZero()),
 		KeyOTLPEndpoint + "=" + c.OTLPEndpoint,
@@ -270,6 +294,22 @@ func Load(lookup LookupFunc) (*Config, error) {
 		}
 	}
 	issues = append(issues, checkAddrCollisions(cfg)...)
+
+	if u, reason := parseDNSUpstream(lookup); reason != "" {
+		add(KeyDNSUpstream, reason)
+	} else {
+		cfg.DNSUpstream = u
+	}
+	if d, reason := parseDNSPinTTL(lookup); reason != "" {
+		add(KeyDNSPinTTL, reason)
+	} else {
+		cfg.DNSPinTTL = d
+	}
+	if b, reason := parseStrictCNAME(lookup); reason != "" {
+		add(KeyDNSStrictCNAME, reason)
+	} else {
+		cfg.DNSStrictCNAME = b
+	}
 
 	if p, reason := parseRequired(lookup, KeyPolicySnapshotPath); reason != "" {
 		add(KeyPolicySnapshotPath, reason)
@@ -484,6 +524,55 @@ func parseDrainTimeout(lookup LookupFunc) (time.Duration, string) {
 		return 0, "must be greater than 0 and at most 5m"
 	}
 	return d, ""
+}
+
+// parseDNSUpstream validates GATEWAY_DNS_UPSTREAM: optional; when set a host:port
+// with a non-empty host (a listen-style bare ":53" would mean "this machine").
+func parseDNSUpstream(lookup LookupFunc) (string, string) {
+	v, reason := parseAddr(lookup, KeyDNSUpstream, "")
+	if reason != "" {
+		return "", reason
+	}
+	if host, _, _ := net.SplitHostPort(v); v != "" && host == "" {
+		return "", "must include a host"
+	}
+	return v, ""
+}
+
+// parseDNSPinTTL validates GATEWAY_DNS_PIN_TTL as a Go duration in (0, 1h].
+func parseDNSPinTTL(lookup LookupFunc) (time.Duration, string) {
+	raw, ok := lookup(KeyDNSPinTTL)
+	if !ok {
+		return DefaultDNSPinTTL, ""
+	}
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		return 0, "must not be empty when set"
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		return 0, "must be a duration such as 120s"
+	}
+	if d <= 0 || d > maxDNSPinTTL {
+		return 0, "must be greater than 0 and at most 1h"
+	}
+	return d, ""
+}
+
+// parseStrictCNAME validates GATEWAY_DNS_STRICT_CNAME. Absent means true (the secure
+// default); anything but "true" or "false" is rejected rather than read as false.
+func parseStrictCNAME(lookup LookupFunc) (bool, string) {
+	raw, ok := lookup(KeyDNSStrictCNAME)
+	if !ok {
+		return true, ""
+	}
+	switch strings.TrimSpace(raw) {
+	case "true":
+		return true, ""
+	case "false":
+		return false, ""
+	}
+	return false, "must be true or false"
 }
 
 func joinEnvironments() string {
