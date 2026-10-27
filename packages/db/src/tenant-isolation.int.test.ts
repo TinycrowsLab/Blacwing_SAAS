@@ -27,6 +27,16 @@ import type pg from 'pg';
 
 type Seeder = (tx: pg.PoolClient, tenantId: string) => Promise<void>;
 
+/** A roster that is not the tenant's active one, so seeding twice never trips the one-active index. */
+async function insertInactiveRoster(tx: pg.PoolClient, tenantId: string): Promise<string> {
+  const id = newId();
+  await tx.query(
+    `INSERT INTO oncall_rosters (id, tenant_id, name, timezone, active) VALUES ($1, $2, $3, 'UTC', false)`,
+    [id, tenantId, `roster-${id}`],
+  );
+  return id;
+}
+
 /** One valid row per tenant table. The key is the table name: this list is the coverage note. */
 const ISOLATION_TABLES: Record<string, Seeder> = {
   audit_events: async (tx, tenantId) => {
@@ -41,6 +51,25 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       `INSERT INTO kill_events (id, tenant_id, scope, scope_ref_id, source, actor_type, actor_ref, reason)
        VALUES ($1, $2, 'run', $3, 'console', 'user', 'usr_test', 'stop the run')`,
       [newId(), tenantId, newId()],
+    );
+  },
+  oncall_members: async (tx, tenantId) => {
+    const rosterId = await insertInactiveRoster(tx, tenantId);
+    await tx.query(
+      `INSERT INTO oncall_members (id, tenant_id, roster_id, user_id, level, order_index)
+       VALUES ($1, $2, $3, $4, 0, 0)`,
+      [newId(), tenantId, rosterId, newId()],
+    );
+  },
+  oncall_rosters: async (tx, tenantId) => {
+    await insertInactiveRoster(tx, tenantId);
+  },
+  oncall_schedules: async (tx, tenantId) => {
+    const rosterId = await insertInactiveRoster(tx, tenantId);
+    await tx.query(
+      `INSERT INTO oncall_schedules (id, tenant_id, roster_id, user_id, starts_at, ends_at)
+       VALUES ($1, $2, $3, $4, now(), now() + interval '1 day')`,
+      [newId(), tenantId, rosterId, newId()],
     );
   },
   outbox: async (tx, tenantId) => {

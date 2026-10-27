@@ -3,6 +3,7 @@ import { ERROR_CODES, type ErrorCode } from '@blackwing/errors';
 
 import { errorResponses, type JsonObject, jsonSchema } from './schema.js';
 import { killOpenApiDocument } from '../kill/openapi.js';
+import { oncallOpenApiDocument } from '../oncall/openapi.js';
 
 /** Largest page a client may request (§9). */
 export const PAGE_LIMIT_MAX = 200;
@@ -38,9 +39,25 @@ export function killOpenApiModule(): OpenApiModule {
   };
 }
 
+/** The on-call roster API (GATE2-003) as a module of the combined document. */
+export function oncallOpenApiModule(): OpenApiModule {
+  const source = oncallOpenApiDocument();
+  const schemas = Object.fromEntries(
+    Object.entries((source.components as { schemas: JsonObject }).schemas).filter(
+      ([name]) => name !== 'Problem',
+    ),
+  );
+  return {
+    tag: 'oncall',
+    description: 'Gate 2 on-call rosters: who is paged for a runtime exception, and in what order.',
+    paths: source.paths as JsonObject,
+    schemas,
+  };
+}
+
 /** Every module published in the public spec. Internal routers (`/internal/broker`) are deliberately absent. */
 export function publicOpenApiModules(): readonly OpenApiModule[] {
-  return [killOpenApiModule()];
+  return [killOpenApiModule(), oncallOpenApiModule()];
 }
 
 function commonParameters(): JsonObject {

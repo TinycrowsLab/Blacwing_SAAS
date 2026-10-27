@@ -1,0 +1,1434 @@
+{
+  "id": "798021ca-0035-4c88-bd24-a0b39ae705bc",
+  "prevId": "72cacd0e-41b0-450b-b669-91bff94cc734",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.kill_events": {
+      "name": "kill_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope_ref_id": {
+          "name": "scope_ref_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_type": {
+          "name": "actor_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_ref": {
+          "name": "actor_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'initiated'"
+        },
+        "triggered_at": {
+          "name": "triggered_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "egress_blocked_at": {
+          "name": "egress_blocked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sandboxes_terminated_at": {
+          "name": "sandboxes_terminated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "keys_revoked_at": {
+          "name": "keys_revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "workflows_cancelled_at": {
+          "name": "workflows_cancelled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "halt_ms": {
+          "name": "halt_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "affected": {
+          "name": "affected",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "reenabled_at": {
+          "name": "reenabled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reenabled_by": {
+          "name": "reenabled_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "kill_events_tenant_scope_ref_idx": {
+          "name": "kill_events_tenant_scope_ref_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope_ref_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "kill_events_tenant_triggered_at_idx": {
+          "name": "kill_events_tenant_triggered_at_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "triggered_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "kill_events_tenant_isolation": {
+          "name": "kill_events_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "bw_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        },
+        "kill_events_operator_global": {
+          "name": "kill_events_operator_global",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "bw_operator"
+          ],
+          "using": "tenant_id IS NULL AND scope = 'global'",
+          "withCheck": "tenant_id IS NULL AND scope = 'global'"
+        }
+      },
+      "checkConstraints": {
+        "kill_events_scope_check": {
+          "name": "kill_events_scope_check",
+          "value": "\"kill_events\".\"scope\" IN ('run', 'asset', 'tenant', 'global')"
+        },
+        "kill_events_source_check": {
+          "name": "kill_events_source_check",
+          "value": "\"kill_events\".\"source\" IN ('console', 'api', 'soc_link', 'operator', 'system')"
+        },
+        "kill_events_status_check": {
+          "name": "kill_events_status_check",
+          "value": "\"kill_events\".\"status\" IN ('initiated', 'propagating', 'halted', 'partially_halted', 'failed')"
+        },
+        "kill_events_scope_ref_check": {
+          "name": "kill_events_scope_ref_check",
+          "value": "(\"kill_events\".\"scope\" IN ('run', 'asset')) = (\"kill_events\".\"scope_ref_id\" IS NOT NULL)"
+        },
+        "kill_events_tenant_check": {
+          "name": "kill_events_tenant_check",
+          "value": "\"kill_events\".\"tenant_id\" IS NOT NULL OR \"kill_events\".\"scope\" = 'global'"
+        },
+        "kill_events_reason_check": {
+          "name": "kill_events_reason_check",
+          "value": "length(btrim(\"kill_events\".\"reason\")) > 0"
+        },
+        "kill_events_halt_ms_check": {
+          "name": "kill_events_halt_ms_check",
+          "value": "\"kill_events\".\"halt_ms\" IS NULL OR \"kill_events\".\"halt_ms\" >= 0"
+        },
+        "kill_events_affected_check": {
+          "name": "kill_events_affected_check",
+          "value": "jsonb_typeof(\"kill_events\".\"affected\") = 'object'"
+        },
+        "kill_events_reenabled_check": {
+          "name": "kill_events_reenabled_check",
+          "value": "(\"kill_events\".\"reenabled_at\" IS NULL) = (\"kill_events\".\"reenabled_by\" IS NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.soc_contacts": {
+      "name": "soc_contacts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset_id": {
+          "name": "asset_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "citext",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notify_prewindow": {
+          "name": "notify_prewindow",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "notify_start": {
+          "name": "notify_start",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "notify_end": {
+          "name": "notify_end",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'en'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "soc_contacts_tenant_asset_idx": {
+          "name": "soc_contacts_tenant_asset_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "asset_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "soc_contacts_tenant_id_id_key": {
+          "name": "soc_contacts_tenant_id_id_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "tenant_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {
+        "soc_contacts_tenant_isolation": {
+          "name": "soc_contacts_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "soc_contacts_status_check": {
+          "name": "soc_contacts_status_check",
+          "value": "\"soc_contacts\".\"status\" IN ('active', 'disabled')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.soc_kill_tokens": {
+      "name": "soc_kill_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope_ref_id": {
+          "name": "scope_ref_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_sha256": {
+          "name": "token_sha256",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_uses": {
+          "name": "max_uses",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "use_count": {
+          "name": "use_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "soc_kill_tokens_tenant_scope_ref_idx": {
+          "name": "soc_kill_tokens_tenant_scope_ref_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope_ref_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "soc_kill_tokens_tenant_contact_idx": {
+          "name": "soc_kill_tokens_tenant_contact_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "contact_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "soc_kill_tokens_contact_fk": {
+          "name": "soc_kill_tokens_contact_fk",
+          "tableFrom": "soc_kill_tokens",
+          "tableTo": "soc_contacts",
+          "columnsFrom": [
+            "tenant_id",
+            "contact_id"
+          ],
+          "columnsTo": [
+            "tenant_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "soc_kill_tokens_token_sha256_key": {
+          "name": "soc_kill_tokens_token_sha256_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token_sha256"
+          ]
+        }
+      },
+      "policies": {
+        "soc_kill_tokens_tenant_isolation": {
+          "name": "soc_kill_tokens_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "soc_kill_tokens_scope_check": {
+          "name": "soc_kill_tokens_scope_check",
+          "value": "\"soc_kill_tokens\".\"scope\" IN ('run', 'asset', 'tenant')"
+        },
+        "soc_kill_tokens_scope_ref_check": {
+          "name": "soc_kill_tokens_scope_ref_check",
+          "value": "(\"soc_kill_tokens\".\"scope\" IN ('run', 'asset')) = (\"soc_kill_tokens\".\"scope_ref_id\" IS NOT NULL)"
+        },
+        "soc_kill_tokens_sha256_length_check": {
+          "name": "soc_kill_tokens_sha256_length_check",
+          "value": "octet_length(\"soc_kill_tokens\".\"token_sha256\") = 32"
+        },
+        "soc_kill_tokens_uses_check": {
+          "name": "soc_kill_tokens_uses_check",
+          "value": "\"soc_kill_tokens\".\"max_uses\" >= 1 AND \"soc_kill_tokens\".\"use_count\" >= 0 AND \"soc_kill_tokens\".\"use_count\" <= \"soc_kill_tokens\".\"max_uses\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.audit_events": {
+      "name": "audit_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seq": {
+          "name": "seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "severity": {
+          "name": "severity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor": {
+          "name": "actor",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target": {
+          "name": "target",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "metadata_ref": {
+          "name": "metadata_ref",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "run_id": {
+          "name": "run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ip": {
+          "name": "ip",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prev_hash": {
+          "name": "prev_hash",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hash": {
+          "name": "hash",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "audit_events_tenant_occurred_at_idx": {
+          "name": "audit_events_tenant_occurred_at_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_events_tenant_action_idx": {
+          "name": "audit_events_tenant_action_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "action",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_events_run_id_idx": {
+          "name": "audit_events_run_id_idx",
+          "columns": [
+            {
+              "expression": "run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "audit_events_tenant_seq_key": {
+          "name": "audit_events_tenant_seq_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "tenant_id",
+            "seq"
+          ]
+        }
+      },
+      "policies": {
+        "audit_events_tenant_isolation": {
+          "name": "audit_events_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "audit_events_seq_check": {
+          "name": "audit_events_seq_check",
+          "value": "\"audit_events\".\"seq\" >= 1"
+        },
+        "audit_events_severity_check": {
+          "name": "audit_events_severity_check",
+          "value": "\"audit_events\".\"severity\" IN ('info', 'notice', 'warning', 'critical')"
+        },
+        "audit_events_outcome_check": {
+          "name": "audit_events_outcome_check",
+          "value": "\"audit_events\".\"outcome\" IN ('success', 'failure', 'denied')"
+        },
+        "audit_events_hash_length_check": {
+          "name": "audit_events_hash_length_check",
+          "value": "octet_length(\"audit_events\".\"hash\") = 32"
+        },
+        "audit_events_prev_hash_check": {
+          "name": "audit_events_prev_hash_check",
+          "value": "(\"audit_events\".\"seq\" = 1) = (\"audit_events\".\"prev_hash\" IS NULL) AND (\"audit_events\".\"prev_hash\" IS NULL OR octet_length(\"audit_events\".\"prev_hash\") = 32)"
+        },
+        "audit_events_actor_check": {
+          "name": "audit_events_actor_check",
+          "value": "jsonb_typeof(\"audit_events\".\"actor\") = 'object'"
+        },
+        "audit_events_target_check": {
+          "name": "audit_events_target_check",
+          "value": "jsonb_typeof(\"audit_events\".\"target\") = 'object'"
+        },
+        "audit_events_metadata_check": {
+          "name": "audit_events_metadata_check",
+          "value": "jsonb_typeof(\"audit_events\".\"metadata\") = 'object'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.outbox": {
+      "name": "outbox",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aggregate_type": {
+          "name": "aggregate_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aggregate_id": {
+          "name": "aggregate_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dedupe_key": {
+          "name": "dedupe_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "available_at": {
+          "name": "available_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "dispatched_at": {
+          "name": "dispatched_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "outbox_status_available_at_idx": {
+          "name": "outbox_status_available_at_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "available_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "outbox_tenant_dedupe_key_idx": {
+          "name": "outbox_tenant_dedupe_key_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "dedupe_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"outbox\".\"dedupe_key\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "outbox_tenant_isolation": {
+          "name": "outbox_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "outbox_type_check": {
+          "name": "outbox_type_check",
+          "value": "\"outbox\".\"type\" IN ('audit.event', 'notify.send', 'temporal.signal')"
+        },
+        "outbox_status_check": {
+          "name": "outbox_status_check",
+          "value": "\"outbox\".\"status\" IN ('pending', 'dispatched', 'failed')"
+        },
+        "outbox_payload_object_check": {
+          "name": "outbox_payload_object_check",
+          "value": "jsonb_typeof(\"outbox\".\"payload\") = 'object'"
+        },
+        "outbox_payload_size_check": {
+          "name": "outbox_payload_size_check",
+          "value": "octet_length(\"outbox\".\"payload\"::text) <= 65536"
+        },
+        "outbox_dedupe_key_check": {
+          "name": "outbox_dedupe_key_check",
+          "value": "\"outbox\".\"dedupe_key\" IS NULL OR length(\"outbox\".\"dedupe_key\") BETWEEN 1 AND 255"
+        },
+        "outbox_attempts_check": {
+          "name": "outbox_attempts_check",
+          "value": "\"outbox\".\"attempts\" >= 0"
+        },
+        "outbox_dispatched_check": {
+          "name": "outbox_dispatched_check",
+          "value": "\"outbox\".\"status\" <> 'dispatched' OR \"outbox\".\"dispatched_at\" IS NOT NULL"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.oncall_members": {
+      "name": "oncall_members",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "roster_id": {
+          "name": "roster_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel_refs": {
+          "name": "channel_refs",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "order_index": {
+          "name": "order_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "oncall_members_tenant_roster_idx": {
+          "name": "oncall_members_tenant_roster_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "roster_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "oncall_members_roster_fk": {
+          "name": "oncall_members_roster_fk",
+          "tableFrom": "oncall_members",
+          "tableTo": "oncall_rosters",
+          "columnsFrom": [
+            "tenant_id",
+            "roster_id"
+          ],
+          "columnsTo": [
+            "tenant_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "oncall_members_position_key": {
+          "name": "oncall_members_position_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "roster_id",
+            "level",
+            "order_index"
+          ]
+        },
+        "oncall_members_seat_key": {
+          "name": "oncall_members_seat_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "roster_id",
+            "level",
+            "user_id"
+          ]
+        }
+      },
+      "policies": {
+        "oncall_members_tenant_isolation": {
+          "name": "oncall_members_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "oncall_members_level_check": {
+          "name": "oncall_members_level_check",
+          "value": "\"oncall_members\".\"level\" BETWEEN 0 AND 2"
+        },
+        "oncall_members_order_index_check": {
+          "name": "oncall_members_order_index_check",
+          "value": "\"oncall_members\".\"order_index\" BETWEEN 0 AND 1000"
+        },
+        "oncall_members_channel_refs_check": {
+          "name": "oncall_members_channel_refs_check",
+          "value": "jsonb_typeof(\"oncall_members\".\"channel_refs\") = 'array'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.oncall_rosters": {
+      "name": "oncall_rosters",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "state_version": {
+          "name": "state_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "oncall_rosters_one_active_idx": {
+          "name": "oncall_rosters_one_active_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"oncall_rosters\".\"active\"",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "oncall_rosters_tenant_id_id_key": {
+          "name": "oncall_rosters_tenant_id_id_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "tenant_id",
+            "id"
+          ]
+        },
+        "oncall_rosters_tenant_name_key": {
+          "name": "oncall_rosters_tenant_name_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "tenant_id",
+            "name"
+          ]
+        }
+      },
+      "policies": {
+        "oncall_rosters_tenant_isolation": {
+          "name": "oncall_rosters_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "oncall_rosters_name_check": {
+          "name": "oncall_rosters_name_check",
+          "value": "length(btrim(\"oncall_rosters\".\"name\")) > 0"
+        },
+        "oncall_rosters_timezone_check": {
+          "name": "oncall_rosters_timezone_check",
+          "value": "length(btrim(\"oncall_rosters\".\"timezone\")) > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.oncall_schedules": {
+      "name": "oncall_schedules",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "roster_id": {
+          "name": "roster_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "starts_at": {
+          "name": "starts_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ends_at": {
+          "name": "ends_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "oncall_schedules_tenant_roster_window_idx": {
+          "name": "oncall_schedules_tenant_roster_window_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "roster_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "starts_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "oncall_schedules_roster_fk": {
+          "name": "oncall_schedules_roster_fk",
+          "tableFrom": "oncall_schedules",
+          "tableTo": "oncall_rosters",
+          "columnsFrom": [
+            "tenant_id",
+            "roster_id"
+          ],
+          "columnsTo": [
+            "tenant_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "oncall_schedules_tenant_isolation": {
+          "name": "oncall_schedules_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "oncall_schedules_window_check": {
+          "name": "oncall_schedules_window_check",
+          "value": "\"oncall_schedules\".\"ends_at\" > \"oncall_schedules\".\"starts_at\""
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

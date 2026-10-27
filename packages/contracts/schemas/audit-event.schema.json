@@ -54,7 +54,9 @@
         "secret.kek_rotated",
         "secret.kek_disabled",
         "kill.keys_revoked",
-        "kill.workflows_cancelled"
+        "kill.workflows_cancelled",
+        "oncall.roster_updated",
+        "oncall.sod_skipped"
       ]
     },
     "severity": {

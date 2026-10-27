@@ -320,6 +320,21 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'Kill stage 4: the Temporal workflows of a kill were cancelled and pending reversal entries flagged.',
   },
+  // on-call roster (GATE2-003, F13/F31): appended; metadata carries user references only, no PII
+  {
+    action: 'oncall.roster_updated',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A Gate 2 on-call roster was created or changed (members, ladder, schedule).',
+  },
+  {
+    action: 'oncall.sod_skipped',
+    defaultSeverity: 'warning',
+    isAlwaysAudited: true,
+    description:
+      'An escalation level was skipped because every member was separation-of-duties ineligible.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */
