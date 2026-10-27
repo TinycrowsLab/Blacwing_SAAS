@@ -40,6 +40,7 @@
     "@opentelemetry/api": "catalog:",
     "@radix-ui/react-slot": "1.5.0",
     "@tanstack/react-query": "catalog:",
+    "graphql": "17.0.2",
     "ioredis": "5.11.1",
     "jose": "6.2.13",
     "lucide-react": "1.61.0",

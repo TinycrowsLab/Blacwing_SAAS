@@ -39,6 +39,9 @@ export function createResourceKeys<Id extends string = string>(resource: string)
 /** Query-key factory used by every console query (CONSOLE-005). Feature epics add their resources here. */
 export const qk = {
   runs: createResourceKeys('runs'),
+  /** Read-only GraphQL operations, keyed by operation name and variables (CONSOLE-005 / GRAPHQL client). */
+  graphql: (operationName: string, variables: object): readonly [string, string, object] =>
+    ['graphql', operationName, variables] as const,
 } as const;
 
 /** Keys a mutation invalidates on success, via `meta: { invalidates: [...] }` (see `makeQueryClient`). */

@@ -1,6 +1,6 @@
 import { MAX_PAGE_LIMIT } from '@blackwing/contracts';
 
-import { ApiError, apiErrorFromResponse, CLIENT_ERROR_CODES } from './api-error.js';
+import { ApiError, apiErrorFromResponse, CLIENT_ERROR_CODES, toNetworkError } from './api-error.js';
 import { uuidV7 } from './uuid7.js';
 
 import type { z } from 'zod';
@@ -104,15 +104,6 @@ function buildUrl(baseUrl: string, path: string, query: ApiRequestOptions['query
   }
   const search = params.toString();
   return `${baseUrl.replace(/\/+$/, '')}${path}${search === '' ? '' : `?${search}`}`;
-}
-
-function toNetworkError(timedOut: boolean): ApiError {
-  return new ApiError({
-    status: 0,
-    code: CLIENT_ERROR_CODES.network,
-    title: 'Network error',
-    detail: timedOut ? 'The request timed out.' : 'The server could not be reached.',
-  });
 }
 
 function mismatch(status: number, issuePaths: string): ApiError {

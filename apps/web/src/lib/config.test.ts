@@ -6,6 +6,7 @@ import {
   DEFAULT_RUN_POLL_MS,
   getPublicConfig,
   getRunPollMs,
+  isGraphQLPersisted,
 } from './config';
 
 afterEach(() => {
@@ -38,5 +39,26 @@ describe('getRunPollMs', () => {
     }
     vi.stubEnv('NEXT_PUBLIC_RUN_POLL_MS', '2000');
     expect(getRunPollMs()).toBe(2000);
+  });
+});
+
+describe('isGraphQLPersisted', () => {
+  it('is on in production and off elsewhere when unset', () => {
+    vi.stubEnv('NEXT_PUBLIC_GRAPHQL_PERSISTED', '');
+    vi.stubEnv('NODE_ENV', 'production');
+    expect(isGraphQLPersisted()).toBe(true);
+    vi.stubEnv('NODE_ENV', 'development');
+    expect(isGraphQLPersisted()).toBe(false);
+  });
+
+  it('lets an explicit setting win and only accepts the literal true', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('NEXT_PUBLIC_GRAPHQL_PERSISTED', 'false');
+    expect(isGraphQLPersisted()).toBe(false);
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('NEXT_PUBLIC_GRAPHQL_PERSISTED', ' TRUE ');
+    expect(isGraphQLPersisted()).toBe(true);
+    vi.stubEnv('NEXT_PUBLIC_GRAPHQL_PERSISTED', 'yes');
+    expect(isGraphQLPersisted()).toBe(false);
   });
 });

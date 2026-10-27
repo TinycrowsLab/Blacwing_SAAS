@@ -31,3 +31,18 @@ export function getRunPollMs(): number {
   const parsed = Number(process.env.NEXT_PUBLIC_RUN_POLL_MS);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_RUN_POLL_MS;
 }
+
+/** True for `next build`/`next start`; the GraphQL client falls back to full documents only outside it. */
+export function isProductionBuild(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
+
+/**
+ * Whether GraphQL requests send a persisted-query hash instead of the document (CONTEXT_PACK §9).
+ * `NEXT_PUBLIC_GRAPHQL_PERSISTED` wins when set (only the literal `true` enables it); otherwise it is on in production.
+ */
+export function isGraphQLPersisted(): boolean {
+  const value = process.env.NEXT_PUBLIC_GRAPHQL_PERSISTED;
+  if (value === undefined || value.trim() === '') return isProductionBuild();
+  return value.trim().toLowerCase() === 'true';
+}

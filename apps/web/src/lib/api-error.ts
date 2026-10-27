@@ -28,6 +28,8 @@ export interface ApiErrorInit {
   readonly retryAfterMs?: number | undefined;
   /** Field-level problems of a `422`. */
   readonly fieldErrors?: readonly { path: string; message: string; code: string }[] | undefined;
+  /** GraphQL operation name the error came from (no variables, no PII). */
+  readonly operation?: string | undefined;
 }
 
 /**
@@ -43,6 +45,7 @@ export class ApiError extends Error {
   readonly traceId: string | undefined;
   readonly retryAfterMs: number | undefined;
   readonly fieldErrors: ApiErrorInit['fieldErrors'];
+  readonly operation: string | undefined;
 
   constructor(init: ApiErrorInit) {
     super(init.title);
@@ -54,7 +57,18 @@ export class ApiError extends Error {
     this.traceId = init.traceId;
     this.retryAfterMs = init.retryAfterMs;
     this.fieldErrors = init.fieldErrors;
+    this.operation = init.operation;
   }
+}
+
+/** The `NETWORK` error of a request that never got a response (offline, DNS, reset or timeout). */
+export function toNetworkError(timedOut: boolean): ApiError {
+  return new ApiError({
+    status: 0,
+    code: CLIENT_ERROR_CODES.network,
+    title: 'Network error',
+    detail: timedOut ? 'The request timed out.' : 'The server could not be reached.',
+  });
 }
 
 /** Type guard that also works across duplicated module instances. */
