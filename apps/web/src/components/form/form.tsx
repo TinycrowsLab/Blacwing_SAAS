@@ -16,6 +16,8 @@ import {
 import { cn, Label } from '@blackwing/ui';
 
 import { FORM_ERROR_KEY, mapServerErrorsToForm } from './map-server-errors';
+import { NavigationGuardDialog } from './navigation-guard-dialog';
+import { useUnsavedChangesGuard } from './use-unsaved-changes-guard';
 import { isApiError } from '../../lib/api-error.js';
 
 import type { FormNotify } from './notify';
@@ -70,6 +72,8 @@ export function Form<TInput extends FieldValues, TOutput>({
   ...props
 }: FormProps<TInput, TOutput>) {
   const inFlight = React.useRef(false);
+  // Holds in-app navigation and reloads while the form has unsaved edits (CONSOLE-010).
+  const guard = useUnsavedChangesGuard({ when: form.formState.isDirty });
 
   const submit = form.handleSubmit(
     async (values) => {
@@ -127,6 +131,7 @@ export function Form<TInput extends FieldValues, TOutput>({
         <FormRootError />
         {children}
       </form>
+      <NavigationGuardDialog guard={guard} />
     </FormProvider>
   );
 }

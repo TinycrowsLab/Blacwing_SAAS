@@ -110,6 +110,14 @@ export {
 } from './components/toast';
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/tooltip';
 export {
+  DEFAULT_TOASTER_CONFIG,
+  Toaster,
+  toast,
+  type ToastOptions,
+  type ToastVariant,
+  type ToasterConfig,
+} from './components/toaster';
+export {
   MAX_DETAIL_CHARS,
   classifyApiError,
   errorCopy,

@@ -22,6 +22,8 @@ import {
 } from './index';
 import { ApiError } from '../../lib/api-error.js';
 
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
 const schema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters').max(20, 'Name is too long'),
   email: z.email('Enter a valid email'),
@@ -82,6 +84,7 @@ function Harness({
         )}
       />
       <SubmitButton pendingLabel="Saving">Save</SubmitButton>
+      <a href="/scoping/next">Leave page</a>
     </Form>
   );
 }
@@ -274,6 +277,42 @@ describe('useZodForm + Form', () => {
     expect(note.title).toBe('Changed elsewhere');
     note.action?.run();
     expect(onRefetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('holds an in-app navigation while there are unsaved edits, and Cancel keeps them', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await fill(user, 'Alice', 'a@example.com');
+    fireEvent.click(screen.getByRole('link', { name: 'Leave page' }));
+    expect(await screen.findByRole('dialog', { name: 'Discard unsaved changes?' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByLabelText<HTMLInputElement>('Name').value).toBe('Alice');
+  });
+
+  it('does not hold navigation once a successful save has cleared the dirty state', async () => {
+    const user = userEvent.setup();
+    let latest: ReturnType<typeof useZodForm<typeof schema>> | undefined;
+    const onSubmit = vi.fn();
+    render(
+      <Harness
+        onSubmit={onSubmit}
+        onForm={(f) => {
+          latest = f;
+        }}
+      />,
+    );
+    await fill(user, 'Alice', 'a@example.com');
+    await waitFor(() => {
+      expect(button('Save').disabled).toBe(false);
+    });
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => {
+      expect(latest?.formState.isDirty).toBe(false);
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(fireEvent.click(screen.getByRole('link', { name: 'Leave page' }))).toBe(true);
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
 
