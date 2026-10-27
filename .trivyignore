@@ -9,3 +9,39 @@
 # The date must be in the future and at most 180 days ahead. `node scripts/check-trivy.mjs ignore`
 # fails the build on a missing reason, a missing or expired date, or an exp: that differs from the
 # comment. Trivy itself also stops ignoring an id once exp: has passed.
+
+# reason: accepted risk by design: the egress-gateway node tier is the only tier with internet egress, and what it may reach is enforced by the gateway envelope/policy (CONTEXT_PACK section 8 #1, #2), not by this security-group rule (infra/tofu/modules/security)
+# expires: 2027-04-20
+AWS-0104 exp:2027-04-20
+
+# reason: accepted risk: state, log and egress-ips buckets use SSE-S3; a customer managed KMS key (and its key policy and rotation) is planned with the prod account hardening, and S3 access-log destination buckets cannot use SSE-KMS at all. Also hit by the throwaway local MinIO seed in infra/tofu/tests/backend-lock/seed, never applied to AWS
+# expires: 2027-04-20
+AWS-0132 exp:2027-04-20
+
+# reason: accepted risk: the state-access CloudTrail trail uses the AWS managed key until the customer managed KMS key lands with prod account hardening (infra/tofu/bootstrap)
+# expires: 2027-04-20
+AWS-0015 exp:2027-04-20
+
+# reason: accepted risk: the egress-ips CloudFront distributions only serve a static, public list of egress IPs from a private S3 origin (OAC); a WAF web ACL is a cost with no protected asset, revisit when dynamic content is added (infra/tofu/modules/egress-ips)
+# expires: 2027-04-20
+AWS-0011 exp:2027-04-20
+
+# reason: accepted risk: the SES events SNS topic cannot use the AWS managed SNS key because SES must publish to it; it needs a customer managed KMS key with an SES key policy, planned with prod hardening (infra/tofu/modules/email)
+# expires: 2027-04-20
+AWS-0095 exp:2027-04-20
+
+# reason: false positive for a test fixture: infra/tofu/tests/backend-lock/seed targets a throwaway local MinIO (127.0.0.1 only, never AWS) which does not implement PutPublicAccessBlock
+# expires: 2027-04-20
+AWS-0086 exp:2027-04-20
+
+# reason: false positive for a test fixture: same local MinIO seed as AWS-0086
+# expires: 2027-04-20
+AWS-0087 exp:2027-04-20
+
+# reason: false positive for a test fixture: same local MinIO seed as AWS-0086
+# expires: 2027-04-20
+AWS-0091 exp:2027-04-20
+
+# reason: false positive for a test fixture: same local MinIO seed as AWS-0086
+# expires: 2027-04-20
+AWS-0093 exp:2027-04-20
