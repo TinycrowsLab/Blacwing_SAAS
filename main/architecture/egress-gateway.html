@@ -179,6 +179,18 @@ config hash → asynchronous readiness checks with backoff → on SIGTERM/SIGINT
 not ready, drain within <code>GATEWAY_DRAIN_TIMEOUT</code>, flush telemetry, <code>gateway.stopped</code>.
 SIGKILL drops in-flight connections, which is safe because a dropped connection is a
 denied request.</p>
+<h2 id="blocked-ranges-and-redirects-egress-009">Blocked ranges and redirects (EGRESS-009)</h2>
+<p><code>internal/netguard</code> is the single blocked-address table (private, loopback, link-local, CGNAT,
+multicast, reserved, NAT64 local-use, and the <code>169.254.169.254</code> / <code>fd00:ec2::254</code> metadata
+addresses; <code>GATEWAY_EXTRA_BLOCKED_CIDRS</code> can only add to it). The scoped DNS resolver and every
+dialer (<code>Guard.DialControl</code>, which sees the final pinned IP before <code>connect</code>) use it, so the
+name path and the direct-IP path agree. An address is dialable only when an include rule in the
+envelope names that exact IP/CIDR (S8.2). IP literals (octal, decimal, hex, IPv4-mapped, zoned)
+are normalised with <code>netguard.ParseLiteral</code> first; ambiguous forms are rejected.</p>
+<p>The gateway never follows a 3xx. With <code>GATEWAY_VALIDATE_REDIRECT_TARGET=true</code> (default) the
+<code>Location</code> is checked by <code>proxy.RedirectInScope</code> and the response is annotated
+<code>redirect_in_scope</code>; a follow-up request to an out-of-scope target is denied by the normal
+per-request check. The proxy listeners (EGRESS-005/007) call these hooks when they land.</p>
 </main>
 </div>
 </body>
