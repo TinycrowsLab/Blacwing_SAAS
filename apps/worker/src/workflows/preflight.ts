@@ -26,8 +26,7 @@ export async function PreflightWorkflow(input: PreflightWorkflowInput): Promise<
       maximumAttempts: input.maxAttemptsPerCheck ?? DEFAULT_CHECK_ATTEMPTS,
     },
   });
-  const started = Date.now();
-  await acts.startPreflight(ref);
+  const startedAtMs = await acts.startPreflight(ref);
 
   // Cancels in-flight siblings once any check hard-fails.
   const scope = new CancellationScope();
@@ -38,6 +37,6 @@ export async function PreflightWorkflow(input: PreflightWorkflowInput): Promise<
     },
   );
 
-  await acts.finishPreflight({ ...ref, report, durationMs: Date.now() - started });
+  await acts.finishPreflight({ ...ref, report, startedAtMs });
   return decide(report);
 }

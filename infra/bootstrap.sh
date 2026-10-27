@@ -280,7 +280,7 @@ installed_version() {
       out="$(node --version 2>/dev/null | first_line | sed 's/^v//' || true)"
       ;;
     pnpm)
-      out="$(cd / && COREPACK_ENABLE_NETWORK=0 pnpm --version 2>/dev/null | first_line || true)"
+      out="$( (cd / && COREPACK_ENABLE_NETWORK=0 pnpm --version 2>/dev/null | first_line) || true)"
       ;;
     go)
       out="$(go version 2>/dev/null | first_line | awk '{print $3}' | sed 's/^go//' || true)"

@@ -108,11 +108,12 @@ export const DEFAULT_CHECK_ATTEMPTS = 3;
 
 export interface FinishPreflightInput extends PreflightRef {
   readonly report: PreflightReport;
-  readonly durationMs: number;
+  /** Activity-clock start returned by `startPreflight` (workflow code must not read the wall clock). */
+  readonly startedAtMs: number;
 }
 
 /** Activities the preflight workflow calls: one per check (named by id) plus the two bookends. */
 export type PreflightActivities = {
-  startPreflight(ref: PreflightRef): Promise<void>;
+  startPreflight(ref: PreflightRef): Promise<number>;
   finishPreflight(input: FinishPreflightInput): Promise<void>;
 } & Record<PreflightCheckId, (ref: PreflightRef) => Promise<PreflightCheckResult>>;

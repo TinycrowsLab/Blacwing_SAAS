@@ -282,6 +282,7 @@ export function createPreflightActivities(deps: PreflightActivityDeps): Prefligh
         dedupeKey: `${ref.runId}:preflight.started`,
         metadata: { checks: PREFLIGHT_CHECK_IDS.length },
       });
+      return now().getTime();
     },
 
     async finishPreflight(input: FinishPreflightInput) {
@@ -310,7 +311,7 @@ export function createPreflightActivities(deps: PreflightActivityDeps): Prefligh
         dedupeKey: `${runId}:${report.ok ? 'preflight.passed' : 'preflight.failed'}`,
         metadata: { failedCheck: firstFailure?.id ?? null, code: firstFailure?.code ?? null },
       });
-      deps.metrics.duration(input.durationMs / MS_PER_SECOND);
+      deps.metrics.duration(Math.max(0, now().getTime() - input.startedAtMs) / MS_PER_SECOND);
       deps.log.info({ runId, ok: report.ok }, 'preflight finished');
     },
   };

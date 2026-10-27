@@ -29,6 +29,7 @@ const TENANT = '0190a000-0000-7000-8000-000000000001';
 const RUN_ID = '0190a000-0000-7000-8000-0000000000b1';
 export const REF: PreflightRef = { tenantId: TENANT, runId: RUN_ID };
 const NOW = new Date('2026-01-01T12:00:00.000Z');
+const PREFLIGHT_DURATION_MS = 1500;
 
 export function makeFacts(over: Partial<PreflightRunFacts> = {}): PreflightRunFacts {
   return {
@@ -185,6 +186,7 @@ export function makeHarness(over: Partial<Harness> = {}): Harness {
 export async function runPhase(h: Harness, attempts = 3): Promise<PreflightDecision> {
   const acts = createPreflightActivities(h.deps);
   await acts.startPreflight(REF);
+  const startedAtMs = NOW.getTime() - PREFLIGHT_DURATION_MS;
   const report = await executePreflight(
     async (id: PreflightCheckId) => {
       let last: unknown;
@@ -199,6 +201,6 @@ export async function runPhase(h: Harness, attempts = 3): Promise<PreflightDecis
     },
     () => undefined,
   );
-  await acts.finishPreflight({ ...REF, report, durationMs: 1500 });
+  await acts.finishPreflight({ ...REF, report, startedAtMs });
   return decide(report);
 }
