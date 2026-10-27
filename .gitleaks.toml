@@ -118,6 +118,18 @@ paths = [
   # assertion on the name/type of an SSM parameter (no password value) in the email module test.
   '''^infra/tofu/tests/backend-lock/run\.sh$''',
   '''^infra/tofu/modules/email/tests/email\.tftest\.hcl$''',
+  # Client, proxy, MCP-tool and audit-interceptor tests plant fake, never-issued credentials (a
+  # bw_pat_ token, an AKIA documentation-style key, bwk_ keys, a tok- literal) to prove the client,
+  # proxy, tool summary and audit paths redact or reject them. Not credentials.
+  '''^packages/api-client/src/client\.test\.ts$''',
+  '''^apps/egress-gateway/internal/httpproxy/proxy_test\.go$''',
+  '''^packages/mcp-tools/src/(?:summary|tool)\.test\.ts$''',
+  '''^apps/worker/src/interceptors/audit\.test\.ts$''',
+  # Secret-store identifiers (`secretId` UUIDs, not secret values) in the generated OpenAPI spec and
+  # the secrets service test that uses the same identifier literal. Flagged only because the key is
+  # named "secret". Found on unmerged branches, scanned because CI checks out all branches.
+  '''^docs/api/openapi\.json$''',
+  '''^apps/api/src/secrets/secrets\.service\.test\.ts$''',
   # Lockfile integrity hashes look high-entropy to generic rules.
   '''^pnpm-lock\.yaml$''',
 ]
