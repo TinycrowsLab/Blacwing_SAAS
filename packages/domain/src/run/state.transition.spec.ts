@@ -108,6 +108,21 @@ describe('transition matrix', () => {
   });
 });
 
+describe('Gate 1 re-plan', () => {
+  it('sends a rejected plan back to planning, bumping the version, and the loop can run again', () => {
+    const replan = apply(statusOf('awaiting_gate1', 3), 'gate1_replan');
+    expect(replan.next).toEqual({ state: 'planning', version: 4 });
+    expect(replan.auditIntent).toMatchObject({ event: 'run.gate1_replan', to: 'planning' });
+    expect(apply(replan.next, 'plan_proposed').next.state).toBe('awaiting_gate1');
+  });
+
+  it('is legal only at Gate 1', () => {
+    for (const from of RUN_STATES.filter((s) => s !== 'awaiting_gate1')) {
+      expect(() => apply(from, 'gate1_replan'), from).toThrow(IllegalRunEventError);
+    }
+  });
+});
+
 describe('errors', () => {
   it('throws a typed AppError with the stable code, from and eventType', () => {
     let caught: unknown;

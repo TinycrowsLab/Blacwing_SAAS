@@ -62,6 +62,46 @@ export const standardsRefsSchema = z.strictObject({
 export type StandardsRefs = z.infer<typeof standardsRefsSchema>;
 
 /**
+ * The fields the planner proposes for a test case (§7). The entity below adds identity, status and
+ * timestamps, so planner output and `test_cases` rows validate against the same field definitions.
+ * `class` admits `destructive` on purpose: the plan persistence step rejects it with `CLASS_FORBIDDEN`
+ * (§8.3) instead of the schema hiding it.
+ */
+const plannedTestCaseShape = {
+  class: intrusivenessSchema,
+  title: labelSchema,
+  refs: standardsRefsSchema,
+  cweCandidates: z.array(cweIdSchema),
+  targets: z.array(z.string().min(1).max(LIMITS.urlMax)).min(1),
+  roles: z.array(z.string().min(1).max(LIMITS.shortTextMax)),
+  budget: testCaseBudgetSchema,
+  oracle: oracleSchema,
+  negativeControl: oracleSchema.nullable(),
+};
+
+/** One test case as proposed by the planner (before it is persisted and given an id). */
+export const plannedTestCaseSchema = z.strictObject(plannedTestCaseShape);
+export type PlannedTestCase = z.infer<typeof plannedTestCaseSchema>;
+
+/** Most test cases a single plan may propose; a larger plan is invalid output, not a bigger run. */
+export const MAX_PLAN_TEST_CASES = 200;
+
+/**
+ * The planner's structured output (`outputFormat: { type: 'json_schema' }`, ORCH-005): a list of proposed
+ * test cases. An empty list parses (the orchestrator fails the run with `PLAN_EMPTY`, which is not a
+ * schema problem and is not retried).
+ */
+export const testPlanSchema = z.strictObject({
+  testCases: z.array(plannedTestCaseSchema).max(MAX_PLAN_TEST_CASES),
+});
+export type TestPlan = z.infer<typeof testPlanSchema>;
+
+/** {@link testPlanSchema} as a JSON Schema (draft 2020-12), the `schema` of the planner's `outputFormat`. */
+export function testPlanJsonSchema(): Record<string, unknown> {
+  return z.toJSONSchema(testPlanSchema, { target: 'draft-2020-12', io: 'input' });
+}
+
+/**
  * A planned test case, §7 `test_plans → test_cases`. The planner contracts (#427) extend it.
  *
  * Rules: a test case always declares its oracle (no finding without a deterministic check, §8.11);
@@ -73,15 +113,7 @@ export const testCaseSchema = z
     id: uuidV7Schema,
     tenantId: uuidV7Schema,
     testPlanId: uuidV7Schema,
-    class: intrusivenessSchema,
-    title: labelSchema,
-    refs: standardsRefsSchema,
-    cweCandidates: z.array(cweIdSchema),
-    targets: z.array(z.string().min(1).max(LIMITS.urlMax)).min(1),
-    roles: z.array(z.string().min(1).max(LIMITS.shortTextMax)),
-    budget: testCaseBudgetSchema,
-    oracle: oracleSchema,
-    negativeControl: oracleSchema.nullable(),
+    ...plannedTestCaseShape,
     status: testCaseStatusSchema,
     statusReason: z.string().min(1).max(LIMITS.reasonMax).nullable(),
     ...timestampsShape,

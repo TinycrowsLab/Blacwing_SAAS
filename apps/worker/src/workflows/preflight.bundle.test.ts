@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { bundleWorkflowCode } from '@temporalio/worker';
 import { describe, expect, it } from 'vitest';
 
+import { PLANNING_WORKFLOW } from '../run/planning/types.js';
 import { POST_EXECUTION_WORKFLOW } from '../run/postexec/types.js';
 import { PREFLIGHT_WORKFLOW } from '../run/preflight/types.js';
 
@@ -13,5 +14,6 @@ describe('PreflightWorkflow bundle', () => {
     });
     expect(code).toContain(PREFLIGHT_WORKFLOW);
     expect(code).toContain(POST_EXECUTION_WORKFLOW);
+    expect(code).toContain(PLANNING_WORKFLOW);
   }, 60_000);
 });
