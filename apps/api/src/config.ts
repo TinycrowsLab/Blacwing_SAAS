@@ -61,6 +61,10 @@ const origin = zUrl({ protocols: ['http:', 'https:'] }).refine((value) => {
   return url.pathname === '/' && url.search === '' && url.hash === '' && !value.endsWith('/');
 }, 'must be an origin (scheme://host[:port]) without a path or trailing slash');
 
+/** Keycloak realm, client id and OpenBao path length bounds (IAM-002). */
+const KEYCLOAK_NAME_MAX = 255;
+const KEYCLOAK_PATH_MAX = 512;
+
 /** Environment of `apps/api` (API-001, #53). Validated at boot; any problem refuses to start. */
 export const apiEnvShape = {
   ...baseEnvShape,
@@ -107,6 +111,15 @@ export const apiEnvShape = {
    * unset value must never silently allow, or silently block, every origin.
    */
   WEB_ORIGIN: zCsv(origin).refine((list) => list.length > 0, 'must list at least one origin'),
+  /**
+   * Keycloak Admin API for organisation provisioning (IAM-002). Optional so the API boots without it; the
+   * organisations service refuses to start unless all four are set (see `keycloak/settings.ts`). The client
+   * secret is never an env value: it is read by reference from OpenBao at `KEYCLOAK_ORG_ADMIN_SECRET_PATH`.
+   */
+  KEYCLOAK_ADMIN_URL: zUrl({ protocols: ['http:', 'https:'] }).optional(),
+  KEYCLOAK_ADMIN_REALM: z.string().min(1).max(KEYCLOAK_NAME_MAX).optional(),
+  KEYCLOAK_ORG_ADMIN_CLIENT_ID: z.string().min(1).max(KEYCLOAK_NAME_MAX).optional(),
+  KEYCLOAK_ORG_ADMIN_SECRET_PATH: z.string().min(1).max(KEYCLOAK_PATH_MAX).optional(),
 } as const;
 
 export const apiEnvSchema = z.object(apiEnvShape);

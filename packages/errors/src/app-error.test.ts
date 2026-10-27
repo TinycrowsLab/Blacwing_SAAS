@@ -186,6 +186,11 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'EXTERNAL_BACKEND_UNAVAILABLE',
   'GRAPH_CONFIG_MISSING',
   'GRAPH_POOL_TIMEOUT',
+  // Raised by apps/api's Keycloak organisations service (IAM-002) as plain AppErrors.
+  'KEYCLOAK_UNAVAILABLE',
+  'KEYCLOAK_REJECTED',
+  'KEYCLOAK_NOT_FOUND',
+  'KEYCLOAK_CONFLICT',
 ];
 
 describe('AppError subclasses', () => {

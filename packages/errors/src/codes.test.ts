@@ -97,6 +97,10 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   EXTERNAL_BACKEND_UNAVAILABLE: 503,
   GRAPH_CONFIG_MISSING: 500,
   GRAPH_POOL_TIMEOUT: 503,
+  KEYCLOAK_UNAVAILABLE: 503,
+  KEYCLOAK_REJECTED: 500,
+  KEYCLOAK_NOT_FOUND: 404,
+  KEYCLOAK_CONFLICT: 409,
   INTERNAL: 500,
 };
 
@@ -110,7 +114,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(82);
+    expect(ERROR_CODE_LIST).toHaveLength(86);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -135,7 +139,7 @@ describe('error-code registry', () => {
     );
   });
 
-  it('marks only RATE_LIMITED, TX_RETRY_EXHAUSTED, TEMPORAL_UNAVAILABLE, DB_UNAVAILABLE, DB_SERIALIZATION_CONFLICT, SBX_DRIVER_UNAVAILABLE, KEK_UNAVAILABLE, EXTERNAL_BACKEND_UNAVAILABLE and GRAPH_POOL_TIMEOUT as retryable', () => {
+  it('marks only RATE_LIMITED, TX_RETRY_EXHAUSTED, TEMPORAL_UNAVAILABLE, DB_UNAVAILABLE, DB_SERIALIZATION_CONFLICT, SBX_DRIVER_UNAVAILABLE, KEK_UNAVAILABLE, EXTERNAL_BACKEND_UNAVAILABLE, GRAPH_POOL_TIMEOUT and KEYCLOAK_UNAVAILABLE as retryable', () => {
     expect(ERROR_CODE_LIST.filter((code) => ERROR_CODES[code].retryable)).toEqual([
       'RATE_LIMITED',
       'TX_RETRY_EXHAUSTED',
@@ -146,6 +150,7 @@ describe('error-code registry', () => {
       'KEK_UNAVAILABLE',
       'EXTERNAL_BACKEND_UNAVAILABLE',
       'GRAPH_POOL_TIMEOUT',
+      'KEYCLOAK_UNAVAILABLE',
     ]);
   });
 
@@ -284,6 +289,10 @@ describe('error-code registry', () => {
       | 'EXTERNAL_BACKEND_UNAVAILABLE'
       | 'GRAPH_CONFIG_MISSING'
       | 'GRAPH_POOL_TIMEOUT'
+      | 'KEYCLOAK_UNAVAILABLE'
+      | 'KEYCLOAK_REJECTED'
+      | 'KEYCLOAK_NOT_FOUND'
+      | 'KEYCLOAK_CONFLICT'
       | 'INTERNAL'
     >();
     expectTypeOf<HttpStatusOf<'NOT_FOUND'>>().toEqualTypeOf<404>();

@@ -17,6 +17,7 @@
     { "path": "../../packages/ids" },
     { "path": "../../packages/logger" },
     { "path": "../../packages/telemetry" },
+    { "path": "../../packages/secrets" },
     { "path": "../../packages/testing" },
     { "path": "../../packages/time" }
   ]

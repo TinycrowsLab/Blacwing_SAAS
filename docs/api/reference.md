@@ -178,7 +178,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -262,6 +262,18 @@ Example: Secret disabled.
   "title": "Secret disabled",
   "status": 409,
   "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -493,7 +505,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -577,6 +589,18 @@ Example: Secret disabled.
   "title": "Secret disabled",
   "status": 409,
   "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```

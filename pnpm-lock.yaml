@@ -269,6 +269,9 @@ importers:
       '@blackwing/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@blackwing/secrets':
+        specifier: workspace:*
+        version: link:../../packages/secrets
       '@blackwing/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry

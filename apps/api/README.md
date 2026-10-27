@@ -26,6 +26,20 @@ Validated with Zod through `@blackwing/config` at boot. Any missing or invalid k
 | `API_IDEMPOTENCY_TTL_S` | `86400` | How long a stored `Idempotency-Key` result is replayed |
 | `API_IDEMPOTENCY_LOCK_TTL_S` | `120` | How long an `in_progress` marker blocks duplicates (crash recovery) |
 | `API_IDEMPOTENCY_MAX_BODY_BYTES` | `65536` | Largest response body stored for replay |
+| `KEYCLOAK_ADMIN_URL`, `KEYCLOAK_ADMIN_REALM`, `KEYCLOAK_ORG_ADMIN_CLIENT_ID`, `KEYCLOAK_ORG_ADMIN_SECRET_PATH` | unset | Keycloak Admin API for organisations (IAM-002). Set all four or none. The client secret is read from OpenBao at the secret path, never from env |
+
+## Keycloak organisations (IAM-002)
+
+`src/keycloak/` wraps the Keycloak Admin REST API for tenant Organizations. `createOrganizationsService` (in
+`keycloak/index.ts`) builds `OrganizationsService`, which offers `createOrganization`, `getByAlias`, `update`,
+`delete`, `addMember` and `removeMember`. Each is idempotent (a repeat is a no-op) and records an audit event
+through the `OrganizationAuditSink` port (IAM-012 wires the ledger).
+Keycloak's organisation `name` holds the tenant slug, and the display name is the `displayName` attribute.
+`KeycloakAdminClient` uses a cached `client_credentials` token from the least-privilege service-account client,
+renews it at 80% of its lifetime, re-reads the secret after a 401 and retries transient failures with backoff.
+Keycloak failures map to `KEYCLOAK_UNAVAILABLE` (503, retryable), `KEYCLOAK_REJECTED` (500), `KEYCLOAK_NOT_FOUND`
+(404) and `KEYCLOAK_CONFLICT` (409). Metric: `keycloak_admin_calls_total{op,result}`. Trace: one `keycloak.admin.<op>` span per call, with `bw.keycloak.op` and `bw.keycloak.result`. The service is not yet mounted
+in a Nest module; TENANT-005 and IAM-003/004 consume it. Integration tests against a live Keycloak are tracked in #901.
 
 ## Request pipeline
 

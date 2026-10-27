@@ -97,6 +97,21 @@ describe('loadApiConfig', () => {
     expect(error.message).not.toContain(value);
   });
 
+  it('leaves the Keycloak organisation admin keys optional, and validates the admin URL', () => {
+    expect(loadApiConfig(minimal).KEYCLOAK_ADMIN_URL).toBeUndefined();
+    const config = loadApiConfig({
+      ...minimal,
+      KEYCLOAK_ADMIN_URL: 'https://id.example.test',
+      KEYCLOAK_ADMIN_REALM: 'blackwing',
+      KEYCLOAK_ORG_ADMIN_CLIENT_ID: 'bw-org-admin',
+      KEYCLOAK_ORG_ADMIN_SECRET_PATH: 'secret/data/platform/keycloak/org-admin',
+    });
+    expect(config.KEYCLOAK_ADMIN_REALM).toBe('blackwing');
+    expect(
+      refusal({ ...minimal, KEYCLOAK_ADMIN_URL: 'ftp://id.example.test' }).invalidKeys,
+    ).toEqual(['KEYCLOAK_ADMIN_URL']);
+  });
+
   it('boots from the repository .env.example on the dev port', () => {
     const env: Record<string, string> = {};
     const text = readFileSync(new URL('../../../.env.example', import.meta.url), 'utf8');

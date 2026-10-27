@@ -224,6 +224,21 @@ const DEFINITIONS = {
   // (fail fast, 500). A saturated connection pool past its acquire timeout is a transient overload (503, retryable).
   GRAPH_CONFIG_MISSING: { status: 500, title: 'Graph configuration missing', retryable: false },
   GRAPH_POOL_TIMEOUT: { status: 503, title: 'Graph connection pool timed out', retryable: true },
+  // Keycloak Admin API (IAM-002). An unreachable or overloaded Keycloak is an outage (503, retryable). A refused
+  // credential or permission, a request Keycloak rejects and an unexpected response are server faults (500, never
+  // retried unchanged). A missing resource (404) and a duplicate (409) keep their meaning.
+  KEYCLOAK_UNAVAILABLE: { status: 503, title: 'Identity provider unavailable', retryable: true },
+  KEYCLOAK_REJECTED: {
+    status: 500,
+    title: 'Identity provider rejected the admin request',
+    retryable: false,
+  },
+  KEYCLOAK_NOT_FOUND: {
+    status: 404,
+    title: 'Identity provider resource not found',
+    retryable: false,
+  },
+  KEYCLOAK_CONFLICT: { status: 409, title: 'Identity provider conflict', retryable: false },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 
