@@ -425,13 +425,6 @@
                       "workflowsCancelledAt": "2026-10-20T10:00:03.300Z",
                       "completedAt": "2026-10-20T10:00:03.300Z",
                       "haltMs": 3300,
-                      "stages": {
-                        "egressMs": 400,
-                        "sandboxMs": 2700,
-                        "keysMs": 100,
-                        "workflowsMs": 100
-                      },
-                      "elapsedMs": null,
                       "affected": {
                         "runs": 1,
                         "sessions": 2,
@@ -1179,35 +1172,6 @@
             "type": "string",
             "format": "date-time",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
-          },
-          "stages": {
-            "type": "object",
-            "description": "Per-stage latency from consecutive timestamps (trigger, egress, sandbox, keys, workflows); null when a bounding timestamp is missing.",
-            "properties": {
-              "egressMs": {
-                "type": ["integer", "null"],
-                "minimum": 0
-              },
-              "sandboxMs": {
-                "type": ["integer", "null"],
-                "minimum": 0
-              },
-              "keysMs": {
-                "type": ["integer", "null"],
-                "minimum": 0
-              },
-              "workflowsMs": {
-                "type": ["integer", "null"],
-                "minimum": 0
-              }
-            },
-            "required": ["egressMs", "sandboxMs", "keysMs", "workflowsMs"],
-            "additionalProperties": false
-          },
-          "elapsedMs": {
-            "type": ["integer", "null"],
-            "minimum": 0,
-            "description": "Time since the trigger while the kill is still open; null once haltMs is known."
           }
         },
         "required": [
@@ -1231,9 +1195,7 @@
           "reenabledAt",
           "reenabledBy",
           "createdAt",
-          "updatedAt",
-          "stages",
-          "elapsedMs"
+          "updatedAt"
         ],
         "additionalProperties": false
       },
