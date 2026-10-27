@@ -38,6 +38,10 @@ describe('loadApiConfig', () => {
     expect(config.API_IDEMPOTENCY_TTL_S).toBe(86_400);
     expect(config.API_IDEMPOTENCY_LOCK_TTL_S).toBe(120);
     expect(config.API_IDEMPOTENCY_MAX_BODY_BYTES).toBe(65_536);
+    expect(config.API_SSE_HEARTBEAT_MS).toBe(15_000);
+    expect(config.API_SSE_MAX_DURATION_MS).toBe(3_600_000);
+    expect(config.API_SSE_MAX_REPLAY).toBe(1_000);
+    expect(config.API_SSE_MAX_CONN_PER_TENANT).toBe(100);
     expect(config.RATE_LIMIT_DEFAULT_RPS).toBe(10);
     expect(config.RATE_LIMIT_BURST).toBe(20);
     expect(config.WEB_ORIGIN).toEqual(['http://localhost:3000']);
@@ -83,6 +87,10 @@ describe('loadApiConfig', () => {
     ['API_IDEMPOTENCY_TTL_S', '0'],
     ['API_IDEMPOTENCY_LOCK_TTL_S', '1.5'],
     ['API_IDEMPOTENCY_MAX_BODY_BYTES', '-1'],
+    ['API_SSE_HEARTBEAT_MS', '0'],
+    ['API_SSE_MAX_DURATION_MS', 'soon'],
+    ['API_SSE_MAX_REPLAY', '0'],
+    ['API_SSE_MAX_CONN_PER_TENANT', '-1'],
     ['RATE_LIMIT_DEFAULT_RPS', '0'],
     ['RATE_LIMIT_DEFAULT_RPS', '2.5'],
     ['RATE_LIMIT_BURST', '-3'],

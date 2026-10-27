@@ -28,6 +28,7 @@
     "@blackwing/db": "workspace:*",
     "@blackwing/domain": "workspace:*",
     "@blackwing/errors": "workspace:*",
+    "@blackwing/events": "workspace:*",
     "@blackwing/ids": "workspace:*",
     "@blackwing/logger": "workspace:*",
     "@blackwing/telemetry": "workspace:*",

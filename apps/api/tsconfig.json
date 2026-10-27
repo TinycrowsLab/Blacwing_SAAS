@@ -15,6 +15,7 @@
     { "path": "../../packages/db" },
     { "path": "../../packages/domain" },
     { "path": "../../packages/errors" },
+    { "path": "../../packages/events" },
     { "path": "../../packages/ids" },
     { "path": "../../packages/logger" },
     { "path": "../../packages/telemetry" },

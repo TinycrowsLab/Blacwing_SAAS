@@ -4,6 +4,7 @@ import { ERROR_CODES, type ErrorCode } from '@blackwing/errors';
 import { errorResponses, type JsonObject, jsonSchema } from './schema.js';
 import { auditOpenApiPaths, auditOpenApiSchemas } from '../audit-query/openapi.js';
 import { killOpenApiDocument } from '../kill/openapi.js';
+import { runEventsOpenApiModule } from '../run-events/openapi.js';
 
 /** Largest page a client may request (§9). */
 export const PAGE_LIMIT_MAX = 200;
@@ -51,7 +52,7 @@ function auditOpenApiModule(): OpenApiModule {
 
 /** Every module published in the public spec. Internal routers (`/internal/broker`) are deliberately absent. */
 export function publicOpenApiModules(): readonly OpenApiModule[] {
-  return [killOpenApiModule(), auditOpenApiModule()];
+  return [killOpenApiModule(), auditOpenApiModule(), runEventsOpenApiModule()];
 }
 
 function commonParameters(): JsonObject {

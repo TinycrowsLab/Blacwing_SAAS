@@ -143,3 +143,66 @@ describe('publish validation', () => {
     );
   });
 });
+
+describe('countAfter', () => {
+  it('counts entries strictly after the cursor, bounded by the limit', async () => {
+    const calls: unknown[][] = [];
+    const redis = {
+      xrange: (...args: unknown[]) => {
+        calls.push(args);
+        return Promise.resolve([
+          ['2-0', []],
+          ['3-0', []],
+        ]);
+      },
+    } as unknown as Redis;
+    const bus = createEventBus({ redis, tenantId: 't1' });
+    await expect(bus.countAfter('r1', '1-0', 2)).resolves.toBe(2);
+    expect(calls).toEqual([['bw:t1:run:r1:events', '(1-0', '+', 'COUNT', 2]]);
+  });
+
+  it.each(['$', 'abc', '1-2-3', ''])('refuses the cursor %j without touching Redis', async (id) => {
+    const redis = {
+      xrange: () => {
+        throw new Error('must not be called');
+      },
+    } as unknown as Redis;
+    const bus = createEventBus({ redis, tenantId: 't1' });
+    await expect(bus.countAfter('r1', id, 5)).rejects.toThrow(ValidationError);
+  });
+
+  it.each([0, -1, 1.5])('refuses the limit %s', async (limit) => {
+    const bus = createEventBus({ redis: fakeRedis, tenantId: 't1' });
+    await expect(bus.countAfter('r1', '1-0', limit)).rejects.toThrow(ValidationError);
+  });
+});
+
+describe('subscribe onError', () => {
+  it('reports each transient read failure and stops when the caller closes the subscription', async () => {
+    const errors: unknown[] = [];
+    const connection = {
+      xread: () => Promise.reject(new Error('connection reset')),
+      disconnect: () => undefined,
+    };
+    const bus = createEventBus({
+      redis: fakeRedis,
+      tenantId: 't1',
+      blockMs: 10,
+      createBlockingConnection: () => connection as unknown as Redis,
+    });
+    const controller = new AbortController();
+    const subscription = bus.subscribe('r1', {
+      fromId: '0',
+      signal: controller.signal,
+      onError: (error) => {
+        errors.push(error);
+        controller.abort();
+      },
+    });
+    const received: unknown[] = [];
+    for await (const item of subscription) received.push(item);
+    expect(received).toEqual([]);
+    expect(errors).toHaveLength(1);
+    expect((errors[0] as Error).message).toBe('connection reset');
+  });
+});

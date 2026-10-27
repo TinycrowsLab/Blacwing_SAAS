@@ -82,6 +82,14 @@ describe('schema to OpenAPI 3.1 fragment', () => {
   });
 });
 
+/** The tag each published operation is filed under (the module that owns its route). */
+const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
+  triggerKill: 'kill',
+  getKillEvent: 'kill',
+  listAuditEvents: 'audit',
+  streamRunEvents: 'runs',
+};
+
 describe('public OpenAPI document', () => {
   it('is 3.1.0 with the package version and the /v1 server', () => {
     expect(doc.openapi).toBe('3.1.0');
@@ -104,9 +112,7 @@ describe('public OpenAPI document', () => {
     for (const item of Object.values(at(doc, 'paths'))) {
       for (const operation of Object.values(item as Json) as Json[]) {
         ids.push(operation.operationId as string);
-        const tags = operation.tags as string[];
-        expect(tags).toHaveLength(1);
-        expect(['kill', 'audit']).toContain(tags[0]);
+        expect(operation.tags).toEqual([TAG_OF_OPERATION[operation.operationId as string]]);
         const refs = Object.entries(operation.responses as Json)
           .filter(([status]) => Number(status) >= 400)
           .map(([, r]) => at(r, 'content', 'application/problem+json', 'schema').$ref);
@@ -114,8 +120,8 @@ describe('public OpenAPI document', () => {
         expect(new Set(refs)).toEqual(new Set(['#/components/schemas/Problem']));
       }
     }
-    expect(ids).toEqual(['triggerKill', 'getKillEvent', 'listAuditEvents']);
-    expect(countOperations(doc)).toBe(3);
+    expect(ids).toEqual(['triggerKill', 'getKillEvent', 'listAuditEvents', 'streamRunEvents']);
+    expect(countOperations(doc)).toBe(4);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -169,7 +175,7 @@ describe('public OpenAPI document', () => {
   });
 
   it('exposes every module from publicOpenApiModules', () => {
-    expect(publicOpenApiModules().map((m) => m.tag)).toEqual(['kill', 'audit']);
+    expect(publicOpenApiModules().map((m) => m.tag)).toEqual(['kill', 'audit', 'runs']);
   });
 });
 
@@ -228,7 +234,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(3);
+    expect(result.operations).toBe(4);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

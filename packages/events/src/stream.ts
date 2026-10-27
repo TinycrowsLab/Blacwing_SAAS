@@ -80,6 +80,11 @@ export interface SubscribeOptions {
   /** Per-subscriber buffer capacity (events); overflow drops the oldest and emits a gap marker. */
   readonly bufferSize?: number;
   readonly signal?: AbortSignal;
+  /**
+   * Called on each transient read failure (Valkey outage, dropped socket) before the bus backs off and
+   * retries. A caller that must not wait out the outage closes its subscription from here.
+   */
+  readonly onError?: (error: unknown) => void;
 }
 
 export interface ConsumeOptions {
@@ -105,6 +110,8 @@ export interface EventBus {
   publish(runId: string, event: RunEvent): Promise<string>;
   /** Resumable live subscription (own connection; ends on `return()`, `break` or abort). */
   subscribe(runId: string, options?: SubscribeOptions): AsyncIterableIterator<SubscriptionItem>;
+  /** Counts the entries after `fromId`, stopping at `limit` (a bounded XRANGE): caps resume replays. */
+  countAfter(runId: string, fromId: string, limit: number): Promise<number>;
   /** At-least-once consumption through a consumer group (pending entries are redelivered first). */
   consume(runId: string, options: ConsumeOptions): AsyncIterableIterator<GroupEvent>;
   /** Acknowledges group deliveries. */
@@ -342,6 +349,7 @@ export function createEventBus(options: EventBusOptions): EventBus {
     }
     const capacity = positiveInt('bufferSize', subscribeOptions.bufferSize, defaultBuffer);
     const signal = subscribeOptions.signal;
+    const onError = subscribeOptions.onError;
     const buffer = new DropOldestBuffer(capacity);
 
     let closed = false;
@@ -409,6 +417,8 @@ export function createEventBus(options: EventBusOptions): EventBus {
             { tenantId, runId, err: errorMessage(error) },
             'event subscription read failed; retrying',
           );
+          onError?.(error);
+          if (isClosed()) break;
           connection?.disconnect();
           connection = undefined;
           await sleep(delay);
@@ -552,6 +562,15 @@ export function createEventBus(options: EventBusOptions): EventBus {
     return redis.xack(keyFor(runId), group, ...ids);
   }
 
+  async function countAfter(runId: string, fromId: string, limit: number): Promise<number> {
+    if (parseStreamId(fromId) === undefined) {
+      throw new ValidationError('fromId must be a stream id such as 1700000000000-0');
+    }
+    const count = positiveInt('limit', limit, 1);
+    const entries = await redis.xrange(keyFor(runId), `(${fromId}`, '+', 'COUNT', count);
+    return entries.length;
+  }
+
   async function trim(
     runId: string,
     trimOptions: { readonly maxLen?: number } = {},
@@ -571,5 +590,5 @@ export function createEventBus(options: EventBusOptions): EventBus {
     return (await redis.del(keyFor(runId))) === 1;
   }
 
-  return { tenantId, publish, subscribe, consume, ack, trim, expire, remove };
+  return { tenantId, publish, subscribe, countAfter, consume, ack, trim, expire, remove };
 }

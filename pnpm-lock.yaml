@@ -269,6 +269,9 @@ importers:
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@blackwing/events':
+        specifier: workspace:*
+        version: link:../../packages/events
       '@blackwing/ids':
         specifier: workspace:*
         version: link:../../packages/ids

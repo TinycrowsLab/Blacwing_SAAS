@@ -32,6 +32,12 @@ const DEFAULT_API_RATE_LIMIT_BURST = 20;
 const DEFAULT_API_HEALTH_CHECK_TIMEOUT_MS = 2000;
 const DEFAULT_API_HEALTH_CACHE_MS = 1000;
 
+/** Run event streams over SSE (#65). */
+const DEFAULT_API_SSE_HEARTBEAT_MS = 15_000;
+const DEFAULT_API_SSE_MAX_DURATION_MS = 3_600_000;
+const DEFAULT_API_SSE_MAX_REPLAY = 1_000;
+const DEFAULT_API_SSE_MAX_CONN_PER_TENANT = 100;
+
 /** Idempotency-Key handling (API-008, #60). */
 const DEFAULT_API_IDEMPOTENCY_TTL_S = 86_400;
 const DEFAULT_API_IDEMPOTENCY_LOCK_TTL_S = 120;
@@ -88,6 +94,14 @@ export const apiEnvShape = {
    * the cursor codec refuses a missing or short (< 32 chars) key (fail closed).
    */
   API_CURSOR_SECRET: zSecret().optional(),
+  /** Heartbeat comment interval that keeps an idle run event stream open through intermediaries (#65). */
+  API_SSE_HEARTBEAT_MS: positiveDuration.default(DEFAULT_API_SSE_HEARTBEAT_MS),
+  /** An event stream closes with `event: timeout` after this long, so a forgotten stream cannot pin a connection. */
+  API_SSE_MAX_DURATION_MS: positiveDuration.default(DEFAULT_API_SSE_MAX_DURATION_MS),
+  /** A resume replays at most this many events; further missed events answer `event: resync` (#65). */
+  API_SSE_MAX_REPLAY: positiveRate.default(DEFAULT_API_SSE_MAX_REPLAY),
+  /** Open run event streams per tenant on one instance; the next one answers `429`. */
+  API_SSE_MAX_CONN_PER_TENANT: positiveRate.default(DEFAULT_API_SSE_MAX_CONN_PER_TENANT),
   /** How long a stored `Idempotency-Key` result is replayed (API-008). */
   API_IDEMPOTENCY_TTL_S: seconds.default(DEFAULT_API_IDEMPOTENCY_TTL_S),
   /**
