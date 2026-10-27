@@ -67,6 +67,13 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
     );
   },
   memberships: async (tx, tenantId) => {
+    // The membership's parent is the tenant row itself (FK), and `tenants` is RLS-keyed on its id, so
+    // the row is inserted under its own tenant context (a foreign tenant id is refused by RLS).
+    await tx.query(
+      `INSERT INTO tenants (id, slug, name, region) VALUES ($1, $2, 'Isolation tenant', 'eu')
+       ON CONFLICT (id) DO NOTHING`,
+      [tenantId, `iso-${tenantId.replaceAll('-', '')}`],
+    );
     // memberships references the global users table, so each row gets its own user (no RLS on users).
     const userId = newId();
     await tx.query(`INSERT INTO users (id, keycloak_sub, email) VALUES ($1, $2, $3)`, [
