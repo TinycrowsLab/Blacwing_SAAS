@@ -407,6 +407,9 @@ export {
   brokerStateResponseSchema,
   type BrokerTokenClaims,
   brokerTokenClaimsSchema,
+  type BrokerToolAuditRequest,
+  brokerToolAuditRequestSchema,
+  TOOL_AUDIT_SUMMARY_MAX,
 } from './broker.js';
 export {
   OUTBOX_BATCH_MAX,

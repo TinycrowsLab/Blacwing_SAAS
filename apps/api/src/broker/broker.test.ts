@@ -37,6 +37,17 @@ const EVIDENCE = {
   sizeBytes: 10,
   contentType: 'text/plain',
 };
+const TOOL_AUDIT = {
+  toolName: 'mcp__engagement__get_engagement_state',
+  subtaskId: null,
+  testCaseId: null,
+  roleId: 'orchestrator',
+  durationMs: 12,
+  outputBytes: 100,
+  outcome: 'success',
+  code: null,
+  inputSummary: '{}',
+};
 const CANDIDATE = { title: 'Reflected XSS', vulnClass: 'xss' };
 const JOURNAL = {
   phase: 'planned',
@@ -351,6 +362,7 @@ describe('Run Broker API', () => {
       ['candidates', 'POST', 'candidates', CANDIDATE, 'candidates:write'],
       ['evidence', 'POST', 'evidence', EVIDENCE, 'evidence:write'],
       ['journal', 'POST', 'journal', JOURNAL, 'journal:write'],
+      ['tool-audit', 'POST', 'tool-audit', TOOL_AUDIT, 'audit:write'],
       ['state', 'GET', 'state', undefined, 'state:read'],
     ];
 
@@ -420,6 +432,7 @@ describe('Run Broker API', () => {
           ['candidates', CANDIDATE],
           ['evidence', EVIDENCE],
           ['journal', JOURNAL],
+          ['tool-audit', TOOL_AUDIT],
         ] as const) {
           const res = await call(ctx, { url: `${BASE}/runs/${RUN}/${path}`, payload });
           expect(res.statusCode).toBe(409);
@@ -537,6 +550,7 @@ describe('public OpenAPI exclusion', () => {
       `${BASE}/runs/{runId}/evidence`,
       `${BASE}/runs/{runId}/journal`,
       `${BASE}/runs/{runId}/state`,
+      `${BASE}/runs/{runId}/tool-audit`,
     ]);
     expect(doc.info.title).toContain('internal');
   });

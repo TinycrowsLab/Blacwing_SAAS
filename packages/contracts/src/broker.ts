@@ -29,11 +29,14 @@ const ACTION_MAX = 2048;
 const REVERSAL_MAX = 4096;
 const CONTENT_TYPE_MAX = 255;
 const EVIDENCE_IDS_MAX = 50;
+/** Longest redacted tool-input summary a `tool.invoked` event carries. */
+export const TOOL_AUDIT_SUMMARY_MAX = 1024;
 /** 5 GiB: the largest single evidence object the broker will register. */
 const EVIDENCE_BYTES_MAX = 5_368_709_120;
 
 /** What a token may do. Each stub endpoint requires exactly one scope. */
 export const BROKER_SCOPES = [
+  'audit:write',
   'candidates:write',
   'evidence:write',
   'journal:write',
@@ -110,6 +113,31 @@ export const brokerJournalRequestSchema = z.strictObject({
   targetRef: z.string().min(1).max(URL_MAX),
 });
 export type BrokerJournalRequest = z.infer<typeof brokerJournalRequestSchema>;
+
+/**
+ * `POST /internal/broker/runs/{runId}/tool-audit`: one `tool.invoked` event per MCP tool call (MCP-001, #666;
+ * §8.8). The input summary is already redacted by the caller; the tenant, run and session come from the
+ * token, never from the body. `subtaskId` / `testCaseId` are null for calls outside a test case.
+ */
+export const brokerToolAuditRequestSchema = z.strictObject({
+  ...boundIdsShape,
+  /** Surfaced name, `mcp__<server>__<tool>`. */
+  toolName: z
+    .string()
+    .regex(/^mcp__[a-z][a-z0-9_]*__[a-z][a-z0-9_]*$/)
+    .max(LIMITS.keyMax * 2),
+  subtaskId: uuidV7Schema.nullable(),
+  testCaseId: uuidV7Schema.nullable(),
+  roleId: z.string().min(1).max(LIMITS.keyMax),
+  durationMs: z.int().nonnegative(),
+  outputBytes: z.int().nonnegative(),
+  outcome: z.enum(['success', 'error']),
+  /** Stable tool error code when `outcome` is `error`. */
+  code: z.string().min(1).max(LIMITS.keyMax).nullable(),
+  /** Redacted, bounded rendering of the call input. */
+  inputSummary: z.string().max(TOOL_AUDIT_SUMMARY_MAX),
+});
+export type BrokerToolAuditRequest = z.infer<typeof brokerToolAuditRequestSchema>;
 
 /** `GET /internal/broker/runs/{runId}/state` (ORCH implements the full view). */
 export const brokerStateResponseSchema = z.strictObject({

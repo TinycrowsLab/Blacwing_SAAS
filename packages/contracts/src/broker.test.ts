@@ -6,14 +6,15 @@ import {
   brokerCandidateRequestSchema,
   brokerJournalRequestSchema,
   brokerTokenClaimsSchema,
+  brokerToolAuditRequestSchema,
 } from './index.js';
 
 const ID = '01890a5d-ac96-774b-bcce-b302099a8057';
 
 describe('broker contracts', () => {
-  it('uses the bwrun_ prefix and four scopes', () => {
+  it('uses the bwrun_ prefix and five scopes', () => {
     expect(BROKER_TOKEN_PREFIX).toBe('bwrun_');
-    expect(BROKER_SCOPES).toHaveLength(4);
+    expect(BROKER_SCOPES).toHaveLength(5);
   });
 
   it('rejects unknown fields and applies defaults', () => {
@@ -47,5 +48,31 @@ describe('broker contracts', () => {
       brokerTokenClaimsSchema.safeParse({ ...claims, aud: 'sandbox-controller' }).success,
     ).toBe(false);
     expect(brokerTokenClaimsSchema.safeParse({ ...claims, scp: [] }).success).toBe(false);
+  });
+
+  describe('tool audit request', () => {
+    const audit = {
+      toolName: 'mcp__target__http_request',
+      subtaskId: ID,
+      testCaseId: null,
+      roleId: 'recon',
+      durationMs: 5,
+      outputBytes: 10,
+      outcome: 'success',
+      code: null,
+      inputSummary: '{}',
+    };
+
+    it('accepts a well-formed event and rejects unknown fields, bad names and long summaries', () => {
+      expect(brokerToolAuditRequestSchema.safeParse(audit).success).toBe(true);
+      expect(brokerToolAuditRequestSchema.safeParse({ ...audit, extra: 1 }).success).toBe(false);
+      expect(
+        brokerToolAuditRequestSchema.safeParse({ ...audit, toolName: 'http_request' }).success,
+      ).toBe(false);
+      expect(
+        brokerToolAuditRequestSchema.safeParse({ ...audit, inputSummary: 'x'.repeat(1025) })
+          .success,
+      ).toBe(false);
+    });
   });
 });

@@ -6,6 +6,7 @@ import {
   brokerEvidenceRequestSchema,
   brokerJournalRequestSchema,
   brokerStateResponseSchema,
+  brokerToolAuditRequestSchema,
 } from '@blackwing/contracts';
 import { ERROR_CODES, PROBLEM_JSON_CONTENT_TYPE } from '@blackwing/errors';
 
@@ -14,6 +15,7 @@ import {
   BROKER_EVIDENCE_ROUTE,
   BROKER_JOURNAL_ROUTE,
   BROKER_STATE_ROUTE,
+  BROKER_TOOL_AUDIT_ROUTE,
 } from './routes.js';
 
 type JsonObject = Record<string, unknown>;
@@ -116,6 +118,12 @@ export function brokerOpenApiDocument(): JsonObject {
         'Append a reversal-journal entry',
         'REVERSAL',
         brokerJournalRequestSchema,
+      ),
+      [toOpenApiPath(BROKER_TOOL_AUDIT_ROUTE)]: writeOperation(
+        'recordToolInvocation',
+        'Record a tool.invoked audit event',
+        'AUDIT',
+        brokerToolAuditRequestSchema,
       ),
       [toOpenApiPath(BROKER_STATE_ROUTE)]: {
         get: {

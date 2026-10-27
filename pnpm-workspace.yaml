@@ -24,9 +24,13 @@ packages:
 # NestJS 11 on the Fastify adapter is the control-plane API framework fixed in §5 (apps/api, API-001,
 # #53), with reflect-metadata and rxjs as its required peers and @fastify/helmet, @fastify/cors and
 # @fastify/request-context as its HTTP plugins (@fastify/cors pinned to the copy the adapter bundles).
+# @anthropic-ai/claude-agent-sdk is the agent runtime SDK fixed in §4/§5; mcp-tools builds its in-process MCP servers on
+# tool() + createSdkMcpServer() (MCP-001, #666). @modelcontextprotocol/sdk is that SDK's peer (tool-result types).
 # TanStack Query is the console's server-state library fixed in §5 (apps/web data layer, CONSOLE-005, #265).
 catalog:
+  '@anthropic-ai/claude-agent-sdk': 0.3.308
   '@anthropic-ai/sdk': 0.135.0
+  '@modelcontextprotocol/sdk': 1.29.0
   '@cedar-policy/cedar-wasm': 4.13.0
   '@fastify/cors': 11.3.0
   '@fastify/helmet': 13.2.0

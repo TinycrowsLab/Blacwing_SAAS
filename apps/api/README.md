@@ -93,7 +93,7 @@ client); without a store every `@Idempotent()` route answers `503` (fail closed)
 
 ## Internal Run Broker API (API-014)
 
-`/internal/broker/runs/{runId}/{candidates|evidence|journal|state}` is mounted by `registerBrokerRoutes`
+`/internal/broker/runs/{runId}/{candidates|evidence|journal|tool-audit|state}` is mounted by `registerBrokerRoutes`
 (`src/broker`), outside `/v1` and outside the public OpenAPI document (`brokerOpenApiDocument()` is its own
 internal spec). Per request, in order: source guard (socket CIDR in `BROKER_ALLOWED_CIDRS` AND the mesh
 identity header in `BROKER_MESH_IDENTITIES`; `X-Forwarded-For` is never trusted; anything missing refuses with

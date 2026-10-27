@@ -10,6 +10,7 @@ import {
   brokerCandidateRequestSchema,
   brokerEvidenceRequestSchema,
   brokerJournalRequestSchema,
+  brokerToolAuditRequestSchema,
   TERMINAL_RUN_STATES,
 } from '@blackwing/contracts';
 import { createCrossTenantGuard, runWithTenantContext } from '@blackwing/db/tenant-context';
@@ -40,6 +41,7 @@ export const BROKER_TRACER = 'blackwing.api.broker';
 export const BROKER_CANDIDATES_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/candidates`;
 export const BROKER_EVIDENCE_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/evidence`;
 export const BROKER_JOURNAL_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/journal`;
+export const BROKER_TOOL_AUDIT_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/tool-audit`;
 export const BROKER_STATE_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/state`;
 
 /** Window of the per-run-session limiter. */
@@ -111,6 +113,13 @@ const ENDPOINTS: readonly Endpoint[] = [
     scope: 'journal:write',
     owner: 'REVERSAL',
     body: brokerJournalRequestSchema,
+  },
+  {
+    route: BROKER_TOOL_AUDIT_ROUTE,
+    action: 'broker.tool_audit.record',
+    scope: 'audit:write',
+    owner: 'AUDIT',
+    body: brokerToolAuditRequestSchema,
   },
   {
     route: BROKER_STATE_ROUTE,
