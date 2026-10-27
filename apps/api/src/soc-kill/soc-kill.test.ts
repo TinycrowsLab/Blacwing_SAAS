@@ -200,9 +200,7 @@ describe('mint', () => {
     const r = await rig();
     r.h.audit.append = () => Promise.reject(new Error('ledger down'));
     expect((await mint(r)).statusCode).toBe(500);
-    expect(
-      r.store.get(TENANT_A, r.store.rowsForTest()[0]?.id ?? '')?.revokedAt,
-    ).not.toBeNull();
+    expect(r.store.get(TENANT_A, r.store.rowsForTest()[0]?.id ?? '')?.revokedAt).not.toBeNull();
   });
 });
 

@@ -30,16 +30,17 @@ import type { KillPrincipal, KillResourceReader } from '../kill/ports.js';
 import type { KillService } from '../kill/service.js';
 import type { Logger } from '@blackwing/logger';
 
-export const SOC_KILL_VERIFY_SPAN = 'soc_kill.verify';
+const SOC_KILL_VERIFY_SPAN = 'soc_kill.verify';
 const TRACER_NAME = '@blackwing/api/soc-kill';
 
 const MS_PER_SECOND = 1000;
 const MINUTE_MS = 60_000;
 const DAY_MS = 86_400_000;
+const MAX_VALIDITY_DAYS = 30;
 /** Clock skew allowed on `exp` and `expires_at`, both ways (documented: +/- 60 s). */
 export const SOC_KILL_LEEWAY_MS = 60_000;
 /** A link is never valid for longer than this, whatever the test window says. */
-export const SOC_KILL_MAX_VALIDITY_MS = 30 * DAY_MS;
+const SOC_KILL_MAX_VALIDITY_MS = MAX_VALIDITY_DAYS * DAY_MS;
 /** Per-IP and per-token limits per minute (KILL-007 requirement 4). */
 const VERIFY_PER_IP = 10;
 const VERIFY_PER_TOKEN = 30;
@@ -312,7 +313,8 @@ export class SocKillService {
 
     const verified = verifyJws(rawToken, this.deps.resolveKey);
     const parsed = verified === null ? null : claimsSchema.safeParse(verified.payload);
-    if (verified === null || parsed?.success !== true) return this.reject('invalid_signature', ip, null);
+    if (verified === null || parsed?.success !== true)
+      return this.reject('invalid_signature', ip, null);
     const claims = parsed.data;
     span.setAttributes({ 'bw.tenant_id': claims.tenantId, 'bw.soc_kill.jti': claims.jti });
     // Keyed by the verified jti, so garbage tokens cannot grow the limiter's memory.
@@ -333,8 +335,8 @@ export class SocKillService {
 
     const hash = sha256(rawToken);
     const record = await this.deps.store.findBySha256(claims.tenantId, hash);
+    if (record === null) return this.reject('unknown_token', ip, claims);
     if (
-      record === null ||
       record.tokenSha256.length !== hash.length ||
       !timingSafeEqual(record.tokenSha256, hash) ||
       record.id !== claims.jti ||

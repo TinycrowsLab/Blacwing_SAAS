@@ -3,8 +3,8 @@ import * as React from 'react';
 
 import { Button } from '@blackwing/ui';
 
-import { previewKillLink } from '../../../../lib/soc-kill';
 import { confirmKill } from './actions';
+import { previewKillLink } from '../../../../lib/soc-kill';
 
 import type { ReactNode } from 'react';
 

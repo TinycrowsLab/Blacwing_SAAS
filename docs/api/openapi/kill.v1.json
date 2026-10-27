@@ -625,6 +625,25 @@
           "affected": {
             "type": "object",
             "properties": {
+              "egress": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "identity": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 255
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": ["blocked", "already_blocked", "failed"]
+                    }
+                  },
+                  "required": ["identity", "outcome"],
+                  "additionalProperties": false
+                }
+              },
               "runs": {
                 "type": "integer",
                 "minimum": 0,
@@ -640,12 +659,74 @@
                 "minimum": 0,
                 "maximum": 9007199254740991
               },
+              "sandboxResults": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "sandboxId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 255
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": ["terminated", "already_gone", "terminating", "failed"]
+                    }
+                  },
+                  "required": ["sandboxId", "outcome"],
+                  "additionalProperties": false
+                }
+              },
               "keys": {
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 9007199254740991
               },
+              "keyResults": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "keyId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 255
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": ["revoked", "already_revoked", "failed"]
+                    }
+                  },
+                  "required": ["keyId", "outcome"],
+                  "additionalProperties": false
+                }
+              },
               "workflows": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "workflowResults": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "workflowId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 255
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": ["cancelled", "already_closed", "not_found", "failed"]
+                    }
+                  },
+                  "required": ["workflowId", "outcome"],
+                  "additionalProperties": false
+                }
+              },
+              "reversalsFlagged": {
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 9007199254740991

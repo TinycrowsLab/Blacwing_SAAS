@@ -15,9 +15,9 @@ import { type KillAuthenticator, problemErrorHandler } from '../kill/routes.js';
 import type { SocKillService } from './service.js';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 
-export const SOC_KILL_PAGE_ROUTE = '/soc/kill/:token';
-export const SOC_KILL_TRIGGER_ROUTE = '/soc/kill';
-export const SOC_KILL_MINT_ROUTE = '/v1/assets/:id/soc-kill-link';
+const SOC_KILL_PAGE_ROUTE = '/soc/kill/:token';
+const SOC_KILL_TRIGGER_ROUTE = '/soc/kill';
+const SOC_KILL_MINT_ROUTE = '/v1/assets/:id/soc-kill-link';
 
 const HTTP_OK = 200;
 const HTTP_CREATED = 201;
