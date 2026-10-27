@@ -42,6 +42,7 @@ export const EXPECTED_PACKAGES = Object.freeze([
   'domain',
   'policy',
   'agents',
+  'api-client',
   'mcp-tools',
   'memory',
   'replay',

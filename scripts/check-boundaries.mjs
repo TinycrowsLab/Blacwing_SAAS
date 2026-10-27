@@ -85,6 +85,7 @@ export const ELEMENT_TYPES = Object.freeze([
     summary: 'Platform, data-access and integration libraries used by the apps.',
     members: [
       'packages/agents',
+      'packages/api-client',
       'packages/audit',
       'packages/connectors',
       'packages/cost',

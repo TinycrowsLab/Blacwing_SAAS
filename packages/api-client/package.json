@@ -1,0 +1,29 @@
+{
+  "name": "@blackwing/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Typed client for the control-plane REST API, generated from docs/api/openapi.json",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "api-client:gen": "tsx src/generator/cli.ts",
+    "lint": "eslint . --max-warnings=0",
+    "test": "vitest run",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@blackwing/contracts": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "openapi-typescript": "7.13.0",
+    "prettier": "3.9.9",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

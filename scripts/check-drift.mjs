@@ -20,6 +20,11 @@ export const ARTIFACTS = [
   { name: 'OpenAPI 3.1 spec', path: 'docs/api/openapi.json', fix: 'pnpm openapi:generate' },
   { name: 'GraphQL SDL', path: 'apps/api/graphql', fix: 'pnpm graphql:generate' },
   {
+    name: 'Typed API client',
+    path: 'packages/api-client/src/generated',
+    fix: 'pnpm --filter @blackwing/api-client api-client:gen',
+  },
+  {
     name: 'Drizzle migrations',
     path: 'packages/db/migrations',
     fix: 'pnpm db:generate (then review and commit the new migration)',

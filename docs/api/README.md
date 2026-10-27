@@ -11,6 +11,12 @@ committed and checked for drift in CI.
 
 Regenerate with `pnpm openapi:generate`. `pnpm check:drift` fails when a generated file is stale.
 
+The typed TypeScript client (`packages/api-client`, `@blackwing/api-client`) is generated from `openapi.json` by
+`pnpm --filter @blackwing/api-client api-client:gen` (also run by `pnpm openapi:generate`). It has one typed method
+per `operationId`, throws `ApiProblemError` for problem+json answers, follows `nextCursor` with `paginate()`, and
+sets `Idempotency-Key` and `If-Match` through `withIdempotencyKey()` and `withIfMatch()`. A unit test fails when the
+committed client is stale.
+
 Conventions that apply to every endpoint:
 
 - Errors use RFC 9457 problem+json (`type`, `title`, `status`, `detail`, `code`, `traceId`).
