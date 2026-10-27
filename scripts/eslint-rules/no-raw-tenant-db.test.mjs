@@ -23,7 +23,10 @@ const eslint = new ESLint({
       files: ['**/*.ts'],
       languageOptions: {
         parser: tseslint.parser,
-        parserOptions: { project: path.join(FIXTURES, 'tsconfig.json'), tsconfigRootDir: FIXTURES },
+        // The type information eslint.config.mjs uses. The legacy `project` option is not used: under CI=true
+        // typescript-eslint lints a file's second parse in an isolated program that cannot resolve imports,
+        // so the rule reported nothing on the second and third lint of violations.ts.
+        parserOptions: { projectService: true, tsconfigRootDir: FIXTURES },
       },
       plugins: { blackwing: blackwingPlugin },
       rules: { 'blackwing/no-raw-tenant-db': 'error' },
