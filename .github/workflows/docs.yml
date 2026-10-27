@@ -16,6 +16,8 @@ on:
       - 'scripts/docs-site.mjs'
       - 'scripts/docs-site.test.mjs'
       - 'scripts/check-claude-md.mjs'
+      - 'scripts/check-runbooks.mjs'
+      - 'scripts/check-runbooks.test.mjs'
       - '.github/workflows/docs.yml'
   push:
     branches: [main]
@@ -56,6 +58,8 @@ jobs:
           fetch-depth: '1'
       - name: Check navigation and internal links
         run: pnpm docs:check
+      - name: Check operator runbooks (dates, links, scripts, metrics, pack sections)
+        run: pnpm check:runbooks
       - name: Build the site (smoke)
         run: pnpm docs:build --out "$RUNNER_TEMP/docs-site" --version main
 
