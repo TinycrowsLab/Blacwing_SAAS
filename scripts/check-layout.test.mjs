@@ -38,11 +38,11 @@ function assertError(errors, pattern) {
 }
 
 describe('check-layout against this repository', () => {
-  it('passes and reports exactly the CONTEXT_PACK §6 member set (9 apps + 26 packages)', () => {
+  it('passes and reports exactly the CONTEXT_PACK §6 member set (9 apps + 27 packages)', () => {
     const result = checkLayout(REPO_ROOT);
     assert.deepEqual(result.errors, []);
     assert.equal(result.ok, true);
-    assert.deepEqual(result.counts, { apps: 9, packages: 26 });
+    assert.deepEqual(result.counts, { apps: 9, packages: 27 });
     const names = result.members.map((m) => m.name).sort();
     const expected = [...EXPECTED_APPS, ...EXPECTED_PACKAGES].map((d) => `@blackwing/${d}`).sort();
     assert.deepEqual(names, expected);
@@ -85,10 +85,10 @@ describe('check-layout against this repository', () => {
       'reporting',
       'secrets',
       'telemetry',
-      'workflow-shared',
       'testing',
       'time',
       'ui',
+      'workflow-shared',
     ]);
   });
 
@@ -151,7 +151,7 @@ describe('check-layout on fixtures', () => {
   it('accepts a valid layout', () => {
     const result = checkLayout(fixture.root);
     assert.deepEqual(result.errors, []);
-    assert.deepEqual(result.counts, { apps: 9, packages: 26 });
+    assert.deepEqual(result.counts, { apps: 9, packages: 27 });
   });
 
   it('detects a duplicate package name across members', () => {
@@ -344,9 +344,9 @@ describe('check-layout CLI', () => {
     assert.equal(run.status, 0, run.stderr);
     const summary = parseJsonObject(run.stdout);
     assert.equal(summary.ok, true);
-    assert.deepEqual(summary.counts, { apps: 9, packages: 26 });
+    assert.deepEqual(summary.counts, { apps: 9, packages: 27 });
     const members = asArray(summary.members);
-    assert.equal(members.length, 35);
+    assert.equal(members.length, 36);
     assert.deepEqual(Object.keys(asObject(members[0])).sort(), [
       'dir',
       'kind',

@@ -5,6 +5,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   unlinkSync,
   writeFileSync,
@@ -75,6 +76,12 @@ function makeRoot() {
   cpSync(path.join(REPO_ROOT, ADR_DIR), path.join(root, ADR_DIR), { recursive: true });
   mkdirSync(path.dirname(path.join(root, CONTEXT_PACK)), { recursive: true });
   writeFileSync(path.join(root, CONTEXT_PACK), REAL_PACK);
+  // ADRs link to sibling architecture docs; copy them so the link check sees real targets.
+  const archDir = path.dirname(CONTEXT_PACK);
+  for (const doc of readdirSync(path.join(REPO_ROOT, archDir)).filter((f) => f.endsWith('.md'))) {
+    if (doc !== path.basename(CONTEXT_PACK))
+      cpSync(path.join(REPO_ROOT, archDir, doc), path.join(root, archDir, doc));
+  }
   return root;
 }
 
