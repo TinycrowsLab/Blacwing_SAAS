@@ -15,6 +15,7 @@ import { REPO_ROOT } from './test-fixtures.mjs';
 
 const df = readFileSync(path.join(REPO_ROOT, SANDBOX_DOCKERFILE), 'utf8');
 const ig = readFileSync(path.join(REPO_ROOT, SANDBOX_DOCKERIGNORE), 'utf8');
+/** @param {string} d @param {string} [i] */
 const errs = (d, i = ig) => checkSandboxDockerfile(d, i);
 
 describe('real repository', () => {

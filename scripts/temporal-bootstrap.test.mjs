@@ -108,7 +108,7 @@ describe('temporal bootstrap.sh', () => {
     assert.equal(read(s, 'attrs'), before);
     const creates = read(s, 'calls')
       .split('\n')
-      .filter((l) => /search-attribute create/.test(l));
+      .filter((l) => l.includes('search-attribute create'));
     assert.equal(creates.length, 4, 'no attribute was created by the conflicting run');
   });
 

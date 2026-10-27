@@ -127,6 +127,8 @@ const svc = (name) => pod('bw-system', { 'app.kubernetes.io/name': name });
 const dns = pod('kube-system', { 'k8s-app': 'kube-dns' });
 const outside = pod('bw-dev-outside', { app: 'outside' });
 
+/** @typedef {{ kind: string, spec: { order: number, egress: { action: string, destination: { nets: string[] } }[] } }} Calico */
+
 describe('sandbox three-destination rule', () => {
   const sb = sandbox('run-a');
   it('reaches egress-gateway, model-gateway and the broker', () => {
@@ -146,13 +148,13 @@ describe('sandbox three-destination rule', () => {
   });
   it('cannot reach other namespaces or platform data services', () => {
     assert.ok(!connect(ALL, sb, outside, 80));
-    for (const [n, p] of [
+    for (const [n, p] of /** @type {[string, number][]} */ ([
       ['postgres', 5432],
       ['valkey', 6379],
       ['temporal', 7233],
       ['openbao', 8200],
       ['keycloak', 8080],
-    ]) {
+    ])) {
       assert.ok(!connect(ALL, sb, svc(n), p), n);
     }
   });
@@ -201,11 +203,11 @@ describe('fail closed', () => {
       'blackwing.io/component': 'sandbxo',
       'blackwing.io/run': 'run-a',
     });
-    for (const [n, p] of [
+    for (const [n, p] of /** @type {[string, number][]} */ ([
       ['egress-gateway', 13128],
       ['model-gateway', 13500],
       ['run-broker', 13400],
-    ]) {
+    ])) {
       assert.ok(!connect(ALL, bad, svc(n), p), n);
     }
     assert.ok(!connect(ALL, bad, dns, 53, 'UDP'));
@@ -304,11 +306,15 @@ describe('manifests and scripts', () => {
     const v = read('calico/versions.env');
     assert.match(v, /CALICO_VERSION="v\d+\.\d+\.\d+"/);
     assert.match(v, /calico\/v3\.\d+\.\d+\/manifests/);
-    const g = load('calico/global-deny-sandbox-metadata.yaml')[0];
+    const g = /** @type {Calico} */ (
+      /** @type {unknown} */ (load('calico/global-deny-sandbox-metadata.yaml')[0])
+    );
     assert.equal(g.kind, 'GlobalNetworkPolicy');
     assert.ok(g.spec.order < 1000);
-    assert.equal(g.spec.egress[0].action, 'Deny');
-    const nets = g.spec.egress[0].destination.nets;
+    const first = g.spec.egress[0];
+    assert.ok(first);
+    assert.equal(first.action, 'Deny');
+    const nets = first.destination.nets;
     for (const n of ['169.254.169.254/32', '169.254.0.0/16', 'fd00:ec2::254/128', '::/0'])
       assert.ok(nets.includes(n), n);
   });

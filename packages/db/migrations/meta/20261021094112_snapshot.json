@@ -198,9 +198,7 @@
           "name": "kill_events_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "bw_app"
-          ],
+          "to": ["bw_app"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
         },
@@ -208,9 +206,7 @@
           "name": "kill_events_operator_global",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "bw_operator"
-          ],
+          "to": ["bw_operator"],
           "using": "tenant_id IS NULL AND scope = 'global'",
           "withCheck": "tenant_id IS NULL AND scope = 'global'"
         }
@@ -374,10 +370,7 @@
         "soc_contacts_tenant_id_id_key": {
           "name": "soc_contacts_tenant_id_id_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "tenant_id",
-            "id"
-          ]
+          "columns": ["tenant_id", "id"]
         }
       },
       "policies": {
@@ -385,9 +378,7 @@
           "name": "soc_contacts_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
         }
@@ -542,14 +533,8 @@
           "name": "soc_kill_tokens_contact_fk",
           "tableFrom": "soc_kill_tokens",
           "tableTo": "soc_contacts",
-          "columnsFrom": [
-            "tenant_id",
-            "contact_id"
-          ],
-          "columnsTo": [
-            "tenant_id",
-            "id"
-          ],
+          "columnsFrom": ["tenant_id", "contact_id"],
+          "columnsTo": ["tenant_id", "id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -559,9 +544,7 @@
         "soc_kill_tokens_token_sha256_key": {
           "name": "soc_kill_tokens_token_sha256_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "token_sha256"
-          ]
+          "columns": ["token_sha256"]
         }
       },
       "policies": {
@@ -569,9 +552,7 @@
           "name": "soc_kill_tokens_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
         }
@@ -782,10 +763,7 @@
         "audit_events_tenant_seq_key": {
           "name": "audit_events_tenant_seq_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "tenant_id",
-            "seq"
-          ]
+          "columns": ["tenant_id", "seq"]
         }
       },
       "policies": {
@@ -793,9 +771,7 @@
           "name": "audit_events_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
         }
@@ -984,9 +960,7 @@
           "name": "outbox_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
         }
@@ -1093,14 +1067,8 @@
           "name": "secret_versions_secret_fk",
           "tableFrom": "secret_versions",
           "tableTo": "secrets",
-          "columnsFrom": [
-            "tenant_id",
-            "secret_id"
-          ],
-          "columnsTo": [
-            "tenant_id",
-            "id"
-          ],
+          "columnsFrom": ["tenant_id", "secret_id"],
+          "columnsTo": ["tenant_id", "id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1108,10 +1076,7 @@
       "compositePrimaryKeys": {
         "secret_versions_secret_id_version_pk": {
           "name": "secret_versions_secret_id_version_pk",
-          "columns": [
-            "secret_id",
-            "version"
-          ]
+          "columns": ["secret_id", "version"]
         }
       },
       "uniqueConstraints": {},
@@ -1120,9 +1085,7 @@
           "name": "secret_versions_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
         }
@@ -1286,9 +1249,7 @@
           "name": "secrets_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
         }
@@ -1397,12 +1358,8 @@
           "name": "memberships_tenant_id_tenants_id_fk",
           "tableFrom": "memberships",
           "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tenant_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1410,12 +1367,8 @@
           "name": "memberships_user_id_users_id_fk",
           "tableFrom": "memberships",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1423,10 +1376,7 @@
       "compositePrimaryKeys": {
         "memberships_pkey": {
           "name": "memberships_pkey",
-          "columns": [
-            "tenant_id",
-            "user_id"
-          ]
+          "columns": ["tenant_id", "user_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1435,9 +1385,7 @@
           "name": "memberships_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
         }
@@ -1510,9 +1458,7 @@
         "tenants_slug_key": {
           "name": "tenants_slug_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {
@@ -1520,9 +1466,7 @@
           "name": "tenants_tenant_isolation",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "id = current_setting('app.tenant_id')::uuid",
           "withCheck": "id = current_setting('app.tenant_id')::uuid"
         }
@@ -1597,16 +1541,12 @@
         "users_keycloak_sub_key": {
           "name": "users_keycloak_sub_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "keycloak_sub"
-          ]
+          "columns": ["keycloak_sub"]
         },
         "users_email_key": {
           "name": "users_email_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},

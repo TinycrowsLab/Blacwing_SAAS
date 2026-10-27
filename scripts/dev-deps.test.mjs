@@ -61,7 +61,7 @@ function renderCompose(env) {
 /**
  * @typedef {{ host_ip?: string, published?: string, target: number }} Port
  * @typedef {{ image: string, restart?: string, container_name?: string, ports?: Port[],
- *   networks?: Record<string, unknown>, environment?: Record<string, string>,
+ *   networks?: Record<string, unknown>, volumes?: { source?: string, target?: string, read_only?: boolean }[], environment?: Record<string, string>,
  *   healthcheck?: { test: string[], start_period?: string } }} Service
  * @typedef {{ name: string, services: Record<string, Service>,
  *   networks: Record<string, { name: string, driver: string } | undefined>, volumes: Record<string, unknown> }} Compose
