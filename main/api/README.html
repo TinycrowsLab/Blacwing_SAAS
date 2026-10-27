@@ -160,6 +160,11 @@ committed and checked for drift in CI.</p>
 </tr>
 </tbody></table>
 <p>Regenerate with <code>pnpm openapi:generate</code>. <code>pnpm check:drift</code> fails when a generated file is stale.</p>
+<p>The typed TypeScript client (<code>packages/api-client</code>, <code>@blackwing/api-client</code>) is generated from <code>openapi.json</code> by
+<code>pnpm --filter @blackwing/api-client api-client:gen</code> (also run by <code>pnpm openapi:generate</code>). It has one typed method
+per <code>operationId</code>, throws <code>ApiProblemError</code> for problem+json answers, follows <code>nextCursor</code> with <code>paginate()</code>, and
+sets <code>Idempotency-Key</code> and <code>If-Match</code> through <code>withIdempotencyKey()</code> and <code>withIfMatch()</code>. A unit test fails when the
+committed client is stale.</p>
 <p>Conventions that apply to every endpoint:</p>
 <ul>
 <li>Errors use RFC 9457 problem+json (<code>type</code>, <code>title</code>, <code>status</code>, <code>detail</code>, <code>code</code>, <code>traceId</code>).</li>
