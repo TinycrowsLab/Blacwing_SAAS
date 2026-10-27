@@ -155,8 +155,8 @@ the check name).</p>
 </thead>
 <tbody><tr>
 <td><code>lint</code></td>
-<td><code>pnpm lint</code> (ESLint 9, <code>--max-warnings=0</code> in every member and in <code>lint:root</code>), then <code>pnpm format:check</code></td>
-<td>any ESLint error or warning (for example an <code>any</code>), or a file Prettier would rewrite</td>
+<td><code>pnpm lint</code> (ESLint 9, <code>--max-warnings=0</code> in every member and in <code>lint:root</code>), then <code>pnpm format:check</code>, then <code>pnpm lint:prompts</code></td>
+<td>any ESLint error or warning (for example an <code>any</code>), a file Prettier would rewrite, or a persona prompt that fails the prompt lint (<code>packages/agents/lint/README.md</code>)</td>
 </tr>
 <tr>
 <td><code>typecheck</code></td>
@@ -201,7 +201,7 @@ result on every platform. Generated files are excluded from lint and format (<co
 <code>.prettierignore</code>).</li>
 </ul>
 <h2 id="reproducing-a-failure-locally">Reproducing a failure locally</h2>
-<pre><code class="language-sh">pnpm lint &amp;&amp; pnpm format:check                      # lint
+<pre><code class="language-sh">pnpm lint &amp;&amp; pnpm format:check &amp;&amp; pnpm lint:prompts   # lint
 pnpm typecheck                                      # typecheck
 node scripts/ci-pr.mjs commitlint                   # commitlint over origin/main..HEAD
 pnpm typecheck 2&gt;&amp;1 | node scripts/ci-annotate.mjs --task typecheck   # the annotated output CI shows
