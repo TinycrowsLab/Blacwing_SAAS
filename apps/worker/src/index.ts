@@ -16,6 +16,14 @@ export {
   SANDBOX_TERMINATE_PATH,
   sandboxDeadlineFromEnv,
 } from './kill/sandbox-client.js';
+export {
+  createAuditActivities,
+  createAuditActivityInterceptors,
+  createOtelAuditMetrics,
+  isCriticalActivity,
+  type AuditInterceptorDeps,
+  type AuditInterceptorMetrics,
+} from './interceptors/audit.js';
 export { createTenantActivityInterceptors, type TenantActivityDeps } from './tenant/interceptor.js';
 export {
   createTemporalWorkflowControlClient,

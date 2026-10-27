@@ -320,6 +320,57 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'Kill stage 4: the Temporal workflows of a kill were cancelled and pending reversal entries flagged.',
   },
+  // temporal worker interceptors (WORKFLOW-007)
+  {
+    action: 'activity.started',
+    defaultSeverity: 'info',
+    isAlwaysAudited: false,
+    description:
+      'A Temporal activity attempt started (metadata names the activity type; high-frequency internal types may be sampled).',
+  },
+  {
+    action: 'activity.succeeded',
+    defaultSeverity: 'info',
+    isAlwaysAudited: false,
+    description: 'A Temporal activity attempt succeeded.',
+  },
+  {
+    action: 'activity.failed',
+    defaultSeverity: 'warning',
+    isAlwaysAudited: false,
+    description:
+      'A Temporal activity attempt failed or was cancelled (metadata carries the error code, never a stack).',
+  },
+  {
+    action: 'workflow.started',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description: 'A Temporal workflow execution started.',
+  },
+  {
+    action: 'workflow.completed',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description: 'A Temporal workflow execution completed.',
+  },
+  {
+    action: 'workflow.failed',
+    defaultSeverity: 'warning',
+    isAlwaysAudited: true,
+    description: 'A Temporal workflow execution failed.',
+  },
+  {
+    action: 'workflow.cancelled',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description: 'A Temporal workflow execution was cancelled.',
+  },
+  {
+    action: 'workflow.continued_as_new',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description: 'A Temporal workflow execution continued as new.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

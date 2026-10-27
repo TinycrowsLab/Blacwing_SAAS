@@ -44,4 +44,20 @@ describe('parseWorkerConfig', () => {
   it('rejects an unknown queue', () => {
     expect(() => parseWorkerConfig({ ...base, WORKER_TASK_QUEUES: 'bogus' })).toThrow(/bogus/);
   });
+
+  it('parses AUDIT_ACTIVITY_SAMPLE and defaults to sampling nothing', () => {
+    expect(parseWorkerConfig(base).auditActivitySample.size).toBe(0);
+    const config = parseWorkerConfig({ ...base, AUDIT_ACTIVITY_SAMPLE: 'a=0.1, b=1' });
+    expect([...config.auditActivitySample]).toEqual([
+      ['a', 0.1],
+      ['b', 1],
+    ]);
+  });
+
+  it.each(['a', 'a=', '=0.5', 'a=0', 'a=1.5', 'a=x', 'a=0.5=1'])(
+    'rejects AUDIT_ACTIVITY_SAMPLE %j',
+    (value) => {
+      expect(() => parseWorkerConfig({ ...base, AUDIT_ACTIVITY_SAMPLE: value })).toThrow();
+    },
+  );
 });

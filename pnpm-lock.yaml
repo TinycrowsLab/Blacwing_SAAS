@@ -554,6 +554,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@blackwing/audit':
+        specifier: workspace:*
+        version: link:../../packages/audit
       '@blackwing/config':
         specifier: workspace:*
         version: link:../../packages/config

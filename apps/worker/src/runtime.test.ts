@@ -13,6 +13,7 @@ const config: WorkerConfig = {
   taskQueues: ['validation', 'exports'],
   healthPort: 0,
   shutdownGraceMs: 1000,
+  auditActivitySample: new Map(),
 };
 
 /** A fake worker that stays RUNNING until shutdown(), then drains for `drainMs` before run() settles. */

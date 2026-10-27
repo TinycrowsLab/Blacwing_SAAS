@@ -54,7 +54,15 @@
         "secret.kek_rotated",
         "secret.kek_disabled",
         "kill.keys_revoked",
-        "kill.workflows_cancelled"
+        "kill.workflows_cancelled",
+        "activity.started",
+        "activity.succeeded",
+        "activity.failed",
+        "workflow.started",
+        "workflow.completed",
+        "workflow.failed",
+        "workflow.cancelled",
+        "workflow.continued_as_new"
       ]
     },
     "severity": {
