@@ -36,8 +36,19 @@ const PROBLEM = {
   },
 };
 
+/**
+ * An operation the tests edit field by field. The fields are optional so that `delete` and
+ * reassignment type-check against the shape the tests rely on.
+ * @typedef {{ operationId?: string, responses?: Record<string, unknown> }} FixtureOperation
+ */
+
 /** A small spec with the shapes the renderer must handle: refs, deprecation, an untagged operation, pipes. */
 function fixtureSpec() {
+  /** @type {FixtureOperation} */
+  const untaggedOperation = {
+    operationId: 'untaggedDelete',
+    responses: { 204: { description: 'Deleted.' } },
+  };
   return {
     openapi: '3.1.0',
     info: { title: 'Fixture API', version: '1.2.3' },
@@ -100,10 +111,7 @@ function fixtureSpec() {
         },
       },
       '/v1/untagged': {
-        delete: {
-          operationId: 'untaggedDelete',
-          responses: { 204: { description: 'Deleted.' } },
-        },
+        delete: untaggedOperation,
       },
       '/internal/broker/tokens': {
         post: {
@@ -141,6 +149,7 @@ function fixtureSpec() {
   };
 }
 
+/** @param {unknown} spec */
 function scratchRoot(spec) {
   const root = mkdtempSync(path.join(tmpdir(), 'bw-api-ref-'));
   scratch.push(root);
@@ -187,8 +196,8 @@ describe('parseSpec', () => {
     noResponses.paths['/v1/untagged'].delete.responses = {};
     assert.throws(() => parseSpec(JSON.stringify(noResponses)), /has no responses/);
 
-    const relative = fixtureSpec();
-    relative.paths['v1/x'] = relative.paths['/v1/untagged'];
+    const base = fixtureSpec();
+    const relative = { ...base, paths: { ...base.paths, 'v1/x': base.paths['/v1/untagged'] } };
     assert.throws(() => parseSpec(JSON.stringify(relative)), /must start with \//);
   });
 });
