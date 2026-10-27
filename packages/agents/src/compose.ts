@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { parseSecretRef } from '@blackwing/contracts';
 
+import { PREAMBLE_PLACEHOLDERS } from './base-preamble.js';
 import { PERSONA_INTRUSIVENESS_CEILINGS } from './persona.js';
 import { PromptError, type LoadedPrompt } from './prompt.js';
 
@@ -17,16 +18,6 @@ import { PromptError, type LoadedPrompt } from './prompt.js';
  */
 
 export const DEFAULT_MAX_SYSTEM_PROMPT_BYTES = 65_536;
-
-/** The preamble placeholders, each of which MUST appear in the preamble (fail closed, §4.5). */
-export const PREAMBLE_PLACEHOLDERS = [
-  'saId',
-  'assetScope',
-  'testWindow',
-  'maxIntrusiveness',
-  'roles',
-  'approverIdentity',
-] as const;
 
 const LIMIT = { field: 512, list: 256, brief: 16_384 } as const;
 const text = z.string().trim().min(1).max(LIMIT.field);
