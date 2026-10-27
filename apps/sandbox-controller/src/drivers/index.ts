@@ -5,7 +5,6 @@ import type { SandboxDriver } from './driver.js';
 import type { SandboxDriverKind } from '@blackwing/contracts';
 
 export type { SandboxDriver } from './driver.js';
-export { DockerDriver, type DockerDriverOptions } from './docker.js';
 export { FakeDriver, type FakeDriverOptions } from './fake.js';
 export type { CaProvisioner, RunCaRef, RunScope } from './types.js';
 
@@ -72,7 +71,7 @@ export class UnavailableDriver implements SandboxDriver {
 }
 
 /** Driver-relevant slice of the controller config. */
-export interface DriverConfig {
+interface DriverConfig {
   readonly NODE_ENV: string;
   readonly SBX_DOCKER_RUNTIME?: string;
   readonly SBX_DOCKER_SOCKET?: string;

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
 /** Hex characters of the content hash used when a resource has no `state_version`. */
-export const ETAG_HASH_LENGTH = 16;
+const ETAG_HASH_LENGTH = 16;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

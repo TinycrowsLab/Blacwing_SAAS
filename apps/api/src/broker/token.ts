@@ -22,9 +22,9 @@ import { AuthError } from '@blackwing/errors';
  */
 
 /** Anything longer is refused before decoding. */
-export const MAX_BROKER_TOKEN_LENGTH = 2048;
+const MAX_BROKER_TOKEN_LENGTH = 2048;
 /** Allowed clock skew for an `iat` in the future, in seconds. */
-export const BROKER_CLOCK_SKEW_SECONDS = 30;
+const BROKER_CLOCK_SKEW_SECONDS = 30;
 
 const SIGNATURE_BYTES = 32;
 const MS_PER_SECOND = 1000;

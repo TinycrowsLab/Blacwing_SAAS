@@ -36,7 +36,7 @@ import type { BrokerAuditSink, BrokerRunReader } from './ports.js';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 /** Tracer name of the broker; one span per broker call. */
-export const BROKER_TRACER = 'blackwing.api.broker';
+const BROKER_TRACER = 'blackwing.api.broker';
 
 export const BROKER_CANDIDATES_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/candidates`;
 export const BROKER_EVIDENCE_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/evidence`;

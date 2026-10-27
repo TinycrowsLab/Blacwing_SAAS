@@ -22,7 +22,7 @@ type QueryValue = string | number | boolean | null | undefined;
 /** Tenant is derived from the session on the server (CONTEXT_PACK §8.6); the client must never send one. */
 const TENANT_NAME = /^x?-?tenant(-?id)?$/i;
 
-export interface ApiRequestOptions {
+interface ApiRequestOptions {
   /** Query-string parameters; `undefined`/`null` are skipped and `limit` is capped at 200. */
   readonly query?: Readonly<Record<string, QueryValue>>;
   /** Abort signal (TanStack Query passes one; it aborts on unmount). */

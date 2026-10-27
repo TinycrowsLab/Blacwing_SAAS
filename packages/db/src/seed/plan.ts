@@ -52,7 +52,7 @@ export function seedUuid(key: string): Uuid {
 }
 
 /** The demo tenant (§10). */
-export const SEED_TENANT = Object.freeze({
+const SEED_TENANT = Object.freeze({
   slug: 'acme',
   name: 'Acme Corp (demo)',
   region: 'eu-west-1',
@@ -120,10 +120,10 @@ export const SEED_PERSONAS: readonly SeedPersona[] = Object.freeze([
 ]);
 
 /** Lifetime of the seeded SA, counted from the seed time (re-seeding renews it). */
-export const SEED_SA_LIFETIME = '90d';
+const SEED_SA_LIFETIME = '90d';
 
 /** Juice Shop application roles that get a credential (§7 `asset_credentials`). */
-export const SEED_CREDENTIAL_ROLES = ['customer', 'admin'] as const;
+const SEED_CREDENTIAL_ROLES = ['customer', 'admin'] as const;
 
 /**
  * An OpenBao KV v2 reference (DEVENV-005): `openbao://secret/data/tenants/<slug>/...`. Only a
@@ -180,7 +180,7 @@ export interface SeedUserRow {
 }
 
 /** Placeholder subject for a persona Keycloak could not confirm; replaced once Keycloak answers. */
-export function pendingSubject(persona: SeedPersona): string {
+function pendingSubject(persona: SeedPersona): string {
   return `pending:${persona.username}`;
 }
 
@@ -211,12 +211,12 @@ export function userRows(
   });
 }
 
-export interface SeedMembershipRow {
+interface SeedMembershipRow {
   readonly userId: Uuid;
   readonly roles: readonly Role[];
 }
 
-export interface SeedAssetRow {
+interface SeedAssetRow {
   readonly id: Uuid;
   readonly type: Asset['type'];
   readonly identifiers: readonly string[];
@@ -228,7 +228,7 @@ export interface SeedAssetRow {
   readonly attestation: Readonly<Record<string, unknown>>;
 }
 
-export interface SeedCredentialRow {
+interface SeedCredentialRow {
   readonly id: Uuid;
   readonly assetId: Uuid;
   readonly roleName: string;
@@ -237,7 +237,7 @@ export interface SeedCredentialRow {
   readonly mfaType: 'none';
 }
 
-export interface SeedStandingAuthorisationRow {
+interface SeedStandingAuthorisationRow {
   readonly id: Uuid;
   readonly assetIds: readonly Uuid[];
   readonly scopeRules: StandingAuthorisation['scopeRules'];
@@ -254,9 +254,9 @@ export interface SeedStandingAuthorisationRow {
   readonly status: 'active';
 }
 
-export type Access = 'allow' | 'deny';
+type Access = 'allow' | 'deny';
 
-export interface SeedRoleMatrixRow {
+interface SeedRoleMatrixRow {
   readonly id: Uuid;
   readonly assetId: Uuid;
   readonly name: string;

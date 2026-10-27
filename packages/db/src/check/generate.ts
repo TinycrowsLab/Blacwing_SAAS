@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** The schema entry drizzle-kit reads (same as src/drizzle.config.ts). */
-export const SCHEMA_ENTRY = fileURLToPath(new URL('../schema/index.ts', import.meta.url));
+const SCHEMA_ENTRY = fileURLToPath(new URL('../schema/index.ts', import.meta.url));
 
 /** A generous bound: drizzle-kit prompts (e.g. "is this a rename?") would otherwise hang CI. */
 const GENERATE_TIMEOUT_MS = 120_000;

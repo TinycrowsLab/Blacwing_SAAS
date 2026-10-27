@@ -1,6 +1,6 @@
 {
   "id": "9372b129-cb82-4682-9dd7-0363231a5ccc",
-  "prevId": "ef79c982-305b-4acd-9f92-addb476ceba7",
+  "prevId": "5c250f6a-ab83-4167-9d56-7b85071b086c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1198,27 +1198,6 @@
         }
       },
       "indexes": {
-        "secrets_tenant_id_id_idx": {
-          "name": "secrets_tenant_id_id_idx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "secrets_tenant_name_idx": {
           "name": "secrets_tenant_name_idx",
           "columns": [
@@ -1243,7 +1222,13 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "secrets_tenant_id_id_unique": {
+          "name": "secrets_tenant_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["tenant_id", "id"]
+        }
+      },
       "policies": {
         "secrets_tenant_isolation": {
           "name": "secrets_tenant_isolation",

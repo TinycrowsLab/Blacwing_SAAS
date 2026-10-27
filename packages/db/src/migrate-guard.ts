@@ -53,12 +53,12 @@ export interface MigrationGuardEnv {
 }
 
 /** `true` only for `NODE_ENV=production`. */
-export function isProductionEnv(env: MigrationGuardEnv): boolean {
+function isProductionEnv(env: MigrationGuardEnv): boolean {
   return env.NODE_ENV === 'production';
 }
 
 /** The explicit override: exactly `ALLOW_DESTRUCTIVE_MIGRATION=1` (unset by default). */
-export function destructiveMigrationAllowed(env: MigrationGuardEnv): boolean {
+function destructiveMigrationAllowed(env: MigrationGuardEnv): boolean {
   return env.ALLOW_DESTRUCTIVE_MIGRATION === '1';
 }
 

@@ -54,7 +54,7 @@ export async function inTenant<T>(
 }
 
 /** Minimal logger surface (satisfied by `@blackwing/logger`). */
-export interface SeedLogger {
+interface SeedLogger {
   info(fields: Record<string, unknown>, message: string): void;
   warn(fields: Record<string, unknown>, message: string): void;
 }
@@ -241,7 +241,7 @@ const TENANT_TABLES = [
 ] as const;
 
 /** Row count per tenant-scoped table as seen under `tenantId` (RLS applies). */
-export async function countVisible(
+async function countVisible(
   appPool: pg.Pool,
   tenantId: string,
 ): Promise<Record<(typeof TENANT_TABLES)[number], number>> {
@@ -256,7 +256,7 @@ export async function countVisible(
 }
 
 /** Isolation self-check: under a fresh, unrelated tenant id nothing seeded may be visible (§8.6). */
-export async function assertIsolated(appPool: pg.Pool): Promise<void> {
+async function assertIsolated(appPool: pg.Pool): Promise<void> {
   const counts = await countVisible(appPool, newId());
   const leaked = Object.entries(counts).filter(([, n]) => n > 0);
   if (leaked.length > 0) {

@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { parseEnv } from 'node:util';
 
 /** Realm the dev Keycloak imports (infra/compose/keycloak/realm-export.json). */
-export const DEV_REALM = 'blackwing-dev';
+const DEV_REALM = 'blackwing-dev';
 /** Seeded `owner` of the demo tenant `acme` (DEVENV-011). */
 export const DEFAULT_TEST_USER = 'owner@acme.test';
 

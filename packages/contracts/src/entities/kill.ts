@@ -358,7 +358,7 @@ export const killTriggerResponseSchema = z.strictObject({
 export type KillTriggerResponse = z.infer<typeof killTriggerResponseSchema>;
 
 /** Shortest accepted `Idempotency-Key`, so clients cannot collide by accident. */
-export const IDEMPOTENCY_KEY_MIN = 8;
+const IDEMPOTENCY_KEY_MIN = 8;
 
 /**
  * An `Idempotency-Key` header value (§9): 8 to 255 visible ASCII characters. Long enough that a

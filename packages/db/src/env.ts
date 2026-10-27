@@ -41,7 +41,7 @@ export const DEFAULT_PG_ACQUIRE_TIMEOUT_MS = 5_000;
 export const DEFAULT_PG_IDLE_TIMEOUT_MS = 30_000;
 
 /** Upper bound on `PG_POOL_MAX`: well below the server's `max_connections`. */
-export const MAX_PG_POOL_MAX = 200;
+const MAX_PG_POOL_MAX = 200;
 
 const poolMax = zString({ trim: true }).pipe(
   z.coerce.number<string>().int().min(1).max(MAX_PG_POOL_MAX),

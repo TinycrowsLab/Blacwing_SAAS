@@ -30,7 +30,7 @@ export interface WidgetRepo {
   delete(id: string, expectedVersion: number): Promise<boolean>;
 }
 
-export const WIDGET_REPO = Symbol('widget-repo');
+const WIDGET_REPO = Symbol('widget-repo');
 
 /** In-memory repository whose conditional write is atomic, like a single SQL statement. */
 export class MemoryWidgetRepo implements WidgetRepo {
@@ -62,7 +62,7 @@ export class MemoryWidgetRepo implements WidgetRepo {
 
 @Controller('widgets')
 @UseEtag()
-export class WidgetsController {
+class WidgetsController {
   constructor(@Inject(WIDGET_REPO) private readonly repo: WidgetRepo) {}
 
   @Get(':id')

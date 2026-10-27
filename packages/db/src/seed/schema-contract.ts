@@ -21,7 +21,7 @@ type ColumnType = keyof typeof T;
 const timestamps = { created_at: 'timestamp', updated_at: 'timestamp' } as const;
 
 /** table → column → type. `tenants` and `users` are platform-scope; the rest carry `tenant_id` + RLS. */
-export const SEED_SCHEMA_CONTRACT = Object.freeze({
+const SEED_SCHEMA_CONTRACT = Object.freeze({
   tenants: {
     id: 'uuid',
     slug: 'text',
@@ -91,8 +91,6 @@ export const SEED_SCHEMA_CONTRACT = Object.freeze({
   },
 } as const satisfies Record<string, Record<string, ColumnType>>);
 
-export type SeedTable = keyof typeof SEED_SCHEMA_CONTRACT;
-
 /** The schema the seed needs is not there: the migrations have not been applied (or have drifted). */
 export class SeedPreflightError extends PreconditionFailedError {
   readonly problems: readonly string[];
@@ -108,7 +106,7 @@ export class SeedPreflightError extends PreconditionFailedError {
 }
 
 /** Compares the catalogue with {@link SEED_SCHEMA_CONTRACT}; returns one line per problem. */
-export async function findSchemaProblems(db: pg.Pool | pg.PoolClient): Promise<string[]> {
+async function findSchemaProblems(db: pg.Pool | pg.PoolClient): Promise<string[]> {
   const tables = Object.keys(SEED_SCHEMA_CONTRACT);
   const { rows } = await db.query<{ table_name: string; column_name: string; udt_name: string }>(
     `SELECT table_name, column_name, udt_name FROM information_schema.columns

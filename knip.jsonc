@@ -11,8 +11,8 @@
       "project": ["scripts/**/*.mjs"],
       // gofmt ships with the Go toolchain (lint-staged formats Go files with it); shellcheck is a system
       // package (the infra/bootstrap.sh self-test lints with it). trivy and openssl are system tools too (Trivy
-      // gate, TLS setup tests) and kubeconform lints the dev k3s manifests. None is an npm binary.
-      "ignoreBinaries": ["gofmt", "kubeconform", "openssl", "shellcheck", "trivy"],
+      // gate, TLS setup tests), kubeconform lints the dev k3s manifests and helm renders the ingress charts. None is an npm binary.
+      "ignoreBinaries": ["gofmt", "helm", "kubeconform", "openssl", "shellcheck", "trivy"],
       // Loaded by name at run time, never imported: semantic-release plugins named in release.config.mjs (CI-016) and
       // @vitest/coverage-v8, picked by `--coverage.provider=v8` (pnpm test:ci, CI-003).
       "ignoreDependencies": [
@@ -45,6 +45,12 @@
     "apps/api": {
       // Spawned as a child process by shutdown.process.test.ts (never imported).
       "entry": ["src/testdata/slow-server.ts"],
+      // Served from node_modules by path at run time (docs UI static assets), never imported.
+      "ignoreDependencies": ["swagger-ui-dist", "@types/swagger-ui-dist"],
+    },
+    "packages/db": {
+      // Read by path as the drifted-schema fixture of migrate.int.test.ts (never imported).
+      "ignore": ["src/check/testdata/drifted-schema.ts"],
     },
     "packages/config": {
       // Spawned as a child process by bootstrap.test.ts (never imported), so it has no static importer.

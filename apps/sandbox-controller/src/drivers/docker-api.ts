@@ -27,7 +27,7 @@ export interface DockerInspect {
 
 const HTTP_NOT_FOUND = 404;
 
-export interface DockerLogRequest {
+interface DockerLogRequest {
   readonly follow: boolean;
   readonly tail?: number | undefined;
   /** Unix seconds. */

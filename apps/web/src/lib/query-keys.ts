@@ -3,7 +3,7 @@ import type { QueryKey } from '@tanstack/react-query';
 /** A JSON-serialisable filter value. */
 type FilterValue = string | number | boolean | null | undefined | readonly (string | number)[];
 /** Filters of a list query, e.g. `{ status: 'running', limit: 50 }`. */
-export type ListFilters = Readonly<Record<string, FilterValue>>;
+type ListFilters = Readonly<Record<string, FilterValue>>;
 
 /**
  * Canonical filters: keys sorted, `undefined` dropped, so two filter objects that mean the same thing

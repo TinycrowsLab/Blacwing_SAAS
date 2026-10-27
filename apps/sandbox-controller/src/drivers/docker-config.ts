@@ -22,7 +22,7 @@ const NANO_CPUS_PER_CORE = 1_000_000_000;
 export const MANAGED_BY = 'blackwing-sandbox-controller';
 
 /** Hardened defaults. SANDBOX-007 owns the final values; they live here so create stays one code path. */
-export const DOCKER_HARDENING = {
+const DOCKER_HARDENING = {
   user: '65532:65532',
   workspacePath: '/workspace',
   workspaceSizeMiB: 256,
@@ -96,7 +96,7 @@ export function assertNoDockerSocket(config: DockerContainerConfig): void {
   }
 }
 
-export function containerName(sandboxId: string): string {
+function containerName(sandboxId: string): string {
   return `bw-sbx-${sandboxId}`;
 }
 

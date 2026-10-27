@@ -14,7 +14,7 @@ export interface HealthModuleOptions {
 }
 
 /** `health_check_status` / `health_check_latency_seconds` on the app's registry. */
-export function createHealthMetrics(registry: Registry): HealthMetrics {
+function createHealthMetrics(registry: Registry): HealthMetrics {
   return {
     status: new Gauge({
       name: 'health_check_status',

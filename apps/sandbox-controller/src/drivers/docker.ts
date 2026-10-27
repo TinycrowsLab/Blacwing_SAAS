@@ -32,7 +32,7 @@ import {
 import type { SandboxDriver } from './driver.js';
 import type { z } from 'zod';
 
-export const DEFAULT_RUNTIME = 'runsc';
+const DEFAULT_RUNTIME = 'runsc';
 const HTTP_NOT_MODIFIED = 304;
 const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
@@ -346,7 +346,7 @@ function parse<S extends z.ZodType>(schema: S, value: unknown, what: string): z.
 }
 
 /** Container state -> sandbox status. An OOM kill is `failed`; other exits are `stopped`. */
-export function statusOfContainer(inspected: DockerInspect): SandboxStatus {
+function statusOfContainer(inspected: DockerInspect): SandboxStatus {
   const { State: state } = inspected;
   if (state.OOMKilled === true) return 'failed';
   switch (state.Status) {
@@ -364,7 +364,7 @@ export function statusOfContainer(inspected: DockerInspect): SandboxStatus {
   }
 }
 
-export function toHandle(inspected: DockerInspect): SandboxHandle {
+function toHandle(inspected: DockerInspect): SandboxHandle {
   const labels = inspected.Config.Labels ?? {};
   const ips: string[] = [];
   for (const net of Object.values(inspected.NetworkSettings?.Networks ?? {})) {
@@ -383,7 +383,7 @@ export function toHandle(inspected: DockerInspect): SandboxHandle {
   };
 }
 
-export function healthOf(inspected: DockerInspect, at: Date): HealthStatus {
+function healthOf(inspected: DockerInspect, at: Date): HealthStatus {
   const checkedAt = at.toISOString();
   const { State: state } = inspected;
   if (state.OOMKilled === true) {

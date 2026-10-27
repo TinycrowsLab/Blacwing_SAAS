@@ -25,15 +25,15 @@ import type { RunState } from '@blackwing/contracts';
 import type { KillRunRow, KillSessionRow, KillTargetReader } from '@blackwing/domain';
 
 const gen = createUuidV7Generator();
-export const uuid = (): string => gen();
+const uuid = (): string => gen();
 
 export const TENANT_A = uuid();
-export const TENANT_B = uuid();
-export const OWNER = uuid();
-export const OTHER_USER = uuid();
+const TENANT_B = uuid();
+const OWNER = uuid();
+const OTHER_USER = uuid();
 export const OWNED_ASSET = uuid();
 export const UNOWNED_ASSET = uuid();
-export const ASSET_B = uuid();
+const ASSET_B = uuid();
 export const LIVE_RUN = uuid();
 export const DONE_RUN = uuid();
 export const RUN_B = uuid();

@@ -47,7 +47,7 @@ export interface QueryClientOptions {
 }
 
 /** Queries/mutations that render their own error state set `meta: { suppressGlobalError: true }`. */
-export interface QueryMeta extends InvalidatesMeta {
+interface QueryMeta extends InvalidatesMeta {
   readonly suppressGlobalError?: boolean;
 }
 

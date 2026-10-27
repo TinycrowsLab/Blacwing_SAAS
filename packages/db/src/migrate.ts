@@ -23,7 +23,7 @@ export const DOWN_MIGRATIONS_DIR = `${MIGRATIONS_DIR}down/`;
 export const MIGRATIONS_TABLE = Object.freeze({ schema: 'drizzle', table: '__drizzle_migrations' });
 
 /** Serialises concurrent migrate jobs (two deploys racing) on one database. */
-export const MIGRATION_LOCK_KEY = 'blackwing:db:migrate';
+const MIGRATION_LOCK_KEY = 'blackwing:db:migrate';
 
 /** The structured-logger surface the migrator needs (satisfied by `@blackwing/logger`). */
 export interface MigrationLogger {

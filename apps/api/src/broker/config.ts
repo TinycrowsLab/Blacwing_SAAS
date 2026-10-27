@@ -3,9 +3,9 @@ import { z } from 'zod';
 import { type EnvSource, loadConfig, zDurationMs } from '@blackwing/config';
 
 const MIN_SECRET_LENGTH = 32;
-export const DEFAULT_BROKER_IDENTITY_HEADER = 'x-bw-mesh-identity';
-export const DEFAULT_BROKER_RATE_LIMIT_PER_MINUTE = 600;
-export const DEFAULT_BROKER_RATE_LIMIT_WINDOW_MS = 60_000;
+const DEFAULT_BROKER_IDENTITY_HEADER = 'x-bw-mesh-identity';
+const DEFAULT_BROKER_RATE_LIMIT_PER_MINUTE = 600;
+const DEFAULT_BROKER_RATE_LIMIT_WINDOW_MS = 60_000;
 
 /** Comma-separated list where an empty value means "none" (and so refuses everything, fail closed). */
 const list = z

@@ -1,12 +1,21 @@
 import { fileURLToPath } from 'node:url';
 
+/**
+ * The slice of the webpack config and module this file touches (Next types both as `any`).
+ * @typedef {{ plugins: unknown[], resolve: { extensionAlias?: Record<string, string[]> } }} WebpackConfig
+ * @typedef {{ NormalModuleReplacementPlugin: new (pattern: RegExp, replacement: string) => unknown }} WebpackModule
+ */
+
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
   poweredByHeader: false,
   transpilePackages: ['@blackwing/ui'],
   // The workspace uses NodeNext-style `./x.js` specifiers for `.ts` sources.
-  webpack(webpackConfig, { isServer, webpack }) {
+  webpack(
+    /** @type {WebpackConfig} */ webpackConfig,
+    /** @type {{ isServer: boolean, webpack: WebpackModule }} */ { isServer, webpack },
+  ) {
     if (!isServer) {
       webpackConfig.plugins.push(
         new webpack.NormalModuleReplacementPlugin(

@@ -1,5 +1,5 @@
 /** Outcome of one dependency check. */
-export type CheckStatus = 'ok' | 'down';
+type CheckStatus = 'ok' | 'down';
 
 /** Roll-up of all checks: `degraded` means only non-critical dependencies are down. */
 export type OverallStatus = 'ok' | 'degraded' | 'down';
