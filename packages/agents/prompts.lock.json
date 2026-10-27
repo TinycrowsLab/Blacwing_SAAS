@@ -2,6 +2,9 @@
   "_base": {
     "1.0.0": "b578003953ed419817357b4ed9b1ab0c54139d4e3a9d83937610a92083222490"
   },
+  "active-recon": {
+    "1.0.0": "6d73f8ca6f0523df9991012e0e312ed14f8b4889d2a72de0191bf80f3ef6c478"
+  },
   "orchestrator": {
     "1.0.0": "99f659a41b67d49950b30ebec76edd49dcb24427dbe39132d2e0a0cced5bdcae"
   },
