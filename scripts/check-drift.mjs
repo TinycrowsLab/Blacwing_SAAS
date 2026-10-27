@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 export const ARTIFACTS = [
   { name: 'OpenAPI 3.1 spec', path: 'apps/api/openapi', fix: 'pnpm openapi:generate' },
   { name: 'OpenAPI 3.1 spec', path: 'docs/api/openapi.json', fix: 'pnpm openapi:generate' },
+  { name: 'API reference', path: 'docs/api/reference.md', fix: 'pnpm openapi:generate' },
   { name: 'GraphQL SDL', path: 'apps/api/graphql', fix: 'pnpm graphql:generate' },
   {
     name: 'Typed API client',

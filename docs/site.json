@@ -24,7 +24,7 @@
     },
     {
       "title": "API Reference",
-      "pages": ["api/README.md"]
+      "pages": ["api/README.md", "api/reference.md", "api/conventions.md", "api/auth.md"]
     },
     {
       "title": "Runbooks",

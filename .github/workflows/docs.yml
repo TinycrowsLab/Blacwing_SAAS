@@ -18,6 +18,8 @@ on:
       - 'scripts/check-claude-md.mjs'
       - 'scripts/check-runbooks.mjs'
       - 'scripts/check-runbooks.test.mjs'
+      - 'scripts/render-api-reference.mjs'
+      - 'scripts/render-api-reference.test.mjs'
       - '.github/workflows/docs.yml'
   push:
     branches: [main]
@@ -60,6 +62,8 @@ jobs:
         run: pnpm docs:check
       - name: Check operator runbooks (dates, links, scripts, metrics, pack sections)
         run: pnpm check:runbooks
+      - name: Check the API reference is generated from the committed spec
+        run: pnpm api-reference:check
       - name: Build the site (smoke)
         run: pnpm docs:build --out "$RUNNER_TEMP/docs-site" --version main
 

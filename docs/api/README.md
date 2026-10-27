@@ -8,8 +8,12 @@ committed and checked for drift in CI.
 |---|---|
 | [`openapi.json`](openapi.json) | The control-plane REST API (`/v1`): resources, error codes and examples. |
 | [`openapi/kill.v1.json`](openapi/kill.v1.json) | The kill-switch endpoints, versioned on their own. |
+| [`reference.md`](reference.md) | The API reference: every operation, parameter, request and response, schema and example, generated from `openapi.json`. |
+| [`conventions.md`](conventions.md) | Base URL, errors (problem+json and error codes), pagination, idempotency, ETag/If-Match and rate limits. |
+| [`auth.md`](auth.md) | Session cookies, personal access tokens (`bw_pat_`), CI tokens (`bw_ci_`), scopes and safe handling. |
 
-Regenerate with `pnpm openapi:generate`. `pnpm check:drift` fails when a generated file is stale.
+Regenerate with `pnpm openapi:generate`, which also writes `reference.md` (`pnpm api-reference:check` fails when it is
+stale). `pnpm check:drift` fails when a generated file is stale. The docs site (`pnpm docs:build`) publishes these pages.
 
 The typed TypeScript client (`packages/api-client`, `@blackwing/api-client`) is generated from `openapi.json` by
 `pnpm --filter @blackwing/api-client api-client:gen` (also run by `pnpm openapi:generate`). It has one typed method
