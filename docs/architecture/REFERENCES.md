@@ -199,3 +199,23 @@ Persona definitions live in `packages/agents/personas/*.ts`, prompts in `package
 - **Fill the persona template (§8.1) in full** for any persona issue, and treat the **shared task listing + `dispatch_subtask`→Run Controller** flow (§8.2) as fixed — do not let a persona spawn cross-sandbox work via the native `Agent` tool.
 - **Respect the licence watch-list (§5):** never propose bundling nmap (NPSL) or Semgrep registry rules; use the named open alternatives.
 - **Where this file and `CONTEXT_PACK.md` differ, the pack wins** — this file is prior art and vocabulary, not a source of architectural decisions.
+
+---
+
+## Reference implementation: swiftPentest (MIT)
+
+[swiftsaneai/swiftPentest](https://github.com/swiftsaneai/swiftPentest) (MIT, Copyright (c) 2026 SwiftSaneAI) is a Python, detection-only multi-agent web pentest team with the same shape as Blackwing: planner, specialists, a gated validator, a coverage ledger. It may be used as prior art and as a source of ported logic.
+
+**Port the idea into the repo's own stack (TypeScript/Go), do not copy Python files.** When code is derived from it, keep a header comment `Derived from swiftPentest lib/<file>.py (MIT, (c) 2026 SwiftSaneAI)` and keep the licence text in `docs/architecture/third-party-notices.md`.
+
+| Need | swiftPentest module | Blackwing home |
+|---|---|---|
+| Control-contrast and N-of-M reproduction before a finding counts | `lib/validate.py`, `lib/oracle.py`, `lib/replay.py` | validator, `packages/replay` |
+| Coverage by hypotheses resolved, not requests sent | `lib/ledger.py`, `lib/coverage.py` | run coverage manifest |
+| Expected-value ranking of what to test next | `lib/rank.py`, `lib/kb.py` | planner inputs |
+| Scope intake and checks | `lib/scope_check.py`, `lib/scope_intake.py`, `lib/authority.py` | policy and scope matcher (keep TS/Go parity tests) |
+| Finding fingerprint and duplicate detection | `lib/dupcheck.py`, `lib/finding.py` | dedup and fingerprinting |
+| Severity, SARIF and report export | `lib/severity.py`, `lib/sarif.py`, `lib/report_export.py` | `packages/reporting` |
+| Retest | `lib/retest.py` | retest flow |
+
+**Do not port** `payloads.py`, `payload_corpus.py`, `payloadloop.py`, `wafbypass.py`, `escalate.py`, `payload_inventory/`: this repo forbids payload strings and bypass recipes, and Blackwing's authorisation, gate and egress rules always win over anything in that project.
