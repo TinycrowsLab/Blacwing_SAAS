@@ -68,3 +68,11 @@ export { acceptedRiskValid, classifyVerdict, dedupeDecisions } from './run/poste
 export { createOtelPostExecutionMetrics } from './run/postexec/metrics.js';
 export type * from './run/postexec/ports.js';
 export * from './run/postexec/types.js';
+export { createReconActivities, type ReconActivityDeps } from './run/recon/activities.js';
+export { createOtelReconMetrics } from './run/recon/metrics.js';
+export {
+  allFailed as allReconSessionsFailed,
+  runSessions as runReconSessions,
+} from './run/recon/orchestrate.js';
+export type * from './run/recon/ports.js';
+export * from './run/recon/types.js';
