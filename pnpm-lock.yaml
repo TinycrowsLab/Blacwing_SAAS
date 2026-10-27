@@ -813,6 +813,9 @@ importers:
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../errors
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

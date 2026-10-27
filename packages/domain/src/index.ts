@@ -57,3 +57,33 @@ export {
   transitions,
   type TransitionResult,
 } from './run/state.js';
+
+export { InvalidSurfaceInputError, SurfaceBatchTooLargeError } from './surface/errors.js';
+export {
+  endpointKey,
+  hostKey,
+  parameterKey,
+  roleKey,
+  serviceKey,
+  technologyKey,
+} from './surface/fingerprint.js';
+export { normaliseUrlTemplate } from './surface/normalise.js';
+export {
+  SURFACE_MAX_EDGES,
+  SURFACE_MAX_NODES,
+  SURFACE_WRITE_METRIC,
+  SURFACE_WRITE_METRIC_LABELS,
+  type SurfaceAuditEvent,
+  type SurfaceEdge,
+  surfaceEdgeSchema,
+  type SurfaceNode,
+  surfaceNodeKey,
+  surfaceNodeSchema,
+  type SurfaceProvenance,
+  type SurfaceWriteContext,
+  type SurfaceWriteRequest,
+  surfaceWriteRequestSchema,
+  type SurfaceWriteResult,
+  writeSurface,
+  WRITE_SURFACE_TOOL,
+} from './surface/write.js';
