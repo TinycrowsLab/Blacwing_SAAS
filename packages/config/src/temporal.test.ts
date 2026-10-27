@@ -79,9 +79,9 @@ describe('parseTemporalConfig', () => {
   it('requires both certificate paths when TLS is enabled', () => {
     const base = { NODE_ENV: 'test', TEMPORAL_TLS_ENABLED: 'true' };
     expect(codeOf(() => parseTemporalConfig(base))).toBe('TEMPORAL_TLS_MISCONFIGURED');
-    expect(codeOf(() => parseTemporalConfig({ ...base, TEMPORAL_CLIENT_CERT_PATH: '/c.pem' }))).toBe(
-      'TEMPORAL_TLS_MISCONFIGURED',
-    );
+    expect(
+      codeOf(() => parseTemporalConfig({ ...base, TEMPORAL_CLIENT_CERT_PATH: '/c.pem' })),
+    ).toBe('TEMPORAL_TLS_MISCONFIGURED');
     expect(
       codeOf(() =>
         parseTemporalConfig({

@@ -27,7 +27,10 @@ describe('validateDocument', () => {
   it('rejects wrong version, bad timestamp, extra and missing fields', () => {
     assert.match(validateDocument({ ...good(), version: 2 }).join(), /version must be 1/);
     assert.match(validateDocument({ ...good(), lastUpdated: 'yesterday' }).join(), /lastUpdated/);
-    assert.match(validateDocument({ ...good(), lastUpdated: '2026-10-20T10:00:00+02:00' }).join(), /lastUpdated/);
+    assert.match(
+      validateDocument({ ...good(), lastUpdated: '2026-10-20T10:00:00+02:00' }).join(),
+      /lastUpdated/,
+    );
     assert.match(validateDocument({ ...good(), extra: 1 }).join(), /unexpected field "extra"/);
     assert.match(validateDocument({ ...good(), notes: undefined }).join(), /notes/);
     assert.match(validateDocument([]).join(), /JSON object/);

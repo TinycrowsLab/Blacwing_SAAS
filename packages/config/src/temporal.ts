@@ -86,12 +86,17 @@ export function parseTemporalConfig(source: EnvSource = process.env): TemporalCo
       (key) => source[key] === undefined,
     );
     if (missing.length > 0) {
-      throw invalid(missing, `${missing.join(', ')} must be set explicitly outside development/test`);
+      throw invalid(
+        missing,
+        `${missing.join(', ')} must be set explicitly outside development/test`,
+      );
     }
   }
   const parsed = temporalConfigSchema.safeParse(source);
   if (!parsed.success) {
-    const keys = [...new Set(parsed.error.issues.map((issue) => String(issue.path[0] ?? '(root)')))];
+    const keys = [
+      ...new Set(parsed.error.issues.map((issue) => String(issue.path[0] ?? '(root)'))),
+    ];
     throw invalid(keys, `${keys.join(', ')} failed validation`);
   }
   const env = parsed.data;

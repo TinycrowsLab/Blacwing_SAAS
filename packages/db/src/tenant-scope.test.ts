@@ -19,7 +19,10 @@ import type { Database } from './client.js';
 /** A transaction handle whose `current_setting('app.tenant_id', true)` returns `setting`. */
 function fakeTx(setting: unknown): { tx: TenantScopedDb; executed: () => number } {
   const execute = vi.fn(() => Promise.resolve({ rows: [{ tenant_id: setting }] }));
-  return { tx: { execute } as unknown as TenantScopedDb, executed: () => execute.mock.calls.length };
+  return {
+    tx: { execute } as unknown as TenantScopedDb,
+    executed: () => execute.mock.calls.length,
+  };
 }
 
 const quiet = { warn: vi.fn() };

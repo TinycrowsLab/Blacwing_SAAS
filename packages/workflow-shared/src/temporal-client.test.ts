@@ -82,7 +82,9 @@ describe('connection reuse', () => {
   it('closeTemporal is a no-op when nothing was opened or the open failed', async () => {
     await expect(closeTemporal()).resolves.toBeUndefined();
     const connect = vi.fn(() => Promise.reject(new Error('down')));
-    await codeOf(getTemporalConnection({ config: devConfig, connect, sleep: () => Promise.resolve() }));
+    await codeOf(
+      getTemporalConnection({ config: devConfig, connect, sleep: () => Promise.resolve() }),
+    );
     await expect(closeTemporal()).resolves.toBeUndefined();
   });
 });
@@ -96,7 +98,9 @@ describe('TLS', () => {
 
   it('passes the client certificate pair through when TLS is enabled', async () => {
     const { connection } = fakeConnection();
-    const connect = vi.fn<(options: ConnectionOptions) => Promise<Connection>>(() => Promise.resolve(connection));
+    const connect = vi.fn<(options: ConnectionOptions) => Promise<Connection>>(() =>
+      Promise.resolve(connection),
+    );
     const files: Record<string, string> = { '/tls/c.pem': 'CERT', '/tls/k.pem': 'KEY' };
     await getTemporalConnection({
       config: tlsConfig,
@@ -112,7 +116,9 @@ describe('TLS', () => {
 
   it('does not set TLS options when disabled', async () => {
     const { connection } = fakeConnection();
-    const connect = vi.fn<(options: ConnectionOptions) => Promise<Connection>>(() => Promise.resolve(connection));
+    const connect = vi.fn<(options: ConnectionOptions) => Promise<Connection>>(() =>
+      Promise.resolve(connection),
+    );
     await getTemporalConnection({ config: devConfig, connect });
     expect(connect.mock.calls[0]?.[0]).toEqual({ address: 'temporal:7233' });
   });

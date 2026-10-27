@@ -74,7 +74,9 @@ export function validateDocument(doc) {
       continue;
     }
     if (isNonPublic(octets)) {
-      errors.push(`egressIps entry ${String(entry)} is not a public address (private/internal ranges must never be published)`);
+      errors.push(
+        `egressIps entry ${String(entry)} is not a public address (private/internal ranges must never be published)`,
+      );
     }
     if (seen.has(entry)) errors.push(`egressIps entry ${String(entry)} is duplicated`);
     seen.add(entry);
@@ -145,7 +147,9 @@ export async function main(argv) {
     console.error(`egress-ips: ${err instanceof Error ? err.message : String(err)}`);
     return 1;
   }
-  console.error('usage: check-egress-ips.mjs validate <doc> | drift <doc|https-url> <tofu-output.json>');
+  console.error(
+    'usage: check-egress-ips.mjs validate <doc> | drift <doc|https-url> <tofu-output.json>',
+  );
   return 2;
 }
 
