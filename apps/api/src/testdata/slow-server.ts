@@ -5,12 +5,9 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { Controller, Get, Module, Query } from '@nestjs/common';
 
 import { runApi } from '../run.js';
-import { PublicRoute } from '../tenant/public-route.js';
 
 const MAX_DELAY_MS = 60_000;
 
-// Public: the tenant guard is on by default and this probe route carries no tenant data.
-@PublicRoute()
 @Controller('slow')
 class SlowController {
   @Get()

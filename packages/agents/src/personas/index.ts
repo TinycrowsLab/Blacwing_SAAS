@@ -1,5 +1,4 @@
 export * from './active-recon.js';
-export * from './auth-logic-specialist.js';
 export * from './orchestrator.js';
 export * from './osint.js';
 export * from './passive-recon.js';

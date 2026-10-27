@@ -44,7 +44,7 @@ internal/identity    proxy identity parser (tc/role/sess/run + token), verifier 
 internal/proxy       HTTP(S) MITM + SOCKS5 listeners (EGRESS epic)
 internal/scope       deterministic scope matcher (host/IP/CIDR/port/path/method), shared TS vectors
 internal/policy      Cedar evaluation of the signed policy snapshot (EGRESS/POLICY)
-internal/dns         scoped resolver, IP pinning, anti-rebinding (EGRESS epic)
+internal/dnsresolve  scoped resolver, IP pinning, anti-rebinding (EGRESS epic)
 internal/capture     evidence capture; capture failure blocks (EGRESS epic)
 Makefile             build/test/lint/vet/tidy/run and friends
 .golangci.yml        lint config shared by local runs and CI (CI-005)

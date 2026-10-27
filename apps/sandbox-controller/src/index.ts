@@ -1,8 +1,7 @@
 /** Workspace package name of this app. */
 export const name = '@blackwing/sandbox-controller';
 
-/** Package version; kept in sync with package.json and `./version.ts` (check-layout needs the literal here). */
-export const version = '0.0.0';
+export { version } from './version.js';
 
 export {
   type AuditEmitter,

@@ -177,3 +177,37 @@ func TestHashIsStableCoversValuesButNotSecrets(t *testing.T) {
 	assert.Equal(t, a.Hash(), d.Hash(), "secret values must not influence the hash")
 	assert.NotContains(t, d.Hash(), "other")
 }
+
+func TestLoadAppliesDNSDefaultsAndExplicitValues(t *testing.T) {
+	cfg, verr := load(t, map[string]string{"BW_ENV": "dev"})
+	require.Nil(t, verr)
+	assert.Empty(t, cfg.DNSUpstream, "empty means the system resolver")
+	assert.Equal(t, 120*time.Second, cfg.DNSPinTTL)
+	assert.True(t, cfg.DNSStrictCNAME, "strict CNAME checking is on by default")
+
+	cfg, verr = load(t, map[string]string{
+		"BW_ENV": "dev", "GATEWAY_DNS_UPSTREAM": "10.0.0.2:53",
+		"GATEWAY_DNS_PIN_TTL": "30s", "GATEWAY_DNS_STRICT_CNAME": "false",
+	})
+	require.Nil(t, verr)
+	assert.Equal(t, "10.0.0.2:53", cfg.DNSUpstream)
+	assert.Equal(t, 30*time.Second, cfg.DNSPinTTL)
+	assert.False(t, cfg.DNSStrictCNAME)
+}
+
+func TestLoadRejectsBadDNSSettings(t *testing.T) {
+	cases := map[string][]string{
+		"GATEWAY_DNS_UPSTREAM":     {"", "8.8.8.8", ":53", "8.8.8.8:0"},
+		"GATEWAY_DNS_PIN_TTL":      {"", "120", "0s", "-1s", "2h", "soon"},
+		"GATEWAY_DNS_STRICT_CNAME": {"", "yes", "1", "FALSE"},
+	}
+	for key, values := range cases {
+		for _, value := range values {
+			t.Run(key+"="+value, func(t *testing.T) {
+				_, verr := load(t, map[string]string{"BW_ENV": "dev", key: value})
+				require.NotNil(t, verr)
+				assert.Equal(t, []string{key}, verr.Keys())
+			})
+		}
+	}
+}

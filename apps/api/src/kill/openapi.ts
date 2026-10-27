@@ -44,29 +44,7 @@ function killEventViewSchema(): JsonObject {
   const required = (base.required as string[]).map((name) =>
     name === 'id' ? 'killEventId' : name,
   );
-  const nullableMs = { type: ['integer', 'null'], minimum: 0 };
-  const stages = {
-    type: 'object',
-    description:
-      'Per-stage latency from consecutive timestamps (trigger, egress, sandbox, keys, workflows); null when a bounding timestamp is missing.',
-    properties: {
-      egressMs: nullableMs,
-      sandboxMs: nullableMs,
-      keysMs: nullableMs,
-      workflowsMs: nullableMs,
-    },
-    required: ['egressMs', 'sandboxMs', 'keysMs', 'workflowsMs'],
-    additionalProperties: false,
-  };
-  const elapsedMs = {
-    ...nullableMs,
-    description: 'Time since the trigger while the kill is still open; null once haltMs is known.',
-  };
-  return {
-    ...base,
-    properties: { killEventId: id, ...others, stages, elapsedMs },
-    required: [...required, 'stages', 'elapsedMs'],
-  };
+  return { ...base, properties: { killEventId: id, ...others }, required };
 }
 
 /** The OpenAPI 3.1 document for the kill trigger API, generated from the Zod contracts. */
@@ -186,8 +164,6 @@ export function killOpenApiDocument(): JsonObject {
                         workflowsCancelledAt: '2026-10-20T10:00:03.300Z',
                         completedAt: '2026-10-20T10:00:03.300Z',
                         haltMs: 3300,
-                        stages: { egressMs: 400, sandboxMs: 2700, keysMs: 100, workflowsMs: 100 },
-                        elapsedMs: null,
                         affected: { runs: 1, sessions: 2, sandboxes: 2, keys: 2, workflows: 3 },
                         reenabledAt: null,
                         reenabledBy: null,

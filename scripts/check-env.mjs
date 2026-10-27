@@ -46,10 +46,6 @@ export const OPTIONAL_EMPTY = new Set([
   'WORKER_TASK_QUEUES',
   // Model-gateway provider credential: the dev mock upstream needs none (.env.example).
   'GATEWAY_ANTHROPIC_API_KEY',
-  // POC-only dev_subscription provider (off by default): only read when GATEWAY_DEV_SUBSCRIPTION_ENABLED=true.
-  'GATEWAY_DEV_SUBSCRIPTION_CREDENTIALS_FILE',
-  'GATEWAY_DEV_SUBSCRIPTION_TENANT_IDS',
-  'GATEWAY_DEV_VIRTUAL_KEY_SHA256',
 ]);
 
 /**

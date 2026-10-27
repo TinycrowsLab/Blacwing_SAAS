@@ -3,7 +3,7 @@ import {
   type RunState as ContractRunState,
   runStateSchema,
   TERMINAL_RUN_STATES,
-} from '@blackwing/contracts/run';
+} from '@blackwing/contracts';
 import { ForbiddenError, IllegalRunTransitionError, ValidationError } from '@blackwing/errors';
 
 /**

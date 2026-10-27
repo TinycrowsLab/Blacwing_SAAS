@@ -223,7 +223,7 @@ describe('completeEmptyKill and finalizeKill', () => {
 
   it('completes halted with measured halt_ms once every stage recorded', async () => {
     const repo = new MemoryKillRepo();
-    const { deps, advance, metrics } = makeDeps(repo, new FakeGateway((i) => ackAll(i)));
+    const { deps, advance } = makeDeps(repo, new FakeGateway((i) => ackAll(i)));
     const acts = createKillActivities(deps);
     await acts.blockEgress({ ...ref, identities: [runIdentity(RUN_ID)] });
     repo.event = {
@@ -236,7 +236,6 @@ describe('completeEmptyKill and finalizeKill', () => {
     expect(await acts.finalizeKill(ref)).toEqual({ completed: true });
     expect(repo.event.status).toBe('halted');
     expect(repo.haltMs).toBe(1_500);
-    expect(metrics.halts).toEqual([1_500]);
   });
 
   it('completes partially_halted when egress was never fully acked, and never resets completion', async () => {

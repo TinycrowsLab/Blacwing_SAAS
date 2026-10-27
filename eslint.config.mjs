@@ -413,14 +413,7 @@ export default defineConfig(
           ],
           patterns: [
             {
-              // `!@blackwing/**` keeps workspace packages (e.g. @blackwing/domain) from matching
-              // the deprecated `domain` Node built-in.
-              group: [
-                'node:*',
-                ...builtinModules,
-                ...builtinModules.map((m) => `${m}/*`),
-                '!@blackwing/**',
-              ],
+              group: ['node:*', ...builtinModules, ...builtinModules.map((m) => `${m}/*`)],
               allowTypeImports: true,
               message:
                 'Node built-ins do IO or read the environment. Keep them in activities; see docs/architecture/workflow-determinism.md.',

@@ -5,13 +5,11 @@ import { type Span, SpanStatusCode, trace, type Tracer } from '@opentelemetry/ap
 import {
   type AuditActor,
   type AuditTarget,
-  computeKillHalt,
   idempotencyKeySchema,
   KILL_API_SCOPES,
   type KillApiScope,
   type KillEvent,
   killEventSchema,
-  type KillStageMs,
   type KillTargetSet,
   killTriggerRequestSchema,
   type KillTriggerResponse,
@@ -39,11 +37,6 @@ import type { Logger } from '@blackwing/logger';
 export const KILL_TRIGGER_SPAN = 'kill.trigger';
 const TRACER_NAME = '@blackwing/api/kill';
 const SOURCE = 'api';
-
-export type KillEventView = KillEvent & {
-  readonly stages: KillStageMs;
-  readonly elapsedMs: number | null;
-};
 
 export interface KillServiceDeps {
   readonly store: KillEventStore;
@@ -200,25 +193,6 @@ export class KillService {
       throw new NotFoundError('kill event not found');
     }
     return event;
-  }
-
-  /**
-   * The read model for `GET /v1/kill/{id}`: the event plus the shared halt derivation (KILL-007). While
-   * the kill is open (`haltMs` null) `elapsedMs` is the time since the trigger; the reconciler sets
-   * `completed_at` later.
-   */
-  async getView(principal: KillPrincipal, killEventId: string): Promise<KillEventView> {
-    const event = await this.get(principal, killEventId);
-    const timings = computeKillHalt(event);
-    if (timings.clamped) {
-      this.deps.logger.warn({ killEventId }, 'kill timestamps went backwards; halt delta clamped');
-    }
-    const haltMs = timings.haltMs ?? event.haltMs;
-    const elapsedMs =
-      haltMs === null
-        ? Math.max(0, this.clock.now().getTime() - new Date(event.triggeredAt).getTime())
-        : null;
-    return { ...event, haltMs, stages: timings.stages, elapsedMs };
   }
 
   private requireTenant(principal: KillPrincipal): string {

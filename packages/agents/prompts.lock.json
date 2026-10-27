@@ -5,9 +5,6 @@
   "active-recon": {
     "1.0.0": "6d73f8ca6f0523df9991012e0e312ed14f8b4889d2a72de0191bf80f3ef6c478"
   },
-  "auth-logic-specialist": {
-    "1.0.0": "c74bb2cd7a55082146fa3edf16f5f2128115891063002bb39ed224a823e47592"
-  },
   "orchestrator": {
     "1.0.0": "99f659a41b67d49950b30ebec76edd49dcb24427dbe39132d2e0a0cced5bdcae"
   },

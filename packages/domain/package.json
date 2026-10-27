@@ -7,8 +7,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./session-result": "./src/session/map-result.ts",
-    "./run": "./src/run/state.ts"
+    "./session-result": "./src/session/map-result.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings=0",

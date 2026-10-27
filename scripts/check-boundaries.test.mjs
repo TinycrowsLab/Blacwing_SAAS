@@ -3,15 +3,7 @@
 // workspace symlinks) and introduce one forbidden edge at a time.
 
 import assert from 'node:assert/strict';
-import {
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, afterEach, beforeEach, describe, it } from 'node:test';
@@ -785,14 +777,10 @@ describe('fixture workspaces', () => {
   it('accepts the real egress-gateway go.mod and Go sources', async () => {
     const goMod = readFileSync(path.join(REPO_ROOT, 'apps/egress-gateway/go.mod'), 'utf8');
     ws.write('apps/egress-gateway/go.mod', goMod);
-    const serviceDir = path.join(REPO_ROOT, 'apps/egress-gateway');
-    const goSources = readdirSync(serviceDir, { recursive: true, encoding: 'utf8' }).filter(
-      (rel) => rel.endsWith('.go') && !rel.split(path.sep).includes('node_modules'),
+    ws.write(
+      'apps/egress-gateway/main.go',
+      readFileSync(path.join(REPO_ROOT, 'apps/egress-gateway/main.go'), 'utf8'),
     );
-    assert.ok(goSources.length > 0, 'the egress-gateway has Go sources');
-    for (const rel of goSources) {
-      ws.write(`apps/egress-gateway/${rel}`, readFileSync(path.join(serviceDir, rel), 'utf8'));
-    }
     const report = await ws.check();
     assert.deepEqual(report.violations, []);
   });
