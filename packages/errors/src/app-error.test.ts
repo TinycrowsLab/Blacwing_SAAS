@@ -107,6 +107,9 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'PROMPT_HASH_MISMATCH',
   'PROMPT_NO_RELEASED_VERSION',
   'PROMPT_DRAFT_FORBIDDEN',
+  // PromptError, @blackwing/agents (REGISTRY-004).
+  'PROMPT_PLACEHOLDER_MISSING',
+  'PROMPT_TOO_LARGE',
   // EnvelopeError, @blackwing/secrets (SECRETS-002).
   'AAD_MISMATCH',
   'SECRET_TOO_LARGE',

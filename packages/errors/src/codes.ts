@@ -92,6 +92,13 @@ const DEFINITIONS = {
     title: 'Draft prompt forbidden in production',
     retryable: false,
   },
+  // Prompt composition (REGISTRY-004, §4.5/§8.9): an incomplete or oversized prompt never starts a session.
+  PROMPT_PLACEHOLDER_MISSING: {
+    status: 422,
+    title: 'Prompt placeholder unfilled',
+    retryable: false,
+  },
+  PROMPT_TOO_LARGE: { status: 413, title: 'Composed prompt too large', retryable: false },
   // `secret_ref` URI grammar (SECRETS-003, §8.7): a malformed reference is invalid input, rejected at parse time.
   INVALID_SECRET_REF: { status: 422, title: 'Invalid secret reference', retryable: false },
   CONFIG_INVALID: { status: 500, title: 'Invalid configuration', retryable: false },

@@ -51,6 +51,8 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   SECRET_DECRYPT_FAILED: 500,
   PROMPT_NO_RELEASED_VERSION: 404,
   PROMPT_DRAFT_FORBIDDEN: 403,
+  PROMPT_PLACEHOLDER_MISSING: 422,
+  PROMPT_TOO_LARGE: 413,
   CONFIG_INVALID: 500,
   TEMPORAL_CONFIG_INVALID: 500,
   TEMPORAL_TLS_MISCONFIGURED: 500,
@@ -88,7 +90,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(60);
+    expect(ERROR_CODE_LIST).toHaveLength(62);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -213,6 +215,8 @@ describe('error-code registry', () => {
       | 'SECRET_DECRYPT_FAILED'
       | 'PROMPT_NO_RELEASED_VERSION'
       | 'PROMPT_DRAFT_FORBIDDEN'
+      | 'PROMPT_PLACEHOLDER_MISSING'
+      | 'PROMPT_TOO_LARGE'
       | 'CONFIG_INVALID'
       | 'TEMPORAL_CONFIG_INVALID'
       | 'TEMPORAL_TLS_MISCONFIGURED'
