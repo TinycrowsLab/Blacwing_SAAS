@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/netip"
 	"regexp"
 	"strings"
 )
@@ -355,4 +356,25 @@ func (r *rule) finish(effect string) {
 		r.spec[specMethod] = 1
 	}
 	r.describe = fmt.Sprintf("rules[%d] %s", r.index, effect)
+}
+
+// ExplicitlyIncludesIP reports whether an include rule with a cidr (or bare IP) contains ip and
+// no exclude rule with a cidr does. It is the netguard.ScopeRules hook: the only way a private,
+// loopback or metadata address becomes dialable (S8.2). Host-only rules never count, and port,
+// path and method are left to the normal per-request check. A nil set includes nothing.
+func (rs *RuleSet) ExplicitlyIncludesIP(ip netip.Addr) bool {
+	if rs == nil || !ip.IsValid() {
+		return false
+	}
+	included := false
+	for _, r := range rs.rules {
+		if r.cidr == nil || !r.cidr.contains(ip) {
+			continue
+		}
+		if r.exclude {
+			return false
+		}
+		included = true
+	}
+	return included
 }
