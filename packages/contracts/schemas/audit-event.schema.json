@@ -62,7 +62,10 @@
         "workflow.completed",
         "workflow.failed",
         "workflow.cancelled",
-        "workflow.continued_as_new"
+        "workflow.continued_as_new",
+        "soc_kill.link_minted",
+        "soc_kill.triggered",
+        "soc_kill.rejected"
       ]
     },
     "severity": {

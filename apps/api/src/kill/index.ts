@@ -33,6 +33,8 @@ export {
   type KillTriggerInput,
   type KillTriggerResult,
   parseKillRequest,
+  SOC_KILL_TRIGGER_SPAN,
+  type SocKillTriggerInput,
 } from './service.js';
 export {
   createTemporalKillSignaler,

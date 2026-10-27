@@ -371,6 +371,28 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     isAlwaysAudited: true,
     description: 'A Temporal workflow execution continued as new.',
   },
+  // SOC kill link (KILL-007, F33/§8.5): appended; the raw token is never part of an event
+  {
+    action: 'soc_kill.link_minted',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'kill',
+    description: 'A login-free SOC kill link was minted for a run or asset.',
+  },
+  {
+    action: 'soc_kill.triggered',
+    defaultSeverity: 'critical',
+    isAlwaysAudited: true,
+    actionClass: 'kill',
+    description: 'The customer SOC triggered the kill switch through a signed kill link.',
+  },
+  {
+    action: 'soc_kill.rejected',
+    defaultSeverity: 'warning',
+    isAlwaysAudited: true,
+    actionClass: 'kill',
+    description: 'A SOC kill link was refused (expired, revoked, used or tenant suspended).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

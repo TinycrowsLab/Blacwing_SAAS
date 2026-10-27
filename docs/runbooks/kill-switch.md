@@ -71,9 +71,21 @@ GET /v1/kill/<killEventId>
 The body gives the event `status`, the `egress` outcome (`blocked`, `already_blocked` or `failed`) and the
 `sandbox` outcome. Poll it until `status` is final.
 
-**SOC login-free link: not yet exposed.** The data model (`soc_kill_tokens`, `soc_contacts`) and the contracts
-exist, but no route issues or redeems a signed link. Until that route ships, SOC staff use the console or ask an
-operator to trigger the kill.
+**SOC login-free link.** An `asset_owner` or admin mints a link with `POST /v1/assets/{id}/soc-kill-link`
+(optional `contactId`, `maxUses`, `expiresAt`; the default expiry is the end of the asset's open test window, never
+more than 30 days). The response `url` is the only place the token appears, so hand it to the SOC over a trusted
+channel. The SOC opens `/soc/kill/<token>`, sees only the asset label, and confirms; that calls `POST /soc/kill`,
+which starts the same propagation as the console kill (event `source = soc_link`).
+
+- A link that is expired (60 s clock-skew leeway), revoked, used up, forged, or belongs to a suspended tenant gets
+  the same "link no longer valid" answer. Look in the audit log for `soc_kill.rejected{reason}`; a forged signature
+  has no tenant, so it appears only in `bw_soc_kill_total{result="invalid_signature"}` and the API log.
+- Limits: 10 requests per minute per IP, 30 (open) / 5 (kill) per minute per link, then 429 with `Retry-After`
+  (`bw_soc_kill_ratelimited_total`). The limiter is per API process.
+- Signing keys: a link verifies against the current and the previous `signing_key_id`; retire a key only after the
+  links it signed have expired.
+- The web server reaches the API through `BW_API_ORIGIN` and forwards `X-Forwarded-For`; keep API trust-proxy
+  configured so the per-IP limit counts the SOC analyst and not the web server.
 
 ## 4. Halt times and how to verify them
 
