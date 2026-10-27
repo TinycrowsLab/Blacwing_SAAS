@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -68,6 +68,42 @@ describe('ModeToggle', () => {
       </ThemeProvider>,
     );
     expect(document.documentElement.classList.contains('dark')).toBe(true);
+  });
+
+  it('updates live when the OS preference changes while the app is open under system', () => {
+    // Simulated OS state: next-themes reads `matches` from the live query, then the change listener fires.
+    let osDark = false;
+    let onChange: ((event: { matches: boolean }) => void) | undefined;
+    vi.stubGlobal('matchMedia', (query: string): Partial<MediaQueryList> => ({
+      get matches() {
+        return query.includes('dark') ? osDark : false;
+      },
+      media: query,
+      addListener: vi.fn((cb: (event: { matches: boolean }) => void) => {
+        onChange = cb;
+      }),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    render(
+      <ThemeProvider>
+        <ModeToggle />
+      </ThemeProvider>,
+    );
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+
+    osDark = true;
+    act(() => {
+      onChange?.({ matches: true });
+    });
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+
+    osDark = false;
+    act(() => {
+      onChange?.({ matches: false });
+    });
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
   });
 
   it('does not throw and falls back to system when localStorage is blocked', () => {
