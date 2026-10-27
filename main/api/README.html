@@ -74,6 +74,9 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <h2>API Reference</h2>
 <ul>
 <li><a href="./README.html" aria-current="page">API reference</a></li>
+<li><a href="./reference.html">API reference</a></li>
+<li><a href="./conventions.html">API conventions</a></li>
+<li><a href="./auth.html">Authentication</a></li>
 </ul>
 <h2>Runbooks</h2>
 <ul>
@@ -159,8 +162,21 @@ committed and checked for drift in CI.</p>
 <td><a href="./openapi/kill.v1.json"><code>openapi/kill.v1.json</code></a></td>
 <td>The kill-switch endpoints, versioned on their own.</td>
 </tr>
+<tr>
+<td><a href="./reference.html"><code>reference.md</code></a></td>
+<td>The API reference: every operation, parameter, request and response, schema and example, generated from <code>openapi.json</code>.</td>
+</tr>
+<tr>
+<td><a href="./conventions.html"><code>conventions.md</code></a></td>
+<td>Base URL, errors (problem+json and error codes), pagination, idempotency, ETag/If-Match and rate limits.</td>
+</tr>
+<tr>
+<td><a href="./auth.html"><code>auth.md</code></a></td>
+<td>Session cookies, personal access tokens (<code>bw_pat_</code>), CI tokens (<code>bw_ci_</code>), scopes and safe handling.</td>
+</tr>
 </tbody></table>
-<p>Regenerate with <code>pnpm openapi:generate</code>. <code>pnpm check:drift</code> fails when a generated file is stale.</p>
+<p>Regenerate with <code>pnpm openapi:generate</code>, which also writes <code>reference.md</code> (<code>pnpm api-reference:check</code> fails when it is
+stale). <code>pnpm check:drift</code> fails when a generated file is stale. The docs site (<code>pnpm docs:build</code>) publishes these pages.</p>
 <p>The typed TypeScript client (<code>packages/api-client</code>, <code>@blackwing/api-client</code>) is generated from <code>openapi.json</code> by
 <code>pnpm --filter @blackwing/api-client api-client:gen</code> (also run by <code>pnpm openapi:generate</code>). It has one typed method
 per <code>operationId</code>, throws <code>ApiProblemError</code> for problem+json answers, follows <code>nextCursor</code> with <code>paginate()</code>, and

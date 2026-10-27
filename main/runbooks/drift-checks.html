@@ -74,6 +74,9 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <h2>API Reference</h2>
 <ul>
 <li><a href="../api/README.html">API reference</a></li>
+<li><a href="../api/reference.html">API reference</a></li>
+<li><a href="../api/conventions.html">API conventions</a></li>
+<li><a href="../api/auth.html">Authentication</a></li>
 </ul>
 <h2>Runbooks</h2>
 <ul>
@@ -156,6 +159,11 @@ lockstep with code. It runs on every pull request and on <code>main</code>, with
 <td>OpenAPI 3.1</td>
 <td><code>pnpm openapi:generate</code> changes <code>docs/api/openapi.json</code></td>
 <td>Run <code>pnpm --filter @blackwing/api openapi:emit</code> (alias <code>openapi:generate</code>), commit</td>
+</tr>
+<tr>
+<td>API reference</td>
+<td><code>pnpm openapi:generate</code> changes <code>docs/api/reference.md</code> (the page is rendered from the spec)</td>
+<td>Run <code>pnpm openapi:generate</code>, commit</td>
 </tr>
 <tr>
 <td>GraphQL SDL</td>

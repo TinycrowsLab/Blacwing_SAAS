@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API conventions | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="./README.html">API reference</a></li>
+<li><a href="./reference.html">API reference</a></li>
+<li><a href="./conventions.html" aria-current="page">API conventions</a></li>
+<li><a href="./auth.html">Authentication</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="../runbooks/disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/incident-response.html">Incident response and on-call runbook (OBS, NOTIFY, KILL)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/search-attributes.html">Temporal search attributes</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/secrets-resolve.html">Runbook: internal secret resolve API (SECRETS-006)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+<li><a href="../runbooks/web-bff-auth.html">Runbook: console sign-in (BFF OIDC)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/tenant-data-access.html">Tenant data access</a></li>
+<li><a href="../architecture/tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="../architecture/third-party-notices.html">Third-party notices</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="api-conventions">API conventions</h1>
+<p>Every endpoint in the <a href="./reference.html">reference</a> follows these rules (CONTEXT_PACK <a href="../architecture/CONTEXT_PACK.html#9-api-conventions">§9</a>).
+The examples use placeholder values only. Never send a real token or secret in a request that you write down or share.</p>
+<h2 id="base-url-and-format">Base URL and format</h2>
+<ul>
+<li>All REST routes live under <code>/v1</code>, for example <code>POST /v1/kill</code>.</li>
+<li>Requests and responses are JSON. Field names are camelCase.</li>
+<li>Timestamps are ISO 8601 in UTC with milliseconds, for example <code>2026-10-20T10:00:00.000Z</code>.</li>
+<li>Identifiers are UUIDv7 strings.</li>
+<li>The internal Run Broker API (<code>/internal/broker</code>) is used only from the sandbox network. It is not part of the public
+API and is not described in this reference.</li>
+</ul>
+<h2 id="errors">Errors</h2>
+<p>Every failure answers with <code>application/problem+json</code> (RFC 9457):</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>type</code></td>
+<td><code>https://errors.blackwing.dev/{code}</code>, a stable URI for the error.</td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td>A fixed, human-readable title for the code.</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>The HTTP status, repeated in the body.</td>
+</tr>
+<tr>
+<td><code>detail</code></td>
+<td>Optional. A short explanation for this request. It never contains internals or stack traces.</td>
+</tr>
+<tr>
+<td><code>code</code></td>
+<td>The stable error code, in upper snake case, for example <code>IDEMPOTENCY_KEY_REQUIRED</code>. Codes are never renamed or reused.</td>
+</tr>
+<tr>
+<td><code>traceId</code></td>
+<td>A 32-character hex id. Quote it when you report a failure.</td>
+</tr>
+<tr>
+<td><code>errors</code></td>
+<td>Optional. Per-field problems for <code>422 VALIDATION_FAILED</code>.</td>
+</tr>
+</tbody></table>
+<p>Branch on <code>code</code>, not on <code>title</code> or <code>detail</code>. The codes that clients most often handle:</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Status</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>UNAUTHENTICATED</code></td>
+<td>401</td>
+<td>No valid session or token.</td>
+</tr>
+<tr>
+<td><code>FORBIDDEN</code></td>
+<td>403</td>
+<td>The caller lacks the permission or the resource check denied the action.</td>
+</tr>
+<tr>
+<td><code>NOT_FOUND</code></td>
+<td>404</td>
+<td>The resource does not exist for this tenant.</td>
+</tr>
+<tr>
+<td><code>CONFLICT</code></td>
+<td>409</td>
+<td>The request conflicts with the current state.</td>
+</tr>
+<tr>
+<td><code>IDEMPOTENCY_KEY_REQUIRED</code></td>
+<td>400</td>
+<td>A creating <code>POST</code> has no <code>Idempotency-Key</code> header.</td>
+</tr>
+<tr>
+<td><code>VALIDATION_FAILED</code></td>
+<td>422</td>
+<td>The body or a parameter is malformed.</td>
+</tr>
+<tr>
+<td><code>IDEMPOTENCY_KEY_MISMATCH</code></td>
+<td>422</td>
+<td>The same <code>Idempotency-Key</code> was sent with a different request.</td>
+</tr>
+<tr>
+<td><code>PRECONDITION_REQUIRED</code></td>
+<td>428</td>
+<td>A mutation has no usable <code>If-Match</code> header.</td>
+</tr>
+<tr>
+<td><code>PRECONDITION_FAILED</code></td>
+<td>412</td>
+<td><code>If-Match</code> no longer matches the current ETag. Read the resource again.</td>
+</tr>
+<tr>
+<td><code>RATE_LIMITED</code></td>
+<td>429</td>
+<td>The token exceeded its rate limit. Wait for <code>Retry-After</code>, then retry.</td>
+</tr>
+<tr>
+<td><code>KILL_SWITCH_ACTIVE</code></td>
+<td>423</td>
+<td>The kill switch blocks the action.</td>
+</tr>
+<tr>
+<td><code>NOT_IMPLEMENTED</code></td>
+<td>501</td>
+<td>The endpoint is reserved and not yet available.</td>
+</tr>
+<tr>
+<td><code>TX_RETRY_EXHAUSTED</code></td>
+<td>503</td>
+<td>A transient overload. It is retryable.</td>
+</tr>
+</tbody></table>
+<p>Errors that the error registry marks as retryable, such as <code>RATE_LIMITED</code> and <code>TX_RETRY_EXHAUSTED</code>, may succeed when the same
+request is repeated later. Every other error needs a changed request or a changed state first.</p>
+<h2 id="pagination">Pagination</h2>
+<p>List endpoints are cursor-based:</p>
+<ul>
+<li><code>cursor</code> is an opaque string from the previous page&#39;s <code>nextCursor</code>. It is at most 2048 characters. Do not parse it. The
+platform signs cursors, so an altered one is refused.</li>
+<li><code>limit</code> is an integer. The default is 50, and a value above 200 is served as 200. Zero, negative and non-integer values are
+refused with <code>422 VALIDATION_FAILED</code>.</li>
+<li>A page answers <code>items</code>, <code>nextCursor</code> (<code>null</code> on the last page) and <code>hasMore</code>.</li>
+</ul>
+<p>Follow <code>nextCursor</code> until it is <code>null</code>. Do not assume a fixed page count.</p>
+<h2 id="idempotency">Idempotency</h2>
+<p>A <code>POST</code> that creates a run, an export or a ticket requires an <code>Idempotency-Key</code> header. The kill-switch trigger requires it
+as well. The reference marks it as required on each operation.</p>
+<ul>
+<li>The key is 8 to 255 printable ASCII characters with no spaces. Use a UUID or another random value per logical
+request.</li>
+<li>A retry with the same key and the same body returns the first result. The replayed response carries the header
+<code>Idempotency-Replayed: true</code>.</li>
+<li>The same key with a different body is refused with <code>422 IDEMPOTENCY_KEY_MISMATCH</code>. The platform never replays the
+wrong result.</li>
+<li>While the first request is still running, a duplicate answers <code>409</code> with a <code>Retry-After</code> header. Wait, then retry with
+the same key.</li>
+<li>The platform stores a SHA-256 hash of the key, never the raw key.</li>
+</ul>
+<h2 id="concurrency-control-etag-and-if-match">Concurrency control (ETag and If-Match)</h2>
+<p>Mutable resources carry a strong <code>ETag</code>. The rules are:</p>
+<ol>
+<li>Read the resource. Keep the <code>ETag</code> header value, including its quotes, for example <code>&quot;3&quot;</code>.</li>
+<li>Send the same value in <code>If-Match</code> on the change.</li>
+<li>If the value is stale, the platform answers <code>412 PRECONDITION_FAILED</code>. Read the resource again and decide whether the
+change still applies.</li>
+<li>If <code>If-Match</code> is missing, or is a weak validator (<code>W/&quot;...&quot;</code>), the platform answers <code>428 PRECONDITION_REQUIRED</code>.</li>
+</ol>
+<h2 id="rate-limits">Rate limits</h2>
+<p>Limits apply per token. A request over the limit answers <code>429 RATE_LIMITED</code> with a <code>Retry-After</code> header in whole
+seconds. Wait at least that long before the next request. Batch work where the endpoint allows it, and do not retry in a
+tight loop.</p>
+<h2 id="authentication-and-authorisation">Authentication and authorisation</h2>
+<p>Every operation names its security schemes in the reference. See <a href="./auth.html">Authentication</a> for how to obtain and send
+credentials.</p>
+<p>Authorisation runs in two steps. The first checks the RBAC permission for the operation. The second checks the resource
+against the tenant&#39;s Cedar policy. Both must allow the request. A failed check answers <code>403 FORBIDDEN</code> or a more specific
+403 code, such as <code>KILL_FORBIDDEN</code>. A request that names a resource of another tenant is refused, and the refusal is
+audited.</p>
+<h2 id="versioning-and-deprecation">Versioning and deprecation</h2>
+<p>The major version is in the path (<code>/v1</code>). An operation that is being replaced is marked <strong>Deprecated</strong> in the reference
+and names its replacement in its description. Keep <code>operationId</code>s stable: they are the names of the generated client
+methods.</p>
+</main>
+</div>
+</body>
+</html>

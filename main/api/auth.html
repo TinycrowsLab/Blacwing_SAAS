@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Authentication | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="./README.html">API reference</a></li>
+<li><a href="./reference.html">API reference</a></li>
+<li><a href="./conventions.html">API conventions</a></li>
+<li><a href="./auth.html" aria-current="page">Authentication</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="../runbooks/disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/incident-response.html">Incident response and on-call runbook (OBS, NOTIFY, KILL)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/search-attributes.html">Temporal search attributes</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/secrets-resolve.html">Runbook: internal secret resolve API (SECRETS-006)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+<li><a href="../runbooks/web-bff-auth.html">Runbook: console sign-in (BFF OIDC)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/tenant-data-access.html">Tenant data access</a></li>
+<li><a href="../architecture/tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="../architecture/third-party-notices.html">Third-party notices</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="authentication">Authentication</h1>
+<p>The <code>/v1</code> API accepts two kinds of credential. Both are checked on every request. Neither can name a tenant in the body
+or the query: the tenant comes from the verified credential only.</p>
+<table>
+<thead>
+<tr>
+<th>Credential</th>
+<th>Used by</th>
+<th>How it is sent</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Session cookie <code>__Host-bw_session</code></td>
+<td>The web console, through its backend-for-frontend (BFF).</td>
+<td>The browser sends the cookie. Scripts do not use it.</td>
+</tr>
+<tr>
+<td>Personal access token <code>bw_pat_…</code></td>
+<td>A person who calls the API from a script or a terminal.</td>
+<td><code>Authorization: Bearer bw_pat_&lt;token&gt;</code></td>
+</tr>
+<tr>
+<td>CI token <code>bw_ci_…</code></td>
+<td>An automated pipeline.</td>
+<td><code>Authorization: Bearer bw_ci_&lt;token&gt;</code></td>
+</tr>
+</tbody></table>
+<p>In the examples below, <code>&lt;token&gt;</code> stands for a value you have been issued. It is not a real value.</p>
+<h2 id="getting-a-token">Getting a token</h2>
+<p>Tokens are issued for one tenant. The step-by-step guide to issuing them is part of the console documentation, which is not
+published in this reference yet; ask your tenant administrator if you cannot issue one. Each token has:</p>
+<ul>
+<li>a set of scopes. An operation that needs a specific scope names it in its description, for example <code>kill:trigger</code> for the
+kill-switch trigger;</li>
+<li>an optional binding to assets (<code>asset_ids</code>) or to a standing authorisation. A bound token can act only inside that
+binding;</li>
+<li>an expiry (<code>expires_at</code>), an optional revocation (<code>revoked_at</code>) and a <code>last_used_at</code> record.</li>
+</ul>
+<p>Give each token the narrowest scopes and binding that its job needs. Use a CI token for pipelines, not a personal token.</p>
+<h2 id="calling-the-api">Calling the API</h2>
+<pre><code class="language-sh">curl -sS https://&lt;your-tenant-host&gt;/v1/kill/&lt;killEventId&gt; \
+  -H &quot;Authorization: Bearer bw_pat_&lt;token&gt;&quot;
+</code></pre>
+<p>A request with no credential, an expired one, a revoked one or one that is not valid for the tenant answers
+<code>401 UNAUTHENTICATED</code>. A valid credential without the scope or the binding for the operation answers <code>403</code>.</p>
+<h2 id="handling-tokens-safely">Handling tokens safely</h2>
+<ul>
+<li>Store tokens in your secret manager or CI secret store. Never put one in source code, a commit, a ticket, a chat or a
+log line.</li>
+<li>Send tokens only over HTTPS, and only to the platform&#39;s own host.</li>
+<li>Revoke a token at once when you suspect it has leaked, and create a new one.</li>
+<li>The platform stores only a SHA-256 hash of each token and looks it up by its prefix. It cannot recover a lost token.
+Create a new one instead.</li>
+<li>Rotate CI tokens on a schedule, and when the people or pipelines that held them change.</li>
+</ul>
+<h2 id="scopes-and-tenant-isolation">Scopes and tenant isolation</h2>
+<p>Scopes say what a token may ask for. They do not replace the resource checks. A token with the right scope still cannot
+act on an asset outside its binding, or on another tenant&#39;s data. Those attempts are refused and recorded in the audit
+trail.</p>
+<p>If a request fails with <code>403</code>, read the <code>code</code> in the response. <code>FORBIDDEN</code> means the scope or the RBAC role is
+missing. <code>KILL_FORBIDDEN</code> and similar codes name the specific check that refused the action.</p>
+</main>
+</div>
+</body>
+</html>

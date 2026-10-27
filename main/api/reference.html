@@ -1,0 +1,1387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API reference | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="./README.html">API reference</a></li>
+<li><a href="./reference.html" aria-current="page">API reference</a></li>
+<li><a href="./conventions.html">API conventions</a></li>
+<li><a href="./auth.html">Authentication</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="../runbooks/disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/incident-response.html">Incident response and on-call runbook (OBS, NOTIFY, KILL)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/search-attributes.html">Temporal search attributes</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/secrets-resolve.html">Runbook: internal secret resolve API (SECRETS-006)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+<li><a href="../runbooks/web-bff-auth.html">Runbook: console sign-in (BFF OIDC)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/tenant-data-access.html">Tenant data access</a></li>
+<li><a href="../architecture/tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="../architecture/third-party-notices.html">Third-party notices</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="api-reference">API reference</h1>
+<p>The public <code>/v1</code> REST API, version 0.0.0. This page is generated from <a href="./openapi.json"><code>openapi.json</code></a> by <code>pnpm openapi:generate</code>; do not edit it by hand. CI fails when it is stale.</p>
+<p>It documents 2 operations. Read <a href="./conventions.html">Conventions</a> for pagination, idempotency, concurrency and errors, and <a href="./auth.html">Authentication</a> for tokens and scopes.</p>
+<p>The internal Run Broker API (<code>/internal/broker</code>) is not part of this reference.</p>
+<h2 id="contents">Contents</h2>
+<ul>
+<li>kill<ul>
+<li><a href="#post-kill">POST /kill</a></li>
+<li><a href="#get-killid">GET /kill/{id}</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="kill">kill</h2>
+<p>Kill switch: stop every agent in a run, asset or tenant scope.</p>
+<h3 id="post-kill">POST /kill</h3>
+<p><strong>Trigger the kill switch for a run, asset or the whole tenant</strong></p>
+<p>Requires kill:trigger and the Cedar Kill::trigger resource check. An asset_owner may kill only assets they own; only org_admin may kill the tenant. Propagation is asynchronous: poll the Location.</p>
+<ul>
+<li>Operation ID: <code>triggerKill</code></li>
+<li>Authentication: <code>bearerAuth</code> or <code>sessionCookie</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>In</th>
+<th>Required</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Idempotency-Key</code></td>
+<td>header</td>
+<td>yes</td>
+<td>string</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>Request body</strong> (required)</p>
+<p>Content type <code>application/json</code>: <a href="#killtriggerrequest">KillTriggerRequest</a>.</p>
+<p>Example: Kill one run.</p>
+<pre><code class="language-json">{
+  &quot;scope&quot;: &quot;run&quot;,
+  &quot;scopeRefId&quot;: &quot;01890a5d-ac96-774b-bcce-b302099a8058&quot;,
+  &quot;reason&quot;: &quot;unexpected 5xx spike&quot;
+}
+</code></pre>
+<p>Example: Kill every run on an asset.</p>
+<pre><code class="language-json">{
+  &quot;scope&quot;: &quot;asset&quot;,
+  &quot;scopeRefId&quot;: &quot;01890a5d-ac96-774b-bcce-b302099a8058&quot;,
+  &quot;reason&quot;: &quot;change freeze&quot;
+}
+</code></pre>
+<p>Example: Kill every run in the tenant.</p>
+<pre><code class="language-json">{
+  &quot;scope&quot;: &quot;tenant&quot;,
+  &quot;reason&quot;: &quot;incident declared&quot;
+}
+</code></pre>
+<h4 id="response-202">Response 202</h4>
+<p>Kill accepted. status is halted when nothing in scope was running.</p>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Location</code></td>
+<td>URL of the kill event, /v1/kill/{killEventId}.</td>
+</tr>
+</tbody></table>
+<p>Content type <code>application/json</code>: <a href="#killtriggerresponse">KillTriggerResponse</a>.</p>
+<p>Example: initiated.</p>
+<pre><code class="language-json">{
+  &quot;killEventId&quot;: &quot;01890a5d-ac96-774b-bcce-b302099a8057&quot;,
+  &quot;status&quot;: &quot;initiated&quot;,
+  &quot;triggeredAt&quot;: &quot;2026-10-20T10:00:00.000Z&quot;
+}
+</code></pre>
+<p>Example: nothing running.</p>
+<pre><code class="language-json">{
+  &quot;killEventId&quot;: &quot;01890a5d-ac96-774b-bcce-b302099a8057&quot;,
+  &quot;status&quot;: &quot;halted&quot;,
+  &quot;triggeredAt&quot;: &quot;2026-10-20T10:00:00.000Z&quot;
+}
+</code></pre>
+<h4 id="response-400">Response 400</h4>
+<p>Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Idempotency key required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Idempotency key required&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-401">Response 401</h4>
+<p>Problem details; code is one of UNAUTHENTICATED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-403">Response 403</h4>
+<p>Problem details; code is one of KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Kill not permitted.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_FORBIDDEN&quot;,
+  &quot;title&quot;: &quot;Kill not permitted&quot;,
+  &quot;status&quot;: 403,
+  &quot;code&quot;: &quot;KILL_FORBIDDEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Global kill is not allowed on this endpoint.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE&quot;,
+  &quot;title&quot;: &quot;Global kill is not allowed on this endpoint&quot;,
+  &quot;status&quot;: 403,
+  &quot;code&quot;: &quot;KILL_GLOBAL_NOT_ALLOWED_HERE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-404">Response 404</h4>
+<p>Problem details; code is one of NOT_FOUND.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Resource not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Resource not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-409">Response 409</h4>
+<p>Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE, SECRET_DISABLED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONFLICT&quot;,
+  &quot;title&quot;: &quot;Conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal run state transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal run state transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Key version disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEK_DISABLED&quot;,
+  &quot;title&quot;: &quot;Key version disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KEK_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run is not active.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RUN_NOT_ACTIVE&quot;,
+  &quot;title&quot;: &quot;Run is not active&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;RUN_NOT_ACTIVE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Secret disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SECRET_DISABLED&quot;,
+  &quot;title&quot;: &quot;Secret disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;SECRET_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-422">Response 422</h4>
+<p>Problem details; code is one of KILL_SCOPE_INVALID, KILL_REF_REQUIRED, VALIDATION_FAILED, IDEMPOTENCY_KEY_MISMATCH.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Invalid kill scope.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_SCOPE_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid kill scope&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;KILL_SCOPE_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Kill scope reference required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_REF_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Kill scope reference required&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;KILL_REF_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Validation failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/VALIDATION_FAILED&quot;,
+  &quot;title&quot;: &quot;Validation failed&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;VALIDATION_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Idempotency key reused with a different request.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH&quot;,
+  &quot;title&quot;: &quot;Idempotency key reused with a different request&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;IDEMPOTENCY_KEY_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-429">Response 429</h4>
+<p>Problem details; code is one of RATE_LIMITED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Too many requests.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Too many requests&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;RATE_LIMITED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-500">Response 500</h4>
+<p>Problem details; code is one of INTERNAL.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Internal server error.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INTERNAL&quot;,
+  &quot;title&quot;: &quot;Internal server error&quot;,
+  &quot;status&quot;: 500,
+  &quot;code&quot;: &quot;INTERNAL&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h3 id="get-killid">GET /kill/{id}</h3>
+<p><strong>A kill event with its halt timings</strong></p>
+<ul>
+<li>Operation ID: <code>getKillEvent</code></li>
+<li>Authentication: <code>bearerAuth</code> or <code>sessionCookie</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>In</th>
+<th>Required</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>path</td>
+<td>yes</td>
+<td>string (uuid)</td>
+<td></td>
+</tr>
+</tbody></table>
+<h4 id="response-200">Response 200</h4>
+<p>The kill event.</p>
+<p>Content type <code>application/json</code>: <a href="#killevent">KillEvent</a>.</p>
+<p>Example: halted.</p>
+<pre><code class="language-json">{
+  &quot;killEventId&quot;: &quot;01890a5d-ac96-774b-bcce-b302099a8057&quot;,
+  &quot;tenantId&quot;: &quot;01890a5d-ac96-774b-bcce-b302099a8058&quot;,
+  &quot;scope&quot;: &quot;run&quot;,
+  &quot;scopeRefId&quot;: &quot;01890a5d-ac96-774b-bcce-b302099a8058&quot;,
+  &quot;source&quot;: &quot;api&quot;,
+  &quot;actorType&quot;: &quot;user&quot;,
+  &quot;actorRef&quot;: &quot;01890a5d-ac96-774b-bcce-b302099a8058&quot;,
+  &quot;reason&quot;: &quot;unexpected 5xx spike&quot;,
+  &quot;status&quot;: &quot;halted&quot;,
+  &quot;triggeredAt&quot;: &quot;2026-10-20T10:00:00.000Z&quot;,
+  &quot;egressBlockedAt&quot;: &quot;2026-10-20T10:00:00.400Z&quot;,
+  &quot;sandboxesTerminatedAt&quot;: &quot;2026-10-20T10:00:03.100Z&quot;,
+  &quot;keysRevokedAt&quot;: &quot;2026-10-20T10:00:03.200Z&quot;,
+  &quot;workflowsCancelledAt&quot;: &quot;2026-10-20T10:00:03.300Z&quot;,
+  &quot;completedAt&quot;: &quot;2026-10-20T10:00:03.300Z&quot;,
+  &quot;haltMs&quot;: 3300,
+  &quot;affected&quot;: {
+    &quot;runs&quot;: 1,
+    &quot;sessions&quot;: 2,
+    &quot;sandboxes&quot;: 2,
+    &quot;keys&quot;: 2,
+    &quot;workflows&quot;: 3
+  },
+  &quot;reenabledAt&quot;: null,
+  &quot;reenabledBy&quot;: null,
+  &quot;createdAt&quot;: &quot;2026-10-20T10:00:00.000Z&quot;,
+  &quot;updatedAt&quot;: &quot;2026-10-20T10:00:03.300Z&quot;
+}
+</code></pre>
+<h4 id="response-400-1">Response 400</h4>
+<p>Problem details; code is one of SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Malformed request.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SBX_BAD_REQUEST&quot;,
+  &quot;title&quot;: &quot;Malformed request&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SBX_BAD_REQUEST&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Idempotency key required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Idempotency key required&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-401-1">Response 401</h4>
+<p>Problem details; code is one of UNAUTHENTICATED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-403-1">Response 403</h4>
+<p>Problem details; code is one of KILL_FORBIDDEN.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Kill not permitted.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_FORBIDDEN&quot;,
+  &quot;title&quot;: &quot;Kill not permitted&quot;,
+  &quot;status&quot;: 403,
+  &quot;code&quot;: &quot;KILL_FORBIDDEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-404-1">Response 404</h4>
+<p>Problem details; code is one of NOT_FOUND.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Resource not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Resource not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-409-1">Response 409</h4>
+<p>Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, RUN_NOT_ACTIVE, SECRET_DISABLED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONFLICT&quot;,
+  &quot;title&quot;: &quot;Conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal run state transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal run state transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Key version disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEK_DISABLED&quot;,
+  &quot;title&quot;: &quot;Key version disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KEK_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run is not active.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RUN_NOT_ACTIVE&quot;,
+  &quot;title&quot;: &quot;Run is not active&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;RUN_NOT_ACTIVE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Secret disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SECRET_DISABLED&quot;,
+  &quot;title&quot;: &quot;Secret disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;SECRET_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-422-1">Response 422</h4>
+<p>Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Validation failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/VALIDATION_FAILED&quot;,
+  &quot;title&quot;: &quot;Validation failed&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;VALIDATION_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid intrusiveness class.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SCOPE_INVALID_CLASS&quot;,
+  &quot;title&quot;: &quot;Invalid intrusiveness class&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;SCOPE_INVALID_CLASS&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid request budget.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SCOPE_INVALID_BUDGET&quot;,
+  &quot;title&quot;: &quot;Invalid request budget&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;SCOPE_INVALID_BUDGET&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid scope rule.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SCOPE_INVALID_RULE&quot;,
+  &quot;title&quot;: &quot;Invalid scope rule&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;SCOPE_INVALID_RULE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Unknown persona.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PERSONA_UNKNOWN&quot;,
+  &quot;title&quot;: &quot;Unknown persona&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;PERSONA_UNKNOWN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Forbidden tool in persona.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL&quot;,
+  &quot;title&quot;: &quot;Forbidden tool in persona&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;PERSONA_FORBIDDEN_TOOL&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid persona definition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PERSONA_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid persona definition&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;PERSONA_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid secret envelope.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ENVELOPE_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid secret envelope&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;ENVELOPE_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid prompt file.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PROMPT_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid prompt file&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;PROMPT_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Prompt placeholder unfilled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING&quot;,
+  &quot;title&quot;: &quot;Prompt placeholder unfilled&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;PROMPT_PLACEHOLDER_MISSING&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid secret reference.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_SECRET_REF&quot;,
+  &quot;title&quot;: &quot;Invalid secret reference&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;INVALID_SECRET_REF&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Sandbox image missing.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SBX_IMAGE_MISSING&quot;,
+  &quot;title&quot;: &quot;Sandbox image missing&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;SBX_IMAGE_MISSING&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid kill scope.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_SCOPE_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid kill scope&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;KILL_SCOPE_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Kill scope reference required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_REF_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Kill scope reference required&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;KILL_REF_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Idempotency key reused with a different request.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH&quot;,
+  &quot;title&quot;: &quot;Idempotency key reused with a different request&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;IDEMPOTENCY_KEY_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid audit event.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUDIT_EVENT_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid audit event&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;AUDIT_EVENT_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-429-1">Response 429</h4>
+<p>Problem details; code is one of RATE_LIMITED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Too many requests.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Too many requests&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;RATE_LIMITED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-500-1">Response 500</h4>
+<p>Problem details; code is one of INTERNAL.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Internal server error.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INTERNAL&quot;,
+  &quot;title&quot;: &quot;Internal server error&quot;,
+  &quot;status&quot;: 500,
+  &quot;code&quot;: &quot;INTERNAL&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h2 id="schemas">Schemas</h2>
+<h3 id="killevent">KillEvent</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>killEventId</code></td>
+<td>string</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>tenantId</code></td>
+<td>string or null</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>scope</code></td>
+<td>enum: <code>&quot;run&quot;</code>, <code>&quot;asset&quot;</code>, <code>&quot;tenant&quot;</code>, <code>&quot;global&quot;</code></td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>scopeRefId</code></td>
+<td>string or null</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>enum: <code>&quot;console&quot;</code>, <code>&quot;api&quot;</code>, <code>&quot;soc_link&quot;</code>, <code>&quot;operator&quot;</code>, <code>&quot;system&quot;</code></td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>actorType</code></td>
+<td>string</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>actorRef</code></td>
+<td>string</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>reason</code></td>
+<td>string</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>enum: <code>&quot;initiated&quot;</code>, <code>&quot;propagating&quot;</code>, <code>&quot;halted&quot;</code>, <code>&quot;partially_halted&quot;</code>, <code>&quot;failed&quot;</code></td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>triggeredAt</code></td>
+<td>string (date-time)</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>egressBlockedAt</code></td>
+<td>string (date-time) or null</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>sandboxesTerminatedAt</code></td>
+<td>string (date-time) or null</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>keysRevokedAt</code></td>
+<td>string (date-time) or null</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>workflowsCancelledAt</code></td>
+<td>string (date-time) or null</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>completedAt</code></td>
+<td>string (date-time) or null</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>haltMs</code></td>
+<td>integer or null</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>affected</code></td>
+<td>object</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>reenabledAt</code></td>
+<td>string (date-time) or null</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>reenabledBy</code></td>
+<td>string or null</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>createdAt</code></td>
+<td>string (date-time)</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>updatedAt</code></td>
+<td>string (date-time)</td>
+<td>yes</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Full schema:</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;killEventId&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;pattern&quot;: &quot;^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$&quot;
+    },
+    &quot;tenantId&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;pattern&quot;: &quot;^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ]
+    },
+    &quot;scope&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [&quot;run&quot;, &quot;asset&quot;, &quot;tenant&quot;, &quot;global&quot;]
+    },
+    &quot;scopeRefId&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;pattern&quot;: &quot;^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ]
+    },
+    &quot;source&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [&quot;console&quot;, &quot;api&quot;, &quot;soc_link&quot;, &quot;operator&quot;, &quot;system&quot;]
+    },
+    &quot;actorType&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;minLength&quot;: 1,
+      &quot;maxLength&quot;: 64
+    },
+    &quot;actorRef&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;minLength&quot;: 1,
+      &quot;maxLength&quot;: 255
+    },
+    &quot;reason&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;maxLength&quot;: 2000
+    },
+    &quot;status&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [&quot;initiated&quot;, &quot;propagating&quot;, &quot;halted&quot;, &quot;partially_halted&quot;, &quot;failed&quot;]
+    },
+    &quot;triggeredAt&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;format&quot;: &quot;date-time&quot;,
+      &quot;pattern&quot;: &quot;^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$&quot;
+    },
+    &quot;egressBlockedAt&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;format&quot;: &quot;date-time&quot;,
+          &quot;pattern&quot;: &quot;^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ]
+    },
+    &quot;sandboxesTerminatedAt&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;format&quot;: &quot;date-time&quot;,
+          &quot;pattern&quot;: &quot;^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ]
+    },
+    &quot;keysRevokedAt&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;format&quot;: &quot;date-time&quot;,
+          &quot;pattern&quot;: &quot;^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ]
+    },
+    &quot;workflowsCancelledAt&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;format&quot;: &quot;date-time&quot;,
+          &quot;pattern&quot;: &quot;^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ]
+    },
+    &quot;completedAt&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;format&quot;: &quot;date-time&quot;,
+          &quot;pattern&quot;: &quot;^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ]
+    },
+    &quot;haltMs&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;integer&quot;,
+          &quot;minimum&quot;: 0,
+          &quot;maximum&quot;: 2147483647
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ]
+    },
+    &quot;affected&quot;: {
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;egress&quot;: {
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+              &quot;identity&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;minLength&quot;: 1,
+                &quot;maxLength&quot;: 255
+              },
+              &quot;outcome&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;enum&quot;: [&quot;blocked&quot;, &quot;already_blocked&quot;, &quot;failed&quot;]
+              }
+            },
+            &quot;required&quot;: [&quot;identity&quot;, &quot;outcome&quot;],
+            &quot;additionalProperties&quot;: false
+          }
+        },
+        &quot;runs&quot;: {
+          &quot;type&quot;: &quot;integer&quot;,
+          &quot;minimum&quot;: 0,
+          &quot;maximum&quot;: 9007199254740991
+        },
+        &quot;sessions&quot;: {
+          &quot;type&quot;: &quot;integer&quot;,
+          &quot;minimum&quot;: 0,
+          &quot;maximum&quot;: 9007199254740991
+        },
+        &quot;sandboxes&quot;: {
+          &quot;type&quot;: &quot;integer&quot;,
+          &quot;minimum&quot;: 0,
+          &quot;maximum&quot;: 9007199254740991
+        },
+        &quot;sandboxResults&quot;: {
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+              &quot;sandboxId&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;minLength&quot;: 1,
+                &quot;maxLength&quot;: 255
+              },
+              &quot;outcome&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;enum&quot;: [&quot;terminated&quot;, &quot;already_gone&quot;, &quot;terminating&quot;, &quot;failed&quot;]
+              }
+            },
+            &quot;required&quot;: [&quot;sandboxId&quot;, &quot;outcome&quot;],
+            &quot;additionalProperties&quot;: false
+          }
+        },
+        &quot;keys&quot;: {
+          &quot;type&quot;: &quot;integer&quot;,
+          &quot;minimum&quot;: 0,
+          &quot;maximum&quot;: 9007199254740991
+        },
+        &quot;keyResults&quot;: {
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+              &quot;keyId&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;minLength&quot;: 1,
+                &quot;maxLength&quot;: 255
+              },
+              &quot;outcome&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;enum&quot;: [&quot;revoked&quot;, &quot;already_revoked&quot;, &quot;failed&quot;]
+              }
+            },
+            &quot;required&quot;: [&quot;keyId&quot;, &quot;outcome&quot;],
+            &quot;additionalProperties&quot;: false
+          }
+        },
+        &quot;workflows&quot;: {
+          &quot;type&quot;: &quot;integer&quot;,
+          &quot;minimum&quot;: 0,
+          &quot;maximum&quot;: 9007199254740991
+        },
+        &quot;workflowResults&quot;: {
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;items&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+              &quot;workflowId&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;minLength&quot;: 1,
+                &quot;maxLength&quot;: 255
+              },
+              &quot;outcome&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;enum&quot;: [&quot;cancelled&quot;, &quot;already_closed&quot;, &quot;not_found&quot;, &quot;failed&quot;]
+              }
+            },
+            &quot;required&quot;: [&quot;workflowId&quot;, &quot;outcome&quot;],
+            &quot;additionalProperties&quot;: false
+          }
+        },
+        &quot;reversalsFlagged&quot;: {
+          &quot;type&quot;: &quot;integer&quot;,
+          &quot;minimum&quot;: 0,
+          &quot;maximum&quot;: 9007199254740991
+        }
+      },
+      &quot;additionalProperties&quot;: false
+    },
+    &quot;reenabledAt&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;format&quot;: &quot;date-time&quot;,
+          &quot;pattern&quot;: &quot;^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ]
+    },
+    &quot;reenabledBy&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;pattern&quot;: &quot;^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ]
+    },
+    &quot;createdAt&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;format&quot;: &quot;date-time&quot;,
+      &quot;pattern&quot;: &quot;^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$&quot;
+    },
+    &quot;updatedAt&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;format&quot;: &quot;date-time&quot;,
+      &quot;pattern&quot;: &quot;^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$&quot;
+    }
+  },
+  &quot;required&quot;: [
+    &quot;killEventId&quot;,
+    &quot;tenantId&quot;,
+    &quot;scope&quot;,
+    &quot;scopeRefId&quot;,
+    &quot;source&quot;,
+    &quot;actorType&quot;,
+    &quot;actorRef&quot;,
+    &quot;reason&quot;,
+    &quot;status&quot;,
+    &quot;triggeredAt&quot;,
+    &quot;egressBlockedAt&quot;,
+    &quot;sandboxesTerminatedAt&quot;,
+    &quot;keysRevokedAt&quot;,
+    &quot;workflowsCancelledAt&quot;,
+    &quot;completedAt&quot;,
+    &quot;haltMs&quot;,
+    &quot;affected&quot;,
+    &quot;reenabledAt&quot;,
+    &quot;reenabledBy&quot;,
+    &quot;createdAt&quot;,
+    &quot;updatedAt&quot;
+  ],
+  &quot;additionalProperties&quot;: false
+}
+</code></pre>
+<h3 id="killtriggerrequest">KillTriggerRequest</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>scope</code></td>
+<td>enum: <code>&quot;run&quot;</code>, <code>&quot;asset&quot;</code>, <code>&quot;tenant&quot;</code></td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>scopeRefId</code></td>
+<td>string</td>
+<td>no</td>
+<td></td>
+</tr>
+<tr>
+<td><code>reason</code></td>
+<td>string</td>
+<td>yes</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Full schema:</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;scope&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [&quot;run&quot;, &quot;asset&quot;, &quot;tenant&quot;]
+    },
+    &quot;scopeRefId&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;pattern&quot;: &quot;^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$&quot;
+    },
+    &quot;reason&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;maxLength&quot;: 2000
+    }
+  },
+  &quot;required&quot;: [&quot;scope&quot;, &quot;reason&quot;],
+  &quot;additionalProperties&quot;: false
+}
+</code></pre>
+<h3 id="killtriggerresponse">KillTriggerResponse</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>killEventId</code></td>
+<td>string</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>enum: <code>&quot;initiated&quot;</code>, <code>&quot;propagating&quot;</code>, <code>&quot;halted&quot;</code>, <code>&quot;partially_halted&quot;</code>, <code>&quot;failed&quot;</code></td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>triggeredAt</code></td>
+<td>string (date-time)</td>
+<td>yes</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Full schema:</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;killEventId&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;pattern&quot;: &quot;^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$&quot;
+    },
+    &quot;status&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [&quot;initiated&quot;, &quot;propagating&quot;, &quot;halted&quot;, &quot;partially_halted&quot;, &quot;failed&quot;]
+    },
+    &quot;triggeredAt&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;format&quot;: &quot;date-time&quot;,
+      &quot;pattern&quot;: &quot;^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$&quot;
+    }
+  },
+  &quot;required&quot;: [&quot;killEventId&quot;, &quot;status&quot;, &quot;triggeredAt&quot;],
+  &quot;additionalProperties&quot;: false
+}
+</code></pre>
+<h3 id="problem">Problem</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>type</code></td>
+<td>string (uri)</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td>string</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>integer</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>detail</code></td>
+<td>string</td>
+<td>no</td>
+<td></td>
+</tr>
+<tr>
+<td><code>code</code></td>
+<td>string</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>traceId</code></td>
+<td>string</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>errors</code></td>
+<td>array of object</td>
+<td>no</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Full schema:</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;type&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;format&quot;: &quot;uri&quot;
+    },
+    &quot;title&quot;: {
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;status&quot;: {
+      &quot;type&quot;: &quot;integer&quot;,
+      &quot;minimum&quot;: -9007199254740991,
+      &quot;maximum&quot;: 9007199254740991
+    },
+    &quot;detail&quot;: {
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;code&quot;: {
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;traceId&quot;: {
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;errors&quot;: {
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;path&quot;: {
+            &quot;type&quot;: &quot;string&quot;
+          },
+          &quot;message&quot;: {
+            &quot;type&quot;: &quot;string&quot;
+          },
+          &quot;code&quot;: {
+            &quot;type&quot;: &quot;string&quot;
+          }
+        },
+        &quot;required&quot;: [&quot;path&quot;, &quot;message&quot;, &quot;code&quot;],
+        &quot;additionalProperties&quot;: false
+      }
+    }
+  },
+  &quot;required&quot;: [&quot;type&quot;, &quot;title&quot;, &quot;status&quot;, &quot;code&quot;, &quot;traceId&quot;],
+  &quot;additionalProperties&quot;: false
+}
+</code></pre>
+</main>
+</div>
+</body>
+</html>
