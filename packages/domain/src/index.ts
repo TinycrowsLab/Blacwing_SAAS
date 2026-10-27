@@ -87,3 +87,28 @@ export {
   writeSurface,
   WRITE_SURFACE_TOOL,
 } from './surface/write.js';
+
+export {
+  type Catalogue,
+  CatalogueError,
+  type CatalogueEntry,
+  defineCatalogue,
+  entryCountsByClass,
+  NEGATIVE_CONTROL_STRATEGIES,
+  type NegativeControlStrategy,
+  ORACLE_TYPES,
+  type OracleType,
+  selectApplicable,
+} from './testcases/catalogue.js';
+export {
+  isKnownApiTop10,
+  isKnownCwe,
+  isKnownOwaspTop10,
+  isKnownWstg,
+} from './testcases/standards.js';
+export {
+  WEBAPI_CATALOGUE,
+  WEBAPI_CATALOGUE_METRIC,
+  WEBAPI_CATALOGUE_METRIC_LABELS,
+  webApiCatalogueMetricSamples,
+} from './testcases/webapi.js';
