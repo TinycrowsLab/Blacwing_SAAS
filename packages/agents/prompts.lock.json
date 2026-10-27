@@ -10,5 +10,11 @@
   },
   "passive-recon": {
     "1.0.0": "e1a80fbf948b564857623ac8711a691a83f31a76ad2f76b2807cde2670ba74aa"
+  },
+  "planner": {
+    "1.0.0": "6b116181efa8fbba5f2ccea5d59707bb815c234035255e585fe17f91872fcc28"
+  },
+  "sub-planner": {
+    "1.0.0": "4ad656fae63c9c832f645665cd6b2563a67dc2ddd361b7210843447e46688957"
   }
 }
