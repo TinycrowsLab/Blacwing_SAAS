@@ -19,5 +19,8 @@
   },
   "sub-planner": {
     "1.0.0": "4ad656fae63c9c832f645665cd6b2563a67dc2ddd361b7210843447e46688957"
+  },
+  "validator-assistant": {
+    "1.0.0": "e72c6750e2cde43d8b19e87a96a85ccd7978a88a4208a991ef5d0247efd77d31"
   }
 }
