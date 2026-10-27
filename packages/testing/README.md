@@ -60,6 +60,16 @@ signatures, never real key material.
 a `FixedClock` that also drives `Date` and `Date.now()` (`clock.advance('5m')` moves both). Only `Date` is faked,
 so timers and I/O keep working; the clock resets before each test and real time is restored after it.
 
+## Temporal workflows (time-skipping)
+
+`@blackwing/testing/temporal` boots the SDK's time-skipping test server, so gate timeouts and test windows run in
+seconds of wall time. `withTestWorkflowEnv(fn, options)` starts the server and a worker, runs `fn`, and always tears
+both down. Inside `fn`, `getWorkflowResult(handle)` waits for a result (the server skips time to the next timer),
+`advanceTime(testEnv, ms)` skips time explicitly, and `sendSignalAndSettle(handle, name, args)` delivers a signal.
+Pass project interceptors as `workflowInterceptorModules` and their sinks as `sinks`. Activities that sleep in real
+time must be mocked: only timers advance with skipped time. The test server binary is fetched and cached by the SDK
+on first use (no Docker). Example: `src/temporal.test.ts`.
+
 ## Tenant isolation (§8.6)
 
 ```ts

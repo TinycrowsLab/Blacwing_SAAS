@@ -61,6 +61,7 @@ describe('package wiring', () => {
     expect(Object.keys(manifest.exports)).toEqual([
       '.',
       './containers',
+      './temporal',
       './vitest',
       './vitest-config',
       './ci-preload',

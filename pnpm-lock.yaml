@@ -66,6 +66,9 @@ catalogs:
     '@temporalio/proto':
       specifier: 1.13.2
       version: 1.13.2
+    '@temporalio/testing':
+      specifier: 1.13.2
+      version: 1.13.2
     '@temporalio/worker':
       specifier: 1.13.2
       version: 1.13.2
@@ -1270,6 +1273,21 @@ importers:
       '@blackwing/time':
         specifier: workspace:*
         version: link:../time
+      '@temporalio/client':
+        specifier: 'catalog:'
+        version: 1.13.2
+      '@temporalio/common':
+        specifier: 'catalog:'
+        version: 1.13.2
+      '@temporalio/testing':
+        specifier: 'catalog:'
+        version: 1.13.2(lightningcss@1.32.0)
+      '@temporalio/worker':
+        specifier: 'catalog:'
+        version: 1.13.2(lightningcss@1.32.0)
+      '@temporalio/workflow':
+        specifier: 'catalog:'
+        version: 1.13.2
       fast-check:
         specifier: 'catalog:'
         version: 4.10.2
@@ -4641,6 +4659,10 @@ packages:
 
   '@temporalio/proto@1.13.2':
     resolution: {integrity: sha512-V8agtFxM2KkKOtUjcCZFaIdOV64j86VrUQ4bvOZtzwmWGyp5ZCebskoaTTL8UMkRx4bTIeEKOckLrXo8VeorWg==}
+    engines: {node: '>= 18.0.0'}
+
+  '@temporalio/testing@1.13.2':
+    resolution: {integrity: sha512-Yv+f14igAGaDdaITuOCJgzV+G1c7yVjP1u6nBXrhxGdzTh5FS6l7Zw84XrXOBTVHXfBFHsQnDuZYfGJVKf7vTw==}
     engines: {node: '>= 18.0.0'}
 
   '@temporalio/worker@1.13.2':
@@ -11949,6 +11971,35 @@ snapshots:
     dependencies:
       long: 5.3.2
       protobufjs: 7.6.6
+
+  '@temporalio/testing@1.13.2(lightningcss@1.32.0)':
+    dependencies:
+      '@temporalio/activity': 1.13.2
+      '@temporalio/client': 1.13.2
+      '@temporalio/common': 1.13.2
+      '@temporalio/core-bridge': 1.13.2
+      '@temporalio/proto': 1.13.2
+      '@temporalio/worker': 1.13.2(lightningcss@1.32.0)
+      '@temporalio/workflow': 1.13.2
+      abort-controller: 3.0.0
+    transitivePeerDependencies:
+      - '@minify-html/node'
+      - '@napi-rs/image'
+      - '@swc/css'
+      - '@swc/helpers'
+      - '@swc/html'
+      - clean-css
+      - cssnano
+      - csso
+      - esbuild
+      - html-minifier-terser
+      - imagemin
+      - lightningcss
+      - postcss
+      - sharp
+      - svgo
+      - uglify-js
+      - webpack-cli
 
   '@temporalio/worker@1.13.2(lightningcss@1.32.0)':
     dependencies:
