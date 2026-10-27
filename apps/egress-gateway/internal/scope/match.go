@@ -131,10 +131,10 @@ func (r *rule) applies(t *normTarget) bool {
 	}
 	// Host and cidr select which rules apply at all: a miss (or a missing address) is a miss for
 	// both effects.
-	if r.hasHost && !(t.hasHost && hostMatches(r.host, t.host)) {
+	if r.hasHost && (!t.hasHost || !hostMatches(r.host, t.host)) {
 		return false
 	}
-	if r.cidr != nil && !(t.hasIP && r.cidr.contains(t.ip)) {
+	if r.cidr != nil && (!t.hasIP || !r.cidr.contains(t.ip)) {
 		return false
 	}
 	if r.ports != nil {

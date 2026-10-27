@@ -344,7 +344,7 @@ func randomTarget(rng *rand.Rand) Target {
 // dominates it, (2) adding an identical exclude of every include can only deny, and (3) the
 // decision does not depend on rule order.
 func TestPropertyExcludeDominatesAndOrderIndependent(t *testing.T) {
-	rng := rand.New(rand.NewPCG(1, 2))
+	rng := rand.New(rand.NewPCG(1, 2)) // #nosec G404 -- fixed-seed PRNG: reproducible property-test inputs, not security-sensitive
 	for range 3000 {
 		n := 1 + rng.IntN(6)
 		var docs []string

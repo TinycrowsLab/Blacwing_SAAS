@@ -35,7 +35,7 @@ func TestBaselineValidatesUnderCedarGo(t *testing.T) {
 
 	count := 0
 	for _, name := range files {
-		raw, err := os.ReadFile(filepath.Join(filepath.Clean(sharedBaselineDir), name))
+		raw, err := os.ReadFile(filepath.Join(filepath.Clean(sharedBaselineDir), name)) // #nosec G304 -- name comes from listing the in-repo baseline fixture dir
 		require.NoError(t, err)
 		ps, err := cedar.NewPolicySetFromBytes(name, raw)
 		require.NoErrorf(t, err, "%s does not parse", name)
