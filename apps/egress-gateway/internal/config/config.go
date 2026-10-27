@@ -22,12 +22,15 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/netip"
 	"net/url"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/netguard"
 )
 
 // Environment keys read by Load.
@@ -56,6 +59,12 @@ const (
 	// KeyDNSStrictCNAME requires every name in a CNAME chain to be in scope. Optional,
 	// defaults to true; accepts only "true" or "false".
 	KeyDNSStrictCNAME = "GATEWAY_DNS_STRICT_CNAME"
+	// KeyExtraBlockedCIDRs adds comma-separated CIDRs to the built-in blocked ranges
+	// (netguard). Optional, defaults to none; it can only widen the block list.
+	KeyExtraBlockedCIDRs = "GATEWAY_EXTRA_BLOCKED_CIDRS"
+	// KeyValidateRedirectTarget makes the gateway evaluate a 3xx Location against scope
+	// and annotate redirect_in_scope. Optional, defaults to true; "true" or "false".
+	KeyValidateRedirectTarget = "GATEWAY_VALIDATE_REDIRECT_TARGET"
 	// KeyPolicySnapshotPath is the file path of the signed policy snapshot. Required.
 	KeyPolicySnapshotPath = "POLICY_SNAPSHOT_PATH"
 	// KeyValkeyURL is the Valkey connection URL (redis://, rediss://, valkey://,
@@ -127,6 +136,10 @@ type Config struct {
 	DNSPinTTL time.Duration
 	// DNSStrictCNAME requires CNAME chains to stay in scope (GATEWAY_DNS_STRICT_CNAME).
 	DNSStrictCNAME bool
+	// ExtraBlockedCIDRs is the operator-added blocked set (GATEWAY_EXTRA_BLOCKED_CIDRS).
+	ExtraBlockedCIDRs []netip.Prefix
+	// ValidateRedirectTarget enables redirect scope annotation (GATEWAY_VALIDATE_REDIRECT_TARGET).
+	ValidateRedirectTarget bool
 	// PolicySnapshotPath is the signed policy snapshot file (POLICY_SNAPSHOT_PATH).
 	PolicySnapshotPath string
 	// ValkeyURL is the Valkey connection URL (VALKEY_URL); it may carry credentials.
@@ -144,6 +157,7 @@ func Keys() []string {
 	keys := []string{
 		KeyEnv, KeyLogLevel, KeyMgmtAddr, KeyHTTPProxyAddr, KeySOCKSAddr, KeyDNSAddr,
 		KeyDNSUpstream, KeyDNSPinTTL, KeyDNSStrictCNAME,
+		KeyExtraBlockedCIDRs, KeyValidateRedirectTarget,
 		KeyPolicySnapshotPath, KeyValkeyURL, KeyOTLPEndpoint, KeyDrainTimeout,
 	}
 	sort.Strings(keys)
@@ -164,6 +178,8 @@ func (c Config) LogValue() slog.Value {
 		slog.String("dns_upstream", c.DNSUpstream),
 		slog.String("dns_pin_ttl", c.DNSPinTTL.String()),
 		slog.Bool("dns_strict_cname", c.DNSStrictCNAME),
+		slog.Int("extra_blocked_cidrs", len(c.ExtraBlockedCIDRs)),
+		slog.Bool("validate_redirect_target", c.ValidateRedirectTarget),
 		slog.String("policy_snapshot_path", c.PolicySnapshotPath),
 		slog.Any("valkey_url", c.ValkeyURL),
 		slog.Bool("otlp_export", c.OTLPEndpoint != ""),
@@ -186,6 +202,8 @@ func (c Config) Hash() string {
 		KeyDNSUpstream + "=" + c.DNSUpstream,
 		KeyDNSPinTTL + "=" + c.DNSPinTTL.String(),
 		KeyDNSStrictCNAME + "=" + strconv.FormatBool(c.DNSStrictCNAME),
+		KeyExtraBlockedCIDRs + "=" + joinPrefixes(c.ExtraBlockedCIDRs),
+		KeyValidateRedirectTarget + "=" + strconv.FormatBool(c.ValidateRedirectTarget),
 		KeyPolicySnapshotPath + "=" + c.PolicySnapshotPath,
 		KeyValkeyURL + "=set:" + strconv.FormatBool(!c.ValkeyURL.IsZero()),
 		KeyOTLPEndpoint + "=" + c.OTLPEndpoint,
@@ -193,6 +211,14 @@ func (c Config) Hash() string {
 	}
 	sum := sha256.Sum256([]byte(strings.Join(fields, "\n")))
 	return hex.EncodeToString(sum[:])
+}
+
+func joinPrefixes(ps []netip.Prefix) string {
+	out := make([]string, len(ps))
+	for i, p := range ps {
+		out[i] = p.String()
+	}
+	return strings.Join(out, ",")
 }
 
 // LookupFunc reports the value of an environment key and whether it is set. It has
@@ -309,6 +335,17 @@ func Load(lookup LookupFunc) (*Config, error) {
 		add(KeyDNSStrictCNAME, reason)
 	} else {
 		cfg.DNSStrictCNAME = b
+	}
+
+	if c, reason := parseExtraBlocked(lookup); reason != "" {
+		add(KeyExtraBlockedCIDRs, reason)
+	} else {
+		cfg.ExtraBlockedCIDRs = c
+	}
+	if b, reason := parseBoolDefaultTrue(lookup, KeyValidateRedirectTarget); reason != "" {
+		add(KeyValidateRedirectTarget, reason)
+	} else {
+		cfg.ValidateRedirectTarget = b
 	}
 
 	if p, reason := parseRequired(lookup, KeyPolicySnapshotPath); reason != "" {
@@ -562,7 +599,22 @@ func parseDNSPinTTL(lookup LookupFunc) (time.Duration, string) {
 // parseStrictCNAME validates GATEWAY_DNS_STRICT_CNAME. Absent means true (the secure
 // default); anything but "true" or "false" is rejected rather than read as false.
 func parseStrictCNAME(lookup LookupFunc) (bool, string) {
-	raw, ok := lookup(KeyDNSStrictCNAME)
+	return parseBoolDefaultTrue(lookup, KeyDNSStrictCNAME)
+}
+
+// parseExtraBlocked validates GATEWAY_EXTRA_BLOCKED_CIDRS. The reason never echoes the value.
+func parseExtraBlocked(lookup LookupFunc) ([]netip.Prefix, string) {
+	raw, _ := lookup(KeyExtraBlockedCIDRs)
+	p, err := netguard.ParseCIDRList(raw)
+	if err != nil {
+		return nil, "must be a comma-separated list of valid CIDRs (at most 256)"
+	}
+	return p, ""
+}
+
+// parseBoolDefaultTrue accepts only "true" or "false"; an absent key is true.
+func parseBoolDefaultTrue(lookup LookupFunc, key string) (bool, string) {
+	raw, ok := lookup(key)
 	if !ok {
 		return true, ""
 	}

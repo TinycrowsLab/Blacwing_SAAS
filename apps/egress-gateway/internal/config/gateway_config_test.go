@@ -211,3 +211,26 @@ func TestLoadRejectsBadDNSSettings(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadNetguardSettings(t *testing.T) {
+	cfg, verr := load(t, map[string]string{"BW_ENV": "dev"})
+	require.Nil(t, verr)
+	assert.Empty(t, cfg.ExtraBlockedCIDRs)
+	assert.True(t, cfg.ValidateRedirectTarget, "redirect validation is on by default")
+
+	cfg, verr = load(t, map[string]string{
+		"BW_ENV": "dev", "GATEWAY_EXTRA_BLOCKED_CIDRS": "203.0.113.0/24,198.51.100.7",
+		"GATEWAY_VALIDATE_REDIRECT_TARGET": "false",
+	})
+	require.Nil(t, verr)
+	assert.Len(t, cfg.ExtraBlockedCIDRs, 2)
+	assert.False(t, cfg.ValidateRedirectTarget)
+
+	for key, bad := range map[string]string{
+		"GATEWAY_EXTRA_BLOCKED_CIDRS":      "10.0.0.1/8",
+		"GATEWAY_VALIDATE_REDIRECT_TARGET": "yes",
+	} {
+		_, verr = load(t, map[string]string{"BW_ENV": "dev", key: bad})
+		require.NotNil(t, verr, key)
+	}
+}

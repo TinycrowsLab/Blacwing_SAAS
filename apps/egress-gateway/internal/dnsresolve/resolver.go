@@ -8,7 +8,7 @@
 // second time: that, not the cache, is the defence.
 //
 // Every failure denies. A name outside the run's scope is refused before any
-// upstream query is made, an answer in a blocked range (see package netrange) is
+// upstream query is made, an answer in a blocked range (see package netguard) is
 // refused unless the scope names that exact IP or CIDR, and an upstream error is
 // ErrResolveFailed. Pins are keyed by pin key, so one run can never read another
 // run's pin (§8.6); Release drops a key's pins when its run or connection ends.
@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/net/idna"
 
-	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/netrange"
+	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/netguard"
 	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/obs"
 )
 
@@ -315,7 +315,7 @@ func (r *Resolver) deny(ctx context.Context, span trace.Span, host, reason strin
 
 // admit rejects an IP in a blocked range unless the scope explicitly names it.
 func (r *Resolver) admit(ip netip.Addr) error {
-	if netrange.IsBlocked(ip) && !r.opts.Scope.IPInScope(ip.Unmap()) {
+	if netguard.IsBlocked(ip, r.opts.Scope) {
 		return ErrBlockedRange
 	}
 	return nil
