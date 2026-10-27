@@ -255,9 +255,22 @@ propagation runs asynchronously, so <code>202</code> means the kill was <strong>
 </code></pre>
 <p>The body gives the event <code>status</code>, the <code>egress</code> outcome (<code>blocked</code>, <code>already_blocked</code> or <code>failed</code>) and the
 <code>sandbox</code> outcome. Poll it until <code>status</code> is final.</p>
-<p><strong>SOC login-free link: not yet exposed.</strong> The data model (<code>soc_kill_tokens</code>, <code>soc_contacts</code>) and the contracts
-exist, but no route issues or redeems a signed link. Until that route ships, SOC staff use the console or ask an
-operator to trigger the kill.</p>
+<p><strong>SOC login-free link.</strong> An <code>asset_owner</code> or admin mints a link with <code>POST /v1/assets/{id}/soc-kill-link</code>
+(optional <code>contactId</code>, <code>maxUses</code>, <code>expiresAt</code>; the default expiry is the end of the asset&#39;s open test window, never
+more than 30 days). The response <code>url</code> is the only place the token appears, so hand it to the SOC over a trusted
+channel. The SOC opens <code>/soc/kill/&lt;token&gt;</code>, sees only the asset label, and confirms; that calls <code>POST /soc/kill</code>,
+which starts the same propagation as the console kill (event <code>source = soc_link</code>).</p>
+<ul>
+<li>A link that is expired (60 s clock-skew leeway), revoked, used up, forged, or belongs to a suspended tenant gets
+the same &quot;link no longer valid&quot; answer. Look in the audit log for <code>soc_kill.rejected{reason}</code>; a forged signature
+has no tenant, so it appears only in <code>bw_soc_kill_total{result=&quot;invalid_signature&quot;}</code> and the API log.</li>
+<li>Limits: 10 requests per minute per IP, 30 (open) / 5 (kill) per minute per link, then 429 with <code>Retry-After</code>
+(<code>bw_soc_kill_ratelimited_total</code>). The limiter is per API process.</li>
+<li>Signing keys: a link verifies against the current and the previous <code>signing_key_id</code>; retire a key only after the
+links it signed have expired.</li>
+<li>The web server reaches the API through <code>BW_API_ORIGIN</code> and forwards <code>X-Forwarded-For</code>; keep API trust-proxy
+configured so the per-IP limit counts the SOC analyst and not the web server.</li>
+</ul>
 <h2 id="4-halt-times-and-how-to-verify-them">4. Halt times and how to verify them</h2>
 <p>Expected halt time is the §8.5 target: egress block &lt; 2 s p99, sandbox stop &lt; 10 s p99. Verify it from the
 telemetry that exists today:</p>
