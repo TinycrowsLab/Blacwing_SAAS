@@ -76,6 +76,21 @@ const (
 	// KeyDrainTimeout bounds the graceful drain on SIGTERM/SIGINT. Optional,
 	// defaults to 10s; must be within (0, 5m].
 	KeyDrainTimeout = "GATEWAY_DRAIN_TIMEOUT"
+	// KeyReadTimeout bounds reading a whole HTTP proxy request (headers and body).
+	// Optional, defaults to 30s; must be within (0, 5m].
+	KeyReadTimeout = "GATEWAY_READ_TIMEOUT"
+	// KeyWriteTimeout bounds writing an HTTP proxy response. Optional, defaults to
+	// 60s; must be within (0, 5m].
+	KeyWriteTimeout = "GATEWAY_WRITE_TIMEOUT"
+	// KeyIdleTimeout bounds an idle keep-alive client connection. Optional,
+	// defaults to 90s; must be within (0, 5m].
+	KeyIdleTimeout = "GATEWAY_IDLE_TIMEOUT"
+	// KeyMaxHeaderBytes caps the request header size accepted by the HTTP proxy.
+	// Optional, defaults to 65536; must be within [1024, 1048576].
+	KeyMaxHeaderBytes = "GATEWAY_MAX_HEADER_BYTES"
+	// KeyMITMEnabled selects whether allowed CONNECT tunnels are handed to the TLS
+	// interception path (EGRESS-006). Optional, defaults to true.
+	KeyMITMEnabled = "GATEWAY_MITM_ENABLED"
 )
 
 // Defaults for the optional keys.
@@ -88,6 +103,13 @@ const (
 	DefaultDNSPinTTL     = 120 * time.Second
 	maxDrainTimeout      = 5 * time.Minute
 	maxDNSPinTTL         = time.Hour
+
+	DefaultReadTimeout    = 30 * time.Second
+	DefaultWriteTimeout   = 60 * time.Second
+	DefaultIdleTimeout    = 90 * time.Second
+	DefaultMaxHeaderBytes = 64 << 10
+	minMaxHeaderBytes     = 1 << 10
+	maxMaxHeaderBytes     = 1 << 20
 )
 
 // Environment is the deployment environment the gateway runs in.
@@ -149,6 +171,13 @@ type Config struct {
 	OTLPEndpoint string
 	// DrainTimeout bounds the graceful drain on shutdown (GATEWAY_DRAIN_TIMEOUT).
 	DrainTimeout time.Duration
+	// ReadTimeout, WriteTimeout and IdleTimeout are the HTTP proxy listener timeouts
+	// (GATEWAY_READ_TIMEOUT, GATEWAY_WRITE_TIMEOUT, GATEWAY_IDLE_TIMEOUT).
+	ReadTimeout, WriteTimeout, IdleTimeout time.Duration
+	// MaxHeaderBytes caps the HTTP proxy request header size (GATEWAY_MAX_HEADER_BYTES).
+	MaxHeaderBytes int
+	// MITMEnabled hands allowed CONNECT tunnels to TLS interception (GATEWAY_MITM_ENABLED).
+	MITMEnabled bool
 }
 
 // Keys returns the environment keys the loader understands, sorted. It is used to
@@ -159,6 +188,7 @@ func Keys() []string {
 		KeyDNSUpstream, KeyDNSPinTTL, KeyDNSStrictCNAME,
 		KeyExtraBlockedCIDRs, KeyValidateRedirectTarget,
 		KeyPolicySnapshotPath, KeyValkeyURL, KeyOTLPEndpoint, KeyDrainTimeout,
+		KeyReadTimeout, KeyWriteTimeout, KeyIdleTimeout, KeyMaxHeaderBytes, KeyMITMEnabled,
 	}
 	sort.Strings(keys)
 	return keys
@@ -184,6 +214,11 @@ func (c Config) LogValue() slog.Value {
 		slog.Any("valkey_url", c.ValkeyURL),
 		slog.Bool("otlp_export", c.OTLPEndpoint != ""),
 		slog.String("drain_timeout", c.DrainTimeout.String()),
+		slog.String("read_timeout", c.ReadTimeout.String()),
+		slog.String("write_timeout", c.WriteTimeout.String()),
+		slog.String("idle_timeout", c.IdleTimeout.String()),
+		slog.Int("max_header_bytes", c.MaxHeaderBytes),
+		slog.Bool("mitm_enabled", c.MITMEnabled),
 	)
 }
 
@@ -208,6 +243,11 @@ func (c Config) Hash() string {
 		KeyValkeyURL + "=set:" + strconv.FormatBool(!c.ValkeyURL.IsZero()),
 		KeyOTLPEndpoint + "=" + c.OTLPEndpoint,
 		KeyDrainTimeout + "=" + c.DrainTimeout.String(),
+		KeyReadTimeout + "=" + c.ReadTimeout.String(),
+		KeyWriteTimeout + "=" + c.WriteTimeout.String(),
+		KeyIdleTimeout + "=" + c.IdleTimeout.String(),
+		KeyMaxHeaderBytes + "=" + strconv.Itoa(c.MaxHeaderBytes),
+		KeyMITMEnabled + "=" + strconv.FormatBool(c.MITMEnabled),
 	}
 	sum := sha256.Sum256([]byte(strings.Join(fields, "\n")))
 	return hex.EncodeToString(sum[:])
@@ -370,6 +410,34 @@ func Load(lookup LookupFunc) (*Config, error) {
 		add(KeyDrainTimeout, reason)
 	} else {
 		cfg.DrainTimeout = d
+	}
+
+	for _, t := range []struct {
+		key string
+		def time.Duration
+		dst *time.Duration
+	}{
+		{KeyReadTimeout, DefaultReadTimeout, &cfg.ReadTimeout},
+		{KeyWriteTimeout, DefaultWriteTimeout, &cfg.WriteTimeout},
+		{KeyIdleTimeout, DefaultIdleTimeout, &cfg.IdleTimeout},
+	} {
+		if d, reason := parseDuration(lookup, t.key, t.def); reason != "" {
+			add(t.key, reason)
+		} else {
+			*t.dst = d
+		}
+	}
+
+	if n, reason := parseMaxHeaderBytes(lookup); reason != "" {
+		add(KeyMaxHeaderBytes, reason)
+	} else {
+		cfg.MaxHeaderBytes = n
+	}
+
+	if b, reason := parseBool(lookup, KeyMITMEnabled, true); reason != "" {
+		add(KeyMITMEnabled, reason)
+	} else {
+		cfg.MITMEnabled = b
 	}
 
 	if len(issues) > 0 {
@@ -617,6 +685,57 @@ func parseBoolDefaultTrue(lookup LookupFunc, key string) (bool, string) {
 	raw, ok := lookup(key)
 	if !ok {
 		return true, ""
+	}
+	switch strings.TrimSpace(raw) {
+	case "true":
+		return true, ""
+	case "false":
+		return false, ""
+	}
+	return false, "must be true or false"
+}
+
+// parseDuration validates a timeout key as a Go duration in (0, 5m].
+func parseDuration(lookup LookupFunc, key string, def time.Duration) (time.Duration, string) {
+	raw, ok := lookup(key)
+	if !ok {
+		return def, ""
+	}
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		return 0, "must not be empty when set"
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		return 0, "must be a duration such as 30s"
+	}
+	if d <= 0 || d > maxDrainTimeout {
+		return 0, "must be greater than 0 and at most 5m"
+	}
+	return d, ""
+}
+
+// parseMaxHeaderBytes validates GATEWAY_MAX_HEADER_BYTES as an integer in [1024, 1048576].
+func parseMaxHeaderBytes(lookup LookupFunc) (int, string) {
+	raw, ok := lookup(KeyMaxHeaderBytes)
+	if !ok {
+		return DefaultMaxHeaderBytes, ""
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil {
+		return 0, "must be an integer number of bytes"
+	}
+	if n < minMaxHeaderBytes || n > maxMaxHeaderBytes {
+		return 0, "must be between 1024 and 1048576"
+	}
+	return n, ""
+}
+
+// parseBool validates a boolean key: exactly "true" or "false".
+func parseBool(lookup LookupFunc, key string, def bool) (bool, string) {
+	raw, ok := lookup(key)
+	if !ok {
+		return def, ""
 	}
 	switch strings.TrimSpace(raw) {
 	case "true":

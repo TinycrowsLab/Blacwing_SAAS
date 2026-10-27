@@ -8,8 +8,6 @@
 package proxy
 
 import (
-	// Pinned for the HTTP/1.1 + HTTPS (MITM) forward proxy (EGRESS epic).
-	_ "github.com/elazarl/goproxy"
 	// Pinned for the SOCKS5 TCP proxy (EGRESS epic).
 	_ "github.com/things-go/go-socks5"
 )

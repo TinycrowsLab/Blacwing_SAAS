@@ -202,7 +202,8 @@ func TestConfigLogValueListsFieldsExplicitly(t *testing.T) {
 		`"dns_upstream":"","dns_pin_ttl":"2m0s","dns_strict_cname":true,`+
 		`"extra_blocked_cidrs":0,"validate_redirect_target":true,`+
 		`"policy_snapshot_path":"/var/run/blackwing/policy.snapshot","valkey_url":"[REDACTED]",`+
-		`"otlp_export":false,"drain_timeout":"10s"}`)
+		`"otlp_export":false,"drain_timeout":"10s","read_timeout":"30s","write_timeout":"1m0s",`+
+		`"idle_timeout":"1m30s","max_header_bytes":65536,"mitm_enabled":true}`)
 }
 
 func TestKeysAreSortedAndComplete(t *testing.T) {
@@ -210,9 +211,10 @@ func TestKeysAreSortedAndComplete(t *testing.T) {
 	assert.Equal(t, []string{
 		"BW_ENV", "GATEWAY_DNS_ADDR", "GATEWAY_DNS_PIN_TTL", "GATEWAY_DNS_STRICT_CNAME",
 		"GATEWAY_DNS_UPSTREAM", "GATEWAY_DRAIN_TIMEOUT", "GATEWAY_EXTRA_BLOCKED_CIDRS",
-		"GATEWAY_HTTP_PROXY_ADDR", "GATEWAY_MGMT_ADDR", "GATEWAY_SOCKS_ADDR",
-		"GATEWAY_VALIDATE_REDIRECT_TARGET", "LOG_LEVEL", "OTEL_EXPORTER_OTLP_ENDPOINT",
-		"POLICY_SNAPSHOT_PATH", "VALKEY_URL",
+		"GATEWAY_HTTP_PROXY_ADDR", "GATEWAY_IDLE_TIMEOUT", "GATEWAY_MAX_HEADER_BYTES", "GATEWAY_MGMT_ADDR",
+		"GATEWAY_MITM_ENABLED", "GATEWAY_READ_TIMEOUT", "GATEWAY_SOCKS_ADDR",
+		"GATEWAY_VALIDATE_REDIRECT_TARGET", "GATEWAY_WRITE_TIMEOUT", "LOG_LEVEL",
+		"OTEL_EXPORTER_OTLP_ENDPOINT", "POLICY_SNAPSHOT_PATH", "VALKEY_URL",
 	}, keys)
 	for i := 1; i < len(keys); i++ {
 		assert.True(t, strings.Compare(keys[i-1], keys[i]) < 0)

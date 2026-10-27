@@ -101,6 +101,11 @@ weakens security.
 | `VALKEY_URL` | yes | `redis://`, `rediss://`, `valkey://`, `valkeys://` URL (stored as `Secret`) | none |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | no | collector base URL, `http(s)://host:port`, no credentials | unset: spans not exported |
 | `GATEWAY_DRAIN_TIMEOUT` | no | Go duration in `(0, 5m]` | `10s` |
+| `GATEWAY_READ_TIMEOUT` | no | Go duration in `(0, 5m]`; HTTP proxy request read timeout | `30s` |
+| `GATEWAY_WRITE_TIMEOUT` | no | Go duration in `(0, 5m]`; HTTP proxy response write timeout | `60s` |
+| `GATEWAY_IDLE_TIMEOUT` | no | Go duration in `(0, 5m]`; HTTP proxy idle keep-alive timeout | `90s` |
+| `GATEWAY_MAX_HEADER_BYTES` | no | integer in `[1024, 1048576]`; HTTP proxy request header cap | `65536` |
+| `GATEWAY_MITM_ENABLED` | no | `true` or `false`; hand allowed CONNECT tunnels to TLS interception (EGRESS-006) | `true` |
 
 An optional key that is present but empty is rejected rather than defaulted. Two
 listeners may not share a port on overlapping hosts, so the management plane can

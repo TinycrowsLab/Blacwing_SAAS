@@ -234,3 +234,48 @@ func TestLoadNetguardSettings(t *testing.T) {
 		require.NotNil(t, verr, key)
 	}
 }
+
+func TestLoadAppliesHTTPProxyListenerDefaults(t *testing.T) {
+	cfg, verr := load(t, map[string]string{"BW_ENV": "dev"})
+	require.Nil(t, verr)
+	assert.Equal(t, 30*time.Second, cfg.ReadTimeout)
+	assert.Equal(t, 60*time.Second, cfg.WriteTimeout)
+	assert.Equal(t, 90*time.Second, cfg.IdleTimeout)
+	assert.Equal(t, 64<<10, cfg.MaxHeaderBytes)
+	assert.True(t, cfg.MITMEnabled)
+}
+
+func TestLoadAcceptsExplicitHTTPProxyListenerValues(t *testing.T) {
+	cfg, verr := load(t, map[string]string{
+		"BW_ENV":                   "dev",
+		"GATEWAY_READ_TIMEOUT":     "5s",
+		"GATEWAY_WRITE_TIMEOUT":    "6s",
+		"GATEWAY_IDLE_TIMEOUT":     "7s",
+		"GATEWAY_MAX_HEADER_BYTES": "4096",
+		"GATEWAY_MITM_ENABLED":     "false",
+	})
+	require.Nil(t, verr)
+	assert.Equal(t, 5*time.Second, cfg.ReadTimeout)
+	assert.Equal(t, 6*time.Second, cfg.WriteTimeout)
+	assert.Equal(t, 7*time.Second, cfg.IdleTimeout)
+	assert.Equal(t, 4096, cfg.MaxHeaderBytes)
+	assert.False(t, cfg.MITMEnabled)
+}
+
+func TestLoadRejectsInvalidHTTPProxyListenerValues(t *testing.T) {
+	for key, bad := range map[string][]string{
+		"GATEWAY_READ_TIMEOUT":     {"", "abc", "0s", "-1s", "6m"},
+		"GATEWAY_WRITE_TIMEOUT":    {"", "abc", "0s", "6m"},
+		"GATEWAY_IDLE_TIMEOUT":     {"", "abc", "0s", "6m"},
+		"GATEWAY_MAX_HEADER_BYTES": {"", "abc", "1023", "1048577", "-5"},
+		"GATEWAY_MITM_ENABLED":     {"", "yes", "1", "TRUE"},
+	} {
+		for _, v := range bad {
+			t.Run(fmt.Sprintf("%s=%q", key, v), func(t *testing.T) {
+				_, verr := load(t, map[string]string{"BW_ENV": "dev", key: v})
+				require.NotNil(t, verr)
+				assert.Equal(t, []string{key}, verr.Keys())
+			})
+		}
+	}
+}
