@@ -22,3 +22,12 @@ export function getPublicConfig(): PublicConfig {
     graphqlUrl: valueOrDefault(process.env.NEXT_PUBLIC_GRAPHQL_URL, DEFAULT_GRAPHQL_URL),
   };
 }
+
+/** Poll interval of the run detail page while the live stream is down. */
+export const DEFAULT_RUN_POLL_MS = 15_000;
+
+/** `NEXT_PUBLIC_RUN_POLL_MS` when it is a positive integer, else {@link DEFAULT_RUN_POLL_MS}. */
+export function getRunPollMs(): number {
+  const parsed = Number(process.env.NEXT_PUBLIC_RUN_POLL_MS);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_RUN_POLL_MS;
+}
