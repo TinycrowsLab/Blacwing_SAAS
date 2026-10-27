@@ -66,6 +66,19 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [tenantId, secretId],
     );
   },
+  memberships: async (tx, tenantId) => {
+    // memberships references the global users table, so each row gets its own user (no RLS on users).
+    const userId = newId();
+    await tx.query(`INSERT INTO users (id, keycloak_sub, email) VALUES ($1, $2, $3)`, [
+      userId,
+      `iso-${userId}`,
+      `iso-${userId}@example.test`,
+    ]);
+    await tx.query(
+      `INSERT INTO memberships (tenant_id, user_id, roles) VALUES ($1, $2, '{admin}')`,
+      [tenantId, userId],
+    );
+  },
   soc_contacts: async (tx, tenantId) => {
     await tx.query(
       `INSERT INTO soc_contacts (id, tenant_id, name, email) VALUES ($1, $2, 'SOC desk', 'soc@example.test')`,
