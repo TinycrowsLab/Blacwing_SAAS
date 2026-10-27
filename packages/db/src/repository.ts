@@ -12,16 +12,16 @@ import { and, asc, eq, isNull, sql, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 
 import {
-  ConflictError,
   NotFoundError,
   PreconditionFailedError,
   TenantContextMissingError,
   ValidationError,
 } from '@blackwing/errors';
 
+import { ForeignKeyError, unwrapQueryError } from './query-errors.js';
 import { toTenantIsolationError } from './rls.js';
 import { currentTenantId } from './tenant-context.js';
-import { unwrapQueryError, withTenant, type TenantTx } from './with-tenant.js';
+import { withTenant, type TenantTx } from './with-tenant.js';
 
 import type { Database } from './client.js';
 import type { DbLogger } from './pool.js';
@@ -63,19 +63,7 @@ export class CursorInvalidError extends ValidationError {
   }
 }
 
-/** A foreign key blocked the operation (deleting a referenced row, or referencing a missing one). */
-export class ForeignKeyError extends ConflictError {
-  /** Name of the violated constraint (a schema identifier, safe to expose). */
-  readonly constraint: string | undefined;
-  constructor(entity: string, constraint: string | undefined, options: { cause?: unknown } = {}) {
-    super(`${entity} violates a foreign key`, {
-      detail: 'The resource is referenced by, or references, another resource.',
-      ...options,
-    });
-    this.name = 'ForeignKeyError';
-    this.constraint = constraint;
-  }
-}
+export { ForeignKeyError };
 
 // --- cursors -----------------------------------------------------------------------------------
 

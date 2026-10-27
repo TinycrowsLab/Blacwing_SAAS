@@ -36,6 +36,12 @@ export {
   type DbConnectionConfig,
   DEFAULT_PG_ACQUIRE_TIMEOUT_MS,
   DEFAULT_PG_DATABASE,
+  DEFAULT_DB_IDLE_TX_TIMEOUT_MS,
+  DEFAULT_DB_LOCK_TIMEOUT_MS,
+  DEFAULT_DB_SLOW_QUERY_MS,
+  DEFAULT_DB_STATEMENT_TIMEOUT_MS,
+  type AppDbConnectionConfig,
+  type QueryGuardConfig,
   DEFAULT_PG_IDLE_TIMEOUT_MS,
   DEFAULT_PG_POOL_MAX,
   DEFAULT_PG_PORT,
@@ -74,6 +80,14 @@ export {
   type PoolName,
 } from './pool.js';
 export {
+  CheckViolationError,
+  mapDbError,
+  QueryTimeoutError,
+  SerializationConflictError,
+  UniqueViolationError,
+  unwrapQueryError,
+} from './query-errors.js';
+export {
   type DbTxMetrics,
   RETRYABLE_PG_CODES,
   type SystemAccessEvent,
@@ -84,7 +98,6 @@ export {
   type TxLogger,
   type TxOptions,
   TxRetryExhaustedError,
-  unwrapQueryError,
   withSystem,
   withTenant,
   type WithSystemOptions,

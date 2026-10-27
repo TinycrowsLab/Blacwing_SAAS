@@ -9,7 +9,9 @@ import pg from 'pg';
 
 import { AppError, type AppErrorOptions } from '@blackwing/errors';
 
-import type { DbConnectionConfig } from './env.js';
+import { DEFAULT_DB_SLOW_QUERY_MS, type DbConnectionConfig, type QueryGuardConfig } from './env.js';
+import { instrumentClient } from './query-observe.js';
+
 import type { Logger } from '@blackwing/logger';
 
 /** Which role a pool connects as: `app` (runtime, RLS subject) or `owner` (migrations only). */
@@ -41,9 +43,18 @@ export interface DbPoolMetrics {
   poolInUse(pool: PoolName, value: number): void;
   /** `db_pool_size{pool}`: open connections (idle + in use). */
   poolSize(pool: PoolName, value: number): void;
+  /** `db_pool_waiting{pool}`: callers queued for a connection. */
+  poolWaiting(pool: PoolName, value: number): void;
+  /** `db_query_duration_ms{op}`: duration of one statement, by leading keyword (`OTHER` if unknown). */
+  queryDuration(op: string, durationMs: number): void;
 }
 
-const NOOP_METRICS: DbPoolMetrics = { poolInUse: () => undefined, poolSize: () => undefined };
+const NOOP_METRICS: DbPoolMetrics = {
+  poolInUse: () => undefined,
+  poolSize: () => undefined,
+  poolWaiting: () => undefined,
+  queryDuration: () => undefined,
+};
 
 /** The logger surface pools need (satisfied by `@blackwing/logger`). */
 export type DbLogger = Pick<Logger, 'info' | 'warn' | 'error'>;
@@ -54,6 +65,11 @@ export interface CreatePoolOptions {
   readonly metrics?: DbPoolMetrics;
   /** Sent as `application_name`, so the role and process show up in `pg_stat_activity`. */
   readonly applicationName?: string;
+  /**
+   * Query guardrails (DB-007) applied as startup settings on every connection. Only the runtime
+   * app pool passes them; the owner pool runs with the server defaults.
+   */
+  readonly guards?: QueryGuardConfig;
 }
 
 type ConnectCallback = (
@@ -78,6 +94,7 @@ export class ObservedPool extends pg.Pool {
   readonly #logger: DbLogger;
   readonly #metrics: DbPoolMetrics;
   readonly #max: number;
+  readonly #slowQueryMs: number;
   #exhausted = false;
 
   constructor(config: pg.PoolConfig & { max: number }, name: PoolName, options: CreatePoolOptions) {
@@ -86,6 +103,7 @@ export class ObservedPool extends pg.Pool {
     this.#logger = options.logger;
     this.#metrics = options.metrics ?? NOOP_METRICS;
     this.#max = config.max;
+    this.#slowQueryMs = options.guards?.slowQueryMs ?? DEFAULT_DB_SLOW_QUERY_MS;
     this.on('connect', () => {
       this.#logger.info(this.#fields(), 'db.pool.connect');
       this.#gauges();
@@ -119,6 +137,18 @@ export class ObservedPool extends pg.Pool {
   #gauges(): void {
     this.#metrics.poolSize(this.poolName, this.totalCount);
     this.#metrics.poolInUse(this.poolName, this.totalCount - this.idleCount);
+    this.#metrics.poolWaiting(this.poolName, this.waitingCount);
+  }
+
+  /** Every checked-out client reports its statements (timing, slow and timeout logs, spans). */
+  #observe(client: pg.PoolClient): pg.PoolClient {
+    instrumentClient(client, {
+      pool: this.poolName,
+      logger: this.#logger,
+      metrics: this.#metrics,
+      slowQueryMs: this.#slowQueryMs,
+    });
+    return client;
   }
 
   #noteDemand(): void {
@@ -148,11 +178,15 @@ export class ObservedPool extends pg.Pool {
   override connect(callback?: ConnectCallback): Promise<pg.PoolClient> | undefined {
     this.#noteDemand();
     if (callback === undefined) {
-      return super.connect().catch((error: unknown) => {
-        throw this.#translate(error);
-      });
+      return super
+        .connect()
+        .then((client) => this.#observe(client))
+        .catch((error: unknown) => {
+          throw this.#translate(error);
+        });
     }
     super.connect((error, client, done) => {
+      if (client !== undefined) this.#observe(client);
       callback(error instanceof Error ? this.#translate(error) : undefined, client, done);
     });
     return undefined;
@@ -165,9 +199,22 @@ function sslFor(config: DbConnectionConfig): pg.PoolConfig['ssl'] {
 }
 
 /**
- * Creates the pool for `name`. Per-connection settings (`search_path`) go in the startup `options`,
- * so every pooled connection carries them, never a per-query `SET`.
+ * The startup `options` string: per-connection settings sent when each connection opens, so every
+ * pooled connection carries them, never a per-query `SET`. Query guardrails are added when given.
  */
+export function sessionOptions(guards?: QueryGuardConfig): string {
+  const settings = ['search_path=public'];
+  if (guards !== undefined) {
+    settings.push(
+      `statement_timeout=${guards.statementTimeoutMs}`,
+      `idle_in_transaction_session_timeout=${guards.idleTxTimeoutMs}`,
+      `lock_timeout=${guards.lockTimeoutMs}`,
+    );
+  }
+  return settings.map((setting) => `-c ${setting}`).join(' ');
+}
+
+/** Creates the pool for `name`. */
 export function createPool(
   config: DbConnectionConfig,
   name: PoolName,
@@ -185,7 +232,7 @@ export function createPool(
       connectionTimeoutMillis: config.acquireTimeoutMs,
       idleTimeoutMillis: config.idleTimeoutMs,
       application_name: options.applicationName ?? `blackwing-${name}`,
-      options: '-c search_path=public',
+      options: sessionOptions(options.guards),
     },
     name,
     options,

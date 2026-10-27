@@ -137,6 +137,9 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'TEMPORAL_UNAVAILABLE',
   // DbUnavailableError, @blackwing/db (DB-001).
   'DB_UNAVAILABLE',
+  // Raised as AppErrors by @blackwing/db query guardrails (DB-007).
+  'DB_QUERY_TIMEOUT',
+  'DB_SERIALIZATION_CONFLICT',
   // Raised as plain AppErrors by @blackwing/telemetry, @blackwing/workflow-shared and apps/worker (#25).
   'MISSING_TENANT_CONTEXT',
   'INVALID_TENANT_CONTEXT',

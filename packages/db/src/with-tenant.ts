@@ -17,10 +17,13 @@ import { AppError, type AppErrorOptions, TenantContextMissingError } from '@blac
 import { createLogger, type Logger } from '@blackwing/logger';
 
 import { type DbTxConfig, loadDbTxConfig, type TxIsolation } from './env.js';
+import { mapDbError, unwrapQueryError } from './query-errors.js';
 import { toTenantIsolationError } from './rls.js';
 import { hashTenantId } from './tenant-context.js';
 
 import type { Database, Tx } from './client.js';
+
+export { unwrapQueryError };
 
 declare const tenantTxBrand: unique symbol;
 declare const systemTxBrand: unique symbol;
@@ -44,7 +47,6 @@ export const RETRYABLE_PG_CODES: readonly string[] = Object.freeze([
 /** Backoff between retries: full jitter on an exponential ceiling. */
 const BACKOFF_BASE_MS = 10;
 const BACKOFF_CAP_MS = 500;
-const CAUSE_DEPTH = 5;
 const CANONICAL_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SQLSTATE = /^[0-9A-Z]{5}$/;
 
@@ -205,18 +207,6 @@ function requireTenantId(value: unknown, metrics: DbTxMetrics): string {
   return value.toLowerCase();
 }
 
-/** Drizzle wraps driver errors in `DrizzleQueryError` with the pg error as `cause`. */
-export function unwrapQueryError(error: unknown): unknown {
-  let current: unknown = error;
-  for (let depth = 0; depth < CAUSE_DEPTH; depth += 1) {
-    if (typeof (current as { code?: unknown } | null)?.code === 'string') return current;
-    const cause = (current as { cause?: unknown } | null)?.cause;
-    if (cause === undefined || cause === null) return error;
-    current = cause;
-  }
-  return error;
-}
-
 /** SQLSTATE of a Postgres error, looking through Drizzle's query-error wrapper (`cause`). */
 function pgErrorCode(error: unknown): string | undefined {
   const code = (unwrapQueryError(error) as { code?: unknown } | null)?.code;
@@ -293,7 +283,8 @@ async function runTransaction<T>(input: RunInput<T>): Promise<T> {
       if (code === undefined || !RETRYABLE_PG_CODES.includes(code)) {
         logger.debug({ tenantId: label, attempt, code }, 'db.tx.rollback');
         // A missing/garbled tenant setting or a WITH CHECK violation surfaces as its AppError (DB-003).
-        throw toTenantIsolationError(unwrapQueryError(error)) ?? error;
+        // Typed query errors (DB-007): a timeout or constraint violation reaches the caller as its AppError.
+        throw toTenantIsolationError(unwrapQueryError(error)) ?? mapDbError(error);
       }
       failures.push(code);
       if (failures.length > maxRetries) {

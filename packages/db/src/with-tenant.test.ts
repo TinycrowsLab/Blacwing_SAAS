@@ -70,8 +70,11 @@ class FakePool extends pg.Pool {
   }
 }
 
-function pgError(code: string): Error {
-  return Object.assign(new Error(`pg ${code}`), { code });
+function pgError(code: string, constraint?: string): Error {
+  return Object.assign(new Error(`pg ${code}`), {
+    code,
+    ...(constraint === undefined ? {} : { constraint }),
+  });
 }
 
 function noopLogger(): TxLogger & { events: string[] } {
@@ -296,13 +299,26 @@ describe('retry', () => {
     expect(error).toBeInstanceOf(TxRetryExhaustedError);
   });
 
-  it.each(['23505', '42501', '57014', '40002'])('does not retry %s', async (code) => {
+  it.each(['42501', '40002'])('does not retry or map %s', async (code) => {
     const { db } = setup();
     const failure = pgError(code);
     const fn = vi.fn(() => Promise.reject(failure));
     await expect(withTenant(db, tenantA, fn, fast)).rejects.toBe(failure);
     expect(fn).toHaveBeenCalledTimes(1);
   });
+
+  it.each(['23505', '57014'])(
+    'does not retry %s but surfaces it as a typed error (DB-007)',
+    async (code) => {
+      const { db } = setup();
+      const failure = pgError(code);
+      const fn = vi.fn(() => Promise.reject(failure));
+      const error = await withTenant(db, tenantA, fn, fast).catch((e: unknown) => e);
+      expect(isAppError(error)).toBe(true);
+      expect((error as Error).cause).toBe(failure);
+      expect(fn).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it('does not retry an error with no SQLSTATE', async () => {
     const { db } = setup();
@@ -708,6 +724,42 @@ describe('mapping of tenant-isolation errors', () => {
     await expect(withTenant(db, tenantA, () => Promise.reject(failure), fast)).rejects.toBe(
       failure,
     );
+  });
+});
+
+describe('typed query errors at the transaction boundary (DB-007)', () => {
+  it('surfaces a statement timeout as QueryTimeoutError after a rollback', async () => {
+    const { pool, db } = setup();
+    const cancelled = pgError('57014');
+    const error: unknown = await withTenant(
+      db,
+      tenantA,
+      () => Promise.reject(cancelled),
+      fast,
+    ).catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: 'DB_QUERY_TIMEOUT', httpStatus: 504, retryable: false });
+    expect(pool.texts().at(-1)).toBe('rollback');
+    expect(pool.releases).toBe(1);
+  });
+
+  it('surfaces a unique violation as UniqueViolationError carrying the constraint name', async () => {
+    const { db } = setup();
+    const error: unknown = await withTenant(
+      db,
+      tenantA,
+      () => Promise.reject(pgError('23505', 'users_email_key')),
+      fast,
+    ).catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: 'CONFLICT', constraint: 'users_email_key' });
+  });
+
+  it('keeps TX_RETRY_EXHAUSTED when serialization failures persist', async () => {
+    const { db } = setup();
+    const error: unknown = await withTenant(db, tenantA, () => Promise.reject(pgError('40001')), {
+      ...fast,
+      maxRetries: 1,
+    }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(TxRetryExhaustedError);
   });
 });
 

@@ -131,6 +131,15 @@ const DEFINITIONS = {
   // PostgreSQL connection (DB-001): no pooled connection within the acquire timeout, or the server is
   // unreachable. A dependency outage (503, retryable); query errors keep their own codes.
   DB_UNAVAILABLE: { status: 503, title: 'Database unavailable', retryable: true },
+  // Query guardrails (DB-007): a statement past DB_STATEMENT_TIMEOUT_MS is cancelled by Postgres (504; the
+  // same statement on the same data times out again, so not retryable). A serialization failure or deadlock
+  // (40001/40P01) is a conflict with a concurrent transaction: 409, retryable (withTenant re-runs it, DB-006).
+  DB_QUERY_TIMEOUT: { status: 504, title: 'Database query timed out', retryable: false },
+  DB_SERIALIZATION_CONFLICT: {
+    status: 409,
+    title: 'Database serialization conflict',
+    retryable: true,
+  },
   // Worker bootstrap (WORKFLOW-002): a misconfigured process refuses to start rather than polling a guess.
   WORKER_QUEUE_UNKNOWN: { status: 500, title: 'Unknown worker task queue', retryable: false },
   // Temporal search attributes (WORKFLOW-003). A registered attribute of another type is never dropped or

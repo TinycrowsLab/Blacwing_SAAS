@@ -129,6 +129,7 @@ export function createAppDatabase(options: CreateAppDatabaseOptions = {}): AppDa
   const logger = options.logger ?? createLogger('@blackwing/db');
   const pool = createPool(config, 'app', {
     logger,
+    guards: config.guards,
     ...(options.metrics === undefined ? {} : { metrics: options.metrics }),
     ...(options.applicationName === undefined ? {} : { applicationName: options.applicationName }),
   });

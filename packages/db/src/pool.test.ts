@@ -7,7 +7,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { isAppError } from '@blackwing/errors';
 
 import { createAppDatabase, pingPool } from './client.js';
-import { DbUnavailableError, type DbLogger } from './pool.js';
+import { loadAppDbConfig } from './env.js';
+import { createPool, DbUnavailableError, type DbLogger, sessionOptions } from './pool.js';
 
 const PASSWORD = 'pool-test-secret-9f8e7d';
 
@@ -166,5 +167,43 @@ describe('runtime entry point', () => {
     for (const file of ['./index.ts', './client.ts', './pool.ts']) {
       expect(src(file)).not.toMatch(/owner\.js|loadOwnerDbConfig|ownerDbEnvSchema|PG_OWNER/);
     }
+  });
+});
+
+describe('session guardrails (DB-007)', () => {
+  const guards = {
+    statementTimeoutMs: 15_000,
+    idleTxTimeoutMs: 30_000,
+    lockTimeoutMs: 5_000,
+    slowQueryMs: 500,
+  } as const;
+
+  it('keeps only the search path when there are no guards (owner pool)', () => {
+    expect(sessionOptions()).toBe('-c search_path=public');
+  });
+
+  it('adds the statement, idle-transaction and lock timeouts to the startup options', () => {
+    expect(sessionOptions(guards)).toBe(
+      '-c search_path=public -c statement_timeout=15000 -c idle_in_transaction_session_timeout=30000 -c lock_timeout=5000',
+    );
+  });
+
+  it('applies the timeouts to the app pool only', () => {
+    const config = loadAppDbConfig({
+      NODE_ENV: 'test',
+      PGHOST: 'db.internal',
+      PG_APP_PASSWORD: 'app-pw-0123456789',
+    });
+    const { logger } = captureLogger();
+    const app = createPool(config, 'app', { logger, guards: config.guards });
+    const owner = createPool(config, 'owner', { logger });
+    cleanups.push(
+      () => app.end(),
+      () => owner.end(),
+    );
+    expect(app.options.options).toContain('-c statement_timeout=15000');
+    expect(app.options.options).toContain('-c idle_in_transaction_session_timeout=30000');
+    expect(app.options.options).toContain('-c lock_timeout=5000');
+    expect(owner.options.options).toBe('-c search_path=public');
   });
 });

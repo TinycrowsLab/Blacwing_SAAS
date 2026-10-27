@@ -48,6 +48,17 @@ const poolMax = zString({ trim: true }).pipe(
 );
 const positiveMs = zDurationMs().refine((ms) => ms > 0, 'must be greater than zero');
 
+/** Default `DB_STATEMENT_TIMEOUT_MS`: a statement running longer is cancelled by Postgres (DB-007). */
+export const DEFAULT_DB_STATEMENT_TIMEOUT_MS = 15_000;
+/** Default `DB_IDLE_TX_TIMEOUT_MS`: an open transaction that sits idle longer is aborted. */
+export const DEFAULT_DB_IDLE_TX_TIMEOUT_MS = 30_000;
+/** Default `DB_LOCK_TIMEOUT_MS`: waiting longer than this for a row or table lock fails the statement. */
+export const DEFAULT_DB_LOCK_TIMEOUT_MS = 5_000;
+/** Default `DB_SLOW_QUERY_MS`: queries at or above this duration log `db.query.slow`. */
+export const DEFAULT_DB_SLOW_QUERY_MS = 500;
+/** Upper bound on the timeout settings: Postgres stores them as a 32-bit millisecond integer. */
+export const MAX_DB_TIMEOUT_MS = 2_147_483_647;
+
 const sharedShape = {
   NODE_ENV: z.enum(NODE_ENVS),
   PGHOST: zString({ trim: true }),
@@ -58,6 +69,22 @@ const sharedShape = {
   PG_ACQUIRE_TIMEOUT: positiveMs.default(DEFAULT_PG_ACQUIRE_TIMEOUT_MS),
   PG_IDLE_TIMEOUT: positiveMs.default(DEFAULT_PG_IDLE_TIMEOUT_MS),
 } as const;
+
+/**
+ * Query guardrails of the runtime pool (DB-007). Applied to every connection of the app pool as
+ * startup settings, so they hold for pooled connections and transactions alike. The migrate job's
+ * owner pool gets none (migrations may legitimately run long).
+ */
+export interface QueryGuardConfig {
+  /** `statement_timeout`: a statement running longer is cancelled (SQLSTATE 57014). */
+  readonly statementTimeoutMs: number;
+  /** `idle_in_transaction_session_timeout`: an idle open transaction is terminated. */
+  readonly idleTxTimeoutMs: number;
+  /** `lock_timeout`: how long a statement may wait for a lock. */
+  readonly lockTimeoutMs: number;
+  /** Queries at or above this many milliseconds are logged as `db.query.slow`. */
+  readonly slowQueryMs: number;
+}
 
 /** Resolved connection settings for one role. */
 export interface DbConnectionConfig {
@@ -72,6 +99,24 @@ export interface DbConnectionConfig {
   readonly acquireTimeoutMs: number;
   readonly idleTimeoutMs: number;
 }
+
+/** Runtime (app role) connection settings: the role's connection plus its query guardrails. */
+export interface AppDbConnectionConfig extends DbConnectionConfig {
+  readonly guards: QueryGuardConfig;
+}
+
+const timeoutMs = zString({ trim: true }).pipe(
+  z.coerce.number<string>().int().min(1).max(MAX_DB_TIMEOUT_MS),
+);
+
+const queryGuardShape = {
+  DB_STATEMENT_TIMEOUT_MS: timeoutMs.default(DEFAULT_DB_STATEMENT_TIMEOUT_MS),
+  DB_IDLE_TX_TIMEOUT_MS: timeoutMs.default(DEFAULT_DB_IDLE_TX_TIMEOUT_MS),
+  DB_LOCK_TIMEOUT_MS: timeoutMs.default(DEFAULT_DB_LOCK_TIMEOUT_MS),
+  DB_SLOW_QUERY_MS: zString({ trim: true })
+    .pipe(z.coerce.number<string>().int().min(0).max(MAX_DB_TIMEOUT_MS))
+    .default(DEFAULT_DB_SLOW_QUERY_MS),
+} as const;
 
 interface SharedParsed {
   NODE_ENV: (typeof NODE_ENVS)[number];
@@ -120,6 +165,7 @@ function toConnection(env: SharedParsed, user: string, password: Secret): DbConn
 export const appDbEnvSchema = z
   .object({
     ...sharedShape,
+    ...queryGuardShape,
     PG_APP_USER: zString({ trim: true }).default(DB_ROLES.app),
     PG_APP_PASSWORD: zSecret(),
   })
@@ -133,7 +179,15 @@ export const appDbEnvSchema = z
       });
     }
   })
-  .transform((env) => toConnection(env, env.PG_APP_USER, env.PG_APP_PASSWORD));
+  .transform((env): AppDbConnectionConfig => ({
+    ...toConnection(env, env.PG_APP_USER, env.PG_APP_PASSWORD),
+    guards: {
+      statementTimeoutMs: env.DB_STATEMENT_TIMEOUT_MS,
+      idleTxTimeoutMs: env.DB_IDLE_TX_TIMEOUT_MS,
+      lockTimeoutMs: env.DB_LOCK_TIMEOUT_MS,
+      slowQueryMs: env.DB_SLOW_QUERY_MS,
+    },
+  }));
 
 /** Migration (owner role) settings: only the migrate job parses these. */
 export const ownerDbEnvSchema = z
@@ -161,7 +215,7 @@ export const ownerDbEnvSchema = z
 export function loadAppDbConfig(
   source?: EnvSource,
   options?: LoadConfigOptions,
-): Readonly<DbConnectionConfig> {
+): Readonly<AppDbConnectionConfig> {
   return loadConfig(appDbEnvSchema, source, options);
 }
 

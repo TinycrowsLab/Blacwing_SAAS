@@ -13,6 +13,7 @@ import { type AppDatabase, createAppDatabase, type Tx, verifyAppRole } from './c
 import { migrateDatabase } from './migrate.js';
 import { createOwnerPool } from './owner.js';
 import { DbUnavailableError, type DbLogger } from './pool.js';
+import { mapDbError, QueryTimeoutError } from './query-errors.js';
 
 let handle: PostgresHandle;
 let app: AppDatabase;
@@ -190,5 +191,56 @@ describe('pool behaviour', () => {
         }),
       );
     }
+  });
+});
+
+describe('query guardrails (DB-007)', () => {
+  let guarded: AppDatabase;
+  beforeAll(() => {
+    guarded = createAppDatabase({
+      source: envFor('app', {
+        DB_STATEMENT_TIMEOUT_MS: '300',
+        DB_IDLE_TX_TIMEOUT_MS: '300',
+        DB_LOCK_TIMEOUT_MS: '300',
+        DB_SLOW_QUERY_MS: '0',
+      }),
+      logger,
+    });
+  });
+  afterAll(async () => {
+    await (guarded as AppDatabase | undefined)?.close();
+  });
+
+  it('cancels a statement past statement_timeout with SQLSTATE 57014 and maps it to QueryTimeoutError', async () => {
+    const error: unknown = await guarded.pool.query('SELECT pg_sleep(5)').catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: '57014' });
+    const mapped = mapDbError(error);
+    expect(mapped).toBeInstanceOf(QueryTimeoutError);
+  });
+
+  it('aborts an idle open transaction after idle_in_transaction_session_timeout', async () => {
+    const client = await guarded.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+      expect(await pgCode(client.query('SELECT 1'))).toBeDefined();
+    } finally {
+      client.release(true);
+    }
+  });
+
+  it('applies the timeouts to every pooled connection through the startup options', async () => {
+    const { rows } = await guarded.pool.query<{ statement_timeout: string; lock_timeout: string }>(
+      "SELECT current_setting('statement_timeout') AS statement_timeout, current_setting('lock_timeout') AS lock_timeout",
+    );
+    expect(rows).toEqual([{ statement_timeout: '300ms', lock_timeout: '300ms' }]);
+  });
+
+  it('logs db.query.slow above the threshold without the SQL text or parameters', async () => {
+    lines.length = 0;
+    await guarded.pool.query('SELECT $1::text AS secret', ['hunter2-do-not-log']);
+    const slow = lines.find((line) => line.message === 'db.query.slow');
+    expect(slow).toBeDefined();
+    expect(JSON.stringify(lines)).not.toContain('hunter2-do-not-log');
   });
 });

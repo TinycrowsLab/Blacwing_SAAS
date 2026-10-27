@@ -6,7 +6,15 @@ import { describe, expect, it } from 'vitest';
 import { isConfigValidationError, isMarkedSecret } from '@blackwing/config';
 import { isAppError } from '@blackwing/errors';
 
-import { appDbEnvSchema, DB_ROLES, loadAppDbConfig } from './env.js';
+import {
+  appDbEnvSchema,
+  DB_ROLES,
+  DEFAULT_DB_IDLE_TX_TIMEOUT_MS,
+  DEFAULT_DB_LOCK_TIMEOUT_MS,
+  DEFAULT_DB_SLOW_QUERY_MS,
+  DEFAULT_DB_STATEMENT_TIMEOUT_MS,
+  loadAppDbConfig,
+} from './env.js';
 import { loadOwnerDbConfig } from './owner.js';
 import { expandEnv } from './seed/env.js';
 
@@ -156,5 +164,64 @@ describe('owner database settings', () => {
     expect(
       configError(() => loadOwnerDbConfig({ ...owner, PG_OWNER_USER: 'bw_app' })).keys,
     ).toEqual(['PG_OWNER_USER']);
+  });
+});
+
+describe('query guardrail settings (DB-007)', () => {
+  it('defaults to 15s statements, 30s idle transactions, 5s lock waits and 500ms slow queries', () => {
+    expect(loadAppDbConfig(base).guards).toEqual({
+      statementTimeoutMs: DEFAULT_DB_STATEMENT_TIMEOUT_MS,
+      idleTxTimeoutMs: DEFAULT_DB_IDLE_TX_TIMEOUT_MS,
+      lockTimeoutMs: DEFAULT_DB_LOCK_TIMEOUT_MS,
+      slowQueryMs: DEFAULT_DB_SLOW_QUERY_MS,
+    });
+    expect([
+      DEFAULT_DB_STATEMENT_TIMEOUT_MS,
+      DEFAULT_DB_IDLE_TX_TIMEOUT_MS,
+      DEFAULT_DB_LOCK_TIMEOUT_MS,
+      DEFAULT_DB_SLOW_QUERY_MS,
+    ]).toEqual([15_000, 30_000, 5_000, 500]);
+  });
+
+  it('reads the four DB_* settings from the environment', () => {
+    expect(
+      loadAppDbConfig({
+        ...base,
+        DB_STATEMENT_TIMEOUT_MS: '2000',
+        DB_IDLE_TX_TIMEOUT_MS: '4000',
+        DB_LOCK_TIMEOUT_MS: '250',
+        DB_SLOW_QUERY_MS: '0',
+      }).guards,
+    ).toEqual({
+      statementTimeoutMs: 2000,
+      idleTxTimeoutMs: 4000,
+      lockTimeoutMs: 250,
+      slowQueryMs: 0,
+    });
+  });
+
+  it('refuses zero or negative timeouts (Postgres reads 0 as "no timeout"), naming keys only', () => {
+    const error = configError(() =>
+      loadAppDbConfig({
+        ...base,
+        DB_STATEMENT_TIMEOUT_MS: '0',
+        DB_IDLE_TX_TIMEOUT_MS: '-5',
+        DB_LOCK_TIMEOUT_MS: 'soon',
+        DB_SLOW_QUERY_MS: '-1',
+      }),
+    );
+    expect(error.code).toBe('CONFIG_INVALID');
+    expect(error.keys.sort()).toEqual([
+      'DB_IDLE_TX_TIMEOUT_MS',
+      'DB_LOCK_TIMEOUT_MS',
+      'DB_SLOW_QUERY_MS',
+      'DB_STATEMENT_TIMEOUT_MS',
+    ]);
+  });
+
+  it('never gives the owner (migration) settings any guardrail', () => {
+    expect(
+      loadOwnerDbConfig({ ...base, PG_OWNER_PASSWORD: 'owner-pw-0123456789' }),
+    ).not.toHaveProperty('guards');
   });
 });

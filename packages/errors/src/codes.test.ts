@@ -63,6 +63,8 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   TEMPORAL_NAMESPACE_NOT_FOUND: 500,
   TEMPORAL_UNAVAILABLE: 503,
   DB_UNAVAILABLE: 503,
+  DB_QUERY_TIMEOUT: 504,
+  DB_SERIALIZATION_CONFLICT: 409,
   WORKER_QUEUE_UNKNOWN: 500,
   SEARCH_ATTR_TYPE_CONFLICT: 500,
   SBX_UNAUTHENTICATED: 401,
@@ -102,7 +104,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(74);
+    expect(ERROR_CODE_LIST).toHaveLength(76);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -127,12 +129,13 @@ describe('error-code registry', () => {
     );
   });
 
-  it('marks only RATE_LIMITED, TX_RETRY_EXHAUSTED, TEMPORAL_UNAVAILABLE, DB_UNAVAILABLE, SBX_DRIVER_UNAVAILABLE, KEK_UNAVAILABLE and EXTERNAL_BACKEND_UNAVAILABLE as retryable', () => {
+  it('marks only RATE_LIMITED, TX_RETRY_EXHAUSTED, TEMPORAL_UNAVAILABLE, DB_UNAVAILABLE, DB_SERIALIZATION_CONFLICT, SBX_DRIVER_UNAVAILABLE, KEK_UNAVAILABLE and EXTERNAL_BACKEND_UNAVAILABLE as retryable', () => {
     expect(ERROR_CODE_LIST.filter((code) => ERROR_CODES[code].retryable)).toEqual([
       'RATE_LIMITED',
       'TX_RETRY_EXHAUSTED',
       'TEMPORAL_UNAVAILABLE',
       'DB_UNAVAILABLE',
+      'DB_SERIALIZATION_CONFLICT',
       'SBX_DRIVER_UNAVAILABLE',
       'KEK_UNAVAILABLE',
       'EXTERNAL_BACKEND_UNAVAILABLE',
@@ -240,6 +243,8 @@ describe('error-code registry', () => {
       | 'TEMPORAL_NAMESPACE_NOT_FOUND'
       | 'TEMPORAL_UNAVAILABLE'
       | 'DB_UNAVAILABLE'
+      | 'DB_QUERY_TIMEOUT'
+      | 'DB_SERIALIZATION_CONFLICT'
       | 'WORKER_QUEUE_UNKNOWN'
       | 'SEARCH_ATTR_TYPE_CONFLICT'
       | 'SBX_UNAUTHENTICATED'
