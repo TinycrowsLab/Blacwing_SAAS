@@ -105,6 +105,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="./secrets-resolve.html">Runbook: internal secret resolve API (SECRETS-006)</a></li>
 <li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
 <li><a href="./trivy.html">Trivy scanning (CI-009)</a></li>
+<li><a href="./web-bff-auth.html">Runbook: console sign-in (BFF OIDC)</a></li>
 </ul>
 <h2>Architecture and Security</h2>
 <ul>
@@ -189,7 +190,8 @@ credentials redacted.</p>
 <li><code>specs/navigation/*.e2e.ts</code>: page loads of the lab target. The only project that retries (once), with a
 trace recorded on that first retry.</li>
 <li><code>specs/flows/*.e2e.ts</code>: user flows (today: password sign-in and sign-out of a seeded Keycloak user in
-realm <code>blackwing-dev</code>, and a refused wrong password). No retries; a trace, video and screenshot are kept
+realm <code>blackwing-dev</code>, a refused wrong password, and the console BFF sign-in in <code>auth-bff.e2e.ts</code>, which drives
+<code>http://localhost:3000</code>, the origin the dev realm registers; see <a href="./web-bff-auth.html">console sign-in</a>). No retries; a trace, video and screenshot are kept
 for every failure.</li>
 <li>Every URL the suite drives must be a loopback address (<code>apps/web/e2e/support/env.ts</code>); anything else
 fails before a browser starts. Tests run with <code>TZ=UTC</code> and the browser clock in UTC.</li>
