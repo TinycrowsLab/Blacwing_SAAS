@@ -27,6 +27,21 @@ if (!('ResizeObserver' in globalThis)) {
   Object.defineProperty(globalThis, 'ResizeObserver', { value: ResizeObserverStub });
 }
 
+// jsdom has no matchMedia; next-themes reads the OS colour scheme through it (ModeToggle, ThemeProvider).
+if (typeof window.matchMedia !== 'function') {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: (query: string): Partial<MediaQueryList> => ({
+      matches: false,
+      media: query,
+      addEventListener: (): void => undefined,
+      removeEventListener: (): void => undefined,
+      addListener: (): void => undefined,
+      removeListener: (): void => undefined,
+    }),
+  });
+}
+
 type StoryModule = Parameters<typeof composeStories>[0];
 
 /** The part of a composed story this suite drives: `run()` mounts it and executes its `play`. */
