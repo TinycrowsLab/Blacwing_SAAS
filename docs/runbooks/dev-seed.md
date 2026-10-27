@@ -1,7 +1,8 @@
 # Dev seed data (`pnpm db:seed`)
 
 DEVENV-011 (#165). Seeds the local database with the minimum data for a first grey-box run against the
-local Juice Shop. Development and test only: the command refuses `NODE_ENV=staging|production`.
+local Juice Shop. Development and test only: the command refuses every `NODE_ENV` except `development` and `test` (error code
+`SEED_FORBIDDEN_IN_PROD`), before it reads any config or opens a connection.
 
 ## Run it
 
@@ -10,7 +11,16 @@ pnpm dev:deps          # Postgres, Keycloak, OpenBao, ...
 pnpm db:migrate        # the seed never creates tables
 pnpm db:seed           # idempotent: run it as often as you like
 pnpm db:seed:reset     # delete the seeded tenant rows, then seed again
+pnpm db:seed --only=assets,credentials   # run only the named steps (see "Steps")
 ```
+
+## Steps
+
+The run is a list of named steps, in order. `tenant` (the tenant `acme` and its users) always runs. The
+others write tenant-scoped rows: `memberships`, `assets`, `credentials`, `standing-authorisations` and
+`role-matrices`. `--only=<a,b>` runs just the named steps. An unknown or empty name is refused before anything
+is written. A step left out by `--only` is not reported as skipped. `--reset` clears every seeded row first,
+whatever `--only` says, so a reset never leaves a child row behind its deleted asset.
 
 It reads `.env` at the repository root: `DATABASE_URL` (app role, RLS applies), `MIGRATION_DATABASE_URL`
 (owner role, platform rows only), `BW_TARGET_JUICE_SHOP_URL` (default `http://127.0.0.1:13000`) and,
@@ -36,11 +46,12 @@ random other tenant sees nothing. It fails if any seeded row leaks.
 
 ## Safety notes
 
-- **Missing schema.** Before writing anything, the seed compares the catalogue with
-  `SEED_SCHEMA_CONTRACT` (`packages/db/src/seed/schema-contract.ts`). It stops on the first run and names
-  each missing table or column. The tables belong to the DB/domain epics (tenancy #94 and later issues).
-  Until those migrations land, the integration test uses a test-only fixture
-  (`src/seed/__fixtures__/seed-tables.sql`) that follows the §7 RLS pattern.
+- **Missing schema.** The seed compares the catalogue with `SEED_SCHEMA_CONTRACT`
+  (`packages/db/src/seed/schema-contract.ts`). The platform tables (`tenants`, `users`) must exist, or the run
+  stops before writing anything and names what is missing. A tenant-scoped step whose tables are missing (or
+  whose dependency was skipped) is skipped and logged as `seed.skipped` with the missing table or column, and
+  the rest of the seed still runs. Run `pnpm db:migrate` to create them. The integration test uses a test-only
+  fixture (`src/seed/__fixtures__/seed-tables.sql`) that follows the §7 RLS pattern.
 - **Separation of duties (§8.4).** A plan where the requester is also the approver is rejected before any
   write.
 - **Keycloak subjects.** With admin credentials set, the seed looks up each user's `sub` in the dev realm.
@@ -49,7 +60,8 @@ random other tenant sees nothing. It fails if any seeded row leaks.
 - **SA signature.** The SA carries a dev EdDSA JWS whose key is generated for the run and then thrown away.
   No trust store holds that key, so the envelope verifier (#375) rejects the signature until the signing
   service exists. A seeded SA cannot pass §8.1 verification by accident.
-- **Audit.** `packages/audit` has no ledger writer yet, so the seed writes no audit events. Production
-  tenants are provisioned through onboarding, which audits, and are never seeded.
+- **Audit.** The seed writes no audit event. `@blackwing/audit` depends on `@blackwing/db`, so this package
+  cannot call the ledger emitter, and a raw insert would bypass the hash chain. The run logs `seed.complete`
+  instead. Production tenants are provisioned through onboarding, which audits, and are never seeded.
 - **Secrets.** OpenBao secrets are referenced, never written. The log summary contains counts and names
   only.

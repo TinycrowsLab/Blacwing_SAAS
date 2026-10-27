@@ -14,7 +14,8 @@ import {
   type TenantSeedPlan,
   userRows,
 } from './plan.js';
-import { assertSeedSchema } from './schema-contract.js';
+import { assertSeedSchema, CORE_SEED_TABLES, findSeedSchemaProblems } from './schema-contract.js';
+import { selectSeeders } from './seeders.js';
 
 import type pg from 'pg';
 
@@ -69,6 +70,8 @@ export interface SeedOptions {
   readonly subjects?: Partial<Record<PersonaKey, string>>;
   /** Delete the seeded tenant rows first (`db:seed:reset`). */
   readonly reset?: boolean;
+  /** Run only these tenant-scoped steps (`--only`); the platform step always runs. Validated by `parseOnly`. */
+  readonly only?: readonly string[];
   readonly now?: () => IsoTimestamp;
   readonly logger?: SeedLogger;
   /** Overrides for tests (e.g. requester == approver must be rejected). */
@@ -133,33 +136,49 @@ async function upsertPlatformRows(
   }
 }
 
-/** Deletes the tenant-scoped rows this seed owns (under the tenant context, so RLS applies). */
-async function deleteSeededRows(tx: pg.PoolClient, plan: TenantSeedPlan): Promise<void> {
+/**
+ * Deletes the tenant-scoped rows this seed owns (under the tenant context, so RLS applies). Only tables that
+ * exist are touched: a missing table has no rows to delete.
+ */
+async function deleteSeededRows(
+  tx: pg.PoolClient,
+  plan: TenantSeedPlan,
+  present: ReadonlySet<string>,
+): Promise<void> {
   const assetId = plan.asset.id;
-  await tx.query('DELETE FROM role_matrices WHERE asset_id = $1', [assetId]);
-  await tx.query('DELETE FROM asset_credentials WHERE asset_id = $1', [assetId]);
-  await tx.query('DELETE FROM standing_authorisations WHERE id = $1', [
+  const del = async (table: string, sql: string, params: unknown[]): Promise<void> => {
+    if (present.has(table)) await tx.query(sql, params);
+  };
+  await del('role_matrices', 'DELETE FROM role_matrices WHERE asset_id = $1', [assetId]);
+  await del('asset_credentials', 'DELETE FROM asset_credentials WHERE asset_id = $1', [assetId]);
+  await del('standing_authorisations', 'DELETE FROM standing_authorisations WHERE id = $1', [
     plan.standingAuthorisation.id,
   ]);
-  await tx.query('DELETE FROM assets WHERE id = $1', [assetId]);
-  await tx.query('DELETE FROM memberships WHERE user_id = ANY($1::uuid[])', [
+  await del('assets', 'DELETE FROM assets WHERE id = $1', [assetId]);
+  await del('memberships', 'DELETE FROM memberships WHERE user_id = ANY($1::uuid[])', [
     plan.memberships.map((m) => m.userId),
   ]);
 }
 
-async function upsertTenantRows(tx: pg.PoolClient, plan: TenantSeedPlan): Promise<void> {
+async function upsertTenantRows(
+  tx: pg.PoolClient,
+  plan: TenantSeedPlan,
+  steps: ReadonlySet<string>,
+): Promise<void> {
   const tenantId = plan.tenantId;
-  for (const m of plan.memberships) {
-    await tx.query(
-      `INSERT INTO memberships (tenant_id, user_id, roles, created_at, updated_at)
+  if (steps.has('memberships'))
+    for (const m of plan.memberships) {
+      await tx.query(
+        `INSERT INTO memberships (tenant_id, user_id, roles, created_at, updated_at)
        VALUES ($1, $2, $3::text[], now(), now())
        ON CONFLICT (tenant_id, user_id) DO UPDATE SET roles = EXCLUDED.roles, updated_at = now()`,
-      [tenantId, m.userId, m.roles],
-    );
-  }
+        [tenantId, m.userId, m.roles],
+      );
+    }
   const a = plan.asset;
-  await tx.query(
-    `INSERT INTO assets (id, tenant_id, type, identifiers, environment, owner_user_id,
+  if (steps.has('assets'))
+    await tx.query(
+      `INSERT INTO assets (id, tenant_id, type, identifiers, environment, owner_user_id,
        verification_status, verification_method, attestation, created_at, updated_at)
      VALUES ($1, $2, $3, $4::text[], $5, $6, $7, $8, $9::jsonb, now(), now())
      ON CONFLICT (id) DO UPDATE SET type = EXCLUDED.type, identifiers = EXCLUDED.identifiers,
@@ -167,31 +186,33 @@ async function upsertTenantRows(tx: pg.PoolClient, plan: TenantSeedPlan): Promis
        verification_status = EXCLUDED.verification_status,
        verification_method = EXCLUDED.verification_method, attestation = EXCLUDED.attestation,
        updated_at = now()`,
-    [
-      a.id,
-      tenantId,
-      a.type,
-      a.identifiers,
-      a.environment,
-      a.ownerUserId,
-      a.verificationStatus,
-      a.verificationMethod,
-      json(a.attestation),
-    ],
-  );
-  for (const c of plan.credentials) {
-    await tx.query(
-      `INSERT INTO asset_credentials (id, tenant_id, asset_id, role_name, secret_ref, login_recipe,
+      [
+        a.id,
+        tenantId,
+        a.type,
+        a.identifiers,
+        a.environment,
+        a.ownerUserId,
+        a.verificationStatus,
+        a.verificationMethod,
+        json(a.attestation),
+      ],
+    );
+  if (steps.has('credentials'))
+    for (const c of plan.credentials) {
+      await tx.query(
+        `INSERT INTO asset_credentials (id, tenant_id, asset_id, role_name, secret_ref, login_recipe,
          mfa_type, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, now(), now())
        ON CONFLICT (id) DO UPDATE SET role_name = EXCLUDED.role_name, secret_ref = EXCLUDED.secret_ref,
          login_recipe = EXCLUDED.login_recipe, mfa_type = EXCLUDED.mfa_type, updated_at = now()`,
-      [c.id, tenantId, c.assetId, c.roleName, c.secretRef, json(c.loginRecipe), c.mfaType],
-    );
-  }
+        [c.id, tenantId, c.assetId, c.roleName, c.secretRef, json(c.loginRecipe), c.mfaType],
+      );
+    }
   const s = plan.standingAuthorisation;
-  await tx.query(
-    `INSERT INTO standing_authorisations (id, tenant_id, asset_ids, scope_rules, max_intrusiveness,
+  if (steps.has('standing-authorisations'))
+    await tx.query(
+      `INSERT INTO standing_authorisations (id, tenant_id, asset_ids, scope_rules, max_intrusiveness,
        pre_approved_test_classes, default_budgets, test_windows, valid_from, expires_at, requester_id,
        approver_id, signature, signing_key_id, status, created_at, updated_at)
      VALUES ($1, $2, $3::uuid[], $4::jsonb, $5, $6::text[], $7::jsonb, $8::jsonb, $9, $10, $11, $12,
@@ -204,32 +225,33 @@ async function upsertTenantRows(tx: pg.PoolClient, plan: TenantSeedPlan): Promis
        requester_id = EXCLUDED.requester_id, approver_id = EXCLUDED.approver_id,
        signature = EXCLUDED.signature, signing_key_id = EXCLUDED.signing_key_id,
        status = EXCLUDED.status, updated_at = now()`,
-    [
-      s.id,
-      tenantId,
-      s.assetIds,
-      json(s.scopeRules),
-      s.maxIntrusiveness,
-      s.preApprovedTestClasses,
-      json(s.defaultBudgets),
-      json(s.testWindows),
-      s.validFrom,
-      s.expiresAt,
-      s.requesterId,
-      s.approverId,
-      s.signature,
-      s.signingKeyId,
-      s.status,
-    ],
-  );
+      [
+        s.id,
+        tenantId,
+        s.assetIds,
+        json(s.scopeRules),
+        s.maxIntrusiveness,
+        s.preApprovedTestClasses,
+        json(s.defaultBudgets),
+        json(s.testWindows),
+        s.validFrom,
+        s.expiresAt,
+        s.requesterId,
+        s.approverId,
+        s.signature,
+        s.signingKeyId,
+        s.status,
+      ],
+    );
   const r = plan.roleMatrix;
-  await tx.query(
-    `INSERT INTO role_matrices (id, tenant_id, asset_id, name, roles, matrix, created_at, updated_at)
+  if (steps.has('role-matrices'))
+    await tx.query(
+      `INSERT INTO role_matrices (id, tenant_id, asset_id, name, roles, matrix, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5::text[], $6::jsonb, now(), now())
      ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, roles = EXCLUDED.roles,
        matrix = EXCLUDED.matrix, updated_at = now()`,
-    [r.id, tenantId, r.assetId, r.name, r.roles, json(r.matrix)],
-  );
+      [r.id, tenantId, r.assetId, r.name, r.roles, json(r.matrix)],
+    );
 }
 
 const TENANT_TABLES = [
@@ -240,14 +262,16 @@ const TENANT_TABLES = [
   'role_matrices',
 ] as const;
 
-/** Row count per tenant-scoped table as seen under `tenantId` (RLS applies). */
+/** Row count per tenant-scoped table that exists, as seen under `tenantId` (RLS applies). */
 async function countVisible(
   appPool: pg.Pool,
   tenantId: string,
-): Promise<Record<(typeof TENANT_TABLES)[number], number>> {
+  present: ReadonlySet<string>,
+): Promise<Record<string, number>> {
   return inTenant(appPool, tenantId, async (tx) => {
-    const counts = {} as Record<(typeof TENANT_TABLES)[number], number>;
+    const counts: Record<string, number> = {};
     for (const table of TENANT_TABLES) {
+      if (!present.has(table)) continue;
       const { rows } = await tx.query<{ n: string }>(`SELECT count(*) AS n FROM ${table}`);
       counts[table] = Number(rows[0]?.n ?? 0);
     }
@@ -256,8 +280,8 @@ async function countVisible(
 }
 
 /** Isolation self-check: under a fresh, unrelated tenant id nothing seeded may be visible (§8.6). */
-async function assertIsolated(appPool: pg.Pool): Promise<void> {
-  const counts = await countVisible(appPool, newId());
+async function assertIsolated(appPool: pg.Pool, present: ReadonlySet<string>): Promise<void> {
+  const counts = await countVisible(appPool, newId(), present);
   const leaked = Object.entries(counts).filter(([, n]) => n > 0);
   if (leaked.length > 0) {
     throw new Error(
@@ -266,13 +290,29 @@ async function assertIsolated(appPool: pg.Pool): Promise<void> {
   }
 }
 
+/** Rows each tenant-scoped step writes, for the `seed.seeded` log line. */
+function rowsPerStep(plan: TenantSeedPlan): Record<string, number> {
+  return {
+    memberships: plan.memberships.length,
+    assets: 1,
+    credentials: plan.credentials.length,
+    'standing-authorisations': 1,
+    'role-matrices': 1,
+  };
+}
+
 /**
- * Seeds (or re-seeds) the demo tenant. Fails fast if the schema is missing, validates every row
- * (SoD, secret refs, verified asset, active unexpired SA) before writing, and proves isolation after.
+ * Seeds (or re-seeds) the demo tenant. The platform rows come first and fail fast if their tables are missing.
+ * Then the tenant-scoped steps run in order, except the ones `--only` leaves out and the ones whose tables are
+ * not migrated yet (`seed.skipped`). Validates every row (SoD, secret refs, verified asset, active unexpired SA)
+ * before writing, and proves isolation after.
  */
 export async function runSeed(options: SeedOptions): Promise<SeedSummary> {
   const now = (options.now ?? (() => nowIso()))();
-  await assertSeedSchema(options.ownerPool);
+  const log = options.logger;
+  const reset = options.reset === true;
+  log?.info({ reset, only: options.only ?? 'all' }, 'seed.start');
+  await assertSeedSchema(options.ownerPool, CORE_SEED_TABLES);
   const { tenantId, userIds } = await upsertPlatformRows(
     options.ownerPool,
     now,
@@ -286,16 +326,41 @@ export async function runSeed(options: SeedOptions): Promise<SeedSummary> {
     ...(options.requester === undefined ? {} : { requester: options.requester }),
     ...(options.approver === undefined ? {} : { approver: options.approver }),
   });
+  const problems = await findSeedSchemaProblems(options.ownerPool);
+  const selection = selectSeeders({ only: options.only, problems });
+  const present = new Set(TENANT_TABLES.filter((table) => !problems.has(table)));
+  for (const skip of selection.skipped) {
+    log?.warn({ seeder: skip.name, reason: skip.reason }, 'seed.skipped');
+  }
+  const steps = new Set(selection.run);
   await inTenant(options.appPool, tenantId, async (tx) => {
-    if (options.reset === true) await deleteSeededRows(tx, plan);
-    await upsertTenantRows(tx, plan);
+    if (reset) await deleteSeededRows(tx, plan, present);
+    await upsertTenantRows(tx, plan, steps);
   });
-  const visible = await countVisible(options.appPool, tenantId);
-  await assertIsolated(options.appPool);
+  const rows = rowsPerStep(plan);
+  for (const name of selection.run) {
+    log?.info({ seeder: name, rows: rows[name] ?? 0 }, 'seed.seeded');
+  }
+  const visible = await countVisible(options.appPool, tenantId, present);
+  await assertIsolated(options.appPool, present);
   const counts = { tenants: 1, users: SEED_PERSONAS.length, ...visible };
-  options.logger?.info(
-    { tenant: 'acme', counts, reset: options.reset === true, asset: 'juice-shop (verified)' },
-    'db:seed complete',
+  log?.info(
+    {
+      tenant: 'acme',
+      counts,
+      reset,
+      skipped: selection.skipped.map((skip) => skip.name),
+      asset: 'juice-shop (verified)',
+    },
+    'seed.complete',
   );
   return { tenantId, tenantSlug: 'acme', counts };
+}
+
+/**
+ * The seed for integration and e2e suites: the same run as `pnpm db:seed` (reset allowed, `--only` not), without
+ * log lines. The baseline tenant is always `acme`, so its id is deterministic and the summary names it.
+ */
+export function seedForTest(options: Omit<SeedOptions, 'logger' | 'only'>): Promise<SeedSummary> {
+  return runSeed(options);
 }

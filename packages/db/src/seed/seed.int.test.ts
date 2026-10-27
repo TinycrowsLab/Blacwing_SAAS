@@ -12,8 +12,7 @@ import { type PostgresHandle, withPostgres } from '@blackwing/testing/containers
 
 import { migrateDatabase } from '../index.js';
 import { tenantRow } from './plan.js';
-import { inTenant, runSeed, type SeedSummary } from './run.js';
-import { SeedPreflightError } from './schema-contract.js';
+import { inTenant, runSeed, seedForTest, type SeedSummary } from './run.js';
 
 import type { IsoTimestamp } from '@blackwing/time';
 
@@ -21,8 +20,8 @@ const FIXTURE = new URL('./__fixtures__/seed-tables.sql', import.meta.url);
 const JUICE = 'http://127.0.0.1:13000';
 let db: PostgresHandle;
 
-const seed = (over: Partial<Parameters<typeof runSeed>[0]> = {}): Promise<SeedSummary> =>
-  runSeed({ ownerPool: db.ownerPool, appPool: db.appPool, juiceShopUrl: JUICE, ...over });
+const seed = (over: Partial<Parameters<typeof seedForTest>[0]> = {}): Promise<SeedSummary> =>
+  seedForTest({ ownerPool: db.ownerPool, appPool: db.appPool, juiceShopUrl: JUICE, ...over });
 
 /** The seeded tenant's id: deterministic, so tests can set the tenant context without reading `tenants`. */
 const ACME_ID = tenantRow('2026-01-01T00:00:00.000Z' as IsoTimestamp).id;
@@ -57,12 +56,23 @@ afterAll(async () => {
 });
 
 describe('db:seed', () => {
-  it('fails fast with guidance when the tables it writes are not migrated', async () => {
-    const error = await seed().catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(SeedPreflightError);
-    expect((error as SeedPreflightError).message).toMatch(/pnpm db:migrate/);
-    expect((error as SeedPreflightError).problems).toContain('table assets does not exist');
-    // Nothing was created by the failed run.
+  it('skips the tenant-scoped steps whose tables are not migrated, logs seed.skipped, and seeds the platform rows', async () => {
+    const skipped: string[] = [];
+    const logger = {
+      info: (): void => undefined,
+      warn: (fields: Record<string, unknown>): void => {
+        skipped.push(String(fields.seeder));
+      },
+    };
+    const summary = await runSeed({
+      ownerPool: db.ownerPool,
+      appPool: db.appPool,
+      juiceShopUrl: JUICE,
+      logger,
+    });
+    expect(summary.counts).toEqual({ tenants: 1, users: 6, memberships: 5 });
+    expect(skipped).toEqual(['assets', 'credentials', 'standing-authorisations', 'role-matrices']);
+    // The seed never creates tables: the missing one is still missing.
     const { rows } = await db.ownerPool.query("SELECT to_regclass('assets') AS t");
     expect(rows[0]).toEqual({ t: null });
   });

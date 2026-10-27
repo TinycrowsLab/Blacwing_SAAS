@@ -6,15 +6,20 @@ import pg from 'pg';
 import { defineConfig } from '@blackwing/config';
 import { createLogger } from '@blackwing/logger';
 
-import { expandEnv, seedEnvSchema } from './env.js';
+import { assertSeedAllowed, expandEnv, seedEnvSchema } from './env.js';
 import { lookupSubjects } from './keycloak.js';
 import { runSeed } from './run.js';
+import { parseOnly } from './seeders.js';
 
 const CONNECT_TIMEOUT_MS = 10_000;
 
 async function main(): Promise<void> {
   const log = createLogger('db-seed');
   const reset = process.argv.includes('--reset');
+  assertSeedAllowed(process.env.NODE_ENV);
+  // `--only=a,b` (the bare `--only` flag is refused as an empty list).
+  const onlyArg = process.argv.find((arg) => arg === '--only' || arg.startsWith('--only='));
+  const only = parseOnly(onlyArg === undefined ? undefined : onlyArg.slice('--only='.length));
   const env = defineConfig(seedEnvSchema, { source: expandEnv(process.env) });
 
   let subjects = {};
@@ -56,6 +61,7 @@ async function main(): Promise<void> {
       juiceShopUrl: env.BW_TARGET_JUICE_SHOP_URL,
       subjects,
       reset,
+      ...(only === undefined ? {} : { only }),
       logger: log,
     });
   } finally {

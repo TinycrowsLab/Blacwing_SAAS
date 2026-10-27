@@ -4,7 +4,7 @@ import { isAppError } from '@blackwing/errors';
 import { isUuidV7, newId, type Uuid } from '@blackwing/ids';
 import { fromIso, type IsoTimestamp } from '@blackwing/time';
 
-import { expandEnv, seedEnvSchema } from './env.js';
+import { assertSeedAllowed, expandEnv, SeedForbiddenInProdError, seedEnvSchema } from './env.js';
 import { lookupSubjects } from './keycloak.js';
 import {
   assertSecretRef,
@@ -111,6 +111,16 @@ describe('buildTenantSeedPlan', () => {
     expect(fromIso(sa.expiresAt).getTime()).toBeGreaterThan(fromIso(later).getTime());
   });
 
+  it('keeps the SA window and its test window in UTC across a DST switch', () => {
+    // EU clocks change at 2026-03-29T01:00Z. A seed run just before that must still expire exactly 90 days later.
+    const beforeSwitch = '2026-03-28T23:30:00.000Z' as IsoTimestamp;
+    const { standingAuthorisation: sa } = build({ now: beforeSwitch });
+    expect(sa.expiresAt).toBe('2026-06-26T23:30:00.000Z');
+    expect(sa.testWindows).toEqual([
+      { cron: '0 0 * * *', timezone: 'UTC', durationMs: 86_400_000 },
+    ]);
+  });
+
   it('rejects requester == approver (§8.4)', () => {
     const err = (() => {
       try {
@@ -197,6 +207,29 @@ describe('seed env', () => {
   it('refuses to seed staging or production', () => {
     for (const NODE_ENV of ['production', 'staging']) {
       expect(seedEnvSchema.safeParse(expandEnv({ ...base, NODE_ENV })).success).toBe(false);
+    }
+  });
+
+  /** The error `assertSeedAllowed` throws for `nodeEnv`, or undefined when the seed is allowed. */
+  const refusal = (nodeEnv: string | undefined): unknown => {
+    try {
+      assertSeedAllowed(nodeEnv);
+      return undefined;
+    } catch (error) {
+      return error;
+    }
+  };
+
+  it('allows development and test only', () => {
+    expect(refusal('development')).toBeUndefined();
+    expect(refusal('test')).toBeUndefined();
+  });
+
+  it('refuses production, staging and an unset NODE_ENV with SEED_FORBIDDEN_IN_PROD, before any config is read', () => {
+    for (const nodeEnv of ['production', 'staging', undefined]) {
+      const error = refusal(nodeEnv);
+      expect(error).toBeInstanceOf(SeedForbiddenInProdError);
+      expect(isAppError(error) && error.code).toBe('SEED_FORBIDDEN_IN_PROD');
     }
   });
 });

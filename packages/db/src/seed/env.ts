@@ -3,6 +3,7 @@
 import { z } from 'zod';
 
 import { type EnvSource, zSecret, zSecretUrl, zString, zUrl } from '@blackwing/config';
+import { AppError } from '@blackwing/errors';
 
 /** Expands `${NAME}` references the way `.env.example` writes them (dotenv files loaded by Node do not). */
 export function expandEnv(source: EnvSource): EnvSource {
@@ -28,3 +29,25 @@ export const seedEnvSchema = z.object({
   BW_DEV_KEYCLOAK_ADMIN_USER: zString({ trim: true }).optional(),
   BW_DEV_KEYCLOAK_ADMIN_PASSWORD: zSecret().optional(),
 });
+
+/** `SEED_FORBIDDEN_IN_PROD` (403): `pnpm db:seed` refuses every environment except development and test. */
+export class SeedForbiddenInProdError extends AppError {
+  declare readonly code: 'SEED_FORBIDDEN_IN_PROD';
+
+  constructor(nodeEnv: string) {
+    super(
+      'SEED_FORBIDDEN_IN_PROD',
+      `db:seed refuses NODE_ENV=${nodeEnv}: it seeds development and test only`,
+    );
+  }
+}
+
+/**
+ * Fails closed before any config or connection is read: the seed runs only when NODE_ENV is exactly
+ * `development` or `test` (CONTEXT_PACK §10). An unset NODE_ENV is refused too.
+ */
+export function assertSeedAllowed(nodeEnv: string | undefined): void {
+  if (nodeEnv !== 'development' && nodeEnv !== 'test') {
+    throw new SeedForbiddenInProdError(nodeEnv ?? 'unset');
+  }
+}

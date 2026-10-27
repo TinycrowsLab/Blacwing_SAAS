@@ -39,6 +39,12 @@ const DEFINITIONS = {
   // deadlocks is a transient overload (503, retryable).
   TENANT_CONTEXT_CONFLICT: { status: 500, title: 'Tenant context conflict', retryable: false },
   TX_RETRY_EXHAUSTED: { status: 503, title: 'Transaction retries exhausted', retryable: true },
+  // db:seed refuses to run outside development and test (DEVENV-011, #75). A dev-only CLI refusal.
+  SEED_FORBIDDEN_IN_PROD: {
+    status: 403,
+    title: 'Seeding forbidden in this environment',
+    retryable: false,
+  },
   // Durable-execution tenant context (#25, §8.6). A workflow, activity or client call without a
   // valid tenant header is a server defect and is refused outright (500, fail closed); a signal, query or
   // update that names another tenant than the running workflow is a cross-tenant attempt (403).
