@@ -44,6 +44,10 @@ describe('loadApiConfig', () => {
     expect(config.API_SSE_MAX_CONN_PER_TENANT).toBe(100);
     expect(config.RATE_LIMIT_DEFAULT_RPS).toBe(10);
     expect(config.RATE_LIMIT_BURST).toBe(20);
+    expect(config.SIGNUP_TOKEN_TTL_HOURS).toBe(24);
+    expect(config.SIGNUP_DEFAULT_REGION).toBe('eu-west-1');
+    expect(config.SIGNUP_EMAIL_MAX_PER_HOUR).toBe(5);
+    expect(config.SIGNUP_VERIFY_URL).toBeUndefined();
     expect(config.WEB_ORIGIN).toEqual(['http://localhost:3000']);
     expect(Object.isFrozen(config)).toBe(true);
   });
@@ -95,6 +99,12 @@ describe('loadApiConfig', () => {
     ['RATE_LIMIT_DEFAULT_RPS', '2.5'],
     ['RATE_LIMIT_BURST', '-3'],
     ['RATE_LIMIT_BURST', '1000000'],
+    ['SIGNUP_TOKEN_TTL_HOURS', '0'],
+    ['SIGNUP_TOKEN_TTL_HOURS', '169'],
+    ['SIGNUP_TOKEN_TTL_HOURS', '1.5'],
+    ['SIGNUP_DEFAULT_REGION', 'Europe'],
+    ['SIGNUP_EMAIL_MAX_PER_HOUR', '0'],
+    ['SIGNUP_VERIFY_URL', 'ftp://files.example/verify'],
     ['WEB_ORIGIN', 'http://localhost:3000/app'],
     ['WEB_ORIGIN', 'http://localhost:3000/'],
     ['WEB_ORIGIN', 'ftp://localhost'],

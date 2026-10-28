@@ -58,6 +58,10 @@ const MAX_API_JWT_LEEWAY_SECONDS = 300;
 const DEFAULT_API_JWKS_TTL_MS = 600_000;
 const DEFAULT_API_JWKS_REFETCH_COOLDOWN_MS = 30_000;
 const DEFAULT_API_JWKS_TIMEOUT_MS = 3000;
+/** Self-service signup (TENANT-004). */
+const DEFAULT_SIGNUP_TOKEN_TTL_HOURS = 24;
+const DEFAULT_SIGNUP_DEFAULT_REGION = 'eu-west-1';
+const DEFAULT_SIGNUP_EMAIL_MAX_PER_HOUR = 5;
 
 const byteCount = z
   .string()
@@ -74,6 +78,13 @@ const positiveRate = z
   .string()
   .regex(/^[1-9][0-9]{0,5}$/, 'must be a positive integer')
   .transform(Number);
+
+const SIGNUP_TOKEN_TTL_HOURS_MAX = 168;
+/** A link that stays valid for more than a week is a standing credential, not a verification. */
+const signupTokenHours = positiveRate.refine(
+  (hours) => hours <= SIGNUP_TOKEN_TTL_HOURS_MAX,
+  `must be at most ${String(SIGNUP_TOKEN_TTL_HOURS_MAX)} hours`,
+);
 
 const positiveDuration = zDurationMs().refine((ms) => ms > 0, 'must be greater than zero');
 
@@ -152,6 +163,20 @@ export const apiEnvShape = {
   API_GQL_MAX_COMPLEXITY: positiveRate.default(DEFAULT_API_GQL_MAX_COMPLEXITY),
   /** Most field aliases one GraphQL operation may carry (alias flooding guard). */
   API_GQL_MAX_ALIASES: positiveRate.default(DEFAULT_API_GQL_MAX_ALIASES),
+  /** How long a signup verification link works, in whole hours (TENANT-004). */
+  SIGNUP_TOKEN_TTL_HOURS: signupTokenHours.default(DEFAULT_SIGNUP_TOKEN_TTL_HOURS),
+  /** Data region a self-service tenant is pinned to. */
+  SIGNUP_DEFAULT_REGION: z
+    .string()
+    .regex(/^[a-z]{2}(?:-[a-z]+)+-[0-9]+$/, 'must look like an AWS region code')
+    .default(DEFAULT_SIGNUP_DEFAULT_REGION),
+  /** Most verification mails one address may ask for per hour; further requests are answered 202 but send nothing. */
+  SIGNUP_EMAIL_MAX_PER_HOUR: positiveRate.default(DEFAULT_SIGNUP_EMAIL_MAX_PER_HOUR),
+  /**
+   * Console page the verification link opens (`<url>#token=<token>`). Unset: `<first WEB_ORIGIN>/signup/verify`.
+   * The token travels in the fragment, so it reaches neither access logs nor `Referer` headers.
+   */
+  SIGNUP_VERIFY_URL: zUrl({ protocols: ['http:', 'https:'] }).optional(),
   /** Release version and commit echoed by `/health`. Neither is a secret. */
   API_VERSION: z.string().min(1).default('0.0.0'),
   API_COMMIT: z.string().min(1).default('unknown'),

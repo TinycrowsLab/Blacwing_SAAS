@@ -75,7 +75,9 @@
         "secret.rotated",
         "secret.rewrapped",
         "persona.override_changed",
-        "auth.sso_config_changed"
+        "auth.sso_config_changed",
+        "tenant.created",
+        "signup.verified"
       ]
     },
     "severity": {

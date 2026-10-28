@@ -90,6 +90,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   RUN_NOT_ACTIVE: 409,
   IDEMPOTENCY_KEY_REQUIRED: 400,
   IDEMPOTENCY_KEY_MISMATCH: 422,
+  SIGNUP_TOKEN_INVALID: 400,
   AUDIT_EVENT_INVALID: 422,
   KEK_UNAVAILABLE: 503,
   SERVICE_AUTH_FAILED: 401,
@@ -120,7 +121,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(92);
+    expect(ERROR_CODE_LIST).toHaveLength(93);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -287,6 +288,7 @@ describe('error-code registry', () => {
       | 'KILL_PARTIAL'
       | 'IDEMPOTENCY_KEY_REQUIRED'
       | 'IDEMPOTENCY_KEY_MISMATCH'
+      | 'SIGNUP_TOKEN_INVALID'
       | 'NOT_IMPLEMENTED'
       | 'RUN_NOT_ACTIVE'
       | 'AUDIT_EVENT_INVALID'

@@ -138,6 +138,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'SCOPE_INVALID_RULE',
   // SecretRefError, @blackwing/contracts (SECRETS-003), for the same reason.
   'INVALID_SECRET_REF',
+  // Raised by apps/api's signup service as a plain AppError (TENANT-004).
+  'SIGNUP_TOKEN_INVALID',
   // Raised by @blackwing/workflow-shared as plain AppErrors (WORKFLOW-001).
   'TEMPORAL_CONFIG_INVALID',
   'TEMPORAL_TLS_MISCONFIGURED',

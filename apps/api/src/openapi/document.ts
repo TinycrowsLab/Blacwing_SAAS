@@ -6,8 +6,7 @@ import { auditOpenApiPaths, auditOpenApiSchemas } from '../audit-query/openapi.j
 import { killOpenApiDocument } from '../kill/openapi.js';
 import { personaOpenApiModule } from '../personas/openapi.js';
 import { runEventsOpenApiModule } from '../run-events/openapi.js';
-
-export type { OpenApiModule } from './schema.js';
+import { signupOpenApiModule } from '../signup/openapi.js';
 
 /** Largest page a client may request (§9). */
 export const PAGE_LIMIT_MAX = 200;
@@ -18,7 +17,9 @@ const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch'
 /** Paths under these prefixes are never part of the public spec (the sandbox-only Run Broker API). */
 const INTERNAL_PATH_PREFIXES = ['/internal'] as const;
 
-/** A feature module's contribution to the public API document. Paths are written as served (`/v1/...`). */
+/** A feature module's contribution to the public API document (defined in `schema.ts`, so feature modules never import the builder). */
+export type { OpenApiModule };
+
 /** The kill trigger API (KILL-003) as a module of the combined document. */
 export function killOpenApiModule(): OpenApiModule {
   const source = killOpenApiDocument();
@@ -52,6 +53,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     auditOpenApiModule(),
     runEventsOpenApiModule(),
     personaOpenApiModule(),
+    signupOpenApiModule(),
   ];
 }
 

@@ -477,6 +477,25 @@ export {
   outboxStatusSchema,
 } from './outbox.js';
 export {
+  SIGNUP_ORG_NAME_MAX,
+  SIGNUP_ORG_NAME_MIN,
+  SIGNUP_SLUG_MAX,
+  SIGNUP_SLUG_MIN,
+  SIGNUP_STATUSES,
+  SIGNUP_TOKEN_BYTES,
+  SIGNUP_TOKEN_INPUT_MAX,
+  type SignupAccepted,
+  signupAcceptedSchema,
+  type SignupRequest,
+  signupRequestSchema,
+  type SignupStatus,
+  signupStatusSchema,
+  type SignupVerified,
+  signupVerifiedSchema,
+  type SignupVerifyRequest,
+  signupVerifyRequestSchema,
+} from './signup.js';
+export {
   EXTERNAL_SECRET_BACKENDS,
   formatSecretRef,
   isSecretRefError,

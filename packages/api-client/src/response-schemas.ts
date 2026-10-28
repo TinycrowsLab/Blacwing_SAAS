@@ -6,6 +6,8 @@ import {
   auditSeveritySchema,
   killEventSchema,
   killTriggerResponseSchema,
+  signupAcceptedSchema,
+  signupVerifiedSchema,
 } from '@blackwing/contracts';
 
 import type { OperationId } from './generated/operations.js';
@@ -65,7 +67,9 @@ export const RESPONSE_SCHEMAS: Readonly<
   listAuditEvents: { 200: auditEventsPageSchema },
   // text/event-stream, not JSON: there is no body schema to check, so the client returns it unparsed.
   streamRunEvents: {},
+  requestSignup: { 202: signupAcceptedSchema },
   triggerKill: { 202: killTriggerResponseSchema },
   getPersonaOverride: { 200: personaOverrideViewSchema },
   putPersonaOverride: { 200: personaOverrideViewSchema },
+  verifySignup: { 200: signupVerifiedSchema },
 };

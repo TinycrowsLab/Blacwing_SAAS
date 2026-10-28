@@ -103,6 +103,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/signup': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Ask for a verification e-mail to create an organisation
+     * @description Always answers 202 with the same body, whether or not the address already has an account, so the endpoint cannot be used to enumerate customers. A verification link is mailed; nothing is created until it is used.
+     */
+    post: operations['requestSignup'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/signup/verify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Verify the e-mail address and create the organisation
+     * @description Consumes the single-use token from the e-mail. An unknown, expired, used or cancelled token is 400 SIGNUP_TOKEN_INVALID and creates nothing. When the address already has an account no second tenant is created: the answer is existing_account and the caller goes to login.
+     */
+    post: operations['verifySignup'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -172,7 +212,9 @@ export interface components {
         | 'secret.rotated'
         | 'secret.rewrapped'
         | 'persona.override_changed'
-        | 'auth.sso_config_changed';
+        | 'auth.sso_config_changed'
+        | 'tenant.created'
+        | 'signup.verified';
       /** @enum {string} */
       severity: 'info' | 'notice' | 'warning' | 'critical';
       /** @description Who acted. `email` is only returned to auditors. */
@@ -318,6 +360,29 @@ export interface components {
         message: string;
         code: string;
       }[];
+    };
+    SignupAccepted: {
+      /** @constant */
+      status: 'verification_requested';
+    };
+    SignupRequest: {
+      /** Format: email */
+      email: string;
+      orgName: string;
+    };
+    SignupVerified:
+      | {
+          /** @constant */
+          outcome: 'tenant_created';
+          tenantId: string;
+          slug: string;
+        }
+      | {
+          /** @constant */
+          outcome: 'existing_account';
+        };
+    SignupVerifyRequest: {
+      token: string;
     };
   };
   responses: never;
@@ -476,7 +541,7 @@ export interface operations {
           'application/json': components['schemas']['KillEvent'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED. */
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -614,7 +679,9 @@ export interface operations {
           | 'secret.rotated'
           | 'secret.rewrapped'
           | 'persona.override_changed'
-          | 'auth.sso_config_changed';
+          | 'auth.sso_config_changed'
+          | 'tenant.created'
+          | 'signup.verified';
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */
         targetId?: string;
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */
@@ -759,7 +826,7 @@ export interface operations {
           'text/event-stream': string;
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED. */
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -864,7 +931,7 @@ export interface operations {
           'application/json': components['schemas']['PersonaOverrideView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED. */
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -982,7 +1049,7 @@ export interface operations {
           'application/json': components['schemas']['PersonaOverrideView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED. */
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -1047,6 +1114,199 @@ export interface operations {
       };
       /** @description Problem details; code is one of INTERNAL. */
       500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  requestSignup: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @example signup-7f3c2a9e-1 */
+        'Idempotency-Key': string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "email": "owner@acme.example",
+         *       "orgName": "Acme Security"
+         *     }
+         */
+        'application/json': components['schemas']['SignupRequest'];
+      };
+    };
+    responses: {
+      /** @description Verification requested. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "status": "verification_requested"
+           *     }
+           */
+          'application/json': components['schemas']['SignupAccepted'];
+        };
+      };
+      /** @description Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, TENANT_MISMATCH, SECRET_PURPOSE_DENIED. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED, IDEMPOTENCY_KEY_MISMATCH. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  verifySignup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "token": "k3mT0xq9m1b1Vd2u7Rj8nQe4wYc6ZaPfH5sLgUoXiBA"
+         *     }
+         */
+        'application/json': components['schemas']['SignupVerifyRequest'];
+      };
+    };
+    responses: {
+      /** @description The signup was verified. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SignupVerified'];
+        };
+      };
+      /** @description Problem details; code is one of SIGNUP_TOKEN_INVALID. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, TENANT_MISMATCH, SECRET_PURPOSE_DENIED. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
         headers: {
           [name: string]: unknown;
         };

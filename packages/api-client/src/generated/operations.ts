@@ -41,6 +41,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  requestSignup: {
+    method: 'POST',
+    path: '/v1/signup',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: ['Idempotency-Key'],
+  },
   streamRunEvents: {
     method: 'GET',
     path: '/v1/runs/{runId}/events',
@@ -54,6 +61,13 @@ export const OPERATIONS = {
     pathParams: [],
     queryParams: [],
     requiredHeaders: ['Idempotency-Key'],
+  },
+  verifySignup: {
+    method: 'POST',
+    path: '/v1/signup/verify',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
   },
 } as const;
 

@@ -29,6 +29,10 @@ Validated with Zod through `@blackwing/config` at boot. Any missing or invalid k
 | `API_GQL_MAX_DEPTH` | `10` | Deepest field nesting of one GraphQL operation; deeper ones answer `query_too_complex` |
 | `API_GQL_MAX_COMPLEXITY` | `1000` | Estimated cost ceiling of one GraphQL operation (a list multiplies its children's cost) |
 | `API_GQL_MAX_ALIASES` | `50` | Most aliased fields one GraphQL operation may carry |
+| `SIGNUP_TOKEN_TTL_HOURS` | `24` | How long a signup verification link works (TENANT-004) |
+| `SIGNUP_DEFAULT_REGION` | `eu-west-1` | Data region of a self-service tenant |
+| `SIGNUP_EMAIL_MAX_PER_HOUR` | `5` | Verification mails one address may ask for per hour |
+| `SIGNUP_VERIFY_URL` | first `WEB_ORIGIN` + `/signup/verify` | Console page the link opens; the token is in the `#token=` fragment |
 | `KEYCLOAK_ADMIN_URL`, `KEYCLOAK_ADMIN_REALM`, `KEYCLOAK_ORG_ADMIN_CLIENT_ID`, `KEYCLOAK_ORG_ADMIN_SECRET_PATH` | unset | Keycloak Admin API for organisations (IAM-002). Set all four or none. The client secret is read from OpenBao at the secret path, never from env |
 
 ## Keycloak organisations (IAM-002)

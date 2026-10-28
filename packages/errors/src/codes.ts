@@ -209,6 +209,9 @@ const DEFINITIONS = {
     title: 'Idempotency key reused with a different request',
     retryable: false,
   },
+  // Self-service signup (TENANT-004): an unknown, expired, already used or cancelled verification token.
+  // One code and one status for all four, so the response cannot tell a guesser which one it was.
+  SIGNUP_TOKEN_INVALID: { status: 400, title: 'Signup token invalid or expired', retryable: false },
   // Run Broker API (API-014, #66). A stub endpoint owned by a later epic answers 501; a broker write for
   // a run that is no longer active is refused with 409 (the run is terminal, §3.3).
   NOT_IMPLEMENTED: { status: 501, title: 'Not implemented', retryable: false },

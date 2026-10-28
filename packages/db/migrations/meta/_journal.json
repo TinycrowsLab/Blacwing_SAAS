@@ -78,6 +78,13 @@
       "when": 1793147356707,
       "tag": "20261028002916_persona_overrides",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793150000000,
+      "tag": "20261028003000_signups",
+      "breakpoints": true
     }
   ]
 }

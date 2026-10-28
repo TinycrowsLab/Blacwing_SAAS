@@ -471,6 +471,20 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'An organisation identity provider (generic OIDC or SAML) was created, updated or removed. Carries the alias, the type and the operation only.',
   },
+  // tenant lifecycle: self-service signup (TENANT-004)
+  {
+    action: 'tenant.created',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A tenant was created when a signup was verified; the actor is the new owner.',
+  },
+  {
+    action: 'signup.verified',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description: 'A signup e-mail address was verified with its single-use token.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

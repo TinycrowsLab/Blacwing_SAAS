@@ -86,6 +86,8 @@ const RELEASED_ACTIONS = [
   'secret.rewrapped',
   'persona.override_changed',
   'auth.sso_config_changed',
+  'tenant.created',
+  'signup.verified',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

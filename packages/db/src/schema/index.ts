@@ -5,3 +5,4 @@ export * from './scope.js';
 export * from './secrets.js';
 export * from './persona-overrides.js';
 export * from './tenancy.js';
+export * from './signups.js';

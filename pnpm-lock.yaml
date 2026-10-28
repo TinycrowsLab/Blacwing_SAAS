@@ -296,6 +296,9 @@ importers:
       '@blackwing/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@blackwing/notify':
+        specifier: workspace:*
+        version: link:../../packages/notify
       '@blackwing/secrets':
         specifier: workspace:*
         version: link:../../packages/secrets
@@ -1173,10 +1176,17 @@ importers:
         version: 3.2.6(@types/node@22.20.5)(jiti@2.7.0)(jsdom@30.1.3)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
 
   packages/notify:
+    dependencies:
+      nodemailer:
+        specifier: 8.0.11
+        version: 8.0.11
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+      '@types/nodemailer':
+        specifier: 8.0.2
+        version: 8.0.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -4939,6 +4949,9 @@ packages:
   '@types/node@22.20.5':
     resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
 
+  '@types/nodemailer@8.0.2':
+    resolution: {integrity: sha512-c7M5ox8p0nEOfbJ2E9Qcmt8/QCu/VzsiAhzBiZbvky2PhKZDHpKB3sQHBM5MEZNkCfBOaS6S9//AGPRTNB7IaA==}
+
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
 
@@ -7686,6 +7699,10 @@ packages:
   node-releases@2.0.59:
     resolution: {integrity: sha512-5qr2okC4ItAI0hG5SaV0HoYMpnM/Y6+Oqr7AmPYy/2uEoGvS+GbSKLeRxSS1uAdu59yz0ouzcuXievSgg///WA==}
     engines: {node: '>=18'}
+
+  nodemailer@8.0.11:
+    resolution: {integrity: sha512-nrO/pDAUKl+wXX+lx16tDLbnm0fW6sK/x8mgohaCpg+CdCEl482bD4tCuAZk2DyliruiNTIZxRCoWkDqJEnAiA==}
+    engines: {node: '>=6.0.0'}
 
   normalize-package-data@6.0.2:
     resolution: {integrity: sha512-V6gygoYb/5EmNI+MEGrWkC+e6+Rr7mTmfHrxDbLzxQogBkgzo76rkok0Am6thgSF7Mv2nLOajAJj5vDJZEFn7g==}
@@ -12603,6 +12620,10 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
+  '@types/nodemailer@8.0.2':
+    dependencies:
+      '@types/node': 22.20.5
+
   '@types/normalize-package-data@2.4.4': {}
 
   '@types/pg@8.23.1':
@@ -15519,6 +15540,8 @@ snapshots:
     optional: true
 
   node-releases@2.0.59: {}
+
+  nodemailer@8.0.11: {}
 
   normalize-package-data@6.0.2:
     dependencies:

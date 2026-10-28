@@ -6,8 +6,10 @@ import {
   Inject,
   Injectable,
   type NestInterceptor,
+  SetMetadata,
   UseInterceptors,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { defer, mergeMap, type Observable, of, throwError } from 'rxjs';
 
 import { TenantContextMissingError } from '@blackwing/errors';
@@ -23,6 +25,15 @@ import type { FastifyRequest } from 'fastify';
 /** DI token of the {@link IdempotencyService} (provided by `IdempotencyModule`). */
 export const IDEMPOTENCY_SERVICE = Symbol.for('blackwing.api.idempotency.service');
 
+/** Metadata key of `@Idempotent({ anonymous: true })`. */
+const IDEMPOTENT_ANONYMOUS_KEY = Symbol.for('blackwing.api.idempotency.anonymous');
+
+/**
+ * The key scope of an `anonymous` route (signup): no tenant exists yet, so its records live under this
+ * reserved scope. It is not a UUID, so it can never collide with a tenant's records.
+ */
+const ANONYMOUS_SCOPE = '_anonymous';
+
 type RawBodyRequest = FastifyRequest & { rawBody?: Buffer | string };
 
 /**
@@ -34,6 +45,7 @@ type RawBodyRequest = FastifyRequest & { rawBody?: Buffer | string };
 @Injectable()
 export class IdempotencyInterceptor implements NestInterceptor {
   constructor(
+    @Inject(Reflector) private readonly reflector: Reflector,
     @Inject(IDEMPOTENCY_SERVICE) private readonly service: IdempotencyService,
     @Inject(API_LOGGER) private readonly logger: Logger,
   ) {}
@@ -42,7 +54,12 @@ export class IdempotencyInterceptor implements NestInterceptor {
     if (context.getType() !== 'http') return next.handle();
     const request = context.switchToHttp().getRequest<RawBodyRequest>();
     // §8.6: the tenant is part of the key. Without one the request is refused, never keyed globally.
-    const tenantId = requestContext.get('tenantId');
+    const anonymous =
+      this.reflector.getAllAndOverride<boolean | undefined>(IDEMPOTENT_ANONYMOUS_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]) === true;
+    const tenantId = requestContext.get('tenantId') ?? (anonymous ? ANONYMOUS_SCOPE : undefined);
     if (tenantId === undefined)
       return throwError(
         () => new TenantContextMissingError('Idempotency-Key handling needs a tenant context'),
@@ -84,6 +101,15 @@ function splitUrl(url: string): { readonly path: string; readonly query: string 
 /**
  * Marks a route as requiring `Idempotency-Key`: a missing header is `400 idempotency_key_required`, a
  * repeated key replays the first response. Put it on POST handlers that create runs, exports or tickets.
+ *
+ * `anonymous: true` is for the one kind of route that has no tenant by design (`@PublicRoute()`, signup): its
+ * records are kept under a reserved scope instead of a tenant's. Every other route still fails closed
+ * without a tenant.
  */
-export const Idempotent = (): MethodDecorator & ClassDecorator =>
-  applyDecorators(UseInterceptors(IdempotencyInterceptor));
+export const Idempotent = (
+  options: { readonly anonymous?: boolean } = {},
+): MethodDecorator & ClassDecorator =>
+  applyDecorators(
+    SetMetadata(IDEMPOTENT_ANONYMOUS_KEY, options.anonymous === true),
+    UseInterceptors(IdempotencyInterceptor),
+  );

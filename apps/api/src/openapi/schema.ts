@@ -103,3 +103,12 @@ export function errorResponses(codes: readonly ErrorCode[]): JsonObject {
     ]),
   );
 }
+
+/** A feature module's contribution to the public API document. Paths are written as served (`/v1/...`). */
+export interface OpenApiModule {
+  readonly tag: string;
+  readonly description: string;
+  readonly paths: JsonObject;
+  /** Schemas under `components.schemas`; the shared `Problem` is added by the builder. */
+  readonly schemas: JsonObject;
+}

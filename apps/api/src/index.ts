@@ -55,3 +55,4 @@ export * from './tenant/index.js';
 export * from './operator-kill/index.js';
 export * from './run-events/index.js';
 export * from './graphql/index.js';
+export * from './signup/index.js';

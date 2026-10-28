@@ -19,6 +19,7 @@
     { "path": "../../packages/events" },
     { "path": "../../packages/ids" },
     { "path": "../../packages/logger" },
+    { "path": "../../packages/notify" },
     { "path": "../../packages/telemetry" },
     { "path": "../../packages/secrets" },
     { "path": "../../packages/testing" },
