@@ -13,8 +13,7 @@ import { TenantContextMissingError } from '@blackwing/errors';
 
 import { tenantContextOf } from './guard.js';
 import { PUBLIC_ROUTE_KEY } from './public-route.js';
-
-import type { FastifyRequest } from 'fastify';
+import { requestOf } from '../bootstrap/transport.js';
 
 /**
  * Opens the `AsyncLocalStorage` scope (`runWithTenantContext`) around the handler, so repositories read
@@ -32,10 +31,8 @@ export class TenantContextInterceptor implements NestInterceptor {
       context.getClass(),
     ]);
     if (isPublic === true) return next.handle();
-    const tenant =
-      context.getType() === 'http'
-        ? tenantContextOf(context.switchToHttp().getRequest<FastifyRequest>())
-        : undefined;
+    const request = requestOf(context);
+    const tenant = request === undefined ? undefined : tenantContextOf(request);
     if (tenant === undefined) {
       throw new TenantContextMissingError('tenant context was not resolved before the handler');
     }

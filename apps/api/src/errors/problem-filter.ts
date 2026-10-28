@@ -120,7 +120,8 @@ function transportStatusOf(error: unknown): number | undefined {
   return undefined;
 }
 
-function wireCodeForStatus(status: number): string {
+/** The wire code of a transport status (`HttpException`, Fastify error) when no registry code is more specific. */
+export function wireCodeForStatus(status: number): string {
   const known = HTTP_STATUS_CODES[status];
   if (known !== undefined) return known;
   if (status >= FIRST_CLIENT_ERROR_STATUS && status <= LAST_CLIENT_ERROR_STATUS)

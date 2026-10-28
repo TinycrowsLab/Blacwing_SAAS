@@ -12,6 +12,7 @@ import { AuthError, TenantContextMissingError } from '@blackwing/errors';
 import { PUBLIC_ROUTE_KEY } from './public-route.js';
 import { bindTenant } from '../bootstrap/request-context.js';
 import { API_TENANT_METRICS, API_TENANT_PRINCIPAL_SOURCE } from '../bootstrap/tokens.js';
+import { requestOf } from '../bootstrap/transport.js';
 
 import type { FastifyRequest } from 'fastify';
 
@@ -51,12 +52,12 @@ export class TenantContextGuard implements CanActivate {
       context.getClass(),
     ]);
     if (isPublic === true) return true;
-    // Only HTTP carries a resolvable principal today; any other transport is refused, never served.
-    if (context.getType() !== 'http') {
+    // HTTP and GraphQL carry a resolvable principal; any other transport is refused, never served.
+    const request = requestOf(context);
+    if (request === undefined) {
       this.metrics.contextMissing();
       throw new TenantContextMissingError('tenant context is not available on this transport');
     }
-    const request = context.switchToHttp().getRequest<FastifyRequest>();
     const principal = await this.principalSource(request);
     if (principal === null) throw new AuthError('no authenticated principal');
     const tenant = resolveTenantContext(principal, this.metrics);

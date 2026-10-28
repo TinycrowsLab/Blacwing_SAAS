@@ -20,13 +20,14 @@ import {
 } from './tokens.js';
 import { requestLogger } from '../bootstrap/request-context.js';
 import { API_LOGGER } from '../bootstrap/tokens.js';
+import { isEntryPoint, replyOf, requestOf } from '../bootstrap/transport.js';
 import { tenantContextOf } from '../tenant/guard.js';
 
 import type { BucketDecision, BucketSpec, BucketSpecs } from './bucket.js';
 import type { RateLimiter } from './limiter.js';
 import type { RateLimitMetrics } from './metrics.js';
 import type { Logger } from '@blackwing/logger';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 
 /** Tracer name of the rate-limit check span (`ratelimit.check`). */
 const TRACER_NAME = '@blackwing/api.rate-limit';
@@ -63,21 +64,24 @@ export class RateLimitGuard implements CanActivate {
       ]) === true
     )
       return true;
-    if (context.getType() !== 'http') return true;
+    // HTTP and GraphQL operations are both charged; other transports are not rate limited here.
+    const request = requestOf(context);
+    if (request === undefined || !isEntryPoint(context)) return true;
 
     const override = this.reflector.getAllAndOverride<RateLimitOptions | undefined>(
       RATE_LIMIT_KEY,
       [...handlers],
     );
     const routeClass = override?.routeClass ?? DEFAULT_ROUTE_CLASS;
-    const request = context.switchToHttp().getRequest<FastifyRequest>();
-    const reply = context.switchToHttp().getResponse<FastifyReply>();
+    const reply = replyOf(context);
     const specs = this.specsFor(request, routeClass, override);
     const decision = await this.decide(specs);
 
-    void reply.header('RateLimit-Limit', String(decision.limit));
-    void reply.header('RateLimit-Remaining', String(decision.remaining));
-    void reply.header('RateLimit-Reset', String(decision.resetSeconds));
+    if (reply !== undefined) {
+      void reply.header('RateLimit-Limit', String(decision.limit));
+      void reply.header('RateLimit-Remaining', String(decision.remaining));
+      void reply.header('RateLimit-Reset', String(decision.resetSeconds));
+    }
     if (decision.allowed) return true;
 
     // A denial always names the empty bucket; the fallback label only satisfies the type.

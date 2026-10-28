@@ -41,7 +41,7 @@ jobs:
           pnpm graphql:generate
           pnpm db:generate
       - name: Normalise generated files
-        run: pnpm exec prettier --write --ignore-unknown --no-error-on-unmatched-pattern apps/api/openapi docs/api/openapi.json docs/api/reference.md apps/api/graphql packages/db/migrations
+        run: pnpm exec prettier --write --ignore-unknown --no-error-on-unmatched-pattern apps/api/openapi docs/api/openapi.json docs/api/reference.md packages/db/migrations
       - name: Fail when a generated artifact is stale
         run: node scripts/check-drift.mjs stale
       - name: Fail when an applied migration was edited (forward-only)

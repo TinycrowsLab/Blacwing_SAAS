@@ -1,0 +1,23 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Query {
+  """Memberships of the caller tenant."""
+  tenantMembers(first: Int): [TenantMember!]!
+}
+
+"""A membership of the caller tenant."""
+type TenantMember {
+  """Roles held in the caller tenant."""
+  roles: [String!]!
+  user: User
+  userId: ID!
+}
+
+"""A user with a membership in the caller tenant."""
+type User {
+  email: String!
+  id: ID!
+  name: String
+}

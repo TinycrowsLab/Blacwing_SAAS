@@ -26,6 +26,9 @@ Validated with Zod through `@blackwing/config` at boot. Any missing or invalid k
 | `API_IDEMPOTENCY_TTL_S` | `86400` | How long a stored `Idempotency-Key` result is replayed |
 | `API_IDEMPOTENCY_LOCK_TTL_S` | `120` | How long an `in_progress` marker blocks duplicates (crash recovery) |
 | `API_IDEMPOTENCY_MAX_BODY_BYTES` | `65536` | Largest response body stored for replay |
+| `API_GQL_MAX_DEPTH` | `10` | Deepest field nesting of one GraphQL operation; deeper ones answer `query_too_complex` |
+| `API_GQL_MAX_COMPLEXITY` | `1000` | Estimated cost ceiling of one GraphQL operation (a list multiplies its children's cost) |
+| `API_GQL_MAX_ALIASES` | `50` | Most aliased fields one GraphQL operation may carry |
 | `KEYCLOAK_ADMIN_URL`, `KEYCLOAK_ADMIN_REALM`, `KEYCLOAK_ORG_ADMIN_CLIENT_ID`, `KEYCLOAK_ORG_ADMIN_SECRET_PATH` | unset | Keycloak Admin API for organisations (IAM-002). Set all four or none. The client secret is read from OpenBao at the secret path, never from env |
 
 ## Keycloak organisations (IAM-002)
@@ -72,6 +75,39 @@ and the tenant alone selects the organisation, so one tenant cannot touch anothe
   `bindTenant()` is the hook later authentication uses to attach the verified tenant (§8.6).
 - On SIGTERM/SIGINT the listener closes, in-flight requests finish (cut once the grace window elapses)
   and the process exits 0.
+
+## GraphQL read layer (API-009)
+
+`src/graphql/` serves a read-only GraphQL API at `/graphql` on the same Fastify server as REST (code-first
+`@nestjs/graphql` on Mercurius). A composition root mounts it with
+`GraphqlApiModule.forRoot({ config, logger, metrics, store })`, where `store` is a tenant-scoped
+`MemberReadStore` (`createPgMemberReadStore(db)` against Postgres). `runApi` does not mount it yet: like the other
+tenant data routes, it waits for the process to own a database handle. Writes stay on REST: the schema has no
+`Mutation` type, so a mutation is refused by validation.
+
+- **Tenant and authn.** The same global tenant guard, interceptor and rate limiter as REST run on each
+  operation (`bootstrap/transport.ts` resolves the request for both transports). The principal is validated and
+  charged once per operation, at its root field. Field resolvers read the tenant the root resolved onto the
+  request and fail closed without it; every store read runs in `withTenant` (RLS).
+- **Limits.** Depth, cost and alias count are checked in a validation rule before any resolver runs, so a
+  rejected operation executes nothing. A list is priced by its `first` (literal or variable value, capped at
+  200; absent: the resolver default of 20). Over a limit: `extensions.code: query_too_complex`. Mercurius' function
+  form of `validationRules` needs the document cache off (`cache: false`); parse and validate run per request.
+- **DataLoader.** Loaders are built per request in the context factory. `createTenantLoader` keys every entry by
+  `(tenantId, id)`, so a batch never mixes tenants and a result never crosses them. `user` on a member is one
+  store call per response.
+- **Errors.** `errors[].extensions.code` mirrors the REST registry (`unauthenticated`, `permission_denied`,
+  `validation_failed`, `rate_limited`, `query_too_complex`, ...). Partial failures keep `data` and list their
+  `errors[]`. Server errors render `Internal server error`; no stack is ever rendered. Mercurius types error
+  `path` items as strings in its response schema, so a list index arrives as `"0"` (a known deviation from the
+  GraphQL spec that Mercurius owns).
+- **Introspection and GraphiQL** are off when `NODE_ENV=production`.
+- **Metrics** (`graphql_requests_total{operation}`, `graphql_complexity`, `graphql_rejected_total{reason}`) and one
+  span per resolver (`graphql <Type>.<field>`). A rejected operation is logged as `graphql.query_rejected` with its
+  name and reason, never its query text.
+- **Schema.** `apps/api/schema.gql` is written from the decorators (`autoSchemaFile`). `pnpm graphql:generate`
+  regenerates it and the drift check (`scripts/check-drift.mjs`) fails when it is stale.
+- **Not yet:** persisted queries in production (API-010) and the domain schema (feature epics add resolvers).
 
 ## Pagination and list filters (API-005)
 

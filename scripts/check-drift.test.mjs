@@ -47,7 +47,7 @@ function fixture() {
   dirs.push(root);
   git(root, ['init', '-q', '-b', 'main']);
   put(root, 'apps/api/openapi/openapi.json', '{"openapi":"3.1.0"}\n');
-  put(root, 'apps/api/graphql/schema.graphql', 'type Query { ok: Boolean }\n');
+  put(root, 'apps/api/schema.gql', 'type Query { ok: Boolean }\n');
   put(root, `${MIGRATIONS_DIR}/0000_init.sql`, 'create table t (id int);\n');
   git(root, ['add', '-A']);
   git(root, ['commit', '-qm', 'base']);
@@ -84,7 +84,7 @@ describe('stale generated artifacts', () => {
 
   it('fails for a stale GraphQL SDL', () => {
     const root = fixture();
-    put(root, 'apps/api/graphql/schema.graphql', 'type Query { ok: Int }\n');
+    put(root, 'apps/api/schema.gql', 'type Query { ok: Int }\n');
     assert.equal(
       quiet(() => main(['stale'], root)),
       1,

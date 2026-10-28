@@ -29,6 +29,11 @@ export const DEFAULT_API_MAX_JSON_DEPTH = 32;
 const DEFAULT_API_RATE_LIMIT_RPS = 10;
 const DEFAULT_API_RATE_LIMIT_BURST = 20;
 
+/** GraphQL query limits (API-009, #61): depth, complexity and alias count per operation. */
+const DEFAULT_API_GQL_MAX_DEPTH = 10;
+const DEFAULT_API_GQL_MAX_COMPLEXITY = 1000;
+const DEFAULT_API_GQL_MAX_ALIASES = 50;
+
 /** Health probes (API-011, #63). */
 const DEFAULT_API_HEALTH_CHECK_TIMEOUT_MS = 2000;
 const DEFAULT_API_HEALTH_CACHE_MS = 1000;
@@ -141,6 +146,12 @@ export const apiEnvShape = {
    */
   RATE_LIMIT_DEFAULT_RPS: positiveRate.default(DEFAULT_API_RATE_LIMIT_RPS),
   RATE_LIMIT_BURST: positiveRate.default(DEFAULT_API_RATE_LIMIT_BURST),
+  /** Deepest field nesting a GraphQL operation may have; deeper operations get `query_too_complex`. */
+  API_GQL_MAX_DEPTH: positiveRate.default(DEFAULT_API_GQL_MAX_DEPTH),
+  /** Estimated cost ceiling of a GraphQL operation (list sizes multiply their children). */
+  API_GQL_MAX_COMPLEXITY: positiveRate.default(DEFAULT_API_GQL_MAX_COMPLEXITY),
+  /** Most field aliases one GraphQL operation may carry (alias flooding guard). */
+  API_GQL_MAX_ALIASES: positiveRate.default(DEFAULT_API_GQL_MAX_ALIASES),
   /** Release version and commit echoed by `/health`. Neither is a secret. */
   API_VERSION: z.string().min(1).default('0.0.0'),
   API_COMMIT: z.string().min(1).default('unknown'),
