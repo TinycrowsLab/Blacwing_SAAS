@@ -2,7 +2,7 @@
 
 The public `/v1` REST API, version 0.0.0. This page is generated from [`openapi.json`](openapi.json) by `pnpm openapi:generate`; do not edit it by hand. CI fails when it is stale.
 
-It documents 8 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
+It documents 10 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
 
 The internal Run Broker API (`/internal/broker`) is not part of this reference.
 
@@ -16,6 +16,8 @@ The internal Run Broker API (`/internal/broker`) is not part of this reference.
 - runs
   - [GET /runs/{runId}/events](#get-runsrunidevents)
 - personas
+  - [GET /personas](#get-personas)
+  - [GET /personas/{persona}](#get-personaspersona)
   - [GET /personas/{persona}/override](#get-personaspersonaoverride)
   - [PUT /personas/{persona}/override](#put-personaspersonaoverride)
 - signup
@@ -1564,7 +1566,875 @@ Example: Too many requests.
 
 ## personas
 
-Tenant overrides of a persona: effort, turn and spend budgets, and standard-tier lowering.
+The persona registry (definitions with the tenant effective settings) and tenant overrides of a persona: effort, turn and spend budgets, and standard-tier lowering.
+
+### GET /personas
+
+**The persona registry for the caller tenant**
+
+Requires run:read, which every tenant role holds. Lists the fixed roster of personas in roster order, each with the settings a run of the caller tenant would pin (the tenant override merged in). Guardrail flags and internal fields are not published.
+
+- Operation ID: `listPersonas`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+#### Response 200
+
+The PersonaRegistryList view.
+
+Content type `application/json`: [PersonaRegistryList](#personaregistrylist).
+
+Example: set.
+
+```json
+{
+  "items": [
+    {
+      "name": "osint",
+      "mandate": "Gather public information about approved assets.",
+      "promptVersion": "1.0.0",
+      "tierAlias": "standard",
+      "effective": {
+        "model": "claude-opus-5-5",
+        "effort": "low",
+        "maxTurns": 10,
+        "maxBudgetUsd": 2
+      },
+      "overridden": ["effort", "maxTurns"],
+      "allowedTools": ["Read"],
+      "disallowedTools": ["WebFetch", "WebSearch"],
+      "declaredOracleTypes": [],
+      "inputs": ["scope"],
+      "intrusivenessCeiling": "passive",
+      "requiresSubmission": false,
+      "helpers": []
+    }
+  ]
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_FOUND",
+  "title": "Resource not found",
+  "status": 404,
+  "code": "NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona not defined.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+  "title": "Persona not defined",
+  "status": 404,
+  "code": "PERSONA_NOT_DEFINED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No released prompt version.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+  "title": "No released prompt version",
+  "status": 404,
+  "code": "PROMPT_NO_RELEASED_VERSION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+  "title": "Secret not found",
+  "status": 404,
+  "code": "SECRET_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+  "title": "Identity provider resource not found",
+  "status": 404,
+  "code": "KEYCLOAK_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONFLICT",
+  "title": "Conflict",
+  "status": 409,
+  "code": "CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal run state transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+  "title": "Illegal run state transition",
+  "status": 409,
+  "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Key version disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEK_DISABLED",
+  "title": "Key version disabled",
+  "status": 409,
+  "code": "KEK_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Database serialization conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+  "title": "Database serialization conflict",
+  "status": 409,
+  "code": "DB_SERIALIZATION_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill already in progress.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+  "title": "Kill already in progress",
+  "status": 409,
+  "code": "KILL_ALREADY_IN_PROGRESS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run is not active.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+  "title": "Run is not active",
+  "status": 409,
+  "code": "RUN_NOT_ACTIVE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+  "title": "Secret disabled",
+  "status": 409,
+  "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid intrusiveness class.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
+  "title": "Invalid intrusiveness class",
+  "status": 422,
+  "code": "SCOPE_INVALID_CLASS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid request budget.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
+  "title": "Invalid request budget",
+  "status": 422,
+  "code": "SCOPE_INVALID_BUDGET",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid scope rule.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
+  "title": "Invalid scope rule",
+  "status": 422,
+  "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+  "title": "Unknown persona",
+  "status": 422,
+  "code": "PERSONA_UNKNOWN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Forbidden tool in persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL",
+  "title": "Forbidden tool in persona",
+  "status": 422,
+  "code": "PERSONA_FORBIDDEN_TOOL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid persona definition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_INVALID",
+  "title": "Invalid persona definition",
+  "status": 422,
+  "code": "PERSONA_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret envelope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
+  "title": "Invalid secret envelope",
+  "status": 422,
+  "code": "ENVELOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid prompt file.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_INVALID",
+  "title": "Invalid prompt file",
+  "status": 422,
+  "code": "PROMPT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Prompt placeholder unfilled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
+  "title": "Prompt placeholder unfilled",
+  "status": 422,
+  "code": "PROMPT_PLACEHOLDER_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret reference.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
+  "title": "Invalid secret reference",
+  "status": 422,
+  "code": "INVALID_SECRET_REF",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Sandbox image missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_IMAGE_MISSING",
+  "title": "Sandbox image missing",
+  "status": 422,
+  "code": "SBX_IMAGE_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid kill scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+  "title": "Invalid kill scope",
+  "status": 422,
+  "code": "KILL_SCOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill scope reference required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+  "title": "Kill scope reference required",
+  "status": 422,
+  "code": "KILL_REF_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key reused with a different request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+  "title": "Idempotency key reused with a different request",
+  "status": 422,
+  "code": "IDEMPOTENCY_KEY_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid audit event.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUDIT_EVENT_INVALID",
+  "title": "Invalid audit event",
+  "status": 422,
+  "code": "AUDIT_EVENT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 500
+
+Problem details; code is one of INTERNAL.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Internal server error.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INTERNAL",
+  "title": "Internal server error",
+  "status": 500,
+  "code": "INTERNAL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### GET /personas/{persona}
+
+**One persona of the registry for the caller tenant**
+
+Requires run:read. The same view as the list, for one persona of the fixed roster.
+
+- Operation ID: `getPersona`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter | In   | Required | Type                                                                                                                                                                                                                                                                                                                                                                                  | Description                    |
+| --------- | ---- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `persona` | path | yes      | enum: `"orchestrator"`, `"planner"`, `"sub-planner"`, `"passive-recon"`, `"osint"`, `"active-recon"`, `"threat-intel"`, `"source-spec-ingestion"`, `"session-setup"`, `"web-api-specialist"`, `"auth-logic-specialist"`, `"infrastructure-specialist"`, `"code-specialist"`, `"exploit-developer"`, `"mentor"`, `"reflector"`, `"validator-assistant"`, `"reporter"`, `"remediation"` | A persona of the fixed roster. |
+
+#### Response 200
+
+The PersonaRegistryView view.
+
+Content type `application/json`: [PersonaRegistryView](#personaregistryview).
+
+Example: set.
+
+```json
+{
+  "name": "osint",
+  "mandate": "Gather public information about approved assets.",
+  "promptVersion": "1.0.0",
+  "tierAlias": "standard",
+  "effective": {
+    "model": "claude-opus-5-5",
+    "effort": "low",
+    "maxTurns": 10,
+    "maxBudgetUsd": 2
+  },
+  "overridden": ["effort", "maxTurns"],
+  "allowedTools": ["Read"],
+  "disallowedTools": ["WebFetch", "WebSearch"],
+  "declaredOracleTypes": [],
+  "inputs": ["scope"],
+  "intrusivenessCeiling": "passive",
+  "requiresSubmission": false,
+  "helpers": []
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of PERSONA_NOT_DEFINED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Persona not defined.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+  "title": "Persona not defined",
+  "status": 404,
+  "code": "PERSONA_NOT_DEFINED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONFLICT",
+  "title": "Conflict",
+  "status": 409,
+  "code": "CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal run state transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+  "title": "Illegal run state transition",
+  "status": 409,
+  "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Key version disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEK_DISABLED",
+  "title": "Key version disabled",
+  "status": 409,
+  "code": "KEK_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Database serialization conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+  "title": "Database serialization conflict",
+  "status": 409,
+  "code": "DB_SERIALIZATION_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill already in progress.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+  "title": "Kill already in progress",
+  "status": 409,
+  "code": "KILL_ALREADY_IN_PROGRESS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run is not active.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+  "title": "Run is not active",
+  "status": 409,
+  "code": "RUN_NOT_ACTIVE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+  "title": "Secret disabled",
+  "status": 409,
+  "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of PERSONA_UNKNOWN.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Unknown persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+  "title": "Unknown persona",
+  "status": 422,
+  "code": "PERSONA_UNKNOWN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 500
+
+Problem details; code is one of INTERNAL.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Internal server error.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INTERNAL",
+  "title": "Internal server error",
+  "status": 500,
+  "code": "INTERNAL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
 
 ### GET /personas/{persona}/override
 
@@ -4150,6 +5020,214 @@ Full schema:
       "format": "date-time"
     }
   }
+}
+```
+
+### PersonaRegistryList
+
+| Property | Type                                                 | Required | Description |
+| -------- | ---------------------------------------------------- | -------- | ----------- |
+| `items`  | array of [PersonaRegistryView](#personaregistryview) | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/PersonaRegistryView"
+      }
+    }
+  }
+}
+```
+
+### PersonaRegistryView
+
+| Property               | Type                                                                                                                                                                                                                                                                                                                                                                                  | Required | Description |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------- |
+| `name`                 | enum: `"orchestrator"`, `"planner"`, `"sub-planner"`, `"passive-recon"`, `"osint"`, `"active-recon"`, `"threat-intel"`, `"source-spec-ingestion"`, `"session-setup"`, `"web-api-specialist"`, `"auth-logic-specialist"`, `"infrastructure-specialist"`, `"code-specialist"`, `"exploit-developer"`, `"mentor"`, `"reflector"`, `"validator-assistant"`, `"reporter"`, `"remediation"` | yes      |             |
+| `mandate`              | string                                                                                                                                                                                                                                                                                                                                                                                | yes      |             |
+| `promptVersion`        | string                                                                                                                                                                                                                                                                                                                                                                                | yes      |             |
+| `tierAlias`            | enum: `"deep"`, `"standard"`, `"fast"`                                                                                                                                                                                                                                                                                                                                                | yes      |             |
+| `effective`            | object                                                                                                                                                                                                                                                                                                                                                                                | yes      |             |
+| `overridden`           | array of enum: `"effort"`, `"maxTurns"`, `"maxBudgetUsd"`, `"lowerStandardTier"`                                                                                                                                                                                                                                                                                                      | yes      |             |
+| `allowedTools`         | array of string                                                                                                                                                                                                                                                                                                                                                                       | yes      |             |
+| `disallowedTools`      | array of string                                                                                                                                                                                                                                                                                                                                                                       | yes      |             |
+| `declaredOracleTypes`  | array of enum: `"reflected_marker"`, `"status_diff"`, `"timing_with_baseline"`, `"out_of_band"`, `"access_matrix"`, `"error_signature"`, `"file_read"`, `"header_flag"`                                                                                                                                                                                                               | yes      |             |
+| `inputs`               | array of string                                                                                                                                                                                                                                                                                                                                                                       | yes      |             |
+| `intrusivenessCeiling` | enum: `"passive"`, `"active_safe"`, `"state_changing"`                                                                                                                                                                                                                                                                                                                                | yes      |             |
+| `requiresSubmission`   | boolean                                                                                                                                                                                                                                                                                                                                                                               | yes      |             |
+| `helpers`              | array of object                                                                                                                                                                                                                                                                                                                                                                       | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "enum": [
+        "orchestrator",
+        "planner",
+        "sub-planner",
+        "passive-recon",
+        "osint",
+        "active-recon",
+        "threat-intel",
+        "source-spec-ingestion",
+        "session-setup",
+        "web-api-specialist",
+        "auth-logic-specialist",
+        "infrastructure-specialist",
+        "code-specialist",
+        "exploit-developer",
+        "mentor",
+        "reflector",
+        "validator-assistant",
+        "reporter",
+        "remediation"
+      ]
+    },
+    "mandate": {
+      "type": "string",
+      "minLength": 1
+    },
+    "promptVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "tierAlias": {
+      "type": "string",
+      "enum": ["deep", "standard", "fast"]
+    },
+    "effective": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effort": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "xhigh", "max"]
+        },
+        "maxTurns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "maxBudgetUsd": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": ["model", "effort", "maxTurns", "maxBudgetUsd"],
+      "additionalProperties": false
+    },
+    "overridden": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["effort", "maxTurns", "maxBudgetUsd", "lowerStandardTier"]
+      }
+    },
+    "allowedTools": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "disallowedTools": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "declaredOracleTypes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "reflected_marker",
+          "status_diff",
+          "timing_with_baseline",
+          "out_of_band",
+          "access_matrix",
+          "error_signature",
+          "file_read",
+          "header_flag"
+        ]
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "intrusivenessCeiling": {
+      "type": "string",
+      "enum": ["passive", "active_safe", "state_changing"]
+    },
+    "requiresSubmission": {
+      "type": "boolean"
+    },
+    "helpers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tierAlias": {
+            "type": "string",
+            "enum": ["deep", "standard", "fast"]
+          },
+          "allowedTools": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": ["name", "description", "tierAlias", "allowedTools"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "name",
+    "mandate",
+    "promptVersion",
+    "tierAlias",
+    "effective",
+    "overridden",
+    "allowedTools",
+    "disallowedTools",
+    "declaredOracleTypes",
+    "inputs",
+    "intrusivenessCeiling",
+    "requiresSubmission",
+    "helpers"
+  ],
+  "additionalProperties": false
 }
 ```
 

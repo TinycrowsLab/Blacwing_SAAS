@@ -26,6 +26,11 @@ export const ARTIFACTS = [
     fix: 'pnpm --filter @blackwing/api-client api-client:gen',
   },
   {
+    name: 'Persona catalogue',
+    path: 'docs/architecture/persona-catalogue.md',
+    fix: 'pnpm gen:persona-catalogue',
+  },
+  {
     name: 'Drizzle migrations',
     path: 'packages/db/migrations',
     fix: 'pnpm db:generate (then review and commit the new migration)',

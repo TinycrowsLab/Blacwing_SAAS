@@ -39,6 +39,7 @@ jobs:
         run: |
           pnpm openapi:generate
           pnpm graphql:generate
+          pnpm gen:persona-catalogue
           pnpm db:generate
       - name: Normalise generated files
         run: pnpm exec prettier --write --ignore-unknown --no-error-on-unmatched-pattern apps/api/openapi docs/api/openapi.json docs/api/reference.md packages/db/migrations

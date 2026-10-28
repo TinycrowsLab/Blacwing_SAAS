@@ -10,6 +10,7 @@ lockstep with code. It runs on every pull request and on `main`, with `contents:
 | OpenAPI 3.1 | `pnpm openapi:generate` changes `docs/api/openapi.json` | Run `pnpm --filter @blackwing/api openapi:emit` (alias `openapi:generate`), commit |
 | API reference | `pnpm openapi:generate` changes `docs/api/reference.md` (the page is rendered from the spec) | Run `pnpm openapi:generate`, commit |
 | GraphQL SDL | `pnpm graphql:generate` changes `apps/api/schema.gql` | Run `pnpm graphql:generate`, commit |
+| Persona catalogue | `pnpm gen:persona-catalogue` changes `docs/architecture/persona-catalogue.md` (derived from the persona definitions) | Run `pnpm gen:persona-catalogue`, commit |
 | Schema vs migrations | `pnpm db:generate` (drizzle-kit generate) emits a new file in `packages/db/migrations/` | Review and commit the generated migration |
 | Forward-only | A migration file that exists on the base branch is modified or deleted | Add a new migration instead |
 | `db-drift` job | `pnpm db:check`: journal collisions, schema vs migrations, a scratch Postgres 16 + pgvector built from the migrations differs from the snapshot, or a re-run is not a no-op | See [db-migrations.md](db-migrations.md) |
@@ -30,7 +31,7 @@ never squash after a migration has been applied to a shared or production databa
 ## Local run
 
 ```sh
-pnpm openapi:generate && pnpm graphql:generate && pnpm db:generate
+pnpm openapi:generate && pnpm graphql:generate && pnpm gen:persona-catalogue && pnpm db:generate
 node scripts/check-drift.mjs stale
 node scripts/check-drift.mjs immutable origin/main
 pnpm db:check   # needs Docker (Testcontainers)

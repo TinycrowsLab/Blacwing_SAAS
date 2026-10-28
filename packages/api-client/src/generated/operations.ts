@@ -9,6 +9,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  getPersona: {
+    method: 'GET',
+    path: '/v1/personas/{persona}',
+    pathParams: ['persona'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   getPersonaOverride: {
     method: 'GET',
     path: '/v1/personas/{persona}/override',
@@ -32,6 +39,13 @@ export const OPERATIONS = {
       'cursor',
       'limit',
     ],
+    requiredHeaders: [],
+  },
+  listPersonas: {
+    method: 'GET',
+    path: '/v1/personas',
+    pathParams: [],
+    queryParams: [],
     requiredHeaders: [],
   },
   putPersonaOverride: {

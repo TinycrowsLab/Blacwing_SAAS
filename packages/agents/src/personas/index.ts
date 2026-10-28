@@ -1,4 +1,5 @@
 export * from './active-recon.js';
+export * from './auth-logic-specialist.js';
 export * from './code-specialist.js';
 export * from './exploit-developer.js';
 export * from './advisory.js';

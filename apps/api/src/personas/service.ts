@@ -46,14 +46,14 @@ const READ_PERMISSION: Permission = 'settings:read';
 const WRITE_PERMISSION: Permission = 'settings:write';
 
 /** The tenant of the caller. A caller without one fails closed (`TENANT_CONTEXT_MISSING`, 403). */
-function requireTenant(principal: PersonaPrincipal): string {
+export function requireTenant(principal: PersonaPrincipal): string {
   if (principal.tenantId === null) {
     throw new AppError('TENANT_CONTEXT_MISSING', 'no tenant context for the persona override');
   }
   return principal.tenantId;
 }
 
-function requirePermission(principal: PersonaPrincipal, permission: Permission): void {
+export function requirePermission(principal: PersonaPrincipal, permission: Permission): void {
   if (!hasPermission(principal.roles, permission)) {
     throw new ForbiddenError(`${permission} is required`, {
       detail: `this action requires ${permission}`,
@@ -65,7 +65,7 @@ function requirePermission(principal: PersonaPrincipal, permission: Permission):
 const MAX_ECHOED_PERSONA_LENGTH = 80;
 
 /** A persona name outside the fixed roster is refused before any storage is touched (422). */
-function requireRosterName(persona: string): PersonaName {
+export function requireRosterName(persona: string): PersonaName {
   if (!isPersonaName(persona)) {
     throw new PersonaError(
       'PERSONA_UNKNOWN',
@@ -164,6 +164,18 @@ export class PersonaOverrideService<Tx> {
   }
 
   /**
+   * The effective settings of `definition` for `tenantId` without side effects: no metrics, no clamp logs. Read
+   * paths (the registry API, REGISTRY-011) use it; a run starts through {@link resolveEffective} instead.
+   */
+  async readEffective(
+    tenantId: string,
+    definition: PersonaDefinition,
+  ): Promise<EffectivePersonaSettings> {
+    const stored = await this.deps.store.find(tenantId, definition.name);
+    return resolveEffectivePersona(definition, stored === null ? null : overrideOf(stored));
+  }
+
+  /**
    * The effective settings of `definition` for `tenantId`: the base definition with the tenant's override
    * merged in (override precedence, clamped to the persona's own bounds). Called at run start, so the
    * result is what a run pins. A persona with no override resolves to its base values.
@@ -172,11 +184,7 @@ export class PersonaOverrideService<Tx> {
     tenantId: string,
     definition: PersonaDefinition,
   ): Promise<EffectivePersonaSettings> {
-    const stored = await this.deps.store.find(tenantId, definition.name);
-    const effective = resolveEffectivePersona(
-      definition,
-      stored === null ? null : overrideOf(stored),
-    );
+    const effective = await this.readEffective(tenantId, definition);
     for (const clamp of effective.clamped) {
       this.deps.logger?.warn(
         {

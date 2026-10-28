@@ -64,6 +64,7 @@
     "openapi:generate": "pnpm -r --if-present run openapi:generate && pnpm --filter @blackwing/api-client api-client:gen && node scripts/render-api-reference.mjs",
     "api-reference:check": "node scripts/render-api-reference.mjs --check",
     "graphql:generate": "pnpm -r --if-present run graphql:generate",
+    "gen:persona-catalogue": "pnpm --filter @blackwing/agents gen:persona-catalogue",
     "db:generate": "pnpm -r --if-present run db:generate",
     "db:migrate": "pnpm --filter @blackwing/db run db:migrate",
     "db:check": "pnpm --filter @blackwing/db run db:check",

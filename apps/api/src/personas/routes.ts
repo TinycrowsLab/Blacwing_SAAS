@@ -7,6 +7,7 @@ import {
 import { problemErrorHandler } from '../kill/routes.js';
 
 import type { PersonaPrincipal } from './ports.js';
+import type { PersonaRegistryService } from './registry.js';
 import type { PersonaOverrideService } from './service.js';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
@@ -57,6 +58,50 @@ export function registerPersonaRoutes<Tx>(
       const principal = await options.authenticate(request);
       const { persona } = request.params as { persona: string };
       const view = await options.service.put(principal, persona, request.body);
+      return reply.status(HTTP_OK).header('cache-control', 'no-store').send(view);
+    });
+
+    done();
+  });
+}
+
+export const PERSONA_COLLECTION_ROUTE = '/v1/personas';
+export const PERSONA_ITEM_ROUTE = '/v1/personas/:persona';
+
+export interface PersonaRegistryRoutesOptions<Tx> {
+  readonly registry: PersonaRegistryService<Tx>;
+  readonly authenticate: PersonaAuthenticator;
+  readonly environment?: ErrorEnvironment;
+  readonly problems?: ProblemDetailsMapper;
+}
+
+/**
+ * Registers `GET /v1/personas` and `GET /v1/personas/:persona` (REGISTRY-011). Same contract as the override
+ * routes: authenticate first, answer the service's view with `no-store`, and map every failure to problem+json.
+ */
+export function registerPersonaRegistryRoutes<Tx>(
+  app: FastifyInstance,
+  options: PersonaRegistryRoutesOptions<Tx>,
+): void {
+  const problems =
+    options.problems ??
+    createProblemDetailsMapper(
+      options.environment === undefined ? {} : { environment: options.environment },
+    );
+
+  void app.register((scope, _opts, done) => {
+    scope.setErrorHandler(problemErrorHandler(problems));
+
+    scope.get(PERSONA_COLLECTION_ROUTE, async (request, reply) => {
+      const principal = await options.authenticate(request);
+      const list = await options.registry.list(principal);
+      return reply.status(HTTP_OK).header('cache-control', 'no-store').send(list);
+    });
+
+    scope.get(PERSONA_ITEM_ROUTE, async (request, reply) => {
+      const principal = await options.authenticate(request);
+      const { persona } = request.params as { persona: string };
+      const view = await options.registry.get(principal, persona);
       return reply.status(HTTP_OK).header('cache-control', 'no-store').send(view);
     });
 

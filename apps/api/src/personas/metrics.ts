@@ -20,3 +20,24 @@ export function createPersonaOverrideMetrics(
     }),
   };
 }
+
+/** Persona registry read metrics (REGISTRY-011 observability). */
+export interface PersonaRegistryMetrics {
+  readonly registry: Registry;
+  /** `persona_registry_reads_total{operation}`: an authorised registry read (`list` or `get`). */
+  readonly reads: Counter<'operation'>;
+}
+
+export function createPersonaRegistryMetrics(
+  registry: Registry = new Registry(),
+): PersonaRegistryMetrics {
+  return {
+    registry,
+    reads: new Counter({
+      name: 'persona_registry_reads_total',
+      help: 'Authorised reads of the persona registry, by operation (list or get).',
+      labelNames: ['operation'],
+      registers: [registry],
+    }),
+  };
+}

@@ -71,6 +71,7 @@
         "architecture/workflow-determinism.md",
         "architecture/workflow-versioning.md",
         "architecture/dependency-graph.md",
+        "architecture/persona-catalogue.md",
         "architecture/egress-gateway.md",
         "architecture/i18n.md",
         "architecture/storage-buckets.md",

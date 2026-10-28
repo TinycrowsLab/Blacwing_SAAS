@@ -79,6 +79,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/personas': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The persona registry for the caller tenant
+     * @description Requires run:read, which every tenant role holds. Lists the fixed roster of personas in roster order, each with the settings a run of the caller tenant would pin (the tenant override merged in). Guardrail flags and internal fields are not published.
+     */
+    get: operations['listPersonas'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/personas/{persona}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One persona of the registry for the caller tenant
+     * @description Requires run:read. The same view as the list, for one persona of the fixed roster.
+     */
+    get: operations['getPersona'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/personas/{persona}/override': {
     parameters: {
       query?: never;
@@ -346,6 +386,67 @@ export interface components {
       override: components['schemas']['PersonaOverride'] | null;
       /** Format: date-time */
       updatedAt: string | null;
+    };
+    PersonaRegistryList: {
+      items: components['schemas']['PersonaRegistryView'][];
+    };
+    PersonaRegistryView: {
+      /** @enum {string} */
+      name:
+        | 'orchestrator'
+        | 'planner'
+        | 'sub-planner'
+        | 'passive-recon'
+        | 'osint'
+        | 'active-recon'
+        | 'threat-intel'
+        | 'source-spec-ingestion'
+        | 'session-setup'
+        | 'web-api-specialist'
+        | 'auth-logic-specialist'
+        | 'infrastructure-specialist'
+        | 'code-specialist'
+        | 'exploit-developer'
+        | 'mentor'
+        | 'reflector'
+        | 'validator-assistant'
+        | 'reporter'
+        | 'remediation';
+      mandate: string;
+      promptVersion: string;
+      /** @enum {string} */
+      tierAlias: 'deep' | 'standard' | 'fast';
+      effective: {
+        model: string;
+        /** @enum {string} */
+        effort: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+        maxTurns: number;
+        maxBudgetUsd: number;
+      };
+      overridden: ('effort' | 'maxTurns' | 'maxBudgetUsd' | 'lowerStandardTier')[];
+      allowedTools: string[];
+      disallowedTools: string[];
+      declaredOracleTypes: (
+        | 'reflected_marker'
+        | 'status_diff'
+        | 'timing_with_baseline'
+        | 'out_of_band'
+        | 'access_matrix'
+        | 'error_signature'
+        | 'file_read'
+        | 'header_flag'
+      )[];
+      inputs: string[];
+      /** @enum {string} */
+      intrusivenessCeiling: 'passive' | 'active_safe' | 'state_changing';
+      requiresSubmission: boolean;
+      helpers: {
+        name: string;
+        description: string;
+        /** @enum {string} */
+        tierAlias: 'deep' | 'standard' | 'fast';
+        allowedTools: string[];
+      }[];
     };
     Problem: {
       /** Format: uri */
@@ -882,6 +983,212 @@ export interface operations {
       };
       /** @description Problem details; code is one of RATE_LIMITED. */
       429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listPersonas: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The PersonaRegistryList view. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PersonaRegistryList'];
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of INTERNAL. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getPersona: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description A persona of the fixed roster. */
+        persona:
+          | 'orchestrator'
+          | 'planner'
+          | 'sub-planner'
+          | 'passive-recon'
+          | 'osint'
+          | 'active-recon'
+          | 'threat-intel'
+          | 'source-spec-ingestion'
+          | 'session-setup'
+          | 'web-api-specialist'
+          | 'auth-logic-specialist'
+          | 'infrastructure-specialist'
+          | 'code-specialist'
+          | 'exploit-developer'
+          | 'mentor'
+          | 'reflector'
+          | 'validator-assistant'
+          | 'reporter'
+          | 'remediation';
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The PersonaRegistryView view. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PersonaRegistryView'];
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of PERSONA_NOT_DEFINED. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of PERSONA_UNKNOWN. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of INTERNAL. */
+      500: {
         headers: {
           [name: string]: unknown;
         };
