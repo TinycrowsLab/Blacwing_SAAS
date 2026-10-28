@@ -248,6 +248,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@blackwing/agents':
+        specifier: workspace:*
+        version: link:../../packages/agents
       '@blackwing/audit':
         specifier: workspace:*
         version: link:../../packages/audit

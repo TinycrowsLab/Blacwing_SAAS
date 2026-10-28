@@ -73,7 +73,8 @@
         "operator.kill_fired",
         "audit.queried",
         "secret.rotated",
-        "secret.rewrapped"
+        "secret.rewrapped",
+        "persona.override_changed"
       ]
     },
     "severity": {

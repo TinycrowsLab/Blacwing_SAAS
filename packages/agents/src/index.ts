@@ -10,3 +10,4 @@ export * from './prompt.js';
 export * from './base-preamble.js';
 export * from './personas/index.js';
 export * from './tier.js';
+export * from './persona-overrides.js';

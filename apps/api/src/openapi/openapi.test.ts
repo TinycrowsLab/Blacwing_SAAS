@@ -88,6 +88,8 @@ const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   getKillEvent: 'kill',
   listAuditEvents: 'audit',
   streamRunEvents: 'runs',
+  getPersonaOverride: 'personas',
+  putPersonaOverride: 'personas',
 };
 
 describe('public OpenAPI document', () => {
@@ -120,8 +122,15 @@ describe('public OpenAPI document', () => {
         expect(new Set(refs)).toEqual(new Set(['#/components/schemas/Problem']));
       }
     }
-    expect(ids).toEqual(['triggerKill', 'getKillEvent', 'listAuditEvents', 'streamRunEvents']);
-    expect(countOperations(doc)).toBe(4);
+    expect(ids).toEqual([
+      'triggerKill',
+      'getKillEvent',
+      'listAuditEvents',
+      'streamRunEvents',
+      'getPersonaOverride',
+      'putPersonaOverride',
+    ]);
+    expect(countOperations(doc)).toBe(6);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -175,7 +184,7 @@ describe('public OpenAPI document', () => {
   });
 
   it('exposes every module from publicOpenApiModules', () => {
-    expect(publicOpenApiModules().map((m) => m.tag)).toEqual(['kill', 'audit', 'runs']);
+    expect(publicOpenApiModules().map((m) => m.tag)).toEqual(['kill', 'audit', 'runs', 'personas']);
   });
 });
 
@@ -234,7 +243,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(4);
+    expect(result.operations).toBe(6);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

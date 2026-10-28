@@ -3,4 +3,5 @@ export * from './audit.js';
 export * from './outbox.js';
 export * from './scope.js';
 export * from './secrets.js';
+export * from './persona-overrides.js';
 export * from './tenancy.js';

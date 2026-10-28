@@ -107,6 +107,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'PERSONA_UNKNOWN',
   'PERSONA_NOT_DEFINED',
   'PERSONA_FORBIDDEN_TOOL',
+  // PersonaOverrideFieldError, @blackwing/agents (REGISTRY-010).
+  'OVERRIDE_FIELD_FORBIDDEN',
   'PERSONA_INVALID',
   // TierError, @blackwing/agents (REGISTRY-003).
   'MODEL_NOT_ALLOWED',

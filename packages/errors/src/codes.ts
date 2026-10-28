@@ -91,6 +91,13 @@ const DEFINITIONS = {
   PERSONA_NOT_DEFINED: { status: 404, title: 'Persona not defined', retryable: false },
   PERSONA_FORBIDDEN_TOOL: { status: 422, title: 'Forbidden tool in persona', retryable: false },
   PERSONA_INVALID: { status: 422, title: 'Invalid persona definition', retryable: false },
+  // Persona override whitelist (REGISTRY-010, §8.11): a tenant may set only the whitelisted fields. A field
+  // outside the whitelist (tools, intrusiveness ceiling, model map) is a refusal of a safety boundary (403).
+  OVERRIDE_FIELD_FORBIDDEN: {
+    status: 403,
+    title: 'Persona override field not permitted',
+    retryable: false,
+  },
   // Model-tier resolution (REGISTRY-003, §8.9): a provider/model outside the gateway allowlist is refused.
   MODEL_NOT_ALLOWED: { status: 403, title: 'Model not allowed', retryable: false },
   // `@blackwing/config` (FOUND-007) refuses to start on an invalid environment: a server fault.

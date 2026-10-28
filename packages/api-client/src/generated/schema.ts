@@ -79,6 +79,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/personas/{persona}/override': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The tenant override of a persona
+     * @description Requires settings:read. Answers the override the tenant set, or null when none is set (the base values apply).
+     */
+    get: operations['getPersonaOverride'];
+    /**
+     * Replace the tenant override of a persona
+     * @description Requires settings:write (org_admin). The body replaces the whole override; an empty object resets the persona to its base values. Only effort, maxTurns, maxBudgetUsd and lowerStandardTier are accepted: any other field answers OVERRIDE_FIELD_FORBIDDEN. Values above the persona bounds are clamped, never raised. The change is audited as persona.override_changed.
+     */
+    put: operations['putPersonaOverride'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -146,7 +170,8 @@ export interface components {
         | 'operator.kill_fired'
         | 'audit.queried'
         | 'secret.rotated'
-        | 'secret.rewrapped';
+        | 'secret.rewrapped'
+        | 'persona.override_changed';
       /** @enum {string} */
       severity: 'info' | 'notice' | 'warning' | 'critical';
       /** @description Who acted. `email` is only returned to auditors. */
@@ -245,6 +270,39 @@ export interface components {
       status: 'initiated' | 'propagating' | 'halted' | 'partially_halted' | 'failed';
       /** Format: date-time */
       triggeredAt: string;
+    };
+    PersonaOverride: {
+      /** @enum {string} */
+      effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+      maxTurns?: number;
+      maxBudgetUsd?: number;
+      lowerStandardTier?: boolean;
+    };
+    PersonaOverrideView: {
+      /** @enum {string} */
+      persona:
+        | 'orchestrator'
+        | 'planner'
+        | 'sub-planner'
+        | 'passive-recon'
+        | 'osint'
+        | 'active-recon'
+        | 'threat-intel'
+        | 'source-spec-ingestion'
+        | 'session-setup'
+        | 'web-api-specialist'
+        | 'auth-logic-specialist'
+        | 'infrastructure-specialist'
+        | 'code-specialist'
+        | 'exploit-developer'
+        | 'mentor'
+        | 'reflector'
+        | 'validator-assistant'
+        | 'reporter'
+        | 'remediation';
+      override: components['schemas']['PersonaOverride'] | null;
+      /** Format: date-time */
+      updatedAt: string | null;
     };
     Problem: {
       /** Format: uri */
@@ -553,7 +611,8 @@ export interface operations {
           | 'operator.kill_fired'
           | 'audit.queried'
           | 'secret.rotated'
-          | 'secret.rewrapped';
+          | 'secret.rewrapped'
+          | 'persona.override_changed';
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */
         targetId?: string;
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */
@@ -754,6 +813,238 @@ export interface operations {
       };
       /** @description Problem details; code is one of RATE_LIMITED. */
       429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getPersonaOverride: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description A persona of the fixed roster. */
+        persona:
+          | 'orchestrator'
+          | 'planner'
+          | 'sub-planner'
+          | 'passive-recon'
+          | 'osint'
+          | 'active-recon'
+          | 'threat-intel'
+          | 'source-spec-ingestion'
+          | 'session-setup'
+          | 'web-api-specialist'
+          | 'auth-logic-specialist'
+          | 'infrastructure-specialist'
+          | 'code-specialist'
+          | 'exploit-developer'
+          | 'mentor'
+          | 'reflector'
+          | 'validator-assistant'
+          | 'reporter'
+          | 'remediation';
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The persona override view. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PersonaOverrideView'];
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of PERSONA_UNKNOWN. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of INTERNAL. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  putPersonaOverride: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description A persona of the fixed roster. */
+        persona:
+          | 'orchestrator'
+          | 'planner'
+          | 'sub-planner'
+          | 'passive-recon'
+          | 'osint'
+          | 'active-recon'
+          | 'threat-intel'
+          | 'source-spec-ingestion'
+          | 'session-setup'
+          | 'web-api-specialist'
+          | 'auth-logic-specialist'
+          | 'infrastructure-specialist'
+          | 'code-specialist'
+          | 'exploit-developer'
+          | 'mentor'
+          | 'reflector'
+          | 'validator-assistant'
+          | 'reporter'
+          | 'remediation';
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PersonaOverride'];
+      };
+    };
+    responses: {
+      /** @description The override as stored. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PersonaOverrideView'];
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, OVERRIDE_FIELD_FORBIDDEN. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of PERSONA_UNKNOWN, VALIDATION_FAILED. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of INTERNAL. */
+      500: {
         headers: {
           [name: string]: unknown;
         };

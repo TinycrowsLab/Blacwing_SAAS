@@ -9,6 +9,15 @@ import {
 
 export type JsonObject = Record<string, unknown>;
 
+/** One feature module of the public document: its tag, paths and the schemas it adds under `components`. */
+export interface OpenApiModule {
+  readonly tag: string;
+  readonly description: string;
+  readonly paths: JsonObject;
+  /** Schemas under `components.schemas`; the shared `Problem` is added by the builder. */
+  readonly schemas: JsonObject;
+}
+
 const COMPONENT_SCHEMAS = '#/components/schemas/';
 const DEFS_PREFIX = '#/$defs/';
 

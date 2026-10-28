@@ -453,6 +453,15 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'A tenant KEK rewrap completed: every envelope of the tenant was re-wrapped to the newest KEK version.',
   },
+  // Persona overrides (REGISTRY-010): appended; records the whitelisted fields a tenant changed, never tools or ceilings.
+  {
+    action: 'persona.override_changed',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'A tenant changed the whitelisted override of a persona (effort, turns, budget, tier).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

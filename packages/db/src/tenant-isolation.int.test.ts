@@ -50,6 +50,12 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       tenantId,
     ]);
   },
+  persona_overrides: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO persona_overrides (tenant_id, persona, max_turns) VALUES ($1, 'osint', 5)`,
+      [tenantId],
+    );
+  },
   kill_events: async (tx, tenantId) => {
     await tx.query(
       `INSERT INTO kill_events (id, tenant_id, scope, scope_ref_id, source, actor_type, actor_ref, reason)

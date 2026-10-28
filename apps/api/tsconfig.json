@@ -8,6 +8,7 @@
   },
   "include": ["src"],
   "references": [
+    { "path": "../../packages/agents" },
     { "path": "../../packages/audit" },
     { "path": "../../packages/config" },
     { "path": "../../packages/contracts" },

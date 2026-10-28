@@ -179,6 +179,13 @@ export {
   type AssessmentRequestUpdate,
 } from './assessment-request.repository.js';
 export {
+  createPgPersonaOverrideStore,
+  type PersonaOverrideColumns,
+  type PgPersonaOverrideStore,
+  type StoredPersonaOverride,
+} from './persona-overrides.js';
+export { positionalSql, txQuery, type TxQueryResult } from './tx-query.js';
+export {
   OutboxDuplicateError,
   type OutboxMetrics,
   withOutbox,

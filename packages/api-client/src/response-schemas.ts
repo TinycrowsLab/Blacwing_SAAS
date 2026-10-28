@@ -33,6 +33,27 @@ const auditEventsPageSchema = z.looseObject({
   nextCursor: z.string().min(1).optional(),
 });
 
+/** Bounds the API enforces on a persona override (`MAX_OVERRIDE_TURNS`, `MAX_OVERRIDE_BUDGET_USD`). */
+const MAX_OVERRIDE_TURNS = 10_000;
+const MAX_OVERRIDE_BUDGET_USD = 10_000;
+
+/**
+ * The persona override view `GET`/`PUT /v1/personas/{persona}/override` serve (REGISTRY-010). It mirrors the
+ * OpenAPI `PersonaOverrideView` component; the bounds are the ones the API enforces (`@blackwing/agents`).
+ */
+const personaOverrideViewSchema = z.strictObject({
+  persona: z.string(),
+  override: z
+    .strictObject({
+      effort: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).optional(),
+      maxTurns: z.number().int().min(1).max(MAX_OVERRIDE_TURNS).optional(),
+      maxBudgetUsd: z.number().positive().max(MAX_OVERRIDE_BUDGET_USD).optional(),
+      lowerStandardTier: z.boolean().optional(),
+    })
+    .nullable(),
+  updatedAt: z.string().nullable(),
+});
+
 /**
  * Zod schema per successful status of every operation (non-prod response validation). The record is
  * keyed by every `OperationId`, so an operation added to the spec fails to compile until it is mapped.
@@ -45,4 +66,6 @@ export const RESPONSE_SCHEMAS: Readonly<
   // text/event-stream, not JSON: there is no body schema to check, so the client returns it unparsed.
   streamRunEvents: {},
   triggerKill: { 202: killTriggerResponseSchema },
+  getPersonaOverride: { 200: personaOverrideViewSchema },
+  putPersonaOverride: { 200: personaOverrideViewSchema },
 };

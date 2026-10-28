@@ -9,6 +9,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  getPersonaOverride: {
+    method: 'GET',
+    path: '/v1/personas/{persona}/override',
+    pathParams: ['persona'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   listAuditEvents: {
     method: 'GET',
     path: '/v1/audit/events',
@@ -25,6 +32,13 @@ export const OPERATIONS = {
       'cursor',
       'limit',
     ],
+    requiredHeaders: [],
+  },
+  putPersonaOverride: {
+    method: 'PUT',
+    path: '/v1/personas/{persona}/override',
+    pathParams: ['persona'],
+    queryParams: [],
     requiredHeaders: [],
   },
   streamRunEvents: {
