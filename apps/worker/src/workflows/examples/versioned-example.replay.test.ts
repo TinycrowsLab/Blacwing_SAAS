@@ -27,15 +27,22 @@ describe('versionedExample replay', () => {
     ).resolves.toBeUndefined();
   }, 60_000);
 
-  it('detects the same v1 history when the review step is inserted without patched()', async () => {
-    // Negative control: proves the replay above can fail. Without the patch the command order changes.
-    const replay = Worker.runReplayHistory(
-      { workflowsPath: unpatchedWorkflows },
-      v1History,
-      'versioned-example-v1-unpatched',
-    );
-    await expect(replay).rejects.toBeInstanceOf(DeterminismViolationError);
-  }, 60_000);
+  // The SDK keeps one shared Runtime. The previous replay worker may still be shutting it down, so
+  // this replay can reach a closing runtime (TypeError from replay_worker_new) before any workflow
+  // runs. The same assertion is re-run on a fresh replay worker; it is not relaxed.
+  it(
+    'detects the same v1 history when the review step is inserted without patched()',
+    { timeout: 60_000, retry: 2 },
+    async () => {
+      // Negative control: proves the replay above can fail. Without the patch the command order changes.
+      const replay = Worker.runReplayHistory(
+        { workflowsPath: unpatchedWorkflows },
+        v1History,
+        'versioned-example-v1-unpatched',
+      );
+      await expect(replay).rejects.toBeInstanceOf(DeterminismViolationError);
+    },
+  );
 
   it('fails closed on a history that is not a valid Temporal history', async () => {
     await expect(
