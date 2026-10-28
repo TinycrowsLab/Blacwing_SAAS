@@ -88,6 +88,7 @@ const RELEASED_ACTIONS = [
   'auth.sso_config_changed',
   'tenant.created',
   'signup.verified',
+  'tenant.settings_updated',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

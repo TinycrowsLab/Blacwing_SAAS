@@ -23,6 +23,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  getTenantSettings: {
+    method: 'GET',
+    path: '/v1/tenant/settings',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   listAuditEvents: {
     method: 'GET',
     path: '/v1/audit/events',
@@ -75,6 +82,13 @@ export const OPERATIONS = {
     pathParams: [],
     queryParams: [],
     requiredHeaders: ['Idempotency-Key'],
+  },
+  updateTenantSettings: {
+    method: 'PATCH',
+    path: '/v1/tenant/settings',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
   },
   verifySignup: {
     method: 'POST',

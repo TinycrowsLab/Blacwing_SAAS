@@ -8,6 +8,7 @@ import {
   killTriggerResponseSchema,
   signupAcceptedSchema,
   signupVerifiedSchema,
+  tenantSettingsResponseSchema,
 } from '@blackwing/contracts';
 
 import type { OperationId } from './generated/operations.js';
@@ -108,4 +109,6 @@ export const RESPONSE_SCHEMAS: Readonly<
   verifySignup: { 200: signupVerifiedSchema },
   listPersonas: { 200: personaRegistryListSchema },
   getPersona: { 200: personaRegistryViewSchema },
+  getTenantSettings: { 200: tenantSettingsResponseSchema },
+  updateTenantSettings: { 200: tenantSettingsResponseSchema },
 };

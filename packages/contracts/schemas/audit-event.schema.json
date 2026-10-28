@@ -77,7 +77,8 @@
         "persona.override_changed",
         "auth.sso_config_changed",
         "tenant.created",
-        "signup.verified"
+        "signup.verified",
+        "tenant.settings_updated"
       ]
     },
     "severity": {

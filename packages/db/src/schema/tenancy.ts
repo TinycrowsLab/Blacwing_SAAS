@@ -2,6 +2,7 @@ import { sql, type SQL } from 'drizzle-orm';
 import {
   check,
   index,
+  jsonb,
   pgPolicy,
   pgTable,
   primaryKey,
@@ -47,12 +48,18 @@ export const tenants = pgTable(
     status: text('status', { enum: TENANT_STATUSES }).notNull().default('active'),
     region: text('region').notNull(),
     plan: text('plan').notNull().default('free'),
+    /** Typed tenant settings (TENANT-008), validated by `TenantSettings` in @blackwing/contracts. */
+    settings: jsonb('settings')
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
     ...timestamps(),
   },
   (t) => [
     // The unique constraint is also the `tenants(slug)` lookup index; likewise `users(email)`.
     unique('tenants_slug_key').on(t.slug),
     check('tenants_status_check', sql`${t.status} IN (${inList(TENANT_STATUSES)})`),
+    check('tenants_settings_check', sql`jsonb_typeof(${t.settings}) = 'object'`),
     check(
       'tenants_slug_check',
       sql`${t.slug} ~ ${sql.raw(`'${SLUG_PATTERN}'`)} AND length(${t.slug}) BETWEEN 3 AND 63`,

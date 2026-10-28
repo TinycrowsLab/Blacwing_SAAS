@@ -485,6 +485,15 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     isAlwaysAudited: true,
     description: 'A signup e-mail address was verified with its single-use token.',
   },
+  // tenant settings API: appended, so the released order above is untouched
+  {
+    action: 'tenant.settings_updated',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'A tenant admin changed tenant settings; metadata records the changed keys, with personal values redacted.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

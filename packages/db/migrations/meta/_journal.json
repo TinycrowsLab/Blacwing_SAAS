@@ -85,6 +85,13 @@
       "when": 1793150000000,
       "tag": "20261028003000_signups",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793154466336,
+      "tag": "20261028022746_tenant_settings",
+      "breakpoints": true
     }
   ]
 }

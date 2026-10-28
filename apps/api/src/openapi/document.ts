@@ -7,6 +7,7 @@ import { killOpenApiDocument } from '../kill/openapi.js';
 import { personaOpenApiModule } from '../personas/openapi.js';
 import { runEventsOpenApiModule } from '../run-events/openapi.js';
 import { signupOpenApiModule } from '../signup/openapi.js';
+import { tenantSettingsOpenApiModule } from '../tenant-settings/openapi.js';
 
 /** Largest page a client may request (§9). */
 export const PAGE_LIMIT_MAX = 200;
@@ -54,6 +55,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     runEventsOpenApiModule(),
     personaOpenApiModule(),
     signupOpenApiModule(),
+    tenantSettingsOpenApiModule(),
   ];
 }
 

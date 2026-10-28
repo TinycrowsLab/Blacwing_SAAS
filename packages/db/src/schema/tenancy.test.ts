@@ -30,15 +30,28 @@ describe('tenancy tables', () => {
       'status',
       'region',
       'plan',
+      'settings',
       'created_at',
       'updated_at',
     ]);
     expect(cols.id).toMatchObject({ columnType: 'PgUUID', primary: true });
-    for (const name of ['slug', 'name', 'status', 'region', 'plan', 'created_at', 'updated_at']) {
+    for (const name of [
+      'slug',
+      'name',
+      'status',
+      'region',
+      'plan',
+      'settings',
+      'created_at',
+      'updated_at',
+    ]) {
       expect(cols[name]?.notNull, name).toBe(true);
     }
     expect(cols.status?.default).toBe('active');
     expect(cols.plan?.default).toBe('free');
+    // TENANT-008: typed settings, defaulting to an empty object (the schema defaults apply on read).
+    expect(cols.settings).toMatchObject({ columnType: 'PgJsonb' });
+    expect(cols.settings?.hasDefault).toBe(true);
   });
 
   it('users is global: citext email, nullable name, no tenant_id', () => {

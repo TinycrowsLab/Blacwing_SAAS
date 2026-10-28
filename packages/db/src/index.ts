@@ -179,6 +179,15 @@ export {
   type AssessmentRequestUpdate,
 } from './assessment-request.repository.js';
 export {
+  type TenantSettingsAuditEvent,
+  type TenantSettingsAuditHook,
+  type TenantSettingsChange,
+  TenantSettingsRepository,
+  type TenantSettingsRepositoryOptions,
+  type TenantSettingsRecord,
+  type TenantSettingsWrite,
+} from './tenant-settings.repository.js';
+export {
   createPgPersonaOverrideStore,
   type PersonaOverrideColumns,
   type PgPersonaOverrideStore,

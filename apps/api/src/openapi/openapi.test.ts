@@ -94,6 +94,8 @@ const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   putPersonaOverride: 'personas',
   requestSignup: 'signup',
   verifySignup: 'signup',
+  getTenantSettings: 'tenant',
+  updateTenantSettings: 'tenant',
 };
 
 describe('public OpenAPI document', () => {
@@ -126,19 +128,21 @@ describe('public OpenAPI document', () => {
         expect(new Set(refs)).toEqual(new Set(['#/components/schemas/Problem']));
       }
     }
-    expect(ids).toEqual([
-      'triggerKill',
+    expect(ids.sort()).toEqual([
       'getKillEvent',
-      'listAuditEvents',
-      'streamRunEvents',
-      'listPersonas',
       'getPersona',
       'getPersonaOverride',
+      'getTenantSettings',
+      'listAuditEvents',
+      'listPersonas',
       'putPersonaOverride',
       'requestSignup',
+      'streamRunEvents',
+      'triggerKill',
+      'updateTenantSettings',
       'verifySignup',
     ]);
-    expect(countOperations(doc)).toBe(10);
+    expect(countOperations(doc)).toBe(12);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -198,6 +202,7 @@ describe('public OpenAPI document', () => {
       'runs',
       'personas',
       'signup',
+      'tenant',
     ]);
   });
 });
@@ -257,7 +262,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(10);
+    expect(result.operations).toBe(12);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });
