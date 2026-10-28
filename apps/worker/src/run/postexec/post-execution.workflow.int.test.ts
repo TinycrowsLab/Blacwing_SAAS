@@ -138,6 +138,8 @@ describe('PostExecutionWorkflow on Temporal', () => {
     expect(h.runs.state).toBe('reporting');
   });
 
+  // The reporter write-up retries for real (5 attempts, 10 s initial, x2 backoff: 10+20+40+80 s of
+  // waiting), so the budget covers that schedule plus worker start-up and teardown.
   it('a failing reporter session fails the phase but keeps the finding released', async () => {
     const h = makeHarness({
       findings: new MemoryFindings({ f: 'candidate' }),
@@ -146,7 +148,7 @@ describe('PostExecutionWorkflow on Temporal', () => {
     const r = await run(h, [release('f')]);
     expect(r).toBeInstanceOf(WorkflowFailedError);
     expect(h.findings.status.get('f')).toBe('released');
-  }, 120_000);
+  }, 240_000);
 
   it('Gate 3 timeout pages and never auto-releases; a later decision still completes', async () => {
     const h = makeHarness({ findings: new MemoryFindings({ f: 'candidate' }) });
