@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 
 import { describe, expect, it, vi } from 'vitest';
 
+import { canonicalQueryText } from '@blackwing/contracts';
+
 import { ApiError, isApiError } from './api-error.js';
 import { createGraphQLClient, defineQuery, GRAPHQL_MAX_DEPTH } from './graphql-client.js';
 
@@ -113,7 +115,9 @@ describe('createGraphQLClient', () => {
     expect(sent).toEqual({
       operationName: 'DashboardRuns',
       variables: { limit: 1 },
-      extensions: { persistedQuery: { version: 1, sha256Hash: sha256(runsQuery.text) } },
+      extensions: {
+        persistedQuery: { version: 1, sha256Hash: sha256(canonicalQueryText(runsQuery.text)) },
+      },
     });
   });
 

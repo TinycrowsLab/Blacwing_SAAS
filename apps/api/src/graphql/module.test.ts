@@ -253,7 +253,8 @@ describe('GraphQL read layer (API-009)', () => {
   });
 
   it('turns introspection and GraphiQL off in production', async () => {
-    const { app } = await boot({ NODE_ENV: 'production' });
+    // Raw documents are refused by the persisted-query gate first; this opts it out to exercise the schema rule.
+    const { app } = await boot({ NODE_ENV: 'production', API_GQL_PERSISTED_ONLY: 'false' });
     const body = await gql(app, '{ __schema { queryType { name } } }', { principal: SESSION_A });
     expect(body.data).toBeNull();
     expect(body.errors?.[0]).toMatchObject({ extensions: { code: 'validation_failed' } });
@@ -263,8 +264,9 @@ describe('GraphQL read layer (API-009)', () => {
     expect(ide.statusCode).toBe(404);
   });
 
-  it('still serves queries in production', async () => {
-    const { app } = await boot({ NODE_ENV: 'production' });
+  it('still serves queries in production when raw documents are opted in', async () => {
+    // The persisted path is covered in persisted.gate.test.ts; this checks the resolver path under production.
+    const { app } = await boot({ NODE_ENV: 'production', API_GQL_PERSISTED_ONLY: 'false' });
     const body = await gql(app, '{ tenantMembers(first: 1) { userId } }', { principal: SESSION_A });
     expect(body).toEqual({ data: { tenantMembers: [{ userId: 'usr_a1' }] } });
   });

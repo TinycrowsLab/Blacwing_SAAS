@@ -26,6 +26,7 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "graphql": "catalog:",
     "zod": "catalog:"
   }
 }

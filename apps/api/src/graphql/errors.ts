@@ -19,9 +19,31 @@ const STATUS_OK = 200;
 const INTERNAL_CODE = 'internal_error';
 const VALIDATION_CODE = 'validation_failed';
 
+/** Codes of the persisted-query gate (API-GQL-PERSIST), in `extensions.code`. */
+export const PERSISTED_QUERY_CODES = [
+  'persisted_manifest_unavailable',
+  'persisted_query_not_found',
+  'persisted_query_required',
+  'persisted_query_hash_mismatch',
+] as const;
+export type PersistedQueryCode = (typeof PERSISTED_QUERY_CODES)[number];
+
+/** Registry status and caller-safe title of each gate code. */
+export const PERSISTED_QUERY_TITLES: Readonly<
+  Record<PersistedQueryCode, { readonly status: number; readonly title: string }>
+> = {
+  persisted_manifest_unavailable: { status: 503, title: 'GraphQL unavailable' },
+  persisted_query_not_found: { status: 400, title: 'Unknown persisted query' },
+  persisted_query_required: { status: 400, title: 'Persisted query required' },
+  persisted_query_hash_mismatch: { status: 400, title: 'Persisted query hash mismatch' },
+};
+
 /** Registers the GraphQL-only wire code in the REST problem registry, so both transports share one code list. */
 export function registerGraphqlProblemCodes(registry: ProblemRegistry = problemRegistry): void {
   registry.register(QUERY_TOO_COMPLEX, { status: 400, title: 'Query too complex' });
+  for (const code of PERSISTED_QUERY_CODES) {
+    registry.register(code, PERSISTED_QUERY_TITLES[code]);
+  }
 }
 
 interface Described {

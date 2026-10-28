@@ -12,6 +12,8 @@
     "build": "tsc -b --pretty false",
     "dev": "tsx watch src/main.ts",
     "graphql:generate": "tsx src/graphql/emit.ts",
+    "graphql:persist": "tsx src/graphql/persist.ts",
+    "graphql:persist:check": "tsx src/graphql/persist.ts --check",
     "lint": "eslint . --max-warnings=0",
     "openapi:check": "tsx src/openapi/emit.ts --check",
     "openapi:emit": "tsx src/openapi/emit.ts",

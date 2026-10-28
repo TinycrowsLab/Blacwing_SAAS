@@ -33,6 +33,7 @@ Validated with Zod through `@blackwing/config` at boot. Any missing or invalid k
 | `SIGNUP_DEFAULT_REGION` | `eu-west-1` | Data region of a self-service tenant |
 | `SIGNUP_EMAIL_MAX_PER_HOUR` | `5` | Verification mails one address may ask for per hour |
 | `SIGNUP_VERIFY_URL` | first `WEB_ORIGIN` + `/signup/verify` | Console page the link opens; the token is in the `#token=` fragment |
+| `API_GQL_PERSISTED_ONLY` | on in production, off otherwise | Only persisted queries run (a sha256 id from `graphql/persisted.json`); raw documents answer `persisted_query_required`. Run `pnpm graphql:persist` after changing a client operation |
 | `KEYCLOAK_ADMIN_URL`, `KEYCLOAK_ADMIN_REALM`, `KEYCLOAK_ORG_ADMIN_CLIENT_ID`, `KEYCLOAK_ORG_ADMIN_SECRET_PATH` | unset | Keycloak Admin API for organisations (IAM-002). Set all four or none. The client secret is read from OpenBao at the secret path, never from env |
 
 ## Keycloak organisations (IAM-002)
@@ -111,7 +112,7 @@ tenant data routes, it waits for the process to own a database handle. Writes st
   name and reason, never its query text.
 - **Schema.** `apps/api/schema.gql` is written from the decorators (`autoSchemaFile`). `pnpm graphql:generate`
   regenerates it and the drift check (`scripts/check-drift.mjs`) fails when it is stale.
-- **Not yet:** persisted queries in production (API-010) and the domain schema (feature epics add resolvers).
+- **Not yet:** the domain schema (feature epics add resolvers).
 
 ## Pagination and list filters (API-005)
 

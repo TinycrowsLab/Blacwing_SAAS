@@ -1,6 +1,8 @@
 import { Kind, parse, type SelectionSetNode } from 'graphql';
 import { z } from 'zod';
 
+import { canonicalQueryText } from '@blackwing/contracts';
+
 import { ApiError, apiErrorFromResponse, CLIENT_ERROR_CODES, toNetworkError } from './api-error.js';
 import { getPublicConfig, isGraphQLPersisted, isProductionBuild } from './config.js';
 
@@ -218,7 +220,10 @@ export function createGraphQLClient(options: GraphQLClientOptions = {}): GraphQL
       ? {
           ...base,
           extensions: {
-            persistedQuery: { version: 1, sha256Hash: await sha256Hex(query.text) },
+            persistedQuery: {
+              version: 1,
+              sha256Hash: await sha256Hex(canonicalQueryText(query.text)),
+            },
           },
         }
       : { ...base, query: query.text };

@@ -863,6 +863,9 @@ importers:
 
   packages/contracts:
     dependencies:
+      graphql:
+        specifier: 'catalog:'
+        version: 16.12.0
       zod:
         specifier: 'catalog:'
         version: 4.6.7

@@ -13,6 +13,12 @@ export interface GraphqlMetrics {
   readonly complexity: Histogram;
   /** `graphql_rejected_total{reason}`: operations refused by a query limit (`depth`, `complexity`, `aliases`). */
   readonly rejected: Counter<'reason'>;
+  /** `graphql_persisted_hits_total`: requests whose persisted-query id resolved to a manifest entry. */
+  readonly persistedHits: Counter;
+  /** `graphql_persisted_misses_total`: requests whose persisted-query id is in no loaded manifest. */
+  readonly persistedMisses: Counter;
+  /** `graphql_persisted_rejected_total{reason}`: requests refused by the persisted-query gate (API-GQL-PERSIST). */
+  readonly persistedRejected: Counter<'reason'>;
 }
 
 export function createGraphqlMetrics(registry: Registry): GraphqlMetrics {
@@ -32,6 +38,22 @@ export function createGraphqlMetrics(registry: Registry): GraphqlMetrics {
     rejected: new Counter({
       name: 'graphql_rejected_total',
       help: 'GraphQL operations refused by a depth, complexity or alias limit, by reason.',
+      labelNames: ['reason'],
+      registers: [registry],
+    }),
+    persistedHits: new Counter({
+      name: 'graphql_persisted_hits_total',
+      help: 'GraphQL requests whose persisted-query id resolved to a manifest entry.',
+      registers: [registry],
+    }),
+    persistedMisses: new Counter({
+      name: 'graphql_persisted_misses_total',
+      help: 'GraphQL requests whose persisted-query id is in no loaded manifest.',
+      registers: [registry],
+    }),
+    persistedRejected: new Counter({
+      name: 'graphql_persisted_rejected_total',
+      help: 'GraphQL requests refused by the persisted-query gate, by reason.',
       labelNames: ['reason'],
       registers: [registry],
     }),

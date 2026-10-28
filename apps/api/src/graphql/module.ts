@@ -15,6 +15,12 @@ import {
 import { createRequestLoaders } from './loaders.js';
 import { MembersResolver } from './members.resolver.js';
 import { createGraphqlMetrics, type GraphqlMetrics } from './metrics.js';
+import {
+  loadPersistedManifests,
+  persistedQueryGate,
+  type PersistedManifestFiles,
+  type PersistedManifests,
+} from './persisted.js';
 import { GRAPHQL_MEMBER_STORE, GRAPHQL_METRICS } from './tokens.js';
 
 import type { MemberReadStore } from './store.js';
@@ -25,6 +31,12 @@ import type { Logger } from '@blackwing/logger';
 /** The schema file `@nestjs/graphql` writes from the decorators (code-first; committed, drift-checked). */
 const GRAPHQL_SCHEMA_FILE = fileURLToPath(new URL('../../schema.gql', import.meta.url));
 
+/** The persisted-query manifests `graphql:persist` writes (API-GQL-PERSIST). */
+const PERSISTED_MANIFEST_FILES: PersistedManifestFiles = {
+  current: fileURLToPath(new URL('../../graphql/persisted.json', import.meta.url)),
+  previous: fileURLToPath(new URL('../../graphql/persisted.previous.json', import.meta.url)),
+};
+
 export interface GraphqlModuleOptions {
   readonly config: Readonly<ApiConfig>;
   readonly logger: Logger;
@@ -32,6 +44,8 @@ export interface GraphqlModuleOptions {
   readonly metrics: HttpMetrics;
   /** Tenant-scoped read port of the resolvers (Postgres in production). */
   readonly store: MemberReadStore;
+  /** The persisted-query manifests; loaded from `apps/api/graphql/` at boot when omitted. */
+  readonly persisted?: PersistedManifests;
 }
 
 /** The query limits the configuration sets (API-009). */
@@ -55,6 +69,9 @@ export class GraphqlApiModule {
     const metrics: GraphqlMetrics = createGraphqlMetrics(options.metrics.registry);
     const limits = queryLimitsOf(config);
     const production = config.NODE_ENV === 'production';
+    // Production runs only persisted queries unless the configuration says otherwise (API-GQL-PERSIST).
+    const persistedOnly = config.API_GQL_PERSISTED_ONLY ?? production;
+    const manifests = options.persisted ?? loadPersistedManifests(PERSISTED_MANIFEST_FILES, logger);
     registerGraphqlProblemCodes();
 
     const mercurius: MercuriusDriverConfig = {
@@ -67,6 +84,10 @@ export class GraphqlApiModule {
       // Mercurius' function form of validationRules (the variables reach the limits) needs the document cache off.
       cache: false,
       graphiql: !production,
+      // The persisted-query gate runs before Mercurius reads the document, on GET and POST alike.
+      additionalRouteOptions: {
+        preHandler: persistedQueryGate({ manifests, persistedOnly, metrics, logger }),
+      },
       validationRules: ({ variables }) => [
         createQueryLimitsRule(limits, variables ?? {}, {
           onOperation: (operation, shape) => {

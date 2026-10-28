@@ -177,6 +177,11 @@ export const apiEnvShape = {
    * The token travels in the fragment, so it reaches neither access logs nor `Referer` headers.
    */
   SIGNUP_VERIFY_URL: zUrl({ protocols: ['http:', 'https:'] }).optional(),
+  /**
+   * Only persisted queries run (a known sha256 id; raw documents are refused). Unset, it is on in production and
+   * off in development, so raw queries keep working locally.
+   */
+  API_GQL_PERSISTED_ONLY: zBool().optional(),
   /** Release version and commit echoed by `/health`. Neither is a secret. */
   API_VERSION: z.string().min(1).default('0.0.0'),
   API_COMMIT: z.string().min(1).default('unknown'),

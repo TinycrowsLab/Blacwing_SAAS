@@ -4,6 +4,7 @@ export const name = '@blackwing/contracts';
 /** Package version; kept in sync with package.json. */
 export const version = '0.0.0';
 
+export { canonicalQueryText, PERSISTED_HASH_PATTERN } from './graphql-persisted.js';
 export {
   assertWithinCeiling,
   compareIntrusiveness,
