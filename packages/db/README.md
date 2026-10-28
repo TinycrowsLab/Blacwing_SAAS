@@ -74,14 +74,14 @@ is not in `schema/index.ts` and has no migration.
 
 ## Hermetic test database (#76)
 
-`startTestDatabase({ seed })` in `src/testing/__fixtures__/pg-container.ts` starts a `pgvector/pgvector:0.8.1-pg16`
+`startTestDatabase({ seed })` in `src/testing/testdata/pg-container.ts` starts a `pgvector/pgvector:0.8.1-pg16`
 container (pinned by digest in `@blackwing/testing`), applies the committed migrations as `bw_owner`, checks that
 every tenant table has FORCE RLS, pings the `bw_app` pool and runs the seed. Each call gets its own uniquely named
 database, so test files that run in parallel never share rows. Integration tests call `db.reset()` between tests to
 return the tenant tables to the seeded baseline (the audit ledger's truncate guard stays enabled), and
 `db.withTestTenant(id, fn)` runs a callback in a tenant transaction as `bw_app`. Measured startup is about 3 to 7 seconds
 per call on a warm image cache (container boot plus migrations); keep a generous `beforeAll` timeout. The
-meta-test is `src/testing/__fixtures__/pg-container.int.test.ts`. Docker is required (`pnpm test:int`).
+meta-test is `src/testing/testdata/pg-container.int.test.ts`. Docker is required (`pnpm test:int`).
 
 ## Embeddings and pgvector (DB-005)
 
