@@ -234,6 +234,36 @@ act on an asset outside its binding, or on another tenant&#39;s data. Those atte
 trail.</p>
 <p>If a request fails with <code>403</code>, read the <code>code</code> in the response. <code>FORBIDDEN</code> means the scope or the RBAC role is
 missing. <code>KILL_FORBIDDEN</code> and similar codes name the specific check that refused the action.</p>
+<h2 id="platform-operators-operatorv1">Platform operators (<code>/operator/v1</code>)</h2>
+<p>Blackwing staff act across tenants only through a separate identity space (#838). An operator signs in to the
+<code>blackwing-operators</code> realm, with a mandatory second factor, through the operator BFF at <code>/operator/api/auth/*</code>, which
+sets <code>__Host-bw_op_session</code>. The operator guard accepts only that realm and that cookie.</p>
+<table>
+<thead>
+<tr>
+<th>Presented to an operator route</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>An operator token or operator session with the second factor (<code>acr=operator_strong</code>) and the <code>platform_operator</code> role</td>
+<td>Served. The principal has no tenant.</td>
+</tr>
+<tr>
+<td>An operator credential without the second factor</td>
+<td><code>403 OPERATOR_MFA_REQUIRED</code>.</td>
+</tr>
+<tr>
+<td>A tenant token, tenant session or tenant API token</td>
+<td><code>403 NOT_OPERATOR</code>, audited.</td>
+</tr>
+<tr>
+<td>No credential, or one that does not verify</td>
+<td><code>401</code>.</td>
+</tr>
+</tbody></table>
+<p>A tenant session can never act as an operator session, and the reverse: the realms, audiences, cookie names, keys and
+Valkey keyspaces are all distinct.</p>
 </main>
 </div>
 </body>

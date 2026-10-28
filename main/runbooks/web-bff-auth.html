@@ -235,6 +235,14 @@ outage of Keycloak or Valkey is a <code>503</code> with <code>Retry-After</code>
 <td>Optional. The secret being rotated out: it still opens cookies and records, it never seals.</td>
 </tr>
 <tr>
+<td><code>OPERATOR_KEYCLOAK_ISSUER_URL</code>, <code>OPERATOR_KEYCLOAK_CLIENT_ID</code>, <code>OPERATOR_KEYCLOAK_CLIENT_SECRET</code></td>
+<td>The platform-operator realm <code>blackwing-operators</code> and its confidential <code>operator-bff</code> client (#838). The secret comes from OpenBao.</td>
+</tr>
+<tr>
+<td><code>BW_OPERATOR_SESSION_SECRET</code> (and <code>_PREVIOUS</code>)</td>
+<td>The operator BFF&#39;s sealing secret (#838). It is a different value from <code>BW_WEB_SESSION_SECRET</code>, so an operator cookie never opens as a tenant one.</td>
+</tr>
+<tr>
 <td><code>KEYCLOAK_SESSION_ADMIN_CLIENT_ID</code>, <code>KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET</code></td>
 <td>Optional, both or neither. A service-account client allowed to log users out in the realm (<code>manage-users</code>). Used by revocation to end a user&#39;s Keycloak sessions; without it a revocation reports Keycloak as <code>skipped</code>.</td>
 </tr>
