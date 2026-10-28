@@ -95,6 +95,7 @@ export class ObservedPool extends pg.Pool {
   readonly #metrics: DbPoolMetrics;
   readonly #max: number;
   readonly #slowQueryMs: number;
+  readonly #listened = new WeakSet<pg.PoolClient>();
   #exhausted = false;
 
   constructor(config: pg.PoolConfig & { max: number }, name: PoolName, options: CreatePoolOptions) {
@@ -148,6 +149,16 @@ export class ObservedPool extends pg.Pool {
       metrics: this.#metrics,
       slowQueryMs: this.#slowQueryMs,
     });
+    if (!this.#listened.has(client)) {
+      this.#listened.add(client);
+      // A checked-out client can lose its connection with no statement in flight: the server ends it,
+      // for instance on idle_in_transaction_session_timeout. Without a listener node-postgres throws that
+      // 'error' event uncaught and the process crashes. The next statement on the client fails, and the
+      // pool discards it on release.
+      client.on('error', (error: unknown) => {
+        this.#logger.warn({ ...this.#fields(), ...errorFields(error) }, 'db.pool.error');
+      });
+    }
     return client;
   }
 
