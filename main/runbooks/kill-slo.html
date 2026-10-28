@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kill SLO chaos suite runbook (KILL-008, §8.5) | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+<li><a href="../api/reference.html">API reference</a></li>
+<li><a href="../api/conventions.html">API conventions</a></li>
+<li><a href="../api/auth.html">Authentication</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="./code-owners.html">Code owners</a></li>
+<li><a href="./codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="./dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="./dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="./dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="./deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="./disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./drift-checks.html">Drift checks</a></li>
+<li><a href="./e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./incident-response.html">Incident response and on-call runbook (OBS, NOTIFY, KILL)</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./kill-slo.html" aria-current="page">Kill SLO chaos suite runbook (KILL-008, §8.5)</a></li>
+<li><a href="./kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
+<li><a href="./node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./search-attributes.html">Temporal search attributes</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="./secrets-resolve.html">Runbook: internal secret resolve API (SECRETS-006)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./trivy.html">Trivy scanning (CI-009)</a></li>
+<li><a href="./web-bff-auth.html">Runbook: console sign-in (BFF OIDC)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/i18n.html">Console strings and i18n</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/tenant-data-access.html">Tenant data access</a></li>
+<li><a href="../architecture/tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="../architecture/third-party-notices.html">Third-party notices</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<hr>
+<h2 id="last_validated-never">last_validated: never</h2>
+<h1 id="kill-slo-chaos-suite-runbook-kill-008-85">Kill SLO chaos suite runbook (KILL-008, §8.5)</h1>
+<p>Owner: KILL. Read with <a href="./kill-switch.html">kill-switch.md</a>, which describes the kill stages, and with the §8.5 kill
+SLO and §8.2 fail-closed egress invariants in the Context Pack.</p>
+<blockquote>
+<p><strong>Status: not yet validated.</strong> <code>last_validated: never</code> is the truth until the real-stack run in
+<a href="#validation">Validation</a> has passed against the dev stack and its record is filed. The mock suite runs in CI
+today; the live-stack run does not.</p>
+</blockquote>
+<h2 id="1-what-the-suite-proves">1. What the suite proves</h2>
+<p>The suite fires a fleet of kills through the real propagation code (<code>apps/worker/src/kill/propagate.ts</code> and the
+kill activities) over the real HTTP control adapters. It runs in <code>apps/worker/src/kill/chaos/</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Test</th>
+<th>Budget or invariant</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Load: <code>KILL_CHAOS_RUNS</code> runs (default 25) across 2 tenants and 4 assets, with a kill per run, per asset and per tenant</td>
+<td><code>halts every kill and keeps the egress and full-halt p99 inside budget</code></td>
+<td>every kill ends <code>halted</code></td>
+</tr>
+<tr>
+<td>Egress block p99</td>
+<td>same test, from the egress stage latency</td>
+<td>p99 &lt; 2 000 ms (§8.5)</td>
+</tr>
+<tr>
+<td>Full halt p99</td>
+<td>same test, from the server-side halt time</td>
+<td>p99 &lt; 10 000 ms (§8.5)</td>
+</tr>
+<tr>
+<td>Egress ack lost after the block applied</td>
+<td><code>kill.chaos.failclosed: egress ack lost ...</code></td>
+<td>ends <code>partially_halted</code>; post-block traffic denied (§8.2)</td>
+</tr>
+<tr>
+<td>Egress unreachable</td>
+<td><code>kill.chaos.failclosed: egress unreachable ...</code></td>
+<td>gateway fails closed; ends <code>partially_halted</code>; traffic denied</td>
+</tr>
+<tr>
+<td>Sandbox terminate ack fails</td>
+<td><code>a sandbox terminate ack failure ...</code></td>
+<td><code>partially_halted</code>; egress blocked and keys revoked</td>
+</tr>
+<tr>
+<td>Key revoke ack fails</td>
+<td><code>a key revoke ack failure ...</code></td>
+<td><code>partially_halted</code>; egress blocked and sandboxes gone</td>
+</tr>
+<tr>
+<td>Egress ack delayed past 2 s</td>
+<td><code>a delayed egress ack past the 2 s budget ...</code></td>
+<td>traffic denied before the ack arrives</td>
+</tr>
+</tbody></table>
+<p>Timing assertions use real timers. Retries are disabled (<code>retry: 0</code>) on purpose: a timing test must never pass
+on a second attempt. Do not add retries to <code>vitest.chaos.config.ts</code>.</p>
+<h2 id="2-running-it">2. Running it</h2>
+<p>The suite is not part of <code>pnpm test</code>, so it never runs on a pull request. It runs in the <code>kill-slo</code> workflow
+(<code>.github/workflows/kill-slo.yml</code>) nightly and on <code>workflow_dispatch</code>.</p>
+<p>Locally, from the repository root:</p>
+<pre><code class="language-sh">pnpm --filter @blackwing/worker test:chaos
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>KILL_CHAOS_MODE</code></td>
+<td><code>mock</code></td>
+<td><code>mock</code> starts an in-process control plane. <code>real</code> targets the live stack.</td>
+</tr>
+<tr>
+<td><code>KILL_CHAOS_RUNS</code></td>
+<td><code>25</code></td>
+<td>Non-terminal runs seeded for the load scenario (1 to 500).</td>
+</tr>
+<tr>
+<td><code>KILL_CHAOS_EGRESS_URL</code>, <code>KILL_CHAOS_SANDBOX_URL</code>, <code>KILL_CHAOS_KEYS_URL</code></td>
+<td>unset</td>
+<td>Live control-plane base URLs. All three are required in <code>real</code> mode, and the suite refuses to start without them.</td>
+</tr>
+<tr>
+<td><code>KILL_CHAOS_REPORT_PATH</code></td>
+<td><code>eval/harness/out/kill-slo-report.json</code></td>
+<td>Where the JSON SLO report is written.</td>
+</tr>
+</tbody></table>
+<p>The fault-injection cases and the traffic checks need the mock control plane, so they are skipped in <code>real</code> mode.
+<code>real</code> mode runs only the load scenario against the live services.</p>
+<p><strong>Minimum host.</strong> The default run count fires 31 kills at once (25 run, 4 asset and 2 tenant scope) in one
+process. A machine that also runs the full dev stack should lower <code>KILL_CHAOS_RUNS</code> (for example to <code>10</code>) instead
+of skipping the suite. Record the value used in the report.</p>
+<h2 id="3-reading-the-report">3. Reading the report</h2>
+<p>The report is written to <code>eval/harness/out/kill-slo-report.json</code> (and uploaded as the <code>kill-slo-report</code> artifact in
+CI). Its fields:</p>
+<ul>
+<li><code>killStatuses</code>: the count of kills per final status. <code>pass</code> needs every fired kill to be <code>halted</code>.</li>
+<li><code>latency.egress_block</code> and <code>latency.full_halt</code>: <code>count</code>, <code>p50Ms</code>, <code>p95Ms</code>, <code>p99Ms</code> and <code>maxMs</code>, measured from
+server-side timestamps only.</li>
+<li><code>budgets</code> and <code>breaches</code>: the §8.5 budgets, and any metric whose p99 reached its budget.</li>
+<li><code>pass</code>: <code>true</code> only when there are no breaches and every fired kill is <code>halted</code>.</li>
+</ul>
+<p>When a budget is breached, the test fails with a message such as
+<code>kill SLO budget breached: egress_block p99 2500 ms &gt;= budget 2000 ms</code>. Read the report before rerunning.</p>
+<p>Percentiles use the nearest-rank method. With 31 kills, p99 is the slowest sample, so one slow kill is enough to
+breach the budget. Treat a single breach as a signal to investigate, not as noise to retry away.</p>
+<h2 id="4-when-the-suite-fails">4. When the suite fails</h2>
+<ol>
+<li>Open the report and find which metric breached, and which kill statuses are not <code>halted</code>.</li>
+<li>If a fault case fails, it names the invariant in its title. A <code>kill.chaos.failclosed</code> failure means traffic
+may have been possible after an egress block: treat it as a security incident, not a test flake
+(<a href="./kill-switch.html">kill-switch.md</a>, section 6).</li>
+<li>For a latency breach, check the stage metrics the suite reads: <code>bw_kill_stage_latency_ms{stage}</code> and
+<code>bw_kill_halt_ms</code>. A sustained rise on a live stack points at the gateway, the sandbox controller or the
+database, not at the suite.</li>
+<li>Do not raise a budget to make the suite pass. The budgets are §8.5 targets. Changing one needs a Context Pack
+change first.</li>
+</ol>
+<h2 id="validation">Validation</h2>
+<p>The procedure below is the check that moves this runbook to a dated <code>last_validated</code>.</p>
+<ol>
+<li>Confirm the mock suite is green on <code>main</code>: the <code>kill-slo</code> workflow run for the commit shows <code>pass: true</code> in its
+artifact.</li>
+<li>Start the dev stack (<code>pnpm dev:deps</code>), and point the suite at its live control APIs:
+<code>KILL_CHAOS_MODE=real KILL_CHAOS_EGRESS_URL=... KILL_CHAOS_SANDBOX_URL=... KILL_CHAOS_KEYS_URL=... pnpm --filter @blackwing/worker test:chaos</code>.</li>
+<li>Confirm <code>pass: true</code> in the report, with <code>killStatuses</code> showing only <code>halted</code>.</li>
+<li>File the report with the date and the commit SHA, then set <code>last_validated</code> to that date.</li>
+</ol>
+</main>
+</div>
+</body>
+</html>
