@@ -84,6 +84,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   SEED_FORBIDDEN_IN_PROD: 403,
   KILL_GLOBAL_NOT_ALLOWED_HERE: 403,
   NOT_OPERATOR: 403,
+  OPERATOR_MFA_REQUIRED: 403,
   KILL_ALREADY_IN_PROGRESS: 409,
   KILL_PARTIAL: 424,
   NOT_IMPLEMENTED: 501,
@@ -121,7 +122,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(93);
+    expect(ERROR_CODE_LIST).toHaveLength(94);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -284,6 +285,7 @@ describe('error-code registry', () => {
       | 'SEED_FORBIDDEN_IN_PROD'
       | 'KILL_GLOBAL_NOT_ALLOWED_HERE'
       | 'NOT_OPERATOR'
+      | 'OPERATOR_MFA_REQUIRED'
       | 'KILL_ALREADY_IN_PROGRESS'
       | 'KILL_PARTIAL'
       | 'IDEMPOTENCY_KEY_REQUIRED'

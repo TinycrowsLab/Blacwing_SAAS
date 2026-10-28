@@ -194,6 +194,11 @@ A malformed `Authorization` header is refused and never falls through to the coo
 
 Configuration: `KEYCLOAK_ISSUER_URL` (unset refuses JWTs), `API_JWT_AUDIENCE`, `API_JWT_LEEWAY_SECONDS`,
 `API_JWKS_TTL_MS`, `API_JWKS_REFETCH_COOLDOWN_MS`, `API_JWKS_TIMEOUT_MS`, and `BW_WEB_SESSION_SECRET` (plus `_PREVIOUS`).
+
+Platform operators (#838) are authenticated by a separate guard, `apps/api/src/auth/operator`, that accepts only the
+`blackwing-operators` realm (`OPERATOR_KEYCLOAK_ISSUER_URL`, `OPERATOR_API_JWT_AUDIENCE` default `operator-api`) and the
+operator BFF cookie (`BW_OPERATOR_SESSION_SECRET`, plus `_PREVIOUS`). A tenant credential at an operator route is refused
+with `NOT_OPERATOR` and audited; a missing second factor is `OPERATOR_MFA_REQUIRED`. Its principal carries no tenant.
 The process entry point connects no Valkey client yet, so BFF session cookies stay refused there until the session store
 is wired (`runApi({ sessionValkey })`); the validator and its tests are complete.
 

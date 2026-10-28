@@ -26,10 +26,14 @@ const claimsSchema = z.object({
   preferred_username: z.string().optional(),
 });
 
-export interface KeycloakJwtOptions {
+/** The Keycloak (tenant realm) validator's options: the same verification, for the `blackwing-api` audience. */
+export type KeycloakJwtOptions = JwtVerificationOptions;
+
+/** What signature and claim verification needs. Shared with the platform-operator validator (#838). */
+export interface JwtVerificationOptions {
   /** The realm URL; must equal the token's `iss` exactly. */
   readonly issuer: string;
-  /** The audience the API accepts (`blackwing-api`). */
+  /** The audience the validator accepts (`blackwing-api`, or `operator-api` for the operator realm). */
   readonly audience: string;
   /** Clock-skew tolerance, in seconds, applied to `exp`, `nbf` and `iat`. */
   readonly leewaySeconds: number;
@@ -52,7 +56,14 @@ export function createKeycloakJwtValidator(options: KeycloakJwtOptions): Keycloa
   };
 }
 
-async function verifySignature(token: string, options: KeycloakJwtOptions): Promise<JWTPayload> {
+/**
+ * Verifies a token's signature, algorithm (pinned), issuer, audience and time claims. Throws `AppError`s only.
+ * Every JWT validator in the API goes through here, so the hardening is one code path (IAM-007, #838).
+ */
+export async function verifySignature(
+  token: string,
+  options: JwtVerificationOptions,
+): Promise<JWTPayload> {
   try {
     const { payload } = await jwtVerify(token, options.resolveKey, {
       issuer: options.issuer,
@@ -75,12 +86,23 @@ async function verifySignature(token: string, options: KeycloakJwtOptions): Prom
   }
 }
 
-function principalOf(payload: JWTPayload, options: KeycloakJwtOptions): Principal {
-  // `iat` in the future (beyond the leeway) is a forged or badly clocked token: refuse it.
-  const issuedAtMs = (payload.iat ?? 0) * MS_PER_SECOND;
-  if (issuedAtMs > options.now() + options.leewaySeconds * MS_PER_SECOND) {
-    throw new AuthInvalidTokenError('token issued in the future');
+/**
+ * `iat` (or any other timestamp claim) in the future beyond the leeway is a forged or badly clocked token: refuse it.
+ * An absent claim is not judged here.
+ */
+export function assertNotFromFuture(
+  epochSeconds: number | undefined,
+  options: Pick<JwtVerificationOptions, 'leewaySeconds' | 'now'>,
+  claim = 'iat',
+): void {
+  if (epochSeconds === undefined) return;
+  if (epochSeconds * MS_PER_SECOND > options.now() + options.leewaySeconds * MS_PER_SECOND) {
+    throw new AuthInvalidTokenError(`token ${claim} is in the future`);
   }
+}
+
+function principalOf(payload: JWTPayload, options: KeycloakJwtOptions): Principal {
+  assertNotFromFuture(payload.iat, options);
   const claims = claimsSchema.safeParse(payload);
   if (!claims.success) throw new AuthInvalidTokenError('tenant or subject claim is invalid');
   const c = claims.data;

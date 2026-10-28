@@ -4,8 +4,6 @@
 
 import { safeEqual } from './pkce.js';
 
-import type { SessionRecord } from './session-store.js';
-
 /** Header the page echoes from `/api/auth/session` on every state-changing BFF call. */
 export const CSRF_HEADER = 'x-bw-csrf';
 
@@ -22,7 +20,11 @@ const RETRY_AFTER_SECONDS = '2';
  * cross-site form cannot set, and a browser-sent `Origin` must be the console's own. SameSite=Lax on
  * the session cookie is the first line; this is the second.
  */
-export function csrfValid(request: Request, record: SessionRecord, consoleOrigin: string): boolean {
+export function csrfValid(
+  request: Request,
+  record: { readonly csrf: string },
+  consoleOrigin: string,
+): boolean {
   const origin = request.headers.get('origin');
   if (origin !== null && origin !== consoleOrigin) return false;
   if (request.headers.get('sec-fetch-site') === 'cross-site') return false;

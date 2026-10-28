@@ -68,3 +68,19 @@ trail.
 
 If a request fails with `403`, read the `code` in the response. `FORBIDDEN` means the scope or the RBAC role is
 missing. `KILL_FORBIDDEN` and similar codes name the specific check that refused the action.
+
+## Platform operators (`/operator/v1`)
+
+Blackwing staff act across tenants only through a separate identity space (#838). An operator signs in to the
+`blackwing-operators` realm, with a mandatory second factor, through the operator BFF at `/operator/api/auth/*`, which
+sets `__Host-bw_op_session`. The operator guard accepts only that realm and that cookie.
+
+| Presented to an operator route | Result |
+|---|---|
+| An operator token or operator session with the second factor (`acr=operator_strong`) and the `platform_operator` role | Served. The principal has no tenant. |
+| An operator credential without the second factor | `403 OPERATOR_MFA_REQUIRED`. |
+| A tenant token, tenant session or tenant API token | `403 NOT_OPERATOR`, audited. |
+| No credential, or one that does not verify | `401`. |
+
+A tenant session can never act as an operator session, and the reverse: the realms, audiences, cookie names, keys and
+Valkey keyspaces are all distinct.

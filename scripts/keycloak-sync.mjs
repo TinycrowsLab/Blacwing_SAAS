@@ -2,6 +2,8 @@
 // Idempotent Keycloak realm sync (IAM-001, #329). Upserts realm settings, roles, client scopes and
 // clients from infra/keycloak/realm-blackwing.json through the admin REST API. It never deletes and
 // never touches users, organizations or identity providers, so re-runs are safe on a live realm.
+// It also syncs the platform-operator realm (#838, infra/keycloak/realm-blackwing-operators.json): a separate
+// identity space, validated and applied by the same job, with its own secrets.
 // The MFA section (IAM-005, #338) creates the browser flow and enables the second-factor required actions.
 // A live flow that differs from the file is a hard failure: the sync never rewrites an existing flow.
 //   node scripts/keycloak-sync.mjs check      # offline validation of the committed realm
@@ -12,6 +14,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const REALM_FILE = path.join(ROOT, 'infra/keycloak/realm-blackwing.json');
+/** The platform-operator realm (#838): a separate identity space, synced by the same job. */
+export const OPERATOR_REALM_FILE = path.join(ROOT, 'infra/keycloak/realm-blackwing-operators.json');
 export const REQUIRED_CLIENTS = Object.freeze([
   'blackwing-console',
   'blackwing-api',
@@ -27,6 +31,15 @@ export const REQUIRED_ROLES = Object.freeze([
   'platform-operator',
 ]);
 export const REQUIRED_CLAIMS = Object.freeze(['tenantId', 'roles']);
+export const REQUIRED_OPERATOR_CLIENTS = Object.freeze(['operator-bff', 'operator-api']);
+export const REQUIRED_OPERATOR_ROLES = Object.freeze([
+  'platform_operator',
+  'verification_reviewer',
+  'platform_admin',
+]);
+/** The `acr` an operator session must carry (#838). Mapped in `acr.loa.map` of the operator realm. */
+export const OPERATOR_ACR = 'operator_strong';
+const PLACEHOLDER_PATTERN = /^\$\{[A-Z0-9_]+\}$/;
 
 const MAX_ACCESS_TOKEN_LIFESPAN_SECONDS = 300;
 const MAX_OTP_LOOK_AHEAD_WINDOW = 2;
@@ -177,6 +190,109 @@ export function validateRealm(r) {
 }
 
 /**
+ * Rules for the platform-operator realm `blackwing-operators` (#838). It is a separate identity space: no
+ * brokering, no self-registration, no tenant claims, and a second factor that can never be conditional.
+ * @param {Realm} r
+ * @returns {string[]}
+ */
+export function validateOperatorRealm(r) {
+  /** @type {string[]} */
+  const p = [];
+  if (r.realm !== 'blackwing-operators') p.push('realm must be "blackwing-operators"');
+  if (r.sslRequired !== 'external') p.push('sslRequired must be external');
+  if (r.bruteForceProtected !== true) p.push('bruteForceProtected must be true');
+  if (r.registrationAllowed !== false) p.push('registrationAllowed must be false');
+  if (r.duplicateEmailsAllowed !== false) p.push('duplicateEmailsAllowed must be false');
+  if (!Array.isArray(r.identityProviders) || r.identityProviders.length > 0)
+    p.push('operators must not broker to identity providers');
+  const ttl = r.accessTokenLifespan ?? 0;
+  if (!(ttl > 0 && ttl <= MAX_ACCESS_TOKEN_LIFESPAN_SECONDS))
+    p.push('accessTokenLifespan must be 1..300s');
+  if (r.users) p.push('realm file must not contain users');
+  const clients = new Map((r.clients ?? []).map((c) => [c.clientId, c]));
+  for (const id of REQUIRED_OPERATOR_CLIENTS) if (!clients.has(id)) p.push(`missing client ${id}`);
+  const bff = clients.get('operator-bff');
+  if (bff) {
+    if (bff.publicClient !== false || bff.standardFlowEnabled !== true)
+      p.push('operator-bff must be confidential with the standard flow');
+    if (bff.attributes?.['pkce.code.challenge.method'] !== 'S256')
+      p.push('operator-bff must require PKCE S256');
+    if (bff.implicitFlowEnabled || bff.directAccessGrantsEnabled || bff.serviceAccountsEnabled)
+      p.push('operator-bff must not allow implicit, password or service-account grants');
+    if (bff.secret === undefined || !PLACEHOLDER_PATTERN.test(bff.secret))
+      p.push('operator-bff secret must be a placeholder (literal secret)');
+  }
+  const api = clients.get('operator-api');
+  if (api) {
+    if (api.standardFlowEnabled || api.directAccessGrantsEnabled || api.implicitFlowEnabled)
+      p.push('operator-api is an audience only: no browser or password flows');
+    if (api.serviceAccountsEnabled) p.push('operator-api must not have a service account');
+    if (api.secret === undefined || !PLACEHOLDER_PATTERN.test(api.secret))
+      p.push('operator-api secret must be a placeholder (literal secret)');
+  }
+  for (const c of clients.values())
+    for (const u of [...(c.redirectUris ?? []), ...(c.webOrigins ?? [])])
+      if (u.includes('*')) p.push(`${c.clientId}: wildcard redirect/origin "${u}"`);
+  const roles = new Set((r.roles?.realm ?? []).map((x) => x.name));
+  for (const n of REQUIRED_OPERATOR_ROLES) if (!roles.has(n)) p.push(`missing role ${n}`);
+  /** @type {{ name?: string, config?: Record<string, unknown> }[]} */
+  const mappers = (r.clientScopes ?? []).flatMap((s) => s.protocolMappers ?? []);
+  if (!mappers.some((m) => m.name === 'roles')) p.push('missing claim mapper roles');
+  if (!mappers.some((m) => m.config?.['included.client.audience'] === 'operator-api'))
+    p.push('operator tokens must carry the operator-api audience');
+  if (mappers.some((m) => m.name === 'tenantId' || m.config?.['claim.name'] === 'tenantId'))
+    p.push('operator tokens must never carry a tenantId claim');
+  const acr = parseAcrMap(r.attributes?.['acr.loa.map']);
+  if (acr?.password !== 1 || acr[OPERATOR_ACR] !== 2 || Object.keys(acr).length !== 2)
+    p.push(`acr.loa.map must map exactly password=1 and ${OPERATOR_ACR}=2`);
+  p.push(...validateOperatorMfa(r));
+  return p;
+}
+
+/**
+ * Operator MFA (#838): the second factor is required, never conditional; TOTP and WebAuthn are both present; the
+ * first login forces TOTP enrolment; the OTP and WebAuthn policies match the tenant realm.
+ * @param {Realm} r
+ * @returns {string[]}
+ */
+function validateOperatorMfa(r) {
+  /** @type {string[]} */
+  const p = [];
+  const mfa = r.mfa;
+  if (!mfa) return ['mfa section is required (#838)'];
+  if (r.browserFlow !== mfa.flow?.alias) p.push('browserFlow must be the mfa flow alias');
+  const providers = new Set();
+  /** @type {string[]} */
+  const requirements = [];
+  walkFlow(mfa.flow?.executions ?? [], (n) => {
+    requirements.push(n.requirement);
+    if (!('children' in n)) providers.add(n.provider);
+  });
+  for (const need of ['auth-username-password-form', 'auth-otp-form', 'webauthn-authenticator'])
+    if (!providers.has(need)) p.push(`operator mfa flow missing ${need}`);
+  if (providers.has('conditional-user-configured') || requirements.includes('CONDITIONAL'))
+    p.push('operator second factor must not be conditional');
+  if (
+    !mfa.requiredActions?.some(
+      (a) => a.alias === 'CONFIGURE_TOTP' && a.enabled === true && a.defaultAction,
+    )
+  )
+    p.push('CONFIGURE_TOTP must be enabled and a default action (forced enrolment)');
+  const win = r.otpPolicyLookAheadWindow;
+  if (!(
+    typeof win === 'number' &&
+    Number.isInteger(win) &&
+    win >= 1 &&
+    win <= MAX_OTP_LOOK_AHEAD_WINDOW
+  ))
+    p.push(`otpPolicyLookAheadWindow must be 1..${MAX_OTP_LOOK_AHEAD_WINDOW} periods`);
+  if (r.otpPolicyCodeReusable !== false) p.push('otpPolicyCodeReusable must be false');
+  if (r.webAuthnPolicyUserVerificationRequirement !== 'required')
+    p.push('WebAuthn user verification must be required');
+  return p;
+}
+
+/**
  * @param {string | undefined} raw
  * @returns {Record<string, number> | undefined}
  */
@@ -248,9 +364,13 @@ async function call(fetchFn, base, token, method, url, body) {
 /**
  * Upsert-only sync. Returns counts. Never deletes, never touches users.
  * @param {Realm} realm
- * @param {{ base: string, token: string, fetchFn?: typeof fetch, log?: (m: string) => void }} opts
+ * @param {{ base: string, token: string, fetchFn?: typeof fetch, log?: (m: string) => void,
+ *   requiredClients?: readonly string[] }} opts
  */
-export async function sync(realm, { base, token, fetchFn = fetch, log = () => undefined }) {
+export async function sync(
+  realm,
+  { base, token, fetchFn = fetch, log = () => undefined, requiredClients = REQUIRED_CLIENTS },
+) {
   const stats = { created: 0, updated: 0 };
   const { clients = [], roles = {}, clientScopes = [], mfa, ...settings } = realm;
   // The flow is bound only after it exists (see below), so the first realm PUT must not reference it.
@@ -321,7 +441,7 @@ export async function sync(realm, { base, token, fetchFn = fetch, log = () => un
   );
   // Startup assertion: everything required exists after the sync.
   const live = /** @type {Client[]} */ (await list(`${R}/clients`));
-  for (const id of REQUIRED_CLIENTS)
+  for (const id of requiredClients)
     if (!live.some((x) => x.clientId === id))
       throw new Error(`post-sync assertion failed: client ${id} missing`);
   if (mfa) {
@@ -446,20 +566,38 @@ async function adminToken(env, fetchFn = fetch) {
   return /** @type {{ access_token: string }} */ (await res.json()).access_token;
 }
 
+/** The realm files this job owns, each with its own rules and the clients its post-sync assertion requires. */
+const TARGETS = Object.freeze([
+  {
+    file: REALM_FILE,
+    name: 'realm-blackwing.json',
+    validate: validateRealm,
+    requiredClients: REQUIRED_CLIENTS,
+  },
+  {
+    file: OPERATOR_REALM_FILE,
+    name: 'realm-blackwing-operators.json',
+    validate: validateOperatorRealm,
+    requiredClients: REQUIRED_OPERATOR_CLIENTS,
+  },
+]);
+
 /**
  * @param {string[]} argv
  * @param {Record<string, string | undefined>} [env]
  * @returns {Promise<number>}
  */
 export async function main(argv, env = process.env) {
-  const raw = loadRealm();
-  const problems = validateRealm(raw);
-  if (problems.length) {
-    for (const x of problems) process.stderr.write(`realm-blackwing.json: ${x}\n`);
-    return 1;
+  const targets = TARGETS.map((t) => ({ ...t, raw: loadRealm(t.file) }));
+  let invalid = false;
+  for (const t of targets) {
+    const problems = t.validate(t.raw);
+    for (const x of problems) process.stderr.write(`${t.name}: ${x}\n`);
+    if (problems.length) invalid = true;
   }
+  if (invalid) return 1;
   if (argv[0] === 'check') {
-    process.stdout.write('realm-blackwing.json: ok\n');
+    for (const t of targets) process.stdout.write(`${t.name}: ok\n`);
     return 0;
   }
   if (argv[0] !== 'apply') {
@@ -471,14 +609,18 @@ export async function main(argv, env = process.env) {
       process.stderr.write(`missing environment variable ${v}\n`);
       return 1;
     }
-  const realm = resolvePlaceholders(raw, env);
+  // Every placeholder is resolved before the first write, so a missing secret changes nothing on the live realm.
+  const realms = targets.map((t) => ({ ...t, realm: resolvePlaceholders(t.raw, env) }));
   const token = await adminToken(env);
-  const stats = await sync(realm, {
-    base: /** @type {string} */ (env.BW_KEYCLOAK_URL),
-    token,
-    log: (m) => process.stdout.write(`${m}\n`),
-  });
-  process.stdout.write(`sync done: ${JSON.stringify(stats)}\n`);
+  for (const t of realms) {
+    const stats = await sync(t.realm, {
+      base: /** @type {string} */ (env.BW_KEYCLOAK_URL),
+      token,
+      requiredClients: t.requiredClients,
+      log: (m) => process.stdout.write(`${m}\n`),
+    });
+    process.stdout.write(`sync done: ${t.realm.realm} ${JSON.stringify(stats)}\n`);
+  }
   return 0;
 }
 

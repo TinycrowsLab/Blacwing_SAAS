@@ -494,6 +494,31 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'A tenant admin changed tenant settings; metadata records the changed keys, with personal values redacted.',
   },
+  // platform-operator authentication (#838): appended. An operator is staff, not a tenant user, so these carry no
+  // tenant context in the console and their ledger writer is the platform ledger (see the operator BFF).
+  {
+    action: 'auth.operator_login',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'login',
+    description:
+      'A platform operator completed sign-in with the operator second factor (outcome failure for a rejected attempt).',
+  },
+  {
+    action: 'auth.operator_logout',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    actionClass: 'login',
+    description: 'A platform operator session ended, by the operator or by expiry.',
+  },
+  {
+    action: 'auth.operator_session_revoked',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'login',
+    description:
+      'A platform operator session was revoked server-side (refresh refused, identity changed or offboarding).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

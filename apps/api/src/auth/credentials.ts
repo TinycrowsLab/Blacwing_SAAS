@@ -50,6 +50,18 @@ function bearerCredential(header: string | string[]): Credential {
 }
 
 function sessionCookieOf(header: string | string[] | undefined): string | undefined {
+  return cookieValueOf(header, SESSION_COOKIE_NAME);
+}
+
+/**
+ * The one value of cookie `name` in a `Cookie` header, or `undefined`. Bounded and strict: a malformed or oversized
+ * header is refused, and two cookies of the same name are ambiguous and refused rather than one being picked.
+ * Shared by every BFF cookie (tenant session, platform-operator session), so the parsing is one code path (#838).
+ */
+export function cookieValueOf(
+  header: string | string[] | undefined,
+  name: string,
+): string | undefined {
   if (header === undefined) return undefined;
   if (typeof header !== 'string' || header.length > MAX_HEADER_BYTES) {
     throw new AuthInvalidTokenError('malformed Cookie header');
@@ -57,8 +69,8 @@ function sessionCookieOf(header: string | string[] | undefined): string | undefi
   let found: string | undefined;
   for (const part of header.split(';')) {
     const eq = part.indexOf('=');
-    if (eq < 0 || part.slice(0, eq).trim() !== SESSION_COOKIE_NAME) continue;
-    // Two session cookies are ambiguous: refuse rather than pick one.
+    if (eq < 0 || part.slice(0, eq).trim() !== name) continue;
+    // Two cookies of one name are ambiguous: refuse rather than pick one.
     if (found !== undefined) throw new AuthInvalidTokenError('duplicate session cookie');
     found = part.slice(eq + 1).trim();
   }

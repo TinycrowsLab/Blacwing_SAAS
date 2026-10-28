@@ -89,6 +89,9 @@ const RELEASED_ACTIONS = [
   'tenant.created',
   'signup.verified',
   'tenant.settings_updated',
+  'auth.operator_login',
+  'auth.operator_logout',
+  'auth.operator_session_revoked',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

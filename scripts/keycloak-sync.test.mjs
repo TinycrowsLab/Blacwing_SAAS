@@ -1,7 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { flowKeys, loadRealm, resolvePlaceholders, sync, validateRealm } from './keycloak-sync.mjs';
+import {
+  flowKeys,
+  loadRealm,
+  main,
+  OPERATOR_REALM_FILE,
+  REQUIRED_OPERATOR_CLIENTS,
+  resolvePlaceholders,
+  sync,
+  validateOperatorRealm,
+  validateRealm,
+} from './keycloak-sync.mjs';
 
 const ENV = {
   BW_ENVIRONMENT: 'prod',
@@ -138,10 +148,10 @@ function fakeKeycloak() {
   };
   /** @type {(method: string | undefined, u: string, parsed: URL, b: Doc) => Response} */
   const handle = (method, u, parsed, b) => {
-    const authPrefix = '/admin/realms/blackwing/authentication';
-    if (u.startsWith(`${authPrefix}/`))
-      return authentication(method, u.slice(authPrefix.length), b);
-    if (u === '/admin/realms/blackwing') {
+    // Any realm: the tenant and the platform-operator realm are both served (#838).
+    const authPrefix = /^\/admin\/realms\/[^/]+\/authentication/.exec(u)?.[0];
+    if (authPrefix !== undefined) return authentication(method, u.slice(authPrefix.length), b);
+    if (/^\/admin\/realms\/[^/]+$/.test(u)) {
       if (method === 'GET') return db.realm ? j(db.realm) : j({}, 404);
       db.realm = db.realm ? { ...db.realm, ...b } : b;
       return j(null, 204);
@@ -297,4 +307,159 @@ test('a drifted live flow fails the sync without writing to it', async () => {
   assert.ok(
     !db.calls.slice(before).some((c) => /^(POST|PUT|DELETE) .*\/authentication\/flows/.test(c)),
   );
+});
+
+/** The committed platform-operator realm with the placeholder values it needs (#838). */
+const OPERATOR_ENV = {
+  BW_ENVIRONMENT: 'prod',
+  BW_KEYCLOAK_PUBLIC_URL: 'https://id.example.test',
+  BW_CONSOLE_ORIGIN: 'https://app.example.test',
+  BW_KEYCLOAK_OPERATOR_BFF_SECRET: 'c',
+  BW_KEYCLOAK_OPERATOR_API_SECRET: 'd',
+};
+
+/** @param {ReturnType<typeof loadRealm>} realm @param {string} clientId */
+function operatorClient(realm, clientId) {
+  const c = (realm.clients ?? []).find((x) => x.clientId === clientId);
+  assert.ok(c, `operator realm has client ${clientId}`);
+  return c;
+}
+
+test('committed operator realm is valid, separate from the tenant realm and has no users', () => {
+  const r = loadRealm(OPERATOR_REALM_FILE);
+  assert.deepEqual(validateOperatorRealm(r), []);
+  assert.equal(r.realm, 'blackwing-operators');
+  assert.equal(r.users, undefined);
+  assert.deepEqual(r.identityProviders, []);
+  assert.equal(r.registrationAllowed, false);
+  assert.doesNotMatch(JSON.stringify(r), /"secret":\s*"(?!\$\{)/);
+  const mappers = /** @type {{ config?: Record<string, unknown> }[]} */ (
+    (r.clientScopes ?? []).flatMap((x) => x.protocolMappers ?? [])
+  );
+  assert.equal(
+    mappers.some((m) => m.config?.['claim.name'] === 'tenantId'),
+    false,
+  );
+});
+
+test('operator realm validation rejects a weakened tenant-separation or MFA design', () => {
+  const r = loadRealm(OPERATOR_REALM_FILE);
+  r.identityProviders = [{ alias: 'entra' }];
+  r.registrationAllowed = true;
+  r.clientScopes?.[0]?.protocolMappers?.push({
+    name: 'tenantId',
+    config: { 'claim.name': 'tenantId' },
+  });
+  const p = validateOperatorRealm(r).join('\n');
+  assert.match(p, /identity providers/);
+  assert.match(p, /registrationAllowed/);
+  assert.match(p, /tenantId claim/);
+});
+
+test('operator realm validation rejects a conditional second factor and a non-forced enrolment', () => {
+  const r = loadRealm(OPERATOR_REALM_FILE);
+  // The second factor sub-flow of the operator browser flow: the forms step's second child.
+  const forms = /** @type {{ children: unknown[] }} */ (
+    /** @type {unknown} */ (r.mfa?.flow?.executions[1])
+  );
+  const second =
+    /** @type {{ requirement: string, children: { provider: string, requirement: string }[] }} */ (
+      /** @type {unknown} */ (forms.children[1])
+    );
+  assert.ok(second);
+  second.requirement = 'CONDITIONAL';
+  second.children.push({ provider: 'conditional-user-configured', requirement: 'REQUIRED' });
+  const configure = r.mfa?.requiredActions?.find((a) => a.alias === 'CONFIGURE_TOTP');
+  assert.ok(configure);
+  configure.defaultAction = false;
+  const p = validateOperatorRealm(r).join('\n');
+  assert.match(p, /must not be conditional/);
+  assert.match(p, /forced enrolment/);
+});
+
+test('operator realm validation rejects public, implicit and literal-secret clients and a wrong acr', () => {
+  const r = loadRealm(OPERATOR_REALM_FILE);
+  const bff = operatorClient(r, 'operator-bff');
+  bff.publicClient = true;
+  bff.implicitFlowEnabled = true;
+  bff.secret = 'literal';
+  r.attributes = { ...r.attributes, 'acr.loa.map': '{"password":1,"strong":2}' };
+  r.roles = { realm: [{ name: 'platform_operator' }] };
+  const p = validateOperatorRealm(r).join('\n');
+  assert.match(p, /confidential/);
+  assert.match(p, /implicit, password/);
+  assert.match(p, /literal secret/);
+  assert.match(p, /operator_strong=2/);
+  assert.match(p, /missing role platform_admin/);
+});
+
+test('operator sync creates the operator realm and asserts its own clients', async () => {
+  const realm = resolvePlaceholders(loadRealm(OPERATOR_REALM_FILE), OPERATOR_ENV);
+  const { db, fetchFn } = fakeKeycloak();
+  const stats = await sync(realm, {
+    base: 'http://kc',
+    token: 't',
+    fetchFn,
+    requiredClients: REQUIRED_OPERATOR_CLIENTS,
+  });
+  assert.ok(stats.created > 0);
+  assert.equal(db.clients.length, 2);
+  assert.equal(db.realm?.browserFlow, 'blackwing operator browser');
+  assert.equal(db.requiredActions.get('CONFIGURE_TOTP')?.defaultAction, true);
+  assert.ok(db.calls.some((c) => c.includes('/admin/realms/blackwing-operators')));
+  assert.ok(!db.calls.some((c) => c.includes('/users')));
+});
+
+test('operator sync fails the post-sync assertion when operator-api is missing', async () => {
+  const realm = resolvePlaceholders(loadRealm(OPERATOR_REALM_FILE), OPERATOR_ENV);
+  realm.clients = (realm.clients ?? []).filter((c) => c.clientId !== 'operator-api');
+  const { fetchFn } = fakeKeycloak();
+  await assert.rejects(
+    sync(realm, {
+      base: 'http://kc',
+      token: 't',
+      fetchFn,
+      requiredClients: REQUIRED_OPERATOR_CLIENTS,
+    }),
+    /operator-api/,
+  );
+});
+
+test('operator placeholders fail closed when an operator secret is missing', () => {
+  assert.throws(
+    () =>
+      resolvePlaceholders(loadRealm(OPERATOR_REALM_FILE), {
+        ...OPERATOR_ENV,
+        BW_KEYCLOAK_OPERATOR_BFF_SECRET: '',
+      }),
+    /BW_KEYCLOAK_OPERATOR_BFF_SECRET/,
+  );
+});
+
+test('check validates both committed realms offline and apply refuses to run without admin credentials', async () => {
+  /** @type {string[]} */
+  const written = [];
+  /** @type {(m: string) => boolean} */
+  const capture = (m) => {
+    written.push(m);
+    return true;
+  };
+  const originalOut = process.stdout.write.bind(process.stdout);
+  const originalErr = process.stderr.write.bind(process.stderr);
+  process.stdout.write = /** @type {typeof process.stdout.write} */ (
+    /** @type {unknown} */ (capture)
+  );
+  process.stderr.write = /** @type {typeof process.stderr.write} */ (
+    /** @type {unknown} */ (capture)
+  );
+  try {
+    assert.equal(await main(['check'], {}), 0);
+    assert.equal(await main(['apply'], {}), 1);
+  } finally {
+    process.stdout.write = originalOut;
+    process.stderr.write = originalErr;
+  }
+  assert.ok(written.includes('realm-blackwing-operators.json: ok\n'));
+  assert.ok(written.includes('realm-blackwing.json: ok\n'));
+  assert.ok(written.some((m) => m.includes('missing environment variable BW_KEYCLOAK_URL')));
 });

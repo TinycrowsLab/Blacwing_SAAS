@@ -53,6 +53,8 @@ const DEFAULT_API_IDEMPOTENCY_MAX_BODY_BYTES = 65_536;
 const DEFAULT_API_JWT_AUDIENCE = 'blackwing-api';
 const MAX_API_JWT_AUDIENCE_CHARS = 256;
 const DEFAULT_API_JWT_LEEWAY_SECONDS = 60;
+/** The platform-operator realm's API audience (#838). */
+const DEFAULT_OPERATOR_API_JWT_AUDIENCE = 'operator-api';
 const MAX_API_JWT_LEEWAY_SECONDS = 300;
 /** JWKS cache: trust window, minimum gap between refetches, and the fetch timeout. */
 const DEFAULT_API_JWKS_TTL_MS = 600_000;
@@ -208,6 +210,23 @@ export const apiEnvShape = {
    */
   BW_WEB_SESSION_SECRET: sessionSecret.optional(),
   BW_WEB_SESSION_SECRET_PREVIOUS: sessionSecret.optional(),
+  /**
+   * Platform-operator realm issuer (#838, `blackwing-operators`). Unset, operator tokens are refused (fail closed).
+   * Operator tokens are never accepted as tenant tokens and the reverse, because the realm, audience and keys differ.
+   */
+  OPERATOR_KEYCLOAK_ISSUER_URL: zUrl({ protocols: ['http:', 'https:'] }).optional(),
+  /** The audience an operator token must carry (`aud`). */
+  OPERATOR_API_JWT_AUDIENCE: z
+    .string()
+    .min(1)
+    .max(MAX_API_JWT_AUDIENCE_CHARS)
+    .default(DEFAULT_OPERATOR_API_JWT_AUDIENCE),
+  /**
+   * The platform-operator BFF's session secret (#838). A key separate from the tenant secret, so an operator cookie
+   * never opens as a tenant one. Unset, operator session cookies are refused.
+   */
+  BW_OPERATOR_SESSION_SECRET: sessionSecret.optional(),
+  BW_OPERATOR_SESSION_SECRET_PREVIOUS: sessionSecret.optional(),
   /**
    * Comma-separated browser origins allowed by CORS (the web console). Required with no default: an
    * unset value must never silently allow, or silently block, every origin.

@@ -62,8 +62,11 @@ export function authOptionsFromConfig(options: AuthFromConfigOptions): AuthOptio
   return { keycloak, session, metrics, logger: options.logger };
 }
 
-/** The BFF keys: the current secret seals and opens, the previous one only opens (rotation without sign-out). */
-function sessionKeys(current: string, previous: string | undefined): [Buffer, ...Buffer[]] {
+/**
+ * The BFF keys: the current secret seals and opens, the previous one only opens (rotation without sign-out).
+ * Shared by the tenant and the platform-operator session validators (#838).
+ */
+export function sessionKeys(current: string, previous: string | undefined): [Buffer, ...Buffer[]] {
   const keys: [Buffer, ...Buffer[]] = [deriveKey(current)];
   if (previous !== undefined) keys.push(deriveKey(previous));
   return keys;

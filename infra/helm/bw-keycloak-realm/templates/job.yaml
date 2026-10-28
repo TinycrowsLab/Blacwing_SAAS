@@ -35,3 +35,8 @@ spec:
               valueFrom: { secretKeyRef: { name: {{ .Values.existingSecret }}, key: api-secret } }
             - name: BW_KEYCLOAK_CLI_SECRET
               valueFrom: { secretKeyRef: { name: {{ .Values.existingSecret }}, key: cli-secret } }
+            # The platform-operator realm (#838) is synced by the same job.
+            - name: BW_KEYCLOAK_OPERATOR_BFF_SECRET
+              valueFrom: { secretKeyRef: { name: {{ .Values.existingSecret }}, key: operator-bff-secret } }
+            - name: BW_KEYCLOAK_OPERATOR_API_SECRET
+              valueFrom: { secretKeyRef: { name: {{ .Values.existingSecret }}, key: operator-api-secret } }

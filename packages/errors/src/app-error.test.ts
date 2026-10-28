@@ -103,6 +103,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   // TxRetryExhaustedError and TenantContextMismatchError, @blackwing/db (DB-004).
   'TX_RETRY_EXHAUSTED',
   'TENANT_CONTEXT_CONFLICT',
+  // OperatorMfaRequiredError, apps/api platform-operator auth (#838).
+  'OPERATOR_MFA_REQUIRED',
   // PersonaError, @blackwing/agents (REGISTRY-001).
   'PERSONA_UNKNOWN',
   'PERSONA_NOT_DEFINED',

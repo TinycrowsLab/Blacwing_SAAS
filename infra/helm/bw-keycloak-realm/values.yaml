@@ -6,5 +6,6 @@ environment: staging
 keycloakUrl: http://keycloak:8080
 publicUrl: ''
 consoleOrigin: ''
-# Name of a Secret (synced from OpenBao) with keys: admin-user, admin-password, api-secret, cli-secret.
+# Name of a Secret (synced from OpenBao) with keys: admin-user, admin-password, api-secret, cli-secret,
+# operator-bff-secret and operator-api-secret (the platform-operator realm, #838).
 existingSecret: bw-keycloak-realm-secrets

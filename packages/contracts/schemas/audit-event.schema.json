@@ -78,7 +78,10 @@
         "auth.sso_config_changed",
         "tenant.created",
         "signup.verified",
-        "tenant.settings_updated"
+        "tenant.settings_updated",
+        "auth.operator_login",
+        "auth.operator_logout",
+        "auth.operator_session_revoked"
       ]
     },
     "severity": {

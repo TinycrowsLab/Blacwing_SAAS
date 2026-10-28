@@ -7,6 +7,12 @@
 export const SESSION_COOKIE = '__Host-bw_session';
 /** The short-lived cookie that carries PKCE verifier, state, nonce and returnTo across the redirect. */
 export const LOGIN_COOKIE = '__Host-bw_login';
+/**
+ * The platform-operator BFF cookies (#838). Distinct names from the tenant ones, so an operator cookie can never be
+ * presented as a tenant cookie or the reverse. Their keys and Valkey keyspace are distinct too (`operator-auth`).
+ */
+export const OPERATOR_SESSION_COOKIE = '__Host-bw_op_session';
+export const OPERATOR_LOGIN_COOKIE = '__Host-bw_op_login';
 
 /** `Set-Cookie` header value. `maxAgeSeconds` omitted makes a browser-session cookie; 0 deletes it. */
 export function serializeCookie(name: string, value: string, maxAgeSeconds?: number): string {

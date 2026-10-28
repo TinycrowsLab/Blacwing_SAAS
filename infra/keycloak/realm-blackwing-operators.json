@@ -1,0 +1,210 @@
+{
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 300,
+  "attributes": {
+    "acr.loa.map": "{\"password\":1,\"operator_strong\":2}",
+    "bw.environment": "${BW_ENVIRONMENT}",
+    "frontendUrl": "${BW_KEYCLOAK_PUBLIC_URL}"
+  },
+  "browserFlow": "blackwing operator browser",
+  "bruteForceProtected": true,
+  "clientScopes": [
+    {
+      "attributes": {
+        "display.on.consent.screen": "false",
+        "include.in.token.scope": "false"
+      },
+      "description": "Platform-operator roles and the operator-api audience (#838). Deliberately no tenantId claim.",
+      "name": "operator-claims",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "config": {
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "userinfo.token.claim": "true"
+          },
+          "name": "roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper"
+        },
+        {
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "included.client.audience": "operator-api",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "false"
+          },
+          "name": "operator-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper"
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false",
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${BW_CONSOLE_ORIGIN}/"
+      },
+      "clientAuthenticatorType": "client-secret",
+      "clientId": "operator-bff",
+      "consentRequired": false,
+      "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "email", "operator-claims"],
+      "directAccessGrantsEnabled": false,
+      "enabled": true,
+      "frontchannelLogout": false,
+      "implicitFlowEnabled": false,
+      "name": "Blackwing operator console (BFF)",
+      "optionalClientScopes": [],
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "redirectUris": ["${BW_CONSOLE_ORIGIN}/operator/api/auth/callback"],
+      "secret": "${BW_KEYCLOAK_OPERATOR_BFF_SECRET}",
+      "serviceAccountsEnabled": false,
+      "standardFlowEnabled": true,
+      "webOrigins": ["${BW_CONSOLE_ORIGIN}"]
+    },
+    {
+      "attributes": {
+        "oauth2.device.authorization.grant.enabled": "false"
+      },
+      "clientAuthenticatorType": "client-secret",
+      "clientId": "operator-api",
+      "consentRequired": false,
+      "defaultClientScopes": ["acr", "profile", "roles", "operator-claims"],
+      "directAccessGrantsEnabled": false,
+      "enabled": true,
+      "frontchannelLogout": false,
+      "implicitFlowEnabled": false,
+      "name": "Blackwing operator API (audience)",
+      "optionalClientScopes": [],
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${BW_KEYCLOAK_OPERATOR_API_SECRET}",
+      "serviceAccountsEnabled": false,
+      "standardFlowEnabled": false
+    }
+  ],
+  "displayName": "Blackwing operators",
+  "duplicateEmailsAllowed": false,
+  "editUsernameAllowed": false,
+  "enabled": true,
+  "failureFactor": 5,
+  "identityProviderMappers": [],
+  "identityProviders": [],
+  "loginWithEmailAllowed": true,
+  "maxDeltaTimeSeconds": 43200,
+  "maxFailureWaitSeconds": 900,
+  "mfa": {
+    "description": "Operator MFA (#838): username and password, then a second factor that is always required (no conditional bypass). WebAuthn is preferred and TOTP is the fallback; the first login forces TOTP enrolment. The token acr is operator_strong only after the second factor.",
+    "flow": {
+      "alias": "blackwing operator browser",
+      "executions": [
+        {
+          "provider": "auth-cookie",
+          "requirement": "ALTERNATIVE"
+        },
+        {
+          "alias": "blackwing operator forms",
+          "requirement": "ALTERNATIVE",
+          "children": [
+            {
+              "provider": "auth-username-password-form",
+              "requirement": "REQUIRED"
+            },
+            {
+              "alias": "blackwing operator second factor",
+              "requirement": "REQUIRED",
+              "children": [
+                {
+                  "provider": "webauthn-authenticator",
+                  "requirement": "ALTERNATIVE"
+                },
+                {
+                  "provider": "auth-otp-form",
+                  "requirement": "ALTERNATIVE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "requiredActions": [
+      {
+        "alias": "CONFIGURE_TOTP",
+        "name": "Configure OTP",
+        "enabled": true,
+        "defaultAction": true,
+        "priority": 10
+      },
+      {
+        "alias": "webauthn-register",
+        "name": "Register security key",
+        "enabled": true,
+        "defaultAction": false,
+        "priority": 70
+      }
+    ]
+  },
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyCodeReusable": false,
+  "otpPolicyDigits": 6,
+  "otpPolicyInitialCounter": 0,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyPeriod": 30,
+  "otpPolicyType": "totp",
+  "permanentLockout": false,
+  "quickLoginCheckMilliSeconds": 1000,
+  "realm": "blackwing-operators",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "roles": {
+    "realm": [
+      {
+        "attributes": {
+          "bw.scope": ["platform"]
+        },
+        "description": "Blackwing platform operator (Tinycrows staff)",
+        "name": "platform_operator"
+      },
+      {
+        "attributes": {
+          "bw.scope": ["platform"]
+        },
+        "description": "Ownership-verification reviewer",
+        "name": "verification_reviewer"
+      },
+      {
+        "attributes": {
+          "bw.scope": ["platform"]
+        },
+        "description": "Manages other platform operators",
+        "name": "platform_admin"
+      }
+    ]
+  },
+  "sslRequired": "external",
+  "ssoSessionIdleTimeout": 900,
+  "ssoSessionMaxLifespan": 28800,
+  "verifyEmail": true,
+  "waitIncrementSeconds": 60,
+  "webAuthnPolicyAcceptableAaguids": [],
+  "webAuthnPolicyAttestationConveyancePreference": "none",
+  "webAuthnPolicyAuthenticatorAttachment": "not specified",
+  "webAuthnPolicyAvoidSameAuthenticatorRegister": false,
+  "webAuthnPolicyCreateTimeout": 0,
+  "webAuthnPolicyRequireResidentKey": "not specified",
+  "webAuthnPolicyRpEntityName": "Blackwing Operators",
+  "webAuthnPolicyRpId": "",
+  "webAuthnPolicySignatureAlgorithms": ["ES256"],
+  "webAuthnPolicyUserVerificationRequirement": "required"
+}

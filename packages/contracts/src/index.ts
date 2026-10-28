@@ -533,4 +533,10 @@ export {
   secretTypeSchema,
 } from './secrets.js';
 
-export { type Principal, principalSchema } from './auth/principal.js';
+export {
+  OPERATOR_STRONG_ACR,
+  type OperatorPrincipal,
+  operatorPrincipalSchema,
+  type Principal,
+  principalSchema,
+} from './auth/principal.js';

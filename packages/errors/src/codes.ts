@@ -199,6 +199,8 @@ const DEFINITIONS = {
   // never starts a second. A kill that ended with some component still running is 424: surfaced, never
   // reported as a success.
   NOT_OPERATOR: { status: 403, title: 'Platform operator required', retryable: false },
+  // The platform-operator session has not completed the operator second factor (acr operator_strong, #838).
+  OPERATOR_MFA_REQUIRED: { status: 403, title: 'Operator MFA required', retryable: false },
   KILL_ALREADY_IN_PROGRESS: { status: 409, title: 'Kill already in progress', retryable: false },
   KILL_PARTIAL: { status: 424, title: 'Kill only partly completed', retryable: false },
   // Idempotency-Key handling (§9): a missing key on a creating POST is a malformed request (400);

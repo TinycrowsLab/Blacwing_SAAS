@@ -1013,7 +1013,10 @@
                 "auth.sso_config_changed",
                 "tenant.created",
                 "signup.verified",
-                "tenant.settings_updated"
+                "tenant.settings_updated",
+                "auth.operator_login",
+                "auth.operator_logout",
+                "auth.operator_session_revoked"
               ]
             },
             "example": "kill.fired"
@@ -3705,7 +3708,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, TENANT_MISMATCH, SECRET_PURPOSE_DENIED.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3869,6 +3872,16 @@
                       "title": "Platform operator required",
                       "status": 403,
                       "code": "NOT_OPERATOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "OPERATOR_MFA_REQUIRED": {
+                    "summary": "Operator MFA required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+                      "title": "Operator MFA required",
+                      "status": 403,
+                      "code": "OPERATOR_MFA_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -4247,7 +4260,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, TENANT_MISMATCH, SECRET_PURPOSE_DENIED.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4411,6 +4424,16 @@
                       "title": "Platform operator required",
                       "status": 403,
                       "code": "NOT_OPERATOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "OPERATOR_MFA_REQUIRED": {
+                    "summary": "Operator MFA required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+                      "title": "Operator MFA required",
+                      "status": 403,
+                      "code": "OPERATOR_MFA_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -4810,7 +4833,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, TENANT_MISMATCH, SECRET_PURPOSE_DENIED.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4974,6 +4997,16 @@
                       "title": "Platform operator required",
                       "status": 403,
                       "code": "NOT_OPERATOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "OPERATOR_MFA_REQUIRED": {
+                    "summary": "Operator MFA required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+                      "title": "Operator MFA required",
+                      "status": 403,
+                      "code": "OPERATOR_MFA_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -5553,7 +5586,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, TENANT_MISMATCH, SECRET_PURPOSE_DENIED.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5717,6 +5750,16 @@
                       "title": "Platform operator required",
                       "status": 403,
                       "code": "NOT_OPERATOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "OPERATOR_MFA_REQUIRED": {
+                    "summary": "Operator MFA required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+                      "title": "Operator MFA required",
+                      "status": 403,
+                      "code": "OPERATOR_MFA_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -6307,7 +6350,10 @@
               "auth.sso_config_changed",
               "tenant.created",
               "signup.verified",
-              "tenant.settings_updated"
+              "tenant.settings_updated",
+              "auth.operator_login",
+              "auth.operator_logout",
+              "auth.operator_session_revoked"
             ]
           },
           "severity": {

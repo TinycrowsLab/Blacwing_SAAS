@@ -43,6 +43,8 @@ The redirect URI registered in Keycloak is `${BW_CONSOLE_ORIGIN}/auth/callback` 
 | `REDIS_URL` | Valkey for the sessions. |
 | `BW_WEB_SESSION_SECRET` | At least 32 random characters, resolved from OpenBao and injected as a secret. The sealing key is derived from it (HKDF-SHA-256). |
 | `BW_WEB_SESSION_SECRET_PREVIOUS` | Optional. The secret being rotated out: it still opens cookies and records, it never seals. |
+| `OPERATOR_KEYCLOAK_ISSUER_URL`, `OPERATOR_KEYCLOAK_CLIENT_ID`, `OPERATOR_KEYCLOAK_CLIENT_SECRET` | The platform-operator realm `blackwing-operators` and its confidential `operator-bff` client (#838). The secret comes from OpenBao. |
+| `BW_OPERATOR_SESSION_SECRET` (and `_PREVIOUS`) | The operator BFF's sealing secret (#838). It is a different value from `BW_WEB_SESSION_SECRET`, so an operator cookie never opens as a tenant one. |
 | `KEYCLOAK_SESSION_ADMIN_CLIENT_ID`, `KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET` | Optional, both or neither. A service-account client allowed to log users out in the realm (`manage-users`). Used by revocation to end a user's Keycloak sessions; without it a revocation reports Keycloak as `skipped`. |
 
 Rotate the secret without signing anyone out: set `BW_WEB_SESSION_SECRET_PREVIOUS` to the old value and
