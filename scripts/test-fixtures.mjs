@@ -2,6 +2,7 @@
 // repository layout in a temporary directory so each test can introduce one defect.
 
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -172,4 +173,16 @@ export function cleanEnv(extra = {}) {
     env[key] = value;
   }
   return { ...env, ...extra };
+}
+
+/**
+ * Skip reason for the kubeconform schema checks, or undefined when they must run. kubeconform is a
+ * developer tool: a machine without it skips with this message. CI installs it (.github/workflows/test.yml)
+ * and sets CI, so there a missing binary is a failure, never a silent skip.
+ * @returns {string | undefined}
+ */
+export function kubeconformSkipReason() {
+  if (!spawnSync('kubeconform', ['-v'], { encoding: 'utf8' }).error) return undefined;
+  if (process.env.CI) return undefined;
+  return 'kubeconform not on PATH: install it (docs/runbooks/dev-k3s.md) to run this check; CI installs it';
 }

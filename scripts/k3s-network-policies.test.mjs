@@ -11,7 +11,9 @@ import { describe, it } from 'node:test';
 
 import { parseAllDocuments } from 'yaml';
 
-import { REPO_ROOT } from './test-fixtures.mjs';
+import { REPO_ROOT, kubeconformSkipReason } from './test-fixtures.mjs';
+
+const KUBECONFORM_SKIP = kubeconformSkipReason();
 
 /** @typedef {Record<string, string>} Labels */
 /** @typedef {{ matchLabels?: Labels, matchExpressions?: { key: string, operator: string, values: string[] }[] }} Sel */
@@ -318,9 +320,7 @@ describe('manifests and scripts', () => {
     for (const n of ['169.254.169.254/32', '169.254.0.0/16', 'fd00:ec2::254/128', '::/0'])
       assert.ok(nets.includes(n), n);
   });
-  it('passes kubeconform when available', () => {
-    const which = spawnSync('which', ['kubeconform'], { encoding: 'utf8' });
-    if (which.status !== 0) return;
+  it('passes kubeconform', { skip: KUBECONFORM_SKIP }, () => {
     const r = spawnSync(
       'kubeconform',
       [

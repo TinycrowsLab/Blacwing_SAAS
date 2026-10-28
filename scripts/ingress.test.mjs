@@ -13,6 +13,9 @@ import { fileURLToPath } from 'node:url';
 
 import { parseAllDocuments } from 'yaml';
 
+import { kubeconformSkipReason } from './test-fixtures.mjs';
+
+const KUBECONFORM_SKIP = kubeconformSkipReason();
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHART = path.join(REPO, 'infra', 'helm', 'bw-ingress');
 const CM = path.join(REPO, 'infra', 'k3s', 'cert-manager');
@@ -353,26 +356,30 @@ describe('observability', () => {
 });
 
 describe('kubeconform', () => {
-  it('validates every rendered object against the Kubernetes, Traefik and cert-manager schemas', () => {
-    const rendered = helm();
-    assert.equal(rendered.status, 0, rendered.stderr);
-    const r = spawnSync(
-      'kubeconform',
-      [
-        '-strict',
-        '-summary',
-        '-schema-location',
-        'default',
-        '-schema-location',
-        'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json',
-        '-ignore-missing-schemas',
-        '-',
-      ],
-      { input: rendered.stdout, encoding: 'utf8' },
-    );
-    assert.equal(r.status, 0, r.stdout + r.stderr);
-    assert.match(r.stdout, /Invalid: 0, Errors: 0/);
-  });
+  it(
+    'validates every rendered object against the Kubernetes, Traefik and cert-manager schemas',
+    { skip: KUBECONFORM_SKIP },
+    () => {
+      const rendered = helm();
+      assert.equal(rendered.status, 0, rendered.stderr);
+      const r = spawnSync(
+        'kubeconform',
+        [
+          '-strict',
+          '-summary',
+          '-schema-location',
+          'default',
+          '-schema-location',
+          'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json',
+          '-ignore-missing-schemas',
+          '-',
+        ],
+        { input: rendered.stdout, encoding: 'utf8' },
+      );
+      assert.equal(r.status, 0, r.stdout + r.stderr);
+      assert.match(r.stdout, /Invalid: 0, Errors: 0/);
+    },
+  );
 });
 
 describe('cert-manager install and external probes', () => {

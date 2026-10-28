@@ -20,6 +20,9 @@ import { fileURLToPath } from 'node:url';
 
 import { parseAllDocuments } from 'yaml';
 
+import { kubeconformSkipReason } from './test-fixtures.mjs';
+
+const KUBECONFORM_SKIP = kubeconformSkipReason();
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const K3S = path.join(REPO, 'infra', 'k3s');
 const INSTALL = path.join(K3S, 'install-dev.sh');
@@ -284,22 +287,34 @@ describe('sandbox NetworkPolicy', () => {
 });
 
 describe('kubeconform', () => {
-  it('validates every manifest strictly against the Kubernetes schemas', () => {
-    const cache = path.join(os.tmpdir(), 'bw-kubeconform-cache');
-    fs.mkdirSync(cache, { recursive: true });
-    const r = spawnSync(
-      'kubeconform',
-      ['-strict', '-summary', '-cache', cache, '-kubernetes-version', '1.33.0', ...MANIFEST_FILES],
-      { cwd: K3S, encoding: 'utf8' },
-    );
-    assert.equal(
-      r.error,
-      undefined,
-      'kubeconform must be installed (see docs/runbooks/dev-k3s.md)',
-    );
-    assert.equal(r.status, 0, r.stdout + r.stderr);
-    assert.match(r.stdout, /Invalid: 0, Errors: 0, Skipped: 0/);
-  });
+  it(
+    'validates every manifest strictly against the Kubernetes schemas',
+    { skip: KUBECONFORM_SKIP },
+    () => {
+      const cache = path.join(os.tmpdir(), 'bw-kubeconform-cache');
+      fs.mkdirSync(cache, { recursive: true });
+      const r = spawnSync(
+        'kubeconform',
+        [
+          '-strict',
+          '-summary',
+          '-cache',
+          cache,
+          '-kubernetes-version',
+          '1.33.0',
+          ...MANIFEST_FILES,
+        ],
+        { cwd: K3S, encoding: 'utf8' },
+      );
+      assert.equal(
+        r.error,
+        undefined,
+        'kubeconform must be installed (see docs/runbooks/dev-k3s.md)',
+      );
+      assert.equal(r.status, 0, r.stdout + r.stderr);
+      assert.match(r.stdout, /Invalid: 0, Errors: 0, Skipped: 0/);
+    },
+  );
 });
 
 // ------------------------------------------------------------ script tests --
