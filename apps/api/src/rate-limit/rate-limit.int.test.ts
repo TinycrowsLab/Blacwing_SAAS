@@ -18,6 +18,7 @@ const MS_PER_SECOND = 1000;
 
 beforeAll(async () => {
   valkey = await withValkey();
+  // A client without the handle's key prefix, to inspect the raw keys the limiter wrote.
   raw = valkey.createClient({ keyPrefix: '' });
   limiter = new ValkeyRateLimiter(valkey.client);
 });
@@ -47,7 +48,7 @@ describe('ValkeyRateLimiter against Valkey', () => {
 
   it('keeps the bucket key under the caller tenant prefix and gives it a TTL', async () => {
     await limiter.consume(specsFor('bw_pat_ttl', 10, 20));
-    const key = `rl:${TENANT}:bw_pat_ttl:default`;
+    const key = `${valkey.keyPrefix}rl:${TENANT}:bw_pat_ttl:default`;
     expect(await raw.exists(key)).toBe(1);
     expect(await raw.pttl(key)).toBeGreaterThan(0);
   });
@@ -74,7 +75,9 @@ describe('ValkeyRateLimiter against Valkey', () => {
     };
     expect((await limiter.consume([principal, tenant])).allowed).toBe(true);
     expect((await limiter.consume([principal, tenant])).blockedBy).toBe('tenant');
-    expect(await raw.hget(principal.key, 'tokens')).toBe('4');
+    // The bucket refills in real time between calls, so compare whole tokens: a charge would leave 3.
+    const tokens = Number(await raw.hget(`${valkey.keyPrefix}${principal.key}`, 'tokens'));
+    expect(Math.floor(tokens)).toBe(4);
   });
 
   it('isolates tenants that share a token id', async () => {
