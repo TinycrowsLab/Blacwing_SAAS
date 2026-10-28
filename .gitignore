@@ -28,6 +28,8 @@ storybook-static/
 .bw-dev/
 
 # Logs and reports
+# Kill SLO chaos report output (KILL-008, eval/harness)
+eval/harness/out/
 *.log
 eslint-report.json
 boundaries-report.json

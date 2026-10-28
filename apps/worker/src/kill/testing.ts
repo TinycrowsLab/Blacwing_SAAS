@@ -189,7 +189,7 @@ export const ackAll = (
   outcome: EgressAck['outcome'] = 'blocked',
 ): EgressAck[] => identities.map((identity) => ({ identity, outcome }));
 
-class RecordingMetrics implements KillStageMetrics {
+export class RecordingMetrics implements KillStageMetrics {
   latencies: [string, number][] = [];
   results: [string, string][] = [];
   partial = 0;

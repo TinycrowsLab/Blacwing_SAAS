@@ -1,0 +1,45 @@
+name: kill-slo
+
+# Kill SLO chaos suite (KILL-008, #184, §8.5): N concurrent runs, kills at run, asset and tenant scope, three
+# injected faults, and the p99 halt budgets. Runs nightly and on demand, never per pull request (too heavy).
+# The default `mock` mode needs no services. `real` mode against the dev stack is run by hand; see
+# docs/runbooks/kill-slo.md. The JSON SLO report is uploaded even when the budgets fail.
+
+on:
+  schedule:
+    - cron: '41 3 * * *' # nightly, 03:41 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kill-slo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kill-slo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      TZ: UTC
+      CI: 'true'
+      KILL_CHAOS_MODE: mock
+      KILL_CHAOS_RUNS: '25'
+    steps:
+      # A local composite action is only readable after a checkout; fetch just its directory.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Kill SLO chaos suite
+        run: pnpm --filter @blackwing/worker test:chaos
+      - name: Upload SLO report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kill-slo-report
+          path: eval/harness/out/kill-slo-report.json
+          if-no-files-found: warn
+          retention-days: 30

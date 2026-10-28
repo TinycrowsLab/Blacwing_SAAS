@@ -48,6 +48,7 @@
         "runbooks/image-verification.md",
         "runbooks/incident-response.md",
         "runbooks/ingress-tls.md",
+        "runbooks/kill-slo.md",
         "runbooks/kill-switch.md",
         "runbooks/node-imds.md",
         "runbooks/release.md",
