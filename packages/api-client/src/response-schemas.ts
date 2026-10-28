@@ -42,5 +42,7 @@ export const RESPONSE_SCHEMAS: Readonly<
 > = {
   getKillEvent: { 200: killEventViewSchema },
   listAuditEvents: { 200: auditEventsPageSchema },
+  // text/event-stream, not JSON: there is no body schema to check, so the client returns it unparsed.
+  streamRunEvents: {},
   triggerKill: { 202: killTriggerResponseSchema },
 };
