@@ -89,7 +89,7 @@ export interface OrganizationsServiceDeps {
 }
 
 /** Validates external input with the schema; the message names the fields and never echoes values. */
-function parseInput<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
+export function parseInput<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
   const result = schema.safeParse(input);
   if (result.success) return result.data;
   const fields = result.error.issues

@@ -30,3 +30,24 @@ export function createOpenBaoClientSecretReader(
     return parsed.data.data.client_secret;
   };
 }
+
+/**
+ * Returns a reader for a client secret that an organisation's identity provider references by OpenBao path
+ * (IAM-004, CONTEXT_PACK §8 #7). The reference is the only thing stored in Blackwing; the value is read at
+ * configure time and sent straight to Keycloak. It is never logged and never placed in an error.
+ */
+export function createOpenBaoSecretRefReader(
+  openBao: OpenBaoClient,
+): (ref: string) => Promise<string> {
+  return async (ref) => {
+    const response = await openBao.request('GET', ref);
+    const parsed = kvSecretSchema.safeParse(response.data);
+    if (!parsed.success) {
+      throw new AppError(
+        'CONFIG_INVALID',
+        'The identity provider client secret is missing from OpenBao',
+      );
+    }
+    return parsed.data.data.client_secret;
+  };
+}

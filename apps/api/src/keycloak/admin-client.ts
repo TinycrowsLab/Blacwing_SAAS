@@ -8,8 +8,25 @@ import type { KeycloakAdminSettings } from './settings.js';
 import type { Logger } from '@blackwing/logger';
 
 /** The logical operation, a label on `keycloak_admin_calls_total`. */
-type KeycloakAdminOp =
-  'create' | 'list' | 'get' | 'update' | 'delete' | 'add_member' | 'remove_member';
+export type KeycloakAdminOp =
+  | 'create'
+  | 'list'
+  | 'get'
+  | 'update'
+  | 'delete'
+  | 'add_member'
+  | 'remove_member'
+  | 'idp_get'
+  | 'idp_create'
+  | 'idp_update'
+  | 'idp_delete'
+  | 'idp_link'
+  | 'idp_unlink'
+  | 'idp_links'
+  | 'idp_mapper_list'
+  | 'idp_mapper_create'
+  | 'idp_mapper_update'
+  | 'idp_mapper_delete';
 
 type KeycloakAdminMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 

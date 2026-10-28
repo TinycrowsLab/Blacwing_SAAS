@@ -171,7 +171,8 @@ export interface components {
         | 'audit.queried'
         | 'secret.rotated'
         | 'secret.rewrapped'
-        | 'persona.override_changed';
+        | 'persona.override_changed'
+        | 'auth.sso_config_changed';
       /** @enum {string} */
       severity: 'info' | 'notice' | 'warning' | 'critical';
       /** @description Who acted. `email` is only returned to auditors. */
@@ -612,7 +613,8 @@ export interface operations {
           | 'audit.queried'
           | 'secret.rotated'
           | 'secret.rewrapped'
-          | 'persona.override_changed';
+          | 'persona.override_changed'
+          | 'auth.sso_config_changed';
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */
         targetId?: string;
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */

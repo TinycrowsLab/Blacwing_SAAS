@@ -462,6 +462,15 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'A tenant changed the whitelisted override of a persona (effort, turns, budget, tier).',
   },
+  // per-org identity provider configuration (IAM-004, #332): metadata only, never secrets or certificates
+  {
+    action: 'auth.sso_config_changed',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'An organisation identity provider (generic OIDC or SAML) was created, updated or removed. Carries the alias, the type and the operation only.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

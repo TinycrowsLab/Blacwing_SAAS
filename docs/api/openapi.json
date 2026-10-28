@@ -991,7 +991,8 @@
                 "audit.queried",
                 "secret.rotated",
                 "secret.rewrapped",
-                "persona.override_changed"
+                "persona.override_changed",
+                "auth.sso_config_changed"
               ]
             },
             "example": "kill.fired"
@@ -2771,7 +2772,8 @@
               "audit.queried",
               "secret.rotated",
               "secret.rewrapped",
-              "persona.override_changed"
+              "persona.override_changed",
+              "auth.sso_config_changed"
             ]
           },
           "severity": {

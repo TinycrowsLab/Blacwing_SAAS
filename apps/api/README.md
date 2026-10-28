@@ -41,6 +41,23 @@ Keycloak failures map to `KEYCLOAK_UNAVAILABLE` (503, retryable), `KEYCLOAK_REJE
 (404) and `KEYCLOAK_CONFLICT` (409). Metric: `keycloak_admin_calls_total{op,result}`. Trace: one `keycloak.admin.<op>` span per call, with `bw.keycloak.op` and `bw.keycloak.result`. The service is not yet mounted
 in a Nest module; TENANT-005 and IAM-003/004 consume it. Integration tests against a live Keycloak are tracked in #901.
 
+## Per-organisation identity providers (IAM-004)
+
+`src/keycloak/idp/` configures one generic OIDC or SAML 2.0 identity provider per organisation, brokered by Keycloak
+for the tenant's Organization. `createIdentityProviderService` builds `IdentityProviderService`, which offers
+`configure` (create or update, idempotent), `remove` and `exportSpMetadata` (the SP entityID, ACS URL and Keycloak's
+descriptor for the customer to register). Only `org_admin` may call them. The caller is the canonical `Principal`,
+and the tenant alone selects the organisation, so one tenant cannot touch another tenant's provider.
+
+- OIDC: the issuer's discovery document is fetched over https (bounded, no redirects) and must name the same issuer, offer
+  the code flow and PKCE S256. The client secret is an OpenBao reference, read at configure time and sent to Keycloak only.
+- SAML: metadata by https URL or XML. XML is parsed without DTDs or entities (XXE, CWE-611), size and element budgets apply,
+  and at least one signing certificate must be valid now (expired ones are dropped during rollover). Keycloak is always
+  set to validate signatures and require signed assertions. The option cannot be switched off.
+- Every applied change emits `auth.sso_config_changed` (metadata only, never secrets or certificates), increments
+  `sso_idp_config_total{type,op}`, and sets `sso_idp_signing_cert_expiry_days{alias}` for SAML.
+- Not mounted over HTTP yet, and not verified against a live Keycloak. See the online-porting follow-up in #904.
+
 ## Request pipeline
 
 - `bootstrap/create-app.ts` wires the Fastify adapter (body limit, proxy trust, `rawBody: true` for later
