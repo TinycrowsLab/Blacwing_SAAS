@@ -63,6 +63,7 @@ function fetcher(tenantId: string) {
   return (plan: KeysetPlan): Promise<ItemRow[]> =>
     db.withTenant(tenantId, async (tx) => {
       const orm = drizzle({ client: tx });
+      // blackwing:allow-raw-tenant-db test harness withTenant hands a tenant-bound pg client (RLS as bw_app)
       return orm
         .select()
         .from(items)
