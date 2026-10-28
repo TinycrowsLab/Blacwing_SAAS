@@ -57,7 +57,7 @@ export const DEFAULT_DB_LOCK_TIMEOUT_MS = 5_000;
 /** Default `DB_SLOW_QUERY_MS`: queries at or above this duration log `db.query.slow`. */
 export const DEFAULT_DB_SLOW_QUERY_MS = 500;
 /** Upper bound on the timeout settings: Postgres stores them as a 32-bit millisecond integer. */
-export const MAX_DB_TIMEOUT_MS = 2_147_483_647;
+const MAX_DB_TIMEOUT_MS = 2_147_483_647;
 
 const sharedShape = {
   NODE_ENV: z.enum(NODE_ENVS),

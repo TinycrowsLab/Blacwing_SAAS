@@ -3,7 +3,7 @@
   // Entry points come from each package.json (`exports`, `bin`, `scripts`) plus the Vitest/Next/Nest plugins,
   // so only exceptions are listed here. Each one says why it is needed.
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignore": ["**/dist/**", "**/generated/**", "**/*.generated.*", "scripts/fixtures/**"],
+  "ignore": ["**/generated/**", "scripts/fixtures/**"],
   "ignoreFiles": ["**/*.config.*"],
   "workspaces": {
     ".": {
@@ -23,19 +23,23 @@
       ],
     },
     "apps/*": {
-      "entry": ["src/main.ts", "src/main.tsx", "src/instrumentation.ts"],
+      // Entry points come from each app's package.json scripts and exports (src/index.ts, src/main.ts).
       "project": ["src/**/*.{ts,tsx}"],
     },
+    "apps/model-gateway": {
+      // Composition root started by the service image; no package.json script names it.
+      "entry": ["src/main.ts"],
+    },
     "apps/web": {
-      // Next.js App Router segment files are loaded by the framework by file name, never imported.
-      "entry": ["src/app/**/{error,loading,not-found,layout,page}.tsx"],
+      // Next.js App Router files are loaded by the framework by file name (CONSOLE-001), never imported.
+      "entry": ["src/app/**/{error,layout,loading,not-found,page,providers}.tsx"],
     },
     "packages/*": {
       "project": ["src/**/*.{ts,tsx}"],
     },
-    "apps/web": {
-      // Next.js App Router files are loaded by the framework by file name (CONSOLE-001), never imported.
-      "entry": ["src/app/**/{layout,page,providers}.tsx"],
+    "packages/ui": {
+      // The Tailwind preset names the compiled stylesheet by specifier (`@blackwing/ui/styles.css`), so .css is project-scoped.
+      "project": ["src/**/*.{ts,tsx,css}"],
     },
     "apps/worker": {
       // The outbox relay (WORKFLOW-012) is a library until the worker composition root starts it (it needs a
