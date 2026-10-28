@@ -58,14 +58,22 @@ function sqlstateOf(error: unknown): string | undefined {
   return typeof code === 'string' && SQLSTATE.test(code) ? code : undefined;
 }
 
+/** The row count of a node-postgres result, when it reports one. */
+function rowCountOf(result: unknown): number | undefined {
+  const rowCount = (result as { rowCount?: unknown } | null | undefined)?.rowCount;
+  return typeof rowCount === 'number' ? rowCount : undefined;
+}
+
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   return typeof (value as { then?: unknown } | null)?.then === 'function';
 }
 
 /**
- * Wraps `client.query` once per connection so every promise-style statement is timed and traced.
- * Results and errors pass through unchanged: this observes, it never maps. Callback-style and
- * submittable calls are left alone (node-postgres' own `Pool.query` path only uses the promise form).
+ * Wraps `client.query` once per connection so every statement is timed and traced, whether it is
+ * promise-style (drizzle, direct client use) or callback-style: node-postgres' `Pool.query` reaches
+ * the client as `client.query(text, values, callback)`, so skipping callbacks would leave every
+ * `pool.query(...)` unobserved. Results and errors pass through unchanged: this observes, it never
+ * maps. Submittable objects without a callback are left to node-postgres.
  */
 export function instrumentClient(client: pg.PoolClient, observer: QueryObserver): void {
   const target = client as unknown as Record<PropertyKey, unknown> & {
@@ -76,7 +84,6 @@ export function instrumentClient(client: pg.PoolClient, observer: QueryObserver)
   const original = target.query;
 
   target.query = function observedQuery(this: unknown, ...args: unknown[]): unknown {
-    if (typeof args.at(-1) === 'function') return Reflect.apply(original, this, args);
     const first = args[0];
     const op = queryOperation(
       typeof first === 'string' ? first : (first as { text?: unknown } | undefined)?.text,
@@ -89,6 +96,22 @@ export function instrumentClient(client: pg.PoolClient, observer: QueryObserver)
         { attributes: { 'db.operation': op, 'db.pool': observer.pool } },
         context.active(),
       );
+    const callback = args.at(-1);
+    if (typeof callback === 'function') {
+      const observedCallback = (...results: unknown[]): unknown => {
+        const [error, result] = results;
+        settle(
+          observer,
+          op,
+          started,
+          span,
+          error === undefined || error === null ? undefined : sqlstateOf(error),
+          rowCountOf(result),
+        );
+        return Reflect.apply(callback, this, results);
+      };
+      return Reflect.apply(original, this, [...args.slice(0, -1), observedCallback]);
+    }
     const pending: unknown = Reflect.apply(original, this, args);
     if (!isPromiseLike(pending)) {
       span.end();
@@ -96,15 +119,7 @@ export function instrumentClient(client: pg.PoolClient, observer: QueryObserver)
     }
     return pending.then(
       (result: unknown) => {
-        const rowCount = (result as { rowCount?: unknown } | null)?.rowCount;
-        settle(
-          observer,
-          op,
-          started,
-          span,
-          undefined,
-          typeof rowCount === 'number' ? rowCount : undefined,
-        );
+        settle(observer, op, started, span, undefined, rowCountOf(result));
         return result;
       },
       (error: unknown) => {

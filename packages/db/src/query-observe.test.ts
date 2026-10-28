@@ -125,14 +125,33 @@ describe('instrumentClient', () => {
     expect(captured.durations).toHaveLength(1);
   });
 
-  it('leaves callback-style calls to node-postgres untouched', () => {
+  it('times callback-style calls (how Pool.query reaches the client) and hands the result to the callback unchanged', () => {
     const captured: Captured = { warnings: [], durations: [] };
-    const original = vi.fn((...args: unknown[]) => args.at(-1));
+    const result = { rows: [], rowCount: 1 };
+    const original = vi.fn((...args: unknown[]) => {
+      (args.at(-1) as (...results: unknown[]) => void)(null, result);
+    });
     const client = { query: original } as unknown as pg.PoolClient;
     instrumentClient(client, observer(500, captured));
-    const callback = (): void => undefined;
+    const callback = vi.fn();
     client.query('SELECT 1', callback);
-    expect(original).toHaveBeenCalledWith('SELECT 1', callback);
-    expect(captured.durations).toEqual([]);
+    expect(original).toHaveBeenCalledWith('SELECT 1', expect.any(Function));
+    expect(callback).toHaveBeenCalledWith(null, result);
+    expect(captured.durations).toEqual([['SELECT', expect.any(Number)]]);
+  });
+
+  it('times a callback-style failure and hands the error to the callback unchanged', () => {
+    const captured: Captured = { warnings: [], durations: [] };
+    const failure = Object.assign(new Error('canceled'), { code: '57014' });
+    const original = vi.fn((...args: unknown[]) => {
+      (args.at(-1) as (...results: unknown[]) => void)(failure);
+    });
+    const client = { query: original } as unknown as pg.PoolClient;
+    instrumentClient(client, observer(500, captured));
+    const callback = vi.fn();
+    client.query('SELECT 1', callback);
+    expect(callback).toHaveBeenCalledWith(failure);
+    expect(captured.durations).toEqual([['SELECT', expect.any(Number)]]);
+    expect(captured.warnings.map((w) => w.message)).toEqual(['db.query.timeout']);
   });
 });
