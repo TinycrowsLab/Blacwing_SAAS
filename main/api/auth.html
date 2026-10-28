@@ -173,6 +173,33 @@ or the query: the tenant comes from the verified credential only.</p>
 </tr>
 </tbody></table>
 <p>In the examples below, <code>&lt;token&gt;</code> stands for a value you have been issued. It is not a real value.</p>
+<h2 id="how-the-api-checks-a-request">How the API checks a request</h2>
+<p>Every route except the public probes goes through one guard. It reads exactly one credential, chosen by its shape:
+a <code>bw_pat_</code> or <code>bw_ci_</code> bearer is checked as a personal or CI token; any other bearer is checked as a Keycloak access
+token (RS256 or ES256, the realm&#39;s <code>aud</code> and <code>iss</code>, with a clock-skew allowance of a few seconds); and a session cookie is
+checked against the console session. If an <code>Authorization</code> header is present but malformed, the request is refused and
+the cookie is not tried. A refused request gets <code>401</code> with one of these codes:</p>
+<table>
+<thead>
+<tr>
+<th><code>code</code></th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>auth_no_credentials</code></td>
+<td>The request carries no credential.</td>
+</tr>
+<tr>
+<td><code>auth_invalid_token</code></td>
+<td>A credential that does not verify: wrong signature, issuer, audience, algorithm or claims.</td>
+</tr>
+<tr>
+<td><code>auth_expired</code></td>
+<td>A credential or session that has expired or ended. Sign in again.</td>
+</tr>
+</tbody></table>
+<p>A session store outage is a <code>503</code> and is retried, not treated as a sign-out.</p>
 <h2 id="getting-a-token">Getting a token</h2>
 <p>Tokens are issued for one tenant. The step-by-step guide to issuing them is part of the console documentation, which is not
 published in this reference yet; ask your tenant administrator if you cannot issue one. Each token has:</p>

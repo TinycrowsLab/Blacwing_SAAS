@@ -237,6 +237,9 @@ outage of Keycloak or Valkey is a <code>503</code> with <code>Retry-After</code>
 <p>Rotate the secret without signing anyone out: set <code>BW_WEB_SESSION_SECRET_PREVIOUS</code> to the old value and
 <code>BW_WEB_SESSION_SECRET</code> to the new one, roll the web pods, and remove the previous value after the longest session
 lifetime (12 h). Losing the secret entirely signs everyone out (fail closed).</p>
+<p>The API (<code>apps/api/src/auth/session-cookie.ts</code>) opens the same session cookie and records, so it reads the same
+<code>BW_WEB_SESSION_SECRET</code> (and <code>_PREVIOUS</code>) and the same Valkey. Rotate the secret on the API and the web app together,
+with the previous value still set, or the API refuses console sessions.</p>
 <p>Recommended Keycloak setting: enable refresh token rotation (<code>revokeRefreshToken</code>) on the realm so a stolen refresh
 token is detected on reuse; the BFF already treats the resulting <code>invalid_grant</code> as a revoked session.</p>
 <h2 id="metrics-traces-audit">Metrics, traces, audit</h2>
