@@ -2,6 +2,8 @@
 // Idempotent Keycloak realm sync (IAM-001, #329). Upserts realm settings, roles, client scopes and
 // clients from infra/keycloak/realm-blackwing.json through the admin REST API. It never deletes and
 // never touches users, organizations or identity providers, so re-runs are safe on a live realm.
+// The MFA section (IAM-005, #338) creates the browser flow and enables the second-factor required actions.
+// A live flow that differs from the file is a hard failure: the sync never rewrites an existing flow.
 //   node scripts/keycloak-sync.mjs check      # offline validation of the committed realm
 //   node scripts/keycloak-sync.mjs apply      # sync (needs BW_KEYCLOAK_URL + admin credentials in env)
 import { readFileSync } from 'node:fs';
@@ -27,7 +29,15 @@ export const REQUIRED_ROLES = Object.freeze([
 export const REQUIRED_CLAIMS = Object.freeze(['tenantId', 'roles']);
 
 const MAX_ACCESS_TOKEN_LIFESPAN_SECONDS = 300;
+const MAX_OTP_LOOK_AHEAD_WINDOW = 2;
 const HTTP_NOT_FOUND = 404;
+/** Providers the second factor needs: the password step, both factors and the "user has this factor" condition. */
+const MFA_PROVIDERS = Object.freeze([
+  'auth-username-password-form',
+  'conditional-user-configured',
+  'auth-otp-form',
+  'webauthn-authenticator',
+]);
 
 /**
  * @typedef {{ name?: string, id?: string } & Record<string, unknown>} Named
@@ -36,10 +46,16 @@ const HTTP_NOT_FOUND = 404;
  *   secret?: string, redirectUris?: string[], webOrigins?: string[], attributes?: Record<string, string> }
  *   & Record<string, unknown>} Client
  * @typedef {{ name: string, protocolMappers?: Named[] } & Record<string, unknown>} ClientScope
+ * @typedef {{ provider: string, requirement: string } | { alias: string, requirement: string,
+ *   children: FlowNode[] }} FlowNode
+ * @typedef {{ description?: string, flow?: { alias: string, executions: FlowNode[] },
+ *   requiredActions?: { alias: string, name: string, enabled: unknown, defaultAction: boolean,
+ *   priority: number }[] }} MfaSection
  * @typedef {{ realm: string, sslRequired?: string, bruteForceProtected?: boolean,
  *   organizationsEnabled?: boolean, duplicateEmailsAllowed?: boolean, loginWithEmailAllowed?: boolean,
  *   accessTokenLifespan?: number, clients?: Client[], clientScopes?: ClientScope[],
- *   roles?: { realm?: Named[] }, attributes?: Record<string, string>, users?: unknown }
+ *   roles?: { realm?: Named[] }, attributes?: Record<string, string>, users?: unknown,
+ *   browserFlow?: string, mfa?: MfaSection }
  *   & Record<string, unknown>} Realm
  */
 
@@ -76,6 +92,37 @@ export function loadRealm(file = REALM_FILE) {
   /** @type {unknown} */
   const parsed = JSON.parse(readFileSync(file, 'utf8'));
   return /** @type {Realm} */ (parsed);
+}
+
+/**
+ * Visits every node of a flow tree depth-first, with its depth. The order matches the Admin API listing.
+ * @param {FlowNode[]} nodes
+ * @param {(node: FlowNode, level: number) => void} visit
+ * @param {number} [level]
+ */
+export function walkFlow(nodes, visit, level = 0) {
+  for (const n of nodes) {
+    visit(n, level);
+    if ('children' in n) walkFlow(n.children, visit, level + 1);
+  }
+}
+
+/**
+ * The listing key of each node, e.g. `0|flow:blackwing forms|ALTERNATIVE`; compared against the live flow.
+ * @param {FlowNode[]} nodes
+ * @returns {string[]}
+ */
+export function flowKeys(nodes) {
+  /** @type {string[]} */
+  const keys = [];
+  walkFlow(nodes, (n, level) =>
+    keys.push(
+      'children' in n
+        ? `${level}|flow:${n.alias}|${n.requirement}`
+        : `${level}|exec:${n.provider}|${n.requirement}`,
+    ),
+  );
+  return keys;
 }
 
 /**
@@ -121,8 +168,55 @@ export function validateRealm(r) {
   for (const n of REQUIRED_ROLES) if (!roles.has(n)) p.push(`missing role ${n}`);
   const mappers = (r.clientScopes ?? []).flatMap((s) => s.protocolMappers ?? []).map((x) => x.name);
   for (const n of REQUIRED_CLAIMS) if (!mappers.includes(n)) p.push(`missing claim mapper ${n}`);
-  if (!r.attributes?.['acr.loa.map']) p.push('acr.loa.map required for step-up');
+  const acr = parseAcrMap(r.attributes?.['acr.loa.map']);
+  if (acr?.password !== 1 || acr.strong !== 2 || Object.keys(acr).length !== 2)
+    p.push('acr.loa.map must map exactly password=1 and strong=2 (step-up, IAM-009)');
   if (r.users) p.push('realm file must not contain users');
+  p.push(...validateMfa(r));
+  return p;
+}
+
+/**
+ * @param {string | undefined} raw
+ * @returns {Record<string, number> | undefined}
+ */
+function parseAcrMap(raw) {
+  if (raw === undefined) return undefined;
+  try {
+    const parsed = /** @type {unknown} */ (JSON.parse(raw));
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return undefined;
+    return /** @type {Record<string, number>} */ (parsed);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * MFA rules for local accounts (IAM-005): TOTP and WebAuthn enabled, single-use TOTP codes, a bounded clock-drift
+ * window, WebAuthn user verification, and a browser flow that carries both second factors.
+ * @param {Realm} r
+ * @returns {string[]}
+ */
+function validateMfa(r) {
+  /** @type {string[]} */
+  const p = [];
+  const mfa = r.mfa;
+  if (!mfa) return ['mfa section is required (IAM-005)'];
+  if (r.browserFlow !== mfa.flow?.alias) p.push('browserFlow must be the mfa flow alias');
+  const providers = new Set();
+  walkFlow(mfa.flow?.executions ?? [], (n) => {
+    if (!('children' in n)) providers.add(n.provider);
+  });
+  for (const need of MFA_PROVIDERS) if (!providers.has(need)) p.push(`mfa flow missing ${need}`);
+  for (const alias of ['CONFIGURE_TOTP', 'webauthn-register'])
+    if (!mfa.requiredActions?.some((a) => a.alias === alias && a.enabled === true))
+      p.push(`required action ${alias} must be enabled`);
+  const win = r.otpPolicyLookAheadWindow;
+  if (!(Number.isInteger(win) && win >= 1 && win <= MAX_OTP_LOOK_AHEAD_WINDOW))
+    p.push(`otpPolicyLookAheadWindow must be 1..${MAX_OTP_LOOK_AHEAD_WINDOW} periods`);
+  if (r.otpPolicyCodeReusable !== false) p.push('otpPolicyCodeReusable must be false');
+  if (r.webAuthnPolicyUserVerificationRequirement !== 'required')
+    p.push('WebAuthn user verification must be required');
   return p;
 }
 
@@ -153,7 +247,9 @@ async function call(fetchFn, base, token, method, url, body) {
  */
 export async function sync(realm, { base, token, fetchFn = fetch, log = () => undefined }) {
   const stats = { created: 0, updated: 0 };
-  const { clients = [], roles = {}, clientScopes = [], ...settings } = realm;
+  const { clients = [], roles = {}, clientScopes = [], mfa, ...settings } = realm;
+  // The flow is bound only after it exists (see below), so the first realm PUT must not reference it.
+  delete settings.browserFlow;
   const name = realm.realm;
   const R = `/admin/realms/${name}`;
   /** @type {(method: string, url: string, body?: unknown) => Promise<unknown>} */
@@ -223,7 +319,105 @@ export async function sync(realm, { base, token, fetchFn = fetch, log = () => un
   for (const id of REQUIRED_CLIENTS)
     if (!live.some((x) => x.clientId === id))
       throw new Error(`post-sync assertion failed: client ${id} missing`);
+  if (mfa) {
+    const m = await syncMfa(realm.realm, mfa, c);
+    stats.created += m.created;
+    stats.updated += m.updated;
+    await c('PUT', R, { realm: name, browserFlow: mfa.flow.alias });
+    log(`browser flow ${mfa.flow.alias} bound`);
+  }
   return stats;
+}
+
+/**
+ * Creates the MFA browser flow when absent and enables the second-factor required actions. An existing flow is
+ * compared with the file and a difference throws: the sync never rewrites a live flow.
+ * @param {string} realmName
+ * @param {MfaSection} mfa
+ * @param {(method: string, url: string, body?: unknown) => Promise<unknown>} c
+ */
+async function syncMfa(realmName, mfa, c) {
+  const stats = { created: 0, updated: 0 };
+  const R = `/admin/realms/${realmName}`;
+  if (!mfa.flow || !mfa.requiredActions)
+    throw new Error('mfa section needs flow and requiredActions');
+  const alias = mfa.flow.alias;
+  for (const ra of mfa.requiredActions) {
+    await c('PUT', `${R}/authentication/required-actions/${encodeURIComponent(ra.alias)}`, {
+      alias: ra.alias,
+      name: ra.name,
+      providerId: ra.alias,
+      enabled: ra.enabled,
+      defaultAction: ra.defaultAction,
+      priority: ra.priority,
+    });
+    stats.updated++;
+  }
+  const flows = /** @type {{ alias: string }[] | null} */ (
+    await c('GET', `${R}/authentication/flows`)
+  );
+  if (flows?.some((f) => f.alias === alias)) {
+    const live = /** @type {Named[] | null} */ (
+      await c('GET', `${R}/authentication/flows/${encodeURIComponent(alias)}/executions`)
+    );
+    const liveKeys = (live ?? []).map((row) => {
+      const level = /** @type {number} */ (row.level);
+      const requirement = /** @type {string} */ (row.requirement);
+      const id =
+        row.authenticationFlow === true
+          ? `flow:${String(row.displayName)}`
+          : `exec:${String(row.providerId)}`;
+      return `${level}|${id}|${requirement}`;
+    });
+    const want = flowKeys(mfa.flow.executions);
+    if (liveKeys.length !== want.length || liveKeys.some((k, i) => k !== want[i]))
+      throw new Error(
+        `browser flow "${alias}" differs from realm-blackwing.json; reconcile it by hand`,
+      );
+  } else {
+    await c('POST', `${R}/authentication/flows`, {
+      alias,
+      description: mfa.description,
+      providerId: 'basic-flow',
+      topLevel: true,
+      builtIn: false,
+    });
+    await createFlowNodes(c, R, alias, mfa.flow.executions);
+    stats.created++;
+  }
+  return stats;
+}
+
+/**
+ * Appends each node to its parent flow in file order (Keycloak appends to the end of a flow), then sets its
+ * requirement on the row it just created: the last direct child of the parent in the listing.
+ * @param {(method: string, url: string, body?: unknown) => Promise<unknown>} c
+ * @param {string} R
+ * @param {string} parent
+ * @param {FlowNode[]} nodes
+ */
+async function createFlowNodes(c, R, parent, nodes) {
+  const url = `${R}/authentication/flows/${encodeURIComponent(parent)}/executions`;
+  for (const n of nodes) {
+    if ('children' in n) {
+      await c('POST', `${url}/flow`, {
+        alias: n.alias,
+        type: 'basic-flow',
+        description: n.alias,
+        provider: 'registration-page-form',
+      });
+    } else {
+      await c('POST', `${url}/execution`, { provider: n.provider });
+    }
+    const rows = /** @type {Named[] | null} */ (await c('GET', url));
+    const added = (rows ?? []).findLast((row) => row.level === 0);
+    if (!added)
+      throw new Error(
+        `browser flow "${parent}": node ${'children' in n ? n.alias : n.provider} was not created`,
+      );
+    await c('PUT', url, { ...added, requirement: n.requirement });
+    if ('children' in n) await createFlowNodes(c, R, n.alias, n.children);
+  }
 }
 
 /**

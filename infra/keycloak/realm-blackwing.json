@@ -2,10 +2,11 @@
   "accessTokenLifespan": 300,
   "accessTokenLifespanForImplicitFlow": 300,
   "attributes": {
-    "acr.loa.map": "{\"password\":1,\"mfa\":2}",
+    "acr.loa.map": "{\"password\":1,\"strong\":2}",
     "bw.environment": "${BW_ENVIRONMENT}",
     "frontendUrl": "${BW_KEYCLOAK_PUBLIC_URL}"
   },
+  "browserFlow": "blackwing browser",
   "bruteForceProtected": true,
   "clientScopes": [
     {
@@ -133,11 +134,88 @@
   "loginWithEmailAllowed": true,
   "maxDeltaTimeSeconds": 43200,
   "maxFailureWaitSeconds": 900,
+  "mfa": {
+    "description": "Local-account MFA (IAM-005). Second factor is TOTP or WebAuthn; a user with neither is sent to enrolment.",
+    "flow": {
+      "alias": "blackwing browser",
+      "executions": [
+        {
+          "provider": "auth-cookie",
+          "requirement": "ALTERNATIVE"
+        },
+        {
+          "provider": "identity-provider-redirector",
+          "requirement": "ALTERNATIVE"
+        },
+        {
+          "alias": "blackwing forms",
+          "requirement": "ALTERNATIVE",
+          "children": [
+            {
+              "provider": "auth-username-password-form",
+              "requirement": "REQUIRED"
+            },
+            {
+              "alias": "blackwing conditional OTP",
+              "requirement": "CONDITIONAL",
+              "children": [
+                {
+                  "provider": "conditional-user-configured",
+                  "requirement": "REQUIRED"
+                },
+                {
+                  "provider": "auth-otp-form",
+                  "requirement": "REQUIRED"
+                }
+              ]
+            },
+            {
+              "alias": "blackwing conditional WebAuthn",
+              "requirement": "CONDITIONAL",
+              "children": [
+                {
+                  "provider": "conditional-user-configured",
+                  "requirement": "REQUIRED"
+                },
+                {
+                  "provider": "webauthn-authenticator",
+                  "requirement": "REQUIRED"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "requiredActions": [
+      {
+        "alias": "CONFIGURE_TOTP",
+        "name": "Configure OTP",
+        "enabled": true,
+        "defaultAction": false,
+        "priority": 10
+      },
+      {
+        "alias": "webauthn-register",
+        "name": "Register security key",
+        "enabled": true,
+        "defaultAction": false,
+        "priority": 70
+      }
+    ]
+  },
   "minimumQuickLoginWaitSeconds": 60,
   "offlineSessionIdleTimeout": 2592000,
   "offlineSessionMaxLifespan": 5184000,
   "offlineSessionMaxLifespanEnabled": true,
   "organizationsEnabled": true,
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyCodeReusable": false,
+  "otpPolicyDigits": 6,
+  "otpPolicyInitialCounter": 0,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyPeriod": 30,
+  "otpPolicyType": "totp",
   "permanentLockout": false,
   "quickLoginCheckMilliSeconds": 1000,
   "realm": "blackwing",
@@ -200,5 +278,15 @@
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
   "verifyEmail": true,
-  "waitIncrementSeconds": 60
+  "waitIncrementSeconds": 60,
+  "webAuthnPolicyAcceptableAaguids": [],
+  "webAuthnPolicyAttestationConveyancePreference": "none",
+  "webAuthnPolicyAuthenticatorAttachment": "not specified",
+  "webAuthnPolicyAvoidSameAuthenticatorRegister": false,
+  "webAuthnPolicyCreateTimeout": 0,
+  "webAuthnPolicyRequireResidentKey": "not specified",
+  "webAuthnPolicyRpEntityName": "Blackwing",
+  "webAuthnPolicyRpId": "",
+  "webAuthnPolicySignatureAlgorithms": ["ES256"],
+  "webAuthnPolicyUserVerificationRequirement": "required"
 }

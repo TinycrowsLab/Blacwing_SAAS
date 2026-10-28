@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { loadRealm, resolvePlaceholders, sync, validateRealm } from './keycloak-sync.mjs';
+import { flowKeys, loadRealm, resolvePlaceholders, sync, validateRealm } from './keycloak-sync.mjs';
 
 const ENV = {
   BW_ENVIRONMENT: 'prod',
@@ -50,8 +50,77 @@ test('placeholders resolve; missing ones fail closed', () => {
 /** @typedef {Record<string, unknown>} Doc */
 
 function fakeKeycloak() {
-  /** @type {{ realm: Doc | null, roles: Map<string, Doc>, scopes: Doc[], clients: Doc[], calls: string[] }} */
-  const db = { realm: null, roles: new Map(), scopes: [], clients: [], calls: [] };
+  /**
+   * `flows` maps a flow alias to its direct child rows; a sub-flow row names its flow in `flowAlias`.
+   * @type {{ realm: Doc | null, roles: Map<string, Doc>, scopes: Doc[], clients: Doc[], calls: string[],
+   *   flows: Map<string, Doc[]>, flowList: Doc[], requiredActions: Map<string, Doc> }}
+   */
+  const db = {
+    realm: null,
+    roles: new Map(),
+    scopes: [],
+    clients: [],
+    calls: [],
+    flows: new Map(),
+    flowList: [],
+    requiredActions: new Map(),
+  };
+  /** The flat listing the Admin API returns for a flow: depth-first, `level` relative to the queried flow. */
+  /** @type {(alias: string, level?: number) => Doc[]} */
+  const listing = (alias, level = 0) =>
+    (db.flows.get(alias) ?? []).flatMap((row) => [
+      { ...row, level },
+      ...(row.authenticationFlow === true ? listing(String(row.flowAlias), level + 1) : []),
+    ]);
+  /** The Admin API paths under /authentication, handled before the realm-level routes. */
+  /** @type {(method: string | undefined, rest: string, b: Doc) => Response} */
+  const authentication = (method, rest, b) => {
+    const j2 = (/** @type {unknown} */ x, /** @type {number} */ s = 200) =>
+      /** @type {Response} */ (
+        /** @type {unknown} */ ({ ok: s < 300, status: s, json: () => Promise.resolve(x) })
+      );
+    if (rest.startsWith('/required-actions/') && method === 'PUT') {
+      db.requiredActions.set(decodeURIComponent(rest.slice('/required-actions/'.length)), b);
+      return j2(null, 204);
+    }
+    if (rest === '/flows') {
+      if (method === 'GET') return j2(db.flowList);
+      db.flowList.push({ id: `f${++n}`, alias: b.alias });
+      db.flows.set(String(b.alias), []);
+      return j2(null, 201);
+    }
+    const m = /^\/flows\/([^/]+)\/executions(\/execution|\/flow)?$/.exec(rest);
+    if (!m) return j2({}, 404);
+    const alias = decodeURIComponent(String(m[1]));
+    const rows = db.flows.get(alias);
+    if (!rows) return j2({}, 404);
+    if (m[2] === undefined) {
+      if (method === 'GET') return j2(listing(alias));
+      const row = rows.find((r) => r.id === b.id);
+      if (!row) return j2({}, 404);
+      row.requirement = b.requirement;
+      return j2(null, 204);
+    }
+    if (m[2] === '/execution') {
+      rows.push({
+        id: `e${++n}`,
+        providerId: b.provider,
+        authenticationFlow: false,
+        requirement: 'DISABLED',
+      });
+      return j2(null, 201);
+    }
+    rows.push({
+      id: `e${++n}`,
+      displayName: b.alias,
+      authenticationFlow: true,
+      flowAlias: b.alias,
+      requirement: 'DISABLED',
+    });
+    db.flows.set(String(b.alias), []);
+    db.flowList.push({ id: `f${n}`, alias: b.alias });
+    return j2(null, 201);
+  };
   let n = 0;
   /** @type {(b: unknown, s?: number) => Response} */
   const j = (b, s = 200) =>
@@ -69,9 +138,12 @@ function fakeKeycloak() {
   };
   /** @type {(method: string | undefined, u: string, parsed: URL, b: Doc) => Response} */
   const handle = (method, u, parsed, b) => {
+    const authPrefix = '/admin/realms/blackwing/authentication';
+    if (u.startsWith(`${authPrefix}/`))
+      return authentication(method, u.slice(authPrefix.length), b);
     if (u === '/admin/realms/blackwing') {
       if (method === 'GET') return db.realm ? j(db.realm) : j({}, 404);
-      db.realm = b;
+      db.realm = db.realm ? { ...db.realm, ...b } : b;
       return j(null, 204);
     }
     if (u === '/admin/realms') {
@@ -120,4 +192,109 @@ test('post-sync assertion fails when a required client is missing', async () => 
   realm.clients = (realm.clients ?? []).filter((c) => c.clientId !== 'blackwing-cli');
   const { fetchFn } = fakeKeycloak();
   await assert.rejects(sync(realm, { base: 'http://kc', token: 't', fetchFn }), /blackwing-cli/);
+});
+
+test('validation rejects weakened MFA settings', () => {
+  const r = loadRealm();
+  r.otpPolicyLookAheadWindow = 5;
+  r.otpPolicyCodeReusable = true;
+  r.webAuthnPolicyUserVerificationRequirement = 'preferred';
+  r.attributes = { ...r.attributes, 'acr.loa.map': '{"password":1,"mfa":2}' };
+  r.browserFlow = 'browser';
+  const mfa = r.mfa;
+  assert.ok(mfa);
+  // Drop the OTP factor and keep only the password step under the forms sub-flow.
+  mfa.flow.executions = [
+    { provider: 'auth-cookie', requirement: 'ALTERNATIVE' },
+    {
+      alias: 'blackwing forms',
+      requirement: 'ALTERNATIVE',
+      children: [
+        { provider: 'auth-username-password-form', requirement: 'REQUIRED' },
+        {
+          alias: 'blackwing conditional WebAuthn',
+          requirement: 'CONDITIONAL',
+          children: [
+            { provider: 'conditional-user-configured', requirement: 'REQUIRED' },
+            { provider: 'webauthn-authenticator', requirement: 'REQUIRED' },
+          ],
+        },
+      ],
+    },
+  ];
+  const ra = mfa.requiredActions.find((a) => a.alias === 'CONFIGURE_TOTP');
+  assert.ok(ra);
+  ra.enabled = false;
+  const p = validateRealm(r).join('\n');
+  assert.match(p, /LookAheadWindow/);
+  assert.match(p, /otpPolicyCodeReusable/);
+  assert.match(p, /user verification/);
+  assert.match(p, /acr\.loa\.map must map exactly/);
+  assert.match(p, /browserFlow must be the mfa flow alias/);
+  assert.match(p, /mfa flow missing auth-otp-form/);
+  assert.match(p, /required action CONFIGURE_TOTP must be enabled/);
+});
+
+test('flow listing keys follow the depth-first order the Admin API returns', () => {
+  const mfa = loadRealm().mfa;
+  assert.ok(mfa);
+  assert.deepEqual(flowKeys(mfa.flow.executions), [
+    '0|exec:auth-cookie|ALTERNATIVE',
+    '0|exec:identity-provider-redirector|ALTERNATIVE',
+    '0|flow:blackwing forms|ALTERNATIVE',
+    '1|exec:auth-username-password-form|REQUIRED',
+    '1|flow:blackwing conditional OTP|CONDITIONAL',
+    '2|exec:conditional-user-configured|REQUIRED',
+    '2|exec:auth-otp-form|REQUIRED',
+    '1|flow:blackwing conditional WebAuthn|CONDITIONAL',
+    '2|exec:conditional-user-configured|REQUIRED',
+    '2|exec:webauthn-authenticator|REQUIRED',
+  ]);
+});
+
+test('sync creates the MFA browser flow, enables the factors and binds the flow', async () => {
+  const realm = resolvePlaceholders(loadRealm(), ENV);
+  const mfa = realm.mfa;
+  assert.ok(mfa);
+  const { db, fetchFn } = fakeKeycloak();
+  await sync(realm, { base: 'http://kc', token: 't', fetchFn });
+  assert.ok(db.realm);
+  assert.equal(db.realm.browserFlow, 'blackwing browser');
+  assert.equal(db.realm.mfa, undefined);
+  assert.equal(db.requiredActions.get('CONFIGURE_TOTP')?.enabled, true);
+  assert.equal(db.requiredActions.get('webauthn-register')?.enabled, true);
+  assert.equal(db.flowList.length, 4);
+  assert.equal(
+    db.calls.filter((c) => c.endsWith('/executions/execution')).length,
+    flowKeys(mfa.flow.executions).filter((k) => k.includes('|exec:')).length,
+  );
+});
+
+test('re-running sync creates nothing and leaves the flow untouched', async () => {
+  const realm = resolvePlaceholders(loadRealm(), ENV);
+  const { db, fetchFn } = fakeKeycloak();
+  await sync(realm, { base: 'http://kc', token: 't', fetchFn });
+  const before = db.calls.length;
+  const second = await sync(realm, { base: 'http://kc', token: 't', fetchFn });
+  assert.equal(second.created, 0);
+  assert.equal(db.flowList.length, 4);
+  assert.equal(db.calls.slice(before).filter((c) => c.startsWith('POST')).length, 0);
+});
+
+test('a drifted live flow fails the sync without writing to it', async () => {
+  const realm = resolvePlaceholders(loadRealm(), ENV);
+  const { db, fetchFn } = fakeKeycloak();
+  await sync(realm, { base: 'http://kc', token: 't', fetchFn });
+  const forms = db.flows.get('blackwing forms') ?? [];
+  const row = forms.find((r) => r.displayName === 'blackwing conditional OTP');
+  assert.ok(row);
+  row.requirement = 'DISABLED';
+  const before = db.calls.length;
+  await assert.rejects(
+    sync(realm, { base: 'http://kc', token: 't', fetchFn }),
+    /differs from realm-blackwing\.json/,
+  );
+  assert.ok(
+    !db.calls.slice(before).some((c) => /^(POST|PUT|DELETE) .*\/authentication\/flows/.test(c)),
+  );
 });
