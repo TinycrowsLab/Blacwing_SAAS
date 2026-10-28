@@ -233,6 +233,10 @@ outage of Keycloak or Valkey is a <code>503</code> with <code>Retry-After</code>
 <td><code>BW_WEB_SESSION_SECRET_PREVIOUS</code></td>
 <td>Optional. The secret being rotated out: it still opens cookies and records, it never seals.</td>
 </tr>
+<tr>
+<td><code>KEYCLOAK_SESSION_ADMIN_CLIENT_ID</code>, <code>KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET</code></td>
+<td>Optional, both or neither. A service-account client allowed to log users out in the realm (<code>manage-users</code>). Used by revocation to end a user&#39;s Keycloak sessions; without it a revocation reports Keycloak as <code>skipped</code>.</td>
+</tr>
 </tbody></table>
 <p>Rotate the secret without signing anyone out: set <code>BW_WEB_SESSION_SECRET_PREVIOUS</code> to the old value and
 <code>BW_WEB_SESSION_SECRET</code> to the new one, roll the web pods, and remove the previous value after the longest session
@@ -242,9 +246,28 @@ lifetime (12 h). Losing the secret entirely signs everyone out (fail closed).</p
 with the previous value still set, or the API refuses console sessions.</p>
 <p>Recommended Keycloak setting: enable refresh token rotation (<code>revokeRefreshToken</code>) on the realm so a stolen refresh
 token is detected on reuse; the BFF already treats the resulting <code>invalid_grant</code> as a revoked session.</p>
+<h2 id="back-channel-logout-and-revocation-iam-006-follow-up-336">Back-channel logout and revocation (IAM-006 follow-up, #336)</h2>
+<ul>
+<li><code>POST /api/auth/backchannel-logout</code> takes Keycloak&#39;s <code>logout_token</code> (form field). The token must verify against the
+realm keys (signature, <code>iss</code>, <code>aud</code>), carry the back-channel logout <code>events</code> member, carry no <code>nonce</code>, name a <code>sid</code> or
+a <code>sub</code>, and be at most 120 s old. Its <code>jti</code> is claimed once in Valkey (<code>bw:web:claim:&lt;jti&gt;</code>), so a replay is refused.
+The sessions named by the token&#39;s <code>sid</code> (through <code>bw:web:sess-idx:idp:&lt;sid&gt;</code>), or else by its <code>sub</code>, end at once. The
+answer is <code>200</code> with no body on success (also when no session matched), <code>400</code> for a refused token and <code>503</code> while
+Keycloak or Valkey is down, so Keycloak retries. The realm client must set <code>backchannel.logout.url</code> to this path.</li>
+<li>Revocation (<code>revokeSessions({ userId, tenantId, reason })</code> in <code>apps/web/src/lib/auth/revocation.ts</code>) ends the BFF
+sessions of a user, a tenant, or a user within one tenant, then logs the user out at Keycloak through the Admin API
+(<code>KEYCLOAK_SESSION_ADMIN_CLIENT_*</code>). The BFF side is applied first and is authoritative: a revoked session cannot be
+read or refreshed (a refresh still in flight loses its write and the user logs in again). Keycloak is retried three
+times and reported as <code>done</code>, <code>skipped</code> or <code>failed</code>. Each ended session writes an <code>auth.session_revoked</code> event.</li>
+<li>Valkey indexes: <code>bw:web:sess-idx:user:&lt;sub&gt;</code>, <code>tenant:&lt;tenantId&gt;</code> and <code>idp:&lt;sid&gt;</code> are sets of session ids, kept for the
+longest session lifetime and pruned as sessions end. The session record stays the authority, so a stale index member
+never keeps a session alive. Large revocations walk the sets in pages of 100.</li>
+<li>Valkey outage: every revocation and logout check fails closed (<code>503</code>); nothing is reported as revoked when it is not.</li>
+</ul>
 <h2 id="metrics-traces-audit">Metrics, traces, audit</h2>
 <p><code>auth_login_total{result}</code>, <code>auth_refresh_total{result}</code> and <code>auth_logout_total</code> are OpenTelemetry counters
-(<code>@blackwing/web</code> meter); spans <code>auth.callback</code>, <code>auth.session</code> and <code>auth.logout</code>. Results are bounded codes, never
+(<code>@blackwing/web</code> meter); <code>backchannel_logout_total{result}</code> and <code>session_revocations_total{scope}</code> count back-channel
+requests and revocations; spans <code>auth.callback</code>, <code>auth.session</code>, <code>auth.logout</code> and <code>auth.backchannel_logout</code>. Results are bounded codes, never
 user data. Login, failed login, logout and revoked-session events are written as structured log lines with ids only;
 the audit ledger writer is IAM-012 (#340).</p>
 <h2 id="validation">Validation</h2>
