@@ -128,11 +128,15 @@ async function makeDue(tenantId: string): Promise<void> {
   );
 }
 
+/** `seq` is a bigint column; the raw pg driver returns int8 as a string, so map it as the schema does. */
 async function auditRows(tenantId: string): Promise<{ action: string; seq: number }[]> {
   const { rows } = await postgres.withTenant(tenantId, (tx) =>
     tx.query('SELECT action, seq FROM audit_events ORDER BY seq'),
   );
-  return rows as { action: string; seq: number }[];
+  return (rows as { action: string; seq: string | number }[]).map((row) => ({
+    action: row.action,
+    seq: Number(row.seq),
+  }));
 }
 
 async function drain(): Promise<void> {
