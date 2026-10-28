@@ -26,6 +26,10 @@
     {
       "name": "personas",
       "description": "Tenant overrides of a persona: effort, turn and spend budgets, and standard-tier lowering."
+    },
+    {
+      "name": "signup",
+      "description": "Self-service signup: verify an e-mail address, then create the organisation and its owner."
     }
   ],
   "paths": {
@@ -485,7 +489,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.",
+            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -519,6 +523,16 @@
                       "title": "Idempotency key required",
                       "status": 400,
                       "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SIGNUP_TOKEN_INVALID": {
+                    "summary": "Signup token invalid or expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+                      "title": "Signup token invalid or expired",
+                      "status": 400,
+                      "code": "SIGNUP_TOKEN_INVALID",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -992,7 +1006,9 @@
                 "secret.rotated",
                 "secret.rewrapped",
                 "persona.override_changed",
-                "auth.sso_config_changed"
+                "auth.sso_config_changed",
+                "tenant.created",
+                "signup.verified"
               ]
             },
             "example": "kill.fired"
@@ -1495,7 +1511,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.",
+            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1529,6 +1545,16 @@
                       "title": "Idempotency key required",
                       "status": 400,
                       "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SIGNUP_TOKEN_INVALID": {
+                    "summary": "Signup token invalid or expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+                      "title": "Signup token invalid or expired",
+                      "status": 400,
+                      "code": "SIGNUP_TOKEN_INVALID",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -1861,7 +1887,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.",
+            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1895,6 +1921,16 @@
                       "title": "Idempotency key required",
                       "status": 400,
                       "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SIGNUP_TOKEN_INVALID": {
+                    "summary": "Signup token invalid or expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+                      "title": "Signup token invalid or expired",
+                      "status": 400,
+                      "code": "SIGNUP_TOKEN_INVALID",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -2270,7 +2306,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.",
+            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2304,6 +2340,16 @@
                       "title": "Idempotency key required",
                       "status": 400,
                       "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SIGNUP_TOKEN_INVALID": {
+                    "summary": "Signup token invalid or expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+                      "title": "Signup token invalid or expired",
+                      "status": 400,
+                      "code": "SIGNUP_TOKEN_INVALID",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -2607,6 +2653,1084 @@
           }
         }
       }
+    },
+    "/signup": {
+      "post": {
+        "tags": ["signup"],
+        "operationId": "requestSignup",
+        "summary": "Ask for a verification e-mail to create an organisation",
+        "description": "Always answers 202 with the same body, whether or not the address already has an account, so the endpoint cannot be used to enumerate customers. A verification link is mailed; nothing is created until it is used.",
+        "security": [{}],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 255,
+              "pattern": "^[\\x21-\\x7e]+$"
+            },
+            "example": "signup-7f3c2a9e-1"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequest"
+              },
+              "example": {
+                "email": "owner@acme.example",
+                "orgName": "Acme Security"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Verification requested.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignupAccepted"
+                },
+                "example": {
+                  "status": "verification_requested"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_NO_CREDENTIALS": {
+                    "summary": "No credentials presented",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+                      "title": "No credentials presented",
+                      "status": 401,
+                      "code": "AUTH_NO_CREDENTIALS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_INVALID_TOKEN": {
+                    "summary": "Invalid credentials",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+                      "title": "Invalid credentials",
+                      "status": 401,
+                      "code": "AUTH_INVALID_TOKEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_EXPIRED": {
+                    "summary": "Credentials expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+                      "title": "Credentials expired",
+                      "status": 401,
+                      "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_UNAUTHENTICATED": {
+                    "summary": "Run token required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+                      "title": "Run token required",
+                      "status": 401,
+                      "code": "SBX_UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SERVICE_AUTH_FAILED": {
+                    "summary": "Service authentication failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+                      "title": "Service authentication failed",
+                      "status": 401,
+                      "code": "SERVICE_AUTH_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, TENANT_MISMATCH, SECRET_PURPOSE_DENIED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TENANT_CONTEXT_MISSING": {
+                    "summary": "Tenant context missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+                      "title": "Tenant context missing",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "CROSS_TENANT_DENIED": {
+                    "summary": "Cross tenant access denied",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CROSS_TENANT_DENIED",
+                      "title": "Cross tenant access denied",
+                      "status": 403,
+                      "code": "CROSS_TENANT_DENIED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SEED_FORBIDDEN_IN_PROD": {
+                    "summary": "Seeding forbidden in this environment",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SEED_FORBIDDEN_IN_PROD",
+                      "title": "Seeding forbidden in this environment",
+                      "status": 403,
+                      "code": "SEED_FORBIDDEN_IN_PROD",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TENANT_CONTEXT_MISMATCH": {
+                    "summary": "Tenant context mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISMATCH",
+                      "title": "Tenant context mismatch",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_VIOLATION": {
+                    "summary": "Out of authorised scope",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_VIOLATION",
+                      "title": "Out of authorised scope",
+                      "status": 403,
+                      "code": "SCOPE_VIOLATION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING": {
+                    "summary": "Intrusiveness exceeds the authorised ceiling",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+                      "title": "Intrusiveness exceeds the authorised ceiling",
+                      "status": 403,
+                      "code": "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_DESTRUCTIVE_FORBIDDEN": {
+                    "summary": "Destructive intrusiveness is forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_DESTRUCTIVE_FORBIDDEN",
+                      "title": "Destructive intrusiveness is forbidden",
+                      "status": 403,
+                      "code": "SCOPE_DESTRUCTIVE_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_BUDGET_EXCEEDS_SA": {
+                    "summary": "Budget exceeds the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_BUDGET_EXCEEDS_SA",
+                      "title": "Budget exceeds the standing authorisation",
+                      "status": 403,
+                      "code": "SCOPE_BUDGET_EXCEEDS_SA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "OVERRIDE_FIELD_FORBIDDEN": {
+                    "summary": "Persona override field not permitted",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+                      "title": "Persona override field not permitted",
+                      "status": 403,
+                      "code": "OVERRIDE_FIELD_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "MODEL_NOT_ALLOWED": {
+                    "summary": "Model not allowed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/MODEL_NOT_ALLOWED",
+                      "title": "Model not allowed",
+                      "status": 403,
+                      "code": "MODEL_NOT_ALLOWED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AAD_MISMATCH": {
+                    "summary": "Secret context mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AAD_MISMATCH",
+                      "title": "Secret context mismatch",
+                      "status": 403,
+                      "code": "AAD_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PROMPT_DRAFT_FORBIDDEN": {
+                    "summary": "Draft prompt forbidden in production",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PROMPT_DRAFT_FORBIDDEN",
+                      "title": "Draft prompt forbidden in production",
+                      "status": 403,
+                      "code": "PROMPT_DRAFT_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_FORBIDDEN": {
+                    "summary": "Kill not permitted",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+                      "title": "Kill not permitted",
+                      "status": 403,
+                      "code": "KILL_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_GLOBAL_NOT_ALLOWED_HERE": {
+                    "summary": "Global kill is not allowed on this endpoint",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+                      "title": "Global kill is not allowed on this endpoint",
+                      "status": 403,
+                      "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "NOT_OPERATOR": {
+                    "summary": "Platform operator required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+                      "title": "Platform operator required",
+                      "status": 403,
+                      "code": "NOT_OPERATOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TENANT_MISMATCH": {
+                    "summary": "Tenant mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_MISMATCH",
+                      "title": "Tenant mismatch",
+                      "status": 403,
+                      "code": "TENANT_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_PURPOSE_DENIED": {
+                    "summary": "Secret purpose not permitted",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_PURPOSE_DENIED",
+                      "title": "Secret purpose not permitted",
+                      "status": 403,
+                      "code": "SECRET_PURPOSE_DENIED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PERSONA_NOT_DEFINED": {
+                    "summary": "Persona not defined",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+                      "title": "Persona not defined",
+                      "status": 404,
+                      "code": "PERSONA_NOT_DEFINED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PROMPT_NO_RELEASED_VERSION": {
+                    "summary": "No released prompt version",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+                      "title": "No released prompt version",
+                      "status": 404,
+                      "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_NOT_FOUND": {
+                    "summary": "Secret not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+                      "title": "Secret not found",
+                      "status": 404,
+                      "code": "SECRET_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEYCLOAK_NOT_FOUND": {
+                    "summary": "Identity provider resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+                      "title": "Identity provider resource not found",
+                      "status": 404,
+                      "code": "KEYCLOAK_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "CONFLICT": {
+                    "summary": "Conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONFLICT",
+                      "title": "Conflict",
+                      "status": 409,
+                      "code": "CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ILLEGAL_RUN_TRANSITION": {
+                    "summary": "Illegal run state transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+                      "title": "Illegal run state transition",
+                      "status": 409,
+                      "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEK_DISABLED": {
+                    "summary": "Key version disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEK_DISABLED",
+                      "title": "Key version disabled",
+                      "status": 409,
+                      "code": "KEK_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "DB_SERIALIZATION_CONFLICT": {
+                    "summary": "Database serialization conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+                      "title": "Database serialization conflict",
+                      "status": 409,
+                      "code": "DB_SERIALIZATION_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_ALREADY_IN_PROGRESS": {
+                    "summary": "Kill already in progress",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+                      "title": "Kill already in progress",
+                      "status": 409,
+                      "code": "KILL_ALREADY_IN_PROGRESS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_ACTIVE": {
+                    "summary": "Run is not active",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+                      "title": "Run is not active",
+                      "status": 409,
+                      "code": "RUN_NOT_ACTIVE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_DISABLED": {
+                    "summary": "Secret disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+                      "title": "Secret disabled",
+                      "status": 409,
+                      "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEYCLOAK_CONFLICT": {
+                    "summary": "Identity provider conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+                      "title": "Identity provider conflict",
+                      "status": 409,
+                      "code": "KEYCLOAK_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED, IDEMPOTENCY_KEY_MISMATCH.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_MISMATCH": {
+                    "summary": "Idempotency key reused with a different request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+                      "title": "Idempotency key reused with a different request",
+                      "status": 422,
+                      "code": "IDEMPOTENCY_KEY_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/signup/verify": {
+      "post": {
+        "tags": ["signup"],
+        "operationId": "verifySignup",
+        "summary": "Verify the e-mail address and create the organisation",
+        "description": "Consumes the single-use token from the e-mail. An unknown, expired, used or cancelled token is 400 SIGNUP_TOKEN_INVALID and creates nothing. When the address already has an account no second tenant is created: the answer is existing_account and the caller goes to login.",
+        "security": [{}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupVerifyRequest"
+              },
+              "example": {
+                "token": "k3mT0xq9m1b1Vd2u7Rj8nQe4wYc6ZaPfH5sLgUoXiBA"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The signup was verified.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignupVerified"
+                },
+                "examples": {
+                  "created": {
+                    "value": {
+                      "outcome": "tenant_created",
+                      "tenantId": "01890a5d-ac96-774b-bcce-b302099a8057",
+                      "slug": "acme-security"
+                    }
+                  },
+                  "existing": {
+                    "value": {
+                      "outcome": "existing_account"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of SIGNUP_TOKEN_INVALID.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "SIGNUP_TOKEN_INVALID": {
+                    "summary": "Signup token invalid or expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+                      "title": "Signup token invalid or expired",
+                      "status": 400,
+                      "code": "SIGNUP_TOKEN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_NO_CREDENTIALS": {
+                    "summary": "No credentials presented",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+                      "title": "No credentials presented",
+                      "status": 401,
+                      "code": "AUTH_NO_CREDENTIALS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_INVALID_TOKEN": {
+                    "summary": "Invalid credentials",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+                      "title": "Invalid credentials",
+                      "status": 401,
+                      "code": "AUTH_INVALID_TOKEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_EXPIRED": {
+                    "summary": "Credentials expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+                      "title": "Credentials expired",
+                      "status": 401,
+                      "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_UNAUTHENTICATED": {
+                    "summary": "Run token required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+                      "title": "Run token required",
+                      "status": 401,
+                      "code": "SBX_UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SERVICE_AUTH_FAILED": {
+                    "summary": "Service authentication failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+                      "title": "Service authentication failed",
+                      "status": 401,
+                      "code": "SERVICE_AUTH_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, TENANT_MISMATCH, SECRET_PURPOSE_DENIED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TENANT_CONTEXT_MISSING": {
+                    "summary": "Tenant context missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+                      "title": "Tenant context missing",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "CROSS_TENANT_DENIED": {
+                    "summary": "Cross tenant access denied",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CROSS_TENANT_DENIED",
+                      "title": "Cross tenant access denied",
+                      "status": 403,
+                      "code": "CROSS_TENANT_DENIED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SEED_FORBIDDEN_IN_PROD": {
+                    "summary": "Seeding forbidden in this environment",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SEED_FORBIDDEN_IN_PROD",
+                      "title": "Seeding forbidden in this environment",
+                      "status": 403,
+                      "code": "SEED_FORBIDDEN_IN_PROD",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TENANT_CONTEXT_MISMATCH": {
+                    "summary": "Tenant context mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISMATCH",
+                      "title": "Tenant context mismatch",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_VIOLATION": {
+                    "summary": "Out of authorised scope",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_VIOLATION",
+                      "title": "Out of authorised scope",
+                      "status": 403,
+                      "code": "SCOPE_VIOLATION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING": {
+                    "summary": "Intrusiveness exceeds the authorised ceiling",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+                      "title": "Intrusiveness exceeds the authorised ceiling",
+                      "status": 403,
+                      "code": "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_DESTRUCTIVE_FORBIDDEN": {
+                    "summary": "Destructive intrusiveness is forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_DESTRUCTIVE_FORBIDDEN",
+                      "title": "Destructive intrusiveness is forbidden",
+                      "status": 403,
+                      "code": "SCOPE_DESTRUCTIVE_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_BUDGET_EXCEEDS_SA": {
+                    "summary": "Budget exceeds the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_BUDGET_EXCEEDS_SA",
+                      "title": "Budget exceeds the standing authorisation",
+                      "status": 403,
+                      "code": "SCOPE_BUDGET_EXCEEDS_SA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "OVERRIDE_FIELD_FORBIDDEN": {
+                    "summary": "Persona override field not permitted",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+                      "title": "Persona override field not permitted",
+                      "status": 403,
+                      "code": "OVERRIDE_FIELD_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "MODEL_NOT_ALLOWED": {
+                    "summary": "Model not allowed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/MODEL_NOT_ALLOWED",
+                      "title": "Model not allowed",
+                      "status": 403,
+                      "code": "MODEL_NOT_ALLOWED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AAD_MISMATCH": {
+                    "summary": "Secret context mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AAD_MISMATCH",
+                      "title": "Secret context mismatch",
+                      "status": 403,
+                      "code": "AAD_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PROMPT_DRAFT_FORBIDDEN": {
+                    "summary": "Draft prompt forbidden in production",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PROMPT_DRAFT_FORBIDDEN",
+                      "title": "Draft prompt forbidden in production",
+                      "status": 403,
+                      "code": "PROMPT_DRAFT_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_FORBIDDEN": {
+                    "summary": "Kill not permitted",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+                      "title": "Kill not permitted",
+                      "status": 403,
+                      "code": "KILL_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_GLOBAL_NOT_ALLOWED_HERE": {
+                    "summary": "Global kill is not allowed on this endpoint",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+                      "title": "Global kill is not allowed on this endpoint",
+                      "status": 403,
+                      "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "NOT_OPERATOR": {
+                    "summary": "Platform operator required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+                      "title": "Platform operator required",
+                      "status": 403,
+                      "code": "NOT_OPERATOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TENANT_MISMATCH": {
+                    "summary": "Tenant mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_MISMATCH",
+                      "title": "Tenant mismatch",
+                      "status": 403,
+                      "code": "TENANT_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_PURPOSE_DENIED": {
+                    "summary": "Secret purpose not permitted",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_PURPOSE_DENIED",
+                      "title": "Secret purpose not permitted",
+                      "status": 403,
+                      "code": "SECRET_PURPOSE_DENIED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PERSONA_NOT_DEFINED": {
+                    "summary": "Persona not defined",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+                      "title": "Persona not defined",
+                      "status": 404,
+                      "code": "PERSONA_NOT_DEFINED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PROMPT_NO_RELEASED_VERSION": {
+                    "summary": "No released prompt version",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+                      "title": "No released prompt version",
+                      "status": 404,
+                      "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_NOT_FOUND": {
+                    "summary": "Secret not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+                      "title": "Secret not found",
+                      "status": 404,
+                      "code": "SECRET_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEYCLOAK_NOT_FOUND": {
+                    "summary": "Identity provider resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+                      "title": "Identity provider resource not found",
+                      "status": 404,
+                      "code": "KEYCLOAK_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "CONFLICT": {
+                    "summary": "Conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONFLICT",
+                      "title": "Conflict",
+                      "status": 409,
+                      "code": "CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ILLEGAL_RUN_TRANSITION": {
+                    "summary": "Illegal run state transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+                      "title": "Illegal run state transition",
+                      "status": 409,
+                      "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEK_DISABLED": {
+                    "summary": "Key version disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEK_DISABLED",
+                      "title": "Key version disabled",
+                      "status": 409,
+                      "code": "KEK_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "DB_SERIALIZATION_CONFLICT": {
+                    "summary": "Database serialization conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+                      "title": "Database serialization conflict",
+                      "status": 409,
+                      "code": "DB_SERIALIZATION_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_ALREADY_IN_PROGRESS": {
+                    "summary": "Kill already in progress",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+                      "title": "Kill already in progress",
+                      "status": 409,
+                      "code": "KILL_ALREADY_IN_PROGRESS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_ACTIVE": {
+                    "summary": "Run is not active",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+                      "title": "Run is not active",
+                      "status": 409,
+                      "code": "RUN_NOT_ACTIVE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_DISABLED": {
+                    "summary": "Secret disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+                      "title": "Secret disabled",
+                      "status": 409,
+                      "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEYCLOAK_CONFLICT": {
+                    "summary": "Identity provider conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+                      "title": "Identity provider conflict",
+                      "status": 409,
+                      "code": "KEYCLOAK_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2773,7 +3897,9 @@
               "secret.rotated",
               "secret.rewrapped",
               "persona.override_changed",
-              "auth.sso_config_changed"
+              "auth.sso_config_changed",
+              "tenant.created",
+              "signup.verified"
             ]
           },
           "severity": {
@@ -3302,6 +4428,83 @@
           }
         },
         "required": ["type", "title", "status", "code", "traceId"],
+        "additionalProperties": false
+      },
+      "SignupAccepted": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "verification_requested"
+          }
+        },
+        "required": ["status"],
+        "additionalProperties": false
+      },
+      "SignupRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "orgName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          }
+        },
+        "required": ["email", "orgName"],
+        "additionalProperties": false
+      },
+      "SignupVerified": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "const": "tenant_created"
+              },
+              "tenantId": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              "slug": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 63,
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              }
+            },
+            "required": ["outcome", "tenantId", "slug"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "const": "existing_account"
+              }
+            },
+            "required": ["outcome"],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "SignupVerifyRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "required": ["token"],
         "additionalProperties": false
       }
     }
