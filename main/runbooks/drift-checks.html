@@ -120,6 +120,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
 <li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
 <li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/persona-catalogue.html">Persona catalogue</a></li>
 <li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
 <li><a href="../architecture/i18n.html">Console strings and i18n</a></li>
 <li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
@@ -173,6 +174,11 @@ lockstep with code. It runs on every pull request and on <code>main</code>, with
 <td>Run <code>pnpm graphql:generate</code>, commit</td>
 </tr>
 <tr>
+<td>Persona catalogue</td>
+<td><code>pnpm gen:persona-catalogue</code> changes <code>docs/architecture/persona-catalogue.md</code> (derived from the persona definitions)</td>
+<td>Run <code>pnpm gen:persona-catalogue</code>, commit</td>
+</tr>
+<tr>
 <td>Schema vs migrations</td>
 <td><code>pnpm db:generate</code> (drizzle-kit generate) emits a new file in <code>packages/db/migrations/</code></td>
 <td>Review and commit the generated migration</td>
@@ -198,7 +204,7 @@ must sort keys and lists so output is stable.</p>
 pull request; the forward-only check is then skipped for that PR. Do not use the label for anything else, and
 never squash after a migration has been applied to a shared or production database.</p>
 <h2 id="local-run">Local run</h2>
-<pre><code class="language-sh">pnpm openapi:generate &amp;&amp; pnpm graphql:generate &amp;&amp; pnpm db:generate
+<pre><code class="language-sh">pnpm openapi:generate &amp;&amp; pnpm graphql:generate &amp;&amp; pnpm gen:persona-catalogue &amp;&amp; pnpm db:generate
 node scripts/check-drift.mjs stale
 node scripts/check-drift.mjs immutable origin/main
 pnpm db:check   # needs Docker (Testcontainers)
