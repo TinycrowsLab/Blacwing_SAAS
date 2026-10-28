@@ -27,6 +27,13 @@ export const OPERATIONS = {
     ],
     requiredHeaders: [],
   },
+  streamRunEvents: {
+    method: 'GET',
+    path: '/v1/runs/{runId}/events',
+    pathParams: ['runId'],
+    queryParams: ['lastEventId'],
+    requiredHeaders: [],
+  },
   triggerKill: {
     method: 'POST',
     path: '/v1/kill',

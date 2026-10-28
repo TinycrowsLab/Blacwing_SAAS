@@ -59,6 +59,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/runs/{runId}/events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Stream the live events of one run (text/event-stream)
+     * @description Requires run:read in the caller tenant. A run outside that tenant answers 403 exactly like a missing one. Each run event is one frame: `id` is the stream entry id, `event` the run event type, `data` the JSON event. Reconnect with the `Last-Event-ID` header (or `lastEventId` query) to replay the missed events; at most API_SSE_MAX_REPLAY are replayed. Control frames (no id): `state` and `end` for a finished run or a terminal event, `resync` (refetch the run: events were trimmed, the client was too slow, or the replay was too long), `timeout` (API_SSE_MAX_DURATION_MS reached) and `error` (the event source failed; reconnect with backoff). The `event` names `state`, `resync`, `end`, `timeout` and `error` are reserved for control frames. A heartbeat comment (`: heartbeat`) is sent every API_SSE_HEARTBEAT_MS while idle.
+     */
+    get: operations['streamRunEvents'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -124,7 +144,9 @@ export interface components {
         | 'scope.request.status_changed'
         | 'operator.kill_previewed'
         | 'operator.kill_fired'
-        | 'audit.queried';
+        | 'audit.queried'
+        | 'secret.rotated'
+        | 'secret.rewrapped';
       /** @enum {string} */
       severity: 'info' | 'notice' | 'warning' | 'critical';
       /** @description Who acted. `email` is only returned to auditors. */
@@ -529,7 +551,9 @@ export interface operations {
           | 'scope.request.status_changed'
           | 'operator.kill_previewed'
           | 'operator.kill_fired'
-          | 'audit.queried';
+          | 'audit.queried'
+          | 'secret.rotated'
+          | 'secret.rewrapped';
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */
         targetId?: string;
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */
@@ -630,6 +654,106 @@ export interface operations {
       };
       /** @description Problem details; code is one of INTERNAL. */
       500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  streamRunEvents: {
+    parameters: {
+      query?: {
+        /** @description Same as the Last-Event-ID header, for clients that cannot set headers. */
+        lastEventId?: string;
+      };
+      header?: {
+        /**
+         * @description Stream id of the last event received; resumes after it.
+         * @example 1700000000000-0
+         */
+        'Last-Event-ID'?: string;
+      };
+      path: {
+        /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */
+        runId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The event stream. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example id: 1700000000000-0
+           *     event: message.partial
+           *     data: {"type":"message.partial","ts":"2026-10-20T10:00:00.000Z","seq":1,"payload":{}}
+           */
+          'text/event-stream': string;
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of TENANT_CONTEXT_MISSING, FORBIDDEN. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
         headers: {
           [name: string]: unknown;
         };
