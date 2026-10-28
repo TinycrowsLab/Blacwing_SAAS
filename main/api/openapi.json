@@ -22,6 +22,10 @@
     {
       "name": "runs",
       "description": "Live run events over Server-Sent Events, with resume after disconnect."
+    },
+    {
+      "name": "personas",
+      "description": "Tenant overrides of a persona: effort, turn and spend budgets, and standard-tier lowering."
     }
   ],
   "paths": {
@@ -986,7 +990,8 @@
                 "operator.kill_fired",
                 "audit.queried",
                 "secret.rotated",
-                "secret.rewrapped"
+                "secret.rewrapped",
+                "persona.override_changed"
               ]
             },
             "example": "kill.fired"
@@ -1784,6 +1789,823 @@
           }
         }
       }
+    },
+    "/personas/{persona}/override": {
+      "get": {
+        "tags": ["personas"],
+        "operationId": "getPersonaOverride",
+        "summary": "The tenant override of a persona",
+        "description": "Requires settings:read. Answers the override the tenant set, or null when none is set (the base values apply).",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "persona",
+            "in": "path",
+            "required": true,
+            "description": "A persona of the fixed roster.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "orchestrator",
+                "planner",
+                "sub-planner",
+                "passive-recon",
+                "osint",
+                "active-recon",
+                "threat-intel",
+                "source-spec-ingestion",
+                "session-setup",
+                "web-api-specialist",
+                "auth-logic-specialist",
+                "infrastructure-specialist",
+                "code-specialist",
+                "exploit-developer",
+                "mentor",
+                "reflector",
+                "validator-assistant",
+                "reporter",
+                "remediation"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The persona override view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaOverrideView"
+                },
+                "examples": {
+                  "set": {
+                    "value": {
+                      "persona": "osint",
+                      "override": {
+                        "effort": "low",
+                        "maxTurns": 10
+                      },
+                      "updatedAt": "2026-10-20T10:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INVALID_CURSOR": {
+                    "summary": "Invalid cursor",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+                      "title": "Invalid cursor",
+                      "status": 400,
+                      "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TENANT_CONTEXT_MISSING": {
+                    "summary": "Tenant context missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+                      "title": "Tenant context missing",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PERSONA_NOT_DEFINED": {
+                    "summary": "Persona not defined",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+                      "title": "Persona not defined",
+                      "status": 404,
+                      "code": "PERSONA_NOT_DEFINED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PROMPT_NO_RELEASED_VERSION": {
+                    "summary": "No released prompt version",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+                      "title": "No released prompt version",
+                      "status": 404,
+                      "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_NOT_FOUND": {
+                    "summary": "Secret not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+                      "title": "Secret not found",
+                      "status": 404,
+                      "code": "SECRET_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEYCLOAK_NOT_FOUND": {
+                    "summary": "Identity provider resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+                      "title": "Identity provider resource not found",
+                      "status": 404,
+                      "code": "KEYCLOAK_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "CONFLICT": {
+                    "summary": "Conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONFLICT",
+                      "title": "Conflict",
+                      "status": 409,
+                      "code": "CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ILLEGAL_RUN_TRANSITION": {
+                    "summary": "Illegal run state transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+                      "title": "Illegal run state transition",
+                      "status": 409,
+                      "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEK_DISABLED": {
+                    "summary": "Key version disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEK_DISABLED",
+                      "title": "Key version disabled",
+                      "status": 409,
+                      "code": "KEK_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "DB_SERIALIZATION_CONFLICT": {
+                    "summary": "Database serialization conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+                      "title": "Database serialization conflict",
+                      "status": 409,
+                      "code": "DB_SERIALIZATION_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_ALREADY_IN_PROGRESS": {
+                    "summary": "Kill already in progress",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+                      "title": "Kill already in progress",
+                      "status": 409,
+                      "code": "KILL_ALREADY_IN_PROGRESS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_ACTIVE": {
+                    "summary": "Run is not active",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+                      "title": "Run is not active",
+                      "status": 409,
+                      "code": "RUN_NOT_ACTIVE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_DISABLED": {
+                    "summary": "Secret disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+                      "title": "Secret disabled",
+                      "status": 409,
+                      "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEYCLOAK_CONFLICT": {
+                    "summary": "Identity provider conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+                      "title": "Identity provider conflict",
+                      "status": 409,
+                      "code": "KEYCLOAK_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of PERSONA_UNKNOWN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PERSONA_UNKNOWN": {
+                    "summary": "Unknown persona",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+                      "title": "Unknown persona",
+                      "status": 422,
+                      "code": "PERSONA_UNKNOWN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["personas"],
+        "operationId": "putPersonaOverride",
+        "summary": "Replace the tenant override of a persona",
+        "description": "Requires settings:write (org_admin). The body replaces the whole override; an empty object resets the persona to its base values. Only effort, maxTurns, maxBudgetUsd and lowerStandardTier are accepted: any other field answers OVERRIDE_FIELD_FORBIDDEN. Values above the persona bounds are clamped, never raised. The change is audited as persona.override_changed.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "persona",
+            "in": "path",
+            "required": true,
+            "description": "A persona of the fixed roster.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "orchestrator",
+                "planner",
+                "sub-planner",
+                "passive-recon",
+                "osint",
+                "active-recon",
+                "threat-intel",
+                "source-spec-ingestion",
+                "session-setup",
+                "web-api-specialist",
+                "auth-logic-specialist",
+                "infrastructure-specialist",
+                "code-specialist",
+                "exploit-developer",
+                "mentor",
+                "reflector",
+                "validator-assistant",
+                "reporter",
+                "remediation"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonaOverride"
+              },
+              "examples": {
+                "tighten": {
+                  "summary": "Shorter run",
+                  "value": {
+                    "effort": "low",
+                    "maxTurns": 10
+                  }
+                },
+                "reset": {
+                  "summary": "Use the base values",
+                  "value": {}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The override as stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaOverrideView"
+                },
+                "examples": {
+                  "set": {
+                    "value": {
+                      "persona": "osint",
+                      "override": {
+                        "effort": "low",
+                        "maxTurns": 10
+                      },
+                      "updatedAt": "2026-10-20T10:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INVALID_CURSOR": {
+                    "summary": "Invalid cursor",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+                      "title": "Invalid cursor",
+                      "status": 400,
+                      "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, OVERRIDE_FIELD_FORBIDDEN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TENANT_CONTEXT_MISSING": {
+                    "summary": "Tenant context missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+                      "title": "Tenant context missing",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "OVERRIDE_FIELD_FORBIDDEN": {
+                    "summary": "Persona override field not permitted",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+                      "title": "Persona override field not permitted",
+                      "status": 403,
+                      "code": "OVERRIDE_FIELD_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PERSONA_NOT_DEFINED": {
+                    "summary": "Persona not defined",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+                      "title": "Persona not defined",
+                      "status": 404,
+                      "code": "PERSONA_NOT_DEFINED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PROMPT_NO_RELEASED_VERSION": {
+                    "summary": "No released prompt version",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+                      "title": "No released prompt version",
+                      "status": 404,
+                      "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_NOT_FOUND": {
+                    "summary": "Secret not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+                      "title": "Secret not found",
+                      "status": 404,
+                      "code": "SECRET_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEYCLOAK_NOT_FOUND": {
+                    "summary": "Identity provider resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+                      "title": "Identity provider resource not found",
+                      "status": 404,
+                      "code": "KEYCLOAK_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "CONFLICT": {
+                    "summary": "Conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONFLICT",
+                      "title": "Conflict",
+                      "status": 409,
+                      "code": "CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ILLEGAL_RUN_TRANSITION": {
+                    "summary": "Illegal run state transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+                      "title": "Illegal run state transition",
+                      "status": 409,
+                      "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEK_DISABLED": {
+                    "summary": "Key version disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEK_DISABLED",
+                      "title": "Key version disabled",
+                      "status": 409,
+                      "code": "KEK_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "DB_SERIALIZATION_CONFLICT": {
+                    "summary": "Database serialization conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+                      "title": "Database serialization conflict",
+                      "status": 409,
+                      "code": "DB_SERIALIZATION_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_ALREADY_IN_PROGRESS": {
+                    "summary": "Kill already in progress",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+                      "title": "Kill already in progress",
+                      "status": 409,
+                      "code": "KILL_ALREADY_IN_PROGRESS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_ACTIVE": {
+                    "summary": "Run is not active",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+                      "title": "Run is not active",
+                      "status": 409,
+                      "code": "RUN_NOT_ACTIVE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_DISABLED": {
+                    "summary": "Secret disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+                      "title": "Secret disabled",
+                      "status": 409,
+                      "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEYCLOAK_CONFLICT": {
+                    "summary": "Identity provider conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+                      "title": "Identity provider conflict",
+                      "status": 409,
+                      "code": "KEYCLOAK_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of PERSONA_UNKNOWN, VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PERSONA_UNKNOWN": {
+                    "summary": "Unknown persona",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+                      "title": "Unknown persona",
+                      "status": 422,
+                      "code": "PERSONA_UNKNOWN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1948,7 +2770,8 @@
               "operator.kill_fired",
               "audit.queried",
               "secret.rotated",
-              "secret.rewrapped"
+              "secret.rewrapped",
+              "persona.override_changed"
             ]
           },
           "severity": {
@@ -2363,6 +3186,74 @@
         },
         "required": ["killEventId", "status", "triggeredAt"],
         "additionalProperties": false
+      },
+      "PersonaOverride": {
+        "type": "object",
+        "properties": {
+          "effort": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "xhigh", "max"]
+          },
+          "maxTurns": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "maxBudgetUsd": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000
+          },
+          "lowerStandardTier": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonaOverrideView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["persona", "override", "updatedAt"],
+        "properties": {
+          "persona": {
+            "type": "string",
+            "enum": [
+              "orchestrator",
+              "planner",
+              "sub-planner",
+              "passive-recon",
+              "osint",
+              "active-recon",
+              "threat-intel",
+              "source-spec-ingestion",
+              "session-setup",
+              "web-api-specialist",
+              "auth-logic-specialist",
+              "infrastructure-specialist",
+              "code-specialist",
+              "exploit-developer",
+              "mentor",
+              "reflector",
+              "validator-assistant",
+              "reporter",
+              "remediation"
+            ]
+          },
+          "override": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonaOverride"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updatedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          }
+        }
       },
       "Problem": {
         "type": "object",

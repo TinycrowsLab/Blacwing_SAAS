@@ -147,7 +147,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <main class="content">
 <h1 id="api-reference">API reference</h1>
 <p>The public <code>/v1</code> REST API, version 0.0.0. This page is generated from <a href="./openapi.json"><code>openapi.json</code></a> by <code>pnpm openapi:generate</code>; do not edit it by hand. CI fails when it is stale.</p>
-<p>It documents 4 operations. Read <a href="./conventions.html">Conventions</a> for pagination, idempotency, concurrency and errors, and <a href="./auth.html">Authentication</a> for tokens and scopes.</p>
+<p>It documents 6 operations. Read <a href="./conventions.html">Conventions</a> for pagination, idempotency, concurrency and errors, and <a href="./auth.html">Authentication</a> for tokens and scopes.</p>
 <p>The internal Run Broker API (<code>/internal/broker</code>) is not part of this reference.</p>
 <h2 id="contents">Contents</h2>
 <ul>
@@ -162,6 +162,11 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 </li>
 <li>runs<ul>
 <li><a href="#get-runsrunidevents">GET /runs/{runId}/events</a></li>
+</ul>
+</li>
+<li>personas<ul>
+<li><a href="#get-personaspersonaoverride">GET /personas/{persona}/override</a></li>
+<li><a href="#put-personaspersonaoverride">PUT /personas/{persona}/override</a></li>
 </ul>
 </li>
 </ul>
@@ -838,7 +843,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <td><code>action</code></td>
 <td>query</td>
 <td>no</td>
-<td>enum: <code>&quot;auth.login&quot;</code>, <code>&quot;auth.logout&quot;</code>, <code>&quot;auth.sso_link&quot;</code>, <code>&quot;auth.api_token_issued&quot;</code>, <code>&quot;auth.api_token_revoked&quot;</code>, <code>&quot;authz.denied&quot;</code>, <code>&quot;authz.role_changed&quot;</code>, <code>&quot;asset.created&quot;</code>, <code>&quot;asset.verified&quot;</code>, <code>&quot;sa.requested&quot;</code>, <code>&quot;sa.approved&quot;</code>, <code>&quot;sa.rejected&quot;</code>, <code>&quot;sa.revoked&quot;</code>, <code>&quot;gate1.decided&quot;</code>, <code>&quot;gate2.decided&quot;</code>, <code>&quot;gate3.released&quot;</code>, <code>&quot;run.created&quot;</code>, <code>&quot;run.state_changed&quot;</code>, <code>&quot;tool.invoked&quot;</code>, <code>&quot;egress.blocked&quot;</code>, <code>&quot;kill.fired&quot;</code>, <code>&quot;kill.completed&quot;</code>, <code>&quot;finding.released&quot;</code>, <code>&quot;finding.risk_accepted&quot;</code>, <code>&quot;export.generated&quot;</code>, <code>&quot;secret.resolved&quot;</code>, <code>&quot;config.changed&quot;</code>, <code>&quot;connector.configured&quot;</code>, <code>&quot;kill.triggered&quot;</code>, <code>&quot;kill.forbidden&quot;</code>, <code>&quot;kill.egress_blocked&quot;</code>, <code>&quot;kill.sandboxes_terminated&quot;</code>, <code>&quot;secret.kek_provisioned&quot;</code>, <code>&quot;secret.kek_rotated&quot;</code>, <code>&quot;secret.kek_disabled&quot;</code>, <code>&quot;kill.keys_revoked&quot;</code>, <code>&quot;kill.workflows_cancelled&quot;</code>, <code>&quot;activity.started&quot;</code>, <code>&quot;activity.succeeded&quot;</code>, <code>&quot;activity.failed&quot;</code>, <code>&quot;workflow.started&quot;</code>, <code>&quot;workflow.completed&quot;</code>, <code>&quot;workflow.failed&quot;</code>, <code>&quot;workflow.cancelled&quot;</code>, <code>&quot;workflow.continued_as_new&quot;</code>, <code>&quot;soc_kill.link_minted&quot;</code>, <code>&quot;soc_kill.triggered&quot;</code>, <code>&quot;soc_kill.rejected&quot;</code>, <code>&quot;outbox.delivery_failed&quot;</code>, <code>&quot;scope.request.created&quot;</code>, <code>&quot;scope.request.status_changed&quot;</code>, <code>&quot;operator.kill_previewed&quot;</code>, <code>&quot;operator.kill_fired&quot;</code>, <code>&quot;audit.queried&quot;</code>, <code>&quot;secret.rotated&quot;</code>, <code>&quot;secret.rewrapped&quot;</code></td>
+<td>enum: <code>&quot;auth.login&quot;</code>, <code>&quot;auth.logout&quot;</code>, <code>&quot;auth.sso_link&quot;</code>, <code>&quot;auth.api_token_issued&quot;</code>, <code>&quot;auth.api_token_revoked&quot;</code>, <code>&quot;authz.denied&quot;</code>, <code>&quot;authz.role_changed&quot;</code>, <code>&quot;asset.created&quot;</code>, <code>&quot;asset.verified&quot;</code>, <code>&quot;sa.requested&quot;</code>, <code>&quot;sa.approved&quot;</code>, <code>&quot;sa.rejected&quot;</code>, <code>&quot;sa.revoked&quot;</code>, <code>&quot;gate1.decided&quot;</code>, <code>&quot;gate2.decided&quot;</code>, <code>&quot;gate3.released&quot;</code>, <code>&quot;run.created&quot;</code>, <code>&quot;run.state_changed&quot;</code>, <code>&quot;tool.invoked&quot;</code>, <code>&quot;egress.blocked&quot;</code>, <code>&quot;kill.fired&quot;</code>, <code>&quot;kill.completed&quot;</code>, <code>&quot;finding.released&quot;</code>, <code>&quot;finding.risk_accepted&quot;</code>, <code>&quot;export.generated&quot;</code>, <code>&quot;secret.resolved&quot;</code>, <code>&quot;config.changed&quot;</code>, <code>&quot;connector.configured&quot;</code>, <code>&quot;kill.triggered&quot;</code>, <code>&quot;kill.forbidden&quot;</code>, <code>&quot;kill.egress_blocked&quot;</code>, <code>&quot;kill.sandboxes_terminated&quot;</code>, <code>&quot;secret.kek_provisioned&quot;</code>, <code>&quot;secret.kek_rotated&quot;</code>, <code>&quot;secret.kek_disabled&quot;</code>, <code>&quot;kill.keys_revoked&quot;</code>, <code>&quot;kill.workflows_cancelled&quot;</code>, <code>&quot;activity.started&quot;</code>, <code>&quot;activity.succeeded&quot;</code>, <code>&quot;activity.failed&quot;</code>, <code>&quot;workflow.started&quot;</code>, <code>&quot;workflow.completed&quot;</code>, <code>&quot;workflow.failed&quot;</code>, <code>&quot;workflow.cancelled&quot;</code>, <code>&quot;workflow.continued_as_new&quot;</code>, <code>&quot;soc_kill.link_minted&quot;</code>, <code>&quot;soc_kill.triggered&quot;</code>, <code>&quot;soc_kill.rejected&quot;</code>, <code>&quot;outbox.delivery_failed&quot;</code>, <code>&quot;scope.request.created&quot;</code>, <code>&quot;scope.request.status_changed&quot;</code>, <code>&quot;operator.kill_previewed&quot;</code>, <code>&quot;operator.kill_fired&quot;</code>, <code>&quot;audit.queried&quot;</code>, <code>&quot;secret.rotated&quot;</code>, <code>&quot;secret.rewrapped&quot;</code>, <code>&quot;persona.override_changed&quot;</code></td>
 <td></td>
 </tr>
 <tr>
@@ -1391,6 +1396,557 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
+<h2 id="personas">personas</h2>
+<p>Tenant overrides of a persona: effort, turn and spend budgets, and standard-tier lowering.</p>
+<h3 id="get-personaspersonaoverride">GET /personas/{persona}/override</h3>
+<p><strong>The tenant override of a persona</strong></p>
+<p>Requires settings:read. Answers the override the tenant set, or null when none is set (the base values apply).</p>
+<ul>
+<li>Operation ID: <code>getPersonaOverride</code></li>
+<li>Authentication: <code>bearerAuth</code> or <code>sessionCookie</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>In</th>
+<th>Required</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>persona</code></td>
+<td>path</td>
+<td>yes</td>
+<td>enum: <code>&quot;orchestrator&quot;</code>, <code>&quot;planner&quot;</code>, <code>&quot;sub-planner&quot;</code>, <code>&quot;passive-recon&quot;</code>, <code>&quot;osint&quot;</code>, <code>&quot;active-recon&quot;</code>, <code>&quot;threat-intel&quot;</code>, <code>&quot;source-spec-ingestion&quot;</code>, <code>&quot;session-setup&quot;</code>, <code>&quot;web-api-specialist&quot;</code>, <code>&quot;auth-logic-specialist&quot;</code>, <code>&quot;infrastructure-specialist&quot;</code>, <code>&quot;code-specialist&quot;</code>, <code>&quot;exploit-developer&quot;</code>, <code>&quot;mentor&quot;</code>, <code>&quot;reflector&quot;</code>, <code>&quot;validator-assistant&quot;</code>, <code>&quot;reporter&quot;</code>, <code>&quot;remediation&quot;</code></td>
+<td>A persona of the fixed roster.</td>
+</tr>
+</tbody></table>
+<h4 id="response-200-3">Response 200</h4>
+<p>The persona override view.</p>
+<p>Content type <code>application/json</code>: <a href="#personaoverrideview">PersonaOverrideView</a>.</p>
+<p>Example: set.</p>
+<pre><code class="language-json">{
+  &quot;persona&quot;: &quot;osint&quot;,
+  &quot;override&quot;: {
+    &quot;effort&quot;: &quot;low&quot;,
+    &quot;maxTurns&quot;: 10
+  },
+  &quot;updatedAt&quot;: &quot;2026-10-20T10:00:00.000Z&quot;
+}
+</code></pre>
+<h4 id="response-400-4">Response 400</h4>
+<p>Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Invalid cursor.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_CURSOR&quot;,
+  &quot;title&quot;: &quot;Invalid cursor&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;INVALID_CURSOR&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Malformed request.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SBX_BAD_REQUEST&quot;,
+  &quot;title&quot;: &quot;Malformed request&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SBX_BAD_REQUEST&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Idempotency key required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Idempotency key required&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-401-4">Response 401</h4>
+<p>Problem details; code is one of UNAUTHENTICATED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-403-4">Response 403</h4>
+<p>Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Forbidden.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/FORBIDDEN&quot;,
+  &quot;title&quot;: &quot;Forbidden&quot;,
+  &quot;status&quot;: 403,
+  &quot;code&quot;: &quot;FORBIDDEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Tenant context missing.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/TENANT_CONTEXT_MISSING&quot;,
+  &quot;title&quot;: &quot;Tenant context missing&quot;,
+  &quot;status&quot;: 403,
+  &quot;code&quot;: &quot;TENANT_CONTEXT_MISSING&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-404-4">Response 404</h4>
+<p>Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Resource not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Resource not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Persona not defined.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PERSONA_NOT_DEFINED&quot;,
+  &quot;title&quot;: &quot;Persona not defined&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;PERSONA_NOT_DEFINED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: No released prompt version.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION&quot;,
+  &quot;title&quot;: &quot;No released prompt version&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;PROMPT_NO_RELEASED_VERSION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Secret not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SECRET_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Secret not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;SECRET_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Identity provider resource not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Identity provider resource not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;KEYCLOAK_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-409-4">Response 409</h4>
+<p>Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONFLICT&quot;,
+  &quot;title&quot;: &quot;Conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal run state transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal run state transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Key version disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEK_DISABLED&quot;,
+  &quot;title&quot;: &quot;Key version disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KEK_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Database serialization conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Database serialization conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Kill already in progress.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS&quot;,
+  &quot;title&quot;: &quot;Kill already in progress&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KILL_ALREADY_IN_PROGRESS&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run is not active.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RUN_NOT_ACTIVE&quot;,
+  &quot;title&quot;: &quot;Run is not active&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;RUN_NOT_ACTIVE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Secret disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SECRET_DISABLED&quot;,
+  &quot;title&quot;: &quot;Secret disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;SECRET_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Identity provider conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEYCLOAK_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Identity provider conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KEYCLOAK_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-422-4">Response 422</h4>
+<p>Problem details; code is one of PERSONA_UNKNOWN.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Unknown persona.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PERSONA_UNKNOWN&quot;,
+  &quot;title&quot;: &quot;Unknown persona&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;PERSONA_UNKNOWN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-429-4">Response 429</h4>
+<p>Problem details; code is one of RATE_LIMITED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Too many requests.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Too many requests&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;RATE_LIMITED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-500-3">Response 500</h4>
+<p>Problem details; code is one of INTERNAL.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Internal server error.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INTERNAL&quot;,
+  &quot;title&quot;: &quot;Internal server error&quot;,
+  &quot;status&quot;: 500,
+  &quot;code&quot;: &quot;INTERNAL&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h3 id="put-personaspersonaoverride">PUT /personas/{persona}/override</h3>
+<p><strong>Replace the tenant override of a persona</strong></p>
+<p>Requires settings:write (org_admin). The body replaces the whole override; an empty object resets the persona to its base values. Only effort, maxTurns, maxBudgetUsd and lowerStandardTier are accepted: any other field answers OVERRIDE_FIELD_FORBIDDEN. Values above the persona bounds are clamped, never raised. The change is audited as persona.override_changed.</p>
+<ul>
+<li>Operation ID: <code>putPersonaOverride</code></li>
+<li>Authentication: <code>bearerAuth</code> or <code>sessionCookie</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>In</th>
+<th>Required</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>persona</code></td>
+<td>path</td>
+<td>yes</td>
+<td>enum: <code>&quot;orchestrator&quot;</code>, <code>&quot;planner&quot;</code>, <code>&quot;sub-planner&quot;</code>, <code>&quot;passive-recon&quot;</code>, <code>&quot;osint&quot;</code>, <code>&quot;active-recon&quot;</code>, <code>&quot;threat-intel&quot;</code>, <code>&quot;source-spec-ingestion&quot;</code>, <code>&quot;session-setup&quot;</code>, <code>&quot;web-api-specialist&quot;</code>, <code>&quot;auth-logic-specialist&quot;</code>, <code>&quot;infrastructure-specialist&quot;</code>, <code>&quot;code-specialist&quot;</code>, <code>&quot;exploit-developer&quot;</code>, <code>&quot;mentor&quot;</code>, <code>&quot;reflector&quot;</code>, <code>&quot;validator-assistant&quot;</code>, <code>&quot;reporter&quot;</code>, <code>&quot;remediation&quot;</code></td>
+<td>A persona of the fixed roster.</td>
+</tr>
+</tbody></table>
+<p><strong>Request body</strong> (required)</p>
+<p>Content type <code>application/json</code>: <a href="#personaoverride">PersonaOverride</a>.</p>
+<p>Example: Shorter run.</p>
+<pre><code class="language-json">{
+  &quot;effort&quot;: &quot;low&quot;,
+  &quot;maxTurns&quot;: 10
+}
+</code></pre>
+<p>Example: Use the base values.</p>
+<pre><code class="language-json">{}
+</code></pre>
+<h4 id="response-200-4">Response 200</h4>
+<p>The override as stored.</p>
+<p>Content type <code>application/json</code>: <a href="#personaoverrideview">PersonaOverrideView</a>.</p>
+<p>Example: set.</p>
+<pre><code class="language-json">{
+  &quot;persona&quot;: &quot;osint&quot;,
+  &quot;override&quot;: {
+    &quot;effort&quot;: &quot;low&quot;,
+    &quot;maxTurns&quot;: 10
+  },
+  &quot;updatedAt&quot;: &quot;2026-10-20T10:00:00.000Z&quot;
+}
+</code></pre>
+<h4 id="response-400-5">Response 400</h4>
+<p>Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Invalid cursor.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_CURSOR&quot;,
+  &quot;title&quot;: &quot;Invalid cursor&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;INVALID_CURSOR&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Malformed request.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SBX_BAD_REQUEST&quot;,
+  &quot;title&quot;: &quot;Malformed request&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SBX_BAD_REQUEST&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Idempotency key required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Idempotency key required&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-401-5">Response 401</h4>
+<p>Problem details; code is one of UNAUTHENTICATED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-403-5">Response 403</h4>
+<p>Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, OVERRIDE_FIELD_FORBIDDEN.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Forbidden.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/FORBIDDEN&quot;,
+  &quot;title&quot;: &quot;Forbidden&quot;,
+  &quot;status&quot;: 403,
+  &quot;code&quot;: &quot;FORBIDDEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Tenant context missing.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/TENANT_CONTEXT_MISSING&quot;,
+  &quot;title&quot;: &quot;Tenant context missing&quot;,
+  &quot;status&quot;: 403,
+  &quot;code&quot;: &quot;TENANT_CONTEXT_MISSING&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Persona override field not permitted.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN&quot;,
+  &quot;title&quot;: &quot;Persona override field not permitted&quot;,
+  &quot;status&quot;: 403,
+  &quot;code&quot;: &quot;OVERRIDE_FIELD_FORBIDDEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-404-5">Response 404</h4>
+<p>Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Resource not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Resource not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Persona not defined.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PERSONA_NOT_DEFINED&quot;,
+  &quot;title&quot;: &quot;Persona not defined&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;PERSONA_NOT_DEFINED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: No released prompt version.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION&quot;,
+  &quot;title&quot;: &quot;No released prompt version&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;PROMPT_NO_RELEASED_VERSION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Secret not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SECRET_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Secret not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;SECRET_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Identity provider resource not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Identity provider resource not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;KEYCLOAK_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-409-5">Response 409</h4>
+<p>Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONFLICT&quot;,
+  &quot;title&quot;: &quot;Conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal run state transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal run state transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Key version disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEK_DISABLED&quot;,
+  &quot;title&quot;: &quot;Key version disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KEK_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Database serialization conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Database serialization conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Kill already in progress.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS&quot;,
+  &quot;title&quot;: &quot;Kill already in progress&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KILL_ALREADY_IN_PROGRESS&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run is not active.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RUN_NOT_ACTIVE&quot;,
+  &quot;title&quot;: &quot;Run is not active&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;RUN_NOT_ACTIVE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Secret disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SECRET_DISABLED&quot;,
+  &quot;title&quot;: &quot;Secret disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;SECRET_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Identity provider conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEYCLOAK_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Identity provider conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KEYCLOAK_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-422-5">Response 422</h4>
+<p>Problem details; code is one of PERSONA_UNKNOWN, VALIDATION_FAILED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Unknown persona.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PERSONA_UNKNOWN&quot;,
+  &quot;title&quot;: &quot;Unknown persona&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;PERSONA_UNKNOWN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Validation failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/VALIDATION_FAILED&quot;,
+  &quot;title&quot;: &quot;Validation failed&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;VALIDATION_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-429-5">Response 429</h4>
+<p>Problem details; code is one of RATE_LIMITED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Too many requests.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Too many requests&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;RATE_LIMITED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-500-4">Response 500</h4>
+<p>Problem details; code is one of INTERNAL.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Internal server error.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INTERNAL&quot;,
+  &quot;title&quot;: &quot;Internal server error&quot;,
+  &quot;status&quot;: 500,
+  &quot;code&quot;: &quot;INTERNAL&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
 <h2 id="schemas">Schemas</h2>
 <h3 id="auditeventview">AuditEventView</h3>
 <table>
@@ -1422,7 +1978,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 </tr>
 <tr>
 <td><code>action</code></td>
-<td>enum: <code>&quot;auth.login&quot;</code>, <code>&quot;auth.logout&quot;</code>, <code>&quot;auth.sso_link&quot;</code>, <code>&quot;auth.api_token_issued&quot;</code>, <code>&quot;auth.api_token_revoked&quot;</code>, <code>&quot;authz.denied&quot;</code>, <code>&quot;authz.role_changed&quot;</code>, <code>&quot;asset.created&quot;</code>, <code>&quot;asset.verified&quot;</code>, <code>&quot;sa.requested&quot;</code>, <code>&quot;sa.approved&quot;</code>, <code>&quot;sa.rejected&quot;</code>, <code>&quot;sa.revoked&quot;</code>, <code>&quot;gate1.decided&quot;</code>, <code>&quot;gate2.decided&quot;</code>, <code>&quot;gate3.released&quot;</code>, <code>&quot;run.created&quot;</code>, <code>&quot;run.state_changed&quot;</code>, <code>&quot;tool.invoked&quot;</code>, <code>&quot;egress.blocked&quot;</code>, <code>&quot;kill.fired&quot;</code>, <code>&quot;kill.completed&quot;</code>, <code>&quot;finding.released&quot;</code>, <code>&quot;finding.risk_accepted&quot;</code>, <code>&quot;export.generated&quot;</code>, <code>&quot;secret.resolved&quot;</code>, <code>&quot;config.changed&quot;</code>, <code>&quot;connector.configured&quot;</code>, <code>&quot;kill.triggered&quot;</code>, <code>&quot;kill.forbidden&quot;</code>, <code>&quot;kill.egress_blocked&quot;</code>, <code>&quot;kill.sandboxes_terminated&quot;</code>, <code>&quot;secret.kek_provisioned&quot;</code>, <code>&quot;secret.kek_rotated&quot;</code>, <code>&quot;secret.kek_disabled&quot;</code>, <code>&quot;kill.keys_revoked&quot;</code>, <code>&quot;kill.workflows_cancelled&quot;</code>, <code>&quot;activity.started&quot;</code>, <code>&quot;activity.succeeded&quot;</code>, <code>&quot;activity.failed&quot;</code>, <code>&quot;workflow.started&quot;</code>, <code>&quot;workflow.completed&quot;</code>, <code>&quot;workflow.failed&quot;</code>, <code>&quot;workflow.cancelled&quot;</code>, <code>&quot;workflow.continued_as_new&quot;</code>, <code>&quot;soc_kill.link_minted&quot;</code>, <code>&quot;soc_kill.triggered&quot;</code>, <code>&quot;soc_kill.rejected&quot;</code>, <code>&quot;outbox.delivery_failed&quot;</code>, <code>&quot;scope.request.created&quot;</code>, <code>&quot;scope.request.status_changed&quot;</code>, <code>&quot;operator.kill_previewed&quot;</code>, <code>&quot;operator.kill_fired&quot;</code>, <code>&quot;audit.queried&quot;</code>, <code>&quot;secret.rotated&quot;</code>, <code>&quot;secret.rewrapped&quot;</code></td>
+<td>enum: <code>&quot;auth.login&quot;</code>, <code>&quot;auth.logout&quot;</code>, <code>&quot;auth.sso_link&quot;</code>, <code>&quot;auth.api_token_issued&quot;</code>, <code>&quot;auth.api_token_revoked&quot;</code>, <code>&quot;authz.denied&quot;</code>, <code>&quot;authz.role_changed&quot;</code>, <code>&quot;asset.created&quot;</code>, <code>&quot;asset.verified&quot;</code>, <code>&quot;sa.requested&quot;</code>, <code>&quot;sa.approved&quot;</code>, <code>&quot;sa.rejected&quot;</code>, <code>&quot;sa.revoked&quot;</code>, <code>&quot;gate1.decided&quot;</code>, <code>&quot;gate2.decided&quot;</code>, <code>&quot;gate3.released&quot;</code>, <code>&quot;run.created&quot;</code>, <code>&quot;run.state_changed&quot;</code>, <code>&quot;tool.invoked&quot;</code>, <code>&quot;egress.blocked&quot;</code>, <code>&quot;kill.fired&quot;</code>, <code>&quot;kill.completed&quot;</code>, <code>&quot;finding.released&quot;</code>, <code>&quot;finding.risk_accepted&quot;</code>, <code>&quot;export.generated&quot;</code>, <code>&quot;secret.resolved&quot;</code>, <code>&quot;config.changed&quot;</code>, <code>&quot;connector.configured&quot;</code>, <code>&quot;kill.triggered&quot;</code>, <code>&quot;kill.forbidden&quot;</code>, <code>&quot;kill.egress_blocked&quot;</code>, <code>&quot;kill.sandboxes_terminated&quot;</code>, <code>&quot;secret.kek_provisioned&quot;</code>, <code>&quot;secret.kek_rotated&quot;</code>, <code>&quot;secret.kek_disabled&quot;</code>, <code>&quot;kill.keys_revoked&quot;</code>, <code>&quot;kill.workflows_cancelled&quot;</code>, <code>&quot;activity.started&quot;</code>, <code>&quot;activity.succeeded&quot;</code>, <code>&quot;activity.failed&quot;</code>, <code>&quot;workflow.started&quot;</code>, <code>&quot;workflow.completed&quot;</code>, <code>&quot;workflow.failed&quot;</code>, <code>&quot;workflow.cancelled&quot;</code>, <code>&quot;workflow.continued_as_new&quot;</code>, <code>&quot;soc_kill.link_minted&quot;</code>, <code>&quot;soc_kill.triggered&quot;</code>, <code>&quot;soc_kill.rejected&quot;</code>, <code>&quot;outbox.delivery_failed&quot;</code>, <code>&quot;scope.request.created&quot;</code>, <code>&quot;scope.request.status_changed&quot;</code>, <code>&quot;operator.kill_previewed&quot;</code>, <code>&quot;operator.kill_fired&quot;</code>, <code>&quot;audit.queried&quot;</code>, <code>&quot;secret.rotated&quot;</code>, <code>&quot;secret.rewrapped&quot;</code>, <code>&quot;persona.override_changed&quot;</code></td>
 <td>yes</td>
 <td></td>
 </tr>
@@ -1582,7 +2138,8 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
         &quot;operator.kill_fired&quot;,
         &quot;audit.queried&quot;,
         &quot;secret.rotated&quot;,
-        &quot;secret.rewrapped&quot;
+        &quot;secret.rewrapped&quot;,
+        &quot;persona.override_changed&quot;
       ]
     },
     &quot;severity&quot;: {
@@ -2198,6 +2755,142 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   },
   &quot;required&quot;: [&quot;killEventId&quot;, &quot;status&quot;, &quot;triggeredAt&quot;],
   &quot;additionalProperties&quot;: false
+}
+</code></pre>
+<h3 id="personaoverride">PersonaOverride</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>effort</code></td>
+<td>enum: <code>&quot;low&quot;</code>, <code>&quot;medium&quot;</code>, <code>&quot;high&quot;</code>, <code>&quot;xhigh&quot;</code>, <code>&quot;max&quot;</code></td>
+<td>no</td>
+<td></td>
+</tr>
+<tr>
+<td><code>maxTurns</code></td>
+<td>integer</td>
+<td>no</td>
+<td></td>
+</tr>
+<tr>
+<td><code>maxBudgetUsd</code></td>
+<td>number</td>
+<td>no</td>
+<td></td>
+</tr>
+<tr>
+<td><code>lowerStandardTier</code></td>
+<td>boolean</td>
+<td>no</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Full schema:</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;effort&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [&quot;low&quot;, &quot;medium&quot;, &quot;high&quot;, &quot;xhigh&quot;, &quot;max&quot;]
+    },
+    &quot;maxTurns&quot;: {
+      &quot;type&quot;: &quot;integer&quot;,
+      &quot;minimum&quot;: 1,
+      &quot;maximum&quot;: 10000
+    },
+    &quot;maxBudgetUsd&quot;: {
+      &quot;type&quot;: &quot;number&quot;,
+      &quot;exclusiveMinimum&quot;: 0,
+      &quot;maximum&quot;: 10000
+    },
+    &quot;lowerStandardTier&quot;: {
+      &quot;type&quot;: &quot;boolean&quot;
+    }
+  },
+  &quot;additionalProperties&quot;: false
+}
+</code></pre>
+<h3 id="personaoverrideview">PersonaOverrideView</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>persona</code></td>
+<td>enum: <code>&quot;orchestrator&quot;</code>, <code>&quot;planner&quot;</code>, <code>&quot;sub-planner&quot;</code>, <code>&quot;passive-recon&quot;</code>, <code>&quot;osint&quot;</code>, <code>&quot;active-recon&quot;</code>, <code>&quot;threat-intel&quot;</code>, <code>&quot;source-spec-ingestion&quot;</code>, <code>&quot;session-setup&quot;</code>, <code>&quot;web-api-specialist&quot;</code>, <code>&quot;auth-logic-specialist&quot;</code>, <code>&quot;infrastructure-specialist&quot;</code>, <code>&quot;code-specialist&quot;</code>, <code>&quot;exploit-developer&quot;</code>, <code>&quot;mentor&quot;</code>, <code>&quot;reflector&quot;</code>, <code>&quot;validator-assistant&quot;</code>, <code>&quot;reporter&quot;</code>, <code>&quot;remediation&quot;</code></td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>override</code></td>
+<td><a href="#personaoverride">PersonaOverride</a> or null</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>updatedAt</code></td>
+<td>any</td>
+<td>yes</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Full schema:</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;additionalProperties&quot;: false,
+  &quot;required&quot;: [&quot;persona&quot;, &quot;override&quot;, &quot;updatedAt&quot;],
+  &quot;properties&quot;: {
+    &quot;persona&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;orchestrator&quot;,
+        &quot;planner&quot;,
+        &quot;sub-planner&quot;,
+        &quot;passive-recon&quot;,
+        &quot;osint&quot;,
+        &quot;active-recon&quot;,
+        &quot;threat-intel&quot;,
+        &quot;source-spec-ingestion&quot;,
+        &quot;session-setup&quot;,
+        &quot;web-api-specialist&quot;,
+        &quot;auth-logic-specialist&quot;,
+        &quot;infrastructure-specialist&quot;,
+        &quot;code-specialist&quot;,
+        &quot;exploit-developer&quot;,
+        &quot;mentor&quot;,
+        &quot;reflector&quot;,
+        &quot;validator-assistant&quot;,
+        &quot;reporter&quot;,
+        &quot;remediation&quot;
+      ]
+    },
+    &quot;override&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;$ref&quot;: &quot;#/components/schemas/PersonaOverride&quot;
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ]
+    },
+    &quot;updatedAt&quot;: {
+      &quot;type&quot;: [&quot;string&quot;, &quot;null&quot;],
+      &quot;format&quot;: &quot;date-time&quot;
+    }
+  }
 }
 </code></pre>
 <h3 id="problem">Problem</h3>
