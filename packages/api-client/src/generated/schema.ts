@@ -39,10 +39,122 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/audit/events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Search the audit ledger of the caller tenant
+     * @description Requires audit:read (auditor, org_admin). Newest first, by (occurredAt, seq). The tenant comes from the caller, never from the query. `from` and `to` are ISO-8601 UTC with a Z. Pass the previous nextCursor to continue; a cursor is bound to its filters. The query itself is recorded as audit.queried. includeChain=true needs the auditor role.
+     */
+    get: operations['listAuditEvents'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AuditEventView: {
+      /** Format: uuid */
+      id: string;
+      seq: number;
+      /** Format: date-time */
+      occurredAt: string;
+      /** @enum {string} */
+      action:
+        | 'auth.login'
+        | 'auth.logout'
+        | 'auth.sso_link'
+        | 'auth.api_token_issued'
+        | 'auth.api_token_revoked'
+        | 'authz.denied'
+        | 'authz.role_changed'
+        | 'asset.created'
+        | 'asset.verified'
+        | 'sa.requested'
+        | 'sa.approved'
+        | 'sa.rejected'
+        | 'sa.revoked'
+        | 'gate1.decided'
+        | 'gate2.decided'
+        | 'gate3.released'
+        | 'run.created'
+        | 'run.state_changed'
+        | 'tool.invoked'
+        | 'egress.blocked'
+        | 'kill.fired'
+        | 'kill.completed'
+        | 'finding.released'
+        | 'finding.risk_accepted'
+        | 'export.generated'
+        | 'secret.resolved'
+        | 'config.changed'
+        | 'connector.configured'
+        | 'kill.triggered'
+        | 'kill.forbidden'
+        | 'kill.egress_blocked'
+        | 'kill.sandboxes_terminated'
+        | 'secret.kek_provisioned'
+        | 'secret.kek_rotated'
+        | 'secret.kek_disabled'
+        | 'kill.keys_revoked'
+        | 'kill.workflows_cancelled'
+        | 'activity.started'
+        | 'activity.succeeded'
+        | 'activity.failed'
+        | 'workflow.started'
+        | 'workflow.completed'
+        | 'workflow.failed'
+        | 'workflow.cancelled'
+        | 'workflow.continued_as_new'
+        | 'soc_kill.link_minted'
+        | 'soc_kill.triggered'
+        | 'soc_kill.rejected'
+        | 'outbox.delivery_failed'
+        | 'scope.request.created'
+        | 'scope.request.status_changed'
+        | 'operator.kill_previewed'
+        | 'operator.kill_fired'
+        | 'audit.queried';
+      /** @enum {string} */
+      severity: 'info' | 'notice' | 'warning' | 'critical';
+      /** @description Who acted. `email` is only returned to auditors. */
+      actor: {
+        /** @enum {string} */
+        type: 'user' | 'operator' | 'service' | 'system' | 'anonymous';
+        id?: string;
+        email?: string;
+        tokenId?: string;
+      };
+      target: {
+        type: string;
+        id: string;
+        publicId?: string;
+      };
+      /** @enum {string} */
+      outcome: 'success' | 'failure' | 'denied';
+      reason: string | null;
+      /** @description Empty for callers that are not auditors. */
+      metadata: Record<string, never>;
+      /** @description Only returned to auditors. */
+      metadataRef?: Record<string, never>;
+      traceId: string | null;
+      /** Format: uuid */
+      runId: string | null;
+      /** @description Hex SHA-256 chain hash. Only with includeChain=true. */
+      hash?: string;
+      /** @description Hex previous hash; null on the genesis row. Only with includeChain=true. */
+      prevHash?: string | null;
+    };
     KillEvent: {
       killEventId: string;
       tenantId: string | null;
@@ -283,7 +395,7 @@ export interface operations {
           'application/json': components['schemas']['KillEvent'];
         };
       };
-      /** @description Problem details; code is one of SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED. */
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -329,6 +441,176 @@ export interface operations {
         };
       };
       /** @description Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of INTERNAL. */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listAuditEvents: {
+    parameters: {
+      query?: {
+        /** @example usr_01jabc */
+        actorId?: string;
+        /** @example kill.fired */
+        action?:
+          | 'auth.login'
+          | 'auth.logout'
+          | 'auth.sso_link'
+          | 'auth.api_token_issued'
+          | 'auth.api_token_revoked'
+          | 'authz.denied'
+          | 'authz.role_changed'
+          | 'asset.created'
+          | 'asset.verified'
+          | 'sa.requested'
+          | 'sa.approved'
+          | 'sa.rejected'
+          | 'sa.revoked'
+          | 'gate1.decided'
+          | 'gate2.decided'
+          | 'gate3.released'
+          | 'run.created'
+          | 'run.state_changed'
+          | 'tool.invoked'
+          | 'egress.blocked'
+          | 'kill.fired'
+          | 'kill.completed'
+          | 'finding.released'
+          | 'finding.risk_accepted'
+          | 'export.generated'
+          | 'secret.resolved'
+          | 'config.changed'
+          | 'connector.configured'
+          | 'kill.triggered'
+          | 'kill.forbidden'
+          | 'kill.egress_blocked'
+          | 'kill.sandboxes_terminated'
+          | 'secret.kek_provisioned'
+          | 'secret.kek_rotated'
+          | 'secret.kek_disabled'
+          | 'kill.keys_revoked'
+          | 'kill.workflows_cancelled'
+          | 'activity.started'
+          | 'activity.succeeded'
+          | 'activity.failed'
+          | 'workflow.started'
+          | 'workflow.completed'
+          | 'workflow.failed'
+          | 'workflow.cancelled'
+          | 'workflow.continued_as_new'
+          | 'soc_kill.link_minted'
+          | 'soc_kill.triggered'
+          | 'soc_kill.rejected'
+          | 'outbox.delivery_failed'
+          | 'scope.request.created'
+          | 'scope.request.status_changed'
+          | 'operator.kill_previewed'
+          | 'operator.kill_fired'
+          | 'audit.queried';
+        /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */
+        targetId?: string;
+        /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */
+        runId?: string;
+        /** @example success */
+        outcome?: 'success' | 'failure' | 'denied';
+        /** @example 2026-10-01T00:00:00Z */
+        from?: string;
+        /** @example 2026-10-31T23:59:59Z */
+        to?: string;
+        /** @description Auditors only: include hash and prevHash. */
+        includeChain?: 'true' | 'false';
+        /** @example eyJrIjpbIjIwMjYtMTAtMjBUMTA6MDA6MDAuMDAwWiIsNDJdfQ.c2ln */
+        cursor?: string;
+        /** @example 50 */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description One page of events, newest first. nextCursor is absent on the last page. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            items: components['schemas']['AuditEventView'][];
+            nextCursor?: string;
+          };
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED. */
       422: {
         headers: {
           [name: string]: unknown;
