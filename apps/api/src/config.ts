@@ -11,6 +11,7 @@ import {
   zSecret,
   zUrl,
 } from '@blackwing/config';
+import { MIN_SECRET_LENGTH } from '@blackwing/crypto';
 
 /**
  * Code default for `API_PORT` (API-001, #53). The shared dev host map runs the API on 13400 because the
@@ -43,6 +44,16 @@ const DEFAULT_API_IDEMPOTENCY_TTL_S = 86_400;
 const DEFAULT_API_IDEMPOTENCY_LOCK_TTL_S = 120;
 const DEFAULT_API_IDEMPOTENCY_MAX_BODY_BYTES = 65_536;
 
+/** Keycloak JWT validation (#335): the audience this API accepts and the clock-skew leeway. */
+const DEFAULT_API_JWT_AUDIENCE = 'blackwing-api';
+const MAX_API_JWT_AUDIENCE_CHARS = 256;
+const DEFAULT_API_JWT_LEEWAY_SECONDS = 60;
+const MAX_API_JWT_LEEWAY_SECONDS = 300;
+/** JWKS cache: trust window, minimum gap between refetches, and the fetch timeout. */
+const DEFAULT_API_JWKS_TTL_MS = 600_000;
+const DEFAULT_API_JWKS_REFETCH_COOLDOWN_MS = 30_000;
+const DEFAULT_API_JWKS_TIMEOUT_MS = 3000;
+
 const byteCount = z
   .string()
   .regex(/^[1-9][0-9]{0,14}$/, 'must be a positive integer number of bytes')
@@ -60,6 +71,19 @@ const positiveRate = z
   .transform(Number);
 
 const positiveDuration = zDurationMs().refine((ms) => ms > 0, 'must be greater than zero');
+
+/** Whole seconds from 0 to the maximum leeway (0 allowed: strict clocks). */
+const leewaySeconds = z
+  .string()
+  .regex(/^(0|[1-9][0-9]{0,2})$/, 'must be a whole number of seconds')
+  .transform(Number)
+  .refine((value) => value <= MAX_API_JWT_LEEWAY_SECONDS, 'must be at most 300 seconds');
+
+/** A BFF session secret: the same value the web app seals its cookies with (IAM-002). */
+const sessionSecret = zSecret().refine(
+  (value) => value.length >= MIN_SECRET_LENGTH,
+  `must be at least ${String(MIN_SECRET_LENGTH)} characters`,
+);
 
 /** Browser origin: scheme, host and optional port only (what a CORS `Origin` header carries). */
 const origin = zUrl({ protocols: ['http:', 'https:'] }).refine((value) => {
@@ -120,6 +144,29 @@ export const apiEnvShape = {
   /** Release version and commit echoed by `/health`. Neither is a secret. */
   API_VERSION: z.string().min(1).default('0.0.0'),
   API_COMMIT: z.string().min(1).default('unknown'),
+  /**
+   * Keycloak realm issuer (`https` outside development). Unset, Keycloak JWTs are refused (fail closed).
+   */
+  KEYCLOAK_ISSUER_URL: zUrl({ protocols: ['http:', 'https:'] }).optional(),
+  /** The audience a Keycloak token must carry (`aud`). */
+  API_JWT_AUDIENCE: z
+    .string()
+    .min(1)
+    .max(MAX_API_JWT_AUDIENCE_CHARS)
+    .default(DEFAULT_API_JWT_AUDIENCE),
+  /** Clock-skew tolerance for `exp`, `nbf` and `iat` (#335). */
+  API_JWT_LEEWAY_SECONDS: leewaySeconds.default(DEFAULT_API_JWT_LEEWAY_SECONDS),
+  /** How long a fetched JWKS is trusted before a refresh. */
+  API_JWKS_TTL_MS: zDurationMs().default(DEFAULT_API_JWKS_TTL_MS),
+  /** Minimum gap between JWKS fetches (bounds refetches on unknown `kid`s). */
+  API_JWKS_REFETCH_COOLDOWN_MS: zDurationMs().default(DEFAULT_API_JWKS_REFETCH_COOLDOWN_MS),
+  API_JWKS_TIMEOUT_MS: positiveDuration.default(DEFAULT_API_JWKS_TIMEOUT_MS),
+  /**
+   * The BFF's session secret (the value IAM-002 seals session cookies with). Unset, BFF session cookies are refused.
+   * `BW_WEB_SESSION_SECRET_PREVIOUS` still opens cookies during a rotation and never seals.
+   */
+  BW_WEB_SESSION_SECRET: sessionSecret.optional(),
+  BW_WEB_SESSION_SECRET_PREVIOUS: sessionSecret.optional(),
   /**
    * Comma-separated browser origins allowed by CORS (the web console). Required with no default: an
    * unset value must never silently allow, or silently block, every origin.

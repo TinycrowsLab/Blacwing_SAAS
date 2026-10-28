@@ -45,6 +45,7 @@
     "@opentelemetry/core": "catalog:",
     "drizzle-orm": "0.45.3",
     "fastify": "catalog:",
+    "jose": "6.2.13",
     "pg": "8.23.1",
     "prom-client": "catalog:",
     "reflect-metadata": "catalog:",

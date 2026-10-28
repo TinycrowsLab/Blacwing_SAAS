@@ -96,6 +96,10 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'CONFIG_INVALID', // ConfigValidationError, @blackwing/config
   // Raised as a plain AppError by the audit query API (apps/api audit-query, #86).
   'INVALID_CURSOR',
+  // AuthNoCredentialsError, AuthInvalidTokenError and AuthExpiredError, apps/api auth guard (#335).
+  'AUTH_NO_CREDENTIALS',
+  'AUTH_INVALID_TOKEN',
+  'AUTH_EXPIRED',
   // TxRetryExhaustedError and TenantContextMismatchError, @blackwing/db (DB-004).
   'TX_RETRY_EXHAUSTED',
   'TENANT_CONTEXT_CONFLICT',

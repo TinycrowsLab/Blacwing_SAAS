@@ -499,3 +499,5 @@ export {
   type SecretType,
   secretTypeSchema,
 } from './secrets.js';
+
+export { type Principal, principalSchema } from './auth/principal.js';

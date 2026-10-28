@@ -16,6 +16,7 @@ import { type DocsAuthenticator, registerDocsRoutes } from '../openapi/docs-rout
 import { buildOpenApiDocument, countOperations } from '../openapi/document.js';
 import { apiPackageVersion } from '../openapi/emit.js';
 
+import type { AuthOptions } from '../auth/module.js';
 import type { ApiConfig } from '../config.js';
 import type { SecurityEventSink } from '../errors/problem-filter.js';
 import type { HealthProbe } from '../health/health.types.js';
@@ -53,6 +54,8 @@ export interface CreateApiAppOptions {
   readonly healthProbes?: readonly HealthProbe[];
   /** Store behind `@Idempotent()` routes; without one they fail closed with 503 (API-008). */
   readonly idempotencyStore?: IdempotencyStore;
+  /** The global auth guard's validators (#335); installs the guard and the tenant source it feeds. */
+  readonly auth?: AuthOptions;
   /** IAM's validated-principal lookup; installs the global tenant guard (see `AppModuleOptions`). */
   readonly tenantPrincipalSource?: TenantPrincipalSource;
   /** Receives security-relevant errors for auditing (see `SecurityEventSink`). */
@@ -117,6 +120,7 @@ export async function createApiApp(options: CreateApiAppOptions): Promise<ApiApp
       ...(options.idempotencyStore === undefined
         ? {}
         : { idempotencyStore: options.idempotencyStore }),
+      ...(options.auth === undefined ? {} : { auth: options.auth }),
       ...(options.tenantPrincipalSource === undefined
         ? {}
         : { tenantPrincipalSource: options.tenantPrincipalSource }),

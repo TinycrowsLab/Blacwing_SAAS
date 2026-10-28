@@ -11,6 +11,22 @@ or the query: the tenant comes from the verified credential only.
 
 In the examples below, `<token>` stands for a value you have been issued. It is not a real value.
 
+## How the API checks a request
+
+Every route except the public probes goes through one guard. It reads exactly one credential, chosen by its shape:
+a `bw_pat_` or `bw_ci_` bearer is checked as a personal or CI token; any other bearer is checked as a Keycloak access
+token (RS256 or ES256, the realm's `aud` and `iss`, with a clock-skew allowance of a few seconds); and a session cookie is
+checked against the console session. If an `Authorization` header is present but malformed, the request is refused and
+the cookie is not tried. A refused request gets `401` with one of these codes:
+
+| `code` | Meaning |
+|---|---|
+| `auth_no_credentials` | The request carries no credential. |
+| `auth_invalid_token` | A credential that does not verify: wrong signature, issuer, audience, algorithm or claims. |
+| `auth_expired` | A credential or session that has expired or ended. Sign in again. |
+
+A session store outage is a `503` and is retried, not treated as a sign-out.
+
 ## Getting a token
 
 Tokens are issued for one tenant. The step-by-step guide to issuing them is part of the console documentation, which is not

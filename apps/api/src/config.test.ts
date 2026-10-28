@@ -131,4 +131,55 @@ describe('loadApiConfig', () => {
     expect(config.API_PORT).toBe(13_400);
     expect(config.WEB_ORIGIN).toEqual(['http://localhost:3000']);
   });
+  describe('global auth settings (#335)', () => {
+    it('defaults the audience, leeway and JWKS windows and leaves the issuer and secrets unset', () => {
+      const config = loadApiConfig(minimal);
+      expect(config.API_JWT_AUDIENCE).toBe('blackwing-api');
+      expect(config.API_JWT_LEEWAY_SECONDS).toBe(60);
+      expect(config.API_JWKS_TTL_MS).toBe(600_000);
+      expect(config.API_JWKS_REFETCH_COOLDOWN_MS).toBe(30_000);
+      expect(config.API_JWKS_TIMEOUT_MS).toBe(3000);
+      expect(config.KEYCLOAK_ISSUER_URL).toBeUndefined();
+      expect(config.BW_WEB_SESSION_SECRET).toBeUndefined();
+    });
+
+    it('accepts a leeway from 0 to 300 seconds and refuses anything outside it', () => {
+      expect(
+        loadApiConfig({ ...minimal, API_JWT_LEEWAY_SECONDS: '0' }).API_JWT_LEEWAY_SECONDS,
+      ).toBe(0);
+      expect(
+        loadApiConfig({ ...minimal, API_JWT_LEEWAY_SECONDS: '300' }).API_JWT_LEEWAY_SECONDS,
+      ).toBe(300);
+      for (const bad of ['301', '-1', '1.5', 'soon']) {
+        expect(refusal({ ...minimal, API_JWT_LEEWAY_SECONDS: bad }).invalidKeys).toContain(
+          'API_JWT_LEEWAY_SECONDS',
+        );
+      }
+    });
+
+    it('refuses a Keycloak issuer that is not a URL', () => {
+      expect(refusal({ ...minimal, KEYCLOAK_ISSUER_URL: 'not a url' }).invalidKeys).toContain(
+        'KEYCLOAK_ISSUER_URL',
+      );
+    });
+
+    it('refuses a BFF session secret shorter than 32 characters, for either the current or previous key', () => {
+      const short = 'x'.repeat(31);
+      expect(refusal({ ...minimal, BW_WEB_SESSION_SECRET: short }).invalidKeys).toContain(
+        'BW_WEB_SESSION_SECRET',
+      );
+      expect(refusal({ ...minimal, BW_WEB_SESSION_SECRET_PREVIOUS: short }).invalidKeys).toContain(
+        'BW_WEB_SESSION_SECRET_PREVIOUS',
+      );
+      expect(
+        loadApiConfig({ ...minimal, BW_WEB_SESSION_SECRET: 'x'.repeat(32) }).BW_WEB_SESSION_SECRET,
+      ).toBe('x'.repeat(32));
+    });
+
+    it('treats an empty session secret as unset, as the example file does', () => {
+      expect(
+        loadApiConfig({ ...minimal, BW_WEB_SESSION_SECRET: '' }).BW_WEB_SESSION_SECRET,
+      ).toBeUndefined();
+    });
+  });
 });

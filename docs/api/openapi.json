@@ -984,7 +984,9 @@
                 "scope.request.status_changed",
                 "operator.kill_previewed",
                 "operator.kill_fired",
-                "audit.queried"
+                "audit.queried",
+                "secret.rotated",
+                "secret.rewrapped"
               ]
             },
             "example": "kill.fired"
@@ -1944,7 +1946,9 @@
               "scope.request.status_changed",
               "operator.kill_previewed",
               "operator.kill_fired",
-              "audit.queried"
+              "audit.queried",
+              "secret.rotated",
+              "secret.rewrapped"
             ]
           },
           "severity": {

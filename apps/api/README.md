@@ -118,6 +118,27 @@ answer `501 not_implemented` until FINDING, EVIDENCE, REVERSAL and ORCH implemen
 `signBrokerToken` (issuance wiring: RUNTIME/SANDBOX). Metrics: `broker_requests_total`,
 `broker_auth_failures_total`. In-memory stores are offline stubs (online-porting #895).
 
+## Authentication (#335)
+
+One global guard, `AuthGuard` (`src/auth/guard.ts`, `APP_GUARD`), authenticates every route not marked `@PublicRoute()`
+before the tenant guard runs. It picks exactly one validator by credential shape (`src/auth/credentials.ts`):
+
+| Shape | Validator | Notes |
+|---|---|---|
+| `Authorization: Bearer bw_pat_…` / `bw_ci_…` | `BearerTokenValidator` (RBAC-007) | Delegated. Until RBAC-007 is wired, refused. The guard never hashes or looks up `api_tokens`. |
+| `Authorization: Bearer <JWT>` | `createKeycloakJwtValidator` | Signature via cached JWKS (`src/auth/jwks.ts`), `iss`, `aud` (`API_JWT_AUDIENCE`), `exp`/`nbf`/`iat` with `API_JWT_LEEWAY_SECONDS`. RS256 and ES256 only. |
+| `__Host-bw_session` cookie (no `Authorization`) | `createSessionCookieValidator` | Opens the BFF's sealed session id and reads its record from Valkey (same keys as `apps/web`). |
+
+A malformed `Authorization` header is refused and never falls through to the cookie. The validators attach one
+`Principal` (`@blackwing/contracts`), which `TenantContextGuard` reads for the tenant. Refusals are problem+json with
+`auth_no_credentials`, `auth_invalid_token` or `auth_expired` (`401`), and a Valkey outage is `503`. Metrics:
+`auth_validate_total{path,result}` and `jwks_refetch_total`. Tokens and cookies are never logged.
+
+Configuration: `KEYCLOAK_ISSUER_URL` (unset refuses JWTs), `API_JWT_AUDIENCE`, `API_JWT_LEEWAY_SECONDS`,
+`API_JWKS_TTL_MS`, `API_JWKS_REFETCH_COOLDOWN_MS`, `API_JWKS_TIMEOUT_MS`, and `BW_WEB_SESSION_SECRET` (plus `_PREVIOUS`).
+The process entry point connects no Valkey client yet, so BFF session cookies stay refused there until the session store
+is wired (`runApi({ sessionValkey })`); the validator and its tests are complete.
+
 ## Tenant context (TENANT-003)
 
 Every route is tenant-scoped unless marked `@PublicRoute()` (probes, the banner). `TenantContextGuard` asks the

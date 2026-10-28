@@ -48,6 +48,10 @@ Rotate the secret without signing anyone out: set `BW_WEB_SESSION_SECRET_PREVIOU
 `BW_WEB_SESSION_SECRET` to the new one, roll the web pods, and remove the previous value after the longest session
 lifetime (12 h). Losing the secret entirely signs everyone out (fail closed).
 
+The API (`apps/api/src/auth/session-cookie.ts`) opens the same session cookie and records, so it reads the same
+`BW_WEB_SESSION_SECRET` (and `_PREVIOUS`) and the same Valkey. Rotate the secret on the API and the web app together,
+with the previous value still set, or the API refuses console sessions.
+
 Recommended Keycloak setting: enable refresh token rotation (`revokeRefreshToken`) on the realm so a stolen refresh
 token is detected on reuse; the BFF already treats the resulting `invalid_grant` as a revoked session.
 

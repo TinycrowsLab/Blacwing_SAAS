@@ -23,6 +23,12 @@ const DEFINITIONS = {
   // A cursor that is malformed, forged, or issued for other filters (audit query API, #86). Never retried as is.
   INVALID_CURSOR: { status: 400, title: 'Invalid cursor', retryable: false },
   UNAUTHENTICATED: { status: 401, title: 'Authentication required', retryable: false },
+  // Authentication of an API request (the global auth guard, #335): no credential presented, a credential
+  // that does not verify (signature, issuer, audience, algorithm, claims, or an unknown session), and a
+  // credential or session that has expired. Never reuse these codes for another meaning.
+  AUTH_NO_CREDENTIALS: { status: 401, title: 'No credentials presented', retryable: false },
+  AUTH_INVALID_TOKEN: { status: 401, title: 'Invalid credentials', retryable: false },
+  AUTH_EXPIRED: { status: 401, title: 'Credentials expired', retryable: false },
   FORBIDDEN: { status: 403, title: 'Forbidden', retryable: false },
   NOT_FOUND: { status: 404, title: 'Resource not found', retryable: false },
   CONFLICT: { status: 409, title: 'Conflict', retryable: false },

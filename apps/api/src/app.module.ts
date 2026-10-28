@@ -1,6 +1,8 @@
 import { type DynamicModule, Global, Module, type ModuleMetadata } from '@nestjs/common';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 
+import { tenantPrincipalFromRequest } from './auth/guard.js';
+import { AuthModule, type AuthOptions } from './auth/module.js';
 import { createHttpMetrics, type HttpMetrics } from './bootstrap/metrics.js';
 import {
   API_CONFIG,
@@ -63,10 +65,16 @@ export interface AppModuleOptions {
    */
   readonly idempotencyStore?: IdempotencyStore;
   /**
+   * The global auth guard's credential validators (#335). When set, every route not marked `@PublicRoute()`
+   * must present a valid credential, and the tenant comes from the principal that guard attached. Mutually
+   * exclusive with `tenantPrincipalSource`.
+   */
+  readonly auth?: AuthOptions;
+  /**
    * IAM's validated-principal lookup (TENANT-003). When set, a global guard and interceptor make every
    * route not marked `@PublicRoute()` tenant-scoped: no principal is 401, no resolvable tenant is
    * `403 tenant_context_missing`, and the handler runs inside the `AsyncLocalStorage` tenant context.
-   * The process entry point (`runApi`) always sets it; it fails closed when none is supplied.
+   * Without `auth` and without this, no tenant guard is installed (tests and the bare app only).
    */
   readonly tenantPrincipalSource?: TenantPrincipalSource;
   /** Receives security-relevant errors (`permission_denied`, `tenant_context_missing`); AUDIT wires `emitAudit`. */
@@ -85,7 +93,12 @@ export interface AppModuleOptions {
 @Module({})
 export class AppModule {
   static forRoot(options: AppModuleOptions): DynamicModule {
+    if (options.auth !== undefined && options.tenantPrincipalSource !== undefined) {
+      throw new Error('set either auth or tenantPrincipalSource, not both');
+    }
     const metrics = options.metrics ?? createHttpMetrics();
+    const principalSource =
+      options.auth === undefined ? options.tenantPrincipalSource : tenantPrincipalFromRequest;
     return {
       module: AppModule,
       imports: [
@@ -99,14 +112,11 @@ export class AppModule {
           registry: metrics.registry,
           ...(options.idempotencyStore === undefined ? {} : { store: options.idempotencyStore }),
         }),
-        ...(options.tenantPrincipalSource === undefined
+        // Before the tenant module: APP_GUARD order makes the auth guard run before tenant resolution.
+        ...(options.auth === undefined ? [] : [AuthModule.forRoot(options.auth)]),
+        ...(principalSource === undefined
           ? []
-          : [
-              TenantContextModule.forRoot({
-                principalSource: options.tenantPrincipalSource,
-                registry: metrics.registry,
-              }),
-            ]),
+          : [TenantContextModule.forRoot({ principalSource, registry: metrics.registry })]),
         // After the tenant module: APP_GUARD order makes the limiter run once the tenant is resolved.
         RateLimitModule.forRoot({
           registry: metrics.registry,

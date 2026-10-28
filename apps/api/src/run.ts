@@ -2,11 +2,16 @@ import { CONFIG_EXIT_CODE, type EnvSource, isConfigValidationError } from '@blac
 import { serializeErrorForLog } from '@blackwing/errors';
 import { createLogger, type Logger } from '@blackwing/logger';
 
+import { authOptionsFromConfig } from './auth/from-config.js';
 import { createApiApp, type CreateApiAppOptions } from './bootstrap/create-app.js';
+import { createHttpMetrics } from './bootstrap/metrics.js';
 import { type ApiConfig, loadApiConfig } from './config.js';
 
+import type { AuthOptions } from './auth/module.js';
+import type { SessionValkey } from './auth/session-cookie.js';
 import type { TenantPrincipalSource } from './tenant/guard.js';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import type { Registry } from 'prom-client';
 
 /** Exit status of a process whose boot failed after its configuration was accepted. */
 export const BOOT_FAILURE_EXIT_CODE = 1;
@@ -20,8 +25,16 @@ export interface RunApiOptions {
   /** Overrides the logger built from config (tests). */
   readonly logger?: Logger;
   /**
-   * IAM's validated-principal lookup. Defaults to none, which makes every tenant-scoped route answer 401
-   * (fail closed) until IAM is wired; probes and the banner are `@PublicRoute()`.
+   * Credential validators of the global auth guard (#335). Defaults to the validators built from
+   * configuration: a path whose settings are absent refuses its credentials (fail closed).
+   */
+  readonly auth?: AuthOptions;
+  /**
+   * Read access to the BFF's Valkey, used to open session cookies. Absent, BFF session cookies are refused.
+   */
+  readonly sessionValkey?: SessionValkey;
+  /**
+   * IAM's validated-principal lookup, an alternative to `auth` for tests. Mutually exclusive with `auth`.
    */
   readonly tenantPrincipalSource?: TenantPrincipalSource;
   /** Extra modules to mount (see `CreateApiAppOptions.imports`). */
@@ -50,12 +63,22 @@ export async function runApi(options: RunApiOptions): Promise<NestFastifyApplica
   const logger =
     options.logger ?? createLogger('api', { level: config.LOG_LEVEL, nodeEnv: config.NODE_ENV });
 
+  const metrics = createHttpMetrics();
   try {
+    const auth =
+      options.auth ??
+      (options.tenantPrincipalSource === undefined
+        ? authFromConfig(config, logger, metrics.registry, options.sessionValkey)
+        : undefined);
     const { app } = await createApiApp({
       config,
       logger,
+      metrics,
       shutdownHooks: true,
-      tenantPrincipalSource: options.tenantPrincipalSource ?? (() => null),
+      ...(auth === undefined ? {} : { auth }),
+      ...(options.tenantPrincipalSource === undefined
+        ? {}
+        : { tenantPrincipalSource: options.tenantPrincipalSource }),
       ...(options.imports === undefined ? {} : { imports: options.imports }),
     });
     await app.listen({ port: config.API_PORT, host: config.API_HOST });
@@ -66,4 +89,22 @@ export async function runApi(options: RunApiOptions): Promise<NestFastifyApplica
     options.exit(BOOT_FAILURE_EXIT_CODE);
     return undefined;
   }
+}
+
+function authFromConfig(
+  config: Readonly<ApiConfig>,
+  logger: Logger,
+  registry: Registry,
+  sessionValkey: SessionValkey | undefined,
+): AuthOptions {
+  if (config.BW_WEB_SESSION_SECRET !== undefined && sessionValkey === undefined) {
+    // The session path needs the BFF's Valkey, which this entry point does not connect: cookies stay refused.
+    logger.warn({ event: 'auth.session_store_not_configured' }, 'BFF session cookies are refused');
+  }
+  return authOptionsFromConfig({
+    config,
+    logger,
+    registry,
+    ...(sessionValkey === undefined ? {} : { sessionValkey }),
+  });
 }
