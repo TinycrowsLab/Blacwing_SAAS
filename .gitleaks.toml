@@ -136,6 +136,9 @@ paths = [
   # The owner-pool config test sets a synthetic PG_OWNER_PASSWORD literal ('owner-' + tag + digits)
   # to prove the owner (migration) role gets no query guardrails. A dummy value, not a credential.
   '''^packages/db/src/env\.test\.ts$''',
+  # The global auth guard test plants a placeholder bw_pat_ bearer ('bw_pat_SECRET-...') to prove the
+  # guard routes it to the opaque-token validator. A dummy value, not a credential.
+  '''^apps/api/src/auth/authenticate\.test\.ts$''',
   # Lockfile integrity hashes look high-entropy to generic rules.
   '''^pnpm-lock\.yaml$''',
 ]
