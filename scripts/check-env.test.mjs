@@ -92,6 +92,8 @@ describe('.env.example', () => {
     for (const [k, v] of vars) {
       if (!/(PASSWORD|SECRET|TOKEN)/.test(k) || k.endsWith('_ENABLED') || k.endsWith('_FILE'))
         continue;
+      // A `*_MS` key holding a plain number is a duration setting (e.g. SECRET_VERSION_GRACE_MS), not a credential.
+      if (k.endsWith('_MS') && /^\d+$/.test(v)) continue;
       assert.ok(
         v === '' || v === 'change-me-dev' || /^\$\{[A-Z0-9_]+\}$/.test(v),
         `${k} looks real`,
