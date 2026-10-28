@@ -212,7 +212,12 @@ function validateMfa(r) {
     if (!mfa.requiredActions?.some((a) => a.alias === alias && a.enabled === true))
       p.push(`required action ${alias} must be enabled`);
   const win = r.otpPolicyLookAheadWindow;
-  if (!(Number.isInteger(win) && win >= 1 && win <= MAX_OTP_LOOK_AHEAD_WINDOW))
+  if (!(
+    typeof win === 'number' &&
+    Number.isInteger(win) &&
+    win >= 1 &&
+    win <= MAX_OTP_LOOK_AHEAD_WINDOW
+  ))
     p.push(`otpPolicyLookAheadWindow must be 1..${MAX_OTP_LOOK_AHEAD_WINDOW} periods`);
   if (r.otpPolicyCodeReusable !== false) p.push('otpPolicyCodeReusable must be false');
   if (r.webAuthnPolicyUserVerificationRequirement !== 'required')
@@ -320,6 +325,7 @@ export async function sync(realm, { base, token, fetchFn = fetch, log = () => un
     if (!live.some((x) => x.clientId === id))
       throw new Error(`post-sync assertion failed: client ${id} missing`);
   if (mfa) {
+    if (!mfa.flow) throw new Error('mfa section needs flow and requiredActions');
     const m = await syncMfa(realm.realm, mfa, c);
     stats.created += m.created;
     stats.updated += m.updated;

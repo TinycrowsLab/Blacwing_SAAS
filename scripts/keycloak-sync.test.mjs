@@ -202,7 +202,7 @@ test('validation rejects weakened MFA settings', () => {
   r.attributes = { ...r.attributes, 'acr.loa.map': '{"password":1,"mfa":2}' };
   r.browserFlow = 'browser';
   const mfa = r.mfa;
-  assert.ok(mfa);
+  assert.ok(mfa?.flow && mfa.requiredActions);
   // Drop the OTP factor and keep only the password step under the forms sub-flow.
   mfa.flow.executions = [
     { provider: 'auth-cookie', requirement: 'ALTERNATIVE' },
@@ -237,7 +237,7 @@ test('validation rejects weakened MFA settings', () => {
 
 test('flow listing keys follow the depth-first order the Admin API returns', () => {
   const mfa = loadRealm().mfa;
-  assert.ok(mfa);
+  assert.ok(mfa?.flow);
   assert.deepEqual(flowKeys(mfa.flow.executions), [
     '0|exec:auth-cookie|ALTERNATIVE',
     '0|exec:identity-provider-redirector|ALTERNATIVE',
@@ -255,7 +255,7 @@ test('flow listing keys follow the depth-first order the Admin API returns', () 
 test('sync creates the MFA browser flow, enables the factors and binds the flow', async () => {
   const realm = resolvePlaceholders(loadRealm(), ENV);
   const mfa = realm.mfa;
-  assert.ok(mfa);
+  assert.ok(mfa?.flow);
   const { db, fetchFn } = fakeKeycloak();
   await sync(realm, { base: 'http://kc', token: 't', fetchFn });
   assert.ok(db.realm);
