@@ -963,6 +963,21 @@
           "to": ["public"],
           "using": "tenant_id = current_setting('app.tenant_id')::uuid",
           "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        },
+        "outbox_relay_select": {
+          "name": "outbox_relay_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": ["bw_relay"],
+          "using": "true"
+        },
+        "outbox_relay_update": {
+          "name": "outbox_relay_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": ["bw_relay"],
+          "using": "\"outbox\".\"status\" = 'pending'",
+          "withCheck": "true"
         }
       },
       "checkConstraints": {
