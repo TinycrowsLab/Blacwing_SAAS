@@ -1,7 +1,8 @@
 // OIDC relying-party calls for the BFF (IAM-002, #334): discovery, the authorize URL, the server-side
 // code exchange, refresh and RP-initiated logout against Keycloak. ID tokens are verified (signature
 // against the issuer's JWKS, `iss`, `aud`, `exp`/`iat` with a small clock leeway, and the login
-// `nonce`) before anything is trusted. Tokens and codes never appear in an error message or a log.
+// `nonce`) before anything is trusted. Back-channel logout tokens (OIDC Back-Channel Logout 1.0) are
+// verified the same way, plus their own claims. Tokens and codes never appear in an error message or a log.
 
 import {
   createRemoteJWKSet,
@@ -18,9 +19,13 @@ const SCOPE = 'openid profile email';
 const REQUEST_TIMEOUT_MS = 5000;
 const DISCOVERY_TTL_MS = 600_000;
 /** Tolerated clock skew between this host and Keycloak when checking `exp`/`iat`. */
-const CLOCK_LEEWAY_SECONDS = 30;
+export const CLOCK_LEEWAY_SECONDS = 30;
+/** A back-channel logout token older than this is refused; its `jti` is remembered at least this long. */
+export const LOGOUT_TOKEN_MAX_AGE_SECONDS = 120;
+const BACKCHANNEL_LOGOUT_EVENT = 'http://schemas.openid.net/event/backchannel-logout';
 const SIGNING_ALGORITHMS = ['RS256', 'PS256', 'ES256'];
 const HTTP_SERVER_ERROR = 500;
+const MS_PER_SECOND = 1000;
 
 /** Keycloak could not be reached or answered 5xx: retryable, no session state may change. */
 export class IdpUnavailableError extends Error {
@@ -43,6 +48,14 @@ export class InvalidIdTokenError extends Error {
   override readonly name = 'InvalidIdTokenError';
   constructor() {
     super('The ID token failed verification');
+  }
+}
+
+/** The back-channel logout token failed verification (signature, claims, event or age). */
+export class InvalidLogoutTokenError extends Error {
+  override readonly name = 'InvalidLogoutTokenError';
+  constructor() {
+    super('The logout token failed verification');
   }
 }
 
@@ -76,12 +89,27 @@ export interface TokenSet {
   readonly claims: JWTPayload | undefined;
 }
 
+/** The verified claims of a back-channel logout token that the BFF acts on. */
+export interface LogoutTokenClaims {
+  /** The user whose sessions end, when the token names one. */
+  readonly sub: string | undefined;
+  /** The Keycloak session that ends, when the token names one. */
+  readonly sid: string | undefined;
+  /** Unique id of this token, remembered so a replay is refused. */
+  readonly jti: string;
+}
+
 export interface OidcClient {
   authorizationUrl(params: { state: string; nonce: string; challenge: string }): Promise<URL>;
   exchangeCode(params: { code: string; verifier: string; nonce: string }): Promise<TokenSet>;
   refresh(refreshToken: string): Promise<TokenSet>;
   /** RP-initiated logout URL, or `undefined` when the IdP advertises no `end_session_endpoint`. */
   endSessionUrl(params: { idToken: string | undefined }): Promise<URL | undefined>;
+  /**
+   * Verifies a back-channel logout token: signature, issuer, audience, the logout `events` member, no
+   * `nonce`, a `jti`, a `sub` or `sid`, and an `iat` within {@link LOGOUT_TOKEN_MAX_AGE_SECONDS}.
+   */
+  verifyLogoutToken(token: string): Promise<LogoutTokenClaims>;
 }
 
 export interface OidcDeps {
@@ -181,29 +209,46 @@ export function createOidcClient(
     };
   }
 
-  async function verifyIdToken(
-    idToken: string,
+  /**
+   * Verifies a token against the issuer's keys. A JWKS that cannot be fetched is an outage; everything
+   * else is a token that does not verify, reported as the error `refuse` builds.
+   */
+  async function verifyJwt(
+    token: string,
     keys: JWTVerifyGetKey,
-    expectedNonce: string | undefined,
+    requiredClaims: string[],
+    refuse: () => Error,
   ): Promise<JWTPayload> {
-    let payload: JWTPayload;
     try {
-      ({ payload } = await jwtVerify(idToken, keys, {
+      const { payload } = await jwtVerify(token, keys, {
         issuer: config.issuer,
         audience: config.clientId,
         algorithms: SIGNING_ALGORITHMS,
         clockTolerance: CLOCK_LEEWAY_SECONDS,
         currentDate: new Date(deps.now()),
-        requiredClaims: ['exp', 'iat', 'sub'],
-      }));
+        requiredClaims,
+      });
+      return payload;
     } catch (error) {
-      // A JWKS that cannot be fetched is an outage; everything else is a token that does not verify.
       const outage =
         !(error instanceof joseErrors.JOSEError) ||
         error instanceof joseErrors.JWKSTimeout ||
         error.code === 'ERR_JOSE_GENERIC';
-      throw outage ? new IdpUnavailableError() : new InvalidIdTokenError();
+      throw outage ? new IdpUnavailableError() : refuse();
     }
+  }
+
+  async function verifyIdToken(
+    idToken: string,
+    keys: JWTVerifyGetKey,
+    expectedNonce: string | undefined,
+  ): Promise<JWTPayload> {
+    const payload = await verifyJwt(
+      idToken,
+      keys,
+      ['exp', 'iat', 'sub'],
+      () => new InvalidIdTokenError(),
+    );
     if (expectedNonce !== undefined && payload.nonce !== expectedNonce) {
       throw new InvalidIdTokenError();
     }
@@ -248,6 +293,33 @@ export function createOidcClient(
         ...(idToken === undefined ? {} : { id_token_hint: idToken }),
       }).toString();
       return url;
+    },
+    async verifyLogoutToken(token) {
+      const { keys } = await discover();
+      const payload = await verifyJwt(
+        token,
+        keys,
+        ['iat', 'jti', 'events'],
+        () => new InvalidLogoutTokenError(),
+      );
+      const events: unknown = payload.events;
+      const isLogoutEvent =
+        typeof events === 'object' &&
+        events !== null &&
+        BACKCHANNEL_LOGOUT_EVENT in events &&
+        typeof (events as Record<string, unknown>)[BACKCHANNEL_LOGOUT_EVENT] === 'object';
+      // A logout token is never an ID token: it must not carry a nonce.
+      if (!isLogoutEvent || 'nonce' in payload) throw new InvalidLogoutTokenError();
+      const sub = typeof payload.sub === 'string' && payload.sub !== '' ? payload.sub : undefined;
+      const sid = typeof payload.sid === 'string' && payload.sid !== '' ? payload.sid : undefined;
+      if (sub === undefined && sid === undefined) throw new InvalidLogoutTokenError();
+      const ageSeconds = deps.now() / MS_PER_SECOND - (payload.iat ?? 0);
+      if (ageSeconds > LOGOUT_TOKEN_MAX_AGE_SECONDS || ageSeconds < -CLOCK_LEEWAY_SECONDS) {
+        throw new InvalidLogoutTokenError();
+      }
+      if (typeof payload.jti !== 'string' || payload.jti === '')
+        throw new InvalidLogoutTokenError();
+      return { sub, sid, jti: payload.jti };
     },
   };
 }

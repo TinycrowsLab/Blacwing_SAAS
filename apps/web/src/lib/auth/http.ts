@@ -11,6 +11,7 @@ export const CSRF_HEADER = 'x-bw-csrf';
 
 const HTTP_OK = 200;
 const HTTP_SEE_OTHER = 303;
+const HTTP_BAD_REQUEST = 400;
 const HTTP_FORBIDDEN = 403;
 const HTTP_SERVICE_UNAVAILABLE = 503;
 const HTTP_UNAUTHORIZED = 401;
@@ -58,6 +59,15 @@ export function redirectResponse(location: string, options: ResponseOptions = {}
 
 export function unauthenticated(cookies: readonly string[] = []): Response {
   return jsonResponse({ error: 'unauthenticated' }, { status: HTTP_UNAUTHORIZED, cookies });
+}
+
+/** A body-less answer (the back-channel logout response, #336): no cache, nothing to read. */
+export function emptyResponse(status: number): Response {
+  return build(null, { status });
+}
+
+export function badRequest(): Response {
+  return jsonResponse({ error: 'invalid_request' }, { status: HTTP_BAD_REQUEST });
 }
 
 export function forbidden(): Response {

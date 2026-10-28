@@ -18,10 +18,18 @@ export type LoginResult =
 export type RefreshResult =
   'success' | 'rejected' | 'no_refresh_token' | 'invalid_token' | 'idp_unavailable' | 'busy';
 
+/** Outcome of a back-channel logout request (#336). */
+export type BackchannelResult = 'success' | 'invalid_token' | 'replayed' | 'unavailable';
+
+/** What a revocation targeted (#336). */
+type RevocationScope = 'user' | 'tenant' | 'user_tenant' | 'backchannel';
+
 export interface AuthMetrics {
   login(result: LoginResult): void;
   refresh(result: RefreshResult): void;
   logout(): void;
+  backchannelLogout(result: BackchannelResult): void;
+  sessionRevocation(scope: RevocationScope): void;
 }
 
 export function createAuthMetrics(): AuthMetrics {
@@ -31,6 +39,12 @@ export function createAuthMetrics(): AuthMetrics {
     description: 'Token refreshes by result.',
   });
   const logout = meter.createCounter('auth_logout_total', { description: 'Logouts.' });
+  const backchannel = meter.createCounter('backchannel_logout_total', {
+    description: 'Keycloak back-channel logout requests by result.',
+  });
+  const revocations = meter.createCounter('session_revocations_total', {
+    description: 'Session revocations by scope.',
+  });
   return {
     login: (result) => {
       login.add(1, { result });
@@ -40,6 +54,12 @@ export function createAuthMetrics(): AuthMetrics {
     },
     logout: () => {
       logout.add(1);
+    },
+    backchannelLogout: (result) => {
+      backchannel.add(1, { result });
+    },
+    sessionRevocation: (scope) => {
+      revocations.add(1, { scope });
     },
   };
 }

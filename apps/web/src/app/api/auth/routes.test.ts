@@ -26,8 +26,10 @@ vi.mock('../../../lib/auth/runtime', () => ({
       redirectUri: `${CONSOLE_ORIGIN}/auth/callback`,
       redisUrl: 'redis://unused',
       sessionKeys: state.h.keys,
+      sessionAdmin: undefined,
     },
     service: state.h.service,
+    revocation: state.h.revocation,
   }),
 }));
 

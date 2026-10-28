@@ -34,6 +34,12 @@ const authEnvSchema = z
     BW_WEB_SESSION_SECRET: zSecret(),
     /** The secret being rotated out: still accepted for opening, never used for sealing. */
     BW_WEB_SESSION_SECRET_PREVIOUS: zSecret().optional(),
+    /**
+     * Service-account client that may end a user's Keycloak sessions (Admin API `logout`, #336). Both
+     * or neither: without it a revocation still ends every BFF session, but reports Keycloak as skipped.
+     */
+    KEYCLOAK_SESSION_ADMIN_CLIENT_ID: zString().optional(),
+    KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET: zSecret().optional(),
   })
   .superRefine((env, ctx) => {
     for (const key of ['BW_WEB_SESSION_SECRET', 'BW_WEB_SESSION_SECRET_PREVIOUS'] as const) {
@@ -45,6 +51,17 @@ const authEnvSchema = z
           message: `must be at least ${String(MIN_SECRET_LENGTH)} characters`,
         });
       }
+    }
+    if (
+      (env.KEYCLOAK_SESSION_ADMIN_CLIENT_ID === undefined) !==
+      (env.KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET === undefined)
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET'],
+        message:
+          'set KEYCLOAK_SESSION_ADMIN_CLIENT_ID and KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET together',
+      });
     }
     if (!SECURE_ENVS.includes(env.NODE_ENV)) return;
     for (const key of ['KEYCLOAK_ISSUER_URL', 'BW_CONSOLE_ORIGIN'] as const) {
@@ -69,6 +86,8 @@ export interface AuthConfig {
   readonly redisUrl: string;
   /** The sealing key first, then the previous key (rotation) accepted for opening only. */
   readonly sessionKeys: readonly [Buffer, ...Buffer[]];
+  /** The Keycloak session-admin client, when configured (both values or neither). */
+  readonly sessionAdmin: { readonly clientId: string; readonly clientSecret: string } | undefined;
 }
 
 /** Path Keycloak redirects back to; `next.config.mjs` rewrites it to `/api/auth/callback`. */
@@ -91,5 +110,13 @@ export function loadAuthConfig(source: EnvSource = process.env): AuthConfig {
         ? []
         : [deriveKey(env.BW_WEB_SESSION_SECRET_PREVIOUS)]),
     ],
+    sessionAdmin:
+      env.KEYCLOAK_SESSION_ADMIN_CLIENT_ID === undefined ||
+      env.KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET === undefined
+        ? undefined
+        : {
+            clientId: env.KEYCLOAK_SESSION_ADMIN_CLIENT_ID,
+            clientSecret: env.KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET,
+          },
   };
 }

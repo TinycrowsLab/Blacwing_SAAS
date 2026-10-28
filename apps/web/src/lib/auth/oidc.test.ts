@@ -13,6 +13,7 @@ import {
   IdpRejectedError,
   IdpUnavailableError,
   InvalidIdTokenError,
+  InvalidLogoutTokenError,
   type OidcClient,
 } from './oidc.js';
 
@@ -319,5 +320,122 @@ describe('endSessionUrl', () => {
     );
     const none = setup(() => new Response(), { doc: withoutEnd }).client;
     expect(await none.endSessionUrl({ idToken: 'idt' })).toBeUndefined();
+  });
+});
+
+const LOGOUT_EVENT = 'http://schemas.openid.net/event/backchannel-logout';
+
+interface LogoutOptions {
+  readonly iss?: string;
+  readonly aud?: string;
+  readonly iat?: number;
+  readonly sub?: string | undefined;
+  readonly sid?: string | undefined;
+  readonly jti?: string | undefined;
+  readonly events?: Record<string, unknown> | undefined;
+  readonly nonce?: string;
+  readonly key?: CryptoKey;
+}
+
+/** A back-channel logout token as Keycloak signs it; every field can be overridden or removed. */
+function logoutToken(options: LogoutOptions = {}): Promise<string> {
+  const iat = options.iat ?? Math.floor(NOW / 1000);
+  const claims: Record<string, unknown> = {
+    events: options.events ?? { [LOGOUT_EVENT]: {} },
+  };
+  if (options.nonce !== undefined) claims.nonce = options.nonce;
+  const sub = 'sub' in options ? options.sub : 'user-1';
+  const sid = 'sid' in options ? options.sid : 'kc-session-1';
+  const jti = 'jti' in options ? options.jti : 'jti-1';
+  if (sub !== undefined) claims.sub = sub;
+  if (sid !== undefined) claims.sid = sid;
+  if (jti !== undefined) claims.jti = jti;
+  return new SignJWT(claims)
+    .setProtectedHeader({ alg: 'RS256', kid: 'k1' })
+    .setIssuer(options.iss ?? ISSUER)
+    .setAudience(options.aud ?? CLIENT_ID)
+    .setIssuedAt(iat)
+    .sign(options.key ?? privateKey);
+}
+
+describe('verifyLogoutToken', () => {
+  it('accepts a signed logout token and returns its subject, session and id', async () => {
+    const { client } = setup(() => Promise.reject(new Error('unused')));
+    await expect(client.verifyLogoutToken(await logoutToken())).resolves.toEqual({
+      sub: 'user-1',
+      sid: 'kc-session-1',
+      jti: 'jti-1',
+    });
+  });
+
+  it('accepts a token that names only a subject, or only a session', async () => {
+    const { client } = setup(() => Promise.reject(new Error('unused')));
+    await expect(
+      client.verifyLogoutToken(await logoutToken({ sid: undefined })),
+    ).resolves.toMatchObject({
+      sub: 'user-1',
+      sid: undefined,
+    });
+    await expect(
+      client.verifyLogoutToken(await logoutToken({ sub: undefined })),
+    ).resolves.toMatchObject({
+      sub: undefined,
+      sid: 'kc-session-1',
+    });
+  });
+
+  it('refuses a forged token, a wrong issuer or audience, and a token from another key', async () => {
+    const { client } = setup(() => Promise.reject(new Error('unused')));
+    await expect(
+      client.verifyLogoutToken(await logoutToken({ key: otherKey })),
+    ).rejects.toBeInstanceOf(InvalidLogoutTokenError);
+    await expect(
+      client.verifyLogoutToken(await logoutToken({ iss: 'https://evil.example' })),
+    ).rejects.toBeInstanceOf(InvalidLogoutTokenError);
+    await expect(
+      client.verifyLogoutToken(await logoutToken({ aud: 'other-client' })),
+    ).rejects.toBeInstanceOf(InvalidLogoutTokenError);
+  });
+
+  it('refuses a token without the back-channel logout event, or that is an ID token with a nonce', async () => {
+    const { client } = setup(() => Promise.reject(new Error('unused')));
+    await expect(
+      client.verifyLogoutToken(await logoutToken({ events: {} })),
+    ).rejects.toBeInstanceOf(InvalidLogoutTokenError);
+    await expect(
+      client.verifyLogoutToken(await logoutToken({ events: { 'https://other/event': {} } })),
+    ).rejects.toBeInstanceOf(InvalidLogoutTokenError);
+    await expect(
+      client.verifyLogoutToken(await logoutToken({ nonce: NONCE })),
+    ).rejects.toBeInstanceOf(InvalidLogoutTokenError);
+  });
+
+  it('refuses a token that names neither a subject nor a session, or has no jti (no replay tracking)', async () => {
+    const { client } = setup(() => Promise.reject(new Error('unused')));
+    await expect(
+      client.verifyLogoutToken(await logoutToken({ sub: undefined, sid: undefined })),
+    ).rejects.toBeInstanceOf(InvalidLogoutTokenError);
+    await expect(
+      client.verifyLogoutToken(await logoutToken({ jti: undefined })),
+    ).rejects.toBeInstanceOf(InvalidLogoutTokenError);
+  });
+
+  it('refuses a token older than the maximum age, and one issued in the future', async () => {
+    const { client } = setup(() => Promise.reject(new Error('unused')));
+    const old = Math.floor(NOW / 1000) - 121;
+    const future = Math.floor(NOW / 1000) + 60;
+    await expect(client.verifyLogoutToken(await logoutToken({ iat: old }))).rejects.toBeInstanceOf(
+      InvalidLogoutTokenError,
+    );
+    await expect(
+      client.verifyLogoutToken(await logoutToken({ iat: future })),
+    ).rejects.toBeInstanceOf(InvalidLogoutTokenError);
+  });
+
+  it('reports an unreachable IdP as unavailable, not as an invalid token', async () => {
+    const { client } = setup(() => Promise.reject(new Error('unused')), { discoveryStatus: 503 });
+    await expect(client.verifyLogoutToken(await logoutToken())).rejects.toBeInstanceOf(
+      IdpUnavailableError,
+    );
   });
 });

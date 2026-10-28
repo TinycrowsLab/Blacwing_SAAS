@@ -43,6 +43,7 @@ The redirect URI registered in Keycloak is `${BW_CONSOLE_ORIGIN}/auth/callback` 
 | `REDIS_URL` | Valkey for the sessions. |
 | `BW_WEB_SESSION_SECRET` | At least 32 random characters, resolved from OpenBao and injected as a secret. The sealing key is derived from it (HKDF-SHA-256). |
 | `BW_WEB_SESSION_SECRET_PREVIOUS` | Optional. The secret being rotated out: it still opens cookies and records, it never seals. |
+| `KEYCLOAK_SESSION_ADMIN_CLIENT_ID`, `KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET` | Optional, both or neither. A service-account client allowed to log users out in the realm (`manage-users`). Used by revocation to end a user's Keycloak sessions; without it a revocation reports Keycloak as `skipped`. |
 
 Rotate the secret without signing anyone out: set `BW_WEB_SESSION_SECRET_PREVIOUS` to the old value and
 `BW_WEB_SESSION_SECRET` to the new one, roll the web pods, and remove the previous value after the longest session
@@ -55,10 +56,29 @@ with the previous value still set, or the API refuses console sessions.
 Recommended Keycloak setting: enable refresh token rotation (`revokeRefreshToken`) on the realm so a stolen refresh
 token is detected on reuse; the BFF already treats the resulting `invalid_grant` as a revoked session.
 
+## Back-channel logout and revocation (IAM-006 follow-up, #336)
+
+- `POST /api/auth/backchannel-logout` takes Keycloak's `logout_token` (form field). The token must verify against the
+  realm keys (signature, `iss`, `aud`), carry the back-channel logout `events` member, carry no `nonce`, name a `sid` or
+  a `sub`, and be at most 120 s old. Its `jti` is claimed once in Valkey (`bw:web:claim:<jti>`), so a replay is refused.
+  The sessions named by the token's `sid` (through `bw:web:sess-idx:idp:<sid>`), or else by its `sub`, end at once. The
+  answer is `200` with no body on success (also when no session matched), `400` for a refused token and `503` while
+  Keycloak or Valkey is down, so Keycloak retries. The realm client must set `backchannel.logout.url` to this path.
+- Revocation (`revokeSessions({ userId, tenantId, reason })` in `apps/web/src/lib/auth/revocation.ts`) ends the BFF
+  sessions of a user, a tenant, or a user within one tenant, then logs the user out at Keycloak through the Admin API
+  (`KEYCLOAK_SESSION_ADMIN_CLIENT_*`). The BFF side is applied first and is authoritative: a revoked session cannot be
+  read or refreshed (a refresh still in flight loses its write and the user logs in again). Keycloak is retried three
+  times and reported as `done`, `skipped` or `failed`. Each ended session writes an `auth.session_revoked` event.
+- Valkey indexes: `bw:web:sess-idx:user:<sub>`, `tenant:<tenantId>` and `idp:<sid>` are sets of session ids, kept for the
+  longest session lifetime and pruned as sessions end. The session record stays the authority, so a stale index member
+  never keeps a session alive. Large revocations walk the sets in pages of 100.
+- Valkey outage: every revocation and logout check fails closed (`503`); nothing is reported as revoked when it is not.
+
 ## Metrics, traces, audit
 
 `auth_login_total{result}`, `auth_refresh_total{result}` and `auth_logout_total` are OpenTelemetry counters
-(`@blackwing/web` meter); spans `auth.callback`, `auth.session` and `auth.logout`. Results are bounded codes, never
+(`@blackwing/web` meter); `backchannel_logout_total{result}` and `session_revocations_total{scope}` count back-channel
+requests and revocations; spans `auth.callback`, `auth.session`, `auth.logout` and `auth.backchannel_logout`. Results are bounded codes, never
 user data. Login, failed login, logout and revoked-session events are written as structured log lines with ids only;
 the audit ledger writer is IAM-012 (#340).
 

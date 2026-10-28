@@ -76,3 +76,27 @@ describe('loadAuthConfig', () => {
     ).toEqual([]);
   });
 });
+
+describe('loadAuthConfig session admin client (#336)', () => {
+  it('is absent when neither value is set, and present when both are', () => {
+    expect(loadAuthConfig(env).sessionAdmin).toBeUndefined();
+    const config = loadAuthConfig({
+      ...env,
+      KEYCLOAK_SESSION_ADMIN_CLIENT_ID: 'bw-session-admin',
+      KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET: 'x'.repeat(24),
+    });
+    expect(config.sessionAdmin).toEqual({
+      clientId: 'bw-session-admin',
+      clientSecret: 'x'.repeat(24),
+    });
+  });
+
+  it('refuses a half-configured admin client, naming the missing key only', () => {
+    expect(issues({ ...env, KEYCLOAK_SESSION_ADMIN_CLIENT_ID: 'bw-session-admin' })).toEqual([
+      'KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET',
+    ]);
+    expect(issues({ ...env, KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET: 'x'.repeat(24) })).toEqual([
+      'KEYCLOAK_SESSION_ADMIN_CLIENT_SECRET',
+    ]);
+  });
+});

@@ -6,22 +6,35 @@
 // id is the only thing the browser holds (sealed, httpOnly, `__Host-`); tokens stay in Valkey. A
 // refresh rotates the token set held under that id and keeps the id and CSRF secret, so concurrent
 // tabs and server-rendered pages (which cannot set cookies) keep working. A refresh the IdP refuses
-// (revoked, expired, or a reused rotated token) destroys the session and forces a new login.
+// (revoked, expired, or a reused rotated token) destroys the session and forces a new login. A
+// back-channel logout (#336) from Keycloak ends the sessions of the Keycloak session it names.
 
 import { z } from 'zod';
 
-import { inSpan, type AuthMetrics, type LoginResult, type RefreshResult } from './metrics.js';
 import {
+  inSpan,
+  type AuthMetrics,
+  type BackchannelResult,
+  type LoginResult,
+  type RefreshResult,
+} from './metrics.js';
+import {
+  CLOCK_LEEWAY_SECONDS,
   IdpRejectedError,
   IdpUnavailableError,
   InvalidIdTokenError,
+  InvalidLogoutTokenError,
+  LOGOUT_TOKEN_MAX_AGE_SECONDS,
+  type LogoutTokenClaims,
   type OidcClient,
   type TokenSet,
 } from './oidc.js';
 import { codeChallenge, randomToken, safeEqual, sanitizeReturnTo } from './pkce.js';
 import { open, seal } from './seal.js';
 import {
+  MAX_SESSION_TTL_MS,
   SessionStoreUnavailableError,
+  type SessionIndex,
   type SessionRecord,
   type SessionStore,
 } from './session-store.js';
@@ -37,14 +50,16 @@ export const REFRESH_SKEW_MS = 60_000;
 const LOCK_TTL_MS = 15_000;
 const LOCK_POLL_MS = 100;
 const LOCK_WAIT_MS = 3000;
-/** Server-side session lifetime when the IdP states none, and the absolute cap on any lifetime. */
+/** Server-side session lifetime when the IdP states none (the absolute cap is `MAX_SESSION_TTL_MS`). */
 const DEFAULT_SESSION_TTL_MS = 1_800_000;
-const MAX_SESSION_TTL_MS = 43_200_000;
+/** A back-channel logout token's `jti` is refused for as long as the token itself is still accepted. */
 const MS_PER_SECOND = 1000;
+const LOGOUT_TOKEN_REPLAY_TTL_MS =
+  (LOGOUT_TOKEN_MAX_AGE_SECONDS + CLOCK_LEEWAY_SECONDS) * MS_PER_SECOND;
 
 type AuthAuditAction = 'auth.login' | 'auth.login_failed' | 'auth.logout' | 'auth.session_revoked';
 
-/** Login/logout audit event (CONTEXT_PACK §8 #8). The ledger writer arrives with IAM-012 (#340). */
+/** Login/logout/revocation audit event (CONTEXT_PACK §8 #8). The ledger writer arrives with IAM-012 (#340). */
 export interface AuthAuditEvent {
   readonly action: AuthAuditAction;
   readonly outcome: 'success' | 'failure';
@@ -84,6 +99,11 @@ const claimsSchema = z.object({
 });
 
 type Identity = Pick<SessionRecord, 'sub' | 'email' | 'name' | 'tenantId' | 'tenantSlug' | 'roles'>;
+
+/** The Keycloak session an ID token belongs to (`sid`), when the IdP states one. */
+function idpSidOf(claims: JWTPayload | undefined): string | undefined {
+  return typeof claims?.sid === 'string' && claims.sid !== '' ? claims.sid : undefined;
+}
 
 /** Identity from verified ID-token claims; `null` when there is no tenant (the console is tenant-scoped). */
 export function identityFromClaims(claims: JWTPayload | undefined): Identity | null {
@@ -132,6 +152,11 @@ export interface AuthService {
   authenticate(sessionCookie: string | undefined, renew?: boolean): Promise<AuthState>;
   /** Ends the session here and returns where the browser goes next (Keycloak's end-session endpoint). */
   logout(sessionCookie: string | undefined): Promise<{ redirectTo: string }>;
+  /**
+   * Handles a Keycloak back-channel logout (#336): verifies the logout token and ends the BFF sessions
+   * it names (its `sid`, or every session of its `sub`). Resolves the outcome; an IdP or Valkey outage throws.
+   */
+  backchannelLogout(logoutToken: string | undefined): Promise<BackchannelResult>;
 }
 
 export function createAuthService(deps: AuthDeps): AuthService {
@@ -231,12 +256,51 @@ export function createAuthService(deps: AuthDeps): AuthService {
       accessToken: tokens.accessToken,
       ...(refreshed === undefined ? {} : { refreshToken: refreshed }),
       ...(idToken === undefined ? {} : { idToken }),
+      // The Keycloak session does not change on refresh, so the index entry built at login stays valid.
+      ...(current.idpSid === undefined ? {} : { idpSid: current.idpSid }),
       accessExpiresAt: now() + tokens.expiresInSeconds * MS_PER_SECOND,
       csrf: current.csrf,
     };
     if (!(await store.replace(sid, next, sessionTtlMs(tokens)))) return { status: 'none' };
     metrics.refresh('success');
     return { status: 'ok', sid, record: next };
+  }
+
+  /** Ends the sessions a verified back-channel logout token names; `replayed` when its `jti` was seen. */
+  async function backchannel(logoutToken: string | undefined): Promise<BackchannelResult> {
+    if (logoutToken === undefined) return 'invalid_token';
+    let claims: LogoutTokenClaims;
+    try {
+      claims = await oidc.verifyLogoutToken(logoutToken);
+    } catch (error) {
+      if (error instanceof InvalidLogoutTokenError) return 'invalid_token';
+      throw error;
+    }
+    // A logout token is single-use: a captured one must not end a session that was started since.
+    if (!(await store.claimOnce(claims.jti, LOGOUT_TOKEN_REPLAY_TTL_MS))) return 'replayed';
+    const index: SessionIndex | undefined =
+      claims.sid !== undefined
+        ? { kind: 'idp', sid: claims.sid }
+        : claims.sub !== undefined
+          ? { kind: 'user', sub: claims.sub }
+          : undefined;
+    if (index === undefined) return 'invalid_token';
+    // When the token names both, only the sessions of that subject end, whichever Keycloak session matched.
+    const subject = claims.sub;
+    const revoked = await store.revokeWhere(index, (record) =>
+      subject === undefined ? true : record.sub === subject,
+    );
+    for (const record of revoked) {
+      audit({
+        action: 'auth.session_revoked',
+        outcome: 'success',
+        userId: record.sub,
+        tenantId: record.tenantId,
+        reason: 'backchannel_logout',
+      });
+    }
+    metrics.sessionRevocation('backchannel');
+    return 'success';
   }
 
   /** Another request owns the refresh lock: wait for its result instead of refreshing again. */
@@ -302,6 +366,7 @@ export function createAuthService(deps: AuthDeps): AuthService {
         }
         const identity = identityFromClaims(tokens.claims);
         if (identity === null) return failLogin('no_tenant');
+        const idpSid = idpSidOf(tokens.claims);
 
         const sid = randomToken();
         const ttl = sessionTtlMs(tokens);
@@ -314,6 +379,7 @@ export function createAuthService(deps: AuthDeps): AuthService {
               accessToken: tokens.accessToken,
               ...(tokens.refreshToken === undefined ? {} : { refreshToken: tokens.refreshToken }),
               ...(tokens.idToken === undefined ? {} : { idToken: tokens.idToken }),
+              ...(idpSid === undefined ? {} : { idpSid }),
               accessExpiresAt: now() + tokens.expiresInSeconds * MS_PER_SECOND,
               csrf: randomToken(),
             },
@@ -370,6 +436,19 @@ export function createAuthService(deps: AuthDeps): AuthService {
           .catch(() => undefined);
         return { redirectTo: endSession?.href ?? '/' };
       }),
+
+    async backchannelLogout(logoutToken) {
+      try {
+        const result = await inSpan('auth.backchannel_logout', () => backchannel(logoutToken));
+        metrics.backchannelLogout(result);
+        return result;
+      } catch (error) {
+        if (error instanceof IdpUnavailableError || error instanceof SessionStoreUnavailableError) {
+          metrics.backchannelLogout('unavailable');
+        }
+        throw error;
+      }
+    },
   };
 }
 
