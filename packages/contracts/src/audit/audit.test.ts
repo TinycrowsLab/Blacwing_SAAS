@@ -82,6 +82,8 @@ const RELEASED_ACTIONS = [
   'operator.kill_previewed',
   'operator.kill_fired',
   'audit.queried',
+  'secret.rotated',
+  'secret.rewrapped',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

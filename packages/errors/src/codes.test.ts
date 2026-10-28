@@ -94,6 +94,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   SECRET_NOT_FOUND: 404,
   SECRET_DISABLED: 409,
   SECRET_SHREDDED: 410,
+  SECRET_VERSION_RETIRED: 410,
   RUN_KILLED: 423,
   EXTERNAL_BACKEND_UNAVAILABLE: 503,
   GRAPH_CONFIG_MISSING: 500,
@@ -115,7 +116,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(87);
+    expect(ERROR_CODE_LIST).toHaveLength(88);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -247,6 +248,7 @@ describe('error-code registry', () => {
       | 'KEK_DISABLED'
       | 'ENVELOPE_INVALID'
       | 'SECRET_DECRYPT_FAILED'
+      | 'SECRET_VERSION_RETIRED'
       | 'PROMPT_NO_RELEASED_VERSION'
       | 'PROMPT_DRAFT_FORBIDDEN'
       | 'PROMPT_PLACEHOLDER_MISSING'

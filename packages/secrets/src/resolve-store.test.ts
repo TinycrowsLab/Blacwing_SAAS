@@ -47,6 +47,7 @@ describe('pg secret store', () => {
       version: 3,
       envelope,
       externalLocator: null,
+      retiredAt: null,
     });
     expect(calls).toHaveLength(1);
     expect(calls[0]).toMatchObject({ values: [S, T], tenant: T });

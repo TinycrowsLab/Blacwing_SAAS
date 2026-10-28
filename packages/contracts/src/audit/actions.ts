@@ -438,6 +438,21 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'An auditor queried the audit ledger; metadata records the filter keys and page size, never the filter values.',
   },
+  // secret rotation and KEK rewrap (SECRETS-012): metadata is ids, version numbers and counts, never values
+  {
+    action: 'secret.rotated',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description:
+      'A secret value was rotated: a new version became current and the prior one enters its grace period.',
+  },
+  {
+    action: 'secret.rewrapped',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description:
+      'A tenant KEK rewrap completed: every envelope of the tenant was re-wrapped to the newest KEK version.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

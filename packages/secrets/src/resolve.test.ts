@@ -415,3 +415,35 @@ describe('secret resolver', () => {
     expect(() => createSecretResolver(deps)).not.toThrow();
   });
 });
+
+describe('pinned secret versions (SECRETS-012)', () => {
+  const pinned = (version: number) => `${REF}?v=${String(version)}`;
+
+  it('keeps resolving a pinned superseded version inside its grace period', async () => {
+    const { resolver, store } = await setup({ now: () => 1000 });
+    const base = store.records.get(`${TENANT_A}/${SECRET_ID}/1`);
+    if (base === undefined) throw new Error('seed missing');
+    store.put({ ...base, retiredAt: new Date(2000) });
+    const result = await resolver.resolve(caller(), {
+      ...login,
+      secretRef: pinned(1),
+    });
+    expect(result).toEqual({ value: PLAINTEXT, version: 1, type: 'password' });
+  });
+
+  it('refuses a pinned version past its grace period with SECRET_VERSION_RETIRED, audited as denied', async () => {
+    const { resolver, store, audited } = await setup({ now: () => 3000 });
+    const base = store.records.get(`${TENANT_A}/${SECRET_ID}/1`);
+    if (base === undefined) throw new Error('seed missing');
+    store.put({ ...base, retiredAt: new Date(2000) });
+    await expect(
+      resolver.resolve(caller(), { ...login, secretRef: pinned(1) }),
+    ).rejects.toMatchObject({ code: 'SECRET_VERSION_RETIRED' });
+    expect(audited.at(-1)).toMatchObject({ outcome: 'denied', reason: 'SECRET_VERSION_RETIRED' });
+  });
+
+  it('never retires the current version, even when its record carries no retirement', async () => {
+    const { resolver } = await setup({ now: () => 999_999_999 });
+    await expect(resolver.resolve(caller(), login)).resolves.toMatchObject({ version: 1 });
+  });
+});

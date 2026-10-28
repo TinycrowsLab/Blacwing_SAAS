@@ -90,6 +90,31 @@ export {
   type ResolveConfig,
 } from './resolve-config.js';
 export { createPgSecretStore, type RunInTenant, type TenantSql } from './resolve-store.js';
+
+// Secret value rotation, KEK rotation and the batched DEK rewrap (SECRETS-012, §8.6, §8.7, §8.8).
+export {
+  createSecretRotation,
+  type KekRotationResult,
+  type RewrapCandidate,
+  type RotateSecretInput,
+  type RotateSecretResult,
+  type RotationCommit,
+  type RotationMetrics,
+  type RotationRecord,
+  type RotationStore,
+  type SecretRotationAuditEvent,
+  type SecretRotationDeps,
+  type SecretRotationService,
+} from './rotation.js';
+export { createPgRotationStore } from './rotation-store.js';
+export {
+  DEFAULT_KEK_ROTATION_CRON,
+  DEFAULT_SECRET_VERSION_GRACE_MS,
+  MAX_SECRET_VERSION_GRACE_MS,
+  MIN_SECRET_VERSION_GRACE_MS,
+  rotationConfigFromEnv,
+  type RotationConfig,
+} from './rotation-config.js';
 export {
   createServiceTokenVerifier,
   SECRET_SERVICES,

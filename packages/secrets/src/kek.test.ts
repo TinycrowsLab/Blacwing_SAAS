@@ -208,3 +208,23 @@ describe('disableTenantKek', () => {
     await expect(kek.rotateTenantKek('globex')).resolves.toMatchObject({ latestVersion: 2 });
   });
 });
+
+describe('getTenantKek', () => {
+  it('reads the key state without rotating it or auditing', async () => {
+    const { kek, events } = setup();
+    await kek.ensureTenantKek('acme');
+    const audited = events.length;
+    await expect(kek.getTenantKek('acme')).resolves.toMatchObject({
+      keyName: 'tenant-acme',
+      latestVersion: 1,
+      minDecryptionVersion: 1,
+    });
+    expect(events).toHaveLength(audited);
+  });
+
+  it('rejects an invalid tenant id before touching OpenBao', async () => {
+    const { kek, bao } = setup();
+    await expect(kek.getTenantKek('../x')).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    expect(bao.calls).toHaveLength(0);
+  });
+});

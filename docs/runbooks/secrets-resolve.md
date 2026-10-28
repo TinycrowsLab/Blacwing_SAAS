@@ -30,6 +30,7 @@ Content-Type: application/json
 | `SECRET_PURPOSE_DENIED` | 403 | The purpose is outside the service's matrix, the record's purpose or type does not match, or Cedar denied. |
 | `SECRET_NOT_FOUND` | 404 | Unknown secret or version (another tenant's secret looks the same). |
 | `SECRET_DISABLED` / `SECRET_SHREDDED` | 409 / 410 | The secret is switched off or its value is gone. |
+| `SECRET_VERSION_RETIRED` | 410 | A pinned `?v=` version went past its rotation grace period (`SECRET_VERSION_GRACE_MS`, default 1 hour). The consumer must drop the `?v=` pin to use the current version, or re-pin to the version that is current now. |
 | `RUN_KILLED` / `RUN_NOT_ACTIVE` | 423 / 409 | The run was killed (so revoked virtual keys cannot be re-minted) or has ended. |
 | `RATE_LIMITED` | 429 | Per-service limit; `Retry-After` is set. The refusal is still audited. |
 | `KEK_UNAVAILABLE` | 503 | OpenBao sealed or unreachable. Fail closed; nothing is served, and the cache is never served past its TTL. |

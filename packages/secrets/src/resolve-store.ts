@@ -14,13 +14,24 @@ export type RunInTenant = <T>(tenantId: string, fn: (tx: TenantSql) => Promise<T
 
 const SECRET_SQL = `SELECT id, tenant_id, type, purpose, backend, status, current_version, envelope, external_locator
   FROM secrets WHERE id = $1 AND tenant_id = $2`;
-const VERSION_SQL = `SELECT envelope, external_locator
+const VERSION_SQL = `SELECT envelope, external_locator, retired_at
   FROM secret_versions WHERE secret_id = $1 AND tenant_id = $2 AND version = $3`;
 
 const asObject = (value: unknown): Record<string, unknown> | null =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+
+/** `retired_at` of a superseded version. A value that is present but unreadable fails closed, never as "not retired". */
+function retiredAtOf(value: unknown): Date | null {
+  if (value === null || value === undefined) return null;
+  const date =
+    value instanceof Date
+      ? value
+      : new Date(typeof value === 'string' || typeof value === 'number' ? value : Number.NaN);
+  if (Number.isNaN(date.getTime())) throw new AppError('INTERNAL', 'unexpected retired_at value');
+  return date;
+}
 
 /**
  * Postgres-backed {@link SecretStore} over `secrets` and `secret_versions` (SECRETS-003). The tenant is both
@@ -57,6 +68,7 @@ export function createPgSecretStore(runInTenant: RunInTenant): SecretStore {
           version: pinned,
           envelope: asObject(source.envelope) as unknown as Envelope | null,
           externalLocator: asObject(source.external_locator),
+          retiredAt: pinned === current ? null : retiredAtOf(source.retired_at),
         } satisfies SecretRecord;
       }),
   };

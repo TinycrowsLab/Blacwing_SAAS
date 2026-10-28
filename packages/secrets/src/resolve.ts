@@ -91,6 +91,11 @@ export interface SecretRecord {
   readonly version: number;
   readonly envelope: Envelope | null;
   readonly externalLocator: Readonly<Record<string, unknown>> | null;
+  /**
+   * When a superseded version stops resolving (SECRETS-012). `null` for the current version and for a
+   * version that never rotated out. Optional so records built before rotation keep type-checking.
+   */
+  readonly retiredAt?: Date | null;
 }
 
 /** Tenant-scoped read of one secret record. */
@@ -212,6 +217,7 @@ const DENIAL_CODES: ReadonlySet<string> = new Set([
   'SECRET_PURPOSE_DENIED',
   'SECRET_DISABLED',
   'SECRET_SHREDDED',
+  'SECRET_VERSION_RETIRED',
   'RUN_KILLED',
   'RUN_NOT_ACTIVE',
   'RATE_LIMITED',
@@ -391,6 +397,17 @@ export function createSecretResolver(deps: SecretResolverDeps): SecretResolver {
     }
     if (record.status === 'shredded') throw new AppError('SECRET_SHREDDED', 'secret was shredded');
     if (record.status === 'disabled') throw new AppError('SECRET_DISABLED', 'secret is disabled');
+    // A pinned version past its grace period is refused, never silently served from the current one.
+    if (
+      record.retiredAt !== undefined &&
+      record.retiredAt !== null &&
+      record.retiredAt.getTime() <= now()
+    ) {
+      throw new AppError(
+        'SECRET_VERSION_RETIRED',
+        'pinned secret version was retired; drop the ?v= pin to use the current version',
+      );
+    }
 
     const type = record.type ?? 'generic';
     const cached = cacheTtlMs > 0 ? cacheGet(key) : undefined;

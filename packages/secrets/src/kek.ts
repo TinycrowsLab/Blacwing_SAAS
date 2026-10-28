@@ -54,6 +54,8 @@ export interface TenantKekService {
   ensureTenantKek(tenantId: string): Promise<KekInfo & { readonly created: boolean }>;
   /** New key version; older versions stay available to decrypt until shred. */
   rotateTenantKek(tenantId: string): Promise<KekInfo>;
+  /** Current key state (latest and minimum decrypt version). Read-only; resumes a rewrap after a crash. */
+  getTenantKek(tenantId: string): Promise<KekInfo>;
   getKekMinVersion(tenantId: string): Promise<number>;
   /** Raises the oldest version that may decrypt (rewrap support). */
   setKekMinDecryptVersion(tenantId: string, version: number): Promise<KekInfo>;
@@ -170,6 +172,10 @@ export function createTenantKekService(deps: TenantKekServiceDeps): TenantKekSer
         metrics.rotate('error');
         throw error;
       }
+    },
+
+    async getTenantKek(tenantId) {
+      return traced(() => requireKey(kekKeyName(tenantId)));
     },
 
     async getKekMinVersion(tenantId) {

@@ -216,6 +216,9 @@ const DEFINITIONS = {
   SECRET_NOT_FOUND: { status: 404, title: 'Secret not found', retryable: false },
   SECRET_DISABLED: { status: 409, title: 'Secret disabled', retryable: false },
   SECRET_SHREDDED: { status: 410, title: 'Secret shredded', retryable: false },
+  // A pinned `?v=` version whose rotation grace period ended (SECRETS-012). Pinned consumers must move to
+  // the current version (drop `?v=`) or re-pin to the version that is current now.
+  SECRET_VERSION_RETIRED: { status: 410, title: 'Secret version retired', retryable: false },
   RUN_KILLED: { status: 423, title: 'Run killed', retryable: false },
   EXTERNAL_BACKEND_UNAVAILABLE: {
     status: 503,
