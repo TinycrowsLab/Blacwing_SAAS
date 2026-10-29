@@ -5,6 +5,24 @@ export const name = '@blackwing/domain';
 export const version = '0.0.0';
 
 export {
+  assertSaDraft,
+  InvalidSaWindowError,
+  type SaDraftFields,
+} from './authorisation/validate.js';
+export {
+  IllegalSaTransitionError,
+  SA_EVENT_TYPES,
+  SA_TRANSITIONS,
+  type SaActor,
+  type SaAuditIntent,
+  type SaEventType,
+  type SaState,
+  type SaTransitionContext,
+  type SaTransitionResult,
+  transitionSa,
+} from './authorisation/state.js';
+
+export {
   hasPermission,
   knownRoles,
   permissionsForRoles,

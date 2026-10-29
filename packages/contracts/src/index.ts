@@ -5,6 +5,7 @@ export const name = '@blackwing/contracts';
 export const version = '0.0.0';
 
 export { canonicalQueryText, PERSISTED_HASH_PATTERN } from './graphql-persisted.js';
+export { SA_STATUSES, type SaStatus, saStatusSchema } from './authorisation.js';
 export {
   assertWithinCeiling,
   compareIntrusiveness,

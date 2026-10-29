@@ -6,3 +6,4 @@ export * from './secrets.js';
 export * from './persona-overrides.js';
 export * from './tenancy.js';
 export * from './signups.js';
+export * from './authorisation.js';

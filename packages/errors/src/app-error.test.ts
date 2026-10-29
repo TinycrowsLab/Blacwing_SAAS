@@ -181,6 +181,9 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   // Raised by apps/api's Run Broker (API-014) as plain AppErrors.
   'NOT_IMPLEMENTED',
   'RUN_NOT_ACTIVE',
+  // Raised by @blackwing/domain's standing-authorisation lifecycle (AUTHZ-001) as plain AppError subclasses.
+  'AUTHZ_ILLEGAL_TRANSITION',
+  'AUTHZ_INVALID_WINDOW',
   // Raised by @blackwing/audit (AUDIT-003) as AuditEventInvalidError.
   'AUDIT_EVENT_INVALID',
   // SeedForbiddenInProdError, @blackwing/db (DEVENV-011, #75).

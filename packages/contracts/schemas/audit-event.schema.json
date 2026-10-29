@@ -81,7 +81,9 @@
         "tenant.settings_updated",
         "auth.operator_login",
         "auth.operator_logout",
-        "auth.operator_session_revoked"
+        "auth.operator_session_revoked",
+        "authz.sa.created",
+        "authz.sa.state_changed"
       ]
     },
     "severity": {

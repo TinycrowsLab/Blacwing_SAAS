@@ -92,6 +92,13 @@
       "when": 1793154466336,
       "tag": "20261028022746_tenant_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793292882536,
+      "tag": "20261029165442_standing_authorisations",
+      "breakpoints": true
     }
   ]
 }

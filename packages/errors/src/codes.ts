@@ -85,6 +85,18 @@ const DEFINITIONS = {
     title: 'Budget exceeds the standing authorisation',
     retryable: false,
   },
+  // Standing-authorisation state machine (AUTHZ-001, §8.1). A transition the SA lifecycle does not allow
+  // is a conflict with the current state (409); a window that does not end after it starts is invalid input (422).
+  AUTHZ_ILLEGAL_TRANSITION: {
+    status: 409,
+    title: 'Illegal standing authorisation transition',
+    retryable: false,
+  },
+  AUTHZ_INVALID_WINDOW: {
+    status: 422,
+    title: 'Invalid standing authorisation window',
+    retryable: false,
+  },
   // Persona-definition validation (REGISTRY-001, §4.5/§8.11). Malformed or forbidden definitions are
   // rejected at load/CI time: invalid input (422); a persona that is not registered yet is 404.
   PERSONA_UNKNOWN: { status: 422, title: 'Unknown persona', retryable: false },

@@ -119,6 +119,13 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, createHash('sha256').update(randomBytes(32)).digest()],
     );
   },
+  standing_authorisations: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO standing_authorisations (id, tenant_id, public_id, asset_ids, scope_rules, max_intrusiveness, default_budgets, test_windows, valid_from, expires_at, requester_id)
+       VALUES ($1, $2, $3, $4::uuid[], '{}', 'passive', '{}', '[]', now(), now() + interval '30 days', $5)`,
+      [newId(), tenantId, `sa_${randomBytes(8).toString('hex')}`, [newId()], newId()],
+    );
+  },
 };
 
 let db: PostgresHandle;

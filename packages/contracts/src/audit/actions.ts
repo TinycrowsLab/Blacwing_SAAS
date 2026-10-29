@@ -519,6 +519,21 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'A platform operator session was revoked server-side (refresh refused, identity changed or offboarding).',
   },
+  // standing authorisation lifecycle (AUTHZ-001, §8.1, §8.8): appended; the event carries ids and states only
+  {
+    action: 'authz.sa.created',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A standing authorisation was created in the draft state.',
+  },
+  {
+    action: 'authz.sa.state_changed',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A standing authorisation changed state (from, to and the acting principal).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */
