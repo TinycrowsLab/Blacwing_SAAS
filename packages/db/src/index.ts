@@ -193,6 +193,15 @@ export {
   type PgPersonaOverrideStore,
   type StoredPersonaOverride,
 } from './persona-overrides.js';
+export {
+  createPgGate2DecisionStore,
+  type Decide,
+  type GateDecisionKind,
+  type GateDecisionStatus,
+  type OpenGate2Input,
+  type PgGate2DecisionStore,
+  type StoredGate2Decision,
+} from './gate-decisions.js';
 export { positionalSql, txQuery, type TxQueryResult } from './tx-query.js';
 export {
   OutboxDuplicateError,
