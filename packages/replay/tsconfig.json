@@ -6,5 +6,10 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
   "include": ["src"],
-  "references": []
+  "references": [
+    { "path": "../agents" },
+    { "path": "../contracts" },
+    { "path": "../domain" },
+    { "path": "../errors" }
+  ]
 }

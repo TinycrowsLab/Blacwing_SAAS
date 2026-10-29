@@ -11,10 +11,18 @@
   "scripts": {
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
-    "typecheck": "tsc -b --pretty false"
+    "typecheck": "tsc -b --pretty false",
+    "demo:juice-sqli": "tsx src/demo-cli.ts"
+  },
+  "dependencies": {
+    "@blackwing/contracts": "workspace:*",
+    "@blackwing/domain": "workspace:*",
+    "@blackwing/errors": "workspace:*"
   },
   "devDependencies": {
+    "@blackwing/agents": "workspace:*",
     "@types/node": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
