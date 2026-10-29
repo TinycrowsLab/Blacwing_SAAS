@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@blackwing/agents": "workspace:*",
+    "@blackwing/contracts": "workspace:*",
     "zod": "catalog:"
   }
 }
