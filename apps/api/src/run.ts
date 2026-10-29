@@ -6,6 +6,7 @@ import { authOptionsFromConfig } from './auth/from-config.js';
 import { createApiApp, type CreateApiAppOptions } from './bootstrap/create-app.js';
 import { createHttpMetrics } from './bootstrap/metrics.js';
 import { type ApiConfig, loadApiConfig } from './config.js';
+import { demoModuleFor } from './demo/index.js';
 
 import type { AuthOptions } from './auth/module.js';
 import type { SessionValkey } from './auth/session-cookie.js';
@@ -79,7 +80,8 @@ export async function runApi(options: RunApiOptions): Promise<NestFastifyApplica
       ...(options.tenantPrincipalSource === undefined
         ? {}
         : { tenantPrincipalSource: options.tenantPrincipalSource }),
-      ...(options.imports === undefined ? {} : { imports: options.imports }),
+      // DEMO-STORY: the demo module is mounted only when BW_DEMO_MODE=1 (inert otherwise).
+      imports: [...(options.imports ?? []), ...demoModuleFor(options.source)],
     });
     await app.listen({ port: config.API_PORT, host: config.API_HOST });
     logger.info({ port: config.API_PORT, host: config.API_HOST }, 'api.listening');
