@@ -80,8 +80,66 @@ The password is `BW_DEV_KEYCLOAK_TEST_USER_PASSWORD` in the repository `.env`. P
 | Keycloak timeout during seed | Keycloak is up on `localhost:18080`. The seed only warns. Users keep a `pending:` subject, so sign-in may still work. |
 | Juice Shop not reachable | `docker logs bw-demo-juice`, or `docker rm -f bw-demo-juice` and rerun `pnpm demo`. |
 
+## The story, click by click
+
+`pnpm demo` sets `BW_DEMO_MODE=1`. That mounts the demo routes in the API (`/v1/demo`, `apps/api/src/demo`), starts the
+demo runner (`apps/worker/src/demo`) and serves the pages under `/demo` (`apps/web/src/app/demo`). Demo data lives in
+the `demo` schema of `blackwing_demo` (migration `20261029200000_demo_story_schema`). Every demo page is marked
+DEMO MODE.
+
+1. Open `http://localhost:3000/demo`. Sign in as `appsec@acme.test` (password in `.env`).
+2. **Dashboard** (`/demo`): counts, pending Gate 1 requests, runs and confirmed findings. The fallback finding is
+   already there, so the story always has a complete finding to show.
+3. **Assets** (`/demo/assets`): the lab asset `OWASP Juice Shop (lab)` on `http://127.0.0.1:3001`, ownership
+   `verified` (basis: demo stub, lab trust). Click **Request assessment**.
+4. **New assessment request** (`/demo/requests/new`): test case is the pinned SQL injection check of issue #881
+   (`GET /rest/products/search`, parameter `q`, CWE-89). Intrusiveness `active_safe`, scope host `127.0.0.1`, path
+   prefix `/rest/products/search`, budget 8 requests and 300 seconds. Submit.
+5. **Gate 1** on the request page: click **Approve at Gate 1** as the requester. It is refused with
+   `separation_of_duties` (the requester cannot approve their own request).
+6. Click **Sign out**, then sign in as `owner@acme.test` (asset owner). Open the same request
+   (`/demo/requests/<id>`) and approve. This is a real second login.
+7. Still as the owner, sign out and sign in as `appsec@acme.test` again. Click **Start run**.
+8. **Live run** (`/demo/runs/<id>`): the timeline polls every 1.5 s. Stages: run accepted (pins), scope check, planner
+   selection, detection probe (`apple'`, benign), two replays, negative control (`apple`), finding, run completed. The
+   probe and control are real HTTP requests to the lab target. The run takes about 8 seconds.
+9. **Finding** (`/demo/findings/<id>`): the confirmed SQL injection. Evidence shows the probe response (HTTP 500,
+   `SQLITE_ERROR`), the negative control (HTTP 200, no error), the replay table and a copyable `curl` repro.
+10. **Report**: **Download report (HTML)** or **Download report (Markdown)** on the finding page.
+11. `/demo/about` lists what is real and what is a stub. Read it before presenting.
+
+Check the whole story without a browser: `node scripts/demo.mjs smoke`. It runs Gate 1 (SoD refusal, then
+approval), a run, the repro on the lab target, both reports and the scope refusal, and exits 1 on any failure.
+
+### Real versus demo stub
+
+| Piece | State |
+|---|---|
+| Keycloak login, BFF session, roles | Real |
+| Tenant `acme`, seeded users | Real (seed in `blackwing_demo`) |
+| Asset ownership (lab trust) | Demo stub: no DNS or HTTP proof |
+| Request scope, intrusiveness, budget checks | Real rules, demo tables (`demo` schema, no RLS) |
+| Gate 1 separation of duties and asset-owner role | Real rule, demo storage (not the audit ledger) |
+| Planner, specialist | Demo stub: deterministic, no model call |
+| Sandbox, egress gateway, Temporal | Demo stub: the runner probes the lab target from the demo worker process |
+| Probes, oracle (error signature), negative control | Real logic and real HTTP to Juice Shop |
+| Severity (CVSS v4.0 score) | Demo-assigned, not calculated |
+| Report (HTML, Markdown) | Real rendering of the stored finding |
+| Kill switch, Gate 3 release, audit ledger | Not in the demo |
+
+The browser never calls the demo API. The demo web server calls it with `BW_DEMO_INTERNAL_TOKEN` (in `.env.demo`)
+and the identity of the Keycloak session. The API refuses any call without that token (401).
+
+### Demo-only code and migration
+
+- `apps/api/src/demo/**`, mounted by `apps/api/src/run.ts` only when `BW_DEMO_MODE=1`.
+- `apps/worker/src/demo/**`, started as the `demo-runner` service. It refuses to start unless `BW_DEMO_MODE=1`.
+- `apps/web/src/app/demo/**` and `apps/web/src/components/demo/**`.
+- `packages/db/migrations/20261029200000_demo_story_schema.sql`: schema `demo`, no RLS, granted to `bw_app`. It is
+  inert unless the demo code reads it. Do not use it for customer data.
+
 ## Status of the story
 
-The console flow (dashboard, asset, assessment request, Gate 1 approval, run, finding, report) is not built on
-`main` yet. The API has no asset or assessment endpoints, and the console has no dashboard, asset or request pages.
-The seed also skips the `assets` tables until they are merged. See `docs/runbooks/demo-status.md`.
+The story runs on localhost with the stubs listed above. The production assessment, Gate 1, run and finding
+pieces are still being built on `main`; the demo keeps its own tables until they land. See
+`docs/runbooks/demo-status.md`.
