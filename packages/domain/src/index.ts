@@ -112,6 +112,15 @@ export {
   WRITE_SURFACE_TOOL,
 } from './surface/write.js';
 export {
+  GATE_DECISION_AUDIT_ACTION,
+  GATE_DECISION_METRIC,
+  GATE_DECISION_METRIC_LABELS,
+  type GateDecisionAuditEvent,
+  type GateDecisionPorts,
+  type GateDecisionRow,
+  recordGateDecision,
+} from './gate/record.js';
+export {
   applySurfaceWrite,
   emptySurfaceModel,
   getMergedSurface,

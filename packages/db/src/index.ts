@@ -202,6 +202,10 @@ export {
   type StoredPersonaOverride,
 } from './persona-overrides.js';
 export {
+  AuthzGateDecisionRepository,
+  type AuthzGateDecisionRepositoryOptions,
+} from './authz-gate-decision.repository.js';
+export {
   createPgGate2DecisionStore,
   type Decide,
   type GateDecisionKind,

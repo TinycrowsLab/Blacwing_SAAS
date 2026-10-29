@@ -213,6 +213,13 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, newId(), `iso-${randomBytes(8).toString('hex')}`],
     );
   },
+  authz_gate_decisions: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO authz_gate_decisions (id, tenant_id, gate, subject_type, subject_id, decision, auto)
+       VALUES ($1, $2, 1, 'test_plan', $3, 'rejected', false)`,
+      [newId(), tenantId, newId()],
+    );
+  },
   runs: async (tx, tenantId) => {
     await tx.query(`INSERT INTO runs (id, tenant_id) VALUES ($1, $2)`, [newId(), tenantId]);
   },

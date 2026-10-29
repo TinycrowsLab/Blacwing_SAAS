@@ -8,6 +8,7 @@ export * from './tenancy.js';
 export * from './signups.js';
 export * from './authorisation.js';
 export * from './gate-decisions.js';
+export * from './authz-gate-decisions.js';
 export * from './assets.js';
 export * from './runs.js';
 export * from './test-plans.js';

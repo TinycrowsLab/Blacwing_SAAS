@@ -550,6 +550,14 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'config_change',
     description: 'The standing-authorisation signing key was rotated to a new Transit version.',
   },
+  // gate decisions (AUTHZ-005, §8.4, §8.8): one event per recorded Gate 1/2/3 or SA decision; ids only
+  {
+    action: 'authz.gate.decision',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'gate_decision',
+    description: 'A gate decision (approved, rejected, deferred or auto-approved) was recorded.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

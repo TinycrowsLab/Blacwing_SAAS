@@ -134,6 +134,13 @@
       "when": 1793306000100,
       "tag": "20261029213000_findings_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793306000200,
+      "tag": "20261029213100_authz_gate_decisions",
+      "breakpoints": true
     }
   ]
 }

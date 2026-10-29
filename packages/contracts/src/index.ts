@@ -714,3 +714,16 @@ export {
   agentSessionPersonaSchema,
   agentSessionRecordSchema,
 } from './agent-session.js';
+export {
+  GATE_DECISIONS,
+  GATE_NUMBERS,
+  GATE_SUBJECT_TYPES,
+  type GateDecision,
+  type GateDecisionInput,
+  gateDecisionInputSchema,
+  gateDecisionSchema,
+  type GateNumber,
+  gateNumberSchema,
+  type GateSubjectType,
+  gateSubjectTypeSchema,
+} from './gate/decision.js';
