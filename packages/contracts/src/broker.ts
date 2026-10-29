@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
+import { findingLocationSchema } from './entities/finding.js';
 import { runStateSchema } from './entities/run.js';
+import { oracleSchema } from './entities/test-case.js';
 import { intrusivenessClassSchema } from './intrusiveness.js';
 import { LIMITS } from './limits.js';
-import { isoDateTimeSchema, sha256HexSchema, uuidV7Schema } from './primitives.js';
+import { cweIdSchema, isoDateTimeSchema, sha256HexSchema, uuidV7Schema } from './primitives.js';
 
 /**
  * Contracts of the internal Run Broker API (API-014, #66; CONTEXT_PACK §4.1/§9). The broker is reachable
@@ -89,8 +91,29 @@ export const brokerCandidateRequestSchema = z.strictObject({
   assetRef: z.string().min(1).max(URL_MAX).optional(),
   summary: z.string().max(TEXT_MAX).optional(),
   evidenceIds: z.array(uuidV7Schema).max(EVIDENCE_IDS_MAX).default([]),
+  /**
+   * Set by `mcp__findings__submit_candidate` (MCP-009): the candidate is bound to the test case's
+   * pre-declared oracle and negative control. There is deliberately no status field: a broker candidate is
+   * always created as `candidate` (§8.11).
+   */
+  testCaseId: uuidV7Schema.optional(),
+  cweId: cweIdSchema.optional(),
+  owaspCategory: z.string().min(1).max(LIMITS.shortTextMax).optional(),
+  location: findingLocationSchema.optional(),
+  oracleBinding: oracleSchema.optional(),
+  negativeControlRef: z.string().min(1).max(LIMITS.keyMax).optional(),
+  confidence: z.number().min(0).max(1).optional(),
+  /** sha256 over `(testCaseId, location, oracleBinding)`; a repeat submission returns the same finding. */
+  idempotencyKey: sha256HexSchema.optional(),
 });
 export type BrokerCandidateRequest = z.infer<typeof brokerCandidateRequestSchema>;
+
+/** Answer of `POST .../candidates`: the finding id; the status can only be `candidate`. */
+export const brokerCandidateResponseSchema = z.strictObject({
+  findingId: uuidV7Schema,
+  status: z.literal('candidate'),
+});
+export type BrokerCandidateResponse = z.infer<typeof brokerCandidateResponseSchema>;
 
 /** `POST /internal/broker/runs/{runId}/evidence`: metadata only, never the evidence bytes (EVIDENCE implements). */
 export const brokerEvidenceRequestSchema = z.strictObject({

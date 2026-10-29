@@ -31,6 +31,7 @@ const MCP_TOOL_TRACER = 'blackwing.mcp-tools';
 export const MCP_SERVERS = [
   'engagement',
   'evidence',
+  'findings',
   'intel',
   'journal',
   'oob',

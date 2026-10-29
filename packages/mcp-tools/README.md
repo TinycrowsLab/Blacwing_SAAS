@@ -27,3 +27,15 @@ MCP-002 to MCP-014; the exposure matrix with MCP-015.
   `mcp_tool_output_truncated_total` (`createToolMetrics`); span `mcp.tool`.
 
 This package runs inside agent sandboxes and may not import server-only packages (`dependency-graph.md`).
+
+## `mcp__findings__submit_candidate` (MCP-009, #673)
+
+`createSubmitCandidateTool(session)` lets a specialist submit a candidate finding. The session supplies the
+persisted test-case record (oracle and negative control declared before the test ran), an evidence check and a
+reversal-journal check; none of it is model input. A submission is rejected with `TOOL_INVALID_INPUT` and a
+reason (`oracle_not_predeclared`, `missing_negative_control`, `missing_reversal_journal`, `invalid_evidence`,
+`wrong_test_case`, `test_case_not_running`) unless the oracle binding equals the declared oracle, the negative
+control is declared, a `state_changing` test case has a journal entry and the evidence ids exist. It posts to the
+broker `candidates` endpoint with an idempotency key over `(testCaseId, location, oracleBinding)` and can only
+return status `candidate`. Metrics: `mcp_candidates_submitted_total{class}`,
+`mcp_candidate_rejections_total{reason}` (`createCandidateMetrics`); span `mcp.submit_candidate`.

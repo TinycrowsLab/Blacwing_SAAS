@@ -74,3 +74,12 @@ export {
   parseNaabu,
 } from './recon/parse.js';
 export { createDiscoverServicesTool, type DiscoverServicesSession } from './recon/tool.js';
+export { type CandidateMetrics, createCandidateMetrics } from './findings/metrics.js';
+export {
+  createSubmitCandidateTool,
+  type DeclaredTestCase,
+  type SubmitCandidateInput,
+  type SubmitCandidateSession,
+  submitCandidateInputSchema,
+  submitCandidateOutputSchema,
+} from './findings/submit-candidate.js';

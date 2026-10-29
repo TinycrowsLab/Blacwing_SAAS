@@ -453,6 +453,8 @@ export {
   BROKER_TOKEN_PREFIX,
   type BrokerCandidateRequest,
   brokerCandidateRequestSchema,
+  type BrokerCandidateResponse,
+  brokerCandidateResponseSchema,
   type BrokerEvidenceRequest,
   brokerEvidenceRequestSchema,
   type BrokerJournalRequest,

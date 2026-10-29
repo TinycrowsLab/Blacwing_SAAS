@@ -39,7 +39,9 @@
   "paths": {
     "/kill": {
       "post": {
-        "tags": ["kill"],
+        "tags": [
+          "kill"
+        ],
         "operationId": "triggerKill",
         "summary": "Trigger the kill switch for a run, asset or the whole tenant",
         "description": "Requires kill:trigger and the Cedar Kill::trigger resource check. An asset_owner may kill only assets they own; only org_admin may kill the tenant. Propagation is asynchronous: poll the Location.",
@@ -426,7 +428,9 @@
     },
     "/kill/{id}": {
       "get": {
-        "tags": ["kill"],
+        "tags": [
+          "kill"
+        ],
         "operationId": "getKillEvent",
         "summary": "A kill event with its halt timings",
         "security": [
@@ -923,7 +927,9 @@
     },
     "/audit/events": {
       "get": {
-        "tags": ["audit"],
+        "tags": [
+          "audit"
+        ],
         "operationId": "listAuditEvents",
         "summary": "Search the audit ledger of the caller tenant",
         "description": "Requires audit:read (auditor, org_admin). Newest first, by (occurredAt, seq). The tenant comes from the caller, never from the query. `from` and `to` are ISO-8601 UTC with a Z. Pass the previous nextCursor to continue; a cursor is bound to its filters. The query itself is recorded as audit.queried. includeChain=true needs the auditor role.",
@@ -1047,7 +1053,11 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": ["success", "failure", "denied"]
+              "enum": [
+                "success",
+                "failure",
+                "denied"
+              ]
             },
             "example": "success"
           },
@@ -1077,7 +1087,10 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": ["true", "false"]
+              "enum": [
+                "true",
+                "false"
+              ]
             },
             "description": "Auditors only: include hash and prevHash."
           },
@@ -1111,7 +1124,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["items"],
+                  "required": [
+                    "items"
+                  ],
                   "properties": {
                     "items": {
                       "type": "array",
@@ -1461,7 +1476,9 @@
     },
     "/runs/{runId}/events": {
       "get": {
-        "tags": ["runs"],
+        "tags": [
+          "runs"
+        ],
         "operationId": "streamRunEvents",
         "summary": "Stream the live events of one run (text/event-stream)",
         "description": "Requires run:read in the caller tenant. A run outside that tenant answers 403 exactly like a missing one. Each run event is one frame: `id` is the stream entry id, `event` the run event type, `data` the JSON event. Reconnect with the `Last-Event-ID` header (or `lastEventId` query) to replay the missed events; at most API_SSE_MAX_REPLAY are replayed. Control frames (no id): `state` and `end` for a finished run or a terminal event, `resync` (refetch the run: events were trimmed, the client was too slow, or the replay was too long), `timeout` (API_SSE_MAX_DURATION_MS reached) and `error` (the event source failed; reconnect with backoff). The `event` names `state`, `resync`, `end`, `timeout` and `error` are reserved for control frames. A heartbeat comment (`: heartbeat`) is sent every API_SSE_HEARTBEAT_MS while idle.",
@@ -1827,7 +1844,9 @@
     },
     "/personas": {
       "get": {
-        "tags": ["personas"],
+        "tags": [
+          "personas"
+        ],
         "operationId": "listPersonas",
         "summary": "The persona registry for the caller tenant",
         "description": "Requires run:read, which every tenant role holds. Lists the fixed roster of personas in roster order, each with the settings a run of the caller tenant would pin (the tenant override merged in). Guardrail flags and internal fields are not published.",
@@ -1862,11 +1881,21 @@
                             "maxTurns": 10,
                             "maxBudgetUsd": 2
                           },
-                          "overridden": ["effort", "maxTurns"],
-                          "allowedTools": ["Read"],
-                          "disallowedTools": ["WebFetch", "WebSearch"],
+                          "overridden": [
+                            "effort",
+                            "maxTurns"
+                          ],
+                          "allowedTools": [
+                            "Read"
+                          ],
+                          "disallowedTools": [
+                            "WebFetch",
+                            "WebSearch"
+                          ],
                           "declaredOracleTypes": [],
-                          "inputs": ["scope"],
+                          "inputs": [
+                            "scope"
+                          ],
                           "intrusivenessCeiling": "passive",
                           "requiresSubmission": false,
                           "helpers": []
@@ -2359,7 +2388,9 @@
     },
     "/personas/{persona}": {
       "get": {
-        "tags": ["personas"],
+        "tags": [
+          "personas"
+        ],
         "operationId": "getPersona",
         "summary": "One persona of the registry for the caller tenant",
         "description": "Requires run:read. The same view as the list, for one persona of the fixed roster.",
@@ -2424,11 +2455,21 @@
                         "maxTurns": 10,
                         "maxBudgetUsd": 2
                       },
-                      "overridden": ["effort", "maxTurns"],
-                      "allowedTools": ["Read"],
-                      "disallowedTools": ["WebFetch", "WebSearch"],
+                      "overridden": [
+                        "effort",
+                        "maxTurns"
+                      ],
+                      "allowedTools": [
+                        "Read"
+                      ],
+                      "disallowedTools": [
+                        "WebFetch",
+                        "WebSearch"
+                      ],
                       "declaredOracleTypes": [],
-                      "inputs": ["scope"],
+                      "inputs": [
+                        "scope"
+                      ],
                       "intrusivenessCeiling": "passive",
                       "requiresSubmission": false,
                       "helpers": []
@@ -2729,7 +2770,9 @@
     },
     "/personas/{persona}/override": {
       "get": {
-        "tags": ["personas"],
+        "tags": [
+          "personas"
+        ],
         "operationId": "getPersonaOverride",
         "summary": "The tenant override of a persona",
         "description": "Requires settings:read. Answers the override the tenant set, or null when none is set (the base values apply).",
@@ -3125,7 +3168,9 @@
         }
       },
       "put": {
-        "tags": ["personas"],
+        "tags": [
+          "personas"
+        ],
         "operationId": "putPersonaOverride",
         "summary": "Replace the tenant override of a persona",
         "description": "Requires settings:write (org_admin). The body replaces the whole override; an empty object resets the persona to its base values. Only effort, maxTurns, maxBudgetUsd and lowerStandardTier are accepted: any other field answers OVERRIDE_FIELD_FORBIDDEN. Values above the persona bounds are clamped, never raised. The change is audited as persona.override_changed.",
@@ -3566,11 +3611,15 @@
     },
     "/signup": {
       "post": {
-        "tags": ["signup"],
+        "tags": [
+          "signup"
+        ],
         "operationId": "requestSignup",
         "summary": "Ask for a verification e-mail to create an organisation",
         "description": "Always answers 202 with the same body, whether or not the address already has an account, so the endpoint cannot be used to enumerate customers. A verification link is mailed; nothing is created until it is used.",
-        "security": [{}],
+        "security": [
+          {}
+        ],
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -4122,11 +4171,15 @@
     },
     "/signup/verify": {
       "post": {
-        "tags": ["signup"],
+        "tags": [
+          "signup"
+        ],
         "operationId": "verifySignup",
         "summary": "Verify the e-mail address and create the organisation",
         "description": "Consumes the single-use token from the e-mail. An unknown, expired, used or cancelled token is 400 SIGNUP_TOKEN_INVALID and creates nothing. When the address already has an account no second tenant is created: the answer is existing_account and the caller goes to login.",
-        "security": [{}],
+        "security": [
+          {}
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -4664,7 +4717,9 @@
     },
     "/tenant/settings": {
       "get": {
-        "tags": ["tenant"],
+        "tags": [
+          "tenant"
+        ],
         "operationId": "getTenantSettings",
         "summary": "Read the tenant settings",
         "security": [
@@ -5385,7 +5440,9 @@
         }
       },
       "patch": {
-        "tags": ["tenant"],
+        "tags": [
+          "tenant"
+        ],
         "operationId": "updateTenantSettings",
         "summary": "Change the tenant settings",
         "description": "Requires If-Match. Unknown keys and region are rejected. An unknown time zone answers invalid_timezone. An empty or unchanged body is a no-op.",
@@ -6358,16 +6415,29 @@
           },
           "severity": {
             "type": "string",
-            "enum": ["info", "notice", "warning", "critical"]
+            "enum": [
+              "info",
+              "notice",
+              "warning",
+              "critical"
+            ]
           },
           "actor": {
             "type": "object",
             "description": "Who acted. `email` is only returned to auditors.",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "type": {
                 "type": "string",
-                "enum": ["user", "operator", "service", "system", "anonymous"]
+                "enum": [
+                  "user",
+                  "operator",
+                  "service",
+                  "system",
+                  "anonymous"
+                ]
               },
               "id": {
                 "type": "string"
@@ -6382,7 +6452,10 @@
           },
           "target": {
             "type": "object",
-            "required": ["type", "id"],
+            "required": [
+              "type",
+              "id"
+            ],
             "properties": {
               "type": {
                 "type": "string"
@@ -6397,10 +6470,17 @@
           },
           "outcome": {
             "type": "string",
-            "enum": ["success", "failure", "denied"]
+            "enum": [
+              "success",
+              "failure",
+              "denied"
+            ]
           },
           "reason": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "metadata": {
             "type": "object",
@@ -6411,10 +6491,16 @@
             "description": "Only returned to auditors."
           },
           "traceId": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "runId": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "uuid"
           },
           "hash": {
@@ -6422,7 +6508,10 @@
             "description": "Hex SHA-256 chain hash. Only with includeChain=true."
           },
           "prevHash": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Hex previous hash; null on the genesis row. Only with includeChain=true."
           }
         }
@@ -6447,7 +6536,12 @@
           },
           "scope": {
             "type": "string",
-            "enum": ["run", "asset", "tenant", "global"]
+            "enum": [
+              "run",
+              "asset",
+              "tenant",
+              "global"
+            ]
           },
           "scopeRefId": {
             "anyOf": [
@@ -6462,7 +6556,13 @@
           },
           "source": {
             "type": "string",
-            "enum": ["console", "api", "soc_link", "operator", "system"]
+            "enum": [
+              "console",
+              "api",
+              "soc_link",
+              "operator",
+              "system"
+            ]
           },
           "actorType": {
             "type": "string",
@@ -6480,7 +6580,13 @@
           },
           "status": {
             "type": "string",
-            "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
+            "enum": [
+              "initiated",
+              "propagating",
+              "halted",
+              "partially_halted",
+              "failed"
+            ]
           },
           "triggeredAt": {
             "type": "string",
@@ -6574,10 +6680,17 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": ["blocked", "already_blocked", "failed"]
+                      "enum": [
+                        "blocked",
+                        "already_blocked",
+                        "failed"
+                      ]
                     }
                   },
-                  "required": ["identity", "outcome"],
+                  "required": [
+                    "identity",
+                    "outcome"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -6608,10 +6721,18 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": ["terminated", "already_gone", "terminating", "failed"]
+                      "enum": [
+                        "terminated",
+                        "already_gone",
+                        "terminating",
+                        "failed"
+                      ]
                     }
                   },
-                  "required": ["sandboxId", "outcome"],
+                  "required": [
+                    "sandboxId",
+                    "outcome"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -6632,10 +6753,17 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": ["revoked", "already_revoked", "failed"]
+                      "enum": [
+                        "revoked",
+                        "already_revoked",
+                        "failed"
+                      ]
                     }
                   },
-                  "required": ["keyId", "outcome"],
+                  "required": [
+                    "keyId",
+                    "outcome"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -6656,10 +6784,18 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": ["cancelled", "already_closed", "not_found", "failed"]
+                      "enum": [
+                        "cancelled",
+                        "already_closed",
+                        "not_found",
+                        "failed"
+                      ]
                     }
                   },
-                  "required": ["workflowId", "outcome"],
+                  "required": [
+                    "workflowId",
+                    "outcome"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -6735,7 +6871,11 @@
         "properties": {
           "scope": {
             "type": "string",
-            "enum": ["run", "asset", "tenant"]
+            "enum": [
+              "run",
+              "asset",
+              "tenant"
+            ]
           },
           "scopeRefId": {
             "type": "string",
@@ -6746,7 +6886,10 @@
             "maxLength": 2000
           }
         },
-        "required": ["scope", "reason"],
+        "required": [
+          "scope",
+          "reason"
+        ],
         "additionalProperties": false
       },
       "KillTriggerResponse": {
@@ -6758,7 +6901,13 @@
           },
           "status": {
             "type": "string",
-            "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
+            "enum": [
+              "initiated",
+              "propagating",
+              "halted",
+              "partially_halted",
+              "failed"
+            ]
           },
           "triggeredAt": {
             "type": "string",
@@ -6766,7 +6915,11 @@
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
           }
         },
-        "required": ["killEventId", "status", "triggeredAt"],
+        "required": [
+          "killEventId",
+          "status",
+          "triggeredAt"
+        ],
         "additionalProperties": false
       },
       "PersonaOverride": {
@@ -6774,7 +6927,13 @@
         "properties": {
           "effort": {
             "type": "string",
-            "enum": ["low", "medium", "high", "xhigh", "max"]
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ]
           },
           "maxTurns": {
             "type": "integer",
@@ -6795,7 +6954,11 @@
       "PersonaOverrideView": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["persona", "override", "updatedAt"],
+        "required": [
+          "persona",
+          "override",
+          "updatedAt"
+        ],
         "properties": {
           "persona": {
             "type": "string",
@@ -6832,7 +6995,10 @@
             ]
           },
           "updatedAt": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           }
         }
@@ -6840,7 +7006,9 @@
       "PersonaRegistryList": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["items"],
+        "required": [
+          "items"
+        ],
         "properties": {
           "items": {
             "type": "array",
@@ -6887,7 +7055,11 @@
           },
           "tierAlias": {
             "type": "string",
-            "enum": ["deep", "standard", "fast"]
+            "enum": [
+              "deep",
+              "standard",
+              "fast"
+            ]
           },
           "effective": {
             "type": "object",
@@ -6898,7 +7070,13 @@
               },
               "effort": {
                 "type": "string",
-                "enum": ["low", "medium", "high", "xhigh", "max"]
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh",
+                  "max"
+                ]
               },
               "maxTurns": {
                 "type": "integer",
@@ -6910,14 +7088,24 @@
                 "exclusiveMinimum": 0
               }
             },
-            "required": ["model", "effort", "maxTurns", "maxBudgetUsd"],
+            "required": [
+              "model",
+              "effort",
+              "maxTurns",
+              "maxBudgetUsd"
+            ],
             "additionalProperties": false
           },
           "overridden": {
             "type": "array",
             "items": {
               "type": "string",
-              "enum": ["effort", "maxTurns", "maxBudgetUsd", "lowerStandardTier"]
+              "enum": [
+                "effort",
+                "maxTurns",
+                "maxBudgetUsd",
+                "lowerStandardTier"
+              ]
             }
           },
           "allowedTools": {
@@ -6959,7 +7147,11 @@
           },
           "intrusivenessCeiling": {
             "type": "string",
-            "enum": ["passive", "active_safe", "state_changing"]
+            "enum": [
+              "passive",
+              "active_safe",
+              "state_changing"
+            ]
           },
           "requiresSubmission": {
             "type": "boolean"
@@ -6979,7 +7171,11 @@
                 },
                 "tierAlias": {
                   "type": "string",
-                  "enum": ["deep", "standard", "fast"]
+                  "enum": [
+                    "deep",
+                    "standard",
+                    "fast"
+                  ]
                 },
                 "allowedTools": {
                   "type": "array",
@@ -6989,7 +7185,12 @@
                   }
                 }
               },
-              "required": ["name", "description", "tierAlias", "allowedTools"],
+              "required": [
+                "name",
+                "description",
+                "tierAlias",
+                "allowedTools"
+              ],
               "additionalProperties": false
             }
           }
@@ -7050,12 +7251,22 @@
                   "type": "string"
                 }
               },
-              "required": ["path", "message", "code"],
+              "required": [
+                "path",
+                "message",
+                "code"
+              ],
               "additionalProperties": false
             }
           }
         },
-        "required": ["type", "title", "status", "code", "traceId"],
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code",
+          "traceId"
+        ],
         "additionalProperties": false
       },
       "SignupAccepted": {
@@ -7066,7 +7277,9 @@
             "const": "verification_requested"
           }
         },
-        "required": ["status"],
+        "required": [
+          "status"
+        ],
         "additionalProperties": false
       },
       "SignupRequest": {
@@ -7084,7 +7297,10 @@
             "maxLength": 100
           }
         },
-        "required": ["email", "orgName"],
+        "required": [
+          "email",
+          "orgName"
+        ],
         "additionalProperties": false
       },
       "SignupVerified": {
@@ -7107,7 +7323,11 @@
                 "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
               }
             },
-            "required": ["outcome", "tenantId", "slug"],
+            "required": [
+              "outcome",
+              "tenantId",
+              "slug"
+            ],
             "additionalProperties": false
           },
           {
@@ -7118,7 +7338,9 @@
                 "const": "existing_account"
               }
             },
-            "required": ["outcome"],
+            "required": [
+              "outcome"
+            ],
             "additionalProperties": false
           }
         ]
@@ -7132,7 +7354,9 @@
             "maxLength": 512
           }
         },
-        "required": ["token"],
+        "required": [
+          "token"
+        ],
         "additionalProperties": false
       },
       "TenantSettings": {
@@ -7146,7 +7370,11 @@
           "defaultAssessmentMode": {
             "default": "grey",
             "type": "string",
-            "enum": ["black", "grey", "white"]
+            "enum": [
+              "black",
+              "grey",
+              "white"
+            ]
           },
           "defaultNotificationEmail": {
             "type": "string",
@@ -7166,7 +7394,10 @@
             ]
           }
         },
-        "required": ["displayTimezone", "defaultAssessmentMode"],
+        "required": [
+          "displayTimezone",
+          "defaultAssessmentMode"
+        ],
         "additionalProperties": false
       },
       "TenantSettingsPatch": {
@@ -7178,7 +7409,11 @@
           },
           "defaultAssessmentMode": {
             "type": "string",
-            "enum": ["black", "grey", "white"]
+            "enum": [
+              "black",
+              "grey",
+              "white"
+            ]
           },
           "defaultNotificationEmail": {
             "anyOf": [
@@ -7228,7 +7463,11 @@
               "defaultAssessmentMode": {
                 "default": "grey",
                 "type": "string",
-                "enum": ["black", "grey", "white"]
+                "enum": [
+                  "black",
+                  "grey",
+                  "white"
+                ]
               },
               "defaultNotificationEmail": {
                 "type": "string",
@@ -7248,7 +7487,10 @@
                 ]
               }
             },
-            "required": ["displayTimezone", "defaultAssessmentMode"],
+            "required": [
+              "displayTimezone",
+              "defaultAssessmentMode"
+            ],
             "additionalProperties": false
           },
           "region": {
@@ -7260,7 +7502,11 @@
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
           }
         },
-        "required": ["settings", "region", "updatedAt"],
+        "required": [
+          "settings",
+          "region",
+          "updatedAt"
+        ],
         "additionalProperties": false
       }
     }
