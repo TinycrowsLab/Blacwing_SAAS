@@ -99,6 +99,13 @@
       "when": 1793292882536,
       "tag": "20261029165442_standing_authorisations",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793300000000,
+      "tag": "20261029200000_demo_story_schema",
+      "breakpoints": true
     }
   ]
 }
