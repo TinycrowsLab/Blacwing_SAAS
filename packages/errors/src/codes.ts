@@ -280,6 +280,19 @@ const DEFINITIONS = {
     retryable: true,
   },
   GRAPH_MIGRATION_INVALID: { status: 500, title: 'Graph migration file invalid', retryable: false },
+  // Surface-graph repository (GRAPH-004, §8.6). A graph access without a tenant context, or with a tenant id that
+  // differs from it, fails closed (403, never retried). A Cypher template that does not bind $tenantId is a code
+  // defect (500). A failing query is a permanent server fault (500); a transient one that the driver gave up on
+  // after its retries is an outage (503, retryable).
+  GRAPH_NO_TENANT_CONTEXT: { status: 403, title: 'Graph tenant context missing', retryable: false },
+  GRAPH_TENANT_MISMATCH: { status: 403, title: 'Graph tenant mismatch', retryable: false },
+  GRAPH_UNSCOPED_QUERY: {
+    status: 500,
+    title: 'Graph query is not tenant scoped',
+    retryable: false,
+  },
+  GRAPH_QUERY_FAILED: { status: 500, title: 'Graph query failed', retryable: false },
+  GRAPH_QUERY_UNAVAILABLE: { status: 503, title: 'Graph query unavailable', retryable: true },
   // Keycloak Admin API (IAM-002). An unreachable or overloaded Keycloak is an outage (503, retryable). A refused
   // credential or permission, a request Keycloak rejects and an unexpected response are server faults (500, never
   // retried unchanged). A missing resource (404) and a duplicate (409) keep their meaning.

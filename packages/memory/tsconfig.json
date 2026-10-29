@@ -11,6 +11,12 @@
       "path": "../config"
     },
     {
+      "path": "../contracts"
+    },
+    {
+      "path": "../db"
+    },
+    {
       "path": "../errors"
     },
     {
