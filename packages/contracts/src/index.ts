@@ -600,3 +600,42 @@ export {
   type TechnologyNode,
   templatise,
 } from './surface.js';
+
+export {
+  evidenceRefSchema,
+  evidenceRefsSchema,
+  nfcTextSchema,
+  ORACLE_BINDING_TYPES,
+  type OracleBinding,
+  OracleBindingSchema,
+  type OracleBindingType,
+  oracleBindingTypeSchema,
+  type OracleObservation,
+  OracleObservationSchema,
+} from './validation/oracle.js';
+export {
+  endpointRefSchema,
+  type EndpointRef,
+  MAX_REPLAY_INPUT_REFS,
+  MAX_REPLAY_STEPS,
+  MAX_REPLAY_TARGETS,
+  type NegativeControl,
+  NEGATIVE_CONTROL_STRATEGIES,
+  negativeControlSchema,
+  negativeControlStrategySchema,
+  type ReplaySpec,
+  replaySpecSchema,
+  type ReplayStep,
+  replayStepSchema,
+  type RunPins,
+  runPinsSchema,
+} from './validation/replay-spec.js';
+export {
+  MAX_REPLAY_MS,
+  MAX_VALIDATION_ATTEMPTS,
+  type ValidationOutcome,
+  validationOutcomeSchema,
+  type ValidationResult,
+  validationResultSchema,
+  VALIDATION_OUTCOMES,
+} from './validation/result.js';
