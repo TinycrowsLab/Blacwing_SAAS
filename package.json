@@ -18,6 +18,7 @@
     "dev:doctor": "node scripts/dev-doctor.mjs",
     "check-env": "node scripts/check-env.mjs",
     "dev:deps": "node scripts/dev-deps.mjs up",
+    "demo": "node scripts/demo.mjs",
     "dev:deps:obs": "node scripts/dev-deps.mjs obs",
     "dev:deps:obs:smoke": "node scripts/obs-smoke.mjs",
     "dev:tls": "node scripts/dev-deps.mjs tls",
