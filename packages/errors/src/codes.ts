@@ -284,6 +284,10 @@ const DEFINITIONS = {
     retryable: false,
   },
   KEYCLOAK_CONFLICT: { status: 409, title: 'Identity provider conflict', retryable: false },
+  // Separation of duties (F31, CONTEXT_PACK §8.4, #352). A requester approving their own request, too few distinct
+  // approvers, an approver outside the eligible roles, or a missing actor (fail closed). A refusal of an authorisation
+  // boundary (403), never retried unchanged. The error class lives in @blackwing/domain/sod.
+  SOD_VIOLATION: { status: 403, title: 'Separation of duties violated', retryable: false },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

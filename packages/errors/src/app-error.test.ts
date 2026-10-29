@@ -210,6 +210,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'KEYCLOAK_REJECTED',
   'KEYCLOAK_NOT_FOUND',
   'KEYCLOAK_CONFLICT',
+  // Subclassed by @blackwing/domain/sod (#352) as SodViolationError.
+  'SOD_VIOLATION',
 ];
 
 describe('AppError subclasses', () => {

@@ -931,6 +931,9 @@ importers:
       '@blackwing/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@blackwing/domain':
+        specifier: workspace:*
+        version: link:../domain
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../errors
@@ -993,6 +996,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
+      '@cedar-policy/cedar-wasm':
+        specifier: 'catalog:'
+        version: 4.13.0
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
