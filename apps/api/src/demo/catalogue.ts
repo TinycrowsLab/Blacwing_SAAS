@@ -4,7 +4,7 @@
 // No data is extracted and nothing is weaponised. The target must be the verified local lab asset.
 
 export const DEMO_TEST_CASE = Object.freeze({
-  id: 'wstg-inpv-05-sqli-products-search',
+  id: 'webapi.injection.sql',
   title: 'SQL injection in product search',
   wstg: 'WSTG-INPV-05',
   cwe: 'CWE-89',
@@ -23,14 +23,15 @@ export const DEMO_TEST_CASE = Object.freeze({
     label: 'Negative control: an ordinary search term must not trigger the oracle',
   },
   oracle: {
-    id: 'oracle-sqli-error-signature-sqlite',
+    id: 'oracle.webapi.injection.sql.error_signature.v1',
     type: 'error_signature' as const,
     declaredAt: '2026-10-29T00:00:00.000Z',
     params: { signature: 'SQLITE_ERROR' },
   },
   replayCount: 2,
   /** Lab image the story was recorded against. The runner records the live version in the run pins. */
-  labImage: 'bkimminich/juice-shop',
+  labImage:
+    'bkimminich/juice-shop:v17.1.1@sha256:9e437b456e444ff001d1663e4f6f05c796fe02f1058dd2651d6791a15b43dfeb',
 });
 
 export type DemoTestCase = typeof DEMO_TEST_CASE;

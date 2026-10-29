@@ -14,17 +14,25 @@ import {
 } from './replay.js';
 
 const PINS: ReplayPins = {
-  asset: { id: '0197a5d0-0000-7000-8000-00000000a001', baseUrl: 'http://127.0.0.1:3001', name: 'lab' },
+  asset: {
+    id: '0197a5d0-0000-7000-8000-00000000a001',
+    baseUrl: 'http://127.0.0.1:3001',
+    name: 'lab',
+  },
   scope: { method: 'GET', host: '127.0.0.1', pathPrefix: '/rest/products/search', parameter: 'q' },
   testCase: {
-    id: 'wstg-inpv-05-sqli-products-search',
+    id: 'webapi.injection.sql',
     title: 'SQL injection in product search',
     cwe: 'CWE-89',
     owasp: 'A03:2021-Injection',
     wstg: 'WSTG-INPV-05',
     probe: { value: "apple'", label: 'probe' },
     negativeControl: { value: 'apple', label: 'control' },
-    oracle: { id: 'oracle-sqli-error-signature-sqlite', type: 'error_signature', params: { signature: 'SQLITE_ERROR' } },
+    oracle: {
+      id: 'oracle.webapi.injection.sql.error_signature.v1',
+      type: 'error_signature',
+      params: { signature: 'SQLITE_ERROR' },
+    },
     replayCount: 2,
   },
 };
@@ -43,7 +51,11 @@ function fakeFetch(respond: (url: string) => ObservedResponse) {
   };
 }
 
-const quietDeps = (fetch: (url: string) => Promise<ObservedResponse>, events: StageEvent[], budget = 8) => ({
+const quietDeps = (
+  fetch: (url: string) => Promise<ObservedResponse>,
+  events: StageEvent[],
+  budget = 8,
+) => ({
   fetch,
   sleep: () => Promise.resolve(),
   stageDelayMs: 0,
@@ -56,31 +68,58 @@ const quietDeps = (fetch: (url: string) => Promise<ObservedResponse>, events: St
 
 describe('errorSignatureMatches (deterministic oracle)', () => {
   it('matches the signature in the body, regardless of status', () => {
-    expect(errorSignatureMatches({ status: 500, contentType: 'text/html', body: ERROR_BODY }, 'SQLITE_ERROR')).toBe(true);
+    expect(
+      errorSignatureMatches(
+        { status: 500, contentType: 'text/html', body: ERROR_BODY },
+        'SQLITE_ERROR',
+      ),
+    ).toBe(true);
   });
   it('does not match an ordinary response', () => {
-    expect(errorSignatureMatches({ status: 200, contentType: 'application/json', body: OK_BODY }, 'SQLITE_ERROR')).toBe(false);
+    expect(
+      errorSignatureMatches(
+        { status: 200, contentType: 'application/json', body: OK_BODY },
+        'SQLITE_ERROR',
+      ),
+    ).toBe(false);
   });
   it('never matches an empty signature', () => {
-    expect(errorSignatureMatches({ status: 200, contentType: '', body: 'anything' }, '')).toBe(false);
+    expect(errorSignatureMatches({ status: 200, contentType: '', body: 'anything' }, '')).toBe(
+      false,
+    );
   });
 });
 
 describe('probeUrl and scope', () => {
   it('encodes the single quote as %27 so the repro works in a shell', () => {
-    expect(probeUrl(PINS.asset.baseUrl, PINS, "apple'")).toBe('http://127.0.0.1:3001/rest/products/search?q=apple%27');
+    expect(probeUrl(PINS.asset.baseUrl, PINS, "apple'")).toBe(
+      'http://127.0.0.1:3001/rest/products/search?q=apple%27',
+    );
   });
   it('refuses a host, a path or a method outside the scope', () => {
-    expect(() => { assertInScope('http://example.com/rest/products/search?q=a', PINS); }).toThrow(ScopeRefusal);
-    expect(() => { assertInScope('http://127.0.0.1:3001/api/Users', PINS); }).toThrow(ScopeRefusal);
-    expect(() => { assertInScope('http://127.0.0.1:3001/rest/products/search?q=a', { ...PINS, scope: { ...PINS.scope, method: 'POST' } }); }).toThrow(ScopeRefusal);
+    expect(() => {
+      assertInScope('http://example.com/rest/products/search?q=a', PINS);
+    }).toThrow(ScopeRefusal);
+    expect(() => {
+      assertInScope('http://127.0.0.1:3001/api/Users', PINS);
+    }).toThrow(ScopeRefusal);
+    expect(() => {
+      assertInScope('http://127.0.0.1:3001/rest/products/search?q=a', {
+        ...PINS,
+        scope: { ...PINS.scope, method: 'POST' },
+      });
+    }).toThrow(ScopeRefusal);
   });
 });
 
 describe('runPinnedCase', () => {
   it('confirms when both replays match and the negative control does not', async () => {
     const events: StageEvent[] = [];
-    const { fetch, seen } = fakeFetch((url) => (url.endsWith('%27') ? { status: 500, contentType: 'text/html', body: ERROR_BODY } : { status: 200, contentType: 'application/json', body: OK_BODY }));
+    const { fetch, seen } = fakeFetch((url) =>
+      url.endsWith('%27')
+        ? { status: 500, contentType: 'text/html', body: ERROR_BODY }
+        : { status: 200, contentType: 'application/json', body: OK_BODY },
+    );
     const outcome = await runPinnedCase(PINS, 'run-1', quietDeps(fetch, events));
     expect(outcome.confirmed).toBe(true);
     expect(outcome.requestsUsed).toBe(4);
@@ -92,7 +131,11 @@ describe('runPinnedCase', () => {
 
   it('does not confirm when the negative control also matches', async () => {
     const events: StageEvent[] = [];
-    const { fetch } = fakeFetch(() => ({ status: 500, contentType: 'text/html', body: ERROR_BODY }));
+    const { fetch } = fakeFetch(() => ({
+      status: 500,
+      contentType: 'text/html',
+      body: ERROR_BODY,
+    }));
     const outcome = await runPinnedCase(PINS, 'run-2', quietDeps(fetch, events));
     expect(outcome.confirmed).toBe(false);
   });
@@ -100,6 +143,8 @@ describe('runPinnedCase', () => {
   it('stops at the request budget (fail closed)', async () => {
     const events: StageEvent[] = [];
     const { fetch } = fakeFetch(() => ({ status: 200, contentType: '', body: OK_BODY }));
-    await expect(runPinnedCase(PINS, 'run-3', quietDeps(fetch, events, 2))).rejects.toBeInstanceOf(BudgetExhausted);
+    await expect(runPinnedCase(PINS, 'run-3', quietDeps(fetch, events, 2))).rejects.toBeInstanceOf(
+      BudgetExhausted,
+    );
   });
 });

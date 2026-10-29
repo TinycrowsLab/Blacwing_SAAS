@@ -54,7 +54,7 @@ const DEMO_USERS = {
   requester: 'appsec@acme.test',
   approver: 'owner@acme.test',
 };
-const DEMO_TEST_CASE_ID = 'wstg-inpv-05-sqli-products-search';
+const DEMO_TEST_CASE_ID = 'webapi.injection.sql';
 
 const log = (msg) => process.stdout.write(`[demo] ${msg}\n`);
 const fail = (msg) => {
@@ -85,7 +85,8 @@ function ensureDemoEnv() {
     BW_WEB_SESSION_SECRET: existing.BW_WEB_SESSION_SECRET ?? randomBytes(48).toString('base64url'),
     BW_WEB_SESSION_SECRET_PREVIOUS: existing.BW_WEB_SESSION_SECRET_PREVIOUS ?? '',
     BW_CONSOLE_ORIGIN: existing.BW_CONSOLE_ORIGIN ?? `http://localhost:${WEB_PORT}`,
-    BW_DEMO_INTERNAL_TOKEN: existing.BW_DEMO_INTERNAL_TOKEN ?? randomBytes(32).toString('base64url'),
+    BW_DEMO_INTERNAL_TOKEN:
+      existing.BW_DEMO_INTERNAL_TOKEN ?? randomBytes(32).toString('base64url'),
   };
   const changed = Object.keys(generated).some((k) => existing[k] !== generated[k]);
   if (!changed) return { ...existing, ...generated };
@@ -380,7 +381,11 @@ async function smoke() {
       const detail = await fn();
       results.push({ ok: true, name, detail: detail ?? '' });
     } catch (error) {
-      results.push({ ok: false, name, detail: error instanceof Error ? error.message : String(error) });
+      results.push({
+        ok: false,
+        name,
+        detail: error instanceof Error ? error.message : String(error),
+      });
     }
     const last = results.at(-1);
     log(`${last.ok ? 'PASS' : 'FAIL'} ${name}${last.detail === '' ? '' : ` (${last.detail})`}`);
@@ -412,40 +417,76 @@ async function smoke() {
     ctx.assetId = asset.id;
   });
   await check('request refused for a target outside the scope', async () => {
-    const r = await api(requester.user, 'POST', '/requests', {
-      assetId: ctx.assetId,
-      testCaseId: DEMO_TEST_CASE_ID,
-      intrusiveness: 'active_safe',
-      budgetRequests: 8,
-      budgetSeconds: 300,
-      scope: { host: 'example.com', pathPrefix: '/rest/products/search' },
-    }, requester.roles);
-    expect(r.status === 422 && r.json.code === 'scope_outside_asset', `HTTP ${r.status} ${r.json.code ?? ''}`);
+    const r = await api(
+      requester.user,
+      'POST',
+      '/requests',
+      {
+        assetId: ctx.assetId,
+        testCaseId: DEMO_TEST_CASE_ID,
+        intrusiveness: 'active_safe',
+        budgetRequests: 8,
+        budgetSeconds: 300,
+        scope: { host: 'example.com', pathPrefix: '/rest/products/search' },
+      },
+      requester.roles,
+    );
+    expect(
+      r.status === 422 && r.json.code === 'scope_outside_asset',
+      `HTTP ${r.status} ${r.json.code ?? ''}`,
+    );
   });
   await check('request created for Gate 1 (requester)', async () => {
-    const r = await api(requester.user, 'POST', '/requests', {
-      assetId: ctx.assetId,
-      testCaseId: DEMO_TEST_CASE_ID,
-      intrusiveness: 'active_safe',
-      budgetRequests: 8,
-      budgetSeconds: 300,
-      scope: { host: '127.0.0.1', pathPrefix: '/rest/products/search' },
-    }, requester.roles);
+    const r = await api(
+      requester.user,
+      'POST',
+      '/requests',
+      {
+        assetId: ctx.assetId,
+        testCaseId: DEMO_TEST_CASE_ID,
+        intrusiveness: 'active_safe',
+        budgetRequests: 8,
+        budgetSeconds: 300,
+        scope: { host: '127.0.0.1', pathPrefix: '/rest/products/search' },
+      },
+      requester.roles,
+    );
     expect(r.status === 200 || r.status === 201, `HTTP ${r.status} ${r.json.code ?? ''}`);
     expect(r.json.status === 'pending_gate1', `status ${r.json.status}`);
     ctx.requestId = r.json.id;
   });
   await check('Gate 1 refuses the requester (separation of duties)', async () => {
-    const r = await api(requester.user, 'POST', `/requests/${ctx.requestId}/decision`, { decision: 'approve' }, requester.roles);
-    expect(r.status === 403 && r.json.code === 'separation_of_duties', `HTTP ${r.status} ${r.json.code ?? ''}`);
+    const r = await api(
+      requester.user,
+      'POST',
+      `/requests/${ctx.requestId}/decision`,
+      { decision: 'approve' },
+      requester.roles,
+    );
+    expect(
+      r.status === 403 && r.json.code === 'separation_of_duties',
+      `HTTP ${r.status} ${r.json.code ?? ''}`,
+    );
   });
   await check('Gate 1 approved by the second user (asset owner)', async () => {
-    const r = await api(approver.user, 'POST', `/requests/${ctx.requestId}/decision`, { decision: 'approve' }, approver.roles);
+    const r = await api(
+      approver.user,
+      'POST',
+      `/requests/${ctx.requestId}/decision`,
+      { decision: 'approve' },
+      approver.roles,
+    );
     expect(r.status === 200, `HTTP ${r.status} ${r.json.code ?? ''}`);
     expect(r.json.status === 'approved', `status ${r.json.status}`);
   });
   await check('run started by the requester', async () => {
-    const r = await api(requester.user, 'POST', `/requests/${ctx.requestId}/runs`, undefined, requester.roles);
+    const r = await api(
+      requester.user,
+      'POST',
+      `/requests/${ctx.requestId}/runs`,
+      undefined,
+      requester.roles,
+    );
     expect(r.status === 200 || r.status === 201, `HTTP ${r.status} ${r.json.code ?? ''}`);
     ctx.runId = r.json.id;
   });
@@ -453,7 +494,13 @@ async function smoke() {
     const deadline = Date.now() + 90_000;
     let run = {};
     while (Date.now() < deadline) {
-      const r = await api(requester.user, 'GET', `/runs/${ctx.runId}?afterSeq=0`, undefined, requester.roles);
+      const r = await api(
+        requester.user,
+        'GET',
+        `/runs/${ctx.runId}?afterSeq=0`,
+        undefined,
+        requester.roles,
+      );
       run = r.json;
       if (run.state === 'completed' || run.state === 'failed') break;
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -464,29 +511,62 @@ async function smoke() {
     ctx.events = run.events.length;
   });
   await check('finding is the pinned SQL injection, confirmed by two replays', async () => {
-    const r = await api(requester.user, 'GET', `/findings/${ctx.findingId}`, undefined, requester.roles);
+    const r = await api(
+      requester.user,
+      'GET',
+      `/findings/${ctx.findingId}`,
+      undefined,
+      requester.roles,
+    );
     expect(r.status === 200, `HTTP ${r.status}`);
     expect(r.json.status === 'confirmed', `status ${r.json.status}`);
     expect(r.json.cwe === 'CWE-89', `cwe ${r.json.cwe}`);
-    expect(r.json.replay.replays.length === 2 && r.json.replay.replays.every((x) => x.matched), 'replays not matched');
+    expect(
+      r.json.replay.replays.length === 2 && r.json.replay.replays.every((x) => x.matched),
+      'replays not matched',
+    );
     expect(r.json.replay.negativeControl.matched === false, 'negative control matched');
     ctx.finding = r.json;
   });
   await check('repro on the lab target: probe errors, negative control does not', async () => {
     const probe = await fetch(ctx.finding.evidence.probe.request.url);
     const probeBody = await probe.text();
-    expect(probe.status === 500 && probeBody.includes('SQLITE_ERROR'), `probe HTTP ${probe.status}`);
+    expect(
+      probe.status === 500 && probeBody.includes('SQLITE_ERROR'),
+      `probe HTTP ${probe.status}`,
+    );
     const control = await fetch(ctx.finding.evidence.negativeControl.request.url);
     const controlBody = await control.text();
-    expect(control.status === 200 && !controlBody.includes('SQLITE_ERROR'), `control HTTP ${control.status}`);
+    expect(
+      control.status === 200 && !controlBody.includes('SQLITE_ERROR'),
+      `control HTTP ${control.status}`,
+    );
   });
   await check('HTML report downloads and carries the finding', async () => {
-    const r = await api(requester.user, 'GET', `/findings/${ctx.findingId}/report?format=html`, undefined, requester.roles);
-    expect(r.status === 200 && r.text.includes('<!doctype html>') && r.text.includes('SQL injection'), `HTTP ${r.status}`);
+    const r = await api(
+      requester.user,
+      'GET',
+      `/findings/${ctx.findingId}/report?format=html`,
+      undefined,
+      requester.roles,
+    );
+    expect(
+      r.status === 200 && r.text.includes('<!doctype html>') && r.text.includes('SQL injection'),
+      `HTTP ${r.status}`,
+    );
   });
   await check('Markdown report downloads and carries the repro', async () => {
-    const r = await api(requester.user, 'GET', `/findings/${ctx.findingId}/report?format=md`, undefined, requester.roles);
-    expect(r.status === 200 && r.text.includes('## Reproduction') && r.text.includes('SQLITE_ERROR'), `HTTP ${r.status}`);
+    const r = await api(
+      requester.user,
+      'GET',
+      `/findings/${ctx.findingId}/report?format=md`,
+      undefined,
+      requester.roles,
+    );
+    expect(
+      r.status === 200 && r.text.includes('## Reproduction') && r.text.includes('SQLITE_ERROR'),
+      `HTTP ${r.status}`,
+    );
   });
   await check('dashboard shows the run and a confirmed finding', async () => {
     const r = await api(requester.user, 'GET', '/dashboard', undefined, requester.roles);
@@ -499,7 +579,9 @@ async function smoke() {
     log(`FAILED: ${failed.map((f) => f.name).join('; ')}`);
     process.exit(1);
   }
-  log(`story URLs: http://localhost:${WEB_PORT}/demo  (sign in as ${DEMO_USERS.requester}, then ${DEMO_USERS.approver})`);
+  log(
+    `story URLs: http://localhost:${WEB_PORT}/demo  (sign in as ${DEMO_USERS.requester}, then ${DEMO_USERS.approver})`,
+  );
 }
 
 function status() {
@@ -536,14 +618,16 @@ async function main() {
 
   const demo = ensureDemoEnv();
   const baseEnv = demoEnv(demo);
-  if (baseEnv.BW_DEV_POSTGRES_SUPERUSER === undefined) fail('.env is missing; run pnpm dev:deps first');
+  if (baseEnv.BW_DEV_POSTGRES_SUPERUSER === undefined)
+    fail('.env is missing; run pnpm dev:deps first');
   stepDeps(baseEnv);
   stepJuice();
   stepDatabase(baseEnv);
   stepMigrateAndSeed(baseEnv);
   // The tenant id is known only after the seed; the demo API and runner need it.
   const tenantId = demoTenantId(baseEnv);
-  if (tenantId === '') fail('the demo tenant acme is not in blackwing_demo; see the seed output above');
+  if (tenantId === '')
+    fail('the demo tenant acme is not in blackwing_demo; see the seed output above');
   const env = demoEnv({ ...demo, BW_DEMO_TENANT_ID: tenantId });
   stepServices(env);
   waitFor('API', `http://127.0.0.1:${API_PORT}/health/live`, 60_000);
