@@ -4,7 +4,7 @@
 // status change writes its audit event through the audit hook inside the same transaction: a change that
 // cannot be audited does not happen.
 
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import {
@@ -102,6 +102,9 @@ export interface AssessmentRequestRepositoryOptions {
   readonly tenant?: () => string | undefined;
 }
 
+/** Upper bound of one `list` page; a cursor arrives with the pagination of the list endpoints. */
+const LIST_LIMIT = 100;
+
 const FOREIGN_KEY_VIOLATION = '23503';
 const CHECK_VIOLATION = '23514';
 
@@ -180,6 +183,19 @@ export class AssessmentRequestRepository {
         .where(and(eq(assessmentRequests.id, rowId), eq(assessmentRequests.tenantId, tenantId)))
         .limit(1);
       return { row: rows[0], rowCount: rows.length };
+    });
+  }
+
+  /** The newest requests of the ambient tenant, at most `LIST_LIMIT`. RLS and the tenant filter keep others out. */
+  async list(): Promise<AssessmentRequestRow[]> {
+    return this.run('list', async (tx, tenantId) => {
+      const rows = await tx
+        .select()
+        .from(assessmentRequests)
+        .where(eq(assessmentRequests.tenantId, tenantId))
+        .orderBy(desc(assessmentRequests.createdAt))
+        .limit(LIST_LIMIT);
+      return { row: rows, rowCount: rows.length };
     });
   }
 

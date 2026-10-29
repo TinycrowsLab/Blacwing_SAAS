@@ -2,12 +2,26 @@
 // Do not edit by hand: `pnpm test` fails when this file is stale.
 
 export const OPERATIONS = {
+  createAssessmentRequest: {
+    method: 'POST',
+    path: '/v1/assessment-requests',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   decideGate1: {
     method: 'POST',
     path: '/v1/runs/{runId}/gate1/decisions',
     pathParams: ['runId'],
     queryParams: [],
     requiredHeaders: ['Idempotency-Key'],
+  },
+  getAssessmentRequest: {
+    method: 'GET',
+    path: '/v1/assessment-requests/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
   },
   getGate1Plan: {
     method: 'GET',
@@ -40,6 +54,13 @@ export const OPERATIONS = {
   getTenantSettings: {
     method: 'GET',
     path: '/v1/tenant/settings',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
+  },
+  listAssessmentRequests: {
+    method: 'GET',
+    path: '/v1/assessment-requests',
     pathParams: [],
     queryParams: [],
     requiredHeaders: [],
@@ -97,12 +118,26 @@ export const OPERATIONS = {
     queryParams: ['lastEventId'],
     requiredHeaders: [],
   },
+  submitAssessmentRequest: {
+    method: 'POST',
+    path: '/v1/assessment-requests/{id}/submit',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['Idempotency-Key'],
+  },
   triggerKill: {
     method: 'POST',
     path: '/v1/kill',
     pathParams: [],
     queryParams: [],
     requiredHeaders: ['Idempotency-Key'],
+  },
+  updateAssessmentRequest: {
+    method: 'PATCH',
+    path: '/v1/assessment-requests/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
   },
   updateTenantSettings: {
     method: 'PATCH',
@@ -117,6 +152,13 @@ export const OPERATIONS = {
     pathParams: [],
     queryParams: [],
     requiredHeaders: [],
+  },
+  withdrawAssessmentRequest: {
+    method: 'POST',
+    path: '/v1/assessment-requests/{id}/withdraw',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
   },
 } as const;
 

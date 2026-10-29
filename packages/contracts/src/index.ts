@@ -214,6 +214,18 @@ export {
   saEnvelopeSchema,
 } from './entities/sa-envelope.js';
 export {
+  type AssessmentRequestListResponse,
+  assessmentRequestListResponseSchema,
+  type AssessmentRequestResponse,
+  assessmentRequestPublicIdSchema,
+  assessmentRequestResponseSchema,
+  type CreateAssessmentRequest,
+  createAssessmentRequestSchema,
+  type PatchAssessmentRequest,
+  patchAssessmentRequestSchema,
+  type SubmitErrorCode,
+} from './entities/assessment-request-api.js';
+export {
   type Run,
   type RunMode,
   RUN_MODES,

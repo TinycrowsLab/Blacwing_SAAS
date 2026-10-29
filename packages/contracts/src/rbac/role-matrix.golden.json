@@ -1,5 +1,5 @@
 {
-  "catalogueVersion": 2,
+  "catalogueVersion": 3,
   "permissions": [
     "asset:read",
     "asset:write",
@@ -8,6 +8,7 @@
     "sa:create",
     "sa:approve",
     "sa:revoke",
+    "assessment:create",
     "run:read",
     "assessment:read",
     "run:create",
@@ -49,6 +50,7 @@
     "org_admin": [
       "asset:read",
       "sa:read",
+      "assessment:create",
       "run:read",
       "assessment:read",
       "testplan:read",
@@ -78,6 +80,7 @@
       "asset:verify",
       "sa:read",
       "sa:create",
+      "assessment:create",
       "run:read",
       "assessment:read",
       "run:create",

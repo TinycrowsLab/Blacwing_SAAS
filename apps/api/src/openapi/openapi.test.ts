@@ -99,6 +99,12 @@ const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   verifySignup: 'signup',
   getTenantSettings: 'tenant',
   updateTenantSettings: 'tenant',
+  listAssessmentRequests: 'assessment-requests',
+  createAssessmentRequest: 'assessment-requests',
+  getAssessmentRequest: 'assessment-requests',
+  updateAssessmentRequest: 'assessment-requests',
+  submitAssessmentRequest: 'assessment-requests',
+  withdrawAssessmentRequest: 'assessment-requests',
 };
 
 describe('public OpenAPI document', () => {
@@ -132,23 +138,29 @@ describe('public OpenAPI document', () => {
       }
     }
     expect(ids.sort()).toEqual([
+      'createAssessmentRequest',
       'decideGate1',
+      'getAssessmentRequest',
       'getGate1Plan',
       'getKillEvent',
       'getPersona',
       'getPersonaOverride',
       'getTenantSettings',
+      'listAssessmentRequests',
       'listAuditEvents',
       'listKillEvents',
       'listPersonas',
       'putPersonaOverride',
       'requestSignup',
       'streamRunEvents',
+      'submitAssessmentRequest',
       'triggerKill',
+      'updateAssessmentRequest',
       'updateTenantSettings',
       'verifySignup',
+      'withdrawAssessmentRequest',
     ]);
-    expect(countOperations(doc)).toBe(15);
+    expect(countOperations(doc)).toBe(21);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -210,6 +222,7 @@ describe('public OpenAPI document', () => {
       'personas',
       'signup',
       'tenant',
+      'assessment-requests',
     ]);
   });
 });
@@ -269,7 +282,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(15);
+    expect(result.operations).toBe(21);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

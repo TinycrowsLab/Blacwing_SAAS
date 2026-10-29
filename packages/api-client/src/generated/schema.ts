@@ -245,10 +245,225 @@ export interface paths {
     patch: operations['updateTenantSettings'];
     trace?: never;
   };
+  '/assessment-requests': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List the assessment requests of the tenant, newest first */
+    get: operations['listAssessmentRequests'];
+    put?: never;
+    /**
+     * Create a draft assessment request
+     * @description Needs assessment:create. Every named asset must belong to the tenant (404 otherwise). Nothing is validated against the standing authorisation until submit.
+     */
+    post: operations['createAssessmentRequest'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/assessment-requests/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read one assessment request */
+    get: operations['getAssessmentRequest'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Edit a draft assessment request
+     * @description Requires If-Match. Only a draft can be edited (409 otherwise). An empty body is refused.
+     */
+    patch: operations['updateAssessmentRequest'];
+    trace?: never;
+  };
+  '/assessment-requests/{id}/submit': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Submit a draft after the scope gate
+     * @description Runs every check of the gate (asset verification, standing authorisation status, expiry, coverage, intrusiveness ceiling, scope subset, budgets) and answers 422 with all failing checks in errors[] (each with its code and path). A halted tenant answers 409 tenant_halted. Needs Idempotency-Key.
+     */
+    post: operations['submitAssessmentRequest'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/assessment-requests/{id}/withdraw': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Withdraw a request
+     * @description Requires If-Match. A withdrawn request is terminal.
+     */
+    post: operations['withdrawAssessmentRequest'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AssessmentRequest: {
+      id: string;
+      /** @enum {string} */
+      status: 'draft' | 'submitted' | 'withdrawn' | 'promoted' | 'rejected';
+      /** @enum {string} */
+      mode: 'black' | 'grey' | 'white';
+      objective: string;
+      assetIds: string[];
+      saId: string | null;
+      inputManifestId: string | null;
+      scopeRules: {
+        [key: string]: unknown;
+      };
+      /** @enum {string} */
+      maxIntrusiveness: 'passive' | 'active_safe' | 'state_changing';
+      budgets: {
+        costCapUsd: number;
+        maxRequests: number;
+        maxDurationMs: number;
+      };
+      /** @enum {string} */
+      trigger: 'console' | 'api' | 'ci' | 'schedule' | 'retest';
+      /** Format: uuid */
+      requestedBy: string;
+      stateVersion: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    AssessmentRequestCreate: {
+      /** @enum {string} */
+      mode: 'black' | 'grey' | 'white';
+      objective: string;
+      /** @default [] */
+      assetIds: string[];
+      scopeRules?: {
+        rules: {
+          /** @enum {string} */
+          effect: 'include' | 'exclude';
+          host?: unknown;
+          cidr?: unknown;
+          ports?: unknown[];
+          paths?: unknown[];
+          methods?: (
+            'GET' | 'HEAD' | 'OPTIONS' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'CONNECT'
+          )[];
+        }[];
+      };
+      /**
+       * @default active_safe
+       * @enum {string}
+       */
+      maxIntrusiveness: 'passive' | 'active_safe' | 'state_changing';
+      budgets?: {
+        costCapUsd?: number;
+        maxRequests?: number;
+        maxDurationMs?: number;
+      };
+      /** Format: uuid */
+      inputManifestId?: string;
+      /** Format: uuid */
+      saId?: string;
+      /**
+       * @default console
+       * @enum {string}
+       */
+      trigger: 'console' | 'api' | 'ci' | 'schedule' | 'retest';
+    };
+    AssessmentRequestList: {
+      items: {
+        id: string;
+        /** @enum {string} */
+        status: 'draft' | 'submitted' | 'withdrawn' | 'promoted' | 'rejected';
+        /** @enum {string} */
+        mode: 'black' | 'grey' | 'white';
+        objective: string;
+        assetIds: string[];
+        saId: string | null;
+        inputManifestId: string | null;
+        scopeRules: {
+          [key: string]: unknown;
+        };
+        /** @enum {string} */
+        maxIntrusiveness: 'passive' | 'active_safe' | 'state_changing';
+        budgets: {
+          costCapUsd: number;
+          maxRequests: number;
+          maxDurationMs: number;
+        };
+        /** @enum {string} */
+        trigger: 'console' | 'api' | 'ci' | 'schedule' | 'retest';
+        /** Format: uuid */
+        requestedBy: string;
+        stateVersion: number;
+        /** Format: date-time */
+        createdAt: string;
+        /** Format: date-time */
+        updatedAt: string;
+      }[];
+    };
+    AssessmentRequestPatch: {
+      /** @enum {string} */
+      mode?: 'black' | 'grey' | 'white';
+      objective?: string;
+      assetIds?: string[];
+      scopeRules?: {
+        rules: {
+          /** @enum {string} */
+          effect: 'include' | 'exclude';
+          host?: unknown;
+          cidr?: unknown;
+          ports?: unknown[];
+          paths?: unknown[];
+          methods?: (
+            'GET' | 'HEAD' | 'OPTIONS' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'CONNECT'
+          )[];
+        }[];
+      };
+      /** @enum {string} */
+      maxIntrusiveness?: 'passive' | 'active_safe' | 'state_changing';
+      budgets?: {
+        costCapUsd?: number;
+        maxRequests?: number;
+        maxDurationMs?: number;
+      };
+      /** Format: uuid */
+      inputManifestId?: string;
+      /** Format: uuid */
+      saId?: string;
+      /** @enum {string} */
+      trigger?: 'console' | 'api' | 'ci' | 'schedule' | 'retest';
+    };
     AuditEventView: {
       /** Format: uuid */
       id: string;
@@ -2070,7 +2285,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, SOD_VIOLATION. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -2162,7 +2377,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, SOD_VIOLATION. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -2247,7 +2462,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, SOD_VIOLATION. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -2342,7 +2557,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, SOD_VIOLATION. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -2388,6 +2603,585 @@ export interface operations {
         };
       };
       /** @description Problem details; code is one of PRECONDITION_REQUIRED. */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listAssessmentRequests: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The requests of the caller tenant. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssessmentRequestList'];
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  createAssessmentRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AssessmentRequestCreate'];
+      };
+    };
+    responses: {
+      /** @description The created draft and its ETag. */
+      201: {
+        headers: {
+          /** @description Strong validator of this request state. Send it in If-Match on PATCH and withdraw. */
+          ETag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssessmentRequest'];
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Body validation failed (validation_failed). */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getAssessmentRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The `areq_…` public id of the assessment request. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The request and its ETag. */
+      200: {
+        headers: {
+          /** @description Strong validator of this request state. Send it in If-Match on PATCH and withdraw. */
+          ETag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssessmentRequest'];
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Not found in this tenant. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  updateAssessmentRequest: {
+    parameters: {
+      query?: never;
+      header: {
+        /**
+         * @description The ETag of the request being changed (from GET). A stale value answers 412, a missing one 428.
+         * @example "v3"
+         */
+        'If-Match': string;
+      };
+      path: {
+        /** @description The `areq_…` public id of the assessment request. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AssessmentRequestPatch'];
+      };
+    };
+    responses: {
+      /** @description The edited draft and its new ETag. */
+      200: {
+        headers: {
+          /** @description Strong validator of this request state. Send it in If-Match on PATCH and withdraw. */
+          ETag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssessmentRequest'];
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description The ETag is stale. */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description If-Match is missing. */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  submitAssessmentRequest: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description Unique per submit attempt (8 to 255 visible ASCII characters). A replay answers the original response and creates nothing new. */
+        'Idempotency-Key': string;
+      };
+      path: {
+        /** @description The `areq_…` public id of the assessment request. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The submitted request. */
+      200: {
+        headers: {
+          /** @description Strong validator of this request state. Send it in If-Match on PATCH and withdraw. */
+          ETag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssessmentRequest'];
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description The tenant is halted (tenant_halted), or the request is no longer a draft. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description One or more submit checks failed; errors[] lists every failing check. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  withdrawAssessmentRequest: {
+    parameters: {
+      query?: never;
+      header: {
+        /**
+         * @description The ETag of the request being changed (from GET). A stale value answers 412, a missing one 428.
+         * @example "v3"
+         */
+        'If-Match': string;
+      };
+      path: {
+        /** @description The `areq_…` public id of the assessment request. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The withdrawn request. */
+      200: {
+        headers: {
+          /** @description Strong validator of this request state. Send it in If-Match on PATCH and withdraw. */
+          ETag?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssessmentRequest'];
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description The ETag is stale. */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description If-Match is missing. */
       428: {
         headers: {
           [name: string]: unknown;

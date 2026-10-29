@@ -49,6 +49,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = O
   org_admin: freeze([
     'asset:read',
     'sa:read',
+    'assessment:create',
     'run:read',
     'assessment:read',
     'testplan:read',
@@ -78,6 +79,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = O
     'asset:verify',
     'sa:read',
     'sa:create',
+    'assessment:create',
     'run:read',
     'assessment:read',
     'run:create',

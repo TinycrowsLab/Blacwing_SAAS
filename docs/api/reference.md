@@ -2,7 +2,7 @@
 
 The public `/v1` REST API, version 0.0.0. This page is generated from [`openapi.json`](openapi.json) by `pnpm openapi:generate`; do not edit it by hand. CI fails when it is stale.
 
-It documents 15 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
+It documents 21 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
 
 The internal Run Broker API (`/internal/broker`) is not part of this reference.
 
@@ -30,6 +30,13 @@ The internal Run Broker API (`/internal/broker`) is not part of this reference.
 - tenant
   - [GET /tenant/settings](#get-tenantsettings)
   - [PATCH /tenant/settings](#patch-tenantsettings)
+- assessment-requests
+  - [GET /assessment-requests](#get-assessment-requests)
+  - [POST /assessment-requests](#post-assessment-requests)
+  - [GET /assessment-requests/{id}](#get-assessment-requestsid)
+  - [PATCH /assessment-requests/{id}](#patch-assessment-requestsid)
+  - [POST /assessment-requests/{id}/submit](#post-assessment-requestsidsubmit)
+  - [POST /assessment-requests/{id}/withdraw](#post-assessment-requestsidwithdraw)
 
 ## kill
 
@@ -4946,7 +4953,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -5174,6 +5181,30 @@ Example: Secret purpose not permitted.
   "title": "Secret purpose not permitted",
   "status": 403,
   "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -5597,7 +5628,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -5825,6 +5856,30 @@ Example: Secret purpose not permitted.
   "title": "Secret purpose not permitted",
   "status": 403,
   "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -6262,7 +6317,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6490,6 +6545,30 @@ Example: Secret purpose not permitted.
   "title": "Secret purpose not permitted",
   "status": 403,
   "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -7133,7 +7212,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7361,6 +7440,30 @@ Example: Secret purpose not permitted.
   "title": "Secret purpose not permitted",
   "status": 403,
   "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -7857,7 +7960,5411 @@ Example: Too many requests.
 }
 ```
 
+## assessment-requests
+
+Assessment requests: draft, edit, submit (validated against the standing authorisation) and withdraw. Submitting never starts a run.
+
+### GET /assessment-requests
+
+**List the assessment requests of the tenant, newest first**
+
+- Operation ID: `listAssessmentRequests`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+#### Response 200
+
+The requests of the caller tenant.
+
+Content type `application/json`: [AssessmentRequestList](#assessmentrequestlist).
+
+Example: One draft.
+
+```json
+{
+  "items": [
+    {
+      "id": "areq_01m64cavacexhrddgjb6xd80xv",
+      "status": "draft",
+      "mode": "grey",
+      "objective": "Test the login flow for authentication bypass",
+      "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
+      "saId": "0198f0a0-0000-7000-8000-0000000000f1",
+      "inputManifestId": null,
+      "scopeRules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.example.test"
+          }
+        ]
+      },
+      "maxIntrusiveness": "active_safe",
+      "budgets": {
+        "costCapUsd": 5,
+        "maxRequests": 5000,
+        "maxDurationMs": 3600000
+      },
+      "trigger": "console",
+      "requestedBy": "0198f0a0-0000-7000-8000-0000000000a1",
+      "stateVersion": 0,
+      "createdAt": "2026-10-29T10:00:00.000Z",
+      "updatedAt": "2026-10-29T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Cross tenant access denied.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CROSS_TENANT_DENIED",
+  "title": "Cross tenant access denied",
+  "status": 403,
+  "code": "CROSS_TENANT_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Seeding forbidden in this environment.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SEED_FORBIDDEN_IN_PROD",
+  "title": "Seeding forbidden in this environment",
+  "status": 403,
+  "code": "SEED_FORBIDDEN_IN_PROD",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISMATCH",
+  "title": "Tenant context mismatch",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Out of authorised scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_VIOLATION",
+  "title": "Out of authorised scope",
+  "status": 403,
+  "code": "SCOPE_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Intrusiveness exceeds the authorised ceiling.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "title": "Intrusiveness exceeds the authorised ceiling",
+  "status": 403,
+  "code": "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive intrusiveness is forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive intrusiveness is forbidden",
+  "status": 403,
+  "code": "SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Budget exceeds the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_BUDGET_EXCEEDS_SA",
+  "title": "Budget exceeds the standing authorisation",
+  "status": 403,
+  "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona override field not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+  "title": "Persona override field not permitted",
+  "status": 403,
+  "code": "OVERRIDE_FIELD_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Model not allowed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/MODEL_NOT_ALLOWED",
+  "title": "Model not allowed",
+  "status": 403,
+  "code": "MODEL_NOT_ALLOWED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AAD_MISMATCH",
+  "title": "Secret context mismatch",
+  "status": 403,
+  "code": "AAD_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Draft prompt forbidden in production.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_DRAFT_FORBIDDEN",
+  "title": "Draft prompt forbidden in production",
+  "status": 403,
+  "code": "PROMPT_DRAFT_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+  "title": "Kill not permitted",
+  "status": 403,
+  "code": "KILL_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Global kill is not allowed on this endpoint.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "title": "Global kill is not allowed on this endpoint",
+  "status": 403,
+  "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Platform operator required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+  "title": "Platform operator required",
+  "status": 403,
+  "code": "NOT_OPERATOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Operator MFA required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+  "title": "Operator MFA required",
+  "status": 403,
+  "code": "OPERATOR_MFA_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_MISMATCH",
+  "title": "Tenant mismatch",
+  "status": 403,
+  "code": "TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret purpose not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_PURPOSE_DENIED",
+  "title": "Secret purpose not permitted",
+  "status": 403,
+  "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SOD_VIOLATION",
+  "title": "Separation of duties violated",
+  "status": 403,
+  "code": "SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_FOUND",
+  "title": "Resource not found",
+  "status": 404,
+  "code": "NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona not defined.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+  "title": "Persona not defined",
+  "status": 404,
+  "code": "PERSONA_NOT_DEFINED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No released prompt version.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+  "title": "No released prompt version",
+  "status": 404,
+  "code": "PROMPT_NO_RELEASED_VERSION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+  "title": "Secret not found",
+  "status": 404,
+  "code": "SECRET_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+  "title": "Identity provider resource not found",
+  "status": 404,
+  "code": "KEYCLOAK_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONFLICT",
+  "title": "Conflict",
+  "status": 409,
+  "code": "CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal run state transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+  "title": "Illegal run state transition",
+  "status": 409,
+  "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal standing authorisation transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+  "title": "Illegal standing authorisation transition",
+  "status": 409,
+  "code": "AUTHZ_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Key version disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEK_DISABLED",
+  "title": "Key version disabled",
+  "status": 409,
+  "code": "KEK_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Database serialization conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+  "title": "Database serialization conflict",
+  "status": 409,
+  "code": "DB_SERIALIZATION_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill already in progress.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+  "title": "Kill already in progress",
+  "status": 409,
+  "code": "KILL_ALREADY_IN_PROGRESS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run is not active.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+  "title": "Run is not active",
+  "status": 409,
+  "code": "RUN_NOT_ACTIVE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+  "title": "Secret disabled",
+  "status": 409,
+  "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid intrusiveness class.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
+  "title": "Invalid intrusiveness class",
+  "status": 422,
+  "code": "SCOPE_INVALID_CLASS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid request budget.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
+  "title": "Invalid request budget",
+  "status": 422,
+  "code": "SCOPE_INVALID_BUDGET",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid scope rule.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
+  "title": "Invalid scope rule",
+  "status": 422,
+  "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid standing authorisation window.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+  "title": "Invalid standing authorisation window",
+  "status": 422,
+  "code": "AUTHZ_INVALID_WINDOW",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+  "title": "Unknown persona",
+  "status": 422,
+  "code": "PERSONA_UNKNOWN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Forbidden tool in persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL",
+  "title": "Forbidden tool in persona",
+  "status": 422,
+  "code": "PERSONA_FORBIDDEN_TOOL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid persona definition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_INVALID",
+  "title": "Invalid persona definition",
+  "status": 422,
+  "code": "PERSONA_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret envelope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
+  "title": "Invalid secret envelope",
+  "status": 422,
+  "code": "ENVELOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid prompt file.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_INVALID",
+  "title": "Invalid prompt file",
+  "status": 422,
+  "code": "PROMPT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Prompt placeholder unfilled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
+  "title": "Prompt placeholder unfilled",
+  "status": 422,
+  "code": "PROMPT_PLACEHOLDER_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret reference.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
+  "title": "Invalid secret reference",
+  "status": 422,
+  "code": "INVALID_SECRET_REF",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Sandbox image missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_IMAGE_MISSING",
+  "title": "Sandbox image missing",
+  "status": 422,
+  "code": "SBX_IMAGE_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid kill scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+  "title": "Invalid kill scope",
+  "status": 422,
+  "code": "KILL_SCOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill scope reference required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+  "title": "Kill scope reference required",
+  "status": 422,
+  "code": "KILL_REF_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key reused with a different request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+  "title": "Idempotency key reused with a different request",
+  "status": 422,
+  "code": "IDEMPOTENCY_KEY_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid audit event.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUDIT_EVENT_INVALID",
+  "title": "Invalid audit event",
+  "status": 422,
+  "code": "AUDIT_EVENT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### POST /assessment-requests
+
+**Create a draft assessment request**
+
+Needs assessment:create. Every named asset must belong to the tenant (404 otherwise). Nothing is validated against the standing authorisation until submit.
+
+- Operation ID: `createAssessmentRequest`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+**Request body** (required)
+
+Content type `application/json`: [AssessmentRequestCreate](#assessmentrequestcreate).
+
+Example: A grey-box draft over one verified asset.
+
+```json
+{
+  "mode": "grey",
+  "objective": "Test the login flow for authentication bypass",
+  "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
+  "saId": "0198f0a0-0000-7000-8000-0000000000f1",
+  "scopeRules": {
+    "rules": [
+      {
+        "effect": "include",
+        "host": "app.example.test"
+      }
+    ]
+  }
+}
+```
+
+#### Response 201
+
+The created draft and its ETag.
+
+| Header | Description                                                                        |
+| ------ | ---------------------------------------------------------------------------------- |
+| `ETag` | Strong validator of this request state. Send it in If-Match on PATCH and withdraw. |
+
+Content type `application/json`: [AssessmentRequest](#assessmentrequest).
+
+Example: A draft request.
+
+```json
+{
+  "id": "areq_01m64cavacexhrddgjb6xd80xv",
+  "status": "draft",
+  "mode": "grey",
+  "objective": "Test the login flow for authentication bypass",
+  "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
+  "saId": "0198f0a0-0000-7000-8000-0000000000f1",
+  "inputManifestId": null,
+  "scopeRules": {
+    "rules": [
+      {
+        "effect": "include",
+        "host": "app.example.test"
+      }
+    ]
+  },
+  "maxIntrusiveness": "active_safe",
+  "budgets": {
+    "costCapUsd": 5,
+    "maxRequests": 5000,
+    "maxDurationMs": 3600000
+  },
+  "trigger": "console",
+  "requestedBy": "0198f0a0-0000-7000-8000-0000000000a1",
+  "stateVersion": 0,
+  "createdAt": "2026-10-29T10:00:00.000Z",
+  "updatedAt": "2026-10-29T10:00:00.000Z"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Cross tenant access denied.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CROSS_TENANT_DENIED",
+  "title": "Cross tenant access denied",
+  "status": 403,
+  "code": "CROSS_TENANT_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Seeding forbidden in this environment.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SEED_FORBIDDEN_IN_PROD",
+  "title": "Seeding forbidden in this environment",
+  "status": 403,
+  "code": "SEED_FORBIDDEN_IN_PROD",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISMATCH",
+  "title": "Tenant context mismatch",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Out of authorised scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_VIOLATION",
+  "title": "Out of authorised scope",
+  "status": 403,
+  "code": "SCOPE_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Intrusiveness exceeds the authorised ceiling.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "title": "Intrusiveness exceeds the authorised ceiling",
+  "status": 403,
+  "code": "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive intrusiveness is forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive intrusiveness is forbidden",
+  "status": 403,
+  "code": "SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Budget exceeds the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_BUDGET_EXCEEDS_SA",
+  "title": "Budget exceeds the standing authorisation",
+  "status": 403,
+  "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona override field not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+  "title": "Persona override field not permitted",
+  "status": 403,
+  "code": "OVERRIDE_FIELD_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Model not allowed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/MODEL_NOT_ALLOWED",
+  "title": "Model not allowed",
+  "status": 403,
+  "code": "MODEL_NOT_ALLOWED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AAD_MISMATCH",
+  "title": "Secret context mismatch",
+  "status": 403,
+  "code": "AAD_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Draft prompt forbidden in production.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_DRAFT_FORBIDDEN",
+  "title": "Draft prompt forbidden in production",
+  "status": 403,
+  "code": "PROMPT_DRAFT_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+  "title": "Kill not permitted",
+  "status": 403,
+  "code": "KILL_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Global kill is not allowed on this endpoint.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "title": "Global kill is not allowed on this endpoint",
+  "status": 403,
+  "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Platform operator required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+  "title": "Platform operator required",
+  "status": 403,
+  "code": "NOT_OPERATOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Operator MFA required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+  "title": "Operator MFA required",
+  "status": 403,
+  "code": "OPERATOR_MFA_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_MISMATCH",
+  "title": "Tenant mismatch",
+  "status": 403,
+  "code": "TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret purpose not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_PURPOSE_DENIED",
+  "title": "Secret purpose not permitted",
+  "status": 403,
+  "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SOD_VIOLATION",
+  "title": "Separation of duties violated",
+  "status": 403,
+  "code": "SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_FOUND",
+  "title": "Resource not found",
+  "status": 404,
+  "code": "NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona not defined.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+  "title": "Persona not defined",
+  "status": 404,
+  "code": "PERSONA_NOT_DEFINED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No released prompt version.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+  "title": "No released prompt version",
+  "status": 404,
+  "code": "PROMPT_NO_RELEASED_VERSION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+  "title": "Secret not found",
+  "status": 404,
+  "code": "SECRET_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+  "title": "Identity provider resource not found",
+  "status": 404,
+  "code": "KEYCLOAK_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONFLICT",
+  "title": "Conflict",
+  "status": 409,
+  "code": "CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal run state transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+  "title": "Illegal run state transition",
+  "status": 409,
+  "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal standing authorisation transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+  "title": "Illegal standing authorisation transition",
+  "status": 409,
+  "code": "AUTHZ_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Key version disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEK_DISABLED",
+  "title": "Key version disabled",
+  "status": 409,
+  "code": "KEK_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Database serialization conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+  "title": "Database serialization conflict",
+  "status": 409,
+  "code": "DB_SERIALIZATION_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill already in progress.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+  "title": "Kill already in progress",
+  "status": 409,
+  "code": "KILL_ALREADY_IN_PROGRESS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run is not active.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+  "title": "Run is not active",
+  "status": 409,
+  "code": "RUN_NOT_ACTIVE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+  "title": "Secret disabled",
+  "status": 409,
+  "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Body validation failed (validation_failed).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### GET /assessment-requests/{id}
+
+**Read one assessment request**
+
+- Operation ID: `getAssessmentRequest`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter | In   | Required | Type   | Description                                       |
+| --------- | ---- | -------- | ------ | ------------------------------------------------- |
+| `id`      | path | yes      | string | The `areq_…` public id of the assessment request. |
+
+#### Response 200
+
+The request and its ETag.
+
+| Header | Description                                                                        |
+| ------ | ---------------------------------------------------------------------------------- |
+| `ETag` | Strong validator of this request state. Send it in If-Match on PATCH and withdraw. |
+
+Content type `application/json`: [AssessmentRequest](#assessmentrequest).
+
+Example: A draft request.
+
+```json
+{
+  "id": "areq_01m64cavacexhrddgjb6xd80xv",
+  "status": "draft",
+  "mode": "grey",
+  "objective": "Test the login flow for authentication bypass",
+  "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
+  "saId": "0198f0a0-0000-7000-8000-0000000000f1",
+  "inputManifestId": null,
+  "scopeRules": {
+    "rules": [
+      {
+        "effect": "include",
+        "host": "app.example.test"
+      }
+    ]
+  },
+  "maxIntrusiveness": "active_safe",
+  "budgets": {
+    "costCapUsd": 5,
+    "maxRequests": 5000,
+    "maxDurationMs": 3600000
+  },
+  "trigger": "console",
+  "requestedBy": "0198f0a0-0000-7000-8000-0000000000a1",
+  "stateVersion": 0,
+  "createdAt": "2026-10-29T10:00:00.000Z",
+  "updatedAt": "2026-10-29T10:00:00.000Z"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Cross tenant access denied.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CROSS_TENANT_DENIED",
+  "title": "Cross tenant access denied",
+  "status": 403,
+  "code": "CROSS_TENANT_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Seeding forbidden in this environment.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SEED_FORBIDDEN_IN_PROD",
+  "title": "Seeding forbidden in this environment",
+  "status": 403,
+  "code": "SEED_FORBIDDEN_IN_PROD",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISMATCH",
+  "title": "Tenant context mismatch",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Out of authorised scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_VIOLATION",
+  "title": "Out of authorised scope",
+  "status": 403,
+  "code": "SCOPE_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Intrusiveness exceeds the authorised ceiling.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "title": "Intrusiveness exceeds the authorised ceiling",
+  "status": 403,
+  "code": "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive intrusiveness is forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive intrusiveness is forbidden",
+  "status": 403,
+  "code": "SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Budget exceeds the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_BUDGET_EXCEEDS_SA",
+  "title": "Budget exceeds the standing authorisation",
+  "status": 403,
+  "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona override field not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+  "title": "Persona override field not permitted",
+  "status": 403,
+  "code": "OVERRIDE_FIELD_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Model not allowed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/MODEL_NOT_ALLOWED",
+  "title": "Model not allowed",
+  "status": 403,
+  "code": "MODEL_NOT_ALLOWED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AAD_MISMATCH",
+  "title": "Secret context mismatch",
+  "status": 403,
+  "code": "AAD_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Draft prompt forbidden in production.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_DRAFT_FORBIDDEN",
+  "title": "Draft prompt forbidden in production",
+  "status": 403,
+  "code": "PROMPT_DRAFT_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+  "title": "Kill not permitted",
+  "status": 403,
+  "code": "KILL_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Global kill is not allowed on this endpoint.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "title": "Global kill is not allowed on this endpoint",
+  "status": 403,
+  "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Platform operator required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+  "title": "Platform operator required",
+  "status": 403,
+  "code": "NOT_OPERATOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Operator MFA required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+  "title": "Operator MFA required",
+  "status": 403,
+  "code": "OPERATOR_MFA_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_MISMATCH",
+  "title": "Tenant mismatch",
+  "status": 403,
+  "code": "TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret purpose not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_PURPOSE_DENIED",
+  "title": "Secret purpose not permitted",
+  "status": 403,
+  "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SOD_VIOLATION",
+  "title": "Separation of duties violated",
+  "status": 403,
+  "code": "SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Not found in this tenant.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 409
+
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONFLICT",
+  "title": "Conflict",
+  "status": 409,
+  "code": "CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal run state transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+  "title": "Illegal run state transition",
+  "status": 409,
+  "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal standing authorisation transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+  "title": "Illegal standing authorisation transition",
+  "status": 409,
+  "code": "AUTHZ_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Key version disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEK_DISABLED",
+  "title": "Key version disabled",
+  "status": 409,
+  "code": "KEK_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Database serialization conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+  "title": "Database serialization conflict",
+  "status": 409,
+  "code": "DB_SERIALIZATION_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill already in progress.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+  "title": "Kill already in progress",
+  "status": 409,
+  "code": "KILL_ALREADY_IN_PROGRESS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run is not active.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+  "title": "Run is not active",
+  "status": 409,
+  "code": "RUN_NOT_ACTIVE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+  "title": "Secret disabled",
+  "status": 409,
+  "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid intrusiveness class.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
+  "title": "Invalid intrusiveness class",
+  "status": 422,
+  "code": "SCOPE_INVALID_CLASS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid request budget.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
+  "title": "Invalid request budget",
+  "status": 422,
+  "code": "SCOPE_INVALID_BUDGET",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid scope rule.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
+  "title": "Invalid scope rule",
+  "status": 422,
+  "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid standing authorisation window.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+  "title": "Invalid standing authorisation window",
+  "status": 422,
+  "code": "AUTHZ_INVALID_WINDOW",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+  "title": "Unknown persona",
+  "status": 422,
+  "code": "PERSONA_UNKNOWN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Forbidden tool in persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL",
+  "title": "Forbidden tool in persona",
+  "status": 422,
+  "code": "PERSONA_FORBIDDEN_TOOL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid persona definition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_INVALID",
+  "title": "Invalid persona definition",
+  "status": 422,
+  "code": "PERSONA_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret envelope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
+  "title": "Invalid secret envelope",
+  "status": 422,
+  "code": "ENVELOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid prompt file.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_INVALID",
+  "title": "Invalid prompt file",
+  "status": 422,
+  "code": "PROMPT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Prompt placeholder unfilled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
+  "title": "Prompt placeholder unfilled",
+  "status": 422,
+  "code": "PROMPT_PLACEHOLDER_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret reference.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
+  "title": "Invalid secret reference",
+  "status": 422,
+  "code": "INVALID_SECRET_REF",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Sandbox image missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_IMAGE_MISSING",
+  "title": "Sandbox image missing",
+  "status": 422,
+  "code": "SBX_IMAGE_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid kill scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+  "title": "Invalid kill scope",
+  "status": 422,
+  "code": "KILL_SCOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill scope reference required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+  "title": "Kill scope reference required",
+  "status": 422,
+  "code": "KILL_REF_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key reused with a different request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+  "title": "Idempotency key reused with a different request",
+  "status": 422,
+  "code": "IDEMPOTENCY_KEY_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid audit event.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUDIT_EVENT_INVALID",
+  "title": "Invalid audit event",
+  "status": 422,
+  "code": "AUDIT_EVENT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### PATCH /assessment-requests/{id}
+
+**Edit a draft assessment request**
+
+Requires If-Match. Only a draft can be edited (409 otherwise). An empty body is refused.
+
+- Operation ID: `updateAssessmentRequest`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter  | In     | Required | Type   | Description                                                                                     |
+| ---------- | ------ | -------- | ------ | ----------------------------------------------------------------------------------------------- |
+| `id`       | path   | yes      | string | The `areq_…` public id of the assessment request.                                               |
+| `If-Match` | header | yes      | string | The ETag of the request being changed (from GET). A stale value answers 412, a missing one 428. |
+
+**Request body** (required)
+
+Content type `application/json`: [AssessmentRequestPatch](#assessmentrequestpatch).
+
+#### Response 200
+
+The edited draft and its new ETag.
+
+| Header | Description                                                                        |
+| ------ | ---------------------------------------------------------------------------------- |
+| `ETag` | Strong validator of this request state. Send it in If-Match on PATCH and withdraw. |
+
+Content type `application/json`: [AssessmentRequest](#assessmentrequest).
+
+Example: A draft request.
+
+```json
+{
+  "id": "areq_01m64cavacexhrddgjb6xd80xv",
+  "status": "draft",
+  "mode": "grey",
+  "objective": "Test the login flow for authentication bypass",
+  "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
+  "saId": "0198f0a0-0000-7000-8000-0000000000f1",
+  "inputManifestId": null,
+  "scopeRules": {
+    "rules": [
+      {
+        "effect": "include",
+        "host": "app.example.test"
+      }
+    ]
+  },
+  "maxIntrusiveness": "active_safe",
+  "budgets": {
+    "costCapUsd": 5,
+    "maxRequests": 5000,
+    "maxDurationMs": 3600000
+  },
+  "trigger": "console",
+  "requestedBy": "0198f0a0-0000-7000-8000-0000000000a1",
+  "stateVersion": 0,
+  "createdAt": "2026-10-29T10:00:00.000Z",
+  "updatedAt": "2026-10-29T10:00:00.000Z"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Cross tenant access denied.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CROSS_TENANT_DENIED",
+  "title": "Cross tenant access denied",
+  "status": 403,
+  "code": "CROSS_TENANT_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Seeding forbidden in this environment.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SEED_FORBIDDEN_IN_PROD",
+  "title": "Seeding forbidden in this environment",
+  "status": 403,
+  "code": "SEED_FORBIDDEN_IN_PROD",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISMATCH",
+  "title": "Tenant context mismatch",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Out of authorised scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_VIOLATION",
+  "title": "Out of authorised scope",
+  "status": 403,
+  "code": "SCOPE_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Intrusiveness exceeds the authorised ceiling.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "title": "Intrusiveness exceeds the authorised ceiling",
+  "status": 403,
+  "code": "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive intrusiveness is forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive intrusiveness is forbidden",
+  "status": 403,
+  "code": "SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Budget exceeds the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_BUDGET_EXCEEDS_SA",
+  "title": "Budget exceeds the standing authorisation",
+  "status": 403,
+  "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona override field not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+  "title": "Persona override field not permitted",
+  "status": 403,
+  "code": "OVERRIDE_FIELD_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Model not allowed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/MODEL_NOT_ALLOWED",
+  "title": "Model not allowed",
+  "status": 403,
+  "code": "MODEL_NOT_ALLOWED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AAD_MISMATCH",
+  "title": "Secret context mismatch",
+  "status": 403,
+  "code": "AAD_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Draft prompt forbidden in production.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_DRAFT_FORBIDDEN",
+  "title": "Draft prompt forbidden in production",
+  "status": 403,
+  "code": "PROMPT_DRAFT_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+  "title": "Kill not permitted",
+  "status": 403,
+  "code": "KILL_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Global kill is not allowed on this endpoint.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "title": "Global kill is not allowed on this endpoint",
+  "status": 403,
+  "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Platform operator required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+  "title": "Platform operator required",
+  "status": 403,
+  "code": "NOT_OPERATOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Operator MFA required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+  "title": "Operator MFA required",
+  "status": 403,
+  "code": "OPERATOR_MFA_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_MISMATCH",
+  "title": "Tenant mismatch",
+  "status": 403,
+  "code": "TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret purpose not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_PURPOSE_DENIED",
+  "title": "Secret purpose not permitted",
+  "status": 403,
+  "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SOD_VIOLATION",
+  "title": "Separation of duties violated",
+  "status": 403,
+  "code": "SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_FOUND",
+  "title": "Resource not found",
+  "status": 404,
+  "code": "NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona not defined.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+  "title": "Persona not defined",
+  "status": 404,
+  "code": "PERSONA_NOT_DEFINED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No released prompt version.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+  "title": "No released prompt version",
+  "status": 404,
+  "code": "PROMPT_NO_RELEASED_VERSION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+  "title": "Secret not found",
+  "status": 404,
+  "code": "SECRET_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+  "title": "Identity provider resource not found",
+  "status": 404,
+  "code": "KEYCLOAK_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONFLICT",
+  "title": "Conflict",
+  "status": 409,
+  "code": "CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal run state transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+  "title": "Illegal run state transition",
+  "status": 409,
+  "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal standing authorisation transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+  "title": "Illegal standing authorisation transition",
+  "status": 409,
+  "code": "AUTHZ_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Key version disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEK_DISABLED",
+  "title": "Key version disabled",
+  "status": 409,
+  "code": "KEK_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Database serialization conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+  "title": "Database serialization conflict",
+  "status": 409,
+  "code": "DB_SERIALIZATION_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill already in progress.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+  "title": "Kill already in progress",
+  "status": 409,
+  "code": "KILL_ALREADY_IN_PROGRESS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run is not active.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+  "title": "Run is not active",
+  "status": 409,
+  "code": "RUN_NOT_ACTIVE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+  "title": "Secret disabled",
+  "status": 409,
+  "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 412
+
+The ETag is stale.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid intrusiveness class.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
+  "title": "Invalid intrusiveness class",
+  "status": 422,
+  "code": "SCOPE_INVALID_CLASS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid request budget.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
+  "title": "Invalid request budget",
+  "status": 422,
+  "code": "SCOPE_INVALID_BUDGET",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid scope rule.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
+  "title": "Invalid scope rule",
+  "status": 422,
+  "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid standing authorisation window.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+  "title": "Invalid standing authorisation window",
+  "status": 422,
+  "code": "AUTHZ_INVALID_WINDOW",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+  "title": "Unknown persona",
+  "status": 422,
+  "code": "PERSONA_UNKNOWN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Forbidden tool in persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL",
+  "title": "Forbidden tool in persona",
+  "status": 422,
+  "code": "PERSONA_FORBIDDEN_TOOL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid persona definition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_INVALID",
+  "title": "Invalid persona definition",
+  "status": 422,
+  "code": "PERSONA_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret envelope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
+  "title": "Invalid secret envelope",
+  "status": 422,
+  "code": "ENVELOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid prompt file.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_INVALID",
+  "title": "Invalid prompt file",
+  "status": 422,
+  "code": "PROMPT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Prompt placeholder unfilled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
+  "title": "Prompt placeholder unfilled",
+  "status": 422,
+  "code": "PROMPT_PLACEHOLDER_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret reference.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
+  "title": "Invalid secret reference",
+  "status": 422,
+  "code": "INVALID_SECRET_REF",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Sandbox image missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_IMAGE_MISSING",
+  "title": "Sandbox image missing",
+  "status": 422,
+  "code": "SBX_IMAGE_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid kill scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+  "title": "Invalid kill scope",
+  "status": 422,
+  "code": "KILL_SCOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill scope reference required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+  "title": "Kill scope reference required",
+  "status": 422,
+  "code": "KILL_REF_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key reused with a different request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+  "title": "Idempotency key reused with a different request",
+  "status": 422,
+  "code": "IDEMPOTENCY_KEY_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid audit event.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUDIT_EVENT_INVALID",
+  "title": "Invalid audit event",
+  "status": 422,
+  "code": "AUDIT_EVENT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 428
+
+If-Match is missing.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### POST /assessment-requests/{id}/submit
+
+**Submit a draft after the scope gate**
+
+Runs every check of the gate (asset verification, standing authorisation status, expiry, coverage, intrusiveness ceiling, scope subset, budgets) and answers 422 with all failing checks in errors[] (each with its code and path). A halted tenant answers 409 tenant_halted. Needs Idempotency-Key.
+
+- Operation ID: `submitAssessmentRequest`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter         | In     | Required | Type   | Description                                                                                                                    |
+| ----------------- | ------ | -------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `id`              | path   | yes      | string | The `areq_…` public id of the assessment request.                                                                              |
+| `Idempotency-Key` | header | yes      | string | Unique per submit attempt (8 to 255 visible ASCII characters). A replay answers the original response and creates nothing new. |
+
+#### Response 200
+
+The submitted request.
+
+| Header | Description                                                                        |
+| ------ | ---------------------------------------------------------------------------------- |
+| `ETag` | Strong validator of this request state. Send it in If-Match on PATCH and withdraw. |
+
+Content type `application/json`: [AssessmentRequest](#assessmentrequest).
+
+Example: A draft request.
+
+```json
+{
+  "id": "areq_01m64cavacexhrddgjb6xd80xv",
+  "status": "draft",
+  "mode": "grey",
+  "objective": "Test the login flow for authentication bypass",
+  "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
+  "saId": "0198f0a0-0000-7000-8000-0000000000f1",
+  "inputManifestId": null,
+  "scopeRules": {
+    "rules": [
+      {
+        "effect": "include",
+        "host": "app.example.test"
+      }
+    ]
+  },
+  "maxIntrusiveness": "active_safe",
+  "budgets": {
+    "costCapUsd": 5,
+    "maxRequests": 5000,
+    "maxDurationMs": 3600000
+  },
+  "trigger": "console",
+  "requestedBy": "0198f0a0-0000-7000-8000-0000000000a1",
+  "stateVersion": 0,
+  "createdAt": "2026-10-29T10:00:00.000Z",
+  "updatedAt": "2026-10-29T10:00:00.000Z"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Cross tenant access denied.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CROSS_TENANT_DENIED",
+  "title": "Cross tenant access denied",
+  "status": 403,
+  "code": "CROSS_TENANT_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Seeding forbidden in this environment.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SEED_FORBIDDEN_IN_PROD",
+  "title": "Seeding forbidden in this environment",
+  "status": 403,
+  "code": "SEED_FORBIDDEN_IN_PROD",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISMATCH",
+  "title": "Tenant context mismatch",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Out of authorised scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_VIOLATION",
+  "title": "Out of authorised scope",
+  "status": 403,
+  "code": "SCOPE_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Intrusiveness exceeds the authorised ceiling.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "title": "Intrusiveness exceeds the authorised ceiling",
+  "status": 403,
+  "code": "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive intrusiveness is forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive intrusiveness is forbidden",
+  "status": 403,
+  "code": "SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Budget exceeds the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_BUDGET_EXCEEDS_SA",
+  "title": "Budget exceeds the standing authorisation",
+  "status": 403,
+  "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona override field not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+  "title": "Persona override field not permitted",
+  "status": 403,
+  "code": "OVERRIDE_FIELD_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Model not allowed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/MODEL_NOT_ALLOWED",
+  "title": "Model not allowed",
+  "status": 403,
+  "code": "MODEL_NOT_ALLOWED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AAD_MISMATCH",
+  "title": "Secret context mismatch",
+  "status": 403,
+  "code": "AAD_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Draft prompt forbidden in production.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_DRAFT_FORBIDDEN",
+  "title": "Draft prompt forbidden in production",
+  "status": 403,
+  "code": "PROMPT_DRAFT_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+  "title": "Kill not permitted",
+  "status": 403,
+  "code": "KILL_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Global kill is not allowed on this endpoint.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "title": "Global kill is not allowed on this endpoint",
+  "status": 403,
+  "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Platform operator required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+  "title": "Platform operator required",
+  "status": 403,
+  "code": "NOT_OPERATOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Operator MFA required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+  "title": "Operator MFA required",
+  "status": 403,
+  "code": "OPERATOR_MFA_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_MISMATCH",
+  "title": "Tenant mismatch",
+  "status": 403,
+  "code": "TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret purpose not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_PURPOSE_DENIED",
+  "title": "Secret purpose not permitted",
+  "status": 403,
+  "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SOD_VIOLATION",
+  "title": "Separation of duties violated",
+  "status": 403,
+  "code": "SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_FOUND",
+  "title": "Resource not found",
+  "status": 404,
+  "code": "NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona not defined.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+  "title": "Persona not defined",
+  "status": 404,
+  "code": "PERSONA_NOT_DEFINED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No released prompt version.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+  "title": "No released prompt version",
+  "status": 404,
+  "code": "PROMPT_NO_RELEASED_VERSION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+  "title": "Secret not found",
+  "status": 404,
+  "code": "SECRET_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+  "title": "Identity provider resource not found",
+  "status": 404,
+  "code": "KEYCLOAK_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+The tenant is halted (tenant_halted), or the request is no longer a draft.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 422
+
+One or more submit checks failed; errors[] lists every failing check.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### POST /assessment-requests/{id}/withdraw
+
+**Withdraw a request**
+
+Requires If-Match. A withdrawn request is terminal.
+
+- Operation ID: `withdrawAssessmentRequest`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter  | In     | Required | Type   | Description                                                                                     |
+| ---------- | ------ | -------- | ------ | ----------------------------------------------------------------------------------------------- |
+| `id`       | path   | yes      | string | The `areq_…` public id of the assessment request.                                               |
+| `If-Match` | header | yes      | string | The ETag of the request being changed (from GET). A stale value answers 412, a missing one 428. |
+
+#### Response 200
+
+The withdrawn request.
+
+| Header | Description                                                                        |
+| ------ | ---------------------------------------------------------------------------------- |
+| `ETag` | Strong validator of this request state. Send it in If-Match on PATCH and withdraw. |
+
+Content type `application/json`: [AssessmentRequest](#assessmentrequest).
+
+Example: A draft request.
+
+```json
+{
+  "id": "areq_01m64cavacexhrddgjb6xd80xv",
+  "status": "draft",
+  "mode": "grey",
+  "objective": "Test the login flow for authentication bypass",
+  "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
+  "saId": "0198f0a0-0000-7000-8000-0000000000f1",
+  "inputManifestId": null,
+  "scopeRules": {
+    "rules": [
+      {
+        "effect": "include",
+        "host": "app.example.test"
+      }
+    ]
+  },
+  "maxIntrusiveness": "active_safe",
+  "budgets": {
+    "costCapUsd": 5,
+    "maxRequests": 5000,
+    "maxDurationMs": 3600000
+  },
+  "trigger": "console",
+  "requestedBy": "0198f0a0-0000-7000-8000-0000000000a1",
+  "stateVersion": 0,
+  "createdAt": "2026-10-29T10:00:00.000Z",
+  "updatedAt": "2026-10-29T10:00:00.000Z"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Cross tenant access denied.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CROSS_TENANT_DENIED",
+  "title": "Cross tenant access denied",
+  "status": 403,
+  "code": "CROSS_TENANT_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Seeding forbidden in this environment.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SEED_FORBIDDEN_IN_PROD",
+  "title": "Seeding forbidden in this environment",
+  "status": 403,
+  "code": "SEED_FORBIDDEN_IN_PROD",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISMATCH",
+  "title": "Tenant context mismatch",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Out of authorised scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_VIOLATION",
+  "title": "Out of authorised scope",
+  "status": 403,
+  "code": "SCOPE_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Intrusiveness exceeds the authorised ceiling.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "title": "Intrusiveness exceeds the authorised ceiling",
+  "status": 403,
+  "code": "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive intrusiveness is forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive intrusiveness is forbidden",
+  "status": 403,
+  "code": "SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Budget exceeds the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_BUDGET_EXCEEDS_SA",
+  "title": "Budget exceeds the standing authorisation",
+  "status": 403,
+  "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona override field not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+  "title": "Persona override field not permitted",
+  "status": 403,
+  "code": "OVERRIDE_FIELD_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Model not allowed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/MODEL_NOT_ALLOWED",
+  "title": "Model not allowed",
+  "status": 403,
+  "code": "MODEL_NOT_ALLOWED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AAD_MISMATCH",
+  "title": "Secret context mismatch",
+  "status": 403,
+  "code": "AAD_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Draft prompt forbidden in production.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_DRAFT_FORBIDDEN",
+  "title": "Draft prompt forbidden in production",
+  "status": 403,
+  "code": "PROMPT_DRAFT_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+  "title": "Kill not permitted",
+  "status": 403,
+  "code": "KILL_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Global kill is not allowed on this endpoint.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "title": "Global kill is not allowed on this endpoint",
+  "status": 403,
+  "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Platform operator required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+  "title": "Platform operator required",
+  "status": 403,
+  "code": "NOT_OPERATOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Operator MFA required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+  "title": "Operator MFA required",
+  "status": 403,
+  "code": "OPERATOR_MFA_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_MISMATCH",
+  "title": "Tenant mismatch",
+  "status": 403,
+  "code": "TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret purpose not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_PURPOSE_DENIED",
+  "title": "Secret purpose not permitted",
+  "status": 403,
+  "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SOD_VIOLATION",
+  "title": "Separation of duties violated",
+  "status": 403,
+  "code": "SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_FOUND",
+  "title": "Resource not found",
+  "status": 404,
+  "code": "NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona not defined.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+  "title": "Persona not defined",
+  "status": 404,
+  "code": "PERSONA_NOT_DEFINED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No released prompt version.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+  "title": "No released prompt version",
+  "status": 404,
+  "code": "PROMPT_NO_RELEASED_VERSION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+  "title": "Secret not found",
+  "status": 404,
+  "code": "SECRET_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+  "title": "Identity provider resource not found",
+  "status": 404,
+  "code": "KEYCLOAK_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONFLICT",
+  "title": "Conflict",
+  "status": 409,
+  "code": "CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal run state transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+  "title": "Illegal run state transition",
+  "status": 409,
+  "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal standing authorisation transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+  "title": "Illegal standing authorisation transition",
+  "status": 409,
+  "code": "AUTHZ_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Key version disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEK_DISABLED",
+  "title": "Key version disabled",
+  "status": 409,
+  "code": "KEK_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Database serialization conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+  "title": "Database serialization conflict",
+  "status": 409,
+  "code": "DB_SERIALIZATION_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill already in progress.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+  "title": "Kill already in progress",
+  "status": 409,
+  "code": "KILL_ALREADY_IN_PROGRESS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run is not active.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+  "title": "Run is not active",
+  "status": 409,
+  "code": "RUN_NOT_ACTIVE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+  "title": "Secret disabled",
+  "status": 409,
+  "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 412
+
+The ETag is stale.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid intrusiveness class.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
+  "title": "Invalid intrusiveness class",
+  "status": 422,
+  "code": "SCOPE_INVALID_CLASS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid request budget.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
+  "title": "Invalid request budget",
+  "status": 422,
+  "code": "SCOPE_INVALID_BUDGET",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid scope rule.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
+  "title": "Invalid scope rule",
+  "status": 422,
+  "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid standing authorisation window.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+  "title": "Invalid standing authorisation window",
+  "status": 422,
+  "code": "AUTHZ_INVALID_WINDOW",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+  "title": "Unknown persona",
+  "status": 422,
+  "code": "PERSONA_UNKNOWN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Forbidden tool in persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL",
+  "title": "Forbidden tool in persona",
+  "status": 422,
+  "code": "PERSONA_FORBIDDEN_TOOL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid persona definition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_INVALID",
+  "title": "Invalid persona definition",
+  "status": 422,
+  "code": "PERSONA_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret envelope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
+  "title": "Invalid secret envelope",
+  "status": 422,
+  "code": "ENVELOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid prompt file.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_INVALID",
+  "title": "Invalid prompt file",
+  "status": 422,
+  "code": "PROMPT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Prompt placeholder unfilled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
+  "title": "Prompt placeholder unfilled",
+  "status": 422,
+  "code": "PROMPT_PLACEHOLDER_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret reference.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
+  "title": "Invalid secret reference",
+  "status": 422,
+  "code": "INVALID_SECRET_REF",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Sandbox image missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_IMAGE_MISSING",
+  "title": "Sandbox image missing",
+  "status": 422,
+  "code": "SBX_IMAGE_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid kill scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+  "title": "Invalid kill scope",
+  "status": 422,
+  "code": "KILL_SCOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill scope reference required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+  "title": "Kill scope reference required",
+  "status": 422,
+  "code": "KILL_REF_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key reused with a different request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+  "title": "Idempotency key reused with a different request",
+  "status": 422,
+  "code": "IDEMPOTENCY_KEY_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid audit event.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUDIT_EVENT_INVALID",
+  "title": "Invalid audit event",
+  "status": 422,
+  "code": "AUDIT_EVENT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 428
+
+If-Match is missing.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 ## Schemas
+
+### AssessmentRequest
+
+| Property           | Type                                                                      | Required | Description |
+| ------------------ | ------------------------------------------------------------------------- | -------- | ----------- |
+| `id`               | string                                                                    | yes      |             |
+| `status`           | enum: `"draft"`, `"submitted"`, `"withdrawn"`, `"promoted"`, `"rejected"` | yes      |             |
+| `mode`             | enum: `"black"`, `"grey"`, `"white"`                                      | yes      |             |
+| `objective`        | string                                                                    | yes      |             |
+| `assetIds`         | array of string (uuid)                                                    | yes      |             |
+| `saId`             | string (uuid) or null                                                     | yes      |             |
+| `inputManifestId`  | string (uuid) or null                                                     | yes      |             |
+| `scopeRules`       | object                                                                    | yes      |             |
+| `maxIntrusiveness` | enum: `"passive"`, `"active_safe"`, `"state_changing"`                    | yes      |             |
+| `budgets`          | object                                                                    | yes      |             |
+| `trigger`          | enum: `"console"`, `"api"`, `"ci"`, `"schedule"`, `"retest"`              | yes      |             |
+| `requestedBy`      | string (uuid)                                                             | yes      |             |
+| `stateVersion`     | integer                                                                   | yes      |             |
+| `createdAt`        | string (date-time)                                                        | yes      |             |
+| `updatedAt`        | string (date-time)                                                        | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^areq_[A-Za-z0-9]+$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "submitted", "withdrawn", "promoted", "rejected"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["black", "grey", "white"]
+    },
+    "objective": {
+      "type": "string"
+    },
+    "assetIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+      }
+    },
+    "saId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "inputManifestId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "scopeRules": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    },
+    "maxIntrusiveness": {
+      "type": "string",
+      "enum": ["passive", "active_safe", "state_changing"]
+    },
+    "budgets": {
+      "type": "object",
+      "properties": {
+        "costCapUsd": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "maxRequests": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 10000000
+        },
+        "maxDurationMs": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 2592000000
+        }
+      },
+      "required": ["costCapUsd", "maxRequests", "maxDurationMs"],
+      "additionalProperties": false
+    },
+    "trigger": {
+      "type": "string",
+      "enum": ["console", "api", "ci", "schedule", "retest"]
+    },
+    "requestedBy": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "stateVersion": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    }
+  },
+  "required": [
+    "id",
+    "status",
+    "mode",
+    "objective",
+    "assetIds",
+    "saId",
+    "inputManifestId",
+    "scopeRules",
+    "maxIntrusiveness",
+    "budgets",
+    "trigger",
+    "requestedBy",
+    "stateVersion",
+    "createdAt",
+    "updatedAt"
+  ],
+  "additionalProperties": false
+}
+```
+
+### AssessmentRequestCreate
+
+| Property           | Type                                                         | Required | Description |
+| ------------------ | ------------------------------------------------------------ | -------- | ----------- |
+| `mode`             | enum: `"black"`, `"grey"`, `"white"`                         | yes      |             |
+| `objective`        | string                                                       | yes      |             |
+| `assetIds`         | array of string (uuid)                                       | yes      |             |
+| `scopeRules`       | object                                                       | no       |             |
+| `maxIntrusiveness` | enum: `"passive"`, `"active_safe"`, `"state_changing"`       | yes      |             |
+| `budgets`          | object                                                       | no       |             |
+| `inputManifestId`  | string (uuid)                                                | no       |             |
+| `saId`             | string (uuid)                                                | no       |             |
+| `trigger`          | enum: `"console"`, `"api"`, `"ci"`, `"schedule"`, `"retest"` | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["black", "grey", "white"]
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "assetIds": {
+      "default": [],
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+      }
+    },
+    "scopeRules": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "maxItems": 1000,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "effect": {
+                "type": "string",
+                "enum": ["include", "exclude"]
+              },
+              "host": {},
+              "cidr": {},
+              "ports": {
+                "minItems": 1,
+                "maxItems": 100,
+                "type": "array",
+                "items": {}
+              },
+              "paths": {
+                "minItems": 1,
+                "maxItems": 100,
+                "type": "array",
+                "items": {}
+              },
+              "methods": {
+                "minItems": 1,
+                "maxItems": 100,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH", "DELETE", "CONNECT"]
+                }
+              }
+            },
+            "required": ["effect"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["rules"],
+      "additionalProperties": false
+    },
+    "maxIntrusiveness": {
+      "default": "active_safe",
+      "type": "string",
+      "enum": ["passive", "active_safe", "state_changing"]
+    },
+    "budgets": {
+      "type": "object",
+      "properties": {
+        "costCapUsd": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "maxRequests": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 10000000
+        },
+        "maxDurationMs": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 2592000000
+        }
+      },
+      "additionalProperties": false
+    },
+    "inputManifestId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "saId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "trigger": {
+      "default": "console",
+      "type": "string",
+      "enum": ["console", "api", "ci", "schedule", "retest"]
+    }
+  },
+  "required": ["mode", "objective", "assetIds", "maxIntrusiveness", "trigger"],
+  "additionalProperties": false
+}
+```
+
+### AssessmentRequestList
+
+| Property | Type            | Required | Description |
+| -------- | --------------- | -------- | ----------- |
+| `items`  | array of object | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^areq_[A-Za-z0-9]+$"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["draft", "submitted", "withdrawn", "promoted", "rejected"]
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["black", "grey", "white"]
+          },
+          "objective": {
+            "type": "string"
+          },
+          "assetIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "saId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "inputManifestId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scopeRules": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "maxIntrusiveness": {
+            "type": "string",
+            "enum": ["passive", "active_safe", "state_changing"]
+          },
+          "budgets": {
+            "type": "object",
+            "properties": {
+              "costCapUsd": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100000
+              },
+              "maxRequests": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 10000000
+              },
+              "maxDurationMs": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 2592000000
+              }
+            },
+            "required": ["costCapUsd", "maxRequests", "maxDurationMs"],
+            "additionalProperties": false
+          },
+          "trigger": {
+            "type": "string",
+            "enum": ["console", "api", "ci", "schedule", "retest"]
+          },
+          "requestedBy": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "stateVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "mode",
+          "objective",
+          "assetIds",
+          "saId",
+          "inputManifestId",
+          "scopeRules",
+          "maxIntrusiveness",
+          "budgets",
+          "trigger",
+          "requestedBy",
+          "stateVersion",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["items"],
+  "additionalProperties": false
+}
+```
+
+### AssessmentRequestPatch
+
+| Property           | Type                                                         | Required | Description |
+| ------------------ | ------------------------------------------------------------ | -------- | ----------- |
+| `mode`             | enum: `"black"`, `"grey"`, `"white"`                         | no       |             |
+| `objective`        | string                                                       | no       |             |
+| `assetIds`         | array of string (uuid)                                       | no       |             |
+| `scopeRules`       | object                                                       | no       |             |
+| `maxIntrusiveness` | enum: `"passive"`, `"active_safe"`, `"state_changing"`       | no       |             |
+| `budgets`          | object                                                       | no       |             |
+| `inputManifestId`  | string (uuid)                                                | no       |             |
+| `saId`             | string (uuid)                                                | no       |             |
+| `trigger`          | enum: `"console"`, `"api"`, `"ci"`, `"schedule"`, `"retest"` | no       |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["black", "grey", "white"]
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "assetIds": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+      }
+    },
+    "scopeRules": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "maxItems": 1000,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "effect": {
+                "type": "string",
+                "enum": ["include", "exclude"]
+              },
+              "host": {},
+              "cidr": {},
+              "ports": {
+                "minItems": 1,
+                "maxItems": 100,
+                "type": "array",
+                "items": {}
+              },
+              "paths": {
+                "minItems": 1,
+                "maxItems": 100,
+                "type": "array",
+                "items": {}
+              },
+              "methods": {
+                "minItems": 1,
+                "maxItems": 100,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["GET", "HEAD", "OPTIONS", "POST", "PUT", "PATCH", "DELETE", "CONNECT"]
+                }
+              }
+            },
+            "required": ["effect"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["rules"],
+      "additionalProperties": false
+    },
+    "maxIntrusiveness": {
+      "type": "string",
+      "enum": ["passive", "active_safe", "state_changing"]
+    },
+    "budgets": {
+      "type": "object",
+      "properties": {
+        "costCapUsd": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "maxRequests": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 10000000
+        },
+        "maxDurationMs": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 2592000000
+        }
+      },
+      "additionalProperties": false
+    },
+    "inputManifestId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "saId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "trigger": {
+      "type": "string",
+      "enum": ["console", "api", "ci", "schedule", "retest"]
+    }
+  },
+  "additionalProperties": false
+}
+```
 
 ### AuditEventView
 
