@@ -142,3 +142,25 @@ Two committed artifacts serve the Go egress gateway, which does not run TypeScri
 
 Tests check that both files match what the code generates. After an intended contract change, delete the file
 and run `pnpm --filter @blackwing/contracts test` to regenerate it, then review the diff.
+
+## Surface graph contracts (GRAPH-001)
+
+`src/surface.ts` is the only definition of the surface-graph node and edge shapes (CONTEXT_PACK §3.1). The
+repository, upsert, planner and INGEST code import it. The module is pure, with no graph-driver imports.
+
+- Node kinds: `asset`, `host`, `service`, `technology`, `endpoint`, `parameter`, `role`. Every node carries
+  `tenantId` and a `provenance` record (`confidence` in 0..1, ordered `firstSeenAt`/`lastSeenAt`).
+- Edge kinds: `RESOLVES_TO`, `EXPOSES`, `RUNS`, `SERVES`, `HAS_PARAM`, `CAN_ACCESS` (with `expected: 'allow' | 'deny'`).
+  Each edge joins a `fromKey` and a `toKey` of the allowed kinds, both in the edge's own tenant (§8.6).
+- `naturalKey(node)` is the GRAPH-002 MERGE key, in the form `kind:tenantId:...`. Free-text components that can
+  hold a `:` are percent-encoded where needed, so distinct nodes never share a key.
+- Hostnames are stored as canonical A-labels (`café.example` and `xn--caf-dma.example` are one host). IP literals,
+  wildcards and invalid names are rejected. The IP is canonicalised.
+- A service banner longer than `SURFACE_BANNER_MAX` is truncated with an ellipsis, never rejected.
+- Endpoint `pathTemplate` is canonical, with no query, fragment or dot segments. `baseUrl` must be http(s) with no
+  credentials, query or fragment.
+- A parameter stores `name`, `location` and `dataType` only. Its `example`/`value` keys are rejected (§8.7).
+- `templatise(path)` turns a concrete path into a template, replacing numeric, UUID and long hex segments with `{id}`.
+- `SURFACE_CONTRACT_VERSION` is a semver. Bump the major on any breaking change to a schema or to `naturalKey`.
+  The contract snapshot test in `surface.test.ts` lists the fields, so a change shows up in review.
+- Objects are strict. Unknown keys are rejected, and `null` is rejected for an optional field: absent means unknown.
