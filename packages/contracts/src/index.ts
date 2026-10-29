@@ -669,3 +669,22 @@ export {
   validationResultSchema,
   VALIDATION_OUTCOMES,
 } from './validation/result.js';
+export {
+  gate1BudgetTotals,
+  gate1DecisionRequestSchema,
+  gate1DecisionResponseSchema,
+  gate1DecisionSchema,
+  gate1PlanChangesSchema,
+  gate1PlanViewSchema,
+  gate1RunIdSchema,
+  gate1TestCaseSchema,
+  GATE1_DECISIONS,
+  GATE1_DECISIONS_REQUIRING_REASON,
+  GATE1_REASON_MAX,
+  type Gate1Decision,
+  type Gate1DecisionRequest,
+  type Gate1DecisionResponse,
+  type Gate1PlanChanges,
+  type Gate1PlanView,
+  type Gate1TestCase,
+} from './entities/gate1.js';

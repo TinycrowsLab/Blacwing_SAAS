@@ -2,7 +2,7 @@
 
 The public `/v1` REST API, version 0.0.0. This page is generated from [`openapi.json`](openapi.json) by `pnpm openapi:generate`; do not edit it by hand. CI fails when it is stale.
 
-It documents 13 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
+It documents 15 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
 
 The internal Run Broker API (`/internal/broker`) is not part of this reference.
 
@@ -16,6 +16,9 @@ The internal Run Broker API (`/internal/broker`) is not part of this reference.
   - [GET /audit/events](#get-auditevents)
 - runs
   - [GET /runs/{runId}/events](#get-runsrunidevents)
+- gate1
+  - [GET /runs/{runId}/gate1](#get-runsrunidgate1)
+  - [POST /runs/{runId}/gate1/decisions](#post-runsrunidgate1decisions)
 - personas
   - [GET /personas](#get-personas)
   - [GET /personas/{persona}](#get-personaspersona)
@@ -239,7 +242,7 @@ Example: Identity provider resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -263,6 +266,42 @@ Example: Illegal run state transition.
   "title": "Illegal run state transition",
   "status": 409,
   "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -567,7 +606,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -591,6 +630,42 @@ Example: Illegal run state transition.
   "title": "Illegal run state transition",
   "status": 409,
   "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -930,7 +1005,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -954,6 +1029,42 @@ Example: Illegal run state transition.
   "title": "Illegal run state transition",
   "status": 409,
   "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -1486,7 +1597,7 @@ Example: Identity provider resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -1510,6 +1621,42 @@ Example: Illegal run state transition.
   "title": "Illegal run state transition",
   "status": 409,
   "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -1853,7 +2000,7 @@ Example: Identity provider resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -1877,6 +2024,42 @@ Example: Illegal run state transition.
   "title": "Illegal run state transition",
   "status": 409,
   "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -1979,6 +2162,795 @@ Example: Validation failed.
   "title": "Validation failed",
   "status": 422,
   "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+## gate1
+
+Gate 1: approval of the test plan before any test runs (separation of duties, §8.4).
+
+### GET /runs/{runId}/gate1
+
+**Read the test plan under Gate 1 review**
+
+Requires testplan:read. `viewer.canDecide` is a UX hint: false for the requester, for a caller without testplan:approve, and for a run not awaiting Gate 1.
+
+- Operation ID: `getGate1Plan`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter | In   | Required | Type   | Description |
+| --------- | ---- | -------- | ------ | ----------- |
+| `runId`   | path | yes      | string |             |
+
+#### Response 200
+
+The plan and what the caller may do with it.
+
+Content type `application/json`: [Gate1PlanView](#gate1planview).
+
+Example: Example.
+
+```json
+{
+  "runId": "run_01jbz3k6w8f5r4t2n9q7x0m1ab",
+  "runState": "awaiting_gate1",
+  "planVersion": 3,
+  "requesterId": "user-requester",
+  "requestedAt": "2026-10-29T08:00:00.000Z",
+  "expiresAt": "2026-10-29T12:00:00.000Z",
+  "testCases": [
+    {
+      "id": "tc-1",
+      "title": "Security headers reviewed",
+      "class": "passive",
+      "targets": ["https://lab.example.test/"],
+      "budget": {
+        "maxRequests": 10,
+        "maxRps": 1,
+        "maxConcurrency": 1,
+        "maxBytes": 100
+      }
+    }
+  ],
+  "budgetTotals": {
+    "maxRequests": 10,
+    "maxBytes": 100
+  },
+  "changes": null,
+  "viewer": {
+    "canDecide": true,
+    "isRequester": false
+  }
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_FOUND",
+  "title": "Resource not found",
+  "status": 404,
+  "code": "NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONFLICT",
+  "title": "Conflict",
+  "status": 409,
+  "code": "CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal run state transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+  "title": "Illegal run state transition",
+  "status": 409,
+  "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal standing authorisation transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+  "title": "Illegal standing authorisation transition",
+  "status": 409,
+  "code": "AUTHZ_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Key version disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEK_DISABLED",
+  "title": "Key version disabled",
+  "status": 409,
+  "code": "KEK_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Database serialization conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+  "title": "Database serialization conflict",
+  "status": 409,
+  "code": "DB_SERIALIZATION_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill already in progress.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+  "title": "Kill already in progress",
+  "status": 409,
+  "code": "KILL_ALREADY_IN_PROGRESS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run is not active.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+  "title": "Run is not active",
+  "status": 409,
+  "code": "RUN_NOT_ACTIVE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+  "title": "Secret disabled",
+  "status": 409,
+  "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid intrusiveness class.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
+  "title": "Invalid intrusiveness class",
+  "status": 422,
+  "code": "SCOPE_INVALID_CLASS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid request budget.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
+  "title": "Invalid request budget",
+  "status": 422,
+  "code": "SCOPE_INVALID_BUDGET",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid scope rule.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
+  "title": "Invalid scope rule",
+  "status": 422,
+  "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid standing authorisation window.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+  "title": "Invalid standing authorisation window",
+  "status": 422,
+  "code": "AUTHZ_INVALID_WINDOW",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+  "title": "Unknown persona",
+  "status": 422,
+  "code": "PERSONA_UNKNOWN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Forbidden tool in persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL",
+  "title": "Forbidden tool in persona",
+  "status": 422,
+  "code": "PERSONA_FORBIDDEN_TOOL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid persona definition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_INVALID",
+  "title": "Invalid persona definition",
+  "status": 422,
+  "code": "PERSONA_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret envelope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
+  "title": "Invalid secret envelope",
+  "status": 422,
+  "code": "ENVELOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid prompt file.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_INVALID",
+  "title": "Invalid prompt file",
+  "status": 422,
+  "code": "PROMPT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Prompt placeholder unfilled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
+  "title": "Prompt placeholder unfilled",
+  "status": 422,
+  "code": "PROMPT_PLACEHOLDER_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret reference.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
+  "title": "Invalid secret reference",
+  "status": 422,
+  "code": "INVALID_SECRET_REF",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Sandbox image missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_IMAGE_MISSING",
+  "title": "Sandbox image missing",
+  "status": 422,
+  "code": "SBX_IMAGE_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid kill scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+  "title": "Invalid kill scope",
+  "status": 422,
+  "code": "KILL_SCOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill scope reference required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+  "title": "Kill scope reference required",
+  "status": 422,
+  "code": "KILL_REF_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key reused with a different request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+  "title": "Idempotency key reused with a different request",
+  "status": 422,
+  "code": "IDEMPOTENCY_KEY_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid audit event.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUDIT_EVENT_INVALID",
+  "title": "Invalid audit event",
+  "status": 422,
+  "code": "AUDIT_EVENT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### POST /runs/{runId}/gate1/decisions
+
+**Approve, request changes to, or reject a test plan**
+
+Requires testplan:approve and an Idempotency-Key. The requester may not decide their own plan (403 SOD_VIOLATION). `planVersion` must be the version reviewed (409 GATE1_PLAN_STALE otherwise). A replay with the same key and body answers the first result.
+
+- Operation ID: `decideGate1`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter         | In     | Required | Type   | Description                                                            |
+| ----------------- | ------ | -------- | ------ | ---------------------------------------------------------------------- |
+| `runId`           | path   | yes      | string |                                                                        |
+| `Idempotency-Key` | header | yes      | string | Unique per decision attempt; reuse it only to retry the same decision. |
+
+**Request body** (required)
+
+Content type `application/json`: [Gate1DecisionRequest](#gate1decisionrequest).
+
+Example: Example.
+
+```json
+{
+  "decision": "request_changes",
+  "planVersion": 3,
+  "reason": "Drop the admin panel from scope."
+}
+```
+
+#### Response 200
+
+The decision and the run state it produced.
+
+Content type `application/json`: [Gate1DecisionResponse](#gate1decisionresponse).
+
+Example: Example.
+
+```json
+{
+  "runId": "run_01jbz3k6w8f5r4t2n9q7x0m1ab",
+  "decision": "approve",
+  "planVersion": 3,
+  "runState": "approved",
+  "decidedAt": "2026-10-29T10:00:00.000Z"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, SOD_VIOLATION, TENANT_CONTEXT_MISSING.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SOD_VIOLATION",
+  "title": "Separation of duties violated",
+  "status": 403,
+  "code": "SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_FOUND",
+  "title": "Resource not found",
+  "status": 404,
+  "code": "NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED, IDEMPOTENCY_KEY_MISMATCH.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key reused with a different request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+  "title": "Idempotency key reused with a different request",
+  "status": 422,
+  "code": "IDEMPOTENCY_KEY_MISMATCH",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -2219,7 +3191,7 @@ Example: Identity provider resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2243,6 +3215,42 @@ Example: Illegal run state transition.
   "title": "Illegal run state transition",
   "status": 409,
   "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -2743,7 +3751,7 @@ Example: Persona not defined.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2767,6 +3775,42 @@ Example: Illegal run state transition.
   "title": "Illegal run state transition",
   "status": 409,
   "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -3111,7 +4155,7 @@ Example: Identity provider resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -3135,6 +4179,42 @@ Example: Illegal run state transition.
   "title": "Illegal run state transition",
   "status": 409,
   "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -3510,7 +4590,7 @@ Example: Identity provider resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -3534,6 +4614,42 @@ Example: Illegal run state transition.
   "title": "Illegal run state transition",
   "status": 409,
   "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -4142,7 +5258,7 @@ Example: Identity provider resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -4166,6 +5282,42 @@ Example: Illegal run state transition.
   "title": "Illegal run state transition",
   "status": 409,
   "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -4757,7 +5909,7 @@ Example: Identity provider resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -4781,6 +5933,42 @@ Example: Illegal run state transition.
   "title": "Illegal run state transition",
   "status": 409,
   "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -5386,7 +6574,7 @@ Example: Identity provider resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -5410,6 +6598,42 @@ Example: Illegal run state transition.
   "title": "Illegal run state transition",
   "status": 409,
   "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -6221,7 +7445,7 @@ Example: Identity provider resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6245,6 +7469,42 @@ Example: Illegal run state transition.
   "title": "Illegal run state transition",
   "status": 409,
   "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -6795,6 +8055,325 @@ Full schema:
       "description": "Hex previous hash; null on the genesis row. Only with includeChain=true."
     }
   }
+}
+```
+
+### Gate1DecisionRequest
+
+| Property      | Type                                               | Required | Description |
+| ------------- | -------------------------------------------------- | -------- | ----------- |
+| `decision`    | enum: `"approve"`, `"request_changes"`, `"reject"` | yes      |             |
+| `planVersion` | integer                                            | yes      |             |
+| `reason`      | string                                             | no       |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": ["approve", "request_changes", "reject"]
+    },
+    "planVersion": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 2000
+    }
+  },
+  "required": ["decision", "planVersion"],
+  "additionalProperties": false
+}
+```
+
+### Gate1DecisionResponse
+
+| Property      | Type                                                                                                                                                                                                                                                     | Required | Description |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------- |
+| `runId`       | string                                                                                                                                                                                                                                                   | yes      |             |
+| `decision`    | enum: `"approve"`, `"request_changes"`, `"reject"`                                                                                                                                                                                                       | yes      |             |
+| `planVersion` | integer                                                                                                                                                                                                                                                  | yes      |             |
+| `runState`    | enum: `"draft"`, `"preflight"`, `"recon"`, `"planning"`, `"awaiting_gate1"`, `"approved"`, `"executing"`, `"paused"`, `"validating"`, `"awaiting_gate3"`, `"released"`, `"reporting"`, `"completed"`, `"cancelled"`, `"killed"`, `"failed"`, `"expired"` | yes      |             |
+| `decidedAt`   | string (date-time)                                                                                                                                                                                                                                       | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string",
+      "pattern": "^run_[0-9A-Za-z]{4,64}$"
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["approve", "request_changes", "reject"]
+    },
+    "planVersion": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
+    "runState": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "preflight",
+        "recon",
+        "planning",
+        "awaiting_gate1",
+        "approved",
+        "executing",
+        "paused",
+        "validating",
+        "awaiting_gate3",
+        "released",
+        "reporting",
+        "completed",
+        "cancelled",
+        "killed",
+        "failed",
+        "expired"
+      ]
+    },
+    "decidedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+    }
+  },
+  "required": ["runId", "decision", "planVersion", "runState", "decidedAt"],
+  "additionalProperties": false
+}
+```
+
+### Gate1PlanView
+
+| Property       | Type                                                                                                                                                                                                                                                     | Required | Description |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------- |
+| `runId`        | string                                                                                                                                                                                                                                                   | yes      |             |
+| `runState`     | enum: `"draft"`, `"preflight"`, `"recon"`, `"planning"`, `"awaiting_gate1"`, `"approved"`, `"executing"`, `"paused"`, `"validating"`, `"awaiting_gate3"`, `"released"`, `"reporting"`, `"completed"`, `"cancelled"`, `"killed"`, `"failed"`, `"expired"` | yes      |             |
+| `planVersion`  | integer                                                                                                                                                                                                                                                  | yes      |             |
+| `requesterId`  | string or null                                                                                                                                                                                                                                           | yes      |             |
+| `requestedAt`  | string (date-time)                                                                                                                                                                                                                                       | yes      |             |
+| `expiresAt`    | string (date-time) or null                                                                                                                                                                                                                               | yes      |             |
+| `testCases`    | array of object                                                                                                                                                                                                                                          | yes      |             |
+| `budgetTotals` | object                                                                                                                                                                                                                                                   | yes      |             |
+| `changes`      | object or null                                                                                                                                                                                                                                           | yes      |             |
+| `viewer`       | object                                                                                                                                                                                                                                                   | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string",
+      "pattern": "^run_[0-9A-Za-z]{4,64}$"
+    },
+    "runState": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "preflight",
+        "recon",
+        "planning",
+        "awaiting_gate1",
+        "approved",
+        "executing",
+        "paused",
+        "validating",
+        "awaiting_gate3",
+        "released",
+        "reporting",
+        "completed",
+        "cancelled",
+        "killed",
+        "failed",
+        "expired"
+      ]
+    },
+    "planVersion": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
+    "requesterId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "requestedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+    },
+    "expiresAt": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "testCases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "class": {
+            "type": "string",
+            "enum": ["passive", "active_safe", "state_changing", "destructive"]
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          "budget": {
+            "type": "object",
+            "properties": {
+              "maxRequests": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 10000000
+              },
+              "maxRps": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1000
+              },
+              "maxConcurrency": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 256
+              },
+              "maxBytes": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 1099511627776
+              }
+            },
+            "required": ["maxRequests", "maxRps", "maxConcurrency", "maxBytes"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["id", "title", "class", "targets", "budget"],
+        "additionalProperties": false
+      }
+    },
+    "budgetTotals": {
+      "type": "object",
+      "properties": {
+        "maxRequests": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "maxBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["maxRequests", "maxBytes"],
+      "additionalProperties": false
+    },
+    "changes": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "fromVersion": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "added": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "removed": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "changed": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": ["fromVersion", "added", "removed", "changed"],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "viewer": {
+      "type": "object",
+      "properties": {
+        "canDecide": {
+          "type": "boolean"
+        },
+        "isRequester": {
+          "type": "boolean"
+        }
+      },
+      "required": ["canDecide", "isRequester"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "runId",
+    "runState",
+    "planVersion",
+    "requesterId",
+    "requestedAt",
+    "expiresAt",
+    "testCases",
+    "budgetTotals",
+    "changes",
+    "viewer"
+  ],
+  "additionalProperties": false
 }
 ```
 

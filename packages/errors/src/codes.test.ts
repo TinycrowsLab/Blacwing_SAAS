@@ -29,6 +29,9 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   PRECONDITION_REQUIRED: 428,
   RATE_LIMITED: 429,
   ILLEGAL_RUN_TRANSITION: 409,
+  GATE1_NOT_PENDING: 409,
+  GATE1_PLAN_STALE: 409,
+  GATE1_EXPIRED: 409,
   TENANT_CONTEXT_MISSING: 403,
   CROSS_TENANT_DENIED: 403,
   TENANT_CONTEXT_CONFLICT: 500,
@@ -129,7 +132,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(101);
+    expect(ERROR_CODE_LIST).toHaveLength(104);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -238,6 +241,9 @@ describe('error-code registry', () => {
       | 'PRECONDITION_REQUIRED'
       | 'RATE_LIMITED'
       | 'ILLEGAL_RUN_TRANSITION'
+      | 'GATE1_NOT_PENDING'
+      | 'GATE1_PLAN_STALE'
+      | 'GATE1_EXPIRED'
       | 'TENANT_CONTEXT_MISSING'
       | 'CROSS_TENANT_DENIED'
       | 'TENANT_CONTEXT_CONFLICT'

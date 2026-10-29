@@ -36,6 +36,17 @@ const DEFINITIONS = {
   PRECONDITION_REQUIRED: { status: 428, title: 'Precondition required', retryable: false },
   RATE_LIMITED: { status: 429, title: 'Too many requests', retryable: true },
   ILLEGAL_RUN_TRANSITION: { status: 409, title: 'Illegal run state transition', retryable: false },
+  // Gate 1 (test plan approval, #877) refusals. The requester's refusal reuses SOD_VIOLATION (F31, below).
+  // Gate 1 decision refused because the run is no longer waiting at Gate 1 (already decided or moved on).
+  GATE1_NOT_PENDING: { status: 409, title: 'Approval gate is no longer pending', retryable: false },
+  // The decision named a plan version other than the current one: the plan changed after it was loaded.
+  GATE1_PLAN_STALE: {
+    status: 409,
+    title: 'Test plan changed since it was loaded',
+    retryable: false,
+  },
+  // The Gate 1 approval window closed before the decision; a late approval is never recorded.
+  GATE1_EXPIRED: { status: 409, title: 'Approval window expired', retryable: false },
   // A request that reaches a tenant-scoped path without a resolvable tenant context is refused outright
   // (§7/§8.6 fail closed, TENANT-003): 403, never retried, never served without isolation. A caller with no
   // principal at all is `UNAUTHENTICATED` (401) before this can happen.

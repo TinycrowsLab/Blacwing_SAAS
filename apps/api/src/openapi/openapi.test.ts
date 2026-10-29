@@ -89,6 +89,8 @@ const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   listKillEvents: 'kill',
   listAuditEvents: 'audit',
   streamRunEvents: 'runs',
+  getGate1Plan: 'gate1',
+  decideGate1: 'gate1',
   listPersonas: 'personas',
   getPersona: 'personas',
   getPersonaOverride: 'personas',
@@ -130,6 +132,8 @@ describe('public OpenAPI document', () => {
       }
     }
     expect(ids.sort()).toEqual([
+      'decideGate1',
+      'getGate1Plan',
       'getKillEvent',
       'getPersona',
       'getPersonaOverride',
@@ -144,7 +148,7 @@ describe('public OpenAPI document', () => {
       'updateTenantSettings',
       'verifySignup',
     ]);
-    expect(countOperations(doc)).toBe(13);
+    expect(countOperations(doc)).toBe(15);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -202,6 +206,7 @@ describe('public OpenAPI document', () => {
       'kill',
       'audit',
       'runs',
+      'gate1',
       'personas',
       'signup',
       'tenant',
@@ -264,7 +269,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(13);
+    expect(result.operations).toBe(15);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

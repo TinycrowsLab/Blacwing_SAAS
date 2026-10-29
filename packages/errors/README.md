@@ -34,6 +34,10 @@ frozen. Codes are public API: never rename or reuse one, add a new one instead.
 | `PRECONDITION_FAILED` | 412 | `PreconditionFailedError` | no |
 | `RATE_LIMITED` | 429 | `RateLimitedError` (`retryAfterSeconds` sets `Retry-After`) | yes |
 | `ILLEGAL_RUN_TRANSITION` | 409 | `IllegalRunTransitionError(from, to)` | no |
+| `SOD_VIOLATION` | 403 | plain `AppError` (Gate 1: the requester may not approve their own plan, §8.4) | no |
+| `GATE1_NOT_PENDING` | 409 | plain `AppError` (Gate 1: the run is no longer awaiting approval) | no |
+| `GATE1_PLAN_STALE` | 409 | plain `AppError` (Gate 1: the plan changed since it was loaded) | no |
+| `GATE1_EXPIRED` | 409 | plain `AppError` (Gate 1: the approval window closed) | no |
 | `TENANT_CONTEXT_MISSING` | 403 | `TenantContextMissingError` (fails closed, §7/§8.6) | no |
 | `CROSS_TENANT_DENIED` | 403 | `CrossTenantAccessError` (a resource of another tenant; audited, §8.6) | no |
 | `MISSING_TENANT_CONTEXT` | 500 | plain `AppError` (durable-execution call without a tenant header, fails closed, §8.6) | no |

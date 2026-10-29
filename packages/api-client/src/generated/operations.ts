@@ -2,6 +2,20 @@
 // Do not edit by hand: `pnpm test` fails when this file is stale.
 
 export const OPERATIONS = {
+  decideGate1: {
+    method: 'POST',
+    path: '/v1/runs/{runId}/gate1/decisions',
+    pathParams: ['runId'],
+    queryParams: [],
+    requiredHeaders: ['Idempotency-Key'],
+  },
+  getGate1Plan: {
+    method: 'GET',
+    path: '/v1/runs/{runId}/gate1',
+    pathParams: ['runId'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   getKillEvent: {
     method: 'GET',
     path: '/v1/kill/{id}',

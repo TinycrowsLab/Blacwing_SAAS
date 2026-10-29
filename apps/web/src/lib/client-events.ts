@@ -5,6 +5,7 @@ export type ClientEventName =
   | 'kill_requested'
   | 'kill_triggered_ui'
   | 'gate_panel_rendered'
+  | 'gate1.decision.submitted'
   | 'help_popover_opened'
   | 'empty_state_cta_click';
 

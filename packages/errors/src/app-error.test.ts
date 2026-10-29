@@ -94,6 +94,10 @@ const SUBCLASSES: readonly (readonly [
 /** Codes whose subclass lives in the package that owns the failure, not here. */
 const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'CONFIG_INVALID', // ConfigValidationError, @blackwing/config
+  // Gate1Error, apps/api Gate 1 approval API (#877): plain AppError subclass with these codes.
+  'GATE1_NOT_PENDING',
+  'GATE1_PLAN_STALE',
+  'GATE1_EXPIRED',
   // Raised as a plain AppError by the audit query API (apps/api audit-query, #86).
   'INVALID_CURSOR',
   // AuthNoCredentialsError, AuthInvalidTokenError and AuthExpiredError, apps/api auth guard (#335).

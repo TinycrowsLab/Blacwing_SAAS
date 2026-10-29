@@ -4,6 +4,8 @@ import {
   auditActionSchema,
   auditOutcomeSchema,
   auditSeveritySchema,
+  gate1DecisionResponseSchema,
+  gate1PlanViewSchema,
   killEventSchema,
   killTriggerResponseSchema,
   signupAcceptedSchema,
@@ -114,5 +116,7 @@ export const RESPONSE_SCHEMAS: Readonly<
   listPersonas: { 200: personaRegistryListSchema },
   getPersona: { 200: personaRegistryViewSchema },
   getTenantSettings: { 200: tenantSettingsResponseSchema },
+  getGate1Plan: { 200: gate1PlanViewSchema },
+  decideGate1: { 200: gate1DecisionResponseSchema },
   updateTenantSettings: { 200: tenantSettingsResponseSchema },
 };

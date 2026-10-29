@@ -80,6 +80,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/runs/{runId}/gate1': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Read the test plan under Gate 1 review
+     * @description Requires testplan:read. `viewer.canDecide` is a UX hint: false for the requester, for a caller without testplan:approve, and for a run not awaiting Gate 1.
+     */
+    get: operations['getGate1Plan'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/runs/{runId}/gate1/decisions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve, request changes to, or reject a test plan
+     * @description Requires testplan:approve and an Idempotency-Key. The requester may not decide their own plan (403 SOD_VIOLATION). `planVersion` must be the version reviewed (409 GATE1_PLAN_STALE otherwise). A replay with the same key and body answers the first result.
+     */
+    post: operations['decideGate1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/personas': {
     parameters: {
       query?: never;
@@ -314,6 +354,93 @@ export interface components {
       hash?: string;
       /** @description Hex previous hash; null on the genesis row. Only with includeChain=true. */
       prevHash?: string | null;
+    };
+    Gate1DecisionRequest: {
+      /** @enum {string} */
+      decision: 'approve' | 'request_changes' | 'reject';
+      planVersion: number;
+      reason?: string;
+    };
+    Gate1DecisionResponse: {
+      runId: string;
+      /** @enum {string} */
+      decision: 'approve' | 'request_changes' | 'reject';
+      planVersion: number;
+      /** @enum {string} */
+      runState:
+        | 'draft'
+        | 'preflight'
+        | 'recon'
+        | 'planning'
+        | 'awaiting_gate1'
+        | 'approved'
+        | 'executing'
+        | 'paused'
+        | 'validating'
+        | 'awaiting_gate3'
+        | 'released'
+        | 'reporting'
+        | 'completed'
+        | 'cancelled'
+        | 'killed'
+        | 'failed'
+        | 'expired';
+      /** Format: date-time */
+      decidedAt: string;
+    };
+    Gate1PlanView: {
+      runId: string;
+      /** @enum {string} */
+      runState:
+        | 'draft'
+        | 'preflight'
+        | 'recon'
+        | 'planning'
+        | 'awaiting_gate1'
+        | 'approved'
+        | 'executing'
+        | 'paused'
+        | 'validating'
+        | 'awaiting_gate3'
+        | 'released'
+        | 'reporting'
+        | 'completed'
+        | 'cancelled'
+        | 'killed'
+        | 'failed'
+        | 'expired';
+      planVersion: number;
+      requesterId: string | null;
+      /** Format: date-time */
+      requestedAt: string;
+      expiresAt: string | null;
+      testCases: {
+        id: string;
+        title: string;
+        /** @enum {string} */
+        class: 'passive' | 'active_safe' | 'state_changing' | 'destructive';
+        targets: string[];
+        budget: {
+          maxRequests: number;
+          maxRps: number;
+          maxConcurrency: number;
+          maxBytes: number;
+        };
+      }[];
+      budgetTotals: {
+        maxRequests: number;
+        maxBytes: number;
+      };
+      changes: {
+        fromVersion: number;
+        added: string[];
+        removed: string[];
+        changed: string[];
+      } | null;
+      viewer: {
+        canDecide: boolean;
+        isRequester: boolean;
+      };
     };
     KillEvent: {
       killEventId: string;
@@ -701,7 +828,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -802,7 +929,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -896,7 +1023,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -1080,7 +1207,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -1189,7 +1316,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -1199,6 +1326,239 @@ export interface operations {
         };
       };
       /** @description Problem details; code is one of VALIDATION_FAILED. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getGate1Plan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example run_01jbz3k6w8f5r4t2n9q7x0m1ab */
+        runId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The plan and what the caller may do with it. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "runId": "run_01jbz3k6w8f5r4t2n9q7x0m1ab",
+           *       "runState": "awaiting_gate1",
+           *       "planVersion": 3,
+           *       "requesterId": "user-requester",
+           *       "requestedAt": "2026-10-29T08:00:00.000Z",
+           *       "expiresAt": "2026-10-29T12:00:00.000Z",
+           *       "testCases": [
+           *         {
+           *           "id": "tc-1",
+           *           "title": "Security headers reviewed",
+           *           "class": "passive",
+           *           "targets": [
+           *             "https://lab.example.test/"
+           *           ],
+           *           "budget": {
+           *             "maxRequests": 10,
+           *             "maxRps": 1,
+           *             "maxConcurrency": 1,
+           *             "maxBytes": 100
+           *           }
+           *         }
+           *       ],
+           *       "budgetTotals": {
+           *         "maxRequests": 10,
+           *         "maxBytes": 100
+           *       },
+           *       "changes": null,
+           *       "viewer": {
+           *         "canDecide": true,
+           *         "isRequester": false
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['Gate1PlanView'];
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  decideGate1: {
+    parameters: {
+      query?: never;
+      header: {
+        /**
+         * @description Unique per decision attempt; reuse it only to retry the same decision.
+         * @example gate1-7f3c2a9e-1
+         */
+        'Idempotency-Key': string;
+      };
+      path: {
+        /** @example run_01jbz3k6w8f5r4t2n9q7x0m1ab */
+        runId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "decision": "request_changes",
+         *       "planVersion": 3,
+         *       "reason": "Drop the admin panel from scope."
+         *     }
+         */
+        'application/json': components['schemas']['Gate1DecisionRequest'];
+      };
+    };
+    responses: {
+      /** @description The decision and the run state it produced. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "runId": "run_01jbz3k6w8f5r4t2n9q7x0m1ab",
+           *       "decision": "approve",
+           *       "planVersion": 3,
+           *       "runState": "approved",
+           *       "decidedAt": "2026-10-29T10:00:00.000Z"
+           *     }
+           */
+          'application/json': components['schemas']['Gate1DecisionResponse'];
+        };
+      };
+      /** @description Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN, SOD_VIOLATION, TENANT_CONTEXT_MISSING. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED, IDEMPOTENCY_KEY_MISMATCH. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -1272,7 +1632,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -1386,7 +1746,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -1500,7 +1860,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -1618,7 +1978,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -1728,7 +2088,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -1820,7 +2180,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -1905,7 +2265,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -2000,7 +2360,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT. */
       409: {
         headers: {
           [name: string]: unknown;
