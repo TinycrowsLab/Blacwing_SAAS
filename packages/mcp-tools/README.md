@@ -39,3 +39,16 @@ control is declared, a `state_changing` test case has a journal entry and the ev
 broker `candidates` endpoint with an idempotency key over `(testCaseId, location, oracleBinding)` and can only
 return status `candidate`. Metrics: `mcp_candidates_submitted_total{class}`,
 `mcp_candidate_rejections_total{reason}` (`createCandidateMetrics`); span `mcp.submit_candidate`.
+
+## `mcp__target__run_httpx`, `run_naabu`, `run_dnsx` (MCP-010, #670)
+
+Typed wrappers around the pinned ProjectDiscovery binaries (`src/recon/run-tools.ts`). The agent supplies only
+targets (`targets`, `hosts` plus `ports`, `names`), and every input object is strict, so no flag can come from the
+model. Each run checks every target against the scope envelope before the binary starts; one out-of-scope target
+denies the whole call (`TOOL_SCOPE_DENIED`). The flag set is fixed per tool and checked against
+`RECON_FLAG_ALLOWLIST` (`assertAllowedFlags`). `httpx` is read-only and forced through the gateway with `-proxy`;
+`naabu` is an active, in-scope-ports-only TCP connect scan; `dnsx` is read-only. Records are parsed into bounded
+JSON (`records` capped at 500, with `total` and `truncated`), raw stdout is stored as evidence, and each run posts a
+`tool-audit` event with the flags used and the pinned `toolVersion`. Proxy forcing for proxy-unaware binaries
+comes from `egressSpawnOptions` (`proxychains-ng`). Metrics: `mcp_recon_runs_total{tool,result}`,
+`mcp_recon_duration_ms{tool}` (`createReconRunMetrics`); span `mcp.recon`.

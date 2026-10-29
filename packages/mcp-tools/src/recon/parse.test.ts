@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { isNonPublicIp } from './addresses.js';
-import { parseDnsx, parseNaabu } from './parse.js';
+import { parseDnsx, parseHttpx, parseNaabu } from './parse.js';
 
 describe('parseDnsx', () => {
   it('reads A and AAAA answers in order, canonicalised and de-duplicated', () => {
@@ -94,4 +94,55 @@ describe('isNonPublicIp', () => {
       expect(isNonPublicIp(ip)).toBe(false);
     },
   );
+});
+
+describe('parseHttpx', () => {
+  it('keeps status, title, server and technology per URL and drops headers and cookies', () => {
+    const out = [
+      JSON.stringify({
+        url: 'https://app.lab.example',
+        status_code: 200,
+        title: 'Login',
+        webserver: 'nginx/1.18.0',
+        tech: ['Nginx:1.18.0'],
+        header: { 'set-cookie': 'session=secret' },
+      }),
+    ].join('\n');
+    expect(parseHttpx(out)).toEqual({
+      records: [
+        {
+          url: 'https://app.lab.example',
+          status: 200,
+          title: 'Login',
+          webserver: 'nginx/1.18.0',
+          tech: ['Nginx:1.18.0'],
+        },
+      ],
+      malformed: 0,
+    });
+  });
+
+  it('counts failed rows, rows without a URL and non-JSON lines as malformed', () => {
+    const out = [
+      JSON.stringify({ url: 'https://a.lab.example', failed: true }),
+      JSON.stringify({ status_code: 200 }),
+      'banner text',
+      '',
+    ].join('\n');
+    expect(parseHttpx(out)).toEqual({ records: [], malformed: 3 });
+  });
+
+  it('bounds the title, server, URL and technology lists', () => {
+    const row = JSON.stringify({
+      url: `https://a.lab.example/${'p'.repeat(3000)}`,
+      title: 't'.repeat(1000),
+      webserver: 'w'.repeat(500),
+      tech: Array.from({ length: 50 }, (_, i) => `tech${String(i)}`),
+    });
+    const [record] = parseHttpx(row).records;
+    expect(record?.url.length).toBe(2048);
+    expect(record?.title?.length).toBe(256);
+    expect(record?.webserver?.length).toBe(128);
+    expect(record?.tech).toHaveLength(32);
+  });
 });

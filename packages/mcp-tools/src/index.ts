@@ -60,19 +60,43 @@ export {
 } from './recon/discover.js';
 export {
   createSpawnExecutor,
+  egressSpawnOptions,
+  PROXYCHAINS_CONFIG,
   type ReconExecutor,
   type ReconRunOptions,
   type ReconTool,
+  type ScanTool,
   type SpawnExecutorOptions,
 } from './recon/exec.js';
-export { createReconMetrics, type ReconMetrics } from './recon/metrics.js';
+export {
+  createReconMetrics,
+  createReconRunMetrics,
+  type ReconMetrics,
+  type ReconRunMetrics,
+} from './recon/metrics.js';
 export {
   type DnsxRecord,
+  type HttpxRecord,
   type NaabuResult,
   type Parsed,
   parseDnsx,
+  parseHttpx,
   parseNaabu,
 } from './recon/parse.js';
+export {
+  assertAllowedFlags,
+  createRunDnsxTool,
+  createRunHttpxTool,
+  createRunNaabuTool,
+  RECON_FLAG_ALLOWLIST,
+  type ReconRunSession,
+  runDnsxInputSchema,
+  runDnsxOutputSchema,
+  runHttpxInputSchema,
+  runHttpxOutputSchema,
+  runNaabuInputSchema,
+  runNaabuOutputSchema,
+} from './recon/run-tools.js';
 export { createDiscoverServicesTool, type DiscoverServicesSession } from './recon/tool.js';
 export { type CandidateMetrics, createCandidateMetrics } from './findings/metrics.js';
 export {

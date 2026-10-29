@@ -4,7 +4,9 @@ import { tmpdir } from 'node:os';
 import { ToolError } from '../errors.js';
 
 /** The projectdiscovery binaries the recon wrappers drive (nmap is never used: NPSL, REFERENCES §5). */
-export type ReconTool = 'dnsx' | 'naabu';
+export type ReconTool = 'dnsx' | 'httpx' | 'naabu';
+/** The tools that scan or resolve through the scope envelope (`httpx` probes are recorded by `probeHttp`). */
+export type ScanTool = Exclude<ReconTool, 'httpx'>;
 
 export interface ReconRunOptions {
   readonly stdin?: string;
@@ -27,6 +29,8 @@ export interface SpawnExecutorOptions {
   readonly commands?: Partial<Record<ReconTool, readonly [string, ...string[]]>>;
   /** Stdout cap in bytes; a tool that prints more is killed and fails. Default 16 MiB. */
   readonly maxOutputBytes?: number;
+  /** Extra environment for every child (proxy variables for egress forcing). Nothing else is inherited. */
+  readonly env?: Readonly<Record<string, string>>;
 }
 
 /** 16 MiB. */
@@ -47,7 +51,7 @@ export function createSpawnExecutor(options: SpawnExecutorOptions = {}): ReconEx
             : new ToolError('TOOL_BACKEND_UNAVAILABLE', message);
         const child = spawn(command, [...lead, ...args], {
           stdio: ['pipe', 'pipe', 'ignore'],
-          env: { PATH: CHILD_PATH, HOME: tmpdir() },
+          env: { ...options.env, PATH: CHILD_PATH, HOME: tmpdir() },
           signal,
           timeout: timeoutMs,
           killSignal: 'SIGKILL',
@@ -74,5 +78,28 @@ export function createSpawnExecutor(options: SpawnExecutorOptions = {}): ReconEx
           else reject(failure(`${tool} failed`));
         });
       }),
+  };
+}
+
+/** The proxychains-ng configuration the sandbox image ships for forcing proxy-unaware tools through the gateway. */
+export const PROXYCHAINS_CONFIG = '/etc/proxychains/blackwing.conf';
+
+/**
+ * Egress forcing for the recon binaries (§8.2): every child gets the gateway as its HTTP(S)/ALL proxy, and the
+ * tools that ignore proxy variables (`naabu`, `dnsx`) run under `proxychains-ng`, which uses the gateway's
+ * SOCKS5 listener. A child that still reaches out directly is stopped by the host firewall and NetworkPolicy.
+ */
+export function egressSpawnOptions(proxyUrl: string): SpawnExecutorOptions {
+  const forced = ['proxychains4', '-q', '-f', PROXYCHAINS_CONFIG] as const;
+  return {
+    env: {
+      HTTP_PROXY: proxyUrl,
+      HTTPS_PROXY: proxyUrl,
+      ALL_PROXY: proxyUrl,
+    },
+    commands: {
+      dnsx: [...forced, 'dnsx'] as const,
+      naabu: [...forced, 'naabu'] as const,
+    },
   };
 }

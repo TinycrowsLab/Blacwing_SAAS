@@ -23,7 +23,7 @@ import { isNonPublicIp } from './addresses.js';
 import { parseDnsx, parseNaabu } from './parse.js';
 import { ToolError, type ToolErrorCode } from '../errors.js';
 
-import type { ReconTool, ReconExecutor } from './exec.js';
+import type { ReconExecutor, ReconTool, ScanTool } from './exec.js';
 import type { ReconMetrics } from './metrics.js';
 
 const PORT_MAX = 65_535;
@@ -122,7 +122,7 @@ export interface DiscoverDeps {
   readonly budget: ReconBudget;
   readonly signal: AbortSignal;
   /** Pinned tool versions of the run (§8.9). */
-  readonly toolVersions: { readonly dnsx: string; readonly naabu: string };
+  readonly toolVersions: Record<ScanTool, string>;
   readonly provenance: Pick<SurfaceProvenance, 'runId' | 'sessionId' | 'persona'>;
   /** Validates, scope-checks and stores a batch (the domain `writeSurface` bound to the run). */
   readonly writeSurface: (request: SurfaceWriteRequest) => Promise<unknown>;
@@ -207,7 +207,7 @@ export async function discoverServices(
     coverage,
   });
 
-  const provenance = (tool: ReconTool, confidence: number): SurfaceProvenance => ({
+  const provenance = (tool: ScanTool, confidence: number): SurfaceProvenance => ({
     ...deps.provenance,
     tool,
     toolVersion: deps.toolVersions[tool],
@@ -230,7 +230,7 @@ export async function discoverServices(
 
   /** Runs one binary under a span and audits the batch whether it worked or not. */
   const probe = async (
-    tool: ReconTool,
+    tool: ScanTool,
     args: readonly string[],
     stdin: string | undefined,
     inputSummary: string,

@@ -15,6 +15,15 @@ export interface NaabuResult {
   readonly proto: 'tcp' | 'udp';
 }
 
+/** One probed URL from `httpx -json`: status, title, server and technology signals. Headers and cookies are never read. */
+export interface HttpxRecord {
+  readonly url: string;
+  readonly status: number | null;
+  readonly title: string | null;
+  readonly webserver: string | null;
+  readonly tech: readonly string[];
+}
+
 export interface Parsed<T> {
   readonly records: readonly T[];
   /** Lines that were not valid JSON or did not match the expected shape; never echoed (tool output is untrusted). */
@@ -22,6 +31,19 @@ export interface Parsed<T> {
 }
 
 const PORT_MAX = 65_535;
+const URL_MAX = 2048;
+const TEXT_MAX = 256;
+const TECH_MAX = 128;
+const TECH_PER_ROW_MAX = 32;
+
+const httpxLineSchema = z.looseObject({
+  url: z.string(),
+  status_code: z.number().int().optional(),
+  title: z.string().optional(),
+  webserver: z.string().optional(),
+  tech: z.array(z.string()).optional(),
+  failed: z.boolean().optional(),
+});
 
 const dnsxLineSchema = z.object({
   host: z.string(),
@@ -83,5 +105,26 @@ export function parseNaabu(stdout: string): Parsed<NaabuResult> {
     if (!line.success) return null;
     const ip = normaliseIp(line.data.ip ?? line.data.host ?? '');
     return ip === null ? null : { ip, port: line.data.port, proto: line.data.protocol };
+  });
+}
+
+/**
+ * Parses `httpx -json` output (one JSON object per line). Rows httpx marks as failed, and rows without a URL,
+ * are malformed. Only the fields the tools return are kept, each bounded in length.
+ */
+export function parseHttpx(stdout: string): Parsed<HttpxRecord> {
+  return parseLines(stdout, (json) => {
+    const line = httpxLineSchema.safeParse(json);
+    if (!line.success || line.data.failed === true) return null;
+    const tech = (line.data.tech ?? [])
+      .slice(0, TECH_PER_ROW_MAX)
+      .map((value) => value.slice(0, TECH_MAX));
+    return {
+      url: line.data.url.slice(0, URL_MAX),
+      status: line.data.status_code ?? null,
+      title: line.data.title === undefined ? null : line.data.title.slice(0, TEXT_MAX),
+      webserver: line.data.webserver === undefined ? null : line.data.webserver.slice(0, TECH_MAX),
+      tech,
+    };
   });
 }
