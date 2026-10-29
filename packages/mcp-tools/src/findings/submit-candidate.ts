@@ -24,6 +24,7 @@ import type { CandidateMetrics } from './metrics.js';
 /** Longest summary kept on a candidate; the evidence holds the detail. */
 const CANDIDATE_SUMMARY_MAX = 2000;
 const EVIDENCE_REFS_MAX = 50;
+const WSTG_REFS_MAX = 20;
 
 /** Why a submission was refused (`mcp_candidate_rejections_total{reason}`). */
 type CandidateRejectionReason =
@@ -60,6 +61,8 @@ export const submitCandidateInputSchema = z.strictObject({
   class: z.string().min(1).max(LIMITS.shortTextMax),
   cweId: cweIdSchema,
   owaspCategory: z.string().min(1).max(LIMITS.shortTextMax),
+  /** WSTG ids the test case cites. Recorded in the tool audit; the broker body does not carry them. */
+  wstgRefs: z.array(z.string().min(1).max(LIMITS.keyMax)).max(WSTG_REFS_MAX).default([]),
   location: findingLocationSchema.refine(
     (location) => location.urlTemplate !== null || location.file !== null,
     'a location needs a URL template or a file',

@@ -76,6 +76,20 @@ export {
 export { createDiscoverServicesTool, type DiscoverServicesSession } from './recon/tool.js';
 export { type CandidateMetrics, createCandidateMetrics } from './findings/metrics.js';
 export {
+  type CaptureSource,
+  type GatewayCapture,
+  type GatewayPart,
+  submitWebApiCandidate,
+  type StoredEvidence,
+  type WebApiCandidate,
+  webApiCandidateSchema,
+  type WebApiRejection,
+  type WebApiSubmitDeps,
+  type WebApiSubmitResult,
+  WEB_API_CAPTURE_KINDS,
+  type WebApiCaptureKind,
+} from './findings/submit.js';
+export {
   createSubmitCandidateTool,
   type DeclaredTestCase,
   type SubmitCandidateInput,
