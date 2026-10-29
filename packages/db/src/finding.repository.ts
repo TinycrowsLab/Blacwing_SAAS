@@ -3,12 +3,16 @@
 // The lifecycle transitions, the fingerprint algorithm and the audit of release (FINDING-002/003, Gate 3) are
 // owned by later issues: this class owns the rows, their validation and optimistic concurrency only.
 
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, notInArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import {
+  type BaselineStatus,
   baselineStatusSchema,
+  type CvssSeverityBand,
+  cvssSeverityBandSchema,
   findingLocationSchema,
+  type FindingStatus,
   findingStatusSchema,
   LIMITS,
   sha256HexSchema,
@@ -150,6 +154,12 @@ const occurrenceCreateSchema = z.strictObject({
 });
 
 const idSchema = z.uuid();
+/** Upper bound on the statuses one search may exclude: every status, once. */
+const FINDING_STATUS_COUNT = findingStatusSchema.options.length;
+/** Largest number of rows one search reads (a page of 200 plus the look-ahead row). */
+const MAX_SEARCH_ROWS = 201;
+/** Largest number of finding ids one batched occurrence read takes (a GraphQL page of 200 findings). */
+const MAX_BATCH_IDS = 500;
 /** `state_version` is a Postgres `integer`. */
 const MAX_STATE_VERSION = 2_147_483_647;
 const versionSchema = z.number().int().min(0).max(MAX_STATE_VERSION);
@@ -174,6 +184,43 @@ export interface FindingPage {
   readonly items: FindingRow[];
   readonly nextCursor: string | null;
 }
+
+/**
+ * Filters and keyset position of a finding search (API findings query). Every filter is optional and they combine
+ * with AND. `excludeStatuses` hides statuses whatever else is asked (the Suspected rule of F17 is enforced here
+ * as well as in Cedar). `after` is the `(createdAt, id)` of the last row of the previous page.
+ */
+export interface FindingQuery {
+  readonly assetId?: string;
+  readonly status?: FindingStatus;
+  readonly excludeStatuses?: readonly FindingStatus[];
+  /** The CVSS v4.0 qualitative band (`severity.cvss4.severity`). */
+  readonly severity?: CvssSeverityBand;
+  readonly cweId?: string;
+  readonly owaspCategory?: string;
+  readonly baselineStatus?: BaselineStatus;
+  readonly after?: { readonly createdAt: Date; readonly id: string };
+  /** Rows to read; the caller reads one more than a page to learn whether a next page exists. */
+  readonly limit: number;
+}
+
+const searchSchema = z.strictObject({
+  assetId: uuidV7Schema.optional(),
+  status: findingStatusSchema.optional(),
+  excludeStatuses: z.array(findingStatusSchema).max(FINDING_STATUS_COUNT).optional(),
+  severity: cvssSeverityBandSchema.optional(),
+  cweId: z
+    .string()
+    .regex(/^CWE-[1-9][0-9]{0,4}$/)
+    .optional(),
+  owaspCategory: z
+    .string()
+    .regex(/^A(0[1-9]|10)$/)
+    .optional(),
+  baselineStatus: baselineStatusSchema.optional(),
+  after: z.strictObject({ createdAt: z.date(), id: uuidV7Schema }).optional(),
+  limit: z.number().int().min(1).max(MAX_SEARCH_ROWS),
+});
 
 function parseInput<V>(schema: z.ZodType<V>, value: unknown, what: string): V {
   const result = schema.safeParse(value);
@@ -307,6 +354,45 @@ export class FindingRepository {
   }
 
   /**
+   * Findings of the ambient tenant matching `query`, newest first (`created_at` desc, then `id` desc). The keyset is
+   * the same millisecond-truncated timestamp the index orders by, so pages concatenate to the unpaged result.
+   */
+  async search(input: FindingQuery): Promise<FindingRow[]> {
+    const query = parseInput(searchSchema, input, 'finding query');
+    const createdAt = sql`date_trunc('milliseconds', ${findings.createdAt})`;
+    return this.run('search', async (tx, tenantId) => {
+      const conditions = [eq(findings.tenantId, tenantId)];
+      if (query.assetId !== undefined) conditions.push(eq(findings.assetId, query.assetId));
+      if (query.status !== undefined) conditions.push(eq(findings.status, query.status));
+      if (query.excludeStatuses !== undefined && query.excludeStatuses.length > 0) {
+        conditions.push(notInArray(findings.status, [...query.excludeStatuses]));
+      }
+      if (query.severity !== undefined) {
+        conditions.push(sql`${findings.severity} -> 'cvss4' ->> 'severity' = ${query.severity}`);
+      }
+      if (query.cweId !== undefined) conditions.push(eq(findings.cweId, query.cweId));
+      if (query.owaspCategory !== undefined) {
+        conditions.push(eq(findings.owaspCategory, query.owaspCategory));
+      }
+      if (query.baselineStatus !== undefined) {
+        conditions.push(eq(findings.baselineStatus, query.baselineStatus));
+      }
+      if (query.after !== undefined) {
+        conditions.push(
+          sql`(${createdAt}, ${findings.id}) < (${query.after.createdAt.toISOString()}::timestamptz, ${query.after.id}::uuid)`,
+        );
+      }
+      const rows = await tx
+        .select()
+        .from(findings)
+        .where(and(...conditions))
+        .orderBy(desc(createdAt), desc(findings.id))
+        .limit(query.limit);
+      return { row: rows, rowCount: rows.length };
+    });
+  }
+
+  /**
    * Applies `patch` only if the row is at `expectedStateVersion`, and bumps it. A stale version is
    * `ConcurrencyError` (412); a missing or foreign row is `NotFoundError`. Two concurrent updates with the same
    * version: one wins, the other gets the 412.
@@ -357,6 +443,28 @@ export class FindingRepository {
       },
       DUPLICATE_OCCURRENCE,
     );
+  }
+
+  /**
+   * Occurrences of several findings in one query (the GraphQL DataLoader batch), oldest first. A finding that is
+   * unknown or foreign contributes no rows, so the caller groups by `findingId` and an absent key is empty.
+   */
+  async listOccurrencesOf(findingIds: readonly string[]): Promise<FindingOccurrenceRow[]> {
+    const ids = parseInput(z.array(idSchema).max(MAX_BATCH_IDS), [...findingIds], 'finding ids');
+    if (ids.length === 0) return [];
+    return this.run('listOccurrencesOf', async (tx, tenantId) => {
+      const rows = await tx
+        .select()
+        .from(findingOccurrences)
+        .where(
+          and(
+            inArray(findingOccurrences.findingId, ids),
+            eq(findingOccurrences.tenantId, tenantId),
+          ),
+        )
+        .orderBy(findingOccurrences.detectedAt, findingOccurrences.id);
+      return { row: rows, rowCount: rows.length };
+    });
   }
 
   /** Every occurrence of one finding, oldest first. An unknown or foreign finding has none. */

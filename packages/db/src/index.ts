@@ -278,3 +278,11 @@ export {
   TenantHaltRepository,
   type TenantHaltRepositoryOptions,
 } from './tenant-halt.repository.js';
+export {
+  FindingRepository,
+  type FindingOccurrenceRow,
+  type FindingPage,
+  type FindingQuery,
+  type FindingRepositoryOptions,
+  type FindingRow,
+} from './finding.repository.js';

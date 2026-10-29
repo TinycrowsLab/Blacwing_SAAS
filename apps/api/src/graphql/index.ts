@@ -1,5 +1,6 @@
 export { createPgAssessmentReadStore, createPgMemberReadStore } from './postgres.js';
 export { AssessmentRequestsResolver } from './assessment-requests.resolver.js';
+export { FindingsResolver } from './findings.resolver.js';
 export { SurfaceResolver } from './surface.resolver.js';
 export { createSurfaceReadStore } from './surface.store.js';
 export { decodeEndpointCursor, encodeEndpointCursor } from './endpoint-cursor.js';

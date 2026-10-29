@@ -310,6 +310,24 @@ export {
   severitySchema,
 } from './entities/finding.js';
 export {
+  FINDING_DETAIL_INLINE_MAX,
+  FINDING_LIST_LIMIT_DEFAULT,
+  FINDING_LIST_LIMIT_MAX,
+  type FindingDetail,
+  findingDetailSchema,
+  type FindingEvidenceRef,
+  findingEvidenceRefSchema,
+  type FindingListFilters,
+  findingListFiltersSchema,
+  type FindingListResponse,
+  findingListResponseSchema,
+  type FindingOccurrence,
+  findingOccurrenceSchema,
+  findingPublicIdSchema,
+  type FindingSummary,
+  findingSummarySchema,
+} from './entities/finding-api.js';
+export {
   AUDIT_ACTION_CATALOGUE,
   AUDIT_ACTION_CLASSES,
   AUDIT_ACTIONS,

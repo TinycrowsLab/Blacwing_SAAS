@@ -46,6 +46,17 @@ type AssetRef {
   id: ID!
 }
 
+"""CVSS v4.0 score, band and nomenclature of a finding."""
+type Cvss4Score {
+  """CVSS-B, CVSS-BE, CVSS-BT or CVSS-BTE."""
+  nomenclature: String!
+  score: Float!
+
+  """none, low, medium, high or critical."""
+  severity: String!
+  vector: String!
+}
+
 """An endpoint discovered for a run."""
 type Endpoint {
   """The asset the endpoint belongs to."""
@@ -66,6 +77,110 @@ type EndpointConnection {
 type EndpointEdge {
   cursor: String!
   node: Endpoint!
+}
+
+"""A finding of the caller tenant (read-only)."""
+type Finding {
+  assetId: ID!
+  baselineStatus: String
+  class: String!
+  confidence: Float
+  createdAt: String!
+  cweId: String
+  evidence(first: Int): FindingEvidence!
+  firstSeenRunId: ID!
+  id: ID!
+  lastSeenRunId: ID!
+  location: FindingLocation!
+  occurrences(first: Int): FindingOccurrences!
+  owaspCategory: String
+  severity: FindingSeverity
+  stateVersion: Int!
+
+  """Finding status (contract FINDING statuses)."""
+  status: String!
+  title: String!
+  unmapped: Boolean!
+  updatedAt: String!
+}
+
+"""A page of findings, newest first."""
+type FindingConnection {
+  hasMore: Boolean!
+  items: [Finding!]!
+
+  """Pass as `after` for the next page."""
+  nextCursor: String
+}
+
+"""Evidence refs of a finding, capped per page."""
+type FindingEvidence {
+  items: [FindingEvidenceRef!]!
+  total: Int!
+  truncated: Boolean!
+}
+
+"""A bound evidence reference of an occurrence."""
+type FindingEvidenceRef {
+  chain: String!
+  evidenceId: ID!
+  objectKey: String!
+  occurrenceId: ID!
+  runId: ID!
+  sha256: String!
+}
+
+"""Filters of the findings list (combined with AND)."""
+input FindingFilter {
+  assetId: ID
+
+  """Baseline status: new, open, fixed, returned or not_retested."""
+  baselineStatus: String
+
+  """A CWE id from the pinned list, for example CWE-89."""
+  cwe: String
+
+  """An OWASP Top 10 2021 category, A01 to A10."""
+  owasp: String
+
+  """CVSS v4.0 band: none, low, medium, high or critical."""
+  severity: String
+
+  """A finding status, for example confirmed."""
+  status: String
+}
+
+"""Where the finding is."""
+type FindingLocation {
+  file: String
+  line: Int
+  method: String
+  parameter: String
+  urlTemplate: String
+}
+
+"""One run that observed a finding."""
+type FindingOccurrence {
+  """ISO-8601 UTC."""
+  detectedAt: String!
+
+  """Head of the evidence chain (SHA-256 hex)."""
+  evidenceChainHead: String
+  id: ID!
+  occurrenceStatus: String!
+  runId: ID!
+}
+
+"""Occurrences of a finding, capped per page."""
+type FindingOccurrences {
+  items: [FindingOccurrence!]!
+  total: Int!
+  truncated: Boolean!
+}
+
+"""Severity of a finding (CVSS v4.0 is authoritative)."""
+type FindingSeverity {
+  cvss4: Cvss4Score!
 }
 
 """How many of one kind a run holds."""
@@ -92,6 +207,16 @@ type Query {
   Endpoints of one run of the caller tenant (Relay connection, at most 200 per page).
   """
   endpoints(after: String, first: Int, runId: ID!): EndpointConnection!
+
+  """
+  One finding of the caller tenant, or null when it is missing, foreign or hidden.
+  """
+  finding(id: ID!): Finding
+
+  """
+  Findings of the caller tenant (filters as GET /v1/findings, newest first).
+  """
+  findings(after: String, filter: FindingFilter, first: Int): FindingConnection!
 
   """
   Surface summary of one run of the caller tenant (counts, top technologies, endpoints).

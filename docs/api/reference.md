@@ -2,7 +2,7 @@
 
 The public `/v1` REST API, version 0.0.0. This page is generated from [`openapi.json`](openapi.json) by `pnpm openapi:generate`; do not edit it by hand. CI fails when it is stale.
 
-It documents 36 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
+It documents 38 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
 
 The internal Run Broker API (`/internal/broker`) is not part of this reference.
 
@@ -56,6 +56,9 @@ The internal Run Broker API (`/internal/broker`) is not part of this reference.
   - [POST /test-plans/{planId}/cases](#post-test-plansplanidcases)
   - [DELETE /test-cases/{caseId}](#delete-test-casescaseid)
   - [PATCH /test-cases/{caseId}](#patch-test-casescaseid)
+- findings
+  - [GET /findings](#get-findings)
+  - [GET /findings/{id}](#get-findingsid)
 
 ## kill
 
@@ -20738,6 +20741,1237 @@ Example: Too many requests.
 }
 ```
 
+## findings
+
+Findings: list and detail, tenant-scoped and read-only. Suspected findings are visible to analysts only (F17).
+
+### GET /findings
+
+**List the findings of the tenant, newest first**
+
+Needs finding:read. Filters combine with AND. An unknown filter, a CWE or OWASP id outside the pinned lists, or a malformed limit is 400. Suspected findings are excluded unless the caller is an analyst. The page size is clamped to 200.
+
+- Operation ID: `listFindings`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter        | In    | Required | Type                                                        | Description |
+| ---------------- | ----- | -------- | ----------------------------------------------------------- | ----------- |
+| `assetId`        | query | no       | string (uuid)                                               |             |
+| `status`         | query | no       | string                                                      |             |
+| `severity`       | query | no       | enum: `"none"`, `"low"`, `"medium"`, `"high"`, `"critical"` |             |
+| `cwe`            | query | no       | string                                                      |             |
+| `owasp`          | query | no       | string                                                      |             |
+| `baselineStatus` | query | no       | string                                                      |             |
+| `cursor`         | query | no       | string                                                      |             |
+| `limit`          | query | no       | integer                                                     |             |
+
+#### Response 200
+
+A page of findings.
+
+Content type `application/json`: [FindingList](#findinglist).
+
+Example: One finding.
+
+```json
+{
+  "items": [
+    {
+      "id": "fnd_01m64cavacexhrddgjb6xd80xv",
+      "title": "Missing authorisation on /admin",
+      "class": "broken_access_control",
+      "status": "confirmed",
+      "baselineStatus": "new",
+      "severity": null,
+      "cweId": "CWE-285",
+      "owaspCategory": "A01",
+      "unmapped": false,
+      "confidence": 0.9,
+      "assetId": "0198f0a0-0000-7000-8000-0000000000e1",
+      "location": {
+        "method": "GET",
+        "urlTemplate": "/admin",
+        "parameter": null,
+        "file": null,
+        "line": null
+      },
+      "firstSeenRunId": "0198f0a0-0000-7000-8000-0000000000c1",
+      "lastSeenRunId": "0198f0a0-0000-7000-8000-0000000000c1",
+      "stateVersion": 1,
+      "createdAt": "2026-10-29T10:00:00.000Z",
+      "updatedAt": "2026-10-29T10:05:00.000Z"
+    }
+  ],
+  "nextCursor": null,
+  "hasMore": false
+}
+```
+
+#### Response 400
+
+A malformed cursor (invalid_cursor), limit (bad_request) or filter (invalid_filter).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 401
+
+No valid credential.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 403
+
+The caller has no finding:read permission in this tenant.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 404
+
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_FOUND",
+  "title": "Resource not found",
+  "status": 404,
+  "code": "NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona not defined.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+  "title": "Persona not defined",
+  "status": 404,
+  "code": "PERSONA_NOT_DEFINED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No released prompt version.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+  "title": "No released prompt version",
+  "status": 404,
+  "code": "PROMPT_NO_RELEASED_VERSION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+  "title": "Run not found",
+  "status": 404,
+  "code": "RUN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+  "title": "Secret not found",
+  "status": 404,
+  "code": "SECRET_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+  "title": "Identity provider resource not found",
+  "status": 404,
+  "code": "KEYCLOAK_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONFLICT",
+  "title": "Conflict",
+  "status": 409,
+  "code": "CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal run state transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+  "title": "Illegal run state transition",
+  "status": 409,
+  "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal standing authorisation transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+  "title": "Illegal standing authorisation transition",
+  "status": 409,
+  "code": "AUTHZ_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Standing authorisation is not a draft.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_NOT_DRAFT",
+  "title": "Standing authorisation is not a draft",
+  "status": 409,
+  "code": "AUTHZ_NOT_DRAFT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Key version disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEK_DISABLED",
+  "title": "Key version disabled",
+  "status": 409,
+  "code": "KEK_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Database serialization conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+  "title": "Database serialization conflict",
+  "status": 409,
+  "code": "DB_SERIALIZATION_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill already in progress.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+  "title": "Kill already in progress",
+  "status": 409,
+  "code": "KILL_ALREADY_IN_PROGRESS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run is not active.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+  "title": "Run is not active",
+  "status": 409,
+  "code": "RUN_NOT_ACTIVE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+  "title": "Secret disabled",
+  "status": 409,
+  "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid intrusiveness class.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
+  "title": "Invalid intrusiveness class",
+  "status": 422,
+  "code": "SCOPE_INVALID_CLASS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid request budget.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
+  "title": "Invalid request budget",
+  "status": 422,
+  "code": "SCOPE_INVALID_BUDGET",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid scope rule.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
+  "title": "Invalid scope rule",
+  "status": 422,
+  "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid standing authorisation window.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+  "title": "Invalid standing authorisation window",
+  "status": 422,
+  "code": "AUTHZ_INVALID_WINDOW",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Asset is not verified for this tenant.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ASSET_UNVERIFIED",
+  "title": "Asset is not verified for this tenant",
+  "status": 422,
+  "code": "AUTHZ_ASSET_UNVERIFIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+  "title": "Unknown persona",
+  "status": 422,
+  "code": "PERSONA_UNKNOWN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Forbidden tool in persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL",
+  "title": "Forbidden tool in persona",
+  "status": 422,
+  "code": "PERSONA_FORBIDDEN_TOOL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid persona definition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_INVALID",
+  "title": "Invalid persona definition",
+  "status": 422,
+  "code": "PERSONA_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret envelope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
+  "title": "Invalid secret envelope",
+  "status": 422,
+  "code": "ENVELOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid prompt file.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_INVALID",
+  "title": "Invalid prompt file",
+  "status": 422,
+  "code": "PROMPT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Prompt placeholder unfilled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
+  "title": "Prompt placeholder unfilled",
+  "status": 422,
+  "code": "PROMPT_PLACEHOLDER_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret reference.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
+  "title": "Invalid secret reference",
+  "status": 422,
+  "code": "INVALID_SECRET_REF",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Sandbox image missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_IMAGE_MISSING",
+  "title": "Sandbox image missing",
+  "status": 422,
+  "code": "SBX_IMAGE_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid kill scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+  "title": "Invalid kill scope",
+  "status": 422,
+  "code": "KILL_SCOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill scope reference required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+  "title": "Kill scope reference required",
+  "status": 422,
+  "code": "KILL_REF_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key reused with a different request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+  "title": "Idempotency key reused with a different request",
+  "status": 422,
+  "code": "IDEMPOTENCY_KEY_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid audit event.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUDIT_EVENT_INVALID",
+  "title": "Invalid audit event",
+  "status": 422,
+  "code": "AUDIT_EVENT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: CVSS score does not match its vector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+  "title": "CVSS score does not match its vector",
+  "status": 422,
+  "code": "CVSS_VECTOR_SCORE_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### GET /findings/{id}
+
+**Get one finding with its occurrences, mapping and evidence refs**
+
+Needs finding:read. Occurrences and evidence refs are each capped at 50 and carry total and truncated. Evidence is referenced by its chain head and resolved by the evidence API. A finding the caller may not see is 404.
+
+- Operation ID: `getFinding`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter | In   | Required | Type   | Description                           |
+| --------- | ---- | -------- | ------ | ------------------------------------- |
+| `id`      | path | yes      | string | The `fnd_…` public id of the finding. |
+
+#### Response 200
+
+The finding detail.
+
+Content type `application/json`: [Finding](#finding).
+
+Example: A confirmed finding with one occurrence.
+
+```json
+{
+  "id": "fnd_01m64cavacexhrddgjb6xd80xv",
+  "title": "Missing authorisation on /admin",
+  "class": "broken_access_control",
+  "status": "confirmed",
+  "baselineStatus": "new",
+  "severity": null,
+  "cweId": "CWE-285",
+  "owaspCategory": "A01",
+  "unmapped": false,
+  "confidence": 0.9,
+  "assetId": "0198f0a0-0000-7000-8000-0000000000e1",
+  "location": {
+    "method": "GET",
+    "urlTemplate": "/admin",
+    "parameter": null,
+    "file": null,
+    "line": null
+  },
+  "firstSeenRunId": "0198f0a0-0000-7000-8000-0000000000c1",
+  "lastSeenRunId": "0198f0a0-0000-7000-8000-0000000000c1",
+  "stateVersion": 1,
+  "createdAt": "2026-10-29T10:00:00.000Z",
+  "updatedAt": "2026-10-29T10:05:00.000Z",
+  "mappingVersion": "1.0.0",
+  "classification": {
+    "cweCandidates": ["CWE-285"],
+    "apiTop10": "API1",
+    "wstg": ["WSTG-ATHZ-02"]
+  },
+  "acceptedRisk": null,
+  "releasedBy": null,
+  "releasedAt": null,
+  "occurrences": {
+    "items": [
+      {
+        "id": "0198f0a0-0000-7000-8000-0000000000c2",
+        "runId": "0198f0a0-0000-7000-8000-0000000000c1",
+        "occurrenceStatus": "observed",
+        "evidenceChainHead": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "detectedAt": "2026-10-29T10:00:00.000Z"
+      }
+    ],
+    "total": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "items": [
+      {
+        "evidenceId": "0198f0a0-0000-7000-8000-0000000000c3",
+        "objectKey": "evidence/run-c1/request-0001.bin",
+        "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "chain": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "occurrenceId": "0198f0a0-0000-7000-8000-0000000000c2",
+        "runId": "0198f0a0-0000-7000-8000-0000000000c1"
+      }
+    ],
+    "total": 1,
+    "truncated": false
+  }
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid query.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_QUERY",
+  "title": "Invalid query",
+  "status": 400,
+  "code": "INVALID_QUERY",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+No valid credential.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 403
+
+The caller has no finding:read permission in this tenant.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 404
+
+Unknown, foreign or hidden finding.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 409
+
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONFLICT",
+  "title": "Conflict",
+  "status": 409,
+  "code": "CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal run state transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+  "title": "Illegal run state transition",
+  "status": 409,
+  "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal standing authorisation transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+  "title": "Illegal standing authorisation transition",
+  "status": 409,
+  "code": "AUTHZ_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Standing authorisation is not a draft.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_NOT_DRAFT",
+  "title": "Standing authorisation is not a draft",
+  "status": 409,
+  "code": "AUTHZ_NOT_DRAFT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Key version disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEK_DISABLED",
+  "title": "Key version disabled",
+  "status": 409,
+  "code": "KEK_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Database serialization conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+  "title": "Database serialization conflict",
+  "status": 409,
+  "code": "DB_SERIALIZATION_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill already in progress.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+  "title": "Kill already in progress",
+  "status": 409,
+  "code": "KILL_ALREADY_IN_PROGRESS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run is not active.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+  "title": "Run is not active",
+  "status": 409,
+  "code": "RUN_NOT_ACTIVE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+  "title": "Secret disabled",
+  "status": 409,
+  "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid intrusiveness class.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
+  "title": "Invalid intrusiveness class",
+  "status": 422,
+  "code": "SCOPE_INVALID_CLASS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid request budget.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
+  "title": "Invalid request budget",
+  "status": 422,
+  "code": "SCOPE_INVALID_BUDGET",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid scope rule.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
+  "title": "Invalid scope rule",
+  "status": 422,
+  "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid standing authorisation window.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+  "title": "Invalid standing authorisation window",
+  "status": 422,
+  "code": "AUTHZ_INVALID_WINDOW",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Asset is not verified for this tenant.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ASSET_UNVERIFIED",
+  "title": "Asset is not verified for this tenant",
+  "status": 422,
+  "code": "AUTHZ_ASSET_UNVERIFIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+  "title": "Unknown persona",
+  "status": 422,
+  "code": "PERSONA_UNKNOWN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Forbidden tool in persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL",
+  "title": "Forbidden tool in persona",
+  "status": 422,
+  "code": "PERSONA_FORBIDDEN_TOOL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid persona definition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_INVALID",
+  "title": "Invalid persona definition",
+  "status": 422,
+  "code": "PERSONA_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret envelope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
+  "title": "Invalid secret envelope",
+  "status": 422,
+  "code": "ENVELOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid prompt file.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_INVALID",
+  "title": "Invalid prompt file",
+  "status": 422,
+  "code": "PROMPT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Prompt placeholder unfilled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
+  "title": "Prompt placeholder unfilled",
+  "status": 422,
+  "code": "PROMPT_PLACEHOLDER_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret reference.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
+  "title": "Invalid secret reference",
+  "status": 422,
+  "code": "INVALID_SECRET_REF",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Sandbox image missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_IMAGE_MISSING",
+  "title": "Sandbox image missing",
+  "status": 422,
+  "code": "SBX_IMAGE_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid kill scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+  "title": "Invalid kill scope",
+  "status": 422,
+  "code": "KILL_SCOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill scope reference required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+  "title": "Kill scope reference required",
+  "status": 422,
+  "code": "KILL_REF_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key reused with a different request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+  "title": "Idempotency key reused with a different request",
+  "status": 422,
+  "code": "IDEMPOTENCY_KEY_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid audit event.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUDIT_EVENT_INVALID",
+  "title": "Invalid audit event",
+  "status": 422,
+  "code": "AUDIT_EVENT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: CVSS score does not match its vector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+  "title": "CVSS score does not match its vector",
+  "status": 422,
+  "code": "CVSS_VECTOR_SCORE_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 ## Schemas
 
 ### AssessmentRequest
@@ -21711,6 +22945,1069 @@ Full schema:
     "testWindows",
     "validFrom",
     "expiresAt"
+  ],
+  "additionalProperties": false
+}
+```
+
+### Finding
+
+| Property         | Type                                                                                                                                                                    | Required | Description |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------- |
+| `id`             | string                                                                                                                                                                  | yes      |             |
+| `title`          | string                                                                                                                                                                  | yes      |             |
+| `class`          | string                                                                                                                                                                  | yes      |             |
+| `status`         | enum: `"candidate"`, `"validating"`, `"confirmed"`, `"suspected"`, `"released"`, `"rejected_false_positive"`, `"duplicate"`, `"accepted_risk"`, `"fixed"`, `"returned"` | yes      |             |
+| `baselineStatus` | enum: `"new"`, `"open"`, `"fixed"`, `"returned"`, `"not_retested"` or null                                                                                              | yes      |             |
+| `severity`       | object or null                                                                                                                                                          | yes      |             |
+| `cweId`          | string or null                                                                                                                                                          | yes      |             |
+| `owaspCategory`  | string or null                                                                                                                                                          | yes      |             |
+| `unmapped`       | boolean                                                                                                                                                                 | yes      |             |
+| `confidence`     | number or null                                                                                                                                                          | yes      |             |
+| `assetId`        | string                                                                                                                                                                  | yes      |             |
+| `location`       | object                                                                                                                                                                  | yes      |             |
+| `firstSeenRunId` | string                                                                                                                                                                  | yes      |             |
+| `lastSeenRunId`  | string                                                                                                                                                                  | yes      |             |
+| `stateVersion`   | integer                                                                                                                                                                 | yes      |             |
+| `createdAt`      | string (date-time)                                                                                                                                                      | yes      |             |
+| `updatedAt`      | string (date-time)                                                                                                                                                      | yes      |             |
+| `mappingVersion` | string or null                                                                                                                                                          | yes      |             |
+| `classification` | object or null                                                                                                                                                          | yes      |             |
+| `acceptedRisk`   | object or null                                                                                                                                                          | yes      |             |
+| `releasedBy`     | string or null                                                                                                                                                          | yes      |             |
+| `releasedAt`     | string (date-time) or null                                                                                                                                              | yes      |             |
+| `occurrences`    | object                                                                                                                                                                  | yes      |             |
+| `evidence`       | object                                                                                                                                                                  | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^fnd_[A-Za-z0-9]+$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "class": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "candidate",
+        "validating",
+        "confirmed",
+        "suspected",
+        "released",
+        "rejected_false_positive",
+        "duplicate",
+        "accepted_risk",
+        "fixed",
+        "returned"
+      ]
+    },
+    "baselineStatus": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": ["new", "open", "fixed", "returned", "not_retested"]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "severity": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "cvss4": {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "type": "string",
+                  "pattern": "^CVSS:4\\.0\\/\\S+$"
+                },
+                "score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": ["none", "low", "medium", "high", "critical"]
+                },
+                "nomenclature": {
+                  "type": "string",
+                  "enum": ["CVSS-B", "CVSS-BE", "CVSS-BT", "CVSS-BTE"]
+                }
+              },
+              "required": ["vector", "score", "severity", "nomenclature"],
+              "additionalProperties": false
+            },
+            "cvss31": {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "type": "string",
+                  "pattern": "^CVSS:3\\.1\\/\\S+$"
+                },
+                "score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": ["none", "low", "medium", "high", "critical"]
+                }
+              },
+              "required": ["vector", "score", "severity"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["cvss4"],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "cweId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^CWE-[1-9][0-9]{0,4}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "owaspCategory": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "unmapped": {
+      "type": "boolean"
+    },
+    "confidence": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "assetId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "method": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "urlTemplate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parameter": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "line": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": ["method", "urlTemplate", "parameter", "file", "line"],
+      "additionalProperties": false
+    },
+    "firstSeenRunId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "lastSeenRunId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "stateVersion": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+    },
+    "mappingVersion": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "classification": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "cweCandidates": {
+              "maxItems": 8,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^CWE-[1-9][0-9]{0,4}$"
+              }
+            },
+            "apiTop10": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^API([1-9]|10)$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "wstg": {
+              "maxItems": 16,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^WSTG-[A-Z]{4}-[0-9]{2}$"
+              }
+            }
+          },
+          "required": ["cweCandidates", "apiTop10", "wstg"],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "acceptedRisk": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "expiresAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+            }
+          },
+          "required": ["reason", "expiresAt"],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "releasedBy": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "releasedAt": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "occurrences": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              "runId": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              "occurrenceStatus": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "evidenceChainHead": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "detectedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              }
+            },
+            "required": ["id", "runId", "occurrenceStatus", "evidenceChainHead", "detectedAt"],
+            "additionalProperties": false
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": ["items", "total", "truncated"],
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "evidenceId": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              "objectKey": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "chain": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "occurrenceId": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              "runId": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              }
+            },
+            "required": ["evidenceId", "objectKey", "sha256", "chain", "occurrenceId", "runId"],
+            "additionalProperties": false
+          }
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": ["items", "total", "truncated"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "class",
+    "status",
+    "baselineStatus",
+    "severity",
+    "cweId",
+    "owaspCategory",
+    "unmapped",
+    "confidence",
+    "assetId",
+    "location",
+    "firstSeenRunId",
+    "lastSeenRunId",
+    "stateVersion",
+    "createdAt",
+    "updatedAt",
+    "mappingVersion",
+    "classification",
+    "acceptedRisk",
+    "releasedBy",
+    "releasedAt",
+    "occurrences",
+    "evidence"
+  ],
+  "additionalProperties": false
+}
+```
+
+### FindingList
+
+| Property     | Type            | Required | Description |
+| ------------ | --------------- | -------- | ----------- |
+| `items`      | array of object | yes      |             |
+| `nextCursor` | any             | yes      |             |
+| `hasMore`    | boolean         | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^fnd_[A-Za-z0-9]+$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "class": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "candidate",
+              "validating",
+              "confirmed",
+              "suspected",
+              "released",
+              "rejected_false_positive",
+              "duplicate",
+              "accepted_risk",
+              "fixed",
+              "returned"
+            ]
+          },
+          "baselineStatus": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["new", "open", "fixed", "returned", "not_retested"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "cvss4": {
+                    "type": "object",
+                    "properties": {
+                      "vector": {
+                        "type": "string",
+                        "pattern": "^CVSS:4\\.0\\/\\S+$"
+                      },
+                      "score": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 10
+                      },
+                      "severity": {
+                        "type": "string",
+                        "enum": ["none", "low", "medium", "high", "critical"]
+                      },
+                      "nomenclature": {
+                        "type": "string",
+                        "enum": ["CVSS-B", "CVSS-BE", "CVSS-BT", "CVSS-BTE"]
+                      }
+                    },
+                    "required": ["vector", "score", "severity", "nomenclature"],
+                    "additionalProperties": false
+                  },
+                  "cvss31": {
+                    "type": "object",
+                    "properties": {
+                      "vector": {
+                        "type": "string",
+                        "pattern": "^CVSS:3\\.1\\/\\S+$"
+                      },
+                      "score": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 10
+                      },
+                      "severity": {
+                        "type": "string",
+                        "enum": ["none", "low", "medium", "high", "critical"]
+                      }
+                    },
+                    "required": ["vector", "score", "severity"],
+                    "additionalProperties": false
+                  }
+                },
+                "required": ["cvss4"],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cweId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^CWE-[1-9][0-9]{0,4}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "owaspCategory": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unmapped": {
+            "type": "boolean"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "assetId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "method": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Z]+$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "urlTemplate": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "parameter": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "file": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "line": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": ["method", "urlTemplate", "parameter", "file", "line"],
+            "additionalProperties": false
+          },
+          "firstSeenRunId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "lastSeenRunId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "stateVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "class",
+          "status",
+          "baselineStatus",
+          "severity",
+          "cweId",
+          "owaspCategory",
+          "unmapped",
+          "confidence",
+          "assetId",
+          "location",
+          "firstSeenRunId",
+          "lastSeenRunId",
+          "stateVersion",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "nextCursor": {
+      "type": ["string", "null"]
+    },
+    "hasMore": {
+      "type": "boolean"
+    }
+  },
+  "required": ["items", "nextCursor", "hasMore"],
+  "additionalProperties": false
+}
+```
+
+### FindingSummary
+
+| Property         | Type                                                                                                                                                                    | Required | Description |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------- |
+| `id`             | string                                                                                                                                                                  | yes      |             |
+| `title`          | string                                                                                                                                                                  | yes      |             |
+| `class`          | string                                                                                                                                                                  | yes      |             |
+| `status`         | enum: `"candidate"`, `"validating"`, `"confirmed"`, `"suspected"`, `"released"`, `"rejected_false_positive"`, `"duplicate"`, `"accepted_risk"`, `"fixed"`, `"returned"` | yes      |             |
+| `baselineStatus` | enum: `"new"`, `"open"`, `"fixed"`, `"returned"`, `"not_retested"` or null                                                                                              | yes      |             |
+| `severity`       | object or null                                                                                                                                                          | yes      |             |
+| `cweId`          | string or null                                                                                                                                                          | yes      |             |
+| `owaspCategory`  | string or null                                                                                                                                                          | yes      |             |
+| `unmapped`       | boolean                                                                                                                                                                 | yes      |             |
+| `confidence`     | number or null                                                                                                                                                          | yes      |             |
+| `assetId`        | string                                                                                                                                                                  | yes      |             |
+| `location`       | object                                                                                                                                                                  | yes      |             |
+| `firstSeenRunId` | string                                                                                                                                                                  | yes      |             |
+| `lastSeenRunId`  | string                                                                                                                                                                  | yes      |             |
+| `stateVersion`   | integer                                                                                                                                                                 | yes      |             |
+| `createdAt`      | string (date-time)                                                                                                                                                      | yes      |             |
+| `updatedAt`      | string (date-time)                                                                                                                                                      | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^fnd_[A-Za-z0-9]+$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "class": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "candidate",
+        "validating",
+        "confirmed",
+        "suspected",
+        "released",
+        "rejected_false_positive",
+        "duplicate",
+        "accepted_risk",
+        "fixed",
+        "returned"
+      ]
+    },
+    "baselineStatus": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": ["new", "open", "fixed", "returned", "not_retested"]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "severity": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "cvss4": {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "type": "string",
+                  "pattern": "^CVSS:4\\.0\\/\\S+$"
+                },
+                "score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": ["none", "low", "medium", "high", "critical"]
+                },
+                "nomenclature": {
+                  "type": "string",
+                  "enum": ["CVSS-B", "CVSS-BE", "CVSS-BT", "CVSS-BTE"]
+                }
+              },
+              "required": ["vector", "score", "severity", "nomenclature"],
+              "additionalProperties": false
+            },
+            "cvss31": {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "type": "string",
+                  "pattern": "^CVSS:3\\.1\\/\\S+$"
+                },
+                "score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": ["none", "low", "medium", "high", "critical"]
+                }
+              },
+              "required": ["vector", "score", "severity"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["cvss4"],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "cweId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^CWE-[1-9][0-9]{0,4}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "owaspCategory": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "unmapped": {
+      "type": "boolean"
+    },
+    "confidence": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "assetId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "method": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Z]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "urlTemplate": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parameter": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "line": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": ["method", "urlTemplate", "parameter", "file", "line"],
+      "additionalProperties": false
+    },
+    "firstSeenRunId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "lastSeenRunId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "stateVersion": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "class",
+    "status",
+    "baselineStatus",
+    "severity",
+    "cweId",
+    "owaspCategory",
+    "unmapped",
+    "confidence",
+    "assetId",
+    "location",
+    "firstSeenRunId",
+    "lastSeenRunId",
+    "stateVersion",
+    "createdAt",
+    "updatedAt"
   ],
   "additionalProperties": false
 }

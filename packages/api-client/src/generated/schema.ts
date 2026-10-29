@@ -554,6 +554,46 @@ export interface paths {
     patch: operations['updateTestCase'];
     trace?: never;
   };
+  '/findings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the findings of the tenant, newest first
+     * @description Needs finding:read. Filters combine with AND. An unknown filter, a CWE or OWASP id outside the pinned lists, or a malformed limit is 400. Suspected findings are excluded unless the caller is an analyst. The page size is clamped to 200.
+     */
+    get: operations['listFindings'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/findings/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get one finding with its occurrences, mapping and evidence refs
+     * @description Needs finding:read. Occurrences and evidence refs are each capped at 50 and carry total and truncated. Evidence is referenced by its chain head and resolved by the evidence API. A finding the caller may not see is 404.
+     */
+    get: operations['getFinding'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -853,6 +893,206 @@ export interface components {
       validFrom: string;
       /** Format: date-time */
       expiresAt: string;
+    };
+    Finding: {
+      id: string;
+      title: string;
+      class: string;
+      /** @enum {string} */
+      status:
+        | 'candidate'
+        | 'validating'
+        | 'confirmed'
+        | 'suspected'
+        | 'released'
+        | 'rejected_false_positive'
+        | 'duplicate'
+        | 'accepted_risk'
+        | 'fixed'
+        | 'returned';
+      baselineStatus: ('new' | 'open' | 'fixed' | 'returned' | 'not_retested') | null;
+      severity: {
+        cvss4: {
+          vector: string;
+          score: number;
+          /** @enum {string} */
+          severity: 'none' | 'low' | 'medium' | 'high' | 'critical';
+          /** @enum {string} */
+          nomenclature: 'CVSS-B' | 'CVSS-BE' | 'CVSS-BT' | 'CVSS-BTE';
+        };
+        cvss31?: {
+          vector: string;
+          score: number;
+          /** @enum {string} */
+          severity: 'none' | 'low' | 'medium' | 'high' | 'critical';
+        };
+      } | null;
+      cweId: string | null;
+      owaspCategory: string | null;
+      unmapped: boolean;
+      confidence: number | null;
+      assetId: string;
+      location: {
+        method: string | null;
+        urlTemplate: string | null;
+        parameter: string | null;
+        file: string | null;
+        line: number | null;
+      };
+      firstSeenRunId: string;
+      lastSeenRunId: string;
+      stateVersion: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      mappingVersion: string | null;
+      classification: {
+        cweCandidates: string[];
+        apiTop10: string | null;
+        wstg: string[];
+      } | null;
+      acceptedRisk: {
+        reason: string;
+        /** Format: date-time */
+        expiresAt: string;
+      } | null;
+      releasedBy: string | null;
+      releasedAt: string | null;
+      occurrences: {
+        items: {
+          id: string;
+          runId: string;
+          occurrenceStatus: string;
+          evidenceChainHead: string | null;
+          /** Format: date-time */
+          detectedAt: string;
+        }[];
+        total: number;
+        truncated: boolean;
+      };
+      evidence: {
+        items: {
+          evidenceId: string;
+          objectKey: string;
+          sha256: string;
+          chain: string;
+          occurrenceId: string;
+          runId: string;
+        }[];
+        total: number;
+        truncated: boolean;
+      };
+    };
+    FindingList: {
+      items: {
+        id: string;
+        title: string;
+        class: string;
+        /** @enum {string} */
+        status:
+          | 'candidate'
+          | 'validating'
+          | 'confirmed'
+          | 'suspected'
+          | 'released'
+          | 'rejected_false_positive'
+          | 'duplicate'
+          | 'accepted_risk'
+          | 'fixed'
+          | 'returned';
+        baselineStatus: ('new' | 'open' | 'fixed' | 'returned' | 'not_retested') | null;
+        severity: {
+          cvss4: {
+            vector: string;
+            score: number;
+            /** @enum {string} */
+            severity: 'none' | 'low' | 'medium' | 'high' | 'critical';
+            /** @enum {string} */
+            nomenclature: 'CVSS-B' | 'CVSS-BE' | 'CVSS-BT' | 'CVSS-BTE';
+          };
+          cvss31?: {
+            vector: string;
+            score: number;
+            /** @enum {string} */
+            severity: 'none' | 'low' | 'medium' | 'high' | 'critical';
+          };
+        } | null;
+        cweId: string | null;
+        owaspCategory: string | null;
+        unmapped: boolean;
+        confidence: number | null;
+        assetId: string;
+        location: {
+          method: string | null;
+          urlTemplate: string | null;
+          parameter: string | null;
+          file: string | null;
+          line: number | null;
+        };
+        firstSeenRunId: string;
+        lastSeenRunId: string;
+        stateVersion: number;
+        /** Format: date-time */
+        createdAt: string;
+        /** Format: date-time */
+        updatedAt: string;
+      }[];
+      nextCursor: string | null;
+      hasMore: boolean;
+    };
+    FindingSummary: {
+      id: string;
+      title: string;
+      class: string;
+      /** @enum {string} */
+      status:
+        | 'candidate'
+        | 'validating'
+        | 'confirmed'
+        | 'suspected'
+        | 'released'
+        | 'rejected_false_positive'
+        | 'duplicate'
+        | 'accepted_risk'
+        | 'fixed'
+        | 'returned';
+      baselineStatus: ('new' | 'open' | 'fixed' | 'returned' | 'not_retested') | null;
+      severity: {
+        cvss4: {
+          vector: string;
+          score: number;
+          /** @enum {string} */
+          severity: 'none' | 'low' | 'medium' | 'high' | 'critical';
+          /** @enum {string} */
+          nomenclature: 'CVSS-B' | 'CVSS-BE' | 'CVSS-BT' | 'CVSS-BTE';
+        };
+        cvss31?: {
+          vector: string;
+          score: number;
+          /** @enum {string} */
+          severity: 'none' | 'low' | 'medium' | 'high' | 'critical';
+        };
+      } | null;
+      cweId: string | null;
+      owaspCategory: string | null;
+      unmapped: boolean;
+      confidence: number | null;
+      assetId: string;
+      location: {
+        method: string | null;
+        urlTemplate: string | null;
+        parameter: string | null;
+        file: string | null;
+        line: number | null;
+      };
+      firstSeenRunId: string;
+      lastSeenRunId: string;
+      stateVersion: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
     };
     Gate1DecisionRequest: {
       /** @enum {string} */
@@ -5553,6 +5793,184 @@ export interface operations {
       };
       /** @description Problem details; code is one of PRECONDITION_REQUIRED. */
       428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  listFindings: {
+    parameters: {
+      query?: {
+        assetId?: string;
+        status?: string;
+        severity?: 'none' | 'low' | 'medium' | 'high' | 'critical';
+        cwe?: string;
+        owasp?: string;
+        baselineStatus?: string;
+        cursor?: string;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description A page of findings. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FindingList'];
+        };
+      };
+      /** @description A malformed cursor (invalid_cursor), limit (bad_request) or filter (invalid_filter). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No valid credential. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description The caller has no finding:read permission in this tenant. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  getFinding: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The `fnd_…` public id of the finding. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The finding detail. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Finding'];
+        };
+      };
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description No valid credential. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description The caller has no finding:read permission in this tenant. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Unknown, foreign or hidden finding. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH. */
+      422: {
         headers: {
           [name: string]: unknown;
         };

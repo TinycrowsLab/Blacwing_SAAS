@@ -6,6 +6,7 @@ import { assessmentRequestOpenApiModule } from '../assessment-requests/openapi.j
 import { assetListOpenApiModule } from '../assets/openapi.js';
 import { auditOpenApiPaths, auditOpenApiSchemas } from '../audit-query/openapi.js';
 import { standingAuthorisationsOpenApiModule } from '../authorisations/openapi.js';
+import { findingOpenApiModule } from '../findings/openapi.js';
 import { gate1OpenApiModule } from '../gate1/openapi.js';
 import { killOpenApiDocument } from '../kill/openapi.js';
 import { personaOpenApiModule } from '../personas/openapi.js';
@@ -68,6 +69,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     assetListOpenApiModule(),
     standingAuthorisationsOpenApiModule(),
     testPlansOpenApiModule(),
+    findingOpenApiModule(),
   ];
 }
 

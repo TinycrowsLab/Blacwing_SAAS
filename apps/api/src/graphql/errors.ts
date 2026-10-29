@@ -11,6 +11,7 @@ import { redactText } from '@blackwing/logger';
 
 import { QUERY_TOO_COMPLEX } from './limits.js';
 import { currentTraceId } from '../bootstrap/request-context.js';
+import { ApiProblemError } from '../errors/problem-errors.js';
 import { wireCodeForStatus } from '../errors/problem-filter.js';
 import { problemRegistry, type ProblemRegistry, wireCodeFor } from '../errors/registry.js';
 
@@ -70,6 +71,14 @@ function describe(error: GraphQLError, registry: ProblemRegistry): Described {
     return {
       code,
       message: entry.status < STATUS_SERVER_ERROR ? redactText(original.message) : entry.title,
+    };
+  }
+  if (original instanceof ApiProblemError) {
+    const { code, entry } = registry.resolve(original.problemCode);
+    const text = original.detail ?? original.message;
+    return {
+      code,
+      message: entry.status < STATUS_SERVER_ERROR ? redactText(text) : entry.title,
     };
   }
   if (original instanceof HttpException) {

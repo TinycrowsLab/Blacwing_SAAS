@@ -1,6 +1,11 @@
 import DataLoader from 'dataloader';
 
+import { currentTenantId } from '@blackwing/db/tenant-context';
+import { AppError, TenantContextMissingError } from '@blackwing/errors';
+
 import type { MemberReadStore, SurfaceReadStore, UserRow } from './store.js';
+import type { FindingService } from '../findings/service.js';
+import type { FindingOccurrenceRow } from '@blackwing/db';
 import type { RunSurfaceSummary } from '@blackwing/memory';
 
 /** A DataLoader key scoped to a tenant. */
@@ -98,6 +103,40 @@ export function createSurfaceLoaders(
       observeBatch(ids.length);
       const summaries = await store.summariesOf(tenantId, ids);
       return ids.map((id) => summaries.get(id));
+    }),
+  };
+}
+
+/** Loaders of the finding resolvers: the occurrences of one visible finding, batched per tenant. */
+export interface FindingLoaders {
+  readonly findingOccurrences: DataLoader<
+    TenantKey,
+    readonly FindingOccurrenceRow[] | undefined,
+    string
+  >;
+}
+
+/**
+ * Batches the occurrences of the findings a request shows (the `occurrences` and `evidence` fields of every finding in
+ * one tick share one read). Only findings the caller may read reach it: the root fields authorise them first. A batch
+ * runs only inside the tenant it was keyed by (fail closed); `null` service means findings are not configured.
+ */
+export function createFindingLoaders(findings: FindingService | null): FindingLoaders {
+  return {
+    findingOccurrences: createTenantLoader(async (tenantId, ids) => {
+      if (findings === null) {
+        throw new AppError('GRAPH_QUERY_UNAVAILABLE', 'findings are not configured');
+      }
+      if (currentTenantId() !== tenantId) {
+        throw new TenantContextMissingError('finding batch outside its tenant context');
+      }
+      const byFinding = new Map<string, FindingOccurrenceRow[]>();
+      for (const row of await findings.occurrencesOf(ids)) {
+        const group = byFinding.get(row.findingId) ?? [];
+        group.push(row);
+        byFinding.set(row.findingId, group);
+      }
+      return ids.map((id) => byFinding.get(id) ?? []);
     }),
   };
 }

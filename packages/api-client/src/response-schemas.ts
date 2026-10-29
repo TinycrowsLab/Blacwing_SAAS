@@ -10,6 +10,8 @@ import {
   auditActionSchema,
   auditOutcomeSchema,
   auditSeveritySchema,
+  findingDetailSchema,
+  findingListResponseSchema,
   gate1DecisionResponseSchema,
   gate1PlanViewSchema,
   killEventSchema,
@@ -155,4 +157,6 @@ export const RESPONSE_SCHEMAS: Readonly<
   updateTestCase: { 200: testCaseViewSchema },
   removeTestCase: { 200: testCaseViewSchema },
   listAssets: { 200: assetListResponseSchema },
+  listFindings: { 200: findingListResponseSchema },
+  getFinding: { 200: findingDetailSchema },
 };

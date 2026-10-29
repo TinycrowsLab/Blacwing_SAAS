@@ -120,6 +120,8 @@ const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   removeTestCase: 'test-plans',
   approveStandingAuthorisation: 'standing-authorisations',
   rejectStandingAuthorisation: 'standing-authorisations',
+  listFindings: 'findings',
+  getFinding: 'findings',
 };
 
 describe('public OpenAPI document', () => {
@@ -160,6 +162,7 @@ describe('public OpenAPI document', () => {
       'createTestPlanVersion',
       'decideGate1',
       'getAssessmentRequest',
+      'getFinding',
       'getGate1Plan',
       'getKillEvent',
       'getPersona',
@@ -171,6 +174,7 @@ describe('public OpenAPI document', () => {
       'listAssessmentRequests',
       'listAssets',
       'listAuditEvents',
+      'listFindings',
       'listKillEvents',
       'listPersonas',
       'listStandingAuthorisations',
@@ -190,7 +194,7 @@ describe('public OpenAPI document', () => {
       'verifySignup',
       'withdrawAssessmentRequest',
     ]);
-    expect(countOperations(doc)).toBe(36);
+    expect(countOperations(doc)).toBe(38);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -257,6 +261,7 @@ describe('public OpenAPI document', () => {
       'assets',
       'standing-authorisations',
       'test-plans',
+      'findings',
     ]);
   });
 });
@@ -316,7 +321,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(36);
+    expect(result.operations).toBe(38);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

@@ -9,3 +9,6 @@ export const GRAPHQL_ASSESSMENT_STORE = Symbol.for('blackwing.api.graphql.assess
 
 /** DI token of the {@link SurfaceReadStore} the surface resolvers read through (GRAPH-004 / GRAPH-009). */
 export const GRAPHQL_SURFACE_STORE = Symbol.for('blackwing.api.graphql.surface-store');
+
+/** DI token of the {@link FindingService} the finding resolvers read through (FINDING query API). Absent: the fields refuse. */
+export const GRAPHQL_FINDINGS = Symbol.for('blackwing.api.graphql.findings');
