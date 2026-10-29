@@ -26,3 +26,11 @@ export {
   withSession,
   withSessionOn,
 } from './graph/driver.js';
+// Forward-only migrations for the surface graph (GRAPH-002).
+export {
+  checkGraphMigrations,
+  type GraphMigrationMetrics,
+  type GraphMigrationOptions,
+  type GraphMigrationReport,
+  runGraphMigrations,
+} from './graph/migrate.js';

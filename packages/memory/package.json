@@ -10,6 +10,8 @@
   },
   "scripts": {
     "lint": "eslint . --max-warnings=0",
+    "graph:migrate": "tsx --env-file-if-exists=../../.env src/graph/migrate-main.ts",
+    "graph:migrate:check": "tsx --env-file-if-exists=../../.env src/graph/migrate-main.ts --check",
     "test": "vitest run --configLoader runner --config src/vitest.config.ts",
     "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts",
     "typecheck": "tsc -b --pretty false"
@@ -18,6 +20,7 @@
     "@blackwing/config": "workspace:*",
     "@blackwing/errors": "workspace:*",
     "@blackwing/logger": "workspace:*",
+    "@blackwing/time": "workspace:*",
     "@opentelemetry/api": "catalog:",
     "neo4j-driver": "6.2.0",
     "zod": "catalog:"
@@ -25,6 +28,7 @@
   "devDependencies": {
     "@blackwing/testing": "workspace:*",
     "@types/node": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

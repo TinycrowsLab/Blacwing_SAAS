@@ -247,6 +247,16 @@ const DEFINITIONS = {
   // (fail fast, 500). A saturated connection pool past its acquire timeout is a transient overload (503, retryable).
   GRAPH_CONFIG_MISSING: { status: 500, title: 'Graph configuration missing', retryable: false },
   GRAPH_POOL_TIMEOUT: { status: 503, title: 'Graph connection pool timed out', retryable: true },
+  // Surface-graph migrations (GRAPH-002). A ledger that disagrees with the files is a deployment defect (500, never
+  // retried). Another run holding the migration lock is transient (503, retryable). A malformed migration file is a
+  // build defect (500).
+  GRAPH_MIGRATION_DRIFT: { status: 500, title: 'Graph migration drift detected', retryable: false },
+  GRAPH_MIGRATION_LOCKED: {
+    status: 503,
+    title: 'Graph migration already running',
+    retryable: true,
+  },
+  GRAPH_MIGRATION_INVALID: { status: 500, title: 'Graph migration file invalid', retryable: false },
   // Keycloak Admin API (IAM-002). An unreachable or overloaded Keycloak is an outage (503, retryable). A refused
   // credential or permission, a request Keycloak rejects and an unexpected response are server faults (500, never
   // retried unchanged). A missing resource (404) and a duplicate (409) keep their meaning.

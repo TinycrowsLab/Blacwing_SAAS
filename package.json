@@ -66,6 +66,8 @@
     "graphql:generate": "pnpm -r --if-present run graphql:generate",
     "gen:persona-catalogue": "pnpm --filter @blackwing/agents gen:persona-catalogue",
     "db:generate": "pnpm -r --if-present run db:generate",
+    "graph:migrate": "pnpm --filter @blackwing/memory run graph:migrate",
+    "graph:migrate:check": "pnpm --filter @blackwing/memory run graph:migrate:check",
     "db:migrate": "pnpm --filter @blackwing/db run db:migrate",
     "db:check": "pnpm --filter @blackwing/db run db:check",
     "db:seed": "pnpm --filter @blackwing/db run db:seed",
