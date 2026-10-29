@@ -282,7 +282,9 @@ export interface components {
         | 'auth.operator_logout'
         | 'auth.operator_session_revoked'
         | 'authz.sa.created'
-        | 'authz.sa.state_changed';
+        | 'authz.sa.state_changed'
+        | 'authz.sa.signed'
+        | 'authz.signing_key.rotated';
       /** @enum {string} */
       severity: 'info' | 'notice' | 'warning' | 'critical';
       /** @description Who acted. `email` is only returned to auditors. */
@@ -1004,7 +1006,9 @@ export interface operations {
           | 'auth.operator_logout'
           | 'auth.operator_session_revoked'
           | 'authz.sa.created'
-          | 'authz.sa.state_changed';
+          | 'authz.sa.state_changed'
+          | 'authz.sa.signed'
+          | 'authz.signing_key.rotated';
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */
         targetId?: string;
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */

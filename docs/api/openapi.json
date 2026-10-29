@@ -1444,7 +1444,9 @@
                 "auth.operator_logout",
                 "auth.operator_session_revoked",
                 "authz.sa.created",
-                "authz.sa.state_changed"
+                "authz.sa.state_changed",
+                "authz.sa.signed",
+                "authz.signing_key.rotated"
               ]
             },
             "example": "kill.fired"
@@ -6953,7 +6955,9 @@
               "auth.operator_logout",
               "auth.operator_session_revoked",
               "authz.sa.created",
-              "authz.sa.state_changed"
+              "authz.sa.state_changed",
+              "authz.sa.signed",
+              "authz.signing_key.rotated"
             ]
           },
           "severity": {
