@@ -88,8 +88,12 @@ export {
 export { normaliseUrlTemplate, parseSurfaceUrl, type SurfaceUrl } from './surface/normalise.js';
 export {
   addressRules,
+  nodeScopeDecision,
+  parseSurfaceWriteRequest,
+  requireSurfaceTenant,
   SURFACE_MAX_EDGES,
   SURFACE_MAX_NODES,
+  SURFACE_SOURCE_KINDS,
   SURFACE_WRITE_METRIC,
   SURFACE_WRITE_METRIC_LABELS,
   type SurfaceAuditEvent,
@@ -99,6 +103,7 @@ export {
   surfaceNodeKey,
   surfaceNodeSchema,
   type SurfaceProvenance,
+  type SurfaceSourceKind,
   type SurfaceWriteContext,
   type SurfaceWriteRequest,
   surfaceWriteRequestSchema,
@@ -106,6 +111,30 @@ export {
   writeSurface,
   WRITE_SURFACE_TOOL,
 } from './surface/write.js';
+export {
+  applySurfaceWrite,
+  emptySurfaceModel,
+  getMergedSurface,
+  mergeSurfaceWrite,
+  type MergedSurfaceEdge,
+  type MergedSurfaceNode,
+  type MergedSurfaceOptions,
+  type MergedSurfacePage,
+  readMergedSurface,
+  SURFACE_CONFLICTS_METRIC,
+  SURFACE_MERGE_SPAN,
+  SURFACE_NODES_METRIC,
+  SURFACE_PAGE_DEFAULT,
+  SURFACE_PAGE_MAX,
+  type SurfaceConflictField,
+  type SurfaceEntity,
+  type SurfaceMergeContext,
+  type SurfaceMergeStats,
+  type SurfaceModel,
+  type SurfaceModelStore,
+  type SurfaceObservation,
+  type TechnologyAlternative,
+} from './surface/merge.js';
 
 export {
   type Catalogue,

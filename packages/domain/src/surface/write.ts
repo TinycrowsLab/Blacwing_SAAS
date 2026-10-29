@@ -47,6 +47,10 @@ const ipAddress = z
   .refine((value) => normaliseIp(value) !== null, 'must be an IPv4 or IPv6 address');
 const keyHex = z.string().regex(/^[0-9a-f]{64}$/, 'must be a lowercase hex SHA-256 key');
 
+/** Where an observation came from. Decides which value wins a conflict (see merge.ts). */
+export const SURFACE_SOURCE_KINDS = ['active', 'ingested', 'passive', 'historical'] as const;
+export type SurfaceSourceKind = (typeof SURFACE_SOURCE_KINDS)[number];
+
 /** Recon-side view of a surface node; the fingerprint key is derived, never supplied. */
 export const surfaceNodeSchema = z.discriminatedUnion('type', [
   z.strictObject({
@@ -104,6 +108,8 @@ const surfaceProvenanceSchema = z.strictObject({
   persona: str(SHORT_MAX),
   tool: str(NAME_MAX),
   toolVersion: str(SHORT_MAX),
+  /** Defaults to `passive`, the weakest evidence class short of historical, when a writer omits it. */
+  sourceKind: z.enum(SURFACE_SOURCE_KINDS).default('passive'),
   confidence: z.number().min(0).max(1),
   observedAt: isoDateTimeSchema,
 });
@@ -244,6 +250,45 @@ function lengthOf(value: unknown, key: string): number {
   return Array.isArray(list) ? list.length : 0;
 }
 
+/** Throws unless the tenant id is a UUIDv7; surface writes and reads fail closed without one (§8.6). */
+export function requireSurfaceTenant(tenantId: unknown): void {
+  if (!uuidV7Schema.safeParse(tenantId).success) {
+    throw new TenantContextMissingError('surface access requires a tenant context', {
+      reason: tenantId ? 'invalid_uuid' : 'missing',
+    });
+  }
+}
+
+/** Caps and Zod-parses a surface batch. Shared by the write tool and the merge layer. */
+export function parseSurfaceWriteRequest(input: unknown): SurfaceWriteRequest {
+  if (lengthOf(input, 'nodes') > SURFACE_MAX_NODES) {
+    throw new SurfaceBatchTooLargeError(`surface batch exceeds ${SURFACE_MAX_NODES} nodes`);
+  }
+  if (lengthOf(input, 'edges') > SURFACE_MAX_EDGES) {
+    throw new SurfaceBatchTooLargeError(`surface batch exceeds ${SURFACE_MAX_EDGES} edges`);
+  }
+  const parsed = surfaceWriteRequestSchema.safeParse(input);
+  if (!parsed.success) {
+    const paths = parsed.error.issues.map((i) => i.path.join('.') || '(root)');
+    throw new ValidationError(`invalid surface write at ${paths.join(', ')}`);
+  }
+  return parsed.data;
+}
+
+/**
+ * Whether a node's target is inside the envelope scope, with the matcher's reason. `null` for nodes that touch
+ * no host (roles). Host and technology nodes are checked at address level, see {@link addressRules}.
+ */
+export function nodeScopeDecision(
+  node: SurfaceNode,
+  scope: ScopeRules,
+): ReturnType<typeof matchScope> | null {
+  const target = scopeTarget(node);
+  if (target === null) return null;
+  const addressOnly = node.type === 'host' || node.type === 'technology';
+  return matchScope(target, addressOnly ? addressRules(scope) : scope);
+}
+
 /**
  * Validates and writes a surface batch through `mcp__blackwing__write_surface`.
  * Order: tenant context, batch caps, Zod, scope check on every node (all-or-nothing), call.
@@ -257,23 +302,8 @@ export async function writeSurface(
   ctx: SurfaceWriteContext,
   input: unknown,
 ): Promise<SurfaceWriteResult> {
-  if (!uuidV7Schema.safeParse(ctx.tenantId).success) {
-    throw new TenantContextMissingError('surface write requires a tenant context', {
-      reason: ctx.tenantId ? 'invalid_uuid' : 'missing',
-    });
-  }
-  if (lengthOf(input, 'nodes') > SURFACE_MAX_NODES) {
-    throw new SurfaceBatchTooLargeError(`surface batch exceeds ${SURFACE_MAX_NODES} nodes`);
-  }
-  if (lengthOf(input, 'edges') > SURFACE_MAX_EDGES) {
-    throw new SurfaceBatchTooLargeError(`surface batch exceeds ${SURFACE_MAX_EDGES} edges`);
-  }
-  const parsed = surfaceWriteRequestSchema.safeParse(input);
-  if (!parsed.success) {
-    const paths = parsed.error.issues.map((i) => i.path.join('.') || '(root)');
-    throw new ValidationError(`invalid surface write at ${paths.join(', ')}`);
-  }
-  const request = parsed.data;
+  requireSurfaceTenant(ctx.tenantId);
+  const request = parseSurfaceWriteRequest(input);
   const { provenance } = request;
   const nodeCount = request.nodes.length;
   const edgeCount = request.edges.length;
@@ -281,24 +311,18 @@ export async function writeSurface(
 
   const keyed: KeyedSurfaceNode[] = [];
   for (const node of request.nodes) {
-    const target = scopeTarget(node);
-    if (target !== null) {
-      const addressOnly = node.type === 'host' || node.type === 'technology';
-      const decision = matchScope(target, addressOnly ? addressRules(ctx.scope) : ctx.scope);
-      if (!decision.inScope) {
-        await ctx.audit({
-          action: 'recon.surface_write.denied',
-          tenantId: ctx.tenantId,
-          runId: provenance.runId,
-          sessionId: provenance.sessionId,
-          persona: provenance.persona,
-          nodeType: node.type,
-          reason: decision.reason,
-        });
-        throw new ScopeViolationError(
-          'surface node references a target outside the envelope scope',
-        );
-      }
+    const decision = nodeScopeDecision(node, ctx.scope);
+    if (decision !== null && !decision.inScope) {
+      await ctx.audit({
+        action: 'recon.surface_write.denied',
+        tenantId: ctx.tenantId,
+        runId: provenance.runId,
+        sessionId: provenance.sessionId,
+        persona: provenance.persona,
+        nodeType: node.type,
+        reason: decision.reason,
+      });
+      throw new ScopeViolationError('surface node references a target outside the envelope scope');
     }
     keyed.push({ ...node, key: surfaceNodeKey(node) });
   }
