@@ -1,4 +1,4 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
 
 /** A user of the caller's tenant, as the console shows it. */
 @ObjectType('User', { description: 'A user with a membership in the caller tenant.' })
@@ -102,6 +102,98 @@ export class PageInfoModel {
 export class AssessmentRequestConnectionModel {
   @Field(() => [AssessmentRequestEdgeModel])
   readonly edges!: readonly AssessmentRequestEdgeModel[];
+
+  @Field(() => PageInfoModel)
+  readonly pageInfo!: PageInfoModel;
+}
+
+/** How many nodes or relationships of one kind a run holds. */
+@ObjectType('KindCount', { description: 'How many of one kind a run holds.' })
+export class KindCountModel {
+  @Field(() => String)
+  readonly kind!: string;
+
+  @Field(() => Int)
+  readonly count!: number;
+}
+
+/** A technology of a run, with how many services run it. */
+@ObjectType('TechnologyCount', {
+  description: 'A technology of a run and how many services run it.',
+})
+export class TechnologyCountModel {
+  @Field(() => String)
+  readonly name!: string;
+
+  @Field(() => Int)
+  readonly count!: number;
+}
+
+/** The surface of one run, as the console dashboard tiles read it (point-in-time per request). */
+@ObjectType('SurfaceSummary', { description: 'The surface graph of one run.' })
+export class SurfaceSummaryModel {
+  @Field(() => ID)
+  readonly runId!: string;
+
+  @Field(() => [KindCountModel], { description: 'Nodes per kind (every kind, zero when absent).' })
+  readonly nodeCounts!: readonly KindCountModel[];
+
+  @Field(() => [KindCountModel], {
+    description: 'Relationships per kind (every kind, zero when absent).',
+  })
+  readonly edgeCounts!: readonly KindCountModel[];
+
+  @Field(() => [TechnologyCountModel], {
+    description: 'Most widely run technologies, most frequent first.',
+  })
+  readonly topTechnologies!: readonly TechnologyCountModel[];
+
+  @Field(() => Int)
+  readonly endpointCount!: number;
+
+  @Field(() => Int, {
+    description: 'Endpoints that a service on an in-scope host serves.',
+  })
+  readonly inScopeEndpointCount!: number;
+}
+
+/** An endpoint of the surface graph (contract `endpoint` node, without its tenant). */
+@ObjectType('Endpoint', { description: 'An endpoint discovered for a run.' })
+export class EndpointModel {
+  @Field(() => String)
+  readonly method!: string;
+
+  @Field(() => String)
+  readonly pathTemplate!: string;
+
+  @Field(() => ID, { description: 'The asset the endpoint belongs to.' })
+  readonly assetId!: string;
+
+  @Field(() => String, { nullable: true })
+  readonly baseUrl!: string | null;
+
+  @Field(() => Boolean)
+  readonly authRequired!: boolean;
+
+  @Field(() => [String])
+  readonly contentTypes!: readonly string[];
+}
+
+/** One endpoint of a page, with the opaque cursor that resumes after it. */
+@ObjectType('EndpointEdge')
+export class EndpointEdgeModel {
+  @Field(() => String)
+  readonly cursor!: string;
+
+  @Field(() => EndpointModel)
+  readonly node!: EndpointModel;
+}
+
+/** A page of a run's endpoints (Relay connection). */
+@ObjectType('EndpointConnection', { description: 'A page of the endpoints of a run.' })
+export class EndpointConnectionModel {
+  @Field(() => [EndpointEdgeModel])
+  readonly edges!: readonly EndpointEdgeModel[];
 
   @Field(() => PageInfoModel)
   readonly pageInfo!: PageInfoModel;

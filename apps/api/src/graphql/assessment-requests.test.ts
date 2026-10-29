@@ -7,7 +7,12 @@ import { createHttpMetrics } from '../bootstrap/metrics.js';
 import { loadApiConfig } from '../config.js';
 import { GraphqlApiModule } from './module.js';
 
-import type { AssessmentReadStore, AssessmentRequestQuery, AssessmentRequestRow } from './store.js';
+import type {
+  AssessmentReadStore,
+  AssessmentRequestQuery,
+  AssessmentRequestRow,
+  SurfaceReadStore,
+} from './store.js';
 import type { TenantPrincipal } from '@blackwing/db/tenant-context';
 
 const TENANT_A = '0198f0a0-0000-7000-8000-00000000000a';
@@ -102,6 +107,13 @@ function principalOf(header: unknown): TenantPrincipal | null {
   return { actor: { type: 'user', id: user }, sessionTenantId: tenant };
 }
 
+/** This suite never reads the surface: its resolvers answer nothing. */
+const NO_SURFACE: SurfaceReadStore = {
+  rolesOf: () => Promise.resolve([]),
+  summariesOf: () => Promise.resolve(new Map()),
+  endpointsOf: () => Promise.resolve(undefined),
+};
+
 let current: ApiApp | undefined;
 afterEach(async () => {
   await current?.app.close();
@@ -121,7 +133,16 @@ async function boot(assessments: AssessmentReadStore, env: Record<string, string
     logger,
     metrics,
     tenantPrincipalSource: (request) => principalOf(request.headers['x-test-principal']),
-    imports: [GraphqlApiModule.forRoot({ config, logger, metrics, store: members, assessments })],
+    imports: [
+      GraphqlApiModule.forRoot({
+        config,
+        logger,
+        metrics,
+        store: members,
+        assessments,
+        surface: NO_SURFACE,
+      }),
+    ],
   });
   await app.app.getHttpAdapter().getInstance().ready();
   current = app;
@@ -183,7 +204,14 @@ describe('assessment request GraphQL reads (SCOPE-001, API-009)', () => {
   it('clamps first to the platform maximum of 200', async () => {
     const log: AssessmentRequestQuery[] = [];
     const app = await boot(fakeAssessments(log));
-    await gql(app, LIST, ME_A, { first: 5000 });
+    // Only `cursor` is selected: a page of 200 nodes with the full selection exceeds the default complexity budget,
+    // and the connection's edges are priced by their page size (API-009 cost model).
+    await gql(
+      app,
+      'query C($first: Int) { assessmentRequests(first: $first) { edges { cursor } } }',
+      ME_A,
+      { first: 5000 },
+    );
     expect(log.at(-1)?.limit).toBe(201);
   });
 

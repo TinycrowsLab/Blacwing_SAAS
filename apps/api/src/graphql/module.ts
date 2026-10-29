@@ -13,7 +13,7 @@ import {
   type QueryLimits,
   type QueryShape,
 } from './limits.js';
-import { createRequestLoaders } from './loaders.js';
+import { createRequestLoaders, createSurfaceLoaders } from './loaders.js';
 import { MembersResolver } from './members.resolver.js';
 import { createGraphqlMetrics, type GraphqlMetrics } from './metrics.js';
 import {
@@ -22,9 +22,15 @@ import {
   type PersistedManifestFiles,
   type PersistedManifests,
 } from './persisted.js';
-import { GRAPHQL_ASSESSMENT_STORE, GRAPHQL_MEMBER_STORE, GRAPHQL_METRICS } from './tokens.js';
+import { SurfaceResolver } from './surface.resolver.js';
+import {
+  GRAPHQL_ASSESSMENT_STORE,
+  GRAPHQL_MEMBER_STORE,
+  GRAPHQL_METRICS,
+  GRAPHQL_SURFACE_STORE,
+} from './tokens.js';
 
-import type { AssessmentReadStore, MemberReadStore } from './store.js';
+import type { AssessmentReadStore, MemberReadStore, SurfaceReadStore } from './store.js';
 import type { HttpMetrics } from '../bootstrap/metrics.js';
 import type { ApiConfig } from '../config.js';
 import type { Logger } from '@blackwing/logger';
@@ -47,6 +53,8 @@ export interface GraphqlModuleOptions {
   readonly store: MemberReadStore;
   /** Tenant-scoped read port of the assessment-request resolvers (SCOPE-001; Postgres in production). */
   readonly assessments: AssessmentReadStore;
+  /** Tenant-scoped read port of the surface resolvers (GRAPH-004; Postgres and the graph in production). */
+  readonly surface: SurfaceReadStore;
   /** The persisted-query manifests; loaded from `apps/api/graphql/` at boot when omitted. */
   readonly persisted?: PersistedManifests;
 }
@@ -68,7 +76,7 @@ function queryLimitsOf(config: Readonly<ApiConfig>): QueryLimits {
 @Module({})
 export class GraphqlApiModule {
   static forRoot(options: GraphqlModuleOptions): DynamicModule {
-    const { config, logger, store, assessments } = options;
+    const { config, logger, store, assessments, surface } = options;
     const metrics: GraphqlMetrics = createGraphqlMetrics(options.metrics.registry);
     const limits = queryLimitsOf(config);
     const production = config.NODE_ENV === 'production';
@@ -115,7 +123,15 @@ export class GraphqlApiModule {
         ...(production ? [NoSchemaIntrospectionCustomRule] : []),
       ],
       errorFormatter: (execution) => formatGraphqlErrors(execution),
-      context: (_request, reply) => ({ reply, loaders: createRequestLoaders(store) }),
+      context: (_request, reply) => ({
+        reply,
+        loaders: {
+          ...createRequestLoaders(store),
+          ...createSurfaceLoaders(surface, (size) => {
+            metrics.dataloaderBatchSize.observe(size);
+          }),
+        },
+      }),
     };
 
     return {
@@ -124,9 +140,11 @@ export class GraphqlApiModule {
       providers: [
         { provide: GRAPHQL_MEMBER_STORE, useValue: store },
         { provide: GRAPHQL_ASSESSMENT_STORE, useValue: assessments },
+        { provide: GRAPHQL_SURFACE_STORE, useValue: surface },
         { provide: GRAPHQL_METRICS, useValue: metrics },
         MembersResolver,
         AssessmentRequestsResolver,
+        SurfaceResolver,
       ],
     };
   }

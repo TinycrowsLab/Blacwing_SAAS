@@ -7,7 +7,7 @@ import { createHttpMetrics } from '../bootstrap/metrics.js';
 import { loadApiConfig } from '../config.js';
 import { GraphqlApiModule } from './module.js';
 
-import type { AssessmentReadStore, MemberReadStore } from './store.js';
+import type { AssessmentReadStore, MemberReadStore, SurfaceReadStore } from './store.js';
 
 /**
  * The store of the schema emitter: the schema is built from the decorators, and no operation runs, so a
@@ -22,6 +22,12 @@ const SCHEMA_ONLY_ASSESSMENTS: AssessmentReadStore = {
   rolesOf: () => Promise.reject(new Error('the schema emitter runs no operations')),
   listRequests: () => Promise.reject(new Error('the schema emitter runs no operations')),
   findRequest: () => Promise.reject(new Error('the schema emitter runs no operations')),
+};
+
+const SCHEMA_ONLY_SURFACE: SurfaceReadStore = {
+  rolesOf: () => Promise.reject(new Error('the schema emitter runs no operations')),
+  summariesOf: () => Promise.reject(new Error('the schema emitter runs no operations')),
+  endpointsOf: () => Promise.reject(new Error('the schema emitter runs no operations')),
 };
 
 /**
@@ -44,6 +50,7 @@ export async function emitGraphqlSchema(): Promise<void> {
         metrics,
         store: SCHEMA_ONLY_STORE,
         assessments: SCHEMA_ONLY_ASSESSMENTS,
+        surface: SCHEMA_ONLY_SURFACE,
       }),
     ],
   });

@@ -6,7 +6,7 @@
 import type { SurfaceEdgeKind, SurfaceNodeKind } from '@blackwing/contracts';
 
 /** The Neo4j label of each node kind. */
-const NODE_LABELS: Readonly<Record<SurfaceNodeKind, string>> = Object.freeze({
+export const NODE_LABELS: Readonly<Record<SurfaceNodeKind, string>> = Object.freeze({
   asset: 'Asset',
   host: 'Host',
   service: 'Service',
@@ -67,5 +67,67 @@ export function neighboursCypher(depth: 1 | 2): string {
     'WHERE n <> start',
     '  AND all(r IN rels WHERE type(r) IN $edgeKinds AND r.tenantId = $tenantId)',
     'RETURN DISTINCT n ORDER BY n.naturalKey LIMIT $limit',
+  ].join('\n');
+}
+
+/**
+ * Node count per kind for a batch of runs (GRAPH-004 read model for the GraphQL surface summary). Provenance is
+ * stored flat as `provenance_runId`, so the run is matched on that property; the tenant is pinned on every node.
+ */
+export function runNodeCountsCypher(): string {
+  return [
+    'MATCH (n {tenantId: $tenantId})',
+    'WHERE n.provenance_runId IN $runIds',
+    'RETURN n.provenance_runId AS runId, n.kind AS kind, count(n) AS count',
+  ].join('\n');
+}
+
+/** Relationship count per kind for a batch of runs. Both the edge and its endpoints are pinned to the tenant. */
+export function runEdgeCountsCypher(): string {
+  return [
+    'MATCH (a {tenantId: $tenantId})-[r]->(b {tenantId: $tenantId})',
+    'WHERE r.tenantId = $tenantId AND r.provenance_runId IN $runIds',
+    'RETURN r.provenance_runId AS runId, type(r) AS kind, count(r) AS count',
+  ].join('\n');
+}
+
+/**
+ * Technology nodes of a batch of runs with the number of services that run them (`RUNS` edges). A technology
+ * with no `RUNS` edge is returned with a count of zero, so the caller can drop it.
+ */
+export function runTechnologiesCypher(): string {
+  return [
+    'MATCH (t:Technology {tenantId: $tenantId})',
+    'WHERE t.provenance_runId IN $runIds',
+    'OPTIONAL MATCH (t)<-[r:RUNS]-()',
+    'WHERE r.tenantId = $tenantId',
+    'RETURN t.provenance_runId AS runId, t.name AS name, count(r) AS count',
+  ].join('\n');
+}
+
+/**
+ * Endpoint totals of a batch of runs: all endpoints, and those whose asset resolves to at least one in-scope host
+ * of the tenant. Endpoints carry no scope flag of their own, so scope is read through the asset (RESOLVES_TO).
+ */
+export function runEndpointTotalsCypher(): string {
+  return [
+    'MATCH (e:Endpoint {tenantId: $tenantId})',
+    'WHERE e.provenance_runId IN $runIds',
+    'OPTIONAL MATCH (a:Asset {tenantId: $tenantId, assetId: e.assetId})-[r:RESOLVES_TO]->(h:Host {tenantId: $tenantId})',
+    'WHERE r.tenantId = $tenantId AND h.inScope = true',
+    'RETURN e.provenance_runId AS runId,',
+    '  count(DISTINCT e) AS endpoints,',
+    '  count(DISTINCT CASE WHEN h IS NULL THEN null ELSE e END) AS inScope',
+  ].join('\n');
+}
+
+/** One keyset page of a run's endpoints, ordered by natural key. */
+export function runEndpointsCypher(): string {
+  return [
+    'MATCH (n:Endpoint)',
+    'WHERE n.tenantId = $tenantId',
+    '  AND n.provenance_runId = $runId',
+    '  AND ($after IS NULL OR n.naturalKey > $after)',
+    'RETURN n ORDER BY n.naturalKey LIMIT $limit',
   ].join('\n');
 }

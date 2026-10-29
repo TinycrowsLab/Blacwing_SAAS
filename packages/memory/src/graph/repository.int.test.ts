@@ -334,3 +334,257 @@ describe('surface-graph repository against Neo4j 5', () => {
     );
   });
 });
+
+// Run summaries and endpoint pages (GRAPH-004 read model for the GraphQL surface) against the same Neo4j.
+const SUMMARY_TENANT = '018f2a6e-1c00-7000-8000-00000000000d';
+const SUMMARY_OTHER_TENANT = '018f2a6e-1c00-7000-8000-00000000000e';
+const RUN_S1 = '018f2a6e-1c01-7000-8000-0000000000a1';
+const RUN_S2 = '018f2a6e-1c01-7000-8000-0000000000a2';
+const RUN_S_EMPTY = '018f2a6e-1c01-7000-8000-0000000000a3';
+const ASSET_IN = '018f2a6e-1c02-7000-8000-0000000000b1';
+const ASSET_OUT = '018f2a6e-1c02-7000-8000-0000000000b2';
+
+function provenanceOf(runId: string) {
+  return { ...PROVENANCE, runId };
+}
+
+function linked(
+  kind: SurfaceEdge['kind'],
+  tenantId: string,
+  from: SurfaceNode,
+  to: SurfaceNode,
+  runId: string,
+): SurfaceEdge {
+  const base = {
+    tenantId,
+    provenance: provenanceOf(runId),
+    fromKey: naturalKey(from),
+    toKey: naturalKey(to),
+  };
+  if (kind === 'CAN_ACCESS') return { ...base, kind, expected: 'deny' };
+  return { ...base, kind };
+}
+
+function endpointOf(
+  tenantId: string,
+  runId: string,
+  assetId: string,
+  method: string,
+  path: string,
+): SurfaceNode {
+  return {
+    kind: 'endpoint',
+    tenantId,
+    provenance: provenanceOf(runId),
+    assetId,
+    method: method as 'GET',
+    pathTemplate: path,
+    contentTypes: [],
+    authRequired: false,
+  };
+}
+
+/** Writes run S1 (two assets, two hosts, three services, two technologies, two endpoints) and a single host for S2. */
+async function seedSummaryTenant(): Promise<void> {
+  const assetIn: SurfaceNode = {
+    kind: 'asset',
+    tenantId: SUMMARY_TENANT,
+    provenance: provenanceOf(RUN_S1),
+    assetId: ASSET_IN,
+    type: 'web_app',
+  };
+  const assetOut: SurfaceNode = {
+    kind: 'asset',
+    tenantId: SUMMARY_TENANT,
+    provenance: provenanceOf(RUN_S1),
+    assetId: ASSET_OUT,
+    type: 'web_app',
+  };
+  const hostIn: SurfaceNode = {
+    kind: 'host',
+    tenantId: SUMMARY_TENANT,
+    provenance: provenanceOf(RUN_S1),
+    hostname: 'in.example.test',
+    inScope: true,
+  };
+  const hostOut: SurfaceNode = {
+    kind: 'host',
+    tenantId: SUMMARY_TENANT,
+    provenance: provenanceOf(RUN_S1),
+    hostname: 'out.example.test',
+    inScope: false,
+  };
+  const svcIn: SurfaceNode = {
+    kind: 'service',
+    tenantId: SUMMARY_TENANT,
+    provenance: provenanceOf(RUN_S1),
+    hostname: 'in.example.test',
+    port: 443,
+    protocol: 'tcp',
+  };
+  const svcInAlt: SurfaceNode = {
+    kind: 'service',
+    tenantId: SUMMARY_TENANT,
+    provenance: provenanceOf(RUN_S1),
+    hostname: 'in.example.test',
+    port: 8443,
+    protocol: 'tcp',
+  };
+  const nginx: SurfaceNode = {
+    kind: 'technology',
+    tenantId: SUMMARY_TENANT,
+    provenance: provenanceOf(RUN_S1),
+    name: 'nginx',
+    version: '1.25',
+    categories: [],
+  };
+  const postgres: SurfaceNode = {
+    kind: 'technology',
+    tenantId: SUMMARY_TENANT,
+    provenance: provenanceOf(RUN_S1),
+    name: 'postgres',
+    categories: [],
+  };
+  const endpointIn = endpointOf(SUMMARY_TENANT, RUN_S1, ASSET_IN, 'GET', '/a');
+  const endpointOut = endpointOf(SUMMARY_TENANT, RUN_S1, ASSET_OUT, 'POST', '/b');
+  const hostOnlyS2: SurfaceNode = {
+    kind: 'host',
+    tenantId: SUMMARY_TENANT,
+    provenance: provenanceOf(RUN_S2),
+    hostname: 'second.example.test',
+    inScope: true,
+  };
+  const nodes = [
+    assetIn,
+    assetOut,
+    hostIn,
+    hostOut,
+    svcIn,
+    svcInAlt,
+    nginx,
+    postgres,
+    endpointIn,
+    endpointOut,
+    hostOnlyS2,
+  ];
+  const edges = [
+    linked('RESOLVES_TO', SUMMARY_TENANT, assetIn, hostIn, RUN_S1),
+    linked('RESOLVES_TO', SUMMARY_TENANT, assetOut, hostOut, RUN_S1),
+    linked('EXPOSES', SUMMARY_TENANT, hostIn, svcIn, RUN_S1),
+    linked('EXPOSES', SUMMARY_TENANT, hostIn, svcInAlt, RUN_S1),
+    linked('RUNS', SUMMARY_TENANT, svcIn, nginx, RUN_S1),
+    linked('RUNS', SUMMARY_TENANT, svcInAlt, nginx, RUN_S1),
+    linked('RUNS', SUMMARY_TENANT, svcIn, postgres, RUN_S1),
+    linked('SERVES', SUMMARY_TENANT, svcIn, endpointIn, RUN_S1),
+  ];
+  await withTenantGraph(
+    SUMMARY_TENANT,
+    async (repo) => {
+      for (const node of nodes) await repo.writeNode(node);
+      for (const link of edges) expect(await repo.writeEdge(link)).toBe(true);
+    },
+    { runtime },
+  );
+}
+
+/** The count of a kind; a kind a run does not hold is absent from the list and counts as zero. */
+function countOf<K extends string>(counts: readonly { kind: K; count: number }[], kind: K): number {
+  return counts.find((entry) => entry.kind === kind)?.count ?? 0;
+}
+
+describe('surface summaries and endpoint pages against Neo4j 5 (GRAPH-004)', () => {
+  it('counts every kind of a run, tenant-pinned, and zeroes the kinds and runs it does not hold', async () => {
+    await seedSummaryTenant();
+    const summaries = await withTenantGraph(
+      SUMMARY_TENANT,
+      (repo) => repo.summariseRuns([RUN_S1, RUN_S2, RUN_S_EMPTY]),
+      { runtime },
+    );
+
+    const s1 = summaries.get(RUN_S1);
+    // Only the kinds the run holds are listed, in kind order (a kind with no nodes is omitted, not zero).
+    expect(s1?.nodeCounts.map((entry) => entry.kind)).toEqual([
+      'asset',
+      'endpoint',
+      'host',
+      'service',
+      'technology',
+    ]);
+    expect(countOf(s1?.nodeCounts ?? [], 'asset')).toBe(2);
+    expect(countOf(s1?.nodeCounts ?? [], 'host')).toBe(2);
+    expect(countOf(s1?.nodeCounts ?? [], 'service')).toBe(2);
+    expect(countOf(s1?.nodeCounts ?? [], 'technology')).toBe(2);
+    expect(countOf(s1?.nodeCounts ?? [], 'endpoint')).toBe(2);
+    expect(countOf(s1?.nodeCounts ?? [], 'parameter')).toBe(0);
+    expect(countOf(s1?.edgeCounts ?? [], 'RUNS')).toBe(3);
+    expect(countOf(s1?.edgeCounts ?? [], 'RESOLVES_TO')).toBe(2);
+    expect(countOf(s1?.edgeCounts ?? [], 'SERVES')).toBe(1);
+    expect(countOf(s1?.edgeCounts ?? [], 'CAN_ACCESS')).toBe(0);
+
+    // nginx runs on two services, postgres on one: most widely run first.
+    expect(s1?.topTechnologies).toEqual([
+      { name: 'nginx', count: 2 },
+      { name: 'postgres', count: 1 },
+    ]);
+    // Endpoint /a is served by a service on the in-scope host; /b belongs to an out-of-scope asset.
+    expect(s1?.endpointCount).toBe(2);
+    expect(s1?.inScopeEndpointCount).toBe(1);
+
+    expect(summaries.get(RUN_S2)?.endpointCount).toBe(0);
+    expect(countOf(summaries.get(RUN_S2)?.nodeCounts ?? [], 'host')).toBe(1);
+    expect(summaries.get(RUN_S_EMPTY)).toEqual({
+      runId: RUN_S_EMPTY,
+      nodeCounts: [],
+      edgeCounts: [],
+      topTechnologies: [],
+      endpointCount: 0,
+      inScopeEndpointCount: 0,
+    });
+    expect(summaries.has('018f2a6e-1c01-7000-8000-0000000000ff')).toBe(false);
+  });
+
+  it('never summarises another tenant: the same run id reads as an empty surface there', async () => {
+    const summaries = await withTenantGraph(
+      SUMMARY_OTHER_TENANT,
+      (repo) => repo.summariseRuns([RUN_S1]),
+      { runtime },
+    );
+    expect(summaries.get(RUN_S1)).toEqual({
+      runId: RUN_S1,
+      nodeCounts: [],
+      edgeCounts: [],
+      topTechnologies: [],
+      endpointCount: 0,
+      inScopeEndpointCount: 0,
+    });
+  });
+
+  it('pages a run endpoints by natural key and resumes after the cursor, never across runs', async () => {
+    const first = await withTenantGraph(
+      SUMMARY_TENANT,
+      (repo) => repo.listRunEndpoints(RUN_S1, { limit: 1 }),
+      { runtime },
+    );
+    expect(first.nodes).toHaveLength(1);
+    expect(first.nextCursor).toBeDefined();
+    const second = await withTenantGraph(
+      SUMMARY_TENANT,
+      (repo) =>
+        repo.listRunEndpoints(RUN_S1, {
+          limit: 1,
+          ...(first.nextCursor === undefined ? {} : { after: first.nextCursor }),
+        }),
+      { runtime },
+    );
+    expect(second.nodes).toHaveLength(1);
+    expect(second.nodes[0]?.pathTemplate).not.toBe(first.nodes[0]?.pathTemplate);
+    expect(second.nextCursor).toBeUndefined();
+
+    const foreign = await withTenantGraph(
+      SUMMARY_OTHER_TENANT,
+      (repo) => repo.listRunEndpoints(RUN_S1, { limit: 10 }),
+      { runtime },
+    );
+    expect(foreign.nodes).toEqual([]);
+  });
+});

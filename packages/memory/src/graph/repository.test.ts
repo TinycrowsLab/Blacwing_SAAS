@@ -127,6 +127,11 @@ describe('surface-graph repository: tenant guard', () => {
       (repo: SurfaceGraphRepository) => repo.getNeighbours(naturalKey(HOST_A), ['EXPOSES'], 1),
     ],
     ['countByTenant', (repo: SurfaceGraphRepository) => repo.countByTenant('host')],
+    ['summariseRuns', (repo: SurfaceGraphRepository) => repo.summariseRuns([RUN_ID])],
+    [
+      'listRunEndpoints',
+      (repo: SurfaceGraphRepository) => repo.listRunEndpoints(RUN_ID, { limit: 10 }),
+    ],
   ])(
     '%s without a tenant context throws GRAPH_NO_TENANT_CONTEXT before any query',
     async (_name, call) => {
@@ -382,5 +387,212 @@ describe('withTenantGraph', () => {
       },
       { runtime: graph.runtime },
     );
+  });
+});
+
+/** A record of scalar columns, as Neo4j returns a row of `RETURN a AS x, b AS y`. */
+function scalarRow(columns: Record<string, unknown>): unknown {
+  return { get: (key: string) => columns[key] };
+}
+
+/** A runtime whose successive queries return the given record sets, in order (one set per query). */
+function sequencedGraph(sets: readonly (readonly unknown[])[]): FakeGraph {
+  const queries: FakeQuery[] = [];
+  const sessions = { opened: 0 };
+  let next = 0;
+  const run = (mode: 'READ' | 'WRITE') => ({
+    run: (cypher: string, params: Record<string, unknown>) => {
+      queries.push({ mode, cypher, params });
+      const records = sets[next] ?? [];
+      next += 1;
+      return Promise.resolve({ records });
+    },
+  });
+  const driver = {
+    session: () => {
+      sessions.opened += 1;
+      return {
+        executeRead: (work: (tx: ReturnType<typeof run>) => Promise<unknown>) => work(run('READ')),
+        executeWrite: (work: (tx: ReturnType<typeof run>) => Promise<unknown>) =>
+          work(run('WRITE')),
+        close: () => Promise.resolve(),
+      };
+    },
+    close: () => Promise.resolve(),
+  };
+  const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+  const runtime = createGraphRuntime(CONFIG, {
+    logger,
+    createDriver: () => driver as unknown as Driver,
+  });
+  return { runtime, queries, sessions };
+}
+
+const ENDPOINT_STORED = {
+  kind: 'endpoint',
+  tenantId: TENANT_A,
+  naturalKey: `endpoint:${TENANT_A}:018f2a6e-1c02-7000-8000-000000000002:GET:/users/{id}`,
+  assetId: '018f2a6e-1c02-7000-8000-000000000002',
+  method: 'GET',
+  pathTemplate: '/users/{id}',
+  contentTypes: ['application/json'],
+  authRequired: true,
+  provenance_runId: RUN_ID,
+  provenance_confidence: 0.8,
+  provenance_firstSeenAt: PROVENANCE.firstSeenAt,
+  provenance_lastSeenAt: PROVENANCE.lastSeenAt,
+};
+
+describe('surface-graph repository: run reads', () => {
+  it('summariseRuns maps and orders the counts, drops empty technologies, and binds the tenant', async () => {
+    // One record set per query, in the order the repository runs them: nodes, edges, technologies, endpoints.
+    const graph = sequencedGraph([
+      [
+        scalarRow({ runId: RUN_ID, kind: 'service', count: neo4j.int(3) }),
+        scalarRow({ runId: RUN_ID, kind: 'host', count: 2 }),
+      ],
+      [scalarRow({ runId: RUN_ID, kind: 'EXPOSES', count: 2 })],
+      [
+        scalarRow({ runId: RUN_ID, name: 'nginx', count: 2 }),
+        scalarRow({ runId: RUN_ID, name: 'redis', count: 0 }),
+        scalarRow({ runId: RUN_ID, name: 'express', count: 2 }),
+      ],
+      [scalarRow({ runId: RUN_ID, endpoints: neo4j.int(5), inScope: 3 })],
+    ]);
+    const summaries = await withTenantGraph(TENANT_A, (repo) => repo.summariseRuns([RUN_ID]), {
+      runtime: graph.runtime,
+    });
+    expect(summaries.get(RUN_ID)).toEqual({
+      runId: RUN_ID,
+      nodeCounts: [
+        { kind: 'host', count: 2 },
+        { kind: 'service', count: 3 },
+      ],
+      edgeCounts: [{ kind: 'EXPOSES', count: 2 }],
+      topTechnologies: [
+        { name: 'express', count: 2 },
+        { name: 'nginx', count: 2 },
+      ],
+      endpointCount: 5,
+      inScopeEndpointCount: 3,
+    });
+    expect(graph.queries).toHaveLength(4);
+    for (const query of graph.queries) {
+      expect(query.mode).toBe('READ');
+      expect(query.cypher).toContain('$tenantId');
+      expect(query.params).toMatchObject({ tenantId: TENANT_A, runIds: [RUN_ID] });
+    }
+  });
+
+  it('summariseRuns answers an empty summary for a run with no graph data, and sends no query for no runs', async () => {
+    const graph = sequencedGraph([[], [], [], []]);
+    const summaries = await withTenantGraph(TENANT_A, (repo) => repo.summariseRuns([RUN_ID]), {
+      runtime: graph.runtime,
+    });
+    expect(summaries.get(RUN_ID)).toEqual({
+      runId: RUN_ID,
+      nodeCounts: [],
+      edgeCounts: [],
+      topTechnologies: [],
+      endpointCount: 0,
+      inScopeEndpointCount: 0,
+    });
+    const none = sequencedGraph([]);
+    const empty = await withTenantGraph(TENANT_A, (repo) => repo.summariseRuns([]), {
+      runtime: none.runtime,
+    });
+    expect(empty.size).toBe(0);
+    expect(none.queries).toHaveLength(0);
+  });
+
+  it('summariseRuns caps the technology list at the most widely run ten', async () => {
+    const technologies = Array.from({ length: 12 }, (_, index) =>
+      scalarRow({
+        runId: RUN_ID,
+        name: `tech-${String(index).padStart(2, '0')}`,
+        count: index + 1,
+      }),
+    );
+    const graph = sequencedGraph([[], [], technologies, []]);
+    const summaries = await withTenantGraph(TENANT_A, (repo) => repo.summariseRuns([RUN_ID]), {
+      runtime: graph.runtime,
+    });
+    const top = summaries.get(RUN_ID)?.topTechnologies ?? [];
+    expect(top).toHaveLength(10);
+    expect(top[0]).toEqual({ name: 'tech-11', count: 12 });
+    expect(top.at(-1)).toEqual({ name: 'tech-02', count: 3 });
+  });
+
+  it('summariseRuns refuses a non-UUID run id and more runs than one batch holds, before any query', async () => {
+    const graph = sequencedGraph([]);
+    await expectCode(
+      withTenantGraph(TENANT_A, (repo) => repo.summariseRuns(['not-a-run']), {
+        runtime: graph.runtime,
+      }),
+      'VALIDATION_FAILED',
+    );
+    const tooMany = Array.from({ length: 101 }, () => RUN_ID);
+    await expectCode(
+      withTenantGraph(TENANT_A, (repo) => repo.summariseRuns(tooMany), { runtime: graph.runtime }),
+      'VALIDATION_FAILED',
+    );
+    expect(graph.queries).toHaveLength(0);
+  });
+
+  it('summariseRuns fails closed on a stored kind outside the contract', async () => {
+    const graph = sequencedGraph([
+      [scalarRow({ runId: RUN_ID, kind: 'mystery', count: 1 })],
+      [],
+      [],
+      [],
+    ]);
+    await expectCode(
+      withTenantGraph(TENANT_A, (repo) => repo.summariseRuns([RUN_ID]), {
+        runtime: graph.runtime,
+      }),
+      'GRAPH_QUERY_FAILED',
+    );
+    // The node-count read is the first statement, so the stored kind stops the summary before any later read.
+    expect(graph.queries).toHaveLength(1);
+  });
+
+  it('listRunEndpoints pages by natural key and returns a cursor when more follow', async () => {
+    const graph = sequencedGraph([
+      [
+        nodeRow(ENDPOINT_STORED),
+        nodeRow({ ...ENDPOINT_STORED, naturalKey: 'endpoint:z' }),
+        nodeRow({ ...ENDPOINT_STORED, naturalKey: 'endpoint:zz' }),
+      ],
+    ]);
+    const page = await withTenantGraph(
+      TENANT_A,
+      (repo) => repo.listRunEndpoints(RUN_ID, { limit: 2 }),
+      { runtime: graph.runtime },
+    );
+    expect(page.nodes).toHaveLength(2);
+    expect(page.nodes[0]).toMatchObject({
+      kind: 'endpoint',
+      method: 'GET',
+      pathTemplate: '/users/{id}',
+    });
+    expect(page.nextCursor).toBe(
+      `endpoint:${TENANT_A}:018f2a6e-1c02-7000-8000-000000000002:GET:/users/{id}`,
+    );
+    expect(graph.queries[0]?.params).toMatchObject({
+      tenantId: TENANT_A,
+      runId: RUN_ID,
+      after: null,
+    });
+  });
+
+  it('listRunEndpoints refuses a non-UUID run id before any query', async () => {
+    const graph = sequencedGraph([]);
+    await expectCode(
+      withTenantGraph(TENANT_A, (repo) => repo.listRunEndpoints('x', { limit: 2 }), {
+        runtime: graph.runtime,
+      }),
+      'VALIDATION_FAILED',
+    );
+    expect(graph.queries).toHaveLength(0);
   });
 });

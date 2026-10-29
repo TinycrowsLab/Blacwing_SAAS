@@ -21,6 +21,7 @@ const schema = buildSchema(`
   type Query {
     tenantMembers(first: Int): [TenantMember!]!
     viewer: TenantMember
+    endpoints(first: Int): EndpointConnection
   }
   type TenantMember {
     userId: ID!
@@ -31,6 +32,15 @@ const schema = buildSchema(`
     id: ID!
     name: String
     friends(first: Int): [User!]!
+  }
+  type EndpointConnection {
+    edges: [EndpointEdge!]!
+  }
+  type EndpointEdge {
+    node: EndpointNode!
+  }
+  type EndpointNode {
+    method: String!
   }
 `);
 
@@ -103,6 +113,23 @@ describe('measureOperation', () => {
   it('costs a list of scalars once, whatever its page size', () => {
     expect(shapeOf('{ tenantMembers(first: 200) { roles } }').complexity).toBe(200 * (1 + 1));
     expect(shapeOf('{ viewer { roles } }').complexity).toBe(2);
+  });
+
+  it("prices a connection's edges by the connection's first argument", () => {
+    // Each edge costs its node (1 + method 1) = 2, so 200 edges cost 600, plus the connection's own cost of 1.
+    expect(shapeOf('{ endpoints(first: 200) { edges { node { method } } } }').complexity).toBe(601);
+    const variable = 'query Q($n: Int) { endpoints(first: $n) { edges { node { method } } } }';
+    expect(shapeOf(variable, { n: 5 }).complexity).toBe(1 + 5 * 3);
+  });
+
+  it('prices a connection without first at the default page, and caps its first at the maximum', () => {
+    const page = (size: number) => 1 + size * 3;
+    expect(shapeOf('{ endpoints { edges { node { method } } } }').complexity).toBe(
+      page(DEFAULT_PAGE_SIZE),
+    );
+    expect(shapeOf('{ endpoints(first: 1000000) { edges { node { method } } } }').complexity).toBe(
+      page(MAX_PAGE_SIZE),
+    );
   });
 
   it('treats __typename and unknown fields as leaves and does not recurse into them', () => {

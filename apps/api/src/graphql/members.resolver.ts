@@ -11,7 +11,7 @@ import { GRAPHQL_MEMBER_STORE } from './tokens.js';
 import { GraphqlTraceInterceptor } from './trace.interceptor.js';
 import { tenantContextOf } from '../tenant/guard.js';
 
-import type { RequestLoaders } from './loaders.js';
+import type { RequestLoaders, SurfaceLoaders } from './loaders.js';
 import type { MemberReadStore } from './store.js';
 import type { FastifyRequest } from 'fastify';
 
@@ -20,7 +20,7 @@ const FirstArg = z.number().int().min(1).max(MAX_PAGE_SIZE);
 /** The GraphQL context the resolvers read (see `module.ts`). */
 export interface GraphqlResolverContext {
   readonly req?: FastifyRequest;
-  readonly loaders: RequestLoaders;
+  readonly loaders: RequestLoaders & SurfaceLoaders;
 }
 
 /**

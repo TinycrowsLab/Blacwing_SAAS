@@ -6,3 +6,6 @@ export const GRAPHQL_METRICS = Symbol.for('blackwing.api.graphql.metrics');
 
 /** DI token of the {@link AssessmentReadStore} the assessment-request resolvers read through (SCOPE-001). */
 export const GRAPHQL_ASSESSMENT_STORE = Symbol.for('blackwing.api.graphql.assessment-store');
+
+/** DI token of the {@link SurfaceReadStore} the surface resolvers read through (GRAPH-004 / GRAPH-009). */
+export const GRAPHQL_SURFACE_STORE = Symbol.for('blackwing.api.graphql.surface-store');

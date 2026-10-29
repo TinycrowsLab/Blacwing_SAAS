@@ -13,6 +13,11 @@ import {
   mergeEdgeCypher,
   mergeNodeCypher,
   neighboursCypher,
+  runEdgeCountsCypher,
+  runEndpointsCypher,
+  runEndpointTotalsCypher,
+  runNodeCountsCypher,
+  runTechnologiesCypher,
 } from './cypher.js';
 
 describe('Cypher templates bind $tenantId', () => {
@@ -34,6 +39,17 @@ describe('Cypher templates bind $tenantId', () => {
   it('the neighbourhood template pins every hop and the depth to the tenant and a bound depth', () => {
     expect(neighboursCypher(1)).toContain('$tenantId');
     expect(neighboursCypher(2)).toContain('*1..2');
+  });
+
+  it.each([
+    ['run node counts', runNodeCountsCypher()],
+    ['run edge counts', runEdgeCountsCypher()],
+    ['run technologies', runTechnologiesCypher()],
+    ['run endpoint totals', runEndpointTotalsCypher()],
+    ['run endpoints', runEndpointsCypher()],
+  ])('the %s template references $tenantId and filters on the run', (_name, cypher) => {
+    expect(cypher).toContain('$tenantId');
+    expect(cypher).toMatch(/provenance_runId|\$runId/);
   });
 
   it('keeps all Cypher in cypher.ts: the repository source contains no query text', () => {

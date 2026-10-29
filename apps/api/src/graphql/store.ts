@@ -1,4 +1,5 @@
 import type { AssessmentRequestStatus, RunMode } from '@blackwing/contracts';
+import type { EndpointPage, RunSurfaceSummary } from '@blackwing/memory';
 
 /** One membership of a tenant: which user holds which roles there. */
 export interface MemberRow {
@@ -84,3 +85,24 @@ export const DRAFT_PRIVILEGED_ROLES: readonly string[] = [
   'org_admin',
   'auditor',
 ];
+
+/**
+ * Read port of the surface resolvers (GRAPH-004 read model, API-009). Every call takes the tenant the guard resolved and
+ * the adapter runs it under that tenant's RLS context and the graph's tenant pin, so another tenant's run is never
+ * summarised. A run that is missing or belongs to another tenant is reported as absent, never as an empty summary.
+ */
+export interface SurfaceReadStore {
+  /** Roles the user holds in `tenantId`; empty when the user has no membership there (fail closed). */
+  rolesOf(tenantId: string, userId: string): Promise<readonly string[]>;
+  /** Summaries of the runs of `tenantId` among `runIds`. Absent keys are runs the tenant does not own. */
+  summariesOf(
+    tenantId: string,
+    runIds: readonly string[],
+  ): Promise<ReadonlyMap<string, RunSurfaceSummary>>;
+  /** One keyset page of the endpoints of a run of `tenantId`; `undefined` when the run is not the tenant's. */
+  endpointsOf(
+    tenantId: string,
+    runId: string,
+    page: { readonly limit: number; readonly after?: string },
+  ): Promise<EndpointPage | undefined>;
+}

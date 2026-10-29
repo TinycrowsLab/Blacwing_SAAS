@@ -46,6 +46,34 @@ type AssetRef {
   id: ID!
 }
 
+"""An endpoint discovered for a run."""
+type Endpoint {
+  """The asset the endpoint belongs to."""
+  assetId: ID!
+  authRequired: Boolean!
+  baseUrl: String
+  contentTypes: [String!]!
+  method: String!
+  pathTemplate: String!
+}
+
+"""A page of the endpoints of a run."""
+type EndpointConnection {
+  edges: [EndpointEdge!]!
+  pageInfo: PageInfo!
+}
+
+type EndpointEdge {
+  cursor: String!
+  node: Endpoint!
+}
+
+"""How many of one kind a run holds."""
+type KindCount {
+  count: Int!
+  kind: String!
+}
+
 type PageInfo {
   endCursor: String
   hasNextPage: Boolean!
@@ -60,6 +88,16 @@ type Query {
   """
   assessmentRequests(after: String, first: Int, mode: String, status: String): AssessmentRequestConnection!
 
+  """
+  Endpoints of one run of the caller tenant (Relay connection, at most 200 per page).
+  """
+  endpoints(after: String, first: Int, runId: ID!): EndpointConnection!
+
+  """
+  Surface summary of one run of the caller tenant (counts, top technologies, endpoints).
+  """
+  surfaceSummary(runId: ID!): SurfaceSummary!
+
   """Memberships of the caller tenant."""
   tenantMembers(first: Int): [TenantMember!]!
 }
@@ -67,6 +105,29 @@ type Query {
 """A standing authorisation, by id."""
 type SARef {
   id: ID!
+}
+
+"""The surface graph of one run."""
+type SurfaceSummary {
+  """Relationships per kind (every kind, zero when absent)."""
+  edgeCounts: [KindCount!]!
+  endpointCount: Int!
+
+  """Endpoints that a service on an in-scope host serves."""
+  inScopeEndpointCount: Int!
+
+  """Nodes per kind (every kind, zero when absent)."""
+  nodeCounts: [KindCount!]!
+  runId: ID!
+
+  """Most widely run technologies, most frequent first."""
+  topTechnologies: [TechnologyCount!]!
+}
+
+"""A technology of a run and how many services run it."""
+type TechnologyCount {
+  count: Int!
+  name: String!
 }
 
 """A membership of the caller tenant."""

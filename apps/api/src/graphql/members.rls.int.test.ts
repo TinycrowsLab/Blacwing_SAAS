@@ -14,6 +14,7 @@ import { createHttpMetrics } from '../bootstrap/metrics.js';
 import { loadApiConfig } from '../config.js';
 import { GraphqlApiModule } from './module.js';
 import { createPgAssessmentReadStore, createPgMemberReadStore } from './postgres.js';
+import { createSurfaceReadStore } from './surface.store.js';
 
 import type { TenantPrincipal } from '@blackwing/db/tenant-context';
 
@@ -115,6 +116,7 @@ describe('GraphQL endpoint over Postgres (RLS)', () => {
           metrics,
           store,
           assessments: createPgAssessmentReadStore(createDatabase(handle.appPool)),
+          surface: createSurfaceReadStore(createDatabase(handle.appPool)),
         }),
       ],
     });

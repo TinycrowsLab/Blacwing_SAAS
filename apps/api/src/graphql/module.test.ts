@@ -13,7 +13,13 @@ import { createHttpMetrics } from '../bootstrap/metrics.js';
 import { loadApiConfig, type ApiConfig } from '../config.js';
 import { GraphqlApiModule } from './module.js';
 
-import type { AssessmentReadStore, MemberReadStore, MemberRow, UserRow } from './store.js';
+import type {
+  AssessmentReadStore,
+  MemberReadStore,
+  MemberRow,
+  SurfaceReadStore,
+  UserRow,
+} from './store.js';
 import type { TenantPrincipal } from '@blackwing/db/tenant-context';
 
 const TENANT_A = '0198f0a0-0000-7000-8000-00000000000a';
@@ -87,6 +93,13 @@ const NO_ASSESSMENTS: AssessmentReadStore = {
   findRequest: () => Promise.resolve(undefined),
 };
 
+/** This suite never reads the surface: its resolvers answer nothing. */
+const NO_SURFACE: SurfaceReadStore = {
+  rolesOf: () => Promise.resolve([]),
+  summariesOf: () => Promise.resolve(new Map()),
+  endpointsOf: () => Promise.resolve(undefined),
+};
+
 const BASE_ENV = { WEB_ORIGIN: 'http://localhost:3000' };
 
 let current: ApiApp | undefined;
@@ -113,7 +126,14 @@ async function boot(
     metrics,
     tenantPrincipalSource: (request) => principalOf(request.headers['x-test-principal']),
     imports: [
-      GraphqlApiModule.forRoot({ config, logger, metrics, store, assessments: NO_ASSESSMENTS }),
+      GraphqlApiModule.forRoot({
+        config,
+        logger,
+        metrics,
+        store,
+        assessments: NO_ASSESSMENTS,
+        surface: NO_SURFACE,
+      }),
     ],
   });
   await app.app.getHttpAdapter().getInstance().ready();

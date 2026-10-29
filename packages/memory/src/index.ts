@@ -36,10 +36,12 @@ export {
 } from './graph/migrate.js';
 // Tenant-guarded surface-graph repository (GRAPH-004, §8.6): the only sanctioned read and write path.
 export {
+  type EndpointPage,
   LIST_PAGE_MAX,
   type Neighbourhood,
   NEIGHBOUR_LIMIT,
   type NodePage,
+  type RunSurfaceSummary,
   SurfaceGraphRepository,
   type SurfaceGraphMetrics,
   type SurfaceGraphOp,

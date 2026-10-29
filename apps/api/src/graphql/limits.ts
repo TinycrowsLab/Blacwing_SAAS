@@ -80,12 +80,17 @@ class OperationMeter {
     return this.#selections(set, root ?? undefined);
   }
 
-  #selections(set: SelectionSetNode, parent: GraphQLCompositeType | undefined): Measure {
+  /** `sizeHint` is the page size a connection passes to its own selections (see `#field`). */
+  #selections(
+    set: SelectionSetNode,
+    parent: GraphQLCompositeType | undefined,
+    sizeHint?: number,
+  ): Measure {
     let depth = 0;
     let cost = 0;
     let aliases = 0;
     for (const selection of set.selections) {
-      const part = this.#selection(selection, parent);
+      const part = this.#selection(selection, parent, sizeHint);
       depth = Math.max(depth, part.depth);
       cost += part.cost;
       aliases += part.aliases;
@@ -93,17 +98,25 @@ class OperationMeter {
     return { depth, cost, aliases };
   }
 
-  #selection(node: SelectionNode, parent: GraphQLCompositeType | undefined): Measure {
+  #selection(
+    node: SelectionNode,
+    parent: GraphQLCompositeType | undefined,
+    sizeHint: number | undefined,
+  ): Measure {
     if (node.kind === Kind.INLINE_FRAGMENT) {
       const typeName = node.typeCondition?.name.value;
       const type = typeName === undefined ? parent : this.schema.getType(typeName);
-      return this.#selections(node.selectionSet, isCompositeType(type) ? type : parent);
+      return this.#selections(node.selectionSet, isCompositeType(type) ? type : parent, sizeHint);
     }
-    if (node.kind === Kind.FRAGMENT_SPREAD) return this.#spread(node.name.value);
-    return this.#field(node, parent);
+    if (node.kind === Kind.FRAGMENT_SPREAD) return this.#spread(node.name.value, sizeHint);
+    return this.#field(node, parent, sizeHint);
   }
 
-  #field(node: FieldNode, parent: GraphQLCompositeType | undefined): Measure {
+  #field(
+    node: FieldNode,
+    parent: GraphQLCompositeType | undefined,
+    sizeHint: number | undefined,
+  ): Measure {
     const aliasCount = node.alias === undefined ? 0 : 1;
     const name = node.name.value;
     const definition =
@@ -114,13 +127,19 @@ class OperationMeter {
       // `__typename`, introspection meta fields and unknown fields (rejected by spec rules) are leaves.
       return { depth: 1, cost: LEAF_COST, aliases: aliasCount };
     }
+    // A connection (a field with `first` whose type has `edges`) pages `edges` by its own `first`, so its direct
+    // children are priced at that size rather than the default page.
+    const connectionSize = isConnection(node, definition.type) ? this.#listSize(node) : undefined;
     const child = node.selectionSet
-      ? this.#selections(node.selectionSet, childComposite(definition.type))
+      ? this.#selections(node.selectionSet, childComposite(definition.type), connectionSize)
       : NO_MEASURE;
     // A list of objects multiplies its elements' cost; a list of scalars is one resolver value and costs once.
+    // A list without its own `first` takes the connection's page size when it sits directly under one.
     const multiplier =
       node.selectionSet !== undefined && isListType(getNullableType(definition.type))
-        ? this.#listSize(node)
+        ? findArgument(node, LIST_SIZE_ARG) === undefined && sizeHint !== undefined
+          ? sizeHint
+          : this.#listSize(node)
         : 1;
     return {
       depth: 1 + child.depth,
@@ -129,16 +148,22 @@ class OperationMeter {
     };
   }
 
-  #spread(name: string): Measure {
-    const memo = this.#memo.get(name);
+  #spread(name: string, sizeHint: number | undefined): Measure {
+    // The memo is keyed by the size hint too: a fragment spread under a connection prices differently.
+    const key = `${name}\u0000${sizeHint ?? ''}`;
+    const memo = this.#memo.get(key);
     if (memo !== undefined) return memo;
     const fragment = this.#fragments.get(name);
     if (fragment === undefined || this.#inProgress.has(name)) return NO_MEASURE;
     this.#inProgress.add(name);
     const typeName = fragment.typeCondition.name.value;
-    const measure = this.#selections(fragment.selectionSet, this.#compositeNamed(typeName));
+    const measure = this.#selections(
+      fragment.selectionSet,
+      this.#compositeNamed(typeName),
+      sizeHint,
+    );
     this.#inProgress.delete(name);
-    this.#memo.set(name, measure);
+    this.#memo.set(key, measure);
     return measure;
   }
 
@@ -147,9 +172,9 @@ class OperationMeter {
     return isCompositeType(type) ? type : undefined;
   }
 
-  /** The page size a list field asks for: a literal `first`, a variable's value, else the pagination maximum. */
+  /** The page size a list field asks for: a literal `first`, a variable's value, else the default page size. */
   #listSize(node: FieldNode): number {
-    const arg = node.arguments?.find((candidate) => candidate.name.value === LIST_SIZE_ARG);
+    const arg = findArgument(node, LIST_SIZE_ARG);
     // The resolver clamps and defaults `first` the same way, so the estimate prices the page it will return.
     if (arg === undefined) return DEFAULT_PAGE_SIZE;
     if (arg.value.kind === Kind.INT) return Math.min(Number(arg.value.value), MAX_PAGE_SIZE);
@@ -160,6 +185,17 @@ class OperationMeter {
     }
     return DEFAULT_PAGE_SIZE;
   }
+}
+
+function findArgument(node: FieldNode, name: string) {
+  return node.arguments?.find((candidate) => candidate.name.value === name);
+}
+
+/** A Relay connection: a field that takes `first` and whose named type has `edges`. */
+function isConnection(node: FieldNode, type: GraphQLOutputType): boolean {
+  if (findArgument(node, LIST_SIZE_ARG) === undefined) return false;
+  const named = getNamedType(type);
+  return isCompositeType(named) && 'getFields' in named && 'edges' in named.getFields();
 }
 
 function childComposite(type: GraphQLOutputType): GraphQLCompositeType | undefined {

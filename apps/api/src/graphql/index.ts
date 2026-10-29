@@ -1,5 +1,8 @@
 export { createPgAssessmentReadStore, createPgMemberReadStore } from './postgres.js';
 export { AssessmentRequestsResolver } from './assessment-requests.resolver.js';
+export { SurfaceResolver } from './surface.resolver.js';
+export { createSurfaceReadStore } from './surface.store.js';
+export { decodeEndpointCursor, encodeEndpointCursor } from './endpoint-cursor.js';
 export {
   createQueryLimitsRule,
   measureOperation,
@@ -13,8 +16,10 @@ export {
 export {
   createLoader,
   createRequestLoaders,
+  createSurfaceLoaders,
   createTenantLoader,
   type RequestLoaders,
+  type SurfaceLoaders,
   type TenantKey,
 } from './loaders.js';
 export { createGraphqlMetrics, type GraphqlMetrics } from './metrics.js';
@@ -47,6 +52,12 @@ export {
   type AssessmentRequestRow,
   type MemberReadStore,
   type MemberRow,
+  type SurfaceReadStore,
   type UserRow,
 } from './store.js';
-export { GRAPHQL_ASSESSMENT_STORE, GRAPHQL_MEMBER_STORE, GRAPHQL_METRICS } from './tokens.js';
+export {
+  GRAPHQL_ASSESSMENT_STORE,
+  GRAPHQL_MEMBER_STORE,
+  GRAPHQL_METRICS,
+  GRAPHQL_SURFACE_STORE,
+} from './tokens.js';

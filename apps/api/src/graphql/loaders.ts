@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
 
-import type { MemberReadStore, UserRow } from './store.js';
+import type { MemberReadStore, SurfaceReadStore, UserRow } from './store.js';
+import type { RunSurfaceSummary } from '@blackwing/memory';
 
 /** A DataLoader key scoped to a tenant. */
 export interface TenantKey {
@@ -74,6 +75,29 @@ export function createRequestLoaders(store: MemberReadStore): RequestLoaders {
     users: createTenantLoader(async (tenantId, ids) => {
       const rows = await store.findUsers(tenantId, ids);
       return ids.map((id) => rows.get(id));
+    }),
+  };
+}
+
+/** Loaders of the surface resolvers (GRAPH-004): one surface summary per tenant-scoped run id. */
+export interface SurfaceLoaders {
+  readonly surfaceSummaries: DataLoader<TenantKey, RunSurfaceSummary | undefined, string>;
+}
+
+/**
+ * Batches the surface summaries of one request (API-009). Every tile of a dashboard that asks for a run's summary in
+ * the same tick shares one graph read. A run the tenant does not own loads as `undefined`. `observeBatch` receives the
+ * number of keys in each batch (the `graphql_dataloader_batch_size` histogram).
+ */
+export function createSurfaceLoaders(
+  store: SurfaceReadStore,
+  observeBatch: (size: number) => void = () => undefined,
+): SurfaceLoaders {
+  return {
+    surfaceSummaries: createTenantLoader(async (tenantId, ids) => {
+      observeBatch(ids.length);
+      const summaries = await store.summariesOf(tenantId, ids);
+      return ids.map((id) => summaries.get(id));
     }),
   };
 }

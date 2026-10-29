@@ -11,6 +11,8 @@ import neo4j, { type Record as GraphRecord, type Session } from 'neo4j-driver';
 import { z } from 'zod';
 
 import {
+  type EndpointNode,
+  endpointNodeSchema,
   type SurfaceEdge,
   surfaceEdgeKindSchema,
   type SurfaceEdgeKind,
@@ -37,6 +39,11 @@ import {
   mergeEdgeCypher,
   mergeNodeCypher,
   neighboursCypher,
+  runEdgeCountsCypher,
+  runEndpointsCypher,
+  runEndpointTotalsCypher,
+  runNodeCountsCypher,
+  runTechnologiesCypher,
 } from './cypher.js';
 import { getGraph, type GraphRuntime, withSessionOn } from './driver.js';
 
@@ -44,6 +51,10 @@ import { getGraph, type GraphRuntime, withSessionOn } from './driver.js';
 export const NEIGHBOUR_LIMIT = 100;
 /** Largest page `listNodes` returns. */
 export const LIST_PAGE_MAX = 200;
+/** Most technologies a run summary lists (the most widely run first). */
+export const TOP_TECHNOLOGIES_MAX = 10;
+/** Largest number of runs one `summariseRuns` call takes (one batch of DataLoader keys). */
+export const SUMMARY_RUNS_MAX = 100;
 const KEY_MAX = 4096;
 const FILTER_KEY = /^[a-z][A-Za-z0-9]*$/;
 const SERVICE_ACTOR: TenantActor = Object.freeze({ type: 'service', id: 'surface-graph' });
@@ -53,7 +64,14 @@ const tracer = trace.getTracer('@blackwing/memory');
 
 /** Repository operations, as named in the `graph.repo.<op>` span and the `op` metric label. */
 export type SurfaceGraphOp =
-  'writeNode' | 'writeEdge' | 'getNode' | 'listNodes' | 'getNeighbours' | 'countByTenant';
+  | 'writeNode'
+  | 'writeEdge'
+  | 'getNode'
+  | 'listNodes'
+  | 'getNeighbours'
+  | 'countByTenant'
+  | 'summariseRuns'
+  | 'listRunEndpoints';
 
 /** Counters (OBS wires these to Prometheus; the default is a no-op). */
 export interface SurfaceGraphMetrics {
@@ -85,7 +103,40 @@ export interface Neighbourhood {
   readonly truncated: boolean;
 }
 
+/** A count of one kind (node kind or relationship type) in a run. */
+export interface KindCount<K extends string> {
+  readonly kind: K;
+  readonly count: number;
+}
+
+/** A technology of a run and how many services run it. */
+export interface TechnologyCount {
+  readonly name: string;
+  readonly count: number;
+}
+
+/**
+ * The surface of one run, read from the graph (GRAPH-004 read model). Kinds with no nodes or edges are omitted, so
+ * an empty run has empty counts and zero endpoints.
+ */
+export interface RunSurfaceSummary {
+  readonly runId: string;
+  readonly nodeCounts: readonly KindCount<SurfaceNodeKind>[];
+  readonly edgeCounts: readonly KindCount<SurfaceEdgeKind>[];
+  readonly topTechnologies: readonly TechnologyCount[];
+  readonly endpointCount: number;
+  readonly inScopeEndpointCount: number;
+}
+
+/** A keyset page of a run's endpoints. `nextCursor` is set when more follow; pass it back as `after`. */
+export interface EndpointPage {
+  readonly nodes: EndpointNode[];
+  readonly nextCursor?: string;
+}
+
 const keySchema = z.string().min(1).max(KEY_MAX);
+const runIdSchema = z.uuid();
+const runIdsSchema = z.array(runIdSchema).max(SUMMARY_RUNS_MAX);
 const pageSchema = z.object({
   limit: z.int().min(1).max(LIST_PAGE_MAX),
   after: keySchema.optional(),
@@ -112,6 +163,26 @@ function storedProps(value: SurfaceNode | SurfaceEdge): Record<string, unknown> 
     if (field !== undefined) props[`${PROVENANCE_PREFIX}${key}`] = field;
   }
   return props;
+}
+
+/** Reads a stored string (a run id or a technology name); anything else is a stored-data fault. */
+function storedString(value: unknown): string {
+  const raw = plain(value);
+  if (typeof raw !== 'string') {
+    throw new AppError('GRAPH_QUERY_FAILED', 'stored surface value is not a string');
+  }
+  return raw;
+}
+
+/** Reads a stored enum value; a value outside the contract is a stored-data fault, never a silent pass. */
+function storedEnum<T>(schema: z.ZodType<T>, value: unknown): T {
+  const parsed = schema.safeParse(plain(value));
+  if (!parsed.success) {
+    throw new AppError('GRAPH_QUERY_FAILED', 'stored surface kind failed contract validation', {
+      cause: parsed.error,
+    });
+  }
+  return parsed.data;
 }
 
 /** Parses a caller's input with its contract schema; a bad value is a validation error, never a silent coercion. */
@@ -251,6 +322,84 @@ export class SurfaceGraphRepository {
     return { nodes, truncated: rows.length > NEIGHBOUR_LIMIT };
   }
 
+  /**
+   * Surface summaries of several runs of the ambient tenant, in four tenant-pinned reads (nodes, edges, technologies,
+   * endpoints) whatever the number of runs. A run without any graph data is returned as an empty summary; the caller
+   * decides whether the run itself exists.
+   */
+  async summariseRuns(runIds: readonly string[]): Promise<Map<string, RunSurfaceSummary>> {
+    const parsedRunIds = input(runIdsSchema, runIds);
+    const summaries = new Map<string, MutableSummary>(
+      parsedRunIds.map((runId) => [runId, emptyMutableSummary()]),
+    );
+    if (parsedRunIds.length === 0) return new Map();
+    const params = { runIds: [...parsedRunIds] };
+
+    for (const row of await this.#execute('summariseRuns', 'READ', runNodeCountsCypher(), params)) {
+      const summary = summaries.get(storedString(row.get('runId')));
+      if (summary === undefined) continue;
+      summary.nodeCounts.push({
+        kind: storedEnum(surfaceNodeKindSchema, row.get('kind')),
+        count: Number(plain(row.get('count'))),
+      });
+    }
+    for (const row of await this.#execute('summariseRuns', 'READ', runEdgeCountsCypher(), params)) {
+      const summary = summaries.get(storedString(row.get('runId')));
+      if (summary === undefined) continue;
+      summary.edgeCounts.push({
+        kind: storedEnum(surfaceEdgeKindSchema, row.get('kind')),
+        count: Number(plain(row.get('count'))),
+      });
+    }
+    for (const row of await this.#execute(
+      'summariseRuns',
+      'READ',
+      runTechnologiesCypher(),
+      params,
+    )) {
+      const summary = summaries.get(storedString(row.get('runId')));
+      const count = Number(plain(row.get('count')));
+      if (summary === undefined || count === 0) continue;
+      summary.technologies.push({ name: storedString(row.get('name')), count });
+    }
+    for (const row of await this.#execute(
+      'summariseRuns',
+      'READ',
+      runEndpointTotalsCypher(),
+      params,
+    )) {
+      const summary = summaries.get(storedString(row.get('runId')));
+      if (summary === undefined) continue;
+      summary.endpointCount = Number(plain(row.get('endpoints')));
+      summary.inScopeEndpointCount = Number(plain(row.get('inScope')));
+    }
+
+    return new Map(
+      [...summaries].map(([runId, summary]) => [runId, finishSummary(runId, summary)]),
+    );
+  }
+
+  /** One keyset page of a run's endpoints in the ambient tenant, ordered by natural key. */
+  async listRunEndpoints(
+    runId: string,
+    page: { readonly limit: number; readonly after?: string },
+  ): Promise<EndpointPage> {
+    const parsedRunId = input(runIdSchema, runId);
+    const parsedPage = input(pageSchema, page);
+    const rows = await this.#execute('listRunEndpoints', 'READ', runEndpointsCypher(), {
+      runId: parsedRunId,
+      after: parsedPage.after ?? null,
+      limit: neo4j.int(parsedPage.limit + 1),
+    });
+    const nodes = rows
+      .slice(0, parsedPage.limit)
+      .map((row) => parseStored(nodeProps(row), endpointNodeSchema));
+    const last = nodes.at(-1);
+    return rows.length > parsedPage.limit && last !== undefined
+      ? { nodes, nextCursor: naturalKey(last) }
+      : { nodes };
+  }
+
   /** Number of nodes of `kind` in the ambient tenant (admin and metrics). */
   async countByTenant(kind: SurfaceNodeKind): Promise<number> {
     const parsedKind = input(surfaceNodeKindSchema, kind);
@@ -346,6 +495,41 @@ export class SurfaceGraphRepository {
       }
     });
   }
+}
+
+interface MutableSummary {
+  nodeCounts: KindCount<SurfaceNodeKind>[];
+  edgeCounts: KindCount<SurfaceEdgeKind>[];
+  technologies: TechnologyCount[];
+  endpointCount: number;
+  inScopeEndpointCount: number;
+}
+
+function emptyMutableSummary(): MutableSummary {
+  return {
+    nodeCounts: [],
+    edgeCounts: [],
+    technologies: [],
+    endpointCount: 0,
+    inScopeEndpointCount: 0,
+  };
+}
+
+/** Orders the counts (kinds ascending; technologies by count, then name) and caps the technology list. */
+function finishSummary(runId: string, summary: MutableSummary): RunSurfaceSummary {
+  const byKind = <K extends string>(a: KindCount<K>, b: KindCount<K>): number =>
+    a.kind < b.kind ? -1 : a.kind > b.kind ? 1 : 0;
+  const technologies = [...summary.technologies]
+    .sort((a, b) => b.count - a.count || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+    .slice(0, TOP_TECHNOLOGIES_MAX);
+  return {
+    runId,
+    nodeCounts: [...summary.nodeCounts].sort(byKind),
+    edgeCounts: [...summary.edgeCounts].sort(byKind),
+    topTechnologies: technologies,
+    endpointCount: summary.endpointCount,
+    inScopeEndpointCount: summary.inScopeEndpointCount,
+  };
 }
 
 /** Options for {@link withTenantGraph}. */
