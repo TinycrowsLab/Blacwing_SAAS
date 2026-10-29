@@ -108,6 +108,16 @@ export {
 export { createOtelExecutionMetrics } from './run/execution/metrics.js';
 export type * from './run/execution/ports.js';
 export * from './run/execution/types.js';
+export {
+  createDispatchActivities,
+  egressIdentityFor,
+  renderBrief,
+  type DispatchActivityDeps,
+} from './run/dispatch/activities.js';
+export { assertPersonaEligible, DispatchRejection } from './run/dispatch/eligibility.js';
+export { createOtelDispatchMetrics } from './run/dispatch/metrics.js';
+export type * from './run/dispatch/ports.js';
+export * from './run/dispatch/types.js';
 export { createPlanningActivities, type PlanningActivityDeps } from './run/planning/activities.js';
 export { evaluateAutoApproval } from './run/planning/auto-approval.js';
 export { createOtelPlanningMetrics } from './run/planning/metrics.js';

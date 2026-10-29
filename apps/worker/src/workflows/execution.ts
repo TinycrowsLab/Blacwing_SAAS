@@ -5,12 +5,26 @@ import {
   condition,
   defineQuery,
   defineSignal,
+  defineUpdate,
+  executeChild,
   isCancellation,
+  ParentClosePolicy,
   proxyActivities,
   setHandler,
   sleep,
+  ChildWorkflowCancellationType,
 } from '@temporalio/workflow';
 
+import {
+  AGENT_SESSION_WORKFLOW,
+  type AgentSessionInput,
+  type AgentSessionResult,
+} from '../agent-session/types.js';
+import {
+  DISPATCH_SUBTASK_UPDATE,
+  type DispatchActivities,
+  type DispatchOutcome,
+} from '../run/dispatch/types.js';
 import {
   classifyOutOfEnvelope,
   INITIAL_STALL,
@@ -44,9 +58,14 @@ import {
 const eventSignal = defineSignal<[ExecutionEvent]>(EXECUTION_EVENT_SIGNAL);
 const gate2Signal = defineSignal<[Gate2DecidedSignal]>(GATE2_DECIDED_SIGNAL);
 const resumedSignal = defineSignal<[{ actorId: string }]>(EXECUTION_RESUMED_SIGNAL);
+const dispatchUpdate = defineUpdate<DispatchOutcome, [unknown]>(DISPATCH_SUBTASK_UPDATE);
 const progressQuery = defineQuery<ExecutionProgress>(EXECUTION_PROGRESS_QUERY);
 
 const bookkeeping = proxyActivities<ExecutionActivities>({
+  startToCloseTimeout: '1 minute',
+  retry: { initialInterval: '1 second', backoffCoefficient: 2, maximumAttempts: 8 },
+});
+const dispatchActs = proxyActivities<DispatchActivities>({
   startToCloseTimeout: '1 minute',
   retry: { initialInterval: '1 second', backoffCoefficient: 2, maximumAttempts: 8 },
 });
@@ -139,6 +158,51 @@ export async function ExecutionWorkflow(input: ExecutionInput): Promise<Executio
     mentorInterventions: state.mentorInterventions,
     recoveries: state.recoveries,
   }));
+
+  // The orchestrator's `dispatch_subtask` reaches the Run Controller here, never through an in-process
+  // agent tool (§4.2, §8.2). The update answers at once so a refusal tells the orchestrator to back off;
+  // the specialist runs as a child workflow with its own sandbox, egress identity, budget and kill handle.
+  setHandler(dispatchUpdate, async (request) => {
+    const outcome = await dispatchActs.planDispatch(ref, request);
+    if (outcome.accepted && outcome.session !== null) {
+      const session = outcome.session;
+      spawn(() => runSpecialist(session, outcome.subtaskId));
+    }
+    return outcome;
+  });
+
+  /** Starts the specialist child (workflow id keyed by subtask: a repeat dispatch cannot start a second). */
+  async function runSpecialist(session: AgentSessionInput, subtaskId: string): Promise<void> {
+    await dispatchActs.markSubtaskRunning({ ...ref, subtaskId });
+    let result: AgentSessionResult | null = null;
+    let reason = 'session_workflow_failed';
+    let cancelled: Error | null = null;
+    try {
+      result = (await executeChild(AGENT_SESSION_WORKFLOW, {
+        workflowId: `agent-session-${subtaskId}`,
+        args: [session],
+        parentClosePolicy: ParentClosePolicy.REQUEST_CANCEL,
+        cancellationType: ChildWorkflowCancellationType.WAIT_CANCELLATION_COMPLETED,
+      })) as AgentSessionResult;
+    } catch (err) {
+      if (isCancellation(err)) {
+        reason = 'cancelled';
+        cancelled = err as Error;
+      }
+    }
+    // The slot must be released and the result stored even when the phase is being cancelled.
+    await CancellationScope.nonCancellable(() =>
+      dispatchActs.recordSubtaskResult({
+        ...ref,
+        subtaskId,
+        sessionId: result?.sessionId ?? null,
+        sandboxId: result?.sandboxId ?? null,
+        outcome: result?.subtask ?? { status: 'failed', reason, declined: false },
+        costUsd: result?.totalCostUsd ?? 0,
+      }),
+    );
+    if (cancelled !== null) throw cancelled;
+  }
 
   /** Runs a branch beside the main loop; its failure is the phase's failure (fail closed). */
   function spawn(task: () => Promise<void>): void {
