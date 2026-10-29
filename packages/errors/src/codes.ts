@@ -22,6 +22,8 @@ const DEFINITIONS = {
   VALIDATION_FAILED: { status: 422, title: 'Validation failed', retryable: false },
   // A cursor that is malformed, forged, or issued for other filters (audit query API, #86). Never retried as is.
   INVALID_CURSOR: { status: 400, title: 'Invalid cursor', retryable: false },
+  // A list or graph query whose parameters fail validation (unknown filter value, limit over the cap). Never retried as is.
+  INVALID_QUERY: { status: 400, title: 'Invalid query', retryable: false },
   UNAUTHENTICATED: { status: 401, title: 'Authentication required', retryable: false },
   // Authentication of an API request (the global auth guard, #335): no credential presented, a credential
   // that does not verify (signature, issuer, audience, algorithm, claims, or an unknown session), and a
@@ -254,6 +256,8 @@ const DEFINITIONS = {
   // a run that is no longer active is refused with 409 (the run is terminal, §3.3).
   NOT_IMPLEMENTED: { status: 501, title: 'Not implemented', retryable: false },
   RUN_NOT_ACTIVE: { status: 409, title: 'Run is not active', retryable: false },
+  // A run that does not exist in the caller's tenant. Uniform for missing and foreign runs (no existence oracle, §8.6).
+  RUN_NOT_FOUND: { status: 404, title: 'Run not found', retryable: false },
   // Audit emission (AUDIT-003, #82): an event that fails AuditEventSchema is refused at the helper's
   // boundary. The producer is at fault, so it is never retried unchanged.
   AUDIT_EVENT_INVALID: { status: 422, title: 'Invalid audit event', retryable: false },

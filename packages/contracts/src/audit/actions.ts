@@ -572,6 +572,13 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'config_change',
     description: 'A standing authorisation was submitted for approval (draft to pending_approval).',
   },
+  // surface graph read (GRAPH-006 console view, #444): appended; the event names the run, never the graph content.
+  {
+    action: 'run.surface.viewed',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description: 'A caller read the surface graph of a run through the console endpoint.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

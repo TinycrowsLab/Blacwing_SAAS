@@ -44,6 +44,10 @@ import {
   runEndpointTotalsCypher,
   runNodeCountsCypher,
   runTechnologiesCypher,
+  runSurfaceEdgeCountCypher,
+  runSurfaceEdgesCypher,
+  runSurfaceNodeCountCypher,
+  runSurfaceRankedCypher,
 } from './cypher.js';
 import { getGraph, type GraphRuntime, withSessionOn } from './driver.js';
 
@@ -71,7 +75,8 @@ export type SurfaceGraphOp =
   | 'getNeighbours'
   | 'countByTenant'
   | 'summariseRuns'
-  | 'listRunEndpoints';
+  | 'listRunEndpoints'
+  | 'readRunSurface';
 
 /** Counters (OBS wires these to Prometheus; the default is a no-op). */
 export interface SurfaceGraphMetrics {
@@ -134,9 +139,59 @@ export interface EndpointPage {
   readonly nextCursor?: string;
 }
 
+/** Parameters of one run-surface read (GRAPH-006): the filters, the page and the two caps. */
+export interface RunSurfaceQuery {
+  /** Node kinds to keep; absent keeps every kind. */
+  readonly kinds?: readonly SurfaceNodeKind[];
+  /** Keep nodes and edges whose provenance confidence is at least this (0 to 1). */
+  readonly minConfidence: number;
+  /** Natural key of the last node of the previous page; the page continues after it. */
+  readonly after?: string;
+  /** Page size, 1 to {@link LIST_PAGE_MAX}. */
+  readonly limit: number;
+  /** Most nodes selected for the whole surface; the highest-degree nodes are kept. */
+  readonly nodeCap: number;
+  /** Most relationships returned in one page. */
+  readonly edgeCap: number;
+}
+
+/** A node of a run surface, with its degree among the candidate nodes. */
+export interface RunSurfaceNode {
+  readonly node: SurfaceNode;
+  readonly degree: number;
+}
+
+/** A relationship between two nodes of one page, named by their natural keys. */
+export interface RunSurfaceEdge {
+  readonly kind: SurfaceEdgeKind;
+  readonly fromKey: string;
+  readonly toKey: string;
+}
+
+/**
+ * One page of a run surface. `totals` are the full candidate counts, before any cap. `nextCursor` is set when more
+ * nodes follow. `edgesTruncated` is set when the page held more relationships than the edge cap.
+ */
+export interface RunSurface {
+  readonly totals: { readonly nodes: number; readonly edges: number };
+  readonly nodes: readonly RunSurfaceNode[];
+  readonly nextCursor?: string;
+  readonly edges: readonly RunSurfaceEdge[];
+  readonly edgesTruncated: boolean;
+}
+
 const keySchema = z.string().min(1).max(KEY_MAX);
 const runIdSchema = z.uuid();
 const runIdsSchema = z.array(runIdSchema).max(SUMMARY_RUNS_MAX);
+const runSurfaceQuerySchema = z.object({
+  kinds: z.array(surfaceNodeKindSchema).min(1).optional(),
+  minConfidence: z.number().min(0).max(1),
+  after: keySchema.optional(),
+  limit: z.int().min(1).max(LIST_PAGE_MAX),
+  nodeCap: z.int().min(1),
+  edgeCap: z.int().min(1),
+});
+
 const pageSchema = z.object({
   limit: z.int().min(1).max(LIST_PAGE_MAX),
   after: keySchema.optional(),
@@ -400,6 +455,64 @@ export class SurfaceGraphRepository {
       : { nodes };
   }
 
+  /**
+   * One page of the surface of run `runId` in the ambient tenant, read in one snapshot-consistent transaction. The
+   * node set is ranked and capped in Cypher (see {@link runSurfaceRankedCypher}); the edges returned are only those
+   * between nodes of the page. A run of another tenant, or an unknown run, has an empty surface.
+   */
+  async readRunSurface(runId: string, query: RunSurfaceQuery): Promise<RunSurface> {
+    const parsedRunId = input(runIdSchema, runId);
+    const parsed = input(runSurfaceQuerySchema, query);
+    const context = this.#scope('readRunSurface');
+    const base = {
+      tenantId: context.tenantId,
+      runId: parsedRunId,
+      kinds: parsed.kinds === undefined ? null : [...parsed.kinds],
+      minConfidence: parsed.minConfidence,
+    };
+    return this.#transact('readRunSurface', 'READ', async (tx) => {
+      const read = async (cypher: string, params: Record<string, unknown>) =>
+        (await tx.run(cypher, { ...base, ...params })).records;
+      const [nodeCountRow] = await read(runSurfaceNodeCountCypher(), {});
+      const [edgeCountRow] = await read(runSurfaceEdgeCountCypher(), {});
+      const ranked = await read(runSurfaceRankedCypher(), {
+        nodeCap: neo4j.int(parsed.nodeCap),
+        after: parsed.after ?? null,
+        limit: neo4j.int(parsed.limit + 1),
+      });
+      const pageRows = ranked.slice(0, parsed.limit);
+      const nodes = pageRows.map((row) => ({
+        node: parseStored(nodeProps(row), surfaceNodeSchema),
+        degree: plain(row.get('degree')) as number,
+      }));
+      const last = nodes.at(-1);
+      const hasMore = ranked.length > parsed.limit && last !== undefined;
+      const keys = nodes.map((entry) => naturalKey(entry.node));
+      const edgeRows =
+        keys.length === 0
+          ? []
+          : await read(runSurfaceEdgesCypher(), {
+              keys,
+              limit: neo4j.int(parsed.edgeCap + 1),
+            });
+      const edges = edgeRows.slice(0, parsed.edgeCap).map((row) => ({
+        kind: storedEnum(surfaceEdgeKindSchema, row.get('kind')),
+        fromKey: storedString(row.get('fromKey')),
+        toKey: storedString(row.get('toKey')),
+      }));
+      return {
+        totals: {
+          nodes: plain(nodeCountRow?.get('count')) as number,
+          edges: plain(edgeCountRow?.get('count')) as number,
+        },
+        nodes,
+        ...(hasMore ? { nextCursor: naturalKey(last.node) } : {}),
+        edges,
+        edgesTruncated: edgeRows.length > parsed.edgeCap,
+      };
+    });
+  }
+
   /** Number of nodes of `kind` in the ambient tenant (admin and metrics). */
   async countByTenant(kind: SurfaceNodeKind): Promise<number> {
     const parsedKind = input(surfaceNodeKindSchema, kind);
@@ -443,9 +556,7 @@ export class SurfaceGraphRepository {
 
   /**
    * Runs one Cypher template for the ambient tenant. The tenant is always bound from the context (it overrides any
-   * `tenantId` the caller passed) and a template without `$tenantId` is refused before it is sent. Transient
-   * failures are retried by the driver's managed transactions, bounded by `maxTransactionRetryTime`; a failure it
-   * gave up on is `GRAPH_QUERY_UNAVAILABLE` (retryable), anything else is `GRAPH_QUERY_FAILED`.
+   * `tenantId` the caller passed) and a template without `$tenantId` is refused before it is sent.
    */
   async #execute(
     op: SurfaceGraphOp,
@@ -463,16 +574,27 @@ export class SurfaceGraphRepository {
       throw new AppError('GRAPH_UNSCOPED_QUERY', 'graph query is not tenant scoped');
     }
     const bound = { ...params, tenantId: context.tenantId };
+    return this.#transact(op, mode, async (tx) => (await tx.run(cypher, bound)).records);
+  }
+
+  /**
+   * Runs `work` in one managed transaction of the graph. Transient failures are retried by the driver's managed
+   * transactions, bounded by `maxTransactionRetryTime`; a failure it gave up on is `GRAPH_QUERY_UNAVAILABLE`
+   * (retryable), anything else is `GRAPH_QUERY_FAILED`.
+   */
+  async #transact<T>(
+    op: SurfaceGraphOp,
+    mode: 'READ' | 'WRITE',
+    work: (tx: GraphTransaction) => Promise<T>,
+  ): Promise<T> {
+    const context = this.#scope(op);
     this.#metrics.queryTotal(op, mode);
     return tracer.startActiveSpan(`graph.repo.${op}`, async (span) => {
       span.setAttribute('tenantId', context.tenantId);
       try {
-        return await withSessionOn(this.#runtime, mode, (session: Session) => {
-          const work = async (tx: {
-            run(text: string, values: Record<string, unknown>): Promise<{ records: GraphRecord[] }>;
-          }) => (await tx.run(cypher, bound)).records;
-          return mode === 'READ' ? session.executeRead(work) : session.executeWrite(work);
-        });
+        return await withSessionOn(this.#runtime, mode, (session: Session) =>
+          mode === 'READ' ? session.executeRead(work) : session.executeWrite(work),
+        );
       } catch (error) {
         if (error instanceof AppError) throw error;
         const code = neo4j.isRetryableError(error)
@@ -495,6 +617,11 @@ export class SurfaceGraphRepository {
       }
     });
   }
+}
+
+/** The part of a driver transaction the repository uses. */
+interface GraphTransaction {
+  run(text: string, values: Record<string, unknown>): Promise<{ records: GraphRecord[] }>;
 }
 
 interface MutableSummary {

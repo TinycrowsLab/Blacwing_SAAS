@@ -24,6 +24,10 @@
       "description": "Live run events over Server-Sent Events, with resume after disconnect."
     },
     {
+      "name": "surface",
+      "description": "Run surface graph for the console view, bounded and paginated."
+    },
+    {
       "name": "gate1",
       "description": "Gate 1: approval of the test plan before any test runs (separation of duties, §8.4)."
     },
@@ -554,7 +558,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -568,6 +572,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -650,7 +664,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -684,6 +698,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -991,7 +1015,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1005,6 +1029,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -1251,7 +1285,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1437,6 +1471,16 @@
                       "code": "AUDIT_EVENT_INVALID",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
+                  },
+                  "CVSS_VECTOR_SCORE_MISMATCH": {
+                    "summary": "CVSS score does not match its vector",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+                      "title": "CVSS score does not match its vector",
+                      "status": 422,
+                      "code": "CVSS_VECTOR_SCORE_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
                   }
                 }
               }
@@ -1591,7 +1635,8 @@
                 "authz.signing_key.rotated",
                 "authz.gate.decision",
                 "authz.sa.updated",
-                "authz.sa.submitted"
+                "authz.sa.submitted",
+                "run.surface.viewed"
               ]
             },
             "example": "kill.fired"
@@ -1812,7 +1857,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1846,6 +1891,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -2144,7 +2199,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2158,6 +2213,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -2250,7 +2315,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2284,6 +2349,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -2500,6 +2575,430 @@
         }
       }
     },
+    "/runs/{runId}/surface": {
+      "get": {
+        "tags": ["surface"],
+        "operationId": "getRunSurface",
+        "summary": "Get the bounded surface graph of one run (nodes and edges)",
+        "description": "Requires run:read in the caller tenant and the Cedar surface policy (an asset owner reads only the runs of assets they own). A run outside the caller tenant, or an unknown run, answers 404 RUN_NOT_FOUND (uniform, no existence oracle). Nodes are ranked by degree then confidence and capped at GRAPH_VIZ_MAX_NODES (2000); edges at GRAPH_VIZ_MAX_EDGES (4000). A surface above a cap answers truncated: true with full totals. Pages are ordered by natural key: pass pageInfo.endCursor back as cursor while hasNextPage is true. Every returned edge joins two nodes of the same page. A finished run (killed or completed) stays viewable: runState carries its state. The read is audited as run.surface.viewed.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "01890a5d-ac96-774b-bcce-b302099a8058"
+          },
+          {
+            "name": "kinds",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated node kinds to keep (asset, host, service, technology, endpoint, parameter, role).",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "example": "host,service"
+          },
+          {
+            "name": "minConfidence",
+            "in": "query",
+            "required": false,
+            "description": "Keep nodes and edges with provenance confidence at least this (0 to 1).",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque cursor: the pageInfo.endCursor of the previous page.",
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Nodes per page, 1 to 200. Larger or non-numeric values answer 400 INVALID_QUERY.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The view of one page of the run surface.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SurfaceRunView"
+                },
+                "example": {
+                  "nodes": [
+                    {
+                      "id": "host:018f2a6e-1c00-7000-8000-00000000000a:api.example.test",
+                      "kind": "host",
+                      "label": "api.example.test",
+                      "inScope": true,
+                      "confidence": 0.9,
+                      "degree": 1
+                    }
+                  ],
+                  "edges": [],
+                  "totals": {
+                    "nodes": 1,
+                    "edges": 0
+                  },
+                  "truncated": false,
+                  "pageInfo": {
+                    "hasNextPage": false
+                  },
+                  "clusteredBy": "asset",
+                  "runState": "recon"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of INVALID_QUERY, INVALID_CURSOR.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_CURSOR": {
+                    "summary": "Invalid cursor",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+                      "title": "Invalid cursor",
+                      "status": 400,
+                      "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TENANT_CONTEXT_MISSING": {
+                    "summary": "Tenant context missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+                      "title": "Tenant context missing",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of RUN_NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "CONFLICT": {
+                    "summary": "Conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONFLICT",
+                      "title": "Conflict",
+                      "status": 409,
+                      "code": "CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ILLEGAL_RUN_TRANSITION": {
+                    "summary": "Illegal run state transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+                      "title": "Illegal run state transition",
+                      "status": 409,
+                      "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "GATE1_NOT_PENDING": {
+                    "summary": "Approval gate is no longer pending",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+                      "title": "Approval gate is no longer pending",
+                      "status": 409,
+                      "code": "GATE1_NOT_PENDING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "GATE1_PLAN_STALE": {
+                    "summary": "Test plan changed since it was loaded",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+                      "title": "Test plan changed since it was loaded",
+                      "status": 409,
+                      "code": "GATE1_PLAN_STALE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "GATE1_EXPIRED": {
+                    "summary": "Approval window expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+                      "title": "Approval window expired",
+                      "status": 409,
+                      "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_NOT_DRAFT": {
+                    "summary": "Standing authorisation is not a draft",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_NOT_DRAFT",
+                      "title": "Standing authorisation is not a draft",
+                      "status": 409,
+                      "code": "AUTHZ_NOT_DRAFT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEK_DISABLED": {
+                    "summary": "Key version disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEK_DISABLED",
+                      "title": "Key version disabled",
+                      "status": 409,
+                      "code": "KEK_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "DB_SERIALIZATION_CONFLICT": {
+                    "summary": "Database serialization conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+                      "title": "Database serialization conflict",
+                      "status": 409,
+                      "code": "DB_SERIALIZATION_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_ALREADY_IN_PROGRESS": {
+                    "summary": "Kill already in progress",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+                      "title": "Kill already in progress",
+                      "status": 409,
+                      "code": "KILL_ALREADY_IN_PROGRESS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_ACTIVE": {
+                    "summary": "Run is not active",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+                      "title": "Run is not active",
+                      "status": 409,
+                      "code": "RUN_NOT_ACTIVE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_DISABLED": {
+                    "summary": "Secret disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+                      "title": "Secret disabled",
+                      "status": 409,
+                      "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEYCLOAK_CONFLICT": {
+                    "summary": "Identity provider conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+                      "title": "Identity provider conflict",
+                      "status": 409,
+                      "code": "KEYCLOAK_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/runs/{runId}/gate1": {
       "get": {
         "tags": ["gate1"],
@@ -2569,7 +3068,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2583,6 +3082,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -2839,7 +3348,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3023,6 +3532,16 @@
                       "title": "Invalid audit event",
                       "status": 422,
                       "code": "AUDIT_EVENT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "CVSS_VECTOR_SCORE_MISMATCH": {
+                    "summary": "CVSS score does not match its vector",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+                      "title": "CVSS score does not match its vector",
+                      "status": 422,
+                      "code": "CVSS_VECTOR_SCORE_MISMATCH",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -3387,7 +3906,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3401,6 +3920,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -3493,7 +4022,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3527,6 +4056,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -3697,7 +4236,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3883,6 +4422,16 @@
                       "code": "AUDIT_EVENT_INVALID",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
+                  },
+                  "CVSS_VECTOR_SCORE_MISMATCH": {
+                    "summary": "CVSS score does not match its vector",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+                      "title": "CVSS score does not match its vector",
+                      "status": 422,
+                      "code": "CVSS_VECTOR_SCORE_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
                   }
                 }
               }
@@ -4017,7 +4566,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4031,6 +4580,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -4425,7 +4984,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4439,6 +4998,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -4531,7 +5100,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4565,6 +5134,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -4894,7 +5473,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4908,6 +5487,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -5010,7 +5599,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5044,6 +5633,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -5668,7 +6267,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5702,6 +6301,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -6300,7 +6909,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6334,6 +6943,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -6597,7 +7216,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6611,6 +7230,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -6953,7 +7582,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6987,6 +7616,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -7157,7 +7796,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7343,6 +7982,16 @@
                       "code": "AUDIT_EVENT_INVALID",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
+                  },
+                  "CVSS_VECTOR_SCORE_MISMATCH": {
+                    "summary": "CVSS score does not match its vector",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+                      "title": "CVSS score does not match its vector",
+                      "status": 422,
+                      "code": "CVSS_VECTOR_SCORE_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
                   }
                 }
               }
@@ -7450,7 +8099,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7464,6 +8113,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -7806,7 +8465,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7840,6 +8499,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -8032,7 +8701,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8218,6 +8887,16 @@
                       "code": "AUDIT_EVENT_INVALID",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
+                  },
+                  "CVSS_VECTOR_SCORE_MISMATCH": {
+                    "summary": "CVSS score does not match its vector",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+                      "title": "CVSS score does not match its vector",
+                      "status": 422,
+                      "code": "CVSS_VECTOR_SCORE_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
                   }
                 }
               }
@@ -8332,7 +9011,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8346,6 +9025,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -8688,7 +9377,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8722,6 +9411,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -8892,7 +9591,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9078,6 +9777,16 @@
                       "code": "AUDIT_EVENT_INVALID",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
+                  },
+                  "CVSS_VECTOR_SCORE_MISMATCH": {
+                    "summary": "CVSS score does not match its vector",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+                      "title": "CVSS score does not match its vector",
+                      "status": 422,
+                      "code": "CVSS_VECTOR_SCORE_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
                   }
                 }
               }
@@ -9202,7 +9911,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9216,6 +9925,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -9558,7 +10277,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9592,6 +10311,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -9874,7 +10603,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9888,6 +10617,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -10382,7 +11121,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -10568,6 +11307,16 @@
                       "code": "AUDIT_EVENT_INVALID",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
+                  },
+                  "CVSS_VECTOR_SCORE_MISMATCH": {
+                    "summary": "CVSS score does not match its vector",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+                      "title": "CVSS score does not match its vector",
+                      "status": 422,
+                      "code": "CVSS_VECTOR_SCORE_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
                   }
                 }
               }
@@ -10696,7 +11445,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -10710,6 +11459,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -11052,7 +11811,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11086,6 +11845,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -11266,7 +12035,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11452,6 +12221,16 @@
                       "code": "AUDIT_EVENT_INVALID",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
+                  },
+                  "CVSS_VECTOR_SCORE_MISMATCH": {
+                    "summary": "CVSS score does not match its vector",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+                      "title": "CVSS score does not match its vector",
+                      "status": 422,
+                      "code": "CVSS_VECTOR_SCORE_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
                   }
                 }
               }
@@ -11582,7 +12361,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11596,6 +12375,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -11938,7 +12727,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11972,6 +12761,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -12134,7 +12933,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12148,6 +12947,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -12490,7 +13299,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12524,6 +13333,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -12704,7 +13523,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12888,6 +13707,16 @@
                       "title": "Invalid audit event",
                       "status": 422,
                       "code": "AUDIT_EVENT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "CVSS_VECTOR_SCORE_MISMATCH": {
+                    "summary": "CVSS score does not match its vector",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+                      "title": "CVSS score does not match its vector",
+                      "status": 422,
+                      "code": "CVSS_VECTOR_SCORE_MISMATCH",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -13565,7 +14394,7 @@
             }
           },
           "404": {
-            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13599,6 +14428,16 @@
                       "title": "No released prompt version",
                       "status": 404,
                       "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -13903,7 +14742,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13917,6 +14756,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -14213,7 +15062,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14399,6 +15248,16 @@
                       "code": "AUDIT_EVENT_INVALID",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
+                  },
+                  "CVSS_VECTOR_SCORE_MISMATCH": {
+                    "summary": "CVSS score does not match its vector",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+                      "title": "CVSS score does not match its vector",
+                      "status": 422,
+                      "code": "CVSS_VECTOR_SCORE_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
                   }
                 }
               }
@@ -14537,7 +15396,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14551,6 +15410,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -14967,7 +15836,7 @@
             }
           },
           "400": {
-            "description": "Problem details; code is one of INVALID_CURSOR, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14981,6 +15850,16 @@
                       "title": "Invalid cursor",
                       "status": 400,
                       "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -15977,7 +16856,8 @@
               "authz.signing_key.rotated",
               "authz.gate.decision",
               "authz.sa.updated",
-              "authz.sa.submitted"
+              "authz.sa.submitted",
+              "run.surface.viewed"
             ]
           },
           "severity": {
@@ -17857,6 +18737,150 @@
           "version",
           "createdAt",
           "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "SurfaceRunView": {
+        "type": "object",
+        "properties": {
+          "nodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "asset",
+                    "host",
+                    "service",
+                    "technology",
+                    "endpoint",
+                    "parameter",
+                    "role"
+                  ]
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "inScope": {
+                  "type": "boolean"
+                },
+                "confidence": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "degree": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["id", "kind", "label", "confidence", "degree"],
+              "additionalProperties": false
+            }
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": ["RESOLVES_TO", "EXPOSES", "RUNS", "SERVES", "HAS_PARAM", "CAN_ACCESS"]
+                },
+                "from": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "to": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                }
+              },
+              "required": ["kind", "from", "to"],
+              "additionalProperties": false
+            }
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "nodes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "edges": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["nodes", "edges"],
+            "additionalProperties": false
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "pageInfo": {
+            "type": "object",
+            "properties": {
+              "endCursor": {
+                "type": "string",
+                "minLength": 1
+              },
+              "hasNextPage": {
+                "type": "boolean"
+              }
+            },
+            "required": ["hasNextPage"],
+            "additionalProperties": false
+          },
+          "clusteredBy": {
+            "type": "string",
+            "const": "asset"
+          },
+          "runState": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "preflight",
+              "recon",
+              "planning",
+              "awaiting_gate1",
+              "approved",
+              "executing",
+              "paused",
+              "validating",
+              "awaiting_gate3",
+              "released",
+              "reporting",
+              "completed",
+              "cancelled",
+              "killed",
+              "failed",
+              "expired"
+            ]
+          }
+        },
+        "required": [
+          "nodes",
+          "edges",
+          "totals",
+          "truncated",
+          "pageInfo",
+          "clusteredBy",
+          "runState"
         ],
         "additionalProperties": false
       },

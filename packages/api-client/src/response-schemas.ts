@@ -13,6 +13,7 @@ import {
   signupAcceptedSchema,
   signupVerifiedSchema,
   standingAuthorisationDtoSchema,
+  surfaceRunViewSchema,
   tenantSettingsResponseSchema,
 } from '@blackwing/contracts';
 
@@ -127,6 +128,7 @@ export const RESPONSE_SCHEMAS: Readonly<
   getPersona: { 200: personaRegistryViewSchema },
   getTenantSettings: { 200: tenantSettingsResponseSchema },
   getGate1Plan: { 200: gate1PlanViewSchema },
+  getRunSurface: { 200: surfaceRunViewSchema },
   decideGate1: { 200: gate1DecisionResponseSchema },
   updateTenantSettings: { 200: tenantSettingsResponseSchema },
   listAssessmentRequests: { 200: assessmentRequestListResponseSchema },

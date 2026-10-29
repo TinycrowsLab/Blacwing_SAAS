@@ -107,6 +107,57 @@ const HOST_A_STORED = {
   provenance_lastSeenAt: PROVENANCE.lastSeenAt,
 };
 
+const RUN_QUERY = { minConfidence: 0, limit: 10, nodeCap: 2000, edgeCap: 4000 } as const;
+
+/** A fake whose answer depends on the Cypher text, so one read can run several queries against it. */
+function fakeGraphRouted(answer: (cypher: string) => unknown[]): FakeGraph {
+  const queries: FakeQuery[] = [];
+  const sessions = { opened: 0 };
+  const run = (mode: 'READ' | 'WRITE') => ({
+    run: (cypher: string, params: Record<string, unknown>) => {
+      queries.push({ mode, cypher, params });
+      return Promise.resolve({ records: answer(cypher) });
+    },
+  });
+  const driver = {
+    session: () => {
+      sessions.opened += 1;
+      return {
+        executeRead: (work: (tx: ReturnType<typeof run>) => Promise<unknown>) => work(run('READ')),
+        executeWrite: (work: (tx: ReturnType<typeof run>) => Promise<unknown>) =>
+          work(run('WRITE')),
+        close: () => Promise.resolve(),
+      };
+    },
+    close: () => Promise.resolve(),
+  };
+  const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+  const runtime = createGraphRuntime(CONFIG, {
+    logger,
+    createDriver: () => driver as unknown as Driver,
+  });
+  return { runtime, queries, sessions };
+}
+
+/** A ranked-page row: the node column `n` and its `degree`. */
+function rankedRow(properties: Record<string, unknown>, degree: number): unknown {
+  return {
+    get: (key: string) => (key === 'n' ? { properties } : key === 'degree' ? degree : undefined),
+  };
+}
+
+/** A count row: the single `count` column. */
+function countRow(count: number): unknown {
+  return { get: (key: string) => (key === 'count' ? count : undefined) };
+}
+
+/** A relationship row of the page edge query. */
+function edgeRow(kind: string, fromKey: string, toKey: string): unknown {
+  return {
+    get: (key: string) => ({ kind, fromKey, toKey })[key as 'kind' | 'fromKey' | 'toKey'],
+  };
+}
+
 async function expectCode(promise: Promise<unknown>, code: string): Promise<void> {
   const error: unknown = await promise.then(
     () => undefined,
@@ -114,6 +165,131 @@ async function expectCode(promise: Promise<unknown>, code: string): Promise<void
   );
   expect(error).toBeInstanceOf(AppError);
   expect((error as AppError).code).toBe(code);
+}
+
+describe('surface-graph repository: run surface read (GRAPH-006)', () => {
+  const SERVICE_KEY = `service:${TENANT_A}:api.example.test:443:tcp`;
+
+  it('reads counts, the ranked page and the page edges in one snapshot, all bound to the ambient tenant', async () => {
+    const graph = fakeGraphRouted((cypher) => {
+      if (cypher.includes('count(n)')) return [countRow(3)];
+      if (cypher.includes('count(r) AS count')) return [countRow(2)];
+      if (cypher.includes('degree DESC')) return [rankedRow(HOST_A_STORED, 2)];
+      return [edgeRow('EXPOSES', naturalKey(HOST_A), SERVICE_KEY)];
+    });
+    const repo = new SurfaceGraphRepository(graph.runtime);
+    const surface = await withTenantGraph(TENANT_A, () => repo.readRunSurface(RUN_ID, RUN_QUERY), {
+      runtime: graph.runtime,
+    });
+
+    expect(graph.sessions.opened).toBe(1);
+    expect(graph.queries.map((q) => q.mode)).toEqual(['READ', 'READ', 'READ', 'READ']);
+    for (const query of graph.queries) {
+      expect(query.params.tenantId).toBe(TENANT_A);
+      expect(query.params.runId).toBe(RUN_ID);
+    }
+    expect(surface.totals).toEqual({ nodes: 3, edges: 2 });
+    expect(surface.nodes).toEqual([{ node: HOST_A, degree: 2 }]);
+    expect(surface.nextCursor).toBeUndefined();
+    expect(surface.edges).toEqual([
+      { kind: 'EXPOSES', fromKey: naturalKey(HOST_A), toKey: SERVICE_KEY },
+    ]);
+    expect(surface.edgesTruncated).toBe(false);
+  });
+
+  it('sets nextCursor to the last node of a full page and reports a cut edge set', async () => {
+    const second: SurfaceNode = { ...HOST_A, hostname: 'web.example.test' };
+    const graph = fakeGraphRouted((cypher) => {
+      if (cypher.includes('count(n)')) return [countRow(2)];
+      if (cypher.includes('count(r) AS count')) return [countRow(0)];
+      if (cypher.includes('degree DESC')) {
+        return [rankedRow(HOST_A_STORED, 1), rankedRow(storedHost(second), 1)];
+      }
+      return [
+        edgeRow('EXPOSES', naturalKey(HOST_A), SERVICE_KEY),
+        edgeRow('EXPOSES', naturalKey(second), SERVICE_KEY),
+      ];
+    });
+    const repo = new SurfaceGraphRepository(graph.runtime);
+    const surface = await withTenantGraph(
+      TENANT_A,
+      () => repo.readRunSurface(RUN_ID, { ...RUN_QUERY, limit: 1, edgeCap: 1 }),
+      { runtime: graph.runtime },
+    );
+
+    expect(surface.nodes.map((entry) => entry.node)).toEqual([HOST_A]);
+    expect(surface.nextCursor).toBe(naturalKey(HOST_A));
+    expect(surface.edges).toHaveLength(1);
+    expect(surface.edgesTruncated).toBe(true);
+    const edgeQuery = graph.queries.at(-1);
+    expect(edgeQuery?.params.keys).toEqual([naturalKey(HOST_A)]);
+    expect((edgeQuery?.params.limit as { toNumber(): number }).toNumber()).toBe(2);
+  });
+
+  it('sends no edge query for an empty surface and answers empty totals', async () => {
+    const graph = fakeGraphRouted((cypher) =>
+      cypher.includes('count(n)') || cypher.includes('count(r) AS count') ? [countRow(0)] : [],
+    );
+    const repo = new SurfaceGraphRepository(graph.runtime);
+    const surface = await withTenantGraph(TENANT_A, () => repo.readRunSurface(RUN_ID, RUN_QUERY), {
+      runtime: graph.runtime,
+    });
+    expect(surface).toEqual({
+      totals: { nodes: 0, edges: 0 },
+      nodes: [],
+      edges: [],
+      edgesTruncated: false,
+    });
+    expect(graph.queries.some((q) => q.cypher.includes('type(r)'))).toBe(false);
+  });
+
+  it.each([
+    ['a non-UUID run id', 'not-a-uuid', RUN_QUERY],
+    ['a confidence above 1', RUN_ID, { ...RUN_QUERY, minConfidence: 1.5 }],
+    ['a page size of zero', RUN_ID, { ...RUN_QUERY, limit: 0 }],
+    ['a page size above the list cap', RUN_ID, { ...RUN_QUERY, limit: 201 }],
+    ['an unknown node kind', RUN_ID, { ...RUN_QUERY, kinds: ['database'] }],
+  ])('refuses %s with VALIDATION_FAILED before any query', async (_name, runId, query) => {
+    const graph = fakeGraphRouted(() => []);
+    const repo = new SurfaceGraphRepository(graph.runtime);
+    await withTenantGraph(
+      TENANT_A,
+      async () => {
+        await expectCode(
+          repo.readRunSurface(runId, query as unknown as typeof RUN_QUERY),
+          'VALIDATION_FAILED',
+        );
+      },
+      { runtime: graph.runtime },
+    );
+    expect(graph.queries).toHaveLength(0);
+  });
+
+  it('treats a stored edge with an unknown kind as a fault, not a validation error', async () => {
+    const graph = fakeGraphRouted((cypher) => {
+      if (cypher.includes('count(n)') || cypher.includes('count(r) AS count')) return [countRow(1)];
+      if (cypher.includes('degree DESC')) return [rankedRow(HOST_A_STORED, 0)];
+      return [edgeRow('LINKS_TO', naturalKey(HOST_A), SERVICE_KEY)];
+    });
+    const repo = new SurfaceGraphRepository(graph.runtime);
+    await withTenantGraph(
+      TENANT_A,
+      () =>
+        expect(repo.readRunSurface(RUN_ID, RUN_QUERY)).rejects.toMatchObject({
+          code: 'GRAPH_QUERY_FAILED',
+        }),
+      { runtime: graph.runtime },
+    );
+  });
+});
+
+/** The stored properties of a host with another hostname (the second node of a page). */
+function storedHost(node: SurfaceNode): Record<string, unknown> {
+  return {
+    ...HOST_A_STORED,
+    naturalKey: naturalKey(node),
+    hostname: node.kind === 'host' ? node.hostname : undefined,
+  };
 }
 
 describe('surface-graph repository: tenant guard', () => {
@@ -127,6 +303,7 @@ describe('surface-graph repository: tenant guard', () => {
       (repo: SurfaceGraphRepository) => repo.getNeighbours(naturalKey(HOST_A), ['EXPOSES'], 1),
     ],
     ['countByTenant', (repo: SurfaceGraphRepository) => repo.countByTenant('host')],
+    ['readRunSurface', (repo: SurfaceGraphRepository) => repo.readRunSurface(RUN_ID, RUN_QUERY)],
     ['summariseRuns', (repo: SurfaceGraphRepository) => repo.summariseRuns([RUN_ID])],
     [
       'listRunEndpoints',

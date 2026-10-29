@@ -131,3 +131,60 @@ export function runEndpointsCypher(): string {
     'RETURN n ORDER BY n.naturalKey LIMIT $limit',
   ].join('\n');
 }
+
+/**
+ * The candidate predicate of the run surface for one node or edge variable: in the ambient tenant, first seen or
+ * last refreshed by the run (`provenance_runId`), of the wanted kinds (all kinds when `$kinds` is null) and at least
+ * `$minConfidence`. Every term is parameterised; only the variable name is interpolated, and it is one of this file's.
+ */
+function candidate(variable: string): string {
+  return [
+    `${variable}.tenantId = $tenantId`,
+    `${variable}.provenance_runId = $runId`,
+    `($kinds IS NULL OR ${variable}.kind IN $kinds)`,
+    `${variable}.provenance_confidence >= $minConfidence`,
+  ].join(' AND ');
+}
+
+/** Full number of candidate nodes of a run surface (before the node cap). */
+export function runSurfaceNodeCountCypher(): string {
+  return `MATCH (n) WHERE ${candidate('n')} RETURN count(n) AS count`;
+}
+
+/** Full number of relationships whose two ends are candidate nodes (before the edge cap). */
+export function runSurfaceEdgeCountCypher(): string {
+  return `MATCH (a)-[r]->(b) WHERE ${candidate('a')} AND ${candidate('b')} RETURN count(r) AS count`;
+}
+
+/**
+ * The retained node set of a run surface, ranked by degree (edges to other candidates), then confidence, then natural
+ * key, and cut to `$nodeCap`. The keyset cursor (`$after`) pages inside that set, ordered by natural key, so the set
+ * and its order are the same on every page of one request. Degree is computed here, server-side, never in the app.
+ */
+export function runSurfaceRankedCypher(): string {
+  return [
+    `MATCH (n) WHERE ${candidate('n')}`,
+    `OPTIONAL MATCH (n)-[r]-(m) WHERE ${candidate('m')}`,
+    'WITH n, count(r) AS degree',
+    'ORDER BY degree DESC, n.provenance_confidence DESC, n.naturalKey ASC',
+    'LIMIT $nodeCap',
+    'WITH n, degree WHERE $after IS NULL OR n.naturalKey > $after',
+    'RETURN n, degree ORDER BY n.naturalKey LIMIT $limit',
+  ].join('\n');
+}
+
+/**
+ * Relationships between the given page nodes (`$keys`), in both ends' run and tenant. One row past `$limit` tells the
+ * caller the edge set was cut. A relationship is returned only when both of its ends are in the page, so the view
+ * never holds a dangling reference.
+ */
+export function runSurfaceEdgesCypher(): string {
+  return [
+    'MATCH (a)-[r]->(b)',
+    'WHERE a.tenantId = $tenantId AND b.tenantId = $tenantId',
+    '  AND a.provenance_runId = $runId AND b.provenance_runId = $runId',
+    '  AND a.naturalKey IN $keys AND b.naturalKey IN $keys',
+    'RETURN type(r) AS kind, a.naturalKey AS fromKey, b.naturalKey AS toKey',
+    'ORDER BY fromKey, kind, toKey LIMIT $limit',
+  ].join('\n');
+}

@@ -58,6 +58,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  getRunSurface: {
+    method: 'GET',
+    path: '/v1/runs/{runId}/surface',
+    pathParams: ['runId'],
+    queryParams: ['kinds', 'minConfidence', 'cursor', 'limit'],
+    requiredHeaders: [],
+  },
   getStandingAuthorisation: {
     method: 'GET',
     path: '/v1/standing-authorisations/{id}',

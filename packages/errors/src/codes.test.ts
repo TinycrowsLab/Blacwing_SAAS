@@ -18,6 +18,7 @@ import {
 const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   VALIDATION_FAILED: 422,
   INVALID_CURSOR: 400,
+  INVALID_QUERY: 400,
   UNAUTHENTICATED: 401,
   AUTH_NO_CREDENTIALS: 401,
   AUTH_INVALID_TOKEN: 401,
@@ -97,6 +98,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   KILL_PARTIAL: 424,
   NOT_IMPLEMENTED: 501,
   RUN_NOT_ACTIVE: 409,
+  RUN_NOT_FOUND: 404,
   IDEMPOTENCY_KEY_REQUIRED: 400,
   IDEMPOTENCY_KEY_MISMATCH: 422,
   SIGNUP_TOKEN_INVALID: 400,
@@ -141,7 +143,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(113);
+    expect(ERROR_CODE_LIST).toHaveLength(115);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -240,6 +242,7 @@ describe('error-code registry', () => {
     expectTypeOf<ErrorCode>().toEqualTypeOf<
       | 'VALIDATION_FAILED'
       | 'INVALID_CURSOR'
+      | 'INVALID_QUERY'
       | 'UNAUTHENTICATED'
       | 'AUTH_NO_CREDENTIALS'
       | 'AUTH_INVALID_TOKEN'
@@ -323,6 +326,7 @@ describe('error-code registry', () => {
       | 'SIGNUP_TOKEN_INVALID'
       | 'NOT_IMPLEMENTED'
       | 'RUN_NOT_ACTIVE'
+      | 'RUN_NOT_FOUND'
       | 'AUDIT_EVENT_INVALID'
       | 'KEK_UNAVAILABLE'
       | 'SERVICE_AUTH_FAILED'

@@ -88,7 +88,8 @@
         "authz.signing_key.rotated",
         "authz.gate.decision",
         "authz.sa.updated",
-        "authz.sa.submitted"
+        "authz.sa.submitted",
+        "run.surface.viewed"
       ]
     },
     "severity": {

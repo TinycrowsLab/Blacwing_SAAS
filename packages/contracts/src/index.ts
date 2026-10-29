@@ -662,6 +662,16 @@ export {
   type TechnologyNode,
   templatise,
 } from './surface.js';
+export {
+  SURFACE_VIEW_CLUSTERED_BY,
+  SURFACE_VIEW_LABEL_MAX,
+  type SurfaceEdgeView,
+  surfaceEdgeViewSchema,
+  type SurfaceNodeView,
+  surfaceNodeViewSchema,
+  type SurfaceRunView,
+  surfaceRunViewSchema,
+} from './surface-view.js';
 
 export {
   evidenceRefSchema,

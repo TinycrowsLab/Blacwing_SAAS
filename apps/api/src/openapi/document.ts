@@ -10,6 +10,7 @@ import { killOpenApiDocument } from '../kill/openapi.js';
 import { personaOpenApiModule } from '../personas/openapi.js';
 import { runEventsOpenApiModule } from '../run-events/openapi.js';
 import { signupOpenApiModule } from '../signup/openapi.js';
+import { surfaceOpenApiModule } from '../surface/openapi.js';
 import { tenantSettingsOpenApiModule } from '../tenant-settings/openapi.js';
 
 /** Largest page a client may request (§9). */
@@ -56,6 +57,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     killOpenApiModule(),
     auditOpenApiModule(),
     runEventsOpenApiModule(),
+    surfaceOpenApiModule(),
     gate1OpenApiModule(),
     personaOpenApiModule(),
     signupOpenApiModule(),

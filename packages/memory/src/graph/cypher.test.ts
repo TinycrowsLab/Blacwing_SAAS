@@ -17,6 +17,10 @@ import {
   runEndpointsCypher,
   runEndpointTotalsCypher,
   runNodeCountsCypher,
+  runSurfaceEdgeCountCypher,
+  runSurfaceEdgesCypher,
+  runSurfaceNodeCountCypher,
+  runSurfaceRankedCypher,
   runTechnologiesCypher,
 } from './cypher.js';
 
@@ -50,6 +54,25 @@ describe('Cypher templates bind $tenantId', () => {
   ])('the %s template references $tenantId and filters on the run', (_name, cypher) => {
     expect(cypher).toContain('$tenantId');
     expect(cypher).toMatch(/provenance_runId|\$runId/);
+  });
+
+  it('every run-surface template binds $tenantId and the run', () => {
+    for (const template of [
+      runSurfaceNodeCountCypher(),
+      runSurfaceEdgeCountCypher(),
+      runSurfaceRankedCypher(),
+      runSurfaceEdgesCypher(),
+    ]) {
+      expect(template).toContain('$tenantId');
+      expect(template).toContain('$runId');
+    }
+  });
+
+  it('ranks and caps the run surface in Cypher, not in application code', () => {
+    const ranked = runSurfaceRankedCypher();
+    expect(ranked).toContain('count(r) AS degree');
+    expect(ranked).toContain('ORDER BY degree DESC');
+    expect(ranked).toContain('LIMIT $nodeCap');
   });
 
   it('keeps all Cypher in cypher.ts: the repository source contains no query text', () => {

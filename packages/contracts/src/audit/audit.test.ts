@@ -99,6 +99,7 @@ const RELEASED_ACTIONS = [
   'authz.gate.decision',
   'authz.sa.updated',
   'authz.sa.submitted',
+  'run.surface.viewed',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */
