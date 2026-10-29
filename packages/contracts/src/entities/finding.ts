@@ -37,14 +37,33 @@ export const RELEASED_FINDING_STATUSES: readonly FindingStatus[] = Object.freeze
 export const baselineStatusSchema = z.enum(['new', 'open', 'fixed', 'returned', 'not_retested']);
 export type BaselineStatus = z.infer<typeof baselineStatusSchema>;
 
-/** CVSS v4.0 vector and score, with an optional 3.1 vector (§7 `severity`). */
+/** Qualitative band of a CVSS score (FIRST): 0.0 none, 0.1-3.9 low, 4.0-6.9 medium, 7.0-8.9 high, 9.0-10.0 critical. */
+export const cvssSeverityBandSchema = z.enum(['none', 'low', 'medium', 'high', 'critical']);
+export type CvssSeverityBand = z.infer<typeof cvssSeverityBandSchema>;
+
+/** CVSS v4.0 nomenclature (FIRST): which metric groups the score uses. `CVSS-B` is Base only. */
+export const cvss4NomenclatureSchema = z.enum(['CVSS-B', 'CVSS-BE', 'CVSS-BT', 'CVSS-BTE']);
+export type Cvss4Nomenclature = z.infer<typeof cvss4NomenclatureSchema>;
+
+/**
+ * Severity of a finding, §7 `severity`. CVSS v4.0 is authoritative (its vector, score, band and nomenclature).
+ * The optional CVSS v3.1 block is kept for legacy references only. The shape checks here; the score, band and
+ * nomenclature must also equal what their vectors compute, which `@blackwing/domain` enforces on every write.
+ */
 export const severitySchema = z.strictObject({
-  cvssV4Vector: z.string().regex(/^CVSS:4\.0\/AV:[NALP]\/\S+$/, 'must be a CVSS:4.0 vector'),
-  cvssV4Score: z.number().min(0).max(LIMITS.cvssScoreMax),
-  cvssV31Vector: z
-    .string()
-    .regex(/^CVSS:3\.1\/AV:[NALP]\/\S+$/, 'must be a CVSS:3.1 vector')
-    .nullable(),
+  cvss4: z.strictObject({
+    vector: z.string().regex(/^CVSS:4\.0\/\S+$/, 'must be a CVSS:4.0 vector'),
+    score: z.number().min(0).max(LIMITS.cvssScoreMax),
+    severity: cvssSeverityBandSchema,
+    nomenclature: cvss4NomenclatureSchema,
+  }),
+  cvss31: z
+    .strictObject({
+      vector: z.string().regex(/^CVSS:3\.1\/\S+$/, 'must be a CVSS:3.1 vector'),
+      score: z.number().min(0).max(LIMITS.cvssScoreMax),
+      severity: cvssSeverityBandSchema,
+    })
+    .optional(),
 });
 export type Severity = z.infer<typeof severitySchema>;
 
@@ -90,9 +109,9 @@ export type AcceptedRisk = z.infer<typeof acceptedRiskSchema>;
 /**
  * A finding, §7 `findings`. The findings issue (#739) owns persistence and extends this contract.
  *
- * Rules: `released`, `fixed` and `returned` findings record who released them and when; `accepted_risk`
- * carries its reason and expiry (and only that status does); the location names at least one of a URL
- * template or a file.
+ * Rules: `released`, `fixed` and `returned` findings record who released them and when and carry a severity;
+ * `accepted_risk` carries its reason and expiry (and only that status does); the location names at least one of
+ * a URL template or a file.
  */
 export const findingSchema = z
   .strictObject({
@@ -146,6 +165,13 @@ export const findingSchema = z
         code: 'custom',
         path: ['unmapped'],
         message: 'a finding without a CWE or OWASP category is unmapped',
+      });
+    }
+    if (released && finding.severity === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['severity'],
+        message: `a ${finding.status} finding is scored before it is released`,
       });
     }
     if (finding.location.urlTemplate === null && finding.location.file === null) {

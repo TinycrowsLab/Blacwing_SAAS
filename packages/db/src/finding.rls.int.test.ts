@@ -103,6 +103,26 @@ describe('create', () => {
     expect(row.severity).toBeNull();
   });
 
+  it('stores a severity that follows from its vector and refuses one that does not (FINDING-005)', async () => {
+    const repo = repoFor(tenantA);
+    const severity = {
+      cvss4: {
+        vector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N',
+        score: 8.7,
+        severity: 'high',
+        nomenclature: 'CVSS-B',
+      },
+    };
+    const row = await repo.create(createInput({ severity }));
+    expect(row.severity).toEqual(severity);
+    const forged = createInput({
+      severity: { cvss4: { ...severity.cvss4, score: 9.8, severity: 'critical' } },
+    });
+    await expect(repo.create(forged)).rejects.toMatchObject({
+      code: 'CVSS_VECTOR_SCORE_MISMATCH',
+    });
+  });
+
   it('refuses a second finding with the same fingerprint in the same tenant (dedup backbone)', async () => {
     const repo = repoFor(tenantA);
     const input = createInput();

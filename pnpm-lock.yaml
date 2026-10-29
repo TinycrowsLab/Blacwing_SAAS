@@ -1019,6 +1019,9 @@ importers:
       '@blackwing/ids':
         specifier: workspace:*
         version: link:../ids
+      '@pandatix/js-cvss':
+        specifier: 0.4.4
+        version: 0.4.4
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -3777,6 +3780,9 @@ packages:
     resolution: {integrity: sha512-UqGPmo56KDfLlfXFAFIrNflHT8tFxWGEivWg3Zeyp4Uy2NlKN1FGPr6/BxcLGG3+kZ6Wp14g5Uj+n71boqZfiw==}
     cpu: [x64]
     os: [win32]
+
+  '@pandatix/js-cvss@0.4.4':
+    resolution: {integrity: sha512-hhBbQ7IKfoRoV3QKTP9hLKJT166/e0FkeiVSLZZIEVsO7DjxVmIWhJlPvbp+RXaM4w215xghtnXQv13Ebdlj/w==}
 
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
@@ -11398,6 +11404,8 @@ snapshots:
 
   '@oxc-resolver/binding-win32-x64-msvc@11.24.2':
     optional: true
+
+  '@pandatix/js-cvss@0.4.4': {}
 
   '@pinojs/redact@0.4.0': {}
 

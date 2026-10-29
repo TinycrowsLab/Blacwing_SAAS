@@ -127,6 +127,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   KEYCLOAK_NOT_FOUND: 404,
   KEYCLOAK_CONFLICT: 409,
   SOD_VIOLATION: 403,
+  CVSS_VECTOR_SCORE_MISMATCH: 422,
   INTERNAL: 500,
 };
 
@@ -140,7 +141,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(112);
+    expect(ERROR_CODE_LIST).toHaveLength(113);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -347,6 +348,7 @@ describe('error-code registry', () => {
       | 'KEYCLOAK_NOT_FOUND'
       | 'KEYCLOAK_CONFLICT'
       | 'SOD_VIOLATION'
+      | 'CVSS_VECTOR_SCORE_MISMATCH'
       | 'AUTHZ_SIGNER_UNAVAILABLE'
       | 'INTERNAL'
     >();

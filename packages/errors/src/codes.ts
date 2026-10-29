@@ -325,6 +325,13 @@ const DEFINITIONS = {
   // approvers, an approver outside the eligible roles, or a missing actor (fail closed). A refusal of an authorisation
   // boundary (403), never retried unchanged. The error class lives in @blackwing/domain/sod.
   SOD_VIOLATION: { status: 403, title: 'Separation of duties violated', retryable: false },
+  // CVSS scoring (FINDING-005, #743): a stored score, severity or nomenclature that does not follow from its vector.
+  // The write is refused (fail closed); the vector and score are never silently recomputed and stored.
+  CVSS_VECTOR_SCORE_MISMATCH: {
+    status: 422,
+    title: 'CVSS score does not match its vector',
+    retryable: false,
+  },
   // Standing-authorisation signing (AUTHZ-004, #376): OpenBao Transit unreachable or unusable. Fail closed:
   // the SA stays pending and nothing is signed or persisted, so the caller retries later.
   AUTHZ_SIGNER_UNAVAILABLE: {

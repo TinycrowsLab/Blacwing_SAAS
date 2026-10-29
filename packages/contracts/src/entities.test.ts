@@ -131,9 +131,12 @@ const finding = {
   unmapped: false,
   classification: { cweCandidates: ['CWE-22'], apiTop10: null, wstg: ['WSTG-ATHZ-01'] },
   severity: {
-    cvssV4Vector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N',
-    cvssV4Score: 8.7,
-    cvssV31Vector: null,
+    cvss4: {
+      vector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N',
+      score: 8.7,
+      severity: 'high',
+      nomenclature: 'CVSS-B',
+    },
   },
   location: { method: 'GET', urlTemplate: '/admin', parameter: null, file: null, line: null },
   status: 'confirmed',
@@ -475,14 +478,70 @@ describe('finding (§3.4)', () => {
   it('rejects out-of-range scores and confidences', () => {
     expect(findingSchema.safeParse({ ...finding, confidence: 1.5 }).success).toBe(false);
     expect(
-      findingSchema.safeParse({ ...finding, severity: { ...finding.severity, cvssV4Score: 11 } })
+      findingSchema.safeParse({
+        ...finding,
+        severity: { cvss4: { ...finding.severity.cvss4, score: 11 } },
+      }).success,
+    ).toBe(false);
+    expect(
+      findingSchema.safeParse({
+        ...finding,
+        severity: { cvss4: { ...finding.severity.cvss4, vector: 'AV:N' } },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('requires the CVSS v4.0 block, a known band and a known nomenclature', () => {
+    const { cvss4 } = finding.severity;
+    expect(findingSchema.safeParse({ ...finding, severity: {} }).success).toBe(false);
+    expect(
+      findingSchema.safeParse({ ...finding, severity: { cvss4: { ...cvss4, severity: 'severe' } } })
         .success,
     ).toBe(false);
     expect(
       findingSchema.safeParse({
         ...finding,
-        severity: { ...finding.severity, cvssV4Vector: 'AV:N' },
+        severity: { cvss4: { ...cvss4, nomenclature: 'CVSS-X' } },
       }).success,
     ).toBe(false);
+    expect(
+      findingSchema.safeParse({
+        ...finding,
+        severity: { cvss4: cvss4, cvss31: null },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('accepts an optional CVSS v3.1 block for legacy references and rejects a v3.1 vector under 4.0', () => {
+    const legacy = {
+      vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+      score: 9.8,
+      severity: 'critical',
+    };
+    expect(
+      findingSchema.safeParse({ ...finding, severity: { ...finding.severity, cvss31: legacy } })
+        .success,
+    ).toBe(true);
+    expect(
+      findingSchema.safeParse({
+        ...finding,
+        severity: {
+          ...finding.severity,
+          cvss31: { ...legacy, vector: finding.severity.cvss4.vector },
+        },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('requires a severity before a finding is released', () => {
+    const released = {
+      ...finding,
+      status: 'released',
+      releasedBy: ID(5),
+      releasedAt: T1,
+      severity: null,
+    };
+    expect(findingSchema.safeParse(released).success).toBe(false);
+    expect(findingSchema.safeParse({ ...released, severity: finding.severity }).success).toBe(true);
   });
 });

@@ -19,6 +19,7 @@
     "@blackwing/contracts": "workspace:*",
     "@blackwing/errors": "workspace:*",
     "@blackwing/ids": "workspace:*",
+    "@pandatix/js-cvss": "0.4.4",
     "zod": "catalog:"
   },
   "devDependencies": {

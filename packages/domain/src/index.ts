@@ -48,6 +48,12 @@ export {
   resolveKillTargets,
 } from './kill/resolve.js';
 
+export {
+  assertSeverityMatchesVectors,
+  FINDING_CVSS_SPAN,
+  FINDING_SEVERITY_METRIC,
+} from './findings/cvss.js';
+
 export { matchScope, ruleSpecificity } from './scope/matcher.js';
 
 export {

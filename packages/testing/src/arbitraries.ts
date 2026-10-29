@@ -10,6 +10,7 @@ import {
   LIMITS,
   type Run,
   runModeSchema,
+  type Severity,
   runTriggerSchema,
   type StandingAuthorisation,
   type Tenant,
@@ -25,8 +26,6 @@ import { createFactories, type Factories } from './factories.js';
 /** Largest generated seed (any 31-bit value). */
 const MAX_SEED = 2_147_483_647;
 const DAY_MS = 86_400_000;
-/** Scores are generated in tenths: 0.0 to 10.0. */
-const TENTHS = 10;
 
 /** Lowest and highest instants generated (keeps UUIDv7 timestamps and ISO strings in a sane range). */
 const MIN_INSTANT = Date.parse('2000-01-01T00:00:00.000Z');
@@ -138,6 +137,53 @@ export const testCaseArbitrary = (): fc.Arbitrary<TestCase> =>
     })
     .map(({ factories, ...overrides }) => factories.makeTestCase(overrides));
 
+/**
+ * CVSS v4.0 severities whose score, band and nomenclature follow from their vectors (the FIRST reference values).
+ * A random score would not follow from its vector, which the finding write refuses (CVSS_VECTOR_SCORE_MISMATCH).
+ */
+const SCORED_SEVERITIES: readonly Severity[] = [
+  {
+    cvss4: {
+      vector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N',
+      score: 9.3,
+      severity: 'critical',
+      nomenclature: 'CVSS-B',
+    },
+  },
+  {
+    cvss4: {
+      vector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N',
+      score: 8.7,
+      severity: 'high',
+      nomenclature: 'CVSS-B',
+    },
+  },
+  {
+    cvss4: {
+      vector: 'CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:P/VC:N/VI:H/VA:H/SC:N/SI:L/SA:L',
+      score: 5.2,
+      severity: 'medium',
+      nomenclature: 'CVSS-B',
+    },
+  },
+  {
+    cvss4: {
+      vector: 'CVSS:4.0/AV:P/AC:H/AT:P/PR:H/UI:A/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N',
+      score: 1.0,
+      severity: 'low',
+      nomenclature: 'CVSS-B',
+    },
+  },
+  {
+    cvss4: {
+      vector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:N/SI:N/SA:N',
+      score: 0,
+      severity: 'none',
+      nomenclature: 'CVSS-B',
+    },
+  },
+];
+
 /** Valid candidate findings with varied severity and confidence. */
 export const findingArbitrary = (): fc.Arbitrary<Finding> =>
   fc
@@ -145,12 +191,6 @@ export const findingArbitrary = (): fc.Arbitrary<Finding> =>
       factories: factoriesArbitrary(),
       tenantId: uuidV7Arbitrary(),
       confidence: fc.double({ min: 0, max: 1, noNaN: true }),
-      score: fc.integer({ min: 0, max: 100 }),
+      severity: fc.constantFrom(...SCORED_SEVERITIES),
     })
-    .map(({ factories, score, ...overrides }) => {
-      const base = factories.makeFinding();
-      return factories.makeFinding({
-        ...overrides,
-        severity: base.severity === null ? null : { ...base.severity, cvssV4Score: score / TENTHS },
-      });
-    });
+    .map(({ factories, ...overrides }) => factories.makeFinding(overrides));

@@ -251,9 +251,12 @@ export function createFactories(options: FactoryOptions = {}): Factories {
         unmapped: false,
         classification: { cweCandidates: ['CWE-22'], apiTop10: null, wstg: ['WSTG-ATHZ-01'] },
         severity: {
-          cvssV4Vector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N',
-          cvssV4Score: 6.9,
-          cvssV31Vector: null,
+          cvss4: {
+            vector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N',
+            score: 8.7,
+            severity: 'high',
+            nomenclature: 'CVSS-B',
+          },
         },
         location: {
           method: 'GET',

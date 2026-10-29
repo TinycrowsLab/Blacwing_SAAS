@@ -12,10 +12,17 @@ import {
   findingStatusSchema,
   LIMITS,
   sha256HexSchema,
+  type Severity,
   severitySchema,
   uuidV7Schema,
 } from '@blackwing/contracts';
-import { candidateRefsSchema, classifyFinding } from '@blackwing/domain';
+import {
+  assertSeverityMatchesVectors,
+  candidateRefsSchema,
+  classifyFinding,
+  FINDING_CVSS_SPAN,
+  FINDING_SEVERITY_METRIC,
+} from '@blackwing/domain';
 import {
   ConflictError,
   NotFoundError,
@@ -33,6 +40,7 @@ import {
   encodeCursor,
   ForeignKeyError,
   MAX_PAGE_LIMIT,
+  type RepositoryTracer,
 } from './repository.js';
 import { toTenantIsolationError } from './rls.js';
 import {
@@ -146,11 +154,20 @@ const idSchema = z.uuid();
 const MAX_STATE_VERSION = 2_147_483_647;
 const versionSchema = z.number().int().min(0).max(MAX_STATE_VERSION);
 
+/** Counter port for `finding_severity_total` (the metric name lives in `@blackwing/domain`). */
+interface FindingMetricSink {
+  increment(name: string, labels: Readonly<Record<string, string>>): void;
+}
+
 export interface FindingRepositoryOptions {
   readonly db: Database;
   /** Ambient tenant source; defaults to the AsyncLocalStorage context (TENANT-003). Tests and tools pass one. */
   readonly tenant?: () => string | undefined;
   readonly logger?: Pick<DbLogger, 'info'>;
+  /** Span port for the CVSS check (`finding.cvss`). Omitted, the check is not traced. */
+  readonly tracer?: RepositoryTracer;
+  /** Counter port for severities written (`finding_severity_total{severity}`). */
+  readonly metrics?: FindingMetricSink;
 }
 
 export interface FindingPage {
@@ -185,6 +202,7 @@ export class FindingRepository {
   /** Records a new finding for the ambient tenant. A second finding with the same fingerprint is a `ConflictError`. */
   async create(input: unknown): Promise<FindingRow> {
     const values = parseInput(createSchema, input, 'finding');
+    await this.checkSeverity(values.severity);
     const id = newId();
     const classified = classifyFinding(values.class, values.refs ?? {});
     const row = await this.run('create', async (tx, tenantId) => {
@@ -297,6 +315,7 @@ export class FindingRepository {
     const rowId = parseInput(idSchema, id, 'id');
     const version = parseInput(versionSchema, expectedStateVersion, 'expectedStateVersion');
     const values = parseInput(updateSchema, patch, 'finding update');
+    await this.checkSeverity(values.severity);
     return this.run('update', async (tx, tenantId) => {
       const updated = await tx
         .update(findings)
@@ -353,6 +372,24 @@ export class FindingRepository {
         .orderBy(findingOccurrences.detectedAt, findingOccurrences.id);
       return { row: rows, rowCount: rows.length };
     });
+  }
+
+  /**
+   * Refuses a severity whose score, band or nomenclature does not follow from its vector, before any SQL
+   * (`CVSS_VECTOR_SCORE_MISMATCH`; a malformed vector is a validation error). A severity that passes is counted by band.
+   */
+  private async checkSeverity(severity: Severity | null | undefined): Promise<void> {
+    if (severity === null || severity === undefined) return;
+    const verify = (): void => {
+      assertSeverityMatchesVectors(severity);
+    };
+    if (this.options.tracer === undefined) verify();
+    else await this.options.tracer.span(FINDING_CVSS_SPAN, () => Promise.resolve().then(verify));
+    this.options.metrics?.increment(FINDING_SEVERITY_METRIC, { severity: severity.cvss4.severity });
+    this.options.logger?.info(
+      { entity: 'finding', op: 'cvss', nomenclature: severity.cvss4.nomenclature },
+      FINDING_CVSS_SPAN,
+    );
   }
 
   /** Runs `fn` in the ambient tenant's transaction, translating database errors into the typed set. */

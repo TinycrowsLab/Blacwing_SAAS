@@ -291,6 +291,10 @@ export {
   findingStatusSchema,
   mappingVersionSchema,
   RELEASED_FINDING_STATUSES,
+  type Cvss4Nomenclature,
+  cvss4NomenclatureSchema,
+  type CvssSeverityBand,
+  cvssSeverityBandSchema,
   type Severity,
   severitySchema,
 } from './entities/finding.js';

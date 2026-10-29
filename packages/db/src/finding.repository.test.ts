@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { TenantContextMissingError, ValidationError } from '@blackwing/errors';
+import { TenantContextMissingError, AppError, ValidationError } from '@blackwing/errors';
 import { newId } from '@blackwing/ids';
 
 import { FindingRepository } from './finding.repository.js';
@@ -98,15 +98,35 @@ describe('FindingRepository.create input validation', () => {
       'an oversized severity',
       {
         severity: {
-          cvssV4Vector: `CVSS:4.0/AV:N/${'x'.repeat(5000)}`,
-          cvssV4Score: 5,
-          cvssV31Vector: null,
+          cvss4: {
+            vector: `CVSS:4.0/AV:N/${'x'.repeat(5000)}`,
+            score: 5,
+            severity: 'medium',
+            nomenclature: 'CVSS-B',
+          },
         },
       },
     ],
     [
       'a severity that is not a CVSS 4.0 vector',
-      { severity: { cvssV4Vector: 'AV:N', cvssV4Score: 5, cvssV31Vector: null } },
+      {
+        severity: {
+          cvss4: { vector: 'AV:N', score: 5, severity: 'medium', nomenclature: 'CVSS-B' },
+        },
+      },
+    ],
+    [
+      'a severity with an unknown band',
+      {
+        severity: {
+          cvss4: {
+            vector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N',
+            score: 8.7,
+            severity: 'severe',
+            nomenclature: 'CVSS-B',
+          },
+        },
+      },
     ],
   ])('rejects %s before SQL', async (_label, overrides) => {
     const input = { ...validCreate(), ...overrides };
@@ -115,6 +135,48 @@ describe('FindingRepository.create input validation', () => {
 
   it('rejects a missing run id before SQL', async () => {
     await expect(repo().create(validCreate({ runId: undefined }))).rejects.toThrow(ValidationError);
+  });
+});
+
+/** A severity block whose stored values follow from its vector (8.7, high, CVSS-B). */
+const SCORED = {
+  cvss4: {
+    vector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N',
+    score: 8.7,
+    severity: 'high',
+    nomenclature: 'CVSS-B',
+  },
+};
+
+describe('FindingRepository CVSS verification (FINDING-005)', () => {
+  it('refuses a stored score that does not follow from its vector, before SQL', async () => {
+    const forged = { cvss4: { ...SCORED.cvss4, score: 9.8, severity: 'critical' } };
+    const error = await repo()
+      .create(validCreate({ severity: forged }))
+      .catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(AppError);
+    expect((error as AppError).code).toBe('CVSS_VECTOR_SCORE_MISMATCH');
+  });
+
+  it('refuses a band or nomenclature that does not follow from the vector, on update too, before SQL', async () => {
+    const wrongBand = { cvss4: { ...SCORED.cvss4, severity: 'low' } };
+    const wrongNomenclature = { cvss4: { ...SCORED.cvss4, nomenclature: 'CVSS-BT' } };
+    await expect(repo().update(newId(), 0, { severity: wrongBand })).rejects.toMatchObject({
+      code: 'CVSS_VECTOR_SCORE_MISMATCH',
+    });
+    await expect(repo().create(validCreate({ severity: wrongNomenclature }))).rejects.toMatchObject(
+      { code: 'CVSS_VECTOR_SCORE_MISMATCH' },
+    );
+  });
+
+  it('refuses a malformed CVSS vector as a validation error, before SQL', async () => {
+    const malformed = { cvss4: { ...SCORED.cvss4, vector: 'CVSS:4.0/AV:N/AC:L' } };
+    await expect(repo().create(validCreate({ severity: malformed }))).rejects.toThrow(
+      ValidationError,
+    );
+    await expect(repo().update(newId(), 0, { severity: malformed })).rejects.toThrow(
+      ValidationError,
+    );
   });
 });
 
