@@ -61,6 +61,14 @@ describe('standing-authorisation Cedar policy', () => {
   });
 
   it('keeps every policy under a unique @id', () => {
-    expect(SA_POLICY_SET.match(/@id\("[^"]+"\)/g)).toHaveLength(4);
+    expect(SA_POLICY_SET.match(/@id\("[^"]+"\)/g)).toHaveLength(5);
+  });
+  it('lets only an asset owner of the tenant approve or reject, the requester included (SoD is checked in the domain)', () => {
+    expect(policy.allows(owner, 'approve', sa(ADMIN_A))).toBe(true);
+    expect(policy.allows(owner, 'reject', sa(ADMIN_A))).toBe(true);
+    expect(policy.allows(appsec, 'approve', sa(ADMIN_A))).toBe(false);
+    expect(policy.allows(auditor, 'reject', sa(ADMIN_A))).toBe(false);
+    expect(policy.allows(owner, 'approve', sa(ADMIN_A, TENANT_B))).toBe(false);
+    expect(policy.allows(adminB, 'approve', sa(ADMIN_A))).toBe(false);
   });
 });

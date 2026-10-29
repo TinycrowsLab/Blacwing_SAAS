@@ -1,0 +1,1 @@
+ALTER TABLE "standing_authorisations" ADD COLUMN "envelope_hash" text;

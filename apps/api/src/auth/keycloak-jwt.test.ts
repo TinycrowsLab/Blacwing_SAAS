@@ -59,6 +59,19 @@ describe('Keycloak JWT validation', () => {
     });
   });
 
+  it('carries the auth_time the IdP reported onto the principal (step-up input, AUTHZ-008)', async () => {
+    const token = await signToken(keys, keycloakClaims({ acr: 'strong', auth_time: NOW_S - 30 }));
+    await expect(validator.validate(token)).resolves.toMatchObject({
+      acr: 'strong',
+      authTime: NOW_S - 30,
+    });
+  });
+
+  it('refuses a non-integer auth_time instead of guessing the freshness of the login', async () => {
+    const token = await signToken(keys, keycloakClaims({ auth_time: 'yesterday' }));
+    await expect(refusedWith(token)).resolves.toBe('AUTH_INVALID_TOKEN');
+  });
+
   it('accepts an ES256 token signed by a key in the realm JWKS', async () => {
     const token = await signToken(keys, keycloakClaims(), 'ES256');
     await expect(validator.validate(token)).resolves.toMatchObject({ authMethod: 'keycloak_jwt' });

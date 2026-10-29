@@ -2,7 +2,7 @@
 
 The public `/v1` REST API, version 0.0.0. This page is generated from [`openapi.json`](openapi.json) by `pnpm openapi:generate`; do not edit it by hand. CI fails when it is stale.
 
-It documents 34 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
+It documents 36 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
 
 The internal Run Broker API (`/internal/broker`) is not part of this reference.
 
@@ -47,6 +47,8 @@ The internal Run Broker API (`/internal/broker`) is not part of this reference.
   - [GET /standing-authorisations/{id}](#get-standing-authorisationsid)
   - [PATCH /standing-authorisations/{id}](#patch-standing-authorisationsid)
   - [POST /standing-authorisations/{id}/submit](#post-standing-authorisationsidsubmit)
+  - [POST /standing-authorisations/{id}/approve](#post-standing-authorisationsidapprove)
+  - [POST /standing-authorisations/{id}/reject](#post-standing-authorisationsidreject)
 - test-plans
   - [GET /runs/{runId}/test-plans](#get-runsrunidtest-plans)
   - [POST /runs/{runId}/test-plans](#post-runsrunidtest-plans)
@@ -5938,7 +5940,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -5990,6 +5992,18 @@ Example: Credentials expired.
 }
 ```
 
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Run token required.
 
 ```json
@@ -6016,7 +6030,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6124,6 +6138,18 @@ Example: Budget exceeds the standing authorisation.
   "title": "Budget exceeds the standing authorisation",
   "status": 403,
   "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -6673,7 +6699,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6725,6 +6751,18 @@ Example: Credentials expired.
 }
 ```
 
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Run token required.
 
 ```json
@@ -6751,7 +6789,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6859,6 +6897,18 @@ Example: Budget exceeds the standing authorisation.
   "title": "Budget exceeds the standing authorisation",
   "status": 403,
   "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -7434,7 +7484,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7486,6 +7536,18 @@ Example: Credentials expired.
 }
 ```
 
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Run token required.
 
 ```json
@@ -7512,7 +7574,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7620,6 +7682,18 @@ Example: Budget exceeds the standing authorisation.
   "title": "Budget exceeds the standing authorisation",
   "status": 403,
   "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -8437,7 +8511,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -8489,6 +8563,18 @@ Example: Credentials expired.
 }
 ```
 
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Run token required.
 
 ```json
@@ -8515,7 +8601,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -8623,6 +8709,18 @@ Example: Budget exceeds the standing authorisation.
   "title": "Budget exceeds the standing authorisation",
   "status": 403,
   "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -9493,7 +9591,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -9545,6 +9643,18 @@ Example: Credentials expired.
 }
 ```
 
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Run token required.
 
 ```json
@@ -9571,7 +9681,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -9679,6 +9789,18 @@ Example: Budget exceeds the standing authorisation.
   "title": "Budget exceeds the standing authorisation",
   "status": 403,
   "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -10522,7 +10644,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -10574,6 +10696,18 @@ Example: Credentials expired.
 }
 ```
 
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Run token required.
 
 ```json
@@ -10600,7 +10734,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -10708,6 +10842,18 @@ Example: Budget exceeds the standing authorisation.
   "title": "Budget exceeds the standing authorisation",
   "status": 403,
   "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -11290,7 +11436,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -11342,6 +11488,18 @@ Example: Credentials expired.
 }
 ```
 
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Run token required.
 
 ```json
@@ -11368,7 +11526,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -11476,6 +11634,18 @@ Example: Budget exceeds the standing authorisation.
   "title": "Budget exceeds the standing authorisation",
   "status": 403,
   "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -12209,7 +12379,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -12261,6 +12431,18 @@ Example: Credentials expired.
 }
 ```
 
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Run token required.
 
 ```json
@@ -12287,7 +12469,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -12395,6 +12577,18 @@ Example: Budget exceeds the standing authorisation.
   "title": "Budget exceeds the standing authorisation",
   "status": 403,
   "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -13232,7 +13426,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13284,6 +13478,18 @@ Example: Credentials expired.
 }
 ```
 
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Run token required.
 
 ```json
@@ -13310,7 +13516,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13418,6 +13624,18 @@ Example: Budget exceeds the standing authorisation.
   "title": "Budget exceeds the standing authorisation",
   "status": 403,
   "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -13835,7 +14053,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13887,6 +14105,18 @@ Example: Credentials expired.
 }
 ```
 
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Run token required.
 
 ```json
@@ -13913,7 +14143,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -14021,6 +14251,18 @@ Example: Budget exceeds the standing authorisation.
   "title": "Budget exceeds the standing authorisation",
   "status": 403,
   "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -14780,7 +15022,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -14828,6 +15070,18 @@ Example: Credentials expired.
   "title": "Credentials expired",
   "status": 401,
   "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -15404,7 +15658,7 @@ Example: Too many requests.
 
 ## standing-authorisations
 
-Standing authorisations (AUTHZ-002): the customer-signed, expiring permission to test assets. Drafts are created, read, changed and submitted for approval here.
+Standing authorisations (AUTHZ-002, AUTHZ-008): the customer-signed, expiring permission to test assets. Drafts are created, read, changed and submitted for approval here; an asset owner approves (signing it) or rejects.
 
 ### GET /standing-authorisations
 
@@ -15494,7 +15748,7 @@ Example: Invalid cursor.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -15542,6 +15796,18 @@ Example: Credentials expired.
   "title": "Credentials expired",
   "status": 401,
   "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -15989,7 +16255,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -16037,6 +16303,18 @@ Example: Credentials expired.
   "title": "Credentials expired",
   "status": 401,
   "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -16394,7 +16672,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -16442,6 +16720,18 @@ Example: Credentials expired.
   "title": "Credentials expired",
   "status": 401,
   "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -17082,7 +17372,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -17130,6 +17420,18 @@ Example: Credentials expired.
   "title": "Credentials expired",
   "status": 401,
   "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -17478,7 +17780,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -17526,6 +17828,18 @@ Example: Credentials expired.
   "title": "Credentials expired",
   "status": 401,
   "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -17740,6 +18054,694 @@ Example: Too many requests.
 }
 ```
 
+### POST /standing-authorisations/{id}/approve
+
+**Approve and sign a pending standing authorisation**
+
+Requires If-Match. The caller must hold asset_owner and must not be the requester (AUTHZ_SOD_VIOLATION). The session must have authenticated freshly with the step-up acr (AUTHZ_STEPUP_REQUIRED, 401). The approval signs the canonical envelope and moves the SA to active, in one transaction.
+
+- Operation ID: `approveStandingAuthorisation`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter  | In     | Required | Type   | Description                                                                                                         |
+| ---------- | ------ | -------- | ------ | ------------------------------------------------------------------------------------------------------------------- |
+| `id`       | path   | yes      | string | The standing authorisation public id (sa_…).                                                                        |
+| `If-Match` | header | yes      | string | The ETag of the version being changed (from the last read or change). A stale value answers 412, a missing one 428. |
+
+#### Response 200
+
+The active, signed standing authorisation and its ETag.
+
+| Header | Description                                                                |
+| ------ | -------------------------------------------------------------------------- |
+| `ETag` | Strong validator of this version. Send it in If-Match on PATCH and submit. |
+
+Content type `application/json`: [StandingAuthorisation](#standingauthorisation).
+
+Example: A draft standing authorisation.
+
+```json
+{
+  "id": "sa_0198f0a0000070008000000000000001",
+  "assetIds": ["0198f0a0-0000-7000-8000-0000000000a1"],
+  "scopeRules": {
+    "rules": [
+      {
+        "effect": "include",
+        "host": "app.example.test"
+      }
+    ]
+  },
+  "maxIntrusiveness": "active_safe",
+  "preApprovedTestClasses": ["header-audit"],
+  "defaultBudgets": {
+    "costCapUsd": 5,
+    "maxRequests": 1000,
+    "maxDurationMs": 3600000
+  },
+  "testWindows": [
+    {
+      "cron": "0 2 * * 1-5",
+      "timezone": "Europe/Berlin",
+      "durationMs": 7200000
+    }
+  ],
+  "validFrom": "2026-11-01T00:00:00.000Z",
+  "expiresAt": "2026-12-01T00:00:00.000Z",
+  "requesterId": "0198f0a0-0000-7000-8000-0000000000a2",
+  "approverId": null,
+  "signature": null,
+  "signingKeyId": null,
+  "status": "draft",
+  "revocationReason": null,
+  "version": 1,
+  "createdAt": "2026-10-29T10:00:00.000Z",
+  "updatedAt": "2026-10-29T10:00:00.000Z"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid query.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_QUERY",
+  "title": "Invalid query",
+  "status": 400,
+  "code": "INVALID_QUERY",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of AUTHZ_STEPUP_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, AUTHZ_SOD_VIOLATION.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_FOUND",
+  "title": "Resource not found",
+  "status": 404,
+  "code": "NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of AUTHZ_ILLEGAL_TRANSITION.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Illegal standing authorisation transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+  "title": "Illegal standing authorisation transition",
+  "status": 409,
+  "code": "AUTHZ_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 412
+
+Problem details; code is one of PRECONDITION_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Precondition failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PRECONDITION_FAILED",
+  "title": "Precondition failed",
+  "status": 412,
+  "code": "PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 428
+
+Problem details; code is one of PRECONDITION_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Precondition required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+  "title": "Precondition required",
+  "status": 428,
+  "code": "PRECONDITION_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 503
+
+Problem details; code is one of AUTHZ_SIGNER_UNAVAILABLE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authorisation signer unavailable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SIGNER_UNAVAILABLE",
+  "title": "Authorisation signer unavailable",
+  "status": 503,
+  "code": "AUTHZ_SIGNER_UNAVAILABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### POST /standing-authorisations/{id}/reject
+
+**Reject a pending standing authorisation**
+
+Requires If-Match and a reason. The SA returns to draft for its requester; the reason is recorded with the gate decision.
+
+- Operation ID: `rejectStandingAuthorisation`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter  | In     | Required | Type   | Description                                                                                                         |
+| ---------- | ------ | -------- | ------ | ------------------------------------------------------------------------------------------------------------------- |
+| `id`       | path   | yes      | string | The standing authorisation public id (sa_…).                                                                        |
+| `If-Match` | header | yes      | string | The ETag of the version being changed (from the last read or change). A stale value answers 412, a missing one 428. |
+
+**Request body** (required)
+
+Content type `application/json`: [RejectStandingAuthorisation](#rejectstandingauthorisation).
+
+#### Response 200
+
+The draft standing authorisation and its ETag.
+
+| Header | Description                                                                |
+| ------ | -------------------------------------------------------------------------- |
+| `ETag` | Strong validator of this version. Send it in If-Match on PATCH and submit. |
+
+Content type `application/json`: [StandingAuthorisation](#standingauthorisation).
+
+Example: A draft standing authorisation.
+
+```json
+{
+  "id": "sa_0198f0a0000070008000000000000001",
+  "assetIds": ["0198f0a0-0000-7000-8000-0000000000a1"],
+  "scopeRules": {
+    "rules": [
+      {
+        "effect": "include",
+        "host": "app.example.test"
+      }
+    ]
+  },
+  "maxIntrusiveness": "active_safe",
+  "preApprovedTestClasses": ["header-audit"],
+  "defaultBudgets": {
+    "costCapUsd": 5,
+    "maxRequests": 1000,
+    "maxDurationMs": 3600000
+  },
+  "testWindows": [
+    {
+      "cron": "0 2 * * 1-5",
+      "timezone": "Europe/Berlin",
+      "durationMs": 7200000
+    }
+  ],
+  "validFrom": "2026-11-01T00:00:00.000Z",
+  "expiresAt": "2026-12-01T00:00:00.000Z",
+  "requesterId": "0198f0a0-0000-7000-8000-0000000000a2",
+  "approverId": null,
+  "signature": null,
+  "signingKeyId": null,
+  "status": "draft",
+  "revocationReason": null,
+  "version": 1,
+  "createdAt": "2026-10-29T10:00:00.000Z",
+  "updatedAt": "2026-10-29T10:00:00.000Z"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid query.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_QUERY",
+  "title": "Invalid query",
+  "status": 400,
+  "code": "INVALID_QUERY",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, AUTHZ_SOD_VIOLATION.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_FOUND",
+  "title": "Resource not found",
+  "status": 404,
+  "code": "NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of AUTHZ_ILLEGAL_TRANSITION.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Illegal standing authorisation transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+  "title": "Illegal standing authorisation transition",
+  "status": 409,
+  "code": "AUTHZ_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 412
+
+Problem details; code is one of PRECONDITION_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Precondition failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PRECONDITION_FAILED",
+  "title": "Precondition failed",
+  "status": 412,
+  "code": "PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 428
+
+Problem details; code is one of PRECONDITION_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Precondition required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+  "title": "Precondition required",
+  "status": 428,
+  "code": "PRECONDITION_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 503
+
+Problem details; code is one of AUTHZ_SIGNER_UNAVAILABLE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authorisation signer unavailable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SIGNER_UNAVAILABLE",
+  "title": "Authorisation signer unavailable",
+  "status": 503,
+  "code": "AUTHZ_SIGNER_UNAVAILABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 ## test-plans
 
 Editable test plans: numbered versions per run, and the cases inside a draft version. An approved version is immutable.
@@ -17801,7 +18803,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -17849,6 +18851,18 @@ Example: Credentials expired.
   "title": "Credentials expired",
   "status": 401,
   "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -18123,7 +19137,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -18171,6 +19185,18 @@ Example: Credentials expired.
   "title": "Credentials expired",
   "status": 401,
   "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -18443,7 +19469,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -18491,6 +19517,18 @@ Example: Credentials expired.
   "title": "Credentials expired",
   "status": 401,
   "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -18796,7 +19834,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -18844,6 +19882,18 @@ Example: Credentials expired.
   "title": "Credentials expired",
   "status": 401,
   "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -19108,7 +20158,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -19156,6 +20206,18 @@ Example: Credentials expired.
   "title": "Credentials expired",
   "status": 401,
   "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -19432,7 +20494,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -19480,6 +20542,18 @@ Example: Credentials expired.
   "title": "Credentials expired",
   "status": 401,
   "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -22196,6 +23270,29 @@ Full schema:
     }
   },
   "required": ["type", "title", "status", "code", "traceId"],
+  "additionalProperties": false
+}
+```
+
+### RejectStandingAuthorisation
+
+| Property | Type   | Required | Description |
+| -------- | ------ | -------- | ----------- |
+| `reason` | string | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    }
+  },
+  "required": ["reason"],
   "additionalProperties": false
 }
 ```

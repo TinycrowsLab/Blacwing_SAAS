@@ -19,6 +19,8 @@ export const principalSchema = z.strictObject({
   scopes: z.array(z.string().min(1).max(MAX_LABEL_CHARS)).max(MAX_LIST_ITEMS),
   /** Authentication context class reported by the IdP, when it reported one. */
   acr: z.string().min(1).max(MAX_LABEL_CHARS).optional(),
+  /** When the user last authenticated (`auth_time`, epoch seconds), when the IdP reported it. Step-up reads it (AUTHZ-008). */
+  authTime: z.number().int().nonnegative().optional(),
   authMethod: z.enum(['keycloak_jwt', 'bff_session']),
 });
 

@@ -249,10 +249,13 @@ export {
 
 export { type AuditSqlTxLike, toAuditSqlTx } from './audit-sql-tx.js';
 export {
+  type GateDecisionAuditHook,
   type NewStandingAuthorisation,
+  type StandingAuthorisationApproval,
   type StandingAuthorisationAuditAction,
   type StandingAuthorisationAuditEvent,
   type StandingAuthorisationAuditHook,
+  type StandingAuthorisationDecision,
   type StandingAuthorisationFields,
   type StandingAuthorisationRecord,
   StandingAuthorisationRepository,

@@ -213,6 +213,8 @@ export {
   type CreateStandingAuthorisationInput,
   patchStandingAuthorisationSchema,
   type PatchStandingAuthorisationInput,
+  rejectStandingAuthorisationSchema,
+  type RejectStandingAuthorisationInput,
   SA_MAX_ASSETS,
   SA_MAX_LIST_ITEMS,
   type StandingAuthorisationDto,

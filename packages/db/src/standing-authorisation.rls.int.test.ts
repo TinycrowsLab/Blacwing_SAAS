@@ -5,6 +5,7 @@
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { SodViolationError } from '@blackwing/domain/sod';
 import { TenantContextMissingError } from '@blackwing/errors';
 import { StandingAuthorisationId } from '@blackwing/ids';
 import { type PostgresHandle, withPostgres } from '@blackwing/testing/containers';
@@ -12,7 +13,9 @@ import { type PostgresHandle, withPostgres } from '@blackwing/testing/containers
 import { unverifiedAssetIds } from './asset-verification.repository.js';
 import { createDatabase, migrateDatabase } from './index.js';
 import {
+  type GateDecisionAuditHook,
   type NewStandingAuthorisation,
+  type StandingAuthorisationDecision,
   type StandingAuthorisationAuditEvent,
   StandingAuthorisationRepository,
 } from './standing-authorisation.repository.js';
@@ -37,13 +40,61 @@ async function pgCode(promise: Promise<unknown>): Promise<string | undefined> {
   return undefined;
 }
 
-function makeRepo(events: StandingAuthorisationAuditEvent[] = []) {
+function makeRepo(
+  events: StandingAuthorisationAuditEvent[] = [],
+  gateAudit: GateDecisionAuditHook = () => undefined,
+) {
   return new StandingAuthorisationRepository({
     db: createDatabase(db.appPool),
     audit: (event) => {
       events.push(event);
     },
+    gateAudit,
   });
+}
+
+/** The approver of the approval tests: a different person from `requester`. */
+const approver = '0198f0a0-0000-7000-8000-0000000000a4';
+const approvalOf = {
+  approverId: approver,
+  signature: 'eyJhbGciOiJFZDI1NTE5In0..c2ln',
+  signingKeyId: 'bw-sa-signing:v1',
+  envelopeHash: 'a'.repeat(64),
+};
+const approvedBy = (actorId: string): StandingAuthorisationDecision => ({
+  decision: 'approved',
+  actorId,
+  reason: null,
+  decidedAt: new Date('2026-11-02T09:00:00.000Z'),
+});
+
+/** Inserts a draft and moves it to pending_approval (version 2), as a submit would. */
+async function pendingSa(repo: StandingAuthorisationRepository, id: string): Promise<void> {
+  await repo.insertDraft(tenantA, draftFor(id), auditOf('authz.sa.created', 'sa_x'));
+  await repo.writeIf(
+    tenantA,
+    id,
+    1,
+    { fields: {}, status: 'pending_approval' },
+    auditOf('authz.sa.submitted', 'sa_x'),
+  );
+}
+
+/** The gate decisions the database holds for one SA, read inside the tenant's context (RLS applies, FORCE). */
+async function gateRowsOf(id: string) {
+  const client = await db.appPool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenantA]);
+    const { rows } = await client.query<{ decision: string; actor_id: string; gate: number }>(
+      'SELECT decision, actor_id, gate FROM authz_gate_decisions WHERE subject_id = $1 AND subject_type = $2',
+      [id, 'sa'],
+    );
+    await client.query('COMMIT');
+    return rows;
+  } finally {
+    client.release();
+  }
 }
 
 function draftFor(id: string): NewStandingAuthorisation {
@@ -236,6 +287,7 @@ describe('standing authorisations: conditional write', () => {
       audit: () => {
         throw new Error('audit unavailable');
       },
+      gateAudit: () => undefined,
     });
     await expect(
       failing.writeIf(
@@ -247,6 +299,108 @@ describe('standing authorisations: conditional write', () => {
       ),
     ).rejects.toThrow('audit unavailable');
     expect((await makeRepo().read(tenantA, id))?.version).toBe(1);
+  });
+});
+
+describe('standing authorisations: approval (AUTHZ-008)', () => {
+  it('activates the SA and records the gate decision and its audit in the same transaction', async () => {
+    const events: StandingAuthorisationAuditEvent[] = [];
+    const gateEvents: unknown[] = [];
+    const repo = makeRepo(events, (event) => {
+      gateEvents.push(event);
+    });
+    const id = StandingAuthorisationId.toUuid(StandingAuthorisationId.generate());
+    await pendingSa(repo, id);
+    const active = await repo.writeIf(
+      tenantA,
+      id,
+      2,
+      { fields: {}, status: 'active', approval: approvalOf, decision: approvedBy(approver) },
+      auditOf('authz.sa.approved', 'sa_x'),
+    );
+    expect(active).toMatchObject({
+      status: 'active',
+      version: 3,
+      approverId: approver,
+      signature: approvalOf.signature,
+      signingKeyId: 'bw-sa-signing:v1',
+      envelopeHash: approvalOf.envelopeHash,
+    });
+    expect(await gateRowsOf(id)).toEqual([{ decision: 'approved', actor_id: approver, gate: 1 }]);
+    expect(gateEvents).toEqual([
+      expect.objectContaining({
+        action: 'authz.gate.decision',
+        subjectType: 'sa',
+        decision: 'approved',
+      }),
+    ]);
+    expect(events.at(-1)).toMatchObject({ action: 'authz.sa.approved', actorId: requester });
+  });
+
+  it('refuses the requester as the approver in the database too (SoD), and changes nothing', async () => {
+    const repo = makeRepo();
+    const id = StandingAuthorisationId.toUuid(StandingAuthorisationId.generate());
+    await pendingSa(repo, id);
+    await expect(
+      repo.writeIf(
+        tenantA,
+        id,
+        2,
+        {
+          fields: {},
+          status: 'active',
+          approval: { ...approvalOf, approverId: requester },
+          decision: approvedBy(requester),
+        },
+        auditOf('authz.sa.approved', 'sa_x'),
+      ),
+    ).rejects.toBeInstanceOf(SodViolationError);
+    const row = await repo.read(tenantA, id);
+    expect(row).toMatchObject({ status: 'pending_approval', version: 2, approverId: null });
+    expect(await gateRowsOf(id)).toEqual([]);
+  });
+
+  it('rolls the approval back when its gate audit fails (no decision without an audit trail)', async () => {
+    const repo = makeRepo([], () => {
+      throw new Error('audit unavailable');
+    });
+    const id = StandingAuthorisationId.toUuid(StandingAuthorisationId.generate());
+    await pendingSa(repo, id);
+    await expect(
+      repo.writeIf(
+        tenantA,
+        id,
+        2,
+        { fields: {}, status: 'active', approval: approvalOf, decision: approvedBy(approver) },
+        auditOf('authz.sa.approved', 'sa_x'),
+      ),
+    ).rejects.toThrow('audit unavailable');
+    expect(await repo.read(tenantA, id)).toMatchObject({ status: 'pending_approval', version: 2 });
+    expect(await gateRowsOf(id)).toEqual([]);
+  });
+
+  it('records a rejection as a gate decision with its reason and returns the SA to draft', async () => {
+    const repo = makeRepo();
+    const id = StandingAuthorisationId.toUuid(StandingAuthorisationId.generate());
+    await pendingSa(repo, id);
+    const draft = await repo.writeIf(
+      tenantA,
+      id,
+      2,
+      {
+        fields: {},
+        status: 'draft',
+        decision: {
+          decision: 'rejected',
+          actorId: approver,
+          reason: 'too broad',
+          decidedAt: new Date(),
+        },
+      },
+      auditOf('authz.sa.rejected', 'sa_x'),
+    );
+    expect(draft).toMatchObject({ status: 'draft', version: 3, approverId: null });
+    expect(await gateRowsOf(id)).toEqual([{ decision: 'rejected', actor_id: approver, gate: 1 }]);
   });
 });
 

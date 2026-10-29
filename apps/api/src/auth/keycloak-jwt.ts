@@ -23,6 +23,7 @@ const claimsSchema = z.object({
   realm_access: z.object({ roles: z.array(z.string().min(1)) }).optional(),
   scope: z.string().optional(),
   acr: z.string().min(1).optional(),
+  auth_time: z.number().int().nonnegative().optional(),
   preferred_username: z.string().optional(),
 });
 
@@ -113,6 +114,7 @@ function principalOf(payload: JWTPayload, options: KeycloakJwtOptions): Principa
     roles: c.roles ?? c.realm_access?.roles ?? [],
     scopes: (c.scope ?? '').split(' ').filter((scope) => scope !== ''),
     ...(c.acr === undefined ? {} : { acr: c.acr }),
+    ...(c.auth_time === undefined ? {} : { authTime: c.auth_time }),
     authMethod: 'keycloak_jwt',
   };
   const principal = principalSchema.safeParse(candidate);

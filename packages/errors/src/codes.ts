@@ -127,6 +127,19 @@ const DEFINITIONS = {
     title: 'Asset is not verified for this tenant',
     retryable: false,
   },
+  // Standing-authorisation approval (AUTHZ-008, #380): the approver is the requester, or lacks the approver role
+  // (separation of duties, §8.4). A refusal of an authorisation boundary (403), never retried unchanged.
+  AUTHZ_SOD_VIOLATION: {
+    status: 403,
+    title: 'Separation of duties violated for the standing authorisation',
+    retryable: false,
+  },
+  // Step-up (AUTHZ-008, #380): approval needs a fresh strong authentication. The client re-authenticates and retries.
+  AUTHZ_STEPUP_REQUIRED: {
+    status: 401,
+    title: 'Step up authentication required',
+    retryable: false,
+  },
   // Persona-definition validation (REGISTRY-001, §4.5/§8.11). Malformed or forbidden definitions are
   // rejected at load/CI time: invalid input (422); a persona that is not registered yet is 404.
   PERSONA_UNKNOWN: { status: 422, title: 'Unknown persona', retryable: false },

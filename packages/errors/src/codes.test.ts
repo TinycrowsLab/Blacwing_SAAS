@@ -59,6 +59,8 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   AUTHZ_INVALID_WINDOW: 422,
   AUTHZ_NOT_DRAFT: 409,
   AUTHZ_ASSET_UNVERIFIED: 422,
+  AUTHZ_SOD_VIOLATION: 403,
+  AUTHZ_STEPUP_REQUIRED: 401,
   PERSONA_UNKNOWN: 422,
   PERSONA_NOT_DEFINED: 404,
   PERSONA_FORBIDDEN_TOOL: 422,
@@ -149,7 +151,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(121);
+    expect(ERROR_CODE_LIST).toHaveLength(123);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -289,6 +291,8 @@ describe('error-code registry', () => {
       | 'AUTHZ_INVALID_WINDOW'
       | 'AUTHZ_NOT_DRAFT'
       | 'AUTHZ_ASSET_UNVERIFIED'
+      | 'AUTHZ_SOD_VIOLATION'
+      | 'AUTHZ_STEPUP_REQUIRED'
       | 'PERSONA_UNKNOWN'
       | 'PERSONA_NOT_DEFINED'
       | 'PERSONA_FORBIDDEN_TOOL'

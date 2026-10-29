@@ -75,6 +75,8 @@ export const standingAuthorisations = pgTable(
     /** JWS over the canonical body; populated by the signing step (AUTHZ-004). No secret is stored here. */
     signature: text('signature'),
     signingKeyId: text('signing_key_id'),
+    /** SHA-256 of the canonical envelope that was signed (§8.9): the hash a run pins to. Set with the signature. */
+    envelopeHash: text('envelope_hash'),
     /** Optimistic concurrency: a losing writer reloads and retries. */
     version: integer('version').notNull().default(1),
     status: text('status', { enum: SA_STATUSES }).notNull().default('draft'),

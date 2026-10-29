@@ -21,13 +21,17 @@ when { principal.tenantId == resource.tenantId };
 permit (principal, action in [Action::"StandingAuthorisation::update", Action::"StandingAuthorisation::submit"], resource is StandingAuthorisation)
 when { principal.tenantId == resource.tenantId && principal.userId == resource.requesterId };
 
+@id("sa.approve")
+permit (principal, action in [Action::"StandingAuthorisation::approve", Action::"StandingAuthorisation::reject"], resource is StandingAuthorisation)
+when { principal.tenantId == resource.tenantId && principal.roles.contains("asset_owner") };
+
 @id("sa.tenant_isolation")
 forbid (principal, action, resource)
 unless { principal has tenantId && resource has tenantId && principal.tenantId == resource.tenantId };
 `;
 
 /** The actions the standing-authorisation routes are authorised against. */
-export type SaPolicyAction = 'create' | 'read' | 'update' | 'submit';
+export type SaPolicyAction = 'create' | 'read' | 'update' | 'submit' | 'approve' | 'reject';
 
 /** Who asks, as the policy sees them. */
 interface SaPolicyPrincipal {

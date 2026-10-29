@@ -5,11 +5,14 @@
 
 import { and, asc, eq, gt, sql } from 'drizzle-orm';
 
+import { type GateDecisionAuditEvent, recordGateDecision } from '@blackwing/domain';
+
 import { standingAuthorisations, type StandingAuthorisationRow } from './schema/authorisation.js';
+import { authzGateDecisions } from './schema/authz-gate-decisions.js';
 import { withTenant, type TenantTx } from './with-tenant.js';
 
 import type { Database } from './client.js';
-import type { IntrusivenessClass, SaStatus } from '@blackwing/contracts';
+import type { GateDecision, IntrusivenessClass, SaStatus } from '@blackwing/contracts';
 
 /** A stored standing authorisation, as the service reads it. */
 export type StandingAuthorisationRecord = StandingAuthorisationRow;
@@ -35,7 +38,11 @@ export interface NewStandingAuthorisation extends StandingAuthorisationFields {
 
 /** The audit actions of the standing-authorisation API (AUTHZ-002). */
 export type StandingAuthorisationAuditAction =
-  'authz.sa.created' | 'authz.sa.updated' | 'authz.sa.submitted';
+  | 'authz.sa.created'
+  | 'authz.sa.updated'
+  | 'authz.sa.submitted'
+  | 'authz.sa.approved'
+  | 'authz.sa.rejected';
 
 /**
  * A committed change: the action, the acting user and the changed field names (never their values). A
@@ -57,16 +64,49 @@ export type StandingAuthorisationAuditHook = (
   tx: TenantTx,
 ) => void | Promise<void>;
 
+/**
+ * Audit hook for the gate decision a SA approval or rejection records (`authz.gate.decision`, §8.8). It runs in the
+ * same transaction as the state change, so an unaudited decision is never recorded.
+ */
+export type GateDecisionAuditHook = (
+  event: GateDecisionAuditEvent,
+  tx: TenantTx,
+) => void | Promise<void>;
+
 export interface StandingAuthorisationRepositoryOptions {
   readonly db: Database;
   readonly audit: StandingAuthorisationAuditHook;
+  readonly gateAudit: GateDecisionAuditHook;
+}
+
+/** The approver and the signature an approval stores (AUTHZ-004 output, AUTHZ-008 approve). */
+export interface StandingAuthorisationApproval {
+  readonly approverId: string;
+  readonly signature: string;
+  readonly signingKeyId: string;
+  readonly envelopeHash: string;
+}
+
+/** The decision a state change records as a gate decision on Gate 1 (the SA scope gate). */
+export interface StandingAuthorisationDecision {
+  readonly decision: Extract<GateDecision, 'approved' | 'rejected'>;
+  readonly actorId: string;
+  readonly reason: string | null;
+  readonly decidedAt: Date;
 }
 
 /** The status and fields a conditional write sets, on top of the version bump. */
 export interface StandingAuthorisationWrite {
   readonly fields: Partial<StandingAuthorisationFields>;
   readonly status?: SaStatus;
+  /** Set by an approval: who approved and the signature the envelope verifies with. */
+  readonly approval?: StandingAuthorisationApproval;
+  /** Recorded in the same transaction: the gate decision row and its audit event. */
+  readonly decision?: StandingAuthorisationDecision;
 }
+
+/** The SA subject of Gate 1 (`gate_decisions.subject_type`). */
+const SA_GATE = 1;
 
 /** Tenant-scoped persistence of standing authorisations. */
 export class StandingAuthorisationRepository {
@@ -162,6 +202,14 @@ export class StandingAuthorisationRepository {
           : { preApprovedTestClasses: [...preApprovedTestClasses] }),
         ...(testWindows === undefined ? {} : { testWindows: [...testWindows] }),
         ...(write.status === undefined ? {} : { status: write.status }),
+        ...(write.approval === undefined
+          ? {}
+          : {
+              approverId: write.approval.approverId,
+              signature: write.approval.signature,
+              signingKeyId: write.approval.signingKeyId,
+              envelopeHash: write.approval.envelopeHash,
+            }),
         version: sql`${standingAuthorisations.version} + 1`,
       };
       const [row] = await tx
@@ -177,6 +225,31 @@ export class StandingAuthorisationRepository {
         .returning();
       if (row === undefined) return undefined;
       await this.options.audit({ ...audit, tenantId }, tx);
+      if (write.decision !== undefined) {
+        // The SoD check (requester = approver) runs inside this transaction too: a refusal rolls the change back.
+        await recordGateDecision(
+          {
+            insert: async (decisionRow) => {
+              await tx.insert(authzGateDecisions).values({ ...decisionRow, tenantId });
+            },
+            audit: async (event) => {
+              await this.options.gateAudit(event, tx);
+            },
+          },
+          {
+            gate: SA_GATE,
+            subjectType: 'sa',
+            subjectId: row.id,
+            decision: write.decision.decision,
+            requesterId: row.requesterId,
+            actorId: write.decision.actorId,
+            reason: write.decision.reason,
+            decidedAt: write.decision.decidedAt,
+            timeoutAt: null,
+            auto: false,
+          },
+        );
+      }
       return row;
     });
   }

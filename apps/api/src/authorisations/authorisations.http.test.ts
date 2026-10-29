@@ -8,6 +8,8 @@ import { loadApiConfig } from '../config.js';
 import {
   ADMIN_A,
   ADMIN_B,
+  APPROVAL_NOW_MS,
+  APPROVER_A,
   APPSEC2_A,
   APPSEC_A,
   ASSET_A_UNVERIFIED,
@@ -15,10 +17,12 @@ import {
   AUDITOR_A,
   draftBody,
   memoryStore,
+  OWNER_A,
   standardFixtures,
   TENANT_A,
   TENANT_B,
   testCursors,
+  testSigner,
 } from './fixtures.test-helpers.js';
 import { AuthorisationModule } from './module.js';
 import { InMemoryIdempotencyStore } from '../idempotency/memory.js';
@@ -34,6 +38,8 @@ const USERS: Record<string, string> = {
   'appsec-a': APPSEC_A,
   'appsec2-a': APPSEC2_A,
   'auditor-a': AUDITOR_A,
+  'approver-a': APPROVER_A,
+  'owner-a': OWNER_A,
   'admin-b': ADMIN_B,
 };
 const TENANTS: Record<string, string> = { a: TENANT_A, b: TENANT_B };
@@ -47,6 +53,19 @@ function principalOf(headers: Record<string, unknown>): TenantPrincipal | null {
   if (userId === undefined || tenantId === undefined)
     return { actor: { type: 'user', id: 'usr_none' } };
   return { actor: { type: 'user', id: userId }, sessionTenantId: tenantId };
+}
+
+/**
+ * The step-up evidence a test sends: `x-test-acr` and `x-test-auth-time` (epoch seconds), as the validated token would
+ * carry them. Absent headers mean the token reported neither.
+ */
+function evidenceOf(request: FastifyRequest): { acr?: string; authTime?: number } | undefined {
+  const acr = request.headers['x-test-acr'];
+  const authTime = request.headers['x-test-auth-time'];
+  return {
+    ...(typeof acr === 'string' ? { acr } : {}),
+    ...(typeof authTime === 'string' ? { authTime: Number(authTime) } : {}),
+  };
 }
 
 let app: NestFastifyApplication;
@@ -71,6 +90,9 @@ beforeEach(async () => {
         cursors: testCursors(),
         logger: createLogger('api', { level: 'silent', nodeEnv: 'test' }),
         registry: metrics.registry,
+        signer: testSigner().signer,
+        now: () => APPROVAL_NOW_MS,
+        evidence: evidenceOf,
       }),
     ],
   });
@@ -273,6 +295,143 @@ describe('draft -> patch -> submit (AUTHZ-002 happy path)', () => {
     const id = created.json<StandingAuthorisationDto>().id;
     const res = await patch('appsec2-a@a', id, { maxIntrusiveness: 'passive' }, etagOf(created));
     expect(res.statusCode).toBe(403);
+  });
+});
+
+describe('approve and reject (AUTHZ-008)', () => {
+  /** A fresh strong login, 30 seconds before the test clock. */
+  const FRESH = {
+    'x-test-acr': 'strong',
+    'x-test-auth-time': String(Math.floor(APPROVAL_NOW_MS / 1000) - 30),
+  };
+  const decide = (
+    action: 'approve' | 'reject',
+    principal: string,
+    id: string,
+    headers: Record<string, string>,
+    payload?: Record<string, unknown>,
+  ) =>
+    app.inject({
+      method: 'POST',
+      url: `${BASE}/${id}/${action}`,
+      headers: {
+        ...as(principal),
+        ...headers,
+        ...(payload === undefined ? {} : { 'content-type': 'application/json' }),
+      },
+      ...(payload === undefined ? {} : { payload }),
+    });
+
+  /** A pending SA requested by `requester`, with the ETag the approver sends back. */
+  async function pending(requester: string) {
+    const created = await create(requester);
+    const id = created.json<StandingAuthorisationDto>().id;
+    const submitted = await submit(requester, id, etagOf(created));
+    return { id, etag: etagOf(submitted) };
+  }
+
+  it('approves with a fresh step-up: 200, status active, a signature and an ETag, and the SA is no longer pending', async () => {
+    const { id, etag } = await pending('appsec-a@a');
+    const res = await decide('approve', 'approver-a@a', id, { ...FRESH, 'if-match': etag });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['cache-control']).toBe('no-store');
+    expect(etagOf(res)).toBe('"v3"');
+    expect(res.json<StandingAuthorisationDto>()).toMatchObject({
+      status: 'active',
+      approverId: APPROVER_A,
+      signingKeyId: 'bw-sa-signing:v1',
+      version: 3,
+    });
+    expect(res.json<StandingAuthorisationDto>().signature).toEqual(expect.any(String));
+  });
+
+  it('refuses the requester approving their own SA: 403 with the AUTHZ_SOD_VIOLATION code', async () => {
+    const created = await create('owner-a@a');
+    const id = created.json<StandingAuthorisationDto>().id;
+    const submitted = await submit('owner-a@a', id, etagOf(created));
+    const res = await decide('approve', 'owner-a@a', id, {
+      ...FRESH,
+      'if-match': etagOf(submitted),
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.json<Problem>().code).toBe('authz_sod_violation');
+  });
+
+  it('answers 401 AUTHZ_STEPUP_REQUIRED without a fresh strong login, with the challenge in the detail', async () => {
+    const { id, etag } = await pending('appsec-a@a');
+    const stale = await decide('approve', 'approver-a@a', id, {
+      'x-test-acr': 'strong',
+      'x-test-auth-time': String(Math.floor(APPROVAL_NOW_MS / 1000) - 3600),
+      'if-match': etag,
+    });
+    expect(stale.statusCode).toBe(401);
+    const problem = stale.json<Problem>();
+    expect(problem.code).toBe('authz_stepup_required');
+    expect(problem.detail).toMatch(/acr "strong" within the last 300 seconds/);
+    const none = await decide('approve', 'approver-a@a', id, { 'if-match': etag });
+    expect(none.statusCode).toBe(401);
+    expect(store.rows.values().next().value?.status).toBe('pending_approval');
+  });
+
+  it('answers 428 without If-Match and 412 for a stale ETag on approve', async () => {
+    const { id, etag } = await pending('appsec-a@a');
+    expect((await decide('approve', 'approver-a@a', id, FRESH)).statusCode).toBe(428);
+    expect(
+      (await decide('approve', 'approver-a@a', id, { ...FRESH, 'if-match': '"v1"' })).statusCode,
+    ).toBe(412);
+    expect(etag).toBe('"v2"');
+  });
+
+  it('rejects with a reason: 200, back to draft, and the requester can edit it again', async () => {
+    const { id, etag } = await pending('appsec-a@a');
+    const res = await decide(
+      'reject',
+      'approver-a@a',
+      id,
+      { 'if-match': etag },
+      {
+        reason: 'scope includes production hosts',
+      },
+    );
+    expect(res.statusCode).toBe(200);
+    expect(res.json<StandingAuthorisationDto>()).toMatchObject({ status: 'draft', version: 3 });
+    expect(
+      (await patch('appsec-a@a', id, { maxIntrusiveness: 'passive' }, etagOf(res))).statusCode,
+    ).toBe(200);
+  });
+
+  it('refuses a reject without a reason, or with an unknown key (422), and a reject of a draft (409)', async () => {
+    const { id, etag } = await pending('appsec-a@a');
+    expect(
+      (await decide('reject', 'approver-a@a', id, { 'if-match': etag }, { reason: '   ' }))
+        .statusCode,
+    ).toBe(422);
+    expect(
+      (await decide('reject', 'approver-a@a', id, { 'if-match': etag }, { reason: 'ok', extra: 1 }))
+        .statusCode,
+    ).toBe(422);
+    const back = await decide('reject', 'approver-a@a', id, { 'if-match': etag }, { reason: 'ok' });
+    expect(
+      (
+        await decide(
+          'reject',
+          'approver-a@a',
+          id,
+          { 'if-match': etagOf(back) },
+          { reason: 'again' },
+        )
+      ).statusCode,
+    ).toBe(409);
+  });
+
+  it('refuses an approver without the asset_owner role (403) and a cross-tenant caller (403)', async () => {
+    const { id, etag } = await pending('appsec-a@a');
+    expect(
+      (await decide('approve', 'appsec-a@a', id, { ...FRESH, 'if-match': etag })).statusCode,
+    ).toBe(403);
+    expect(
+      (await decide('approve', 'admin-b@b', id, { ...FRESH, 'if-match': etag })).statusCode,
+    ).toBe(403);
   });
 });
 

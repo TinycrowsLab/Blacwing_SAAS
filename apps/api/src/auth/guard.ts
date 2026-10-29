@@ -20,6 +20,21 @@ function principalOf(request: object): Principal | undefined {
 }
 
 /**
+ * The step-up evidence of the validated principal: its `acr` and `auth_time`, when the IdP reported them (AUTHZ-008).
+ * `undefined` when the request carries no validated principal.
+ */
+export function authEvidenceOf(
+  request: object,
+): { readonly acr?: string; readonly authTime?: number } | undefined {
+  const principal = principalOf(request);
+  if (principal === undefined) return undefined;
+  return {
+    ...(principal.acr === undefined ? {} : { acr: principal.acr }),
+    ...(principal.authTime === undefined ? {} : { authTime: principal.authTime }),
+  };
+}
+
+/**
  * The one global authentication guard (#335, APP_GUARD). Every route not marked `@PublicRoute()` must present
  * a valid credential; its principal is attached to the request for tenant context (TENANT-003) and RBAC.
  * It runs before the tenant guard, so an unauthenticated request never reaches tenant resolution.

@@ -1,3 +1,8 @@
+import { generateKeyPairSync, sign as edSign, type KeyObject } from 'node:crypto';
+
+import { signEnvelope, verifyJws, type Ed25519Jwk, ed25519Jwk } from '@blackwing/crypto';
+import { SodViolationError } from '@blackwing/domain/sod';
+import { AppError } from '@blackwing/errors';
 import { StandingAuthorisationId } from '@blackwing/ids';
 
 import { createCursorCodec } from '../pagination/index.js';
@@ -5,6 +10,7 @@ import { createCursorCodec } from '../pagination/index.js';
 import type {
   AssetVerifier,
   AuthorisationMemberships,
+  EnvelopeSigner,
   StandingAuthorisationStore,
 } from './ports.js';
 import type { CreateStandingAuthorisationInput } from '@blackwing/contracts';
@@ -30,6 +36,10 @@ export const APPSEC2_A = '0198f0a0-0000-7000-8000-0000000000a4';
 export const ADMIN_B = '0198f0a0-0000-7000-8000-0000000000b1';
 /** Appsec engineer of tenant B: holds sa:create in the other tenant, so cross-tenant reads reach the row check. */
 export const APPSEC_B = '0198f0a0-0000-7000-8000-0000000000b3';
+/** Asset owner of tenant A: the approver (sa:approve, RBAC-001). Not the requester of the drafts. */
+export const APPROVER_A = '0198f0a0-0000-7000-8000-0000000000a5';
+/** A second asset owner of tenant A, who requests an SA of their own (the separation-of-duties case). */
+export const OWNER_A = '0198f0a0-0000-7000-8000-0000000000a6';
 
 /** Two verified assets of tenant A, one of tenant B, and one unverified asset of tenant A. */
 export const ASSET_A1 = '0198f0a0-0000-7000-8000-0000000000e1';
@@ -76,6 +86,7 @@ function rowOf(overrides: Partial<StandingAuthorisationRecord> = {}): StandingAu
     approverId: null,
     signature: null,
     signingKeyId: null,
+    envelopeHash: null,
     version: 1,
     status: 'draft',
     revocationReason: null,
@@ -100,9 +111,18 @@ function recordFields(
   };
 }
 
+/** A gate decision the store recorded: Gate 1 on an SA, with its decider and reason (the `gate_decisions` row). */
+interface RecordedDecision {
+  readonly saId: string;
+  readonly decision: 'approved' | 'rejected';
+  readonly actorId: string;
+  readonly reason: string | null;
+}
+
 export interface MemoryStore extends StandingAuthorisationStore {
   readonly rows: Map<string, StandingAuthorisationRecord>;
   readonly audits: StandingAuthorisationAuditEvent[];
+  readonly decisions: RecordedDecision[];
 }
 
 /**
@@ -112,6 +132,7 @@ export interface MemoryStore extends StandingAuthorisationStore {
 export function memoryStore(initial: readonly StandingAuthorisationRecord[] = []): MemoryStore {
   const rows = new Map(initial.map((row) => [row.id, row]));
   const audits: StandingAuthorisationAuditEvent[] = [];
+  const decisions: RecordedDecision[] = [];
   let tick = 0;
   const stamp = () => {
     tick += 1;
@@ -120,6 +141,7 @@ export function memoryStore(initial: readonly StandingAuthorisationRecord[] = []
   return {
     rows,
     audits,
+    decisions,
     insertDraft(tenantId: string, draft: NewStandingAuthorisation, audit) {
       const row = rowOf({
         ...recordFields(draft),
@@ -161,15 +183,38 @@ export function memoryStore(initial: readonly StandingAuthorisationRecord[] = []
       if (current?.tenantId !== tenantId || current.version !== expectedVersion) {
         return Promise.resolve(undefined);
       }
+      // The Postgres adapter's gate row enforces separation of duties too: the same refusal, the same rollback.
+      if (
+        write.decision?.decision === 'approved' &&
+        write.decision.actorId === current.requesterId
+      ) {
+        return Promise.reject(new SodViolationError('requester_equals_approver', 'gate1.approve'));
+      }
       const next: StandingAuthorisationRecord = {
         ...current,
         ...recordFields(write.fields),
         ...(write.status === undefined ? {} : { status: write.status }),
+        ...(write.approval === undefined
+          ? {}
+          : {
+              approverId: write.approval.approverId,
+              signature: write.approval.signature,
+              signingKeyId: write.approval.signingKeyId,
+              envelopeHash: write.approval.envelopeHash,
+            }),
         version: current.version + 1,
         updatedAt: stamp(),
       };
       rows.set(id, next);
       audits.push({ ...audit, tenantId });
+      if (write.decision !== undefined) {
+        decisions.push({
+          saId: id,
+          decision: write.decision.decision,
+          actorId: write.decision.actorId,
+          reason: write.decision.reason,
+        });
+      }
       return Promise.resolve(next);
     },
   };
@@ -211,9 +256,81 @@ export function standardFixtures() {
         [AUDITOR_A]: ['auditor'],
         [APPSEC_A]: ['appsec_engineer'],
         [APPSEC2_A]: ['appsec_engineer'],
+        [APPROVER_A]: ['asset_owner'],
+        [OWNER_A]: ['asset_owner'],
       },
       [TENANT_B]: { [ADMIN_B]: ['org_admin'], [APPSEC_B]: ['appsec_engineer'] },
     }),
+  };
+}
+
+/** The instant every approval test runs at: epoch milliseconds, the start of the test clock. */
+export const APPROVAL_NOW_MS = Date.parse('2026-11-02T09:00:00.000Z');
+
+/** The signing key of the test signer: its kid is the `<key>:v<N>` form the real signer produces. */
+const TEST_SIGNING_KID = 'bw-sa-signing:v1';
+const ED25519_PUBLIC_KEY_BYTES = 32;
+const MS_PER_S = 1000;
+
+export interface TestSigner {
+  /** The port the service calls: a real Ed25519 detached JWS over the canonical bytes. */
+  readonly signer: EnvelopeSigner;
+  /** Verifies a stored `signature` against the canonical bytes the envelope signed (what the gateway will do). */
+  verify(signature: string, canonicalBytes: Uint8Array): boolean;
+  readonly jwk: Ed25519Jwk;
+  readonly calls: { readonly saId: string; readonly tenantId: string }[];
+}
+
+/** An Ed25519 signer over a fresh key. It records each call, so tests can see what was signed and for whom. */
+export function testSigner(): TestSigner {
+  const { privateKey, publicKey } = generateKeyPairSync('ed25519');
+  const rawPublic = publicKey
+    .export({ format: 'der', type: 'spki' })
+    .subarray(-ED25519_PUBLIC_KEY_BYTES);
+  const jwk = ed25519Jwk(TEST_SIGNING_KID, new Uint8Array(rawPublic));
+  const calls: { saId: string; tenantId: string }[] = [];
+  const keyOf = (kid: string): KeyObject | undefined =>
+    kid === TEST_SIGNING_KID ? publicKey : undefined;
+  return {
+    calls,
+    jwk,
+    signer: {
+      async signEnvelope({ tenantId, saId, canonicalBytes }) {
+        calls.push({ saId, tenantId });
+        const signed = await signEnvelope(
+          canonicalBytes,
+          {
+            kid: TEST_SIGNING_KID,
+            sign: (input) => Promise.resolve(new Uint8Array(edSign(null, input, privateKey))),
+          },
+          Math.floor(APPROVAL_NOW_MS / MS_PER_S),
+        );
+        return {
+          signature: signed.compact,
+          signingKeyId: signed.kid,
+          envelopeHash: signed.envelopeHash,
+        };
+      },
+    },
+    verify(signature, canonicalBytes) {
+      // The detached compact form carries no payload: re-attach the canonical bytes, then verify the whole token.
+      const [header, , sig] = signature.split('.');
+      if (header === undefined || sig === undefined) return false;
+      const payload = Buffer.from(canonicalBytes).toString('base64url');
+      return verifyJws(`${header}.${payload}.${sig}`, keyOf) !== null;
+    },
+  };
+}
+
+/** A signer that is down: every call fails the way an unreachable OpenBao does (AUTHZ_SIGNER_UNAVAILABLE). */
+export function downSigner(): EnvelopeSigner {
+  return {
+    signEnvelope: () =>
+      Promise.reject(
+        new AppError('AUTHZ_SIGNER_UNAVAILABLE', 'the signing key service is unavailable', {
+          detail: 'The signer is unavailable; nothing was signed.',
+        }),
+      ),
   };
 }
 

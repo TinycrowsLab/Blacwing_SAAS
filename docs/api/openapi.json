@@ -53,7 +53,7 @@
     },
     {
       "name": "standing-authorisations",
-      "description": "Standing authorisations (AUTHZ-002): the customer-signed, expiring permission to test assets. Drafts are created, read, changed and submitted for approval here."
+      "description": "Standing authorisations (AUTHZ-002, AUTHZ-008): the customer-signed, expiring permission to test assets. Drafts are created, read, changed and submitted for approval here; an asset owner approves (signing it) or rejects."
     },
     {
       "name": "test-plans",
@@ -63,9 +63,7 @@
   "paths": {
     "/kill": {
       "post": {
-        "tags": [
-          "kill"
-        ],
+        "tags": ["kill"],
         "operationId": "triggerKill",
         "summary": "Trigger the kill switch for a run, asset or the whole tenant",
         "description": "Requires kill:trigger and the Cedar Kill::trigger resource check. An asset_owner may kill only assets they own; only org_admin may kill the tenant. Propagation is asynchronous: poll the Location.",
@@ -510,9 +508,7 @@
         }
       },
       "get": {
-        "tags": [
-          "kill"
-        ],
+        "tags": ["kill"],
         "operationId": "listKillEvents",
         "summary": "The tenant's most recent kill events, newest first",
         "security": [
@@ -1000,9 +996,7 @@
     },
     "/kill/{id}": {
       "get": {
-        "tags": [
-          "kill"
-        ],
+        "tags": ["kill"],
         "operationId": "getKillEvent",
         "summary": "A kill event with its halt timings",
         "security": [
@@ -1609,9 +1603,7 @@
     },
     "/audit/events": {
       "get": {
-        "tags": [
-          "audit"
-        ],
+        "tags": ["audit"],
         "operationId": "listAuditEvents",
         "summary": "Search the audit ledger of the caller tenant",
         "description": "Requires audit:read (auditor, org_admin). Newest first, by (occurredAt, seq). The tenant comes from the caller, never from the query. `from` and `to` are ISO-8601 UTC with a Z. Pass the previous nextCursor to continue; a cursor is bound to its filters. The query itself is recorded as audit.queried. includeChain=true needs the auditor role.",
@@ -1750,11 +1742,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": [
-                "success",
-                "failure",
-                "denied"
-              ]
+              "enum": ["success", "failure", "denied"]
             },
             "example": "success"
           },
@@ -1784,10 +1772,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ]
+              "enum": ["true", "false"]
             },
             "description": "Auditors only: include hash and prevHash."
           },
@@ -1821,9 +1806,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "items"
-                  ],
+                  "required": ["items"],
                   "properties": {
                     "items": {
                       "type": "array",
@@ -2263,9 +2246,7 @@
     },
     "/runs/{runId}/events": {
       "get": {
-        "tags": [
-          "runs"
-        ],
+        "tags": ["runs"],
         "operationId": "streamRunEvents",
         "summary": "Stream the live events of one run (text/event-stream)",
         "description": "Requires run:read in the caller tenant. A run outside that tenant answers 403 exactly like a missing one. Each run event is one frame: `id` is the stream entry id, `event` the run event type, `data` the JSON event. Reconnect with the `Last-Event-ID` header (or `lastEventId` query) to replay the missed events; at most API_SSE_MAX_REPLAY are replayed. Control frames (no id): `state` and `end` for a finished run or a terminal event, `resync` (refetch the run: events were trimmed, the client was too slow, or the replay was too long), `timeout` (API_SSE_MAX_DURATION_MS reached) and `error` (the event source failed; reconnect with backoff). The `event` names `state`, `resync`, `end`, `timeout` and `error` are reserved for control frames. A heartbeat comment (`: heartbeat`) is sent every API_SSE_HEARTBEAT_MS while idle.",
@@ -2731,9 +2712,7 @@
     },
     "/runs/{runId}/surface": {
       "get": {
-        "tags": [
-          "surface"
-        ],
+        "tags": ["surface"],
         "operationId": "getRunSurface",
         "summary": "Get the bounded surface graph of one run (nodes and edges)",
         "description": "Requires run:read in the caller tenant and the Cedar surface policy (an asset owner reads only the runs of assets they own). A run outside the caller tenant, or an unknown run, answers 404 RUN_NOT_FOUND (uniform, no existence oracle). Nodes are ranked by degree then confidence and capped at GRAPH_VIZ_MAX_NODES (2000); edges at GRAPH_VIZ_MAX_EDGES (4000). A surface above a cap answers truncated: true with full totals. Pages are ordered by natural key: pass pageInfo.endCursor back as cursor while hasNextPage is true. Every returned edge joins two nodes of the same page. A finished run (killed or completed) stays viewable: runState carries its state. The read is audited as run.surface.viewed.",
@@ -2786,10 +2765,7 @@
             "description": "true keeps only nodes not marked out of scope (hosts with inScope false are dropped). The graph applies it, so truncation and totals reflect the filter.",
             "schema": {
               "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ],
+              "enum": ["true", "false"],
               "default": "false"
             }
           },
@@ -3187,9 +3163,7 @@
     },
     "/runs/{runId}/gate1": {
       "get": {
-        "tags": [
-          "gate1"
-        ],
+        "tags": ["gate1"],
         "operationId": "getGate1Plan",
         "summary": "Read the test plan under Gate 1 review",
         "description": "Requires testplan:read. `viewer.canDecide` is a UX hint: false for the requester, for a caller without testplan:approve, and for a run not awaiting Gate 1.",
@@ -3233,9 +3207,7 @@
                       "id": "tc-1",
                       "title": "Security headers reviewed",
                       "class": "passive",
-                      "targets": [
-                        "https://lab.example.test/"
-                      ],
+                      "targets": ["https://lab.example.test/"],
                       "budget": {
                         "maxRequests": 10,
                         "maxRps": 1,
@@ -3786,9 +3758,7 @@
     },
     "/runs/{runId}/gate1/decisions": {
       "post": {
-        "tags": [
-          "gate1"
-        ],
+        "tags": ["gate1"],
         "operationId": "decideGate1",
         "summary": "Approve, request changes to, or reject a test plan",
         "description": "Requires testplan:approve and an Idempotency-Key. The requester may not decide their own plan (403 SOD_VIOLATION). `planVersion` must be the version reviewed (409 GATE1_PLAN_STALE otherwise). A replay with the same key and body answers the first result.",
@@ -4066,9 +4036,7 @@
     },
     "/personas": {
       "get": {
-        "tags": [
-          "personas"
-        ],
+        "tags": ["personas"],
         "operationId": "listPersonas",
         "summary": "The persona registry for the caller tenant",
         "description": "Requires run:read, which every tenant role holds. Lists the fixed roster of personas in roster order, each with the settings a run of the caller tenant would pin (the tenant override merged in). Guardrail flags and internal fields are not published.",
@@ -4103,21 +4071,11 @@
                             "maxTurns": 10,
                             "maxBudgetUsd": 2
                           },
-                          "overridden": [
-                            "effort",
-                            "maxTurns"
-                          ],
-                          "allowedTools": [
-                            "Read"
-                          ],
-                          "disallowedTools": [
-                            "WebFetch",
-                            "WebSearch"
-                          ],
+                          "overridden": ["effort", "maxTurns"],
+                          "allowedTools": ["Read"],
+                          "disallowedTools": ["WebFetch", "WebSearch"],
                           "declaredOracleTypes": [],
-                          "inputs": [
-                            "scope"
-                          ],
+                          "inputs": ["scope"],
                           "intrusivenessCeiling": "passive",
                           "requiresSubmission": false,
                           "helpers": []
@@ -4750,9 +4708,7 @@
     },
     "/personas/{persona}": {
       "get": {
-        "tags": [
-          "personas"
-        ],
+        "tags": ["personas"],
         "operationId": "getPersona",
         "summary": "One persona of the registry for the caller tenant",
         "description": "Requires run:read. The same view as the list, for one persona of the fixed roster.",
@@ -4817,21 +4773,11 @@
                         "maxTurns": 10,
                         "maxBudgetUsd": 2
                       },
-                      "overridden": [
-                        "effort",
-                        "maxTurns"
-                      ],
-                      "allowedTools": [
-                        "Read"
-                      ],
-                      "disallowedTools": [
-                        "WebFetch",
-                        "WebSearch"
-                      ],
+                      "overridden": ["effort", "maxTurns"],
+                      "allowedTools": ["Read"],
+                      "disallowedTools": ["WebFetch", "WebSearch"],
                       "declaredOracleTypes": [],
-                      "inputs": [
-                        "scope"
-                      ],
+                      "inputs": ["scope"],
                       "intrusivenessCeiling": "passive",
                       "requiresSubmission": false,
                       "helpers": []
@@ -5202,9 +5148,7 @@
     },
     "/personas/{persona}/override": {
       "get": {
-        "tags": [
-          "personas"
-        ],
+        "tags": ["personas"],
         "operationId": "getPersonaOverride",
         "summary": "The tenant override of a persona",
         "description": "Requires settings:read. Answers the override the tenant set, or null when none is set (the base values apply).",
@@ -5700,9 +5644,7 @@
         }
       },
       "put": {
-        "tags": [
-          "personas"
-        ],
+        "tags": ["personas"],
         "operationId": "putPersonaOverride",
         "summary": "Replace the tenant override of a persona",
         "description": "Requires settings:write (org_admin). The body replaces the whole override; an empty object resets the persona to its base values. Only effort, maxTurns, maxBudgetUsd and lowerStandardTier are accepted: any other field answers OVERRIDE_FIELD_FORBIDDEN. Values above the persona bounds are clamped, never raised. The change is audited as persona.override_changed.",
@@ -6243,15 +6185,11 @@
     },
     "/signup": {
       "post": {
-        "tags": [
-          "signup"
-        ],
+        "tags": ["signup"],
         "operationId": "requestSignup",
         "summary": "Ask for a verification e-mail to create an organisation",
         "description": "Always answers 202 with the same body, whether or not the address already has an account, so the endpoint cannot be used to enumerate customers. A verification link is mailed; nothing is created until it is used.",
-        "security": [
-          {}
-        ],
+        "security": [{}],
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -6317,7 +6255,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6364,6 +6302,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "SBX_UNAUTHENTICATED": {
                     "summary": "Run token required",
                     "value": {
@@ -6389,7 +6337,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6483,6 +6431,16 @@
                       "title": "Budget exceeds the standing authorisation",
                       "status": 403,
                       "code": "SCOPE_BUDGET_EXCEEDS_SA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SOD_VIOLATION": {
+                    "summary": "Separation of duties violated for the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+                      "title": "Separation of duties violated for the standing authorisation",
+                      "status": 403,
+                      "code": "AUTHZ_SOD_VIOLATION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -6923,15 +6881,11 @@
     },
     "/signup/verify": {
       "post": {
-        "tags": [
-          "signup"
-        ],
+        "tags": ["signup"],
         "operationId": "verifySignup",
         "summary": "Verify the e-mail address and create the organisation",
         "description": "Consumes the single-use token from the e-mail. An unknown, expired, used or cancelled token is 400 SIGNUP_TOKEN_INVALID and creates nothing. When the address already has an account no second tenant is created: the answer is existing_account and the caller goes to login.",
-        "security": [
-          {}
-        ],
+        "security": [{}],
         "requestBody": {
           "required": true,
           "content": {
@@ -6993,7 +6947,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7040,6 +6994,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "SBX_UNAUTHENTICATED": {
                     "summary": "Run token required",
                     "value": {
@@ -7065,7 +7029,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7159,6 +7123,16 @@
                       "title": "Budget exceeds the standing authorisation",
                       "status": 403,
                       "code": "SCOPE_BUDGET_EXCEEDS_SA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SOD_VIOLATION": {
+                    "summary": "Separation of duties violated for the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+                      "title": "Separation of duties violated for the standing authorisation",
+                      "status": 403,
+                      "code": "AUTHZ_SOD_VIOLATION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -7589,9 +7563,7 @@
     },
     "/tenant/settings": {
       "get": {
-        "tags": [
-          "tenant"
-        ],
+        "tags": ["tenant"],
         "operationId": "getTenantSettings",
         "summary": "Read the tenant settings",
         "security": [
@@ -7698,7 +7670,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7745,6 +7717,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "SBX_UNAUTHENTICATED": {
                     "summary": "Run token required",
                     "value": {
@@ -7770,7 +7752,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7864,6 +7846,16 @@
                       "title": "Budget exceeds the standing authorisation",
                       "status": 403,
                       "code": "SCOPE_BUDGET_EXCEEDS_SA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SOD_VIOLATION": {
+                    "summary": "Separation of duties violated for the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+                      "title": "Separation of duties violated for the standing authorisation",
+                      "status": 403,
+                      "code": "AUTHZ_SOD_VIOLATION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -8482,9 +8474,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "tenant"
-        ],
+        "tags": ["tenant"],
         "operationId": "updateTenantSettings",
         "summary": "Change the tenant settings",
         "description": "Requires If-Match. Unknown keys and region are rejected. An unknown time zone answers invalid_timezone. An empty or unchanged body is a no-op.",
@@ -8623,7 +8613,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8670,6 +8660,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "SBX_UNAUTHENTICATED": {
                     "summary": "Run token required",
                     "value": {
@@ -8695,7 +8695,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8789,6 +8789,16 @@
                       "title": "Budget exceeds the standing authorisation",
                       "status": 403,
                       "code": "SCOPE_BUDGET_EXCEEDS_SA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SOD_VIOLATION": {
+                    "summary": "Separation of duties violated for the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+                      "title": "Separation of duties violated for the standing authorisation",
+                      "status": 403,
+                      "code": "AUTHZ_SOD_VIOLATION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -9463,9 +9473,7 @@
     },
     "/assessment-requests": {
       "get": {
-        "tags": [
-          "assessment-requests"
-        ],
+        "tags": ["assessment-requests"],
         "operationId": "listAssessmentRequests",
         "summary": "List the assessment requests of the tenant, newest first",
         "security": [
@@ -9494,9 +9502,7 @@
                           "status": "draft",
                           "mode": "grey",
                           "objective": "Test the login flow for authentication bypass",
-                          "assetIds": [
-                            "0198f0a0-0000-7000-8000-0000000000e1"
-                          ],
+                          "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
                           "saId": "0198f0a0-0000-7000-8000-0000000000f1",
                           "inputManifestId": null,
                           "scopeRules": {
@@ -9589,7 +9595,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9636,6 +9642,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "SBX_UNAUTHENTICATED": {
                     "summary": "Run token required",
                     "value": {
@@ -9661,7 +9677,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9755,6 +9771,16 @@
                       "title": "Budget exceeds the standing authorisation",
                       "status": 403,
                       "code": "SCOPE_BUDGET_EXCEEDS_SA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SOD_VIOLATION": {
+                    "summary": "Separation of duties violated for the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+                      "title": "Separation of duties violated for the standing authorisation",
+                      "status": 403,
+                      "code": "AUTHZ_SOD_VIOLATION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -10373,9 +10399,7 @@
         }
       },
       "post": {
-        "tags": [
-          "assessment-requests"
-        ],
+        "tags": ["assessment-requests"],
         "operationId": "createAssessmentRequest",
         "summary": "Create a draft assessment request",
         "description": "Needs assessment:create. Every named asset must belong to the tenant (404 otherwise). Nothing is validated against the standing authorisation until submit.",
@@ -10400,9 +10424,7 @@
                   "value": {
                     "mode": "grey",
                     "objective": "Test the login flow for authentication bypass",
-                    "assetIds": [
-                      "0198f0a0-0000-7000-8000-0000000000e1"
-                    ],
+                    "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
                     "saId": "0198f0a0-0000-7000-8000-0000000000f1",
                     "scopeRules": {
                       "rules": [
@@ -10442,9 +10464,7 @@
                       "status": "draft",
                       "mode": "grey",
                       "objective": "Test the login flow for authentication bypass",
-                      "assetIds": [
-                        "0198f0a0-0000-7000-8000-0000000000e1"
-                      ],
+                      "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
                       "saId": "0198f0a0-0000-7000-8000-0000000000f1",
                       "inputManifestId": null,
                       "scopeRules": {
@@ -10535,7 +10555,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -10582,6 +10602,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "SBX_UNAUTHENTICATED": {
                     "summary": "Run token required",
                     "value": {
@@ -10607,7 +10637,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -10701,6 +10731,16 @@
                       "title": "Budget exceeds the standing authorisation",
                       "status": 403,
                       "code": "SCOPE_BUDGET_EXCEEDS_SA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SOD_VIOLATION": {
+                    "summary": "Separation of duties violated for the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+                      "title": "Separation of duties violated for the standing authorisation",
+                      "status": 403,
+                      "code": "AUTHZ_SOD_VIOLATION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -11119,9 +11159,7 @@
     },
     "/assessment-requests/{id}": {
       "get": {
-        "tags": [
-          "assessment-requests"
-        ],
+        "tags": ["assessment-requests"],
         "operationId": "getAssessmentRequest",
         "summary": "Read one assessment request",
         "security": [
@@ -11168,9 +11206,7 @@
                       "status": "draft",
                       "mode": "grey",
                       "objective": "Test the login flow for authentication bypass",
-                      "assetIds": [
-                        "0198f0a0-0000-7000-8000-0000000000e1"
-                      ],
+                      "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
                       "saId": "0198f0a0-0000-7000-8000-0000000000f1",
                       "inputManifestId": null,
                       "scopeRules": {
@@ -11261,7 +11297,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11308,6 +11344,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "SBX_UNAUTHENTICATED": {
                     "summary": "Run token required",
                     "value": {
@@ -11333,7 +11379,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11427,6 +11473,16 @@
                       "title": "Budget exceeds the standing authorisation",
                       "status": 403,
                       "code": "SCOPE_BUDGET_EXCEEDS_SA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SOD_VIOLATION": {
+                    "summary": "Separation of duties violated for the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+                      "title": "Separation of duties violated for the standing authorisation",
+                      "status": 403,
+                      "code": "AUTHZ_SOD_VIOLATION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -11963,9 +12019,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "assessment-requests"
-        ],
+        "tags": ["assessment-requests"],
         "operationId": "updateAssessmentRequest",
         "summary": "Edit a draft assessment request",
         "description": "Requires If-Match. Only a draft can be edited (409 otherwise). An empty body is refused.",
@@ -12034,9 +12088,7 @@
                       "status": "draft",
                       "mode": "grey",
                       "objective": "Test the login flow for authentication bypass",
-                      "assetIds": [
-                        "0198f0a0-0000-7000-8000-0000000000e1"
-                      ],
+                      "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
                       "saId": "0198f0a0-0000-7000-8000-0000000000f1",
                       "inputManifestId": null,
                       "scopeRules": {
@@ -12127,7 +12179,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12174,6 +12226,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "SBX_UNAUTHENTICATED": {
                     "summary": "Run token required",
                     "value": {
@@ -12199,7 +12261,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12293,6 +12355,16 @@
                       "title": "Budget exceeds the standing authorisation",
                       "status": 403,
                       "code": "SCOPE_BUDGET_EXCEEDS_SA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SOD_VIOLATION": {
+                    "summary": "Separation of duties violated for the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+                      "title": "Separation of duties violated for the standing authorisation",
+                      "status": 403,
+                      "code": "AUTHZ_SOD_VIOLATION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -12933,9 +13005,7 @@
     },
     "/assessment-requests/{id}/submit": {
       "post": {
-        "tags": [
-          "assessment-requests"
-        ],
+        "tags": ["assessment-requests"],
         "operationId": "submitAssessmentRequest",
         "summary": "Submit a draft after the scope gate",
         "description": "Runs every check of the gate (asset verification, standing authorisation status, expiry, coverage, intrusiveness ceiling, scope subset, budgets) and answers 422 with all failing checks in errors[] (each with its code and path). A halted tenant answers 409 tenant_halted. Needs Idempotency-Key.",
@@ -12994,9 +13064,7 @@
                       "status": "draft",
                       "mode": "grey",
                       "objective": "Test the login flow for authentication bypass",
-                      "assetIds": [
-                        "0198f0a0-0000-7000-8000-0000000000e1"
-                      ],
+                      "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
                       "saId": "0198f0a0-0000-7000-8000-0000000000f1",
                       "inputManifestId": null,
                       "scopeRules": {
@@ -13087,7 +13155,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13134,6 +13202,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "SBX_UNAUTHENTICATED": {
                     "summary": "Run token required",
                     "value": {
@@ -13159,7 +13237,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13253,6 +13331,16 @@
                       "title": "Budget exceeds the standing authorisation",
                       "status": 403,
                       "code": "SCOPE_BUDGET_EXCEEDS_SA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SOD_VIOLATION": {
+                    "summary": "Separation of duties violated for the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+                      "title": "Separation of duties violated for the standing authorisation",
+                      "status": 403,
+                      "code": "AUTHZ_SOD_VIOLATION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -13529,9 +13617,7 @@
     },
     "/assessment-requests/{id}/withdraw": {
       "post": {
-        "tags": [
-          "assessment-requests"
-        ],
+        "tags": ["assessment-requests"],
         "operationId": "withdrawAssessmentRequest",
         "summary": "Withdraw a request",
         "description": "Requires If-Match. A withdrawn request is terminal.",
@@ -13590,9 +13676,7 @@
                       "status": "draft",
                       "mode": "grey",
                       "objective": "Test the login flow for authentication bypass",
-                      "assetIds": [
-                        "0198f0a0-0000-7000-8000-0000000000e1"
-                      ],
+                      "assetIds": ["0198f0a0-0000-7000-8000-0000000000e1"],
                       "saId": "0198f0a0-0000-7000-8000-0000000000f1",
                       "inputManifestId": null,
                       "scopeRules": {
@@ -13683,7 +13767,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13730,6 +13814,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "SBX_UNAUTHENTICATED": {
                     "summary": "Run token required",
                     "value": {
@@ -13755,7 +13849,7 @@
             }
           },
           "403": {
-            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
+            "description": "Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13849,6 +13943,16 @@
                       "title": "Budget exceeds the standing authorisation",
                       "status": 403,
                       "code": "SCOPE_BUDGET_EXCEEDS_SA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SOD_VIOLATION": {
+                    "summary": "Separation of duties violated for the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+                      "title": "Separation of duties violated for the standing authorisation",
+                      "status": 403,
+                      "code": "AUTHZ_SOD_VIOLATION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -14489,9 +14593,7 @@
     },
     "/assets": {
       "get": {
-        "tags": [
-          "assets"
-        ],
+        "tags": ["assets"],
         "operationId": "listAssets",
         "summary": "List the tenant assets, optionally filtered by verification state",
         "description": "Needs asset:read. Only the fields the scoping wizard needs are returned.",
@@ -14511,12 +14613,7 @@
             "description": "Only assets in this verification state.",
             "schema": {
               "type": "string",
-              "enum": [
-                "unverified",
-                "pending",
-                "verified",
-                "rejected"
-              ]
+              "enum": ["unverified", "pending", "verified", "rejected"]
             }
           }
         ],
@@ -14558,7 +14655,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14602,6 +14699,16 @@
                       "title": "Credentials expired",
                       "status": 401,
                       "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -15122,9 +15229,7 @@
     },
     "/standing-authorisations": {
       "post": {
-        "tags": [
-          "standing-authorisations"
-        ],
+        "tags": ["standing-authorisations"],
         "operationId": "createStandingAuthorisation",
         "summary": "Create a draft standing authorisation",
         "description": "Requires Idempotency-Key. The caller becomes the requester. The draft is not yet approved or signed.",
@@ -15182,9 +15287,7 @@
                     "summary": "A draft standing authorisation",
                     "value": {
                       "id": "sa_0198f0a0000070008000000000000001",
-                      "assetIds": [
-                        "0198f0a0-0000-7000-8000-0000000000a1"
-                      ],
+                      "assetIds": ["0198f0a0-0000-7000-8000-0000000000a1"],
                       "scopeRules": {
                         "rules": [
                           {
@@ -15194,9 +15297,7 @@
                         ]
                       },
                       "maxIntrusiveness": "active_safe",
-                      "preApprovedTestClasses": [
-                        "header-audit"
-                      ],
+                      "preApprovedTestClasses": ["header-audit"],
                       "defaultBudgets": {
                         "costCapUsd": 5,
                         "maxRequests": 1000,
@@ -15249,7 +15350,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15293,6 +15394,16 @@
                       "title": "Credentials expired",
                       "status": 401,
                       "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -15537,9 +15648,7 @@
         }
       },
       "get": {
-        "tags": [
-          "standing-authorisations"
-        ],
+        "tags": ["standing-authorisations"],
         "operationId": "listStandingAuthorisations",
         "summary": "List standing authorisations",
         "description": "Cursor-paginated, in id order. nextCursor is null on the last page.",
@@ -15579,11 +15688,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "items",
-                    "nextCursor",
-                    "hasMore"
-                  ],
+                  "required": ["items", "nextCursor", "hasMore"],
                   "properties": {
                     "items": {
                       "type": "array",
@@ -15592,10 +15697,7 @@
                       }
                     },
                     "nextCursor": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     },
                     "hasMore": {
                       "type": "boolean"
@@ -15609,9 +15711,7 @@
                       "items": [
                         {
                           "id": "sa_0198f0a0000070008000000000000001",
-                          "assetIds": [
-                            "0198f0a0-0000-7000-8000-0000000000a1"
-                          ],
+                          "assetIds": ["0198f0a0-0000-7000-8000-0000000000a1"],
                           "scopeRules": {
                             "rules": [
                               {
@@ -15621,9 +15721,7 @@
                             ]
                           },
                           "maxIntrusiveness": "active_safe",
-                          "preApprovedTestClasses": [
-                            "header-audit"
-                          ],
+                          "preApprovedTestClasses": ["header-audit"],
                           "defaultBudgets": {
                             "costCapUsd": 5,
                             "maxRequests": 1000,
@@ -15680,7 +15778,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15724,6 +15822,16 @@
                       "title": "Credentials expired",
                       "status": 401,
                       "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -16066,9 +16174,7 @@
     },
     "/standing-authorisations/{id}": {
       "get": {
-        "tags": [
-          "standing-authorisations"
-        ],
+        "tags": ["standing-authorisations"],
         "operationId": "getStandingAuthorisation",
         "summary": "Read one standing authorisation",
         "security": [
@@ -16113,9 +16219,7 @@
                     "summary": "A draft standing authorisation",
                     "value": {
                       "id": "sa_0198f0a0000070008000000000000001",
-                      "assetIds": [
-                        "0198f0a0-0000-7000-8000-0000000000a1"
-                      ],
+                      "assetIds": ["0198f0a0-0000-7000-8000-0000000000a1"],
                       "scopeRules": {
                         "rules": [
                           {
@@ -16125,9 +16229,7 @@
                         ]
                       },
                       "maxIntrusiveness": "active_safe",
-                      "preApprovedTestClasses": [
-                        "header-audit"
-                      ],
+                      "preApprovedTestClasses": ["header-audit"],
                       "defaultBudgets": {
                         "costCapUsd": 5,
                         "maxRequests": 1000,
@@ -16220,7 +16322,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16264,6 +16366,16 @@
                       "title": "Credentials expired",
                       "status": 401,
                       "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -16724,9 +16836,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "standing-authorisations"
-        ],
+        "tags": ["standing-authorisations"],
         "operationId": "updateStandingAuthorisation",
         "summary": "Change a draft standing authorisation",
         "description": "Requires If-Match. Only a draft can change (409 otherwise). Unknown keys are refused. An empty body is refused.",
@@ -16793,9 +16903,7 @@
                     "summary": "A draft standing authorisation",
                     "value": {
                       "id": "sa_0198f0a0000070008000000000000001",
-                      "assetIds": [
-                        "0198f0a0-0000-7000-8000-0000000000a1"
-                      ],
+                      "assetIds": ["0198f0a0-0000-7000-8000-0000000000a1"],
                       "scopeRules": {
                         "rules": [
                           {
@@ -16805,9 +16913,7 @@
                         ]
                       },
                       "maxIntrusiveness": "active_safe",
-                      "preApprovedTestClasses": [
-                        "header-audit"
-                      ],
+                      "preApprovedTestClasses": ["header-audit"],
                       "defaultBudgets": {
                         "costCapUsd": 5,
                         "maxRequests": 1000,
@@ -16900,7 +17006,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16944,6 +17050,16 @@
                       "title": "Credentials expired",
                       "status": 401,
                       "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -17180,9 +17296,7 @@
     },
     "/standing-authorisations/{id}/submit": {
       "post": {
-        "tags": [
-          "standing-authorisations"
-        ],
+        "tags": ["standing-authorisations"],
         "operationId": "submitStandingAuthorisation",
         "summary": "Submit a draft for approval",
         "description": "Requires If-Match. Moves the draft to pending_approval. Every asset must be verified for the tenant.",
@@ -17239,9 +17353,7 @@
                     "summary": "A draft standing authorisation",
                     "value": {
                       "id": "sa_0198f0a0000070008000000000000001",
-                      "assetIds": [
-                        "0198f0a0-0000-7000-8000-0000000000a1"
-                      ],
+                      "assetIds": ["0198f0a0-0000-7000-8000-0000000000a1"],
                       "scopeRules": {
                         "rules": [
                           {
@@ -17251,9 +17363,7 @@
                         ]
                       },
                       "maxIntrusiveness": "active_safe",
-                      "preApprovedTestClasses": [
-                        "header-audit"
-                      ],
+                      "preApprovedTestClasses": ["header-audit"],
                       "defaultBudgets": {
                         "costCapUsd": 5,
                         "maxRequests": 1000,
@@ -17346,7 +17456,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -17390,6 +17500,16 @@
                       "title": "Credentials expired",
                       "status": 401,
                       "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -17624,11 +17744,823 @@
         }
       }
     },
+    "/standing-authorisations/{id}/approve": {
+      "post": {
+        "tags": ["standing-authorisations"],
+        "operationId": "approveStandingAuthorisation",
+        "summary": "Approve and sign a pending standing authorisation",
+        "description": "Requires If-Match. The caller must hold asset_owner and must not be the requester (AUTHZ_SOD_VIOLATION). The session must have authenticated freshly with the step-up acr (AUTHZ_STEPUP_REQUIRED, 401). The approval signs the canonical envelope and moves the SA to active, in one transaction.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The standing authorisation public id (sa_…).",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "sa_0198f0a0000070008000000000000001"
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "description": "The ETag of the version being changed (from the last read or change). A stale value answers 412, a missing one 428.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "\"v1\""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The active, signed standing authorisation and its ETag.",
+            "headers": {
+              "ETag": {
+                "description": "Strong validator of this version. Send it in If-Match on PATCH and submit.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandingAuthorisation"
+                },
+                "examples": {
+                  "current": {
+                    "summary": "A draft standing authorisation",
+                    "value": {
+                      "id": "sa_0198f0a0000070008000000000000001",
+                      "assetIds": ["0198f0a0-0000-7000-8000-0000000000a1"],
+                      "scopeRules": {
+                        "rules": [
+                          {
+                            "effect": "include",
+                            "host": "app.example.test"
+                          }
+                        ]
+                      },
+                      "maxIntrusiveness": "active_safe",
+                      "preApprovedTestClasses": ["header-audit"],
+                      "defaultBudgets": {
+                        "costCapUsd": 5,
+                        "maxRequests": 1000,
+                        "maxDurationMs": 3600000
+                      },
+                      "testWindows": [
+                        {
+                          "cron": "0 2 * * 1-5",
+                          "timezone": "Europe/Berlin",
+                          "durationMs": 7200000
+                        }
+                      ],
+                      "validFrom": "2026-11-01T00:00:00.000Z",
+                      "expiresAt": "2026-12-01T00:00:00.000Z",
+                      "requesterId": "0198f0a0-0000-7000-8000-0000000000a2",
+                      "approverId": null,
+                      "signature": null,
+                      "signingKeyId": null,
+                      "status": "draft",
+                      "revocationReason": null,
+                      "version": 1,
+                      "createdAt": "2026-10-29T10:00:00.000Z",
+                      "updatedAt": "2026-10-29T10:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INVALID_CURSOR": {
+                    "summary": "Invalid cursor",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+                      "title": "Invalid cursor",
+                      "status": 400,
+                      "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SIGNUP_TOKEN_INVALID": {
+                    "summary": "Signup token invalid or expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+                      "title": "Signup token invalid or expired",
+                      "status": 400,
+                      "code": "SIGNUP_TOKEN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of AUTHZ_STEPUP_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN, AUTHZ_SOD_VIOLATION.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SOD_VIOLATION": {
+                    "summary": "Separation of duties violated for the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+                      "title": "Separation of duties violated for the standing authorisation",
+                      "status": 403,
+                      "code": "AUTHZ_SOD_VIOLATION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of AUTHZ_ILLEGAL_TRANSITION.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Problem details; code is one of PRECONDITION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PRECONDITION_FAILED": {
+                    "summary": "Precondition failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PRECONDITION_FAILED",
+                      "title": "Precondition failed",
+                      "status": 412,
+                      "code": "PRECONDITION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Problem details; code is one of PRECONDITION_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PRECONDITION_REQUIRED": {
+                    "summary": "Precondition required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+                      "title": "Precondition required",
+                      "status": 428,
+                      "code": "PRECONDITION_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Problem details; code is one of AUTHZ_SIGNER_UNAVAILABLE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "AUTHZ_SIGNER_UNAVAILABLE": {
+                    "summary": "Authorisation signer unavailable",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SIGNER_UNAVAILABLE",
+                      "title": "Authorisation signer unavailable",
+                      "status": 503,
+                      "code": "AUTHZ_SIGNER_UNAVAILABLE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/standing-authorisations/{id}/reject": {
+      "post": {
+        "tags": ["standing-authorisations"],
+        "operationId": "rejectStandingAuthorisation",
+        "summary": "Reject a pending standing authorisation",
+        "description": "Requires If-Match and a reason. The SA returns to draft for its requester; the reason is recorded with the gate decision.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The standing authorisation public id (sa_…).",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "sa_0198f0a0000070008000000000000001"
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "description": "The ETag of the version being changed (from the last read or change). A stale value answers 412, a missing one 428.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "\"v1\""
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectStandingAuthorisation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The draft standing authorisation and its ETag.",
+            "headers": {
+              "ETag": {
+                "description": "Strong validator of this version. Send it in If-Match on PATCH and submit.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandingAuthorisation"
+                },
+                "examples": {
+                  "current": {
+                    "summary": "A draft standing authorisation",
+                    "value": {
+                      "id": "sa_0198f0a0000070008000000000000001",
+                      "assetIds": ["0198f0a0-0000-7000-8000-0000000000a1"],
+                      "scopeRules": {
+                        "rules": [
+                          {
+                            "effect": "include",
+                            "host": "app.example.test"
+                          }
+                        ]
+                      },
+                      "maxIntrusiveness": "active_safe",
+                      "preApprovedTestClasses": ["header-audit"],
+                      "defaultBudgets": {
+                        "costCapUsd": 5,
+                        "maxRequests": 1000,
+                        "maxDurationMs": 3600000
+                      },
+                      "testWindows": [
+                        {
+                          "cron": "0 2 * * 1-5",
+                          "timezone": "Europe/Berlin",
+                          "durationMs": 7200000
+                        }
+                      ],
+                      "validFrom": "2026-11-01T00:00:00.000Z",
+                      "expiresAt": "2026-12-01T00:00:00.000Z",
+                      "requesterId": "0198f0a0-0000-7000-8000-0000000000a2",
+                      "approverId": null,
+                      "signature": null,
+                      "signingKeyId": null,
+                      "status": "draft",
+                      "revocationReason": null,
+                      "version": 1,
+                      "createdAt": "2026-10-29T10:00:00.000Z",
+                      "updatedAt": "2026-10-29T10:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INVALID_CURSOR": {
+                    "summary": "Invalid cursor",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+                      "title": "Invalid cursor",
+                      "status": 400,
+                      "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SIGNUP_TOKEN_INVALID": {
+                    "summary": "Signup token invalid or expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+                      "title": "Signup token invalid or expired",
+                      "status": 400,
+                      "code": "SIGNUP_TOKEN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_NO_CREDENTIALS": {
+                    "summary": "No credentials presented",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+                      "title": "No credentials presented",
+                      "status": 401,
+                      "code": "AUTH_NO_CREDENTIALS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_INVALID_TOKEN": {
+                    "summary": "Invalid credentials",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+                      "title": "Invalid credentials",
+                      "status": 401,
+                      "code": "AUTH_INVALID_TOKEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_EXPIRED": {
+                    "summary": "Credentials expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+                      "title": "Credentials expired",
+                      "status": 401,
+                      "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_UNAUTHENTICATED": {
+                    "summary": "Run token required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+                      "title": "Run token required",
+                      "status": 401,
+                      "code": "SBX_UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SERVICE_AUTH_FAILED": {
+                    "summary": "Service authentication failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+                      "title": "Service authentication failed",
+                      "status": 401,
+                      "code": "SERVICE_AUTH_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN, AUTHZ_SOD_VIOLATION.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SOD_VIOLATION": {
+                    "summary": "Separation of duties violated for the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+                      "title": "Separation of duties violated for the standing authorisation",
+                      "status": 403,
+                      "code": "AUTHZ_SOD_VIOLATION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of AUTHZ_ILLEGAL_TRANSITION.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Problem details; code is one of PRECONDITION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PRECONDITION_FAILED": {
+                    "summary": "Precondition failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PRECONDITION_FAILED",
+                      "title": "Precondition failed",
+                      "status": 412,
+                      "code": "PRECONDITION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Problem details; code is one of PRECONDITION_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PRECONDITION_REQUIRED": {
+                    "summary": "Precondition required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+                      "title": "Precondition required",
+                      "status": 428,
+                      "code": "PRECONDITION_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Problem details; code is one of AUTHZ_SIGNER_UNAVAILABLE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "AUTHZ_SIGNER_UNAVAILABLE": {
+                    "summary": "Authorisation signer unavailable",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SIGNER_UNAVAILABLE",
+                      "title": "Authorisation signer unavailable",
+                      "status": 503,
+                      "code": "AUTHZ_SIGNER_UNAVAILABLE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/runs/{runId}/test-plans": {
       "post": {
-        "tags": [
-          "test-plans"
-        ],
+        "tags": ["test-plans"],
         "operationId": "createTestPlanVersion",
         "summary": "Create the next version of a run plan",
         "description": "Copies the non-removed cases of the newest version into a new draft. Requires Idempotency-Key: a retry returns the original version.",
@@ -17697,25 +18629,13 @@
                           "status": "proposed",
                           "statusReason": null,
                           "refs": {
-                            "owasp": [
-                              "A07"
-                            ],
-                            "wstg": [
-                              "WSTG-ATHN-03"
-                            ],
-                            "asvs": [
-                              "2.2.1"
-                            ]
+                            "owasp": ["A07"],
+                            "wstg": ["WSTG-ATHN-03"],
+                            "asvs": ["2.2.1"]
                           },
-                          "cweCandidates": [
-                            "CWE-307"
-                          ],
-                          "targets": [
-                            "https://app.example.test/login"
-                          ],
-                          "roles": [
-                            "anonymous"
-                          ],
+                          "cweCandidates": ["CWE-307"],
+                          "targets": ["https://app.example.test/login"],
+                          "roles": ["anonymous"],
                           "budget": {
                             "maxRequests": 50,
                             "maxRps": 2,
@@ -17762,7 +18682,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -17806,6 +18726,16 @@
                       "title": "Credentials expired",
                       "status": 401,
                       "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -18022,9 +18952,7 @@
         }
       },
       "get": {
-        "tags": [
-          "test-plans"
-        ],
+        "tags": ["test-plans"],
         "operationId": "listTestPlanVersions",
         "summary": "List the versions of a run plan",
         "security": [
@@ -18117,7 +19045,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -18161,6 +19089,16 @@
                       "title": "Credentials expired",
                       "status": 401,
                       "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -18379,9 +19317,7 @@
     },
     "/runs/{runId}/test-plans/{version}": {
       "get": {
-        "tags": [
-          "test-plans"
-        ],
+        "tags": ["test-plans"],
         "operationId": "getTestPlanVersion",
         "summary": "Read one plan version with its cases",
         "security": [
@@ -18447,25 +19383,13 @@
                           "status": "proposed",
                           "statusReason": null,
                           "refs": {
-                            "owasp": [
-                              "A07"
-                            ],
-                            "wstg": [
-                              "WSTG-ATHN-03"
-                            ],
-                            "asvs": [
-                              "2.2.1"
-                            ]
+                            "owasp": ["A07"],
+                            "wstg": ["WSTG-ATHN-03"],
+                            "asvs": ["2.2.1"]
                           },
-                          "cweCandidates": [
-                            "CWE-307"
-                          ],
-                          "targets": [
-                            "https://app.example.test/login"
-                          ],
-                          "roles": [
-                            "anonymous"
-                          ],
+                          "cweCandidates": ["CWE-307"],
+                          "targets": ["https://app.example.test/login"],
+                          "roles": ["anonymous"],
                           "budget": {
                             "maxRequests": 50,
                             "maxRps": 2,
@@ -18512,7 +19436,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -18556,6 +19480,16 @@
                       "title": "Credentials expired",
                       "status": 401,
                       "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -18774,9 +19708,7 @@
     },
     "/test-plans/{planId}/cases": {
       "post": {
-        "tags": [
-          "test-plans"
-        ],
+        "tags": ["test-plans"],
         "operationId": "addTestCase",
         "summary": "Add a test case to a draft plan version",
         "description": "Requires If-Match (the plan ETag) and Idempotency-Key. An approved or superseded version answers 409 PLAN_VERSION_IMMUTABLE.",
@@ -18839,25 +19771,13 @@
                     "status": "proposed",
                     "statusReason": null,
                     "refs": {
-                      "owasp": [
-                        "A07"
-                      ],
-                      "wstg": [
-                        "WSTG-ATHN-03"
-                      ],
-                      "asvs": [
-                        "2.2.1"
-                      ]
+                      "owasp": ["A07"],
+                      "wstg": ["WSTG-ATHN-03"],
+                      "asvs": ["2.2.1"]
                     },
-                    "cweCandidates": [
-                      "CWE-307"
-                    ],
-                    "targets": [
-                      "https://app.example.test/login"
-                    ],
-                    "roles": [
-                      "anonymous"
-                    ],
+                    "cweCandidates": ["CWE-307"],
+                    "targets": ["https://app.example.test/login"],
+                    "roles": ["anonymous"],
                     "budget": {
                       "maxRequests": 50,
                       "maxRps": 2,
@@ -18906,25 +19826,13 @@
                       "status": "proposed",
                       "statusReason": null,
                       "refs": {
-                        "owasp": [
-                          "A07"
-                        ],
-                        "wstg": [
-                          "WSTG-ATHN-03"
-                        ],
-                        "asvs": [
-                          "2.2.1"
-                        ]
+                        "owasp": ["A07"],
+                        "wstg": ["WSTG-ATHN-03"],
+                        "asvs": ["2.2.1"]
                       },
-                      "cweCandidates": [
-                        "CWE-307"
-                      ],
-                      "targets": [
-                        "https://app.example.test/login"
-                      ],
-                      "roles": [
-                        "anonymous"
-                      ],
+                      "cweCandidates": ["CWE-307"],
+                      "targets": ["https://app.example.test/login"],
+                      "roles": ["anonymous"],
                       "budget": {
                         "maxRequests": 50,
                         "maxRps": 2,
@@ -18969,7 +19877,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -19013,6 +19921,16 @@
                       "title": "Credentials expired",
                       "status": 401,
                       "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -19231,9 +20149,7 @@
     },
     "/test-cases/{caseId}": {
       "patch": {
-        "tags": [
-          "test-plans"
-        ],
+        "tags": ["test-plans"],
         "operationId": "updateTestCase",
         "summary": "Edit a test case of a draft plan version",
         "description": "Requires If-Match (the case ETag). Only the sent fields change.",
@@ -19312,25 +20228,13 @@
                       "status": "proposed",
                       "statusReason": null,
                       "refs": {
-                        "owasp": [
-                          "A07"
-                        ],
-                        "wstg": [
-                          "WSTG-ATHN-03"
-                        ],
-                        "asvs": [
-                          "2.2.1"
-                        ]
+                        "owasp": ["A07"],
+                        "wstg": ["WSTG-ATHN-03"],
+                        "asvs": ["2.2.1"]
                       },
-                      "cweCandidates": [
-                        "CWE-307"
-                      ],
-                      "targets": [
-                        "https://app.example.test/login"
-                      ],
-                      "roles": [
-                        "anonymous"
-                      ],
+                      "cweCandidates": ["CWE-307"],
+                      "targets": ["https://app.example.test/login"],
+                      "roles": ["anonymous"],
                       "budget": {
                         "maxRequests": 50,
                         "maxRps": 2,
@@ -19375,7 +20279,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -19419,6 +20323,16 @@
                       "title": "Credentials expired",
                       "status": 401,
                       "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -19635,9 +20549,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "test-plans"
-        ],
+        "tags": ["test-plans"],
         "operationId": "removeTestCase",
         "summary": "Remove a test case from a draft plan version",
         "description": "Soft-removes the case (status removed). Removing an already removed case answers 200 and writes nothing. Otherwise requires If-Match.",
@@ -19698,25 +20610,13 @@
                       "status": "proposed",
                       "statusReason": null,
                       "refs": {
-                        "owasp": [
-                          "A07"
-                        ],
-                        "wstg": [
-                          "WSTG-ATHN-03"
-                        ],
-                        "asvs": [
-                          "2.2.1"
-                        ]
+                        "owasp": ["A07"],
+                        "wstg": ["WSTG-ATHN-03"],
+                        "asvs": ["2.2.1"]
                       },
-                      "cweCandidates": [
-                        "CWE-307"
-                      ],
-                      "targets": [
-                        "https://app.example.test/login"
-                      ],
-                      "roles": [
-                        "anonymous"
-                      ],
+                      "cweCandidates": ["CWE-307"],
+                      "targets": ["https://app.example.test/login"],
+                      "roles": ["anonymous"],
                       "budget": {
                         "maxRequests": 50,
                         "maxRps": 2,
@@ -19761,7 +20661,7 @@
             }
           },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -19805,6 +20705,16 @@
                       "title": "Credentials expired",
                       "status": 401,
                       "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -20105,21 +21015,11 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "draft",
-              "submitted",
-              "withdrawn",
-              "promoted",
-              "rejected"
-            ]
+            "enum": ["draft", "submitted", "withdrawn", "promoted", "rejected"]
           },
           "mode": {
             "type": "string",
-            "enum": [
-              "black",
-              "grey",
-              "white"
-            ]
+            "enum": ["black", "grey", "white"]
           },
           "objective": {
             "type": "string"
@@ -20165,11 +21065,7 @@
           },
           "maxIntrusiveness": {
             "type": "string",
-            "enum": [
-              "passive",
-              "active_safe",
-              "state_changing"
-            ]
+            "enum": ["passive", "active_safe", "state_changing"]
           },
           "budgets": {
             "type": "object",
@@ -20190,22 +21086,12 @@
                 "maximum": 2592000000
               }
             },
-            "required": [
-              "costCapUsd",
-              "maxRequests",
-              "maxDurationMs"
-            ],
+            "required": ["costCapUsd", "maxRequests", "maxDurationMs"],
             "additionalProperties": false
           },
           "trigger": {
             "type": "string",
-            "enum": [
-              "console",
-              "api",
-              "ci",
-              "schedule",
-              "retest"
-            ]
+            "enum": ["console", "api", "ci", "schedule", "retest"]
           },
           "requestedBy": {
             "type": "string",
@@ -20252,11 +21138,7 @@
         "properties": {
           "mode": {
             "type": "string",
-            "enum": [
-              "black",
-              "grey",
-              "white"
-            ]
+            "enum": ["black", "grey", "white"]
           },
           "objective": {
             "type": "string",
@@ -20284,10 +21166,7 @@
                   "properties": {
                     "effect": {
                       "type": "string",
-                      "enum": [
-                        "include",
-                        "exclude"
-                      ]
+                      "enum": ["include", "exclude"]
                     },
                     "host": {},
                     "cidr": {},
@@ -20322,26 +21201,18 @@
                       }
                     }
                   },
-                  "required": [
-                    "effect"
-                  ],
+                  "required": ["effect"],
                   "additionalProperties": false
                 }
               }
             },
-            "required": [
-              "rules"
-            ],
+            "required": ["rules"],
             "additionalProperties": false
           },
           "maxIntrusiveness": {
             "default": "active_safe",
             "type": "string",
-            "enum": [
-              "passive",
-              "active_safe",
-              "state_changing"
-            ]
+            "enum": ["passive", "active_safe", "state_changing"]
           },
           "budgets": {
             "type": "object",
@@ -20377,22 +21248,10 @@
           "trigger": {
             "default": "console",
             "type": "string",
-            "enum": [
-              "console",
-              "api",
-              "ci",
-              "schedule",
-              "retest"
-            ]
+            "enum": ["console", "api", "ci", "schedule", "retest"]
           }
         },
-        "required": [
-          "mode",
-          "objective",
-          "assetIds",
-          "maxIntrusiveness",
-          "trigger"
-        ],
+        "required": ["mode", "objective", "assetIds", "maxIntrusiveness", "trigger"],
         "additionalProperties": false
       },
       "AssessmentRequestList": {
@@ -20409,21 +21268,11 @@
                 },
                 "status": {
                   "type": "string",
-                  "enum": [
-                    "draft",
-                    "submitted",
-                    "withdrawn",
-                    "promoted",
-                    "rejected"
-                  ]
+                  "enum": ["draft", "submitted", "withdrawn", "promoted", "rejected"]
                 },
                 "mode": {
                   "type": "string",
-                  "enum": [
-                    "black",
-                    "grey",
-                    "white"
-                  ]
+                  "enum": ["black", "grey", "white"]
                 },
                 "objective": {
                   "type": "string"
@@ -20469,11 +21318,7 @@
                 },
                 "maxIntrusiveness": {
                   "type": "string",
-                  "enum": [
-                    "passive",
-                    "active_safe",
-                    "state_changing"
-                  ]
+                  "enum": ["passive", "active_safe", "state_changing"]
                 },
                 "budgets": {
                   "type": "object",
@@ -20494,22 +21339,12 @@
                       "maximum": 2592000000
                     }
                   },
-                  "required": [
-                    "costCapUsd",
-                    "maxRequests",
-                    "maxDurationMs"
-                  ],
+                  "required": ["costCapUsd", "maxRequests", "maxDurationMs"],
                   "additionalProperties": false
                 },
                 "trigger": {
                   "type": "string",
-                  "enum": [
-                    "console",
-                    "api",
-                    "ci",
-                    "schedule",
-                    "retest"
-                  ]
+                  "enum": ["console", "api", "ci", "schedule", "retest"]
                 },
                 "requestedBy": {
                   "type": "string",
@@ -20553,9 +21388,7 @@
             }
           }
         },
-        "required": [
-          "items"
-        ],
+        "required": ["items"],
         "additionalProperties": false
       },
       "AssessmentRequestPatch": {
@@ -20563,11 +21396,7 @@
         "properties": {
           "mode": {
             "type": "string",
-            "enum": [
-              "black",
-              "grey",
-              "white"
-            ]
+            "enum": ["black", "grey", "white"]
           },
           "objective": {
             "type": "string",
@@ -20594,10 +21423,7 @@
                   "properties": {
                     "effect": {
                       "type": "string",
-                      "enum": [
-                        "include",
-                        "exclude"
-                      ]
+                      "enum": ["include", "exclude"]
                     },
                     "host": {},
                     "cidr": {},
@@ -20632,25 +21458,17 @@
                       }
                     }
                   },
-                  "required": [
-                    "effect"
-                  ],
+                  "required": ["effect"],
                   "additionalProperties": false
                 }
               }
             },
-            "required": [
-              "rules"
-            ],
+            "required": ["rules"],
             "additionalProperties": false
           },
           "maxIntrusiveness": {
             "type": "string",
-            "enum": [
-              "passive",
-              "active_safe",
-              "state_changing"
-            ]
+            "enum": ["passive", "active_safe", "state_changing"]
           },
           "budgets": {
             "type": "object",
@@ -20685,13 +21503,7 @@
           },
           "trigger": {
             "type": "string",
-            "enum": [
-              "console",
-              "api",
-              "ci",
-              "schedule",
-              "retest"
-            ]
+            "enum": ["console", "api", "ci", "schedule", "retest"]
           }
         },
         "additionalProperties": false
@@ -20715,47 +21527,23 @@
                 },
                 "type": {
                   "type": "string",
-                  "enum": [
-                    "web_app",
-                    "api",
-                    "host",
-                    "network_range",
-                    "source_repo"
-                  ]
+                  "enum": ["web_app", "api", "host", "network_range", "source_repo"]
                 },
                 "environment": {
                   "type": "string",
-                  "enum": [
-                    "prod",
-                    "staging",
-                    "dev",
-                    "test"
-                  ]
+                  "enum": ["prod", "staging", "dev", "test"]
                 },
                 "verificationStatus": {
                   "type": "string",
-                  "enum": [
-                    "unverified",
-                    "pending",
-                    "verified",
-                    "rejected"
-                  ]
+                  "enum": ["unverified", "pending", "verified", "rejected"]
                 }
               },
-              "required": [
-                "id",
-                "name",
-                "type",
-                "environment",
-                "verificationStatus"
-              ],
+              "required": ["id", "name", "type", "environment", "verificationStatus"],
               "additionalProperties": false
             }
           }
         },
-        "required": [
-          "items"
-        ],
+        "required": ["items"],
         "additionalProperties": false
       },
       "AuditEventView": {
@@ -20874,29 +21662,16 @@
           },
           "severity": {
             "type": "string",
-            "enum": [
-              "info",
-              "notice",
-              "warning",
-              "critical"
-            ]
+            "enum": ["info", "notice", "warning", "critical"]
           },
           "actor": {
             "type": "object",
             "description": "Who acted. `email` is only returned to auditors.",
-            "required": [
-              "type"
-            ],
+            "required": ["type"],
             "properties": {
               "type": {
                 "type": "string",
-                "enum": [
-                  "user",
-                  "operator",
-                  "service",
-                  "system",
-                  "anonymous"
-                ]
+                "enum": ["user", "operator", "service", "system", "anonymous"]
               },
               "id": {
                 "type": "string"
@@ -20911,10 +21686,7 @@
           },
           "target": {
             "type": "object",
-            "required": [
-              "type",
-              "id"
-            ],
+            "required": ["type", "id"],
             "properties": {
               "type": {
                 "type": "string"
@@ -20929,17 +21701,10 @@
           },
           "outcome": {
             "type": "string",
-            "enum": [
-              "success",
-              "failure",
-              "denied"
-            ]
+            "enum": ["success", "failure", "denied"]
           },
           "reason": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "metadata": {
             "type": "object",
@@ -20950,16 +21715,10 @@
             "description": "Only returned to auditors."
           },
           "traceId": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "runId": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "uuid"
           },
           "hash": {
@@ -20967,10 +21726,7 @@
             "description": "Hex SHA-256 chain hash. Only with includeChain=true."
           },
           "prevHash": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Hex previous hash; null on the genesis row. Only with includeChain=true."
           }
         }
@@ -20998,10 +21754,7 @@
                   "properties": {
                     "effect": {
                       "type": "string",
-                      "enum": [
-                        "include",
-                        "exclude"
-                      ]
+                      "enum": ["include", "exclude"]
                     },
                     "host": {},
                     "cidr": {},
@@ -21036,25 +21789,17 @@
                       }
                     }
                   },
-                  "required": [
-                    "effect"
-                  ],
+                  "required": ["effect"],
                   "additionalProperties": false
                 }
               }
             },
-            "required": [
-              "rules"
-            ],
+            "required": ["rules"],
             "additionalProperties": false
           },
           "maxIntrusiveness": {
             "type": "string",
-            "enum": [
-              "passive",
-              "active_safe",
-              "state_changing"
-            ]
+            "enum": ["passive", "active_safe", "state_changing"]
           },
           "preApprovedTestClasses": {
             "maxItems": 50,
@@ -21084,11 +21829,7 @@
                 "maximum": 2592000000
               }
             },
-            "required": [
-              "costCapUsd",
-              "maxRequests",
-              "maxDurationMs"
-            ],
+            "required": ["costCapUsd", "maxRequests", "maxDurationMs"],
             "additionalProperties": false
           },
           "testWindows": {
@@ -21113,11 +21854,7 @@
                   "maximum": 9007199254740991
                 }
               },
-              "required": [
-                "cron",
-                "timezone",
-                "durationMs"
-              ],
+              "required": ["cron", "timezone", "durationMs"],
               "additionalProperties": false
             }
           },
@@ -21149,11 +21886,7 @@
         "properties": {
           "decision": {
             "type": "string",
-            "enum": [
-              "approve",
-              "request_changes",
-              "reject"
-            ]
+            "enum": ["approve", "request_changes", "reject"]
           },
           "planVersion": {
             "type": "integer",
@@ -21165,10 +21898,7 @@
             "maxLength": 2000
           }
         },
-        "required": [
-          "decision",
-          "planVersion"
-        ],
+        "required": ["decision", "planVersion"],
         "additionalProperties": false
       },
       "Gate1DecisionResponse": {
@@ -21180,11 +21910,7 @@
           },
           "decision": {
             "type": "string",
-            "enum": [
-              "approve",
-              "request_changes",
-              "reject"
-            ]
+            "enum": ["approve", "request_changes", "reject"]
           },
           "planVersion": {
             "type": "integer",
@@ -21219,13 +21945,7 @@
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
           }
         },
-        "required": [
-          "runId",
-          "decision",
-          "planVersion",
-          "runState",
-          "decidedAt"
-        ],
+        "required": ["runId", "decision", "planVersion", "runState", "decidedAt"],
         "additionalProperties": false
       },
       "Gate1PlanView": {
@@ -21308,12 +22028,7 @@
                 },
                 "class": {
                   "type": "string",
-                  "enum": [
-                    "passive",
-                    "active_safe",
-                    "state_changing",
-                    "destructive"
-                  ]
+                  "enum": ["passive", "active_safe", "state_changing", "destructive"]
                 },
                 "targets": {
                   "type": "array",
@@ -21347,22 +22062,11 @@
                       "maximum": 1099511627776
                     }
                   },
-                  "required": [
-                    "maxRequests",
-                    "maxRps",
-                    "maxConcurrency",
-                    "maxBytes"
-                  ],
+                  "required": ["maxRequests", "maxRps", "maxConcurrency", "maxBytes"],
                   "additionalProperties": false
                 }
               },
-              "required": [
-                "id",
-                "title",
-                "class",
-                "targets",
-                "budget"
-              ],
+              "required": ["id", "title", "class", "targets", "budget"],
               "additionalProperties": false
             }
           },
@@ -21380,10 +22084,7 @@
                 "maximum": 9007199254740991
               }
             },
-            "required": [
-              "maxRequests",
-              "maxBytes"
-            ],
+            "required": ["maxRequests", "maxBytes"],
             "additionalProperties": false
           },
           "changes": {
@@ -21415,12 +22116,7 @@
                     }
                   }
                 },
-                "required": [
-                  "fromVersion",
-                  "added",
-                  "removed",
-                  "changed"
-                ],
+                "required": ["fromVersion", "added", "removed", "changed"],
                 "additionalProperties": false
               },
               {
@@ -21438,10 +22134,7 @@
                 "type": "boolean"
               }
             },
-            "required": [
-              "canDecide",
-              "isRequester"
-            ],
+            "required": ["canDecide", "isRequester"],
             "additionalProperties": false
           }
         },
@@ -21479,12 +22172,7 @@
           },
           "scope": {
             "type": "string",
-            "enum": [
-              "run",
-              "asset",
-              "tenant",
-              "global"
-            ]
+            "enum": ["run", "asset", "tenant", "global"]
           },
           "scopeRefId": {
             "anyOf": [
@@ -21499,13 +22187,7 @@
           },
           "source": {
             "type": "string",
-            "enum": [
-              "console",
-              "api",
-              "soc_link",
-              "operator",
-              "system"
-            ]
+            "enum": ["console", "api", "soc_link", "operator", "system"]
           },
           "actorType": {
             "type": "string",
@@ -21523,13 +22205,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "initiated",
-              "propagating",
-              "halted",
-              "partially_halted",
-              "failed"
-            ]
+            "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
           },
           "triggeredAt": {
             "type": "string",
@@ -21623,17 +22299,10 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": [
-                        "blocked",
-                        "already_blocked",
-                        "failed"
-                      ]
+                      "enum": ["blocked", "already_blocked", "failed"]
                     }
                   },
-                  "required": [
-                    "identity",
-                    "outcome"
-                  ],
+                  "required": ["identity", "outcome"],
                   "additionalProperties": false
                 }
               },
@@ -21664,18 +22333,10 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": [
-                        "terminated",
-                        "already_gone",
-                        "terminating",
-                        "failed"
-                      ]
+                      "enum": ["terminated", "already_gone", "terminating", "failed"]
                     }
                   },
-                  "required": [
-                    "sandboxId",
-                    "outcome"
-                  ],
+                  "required": ["sandboxId", "outcome"],
                   "additionalProperties": false
                 }
               },
@@ -21696,17 +22357,10 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": [
-                        "revoked",
-                        "already_revoked",
-                        "failed"
-                      ]
+                      "enum": ["revoked", "already_revoked", "failed"]
                     }
                   },
-                  "required": [
-                    "keyId",
-                    "outcome"
-                  ],
+                  "required": ["keyId", "outcome"],
                   "additionalProperties": false
                 }
               },
@@ -21727,18 +22381,10 @@
                     },
                     "outcome": {
                       "type": "string",
-                      "enum": [
-                        "cancelled",
-                        "already_closed",
-                        "not_found",
-                        "failed"
-                      ]
+                      "enum": ["cancelled", "already_closed", "not_found", "failed"]
                     }
                   },
-                  "required": [
-                    "workflowId",
-                    "outcome"
-                  ],
+                  "required": ["workflowId", "outcome"],
                   "additionalProperties": false
                 }
               },
@@ -21830,12 +22476,7 @@
                 },
                 "scope": {
                   "type": "string",
-                  "enum": [
-                    "run",
-                    "asset",
-                    "tenant",
-                    "global"
-                  ]
+                  "enum": ["run", "asset", "tenant", "global"]
                 },
                 "scopeRefId": {
                   "anyOf": [
@@ -21850,13 +22491,7 @@
                 },
                 "source": {
                   "type": "string",
-                  "enum": [
-                    "console",
-                    "api",
-                    "soc_link",
-                    "operator",
-                    "system"
-                  ]
+                  "enum": ["console", "api", "soc_link", "operator", "system"]
                 },
                 "actorType": {
                   "type": "string",
@@ -21874,13 +22509,7 @@
                 },
                 "status": {
                   "type": "string",
-                  "enum": [
-                    "initiated",
-                    "propagating",
-                    "halted",
-                    "partially_halted",
-                    "failed"
-                  ]
+                  "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
                 },
                 "triggeredAt": {
                   "type": "string",
@@ -21974,17 +22603,10 @@
                           },
                           "outcome": {
                             "type": "string",
-                            "enum": [
-                              "blocked",
-                              "already_blocked",
-                              "failed"
-                            ]
+                            "enum": ["blocked", "already_blocked", "failed"]
                           }
                         },
-                        "required": [
-                          "identity",
-                          "outcome"
-                        ],
+                        "required": ["identity", "outcome"],
                         "additionalProperties": false
                       }
                     },
@@ -22015,18 +22637,10 @@
                           },
                           "outcome": {
                             "type": "string",
-                            "enum": [
-                              "terminated",
-                              "already_gone",
-                              "terminating",
-                              "failed"
-                            ]
+                            "enum": ["terminated", "already_gone", "terminating", "failed"]
                           }
                         },
-                        "required": [
-                          "sandboxId",
-                          "outcome"
-                        ],
+                        "required": ["sandboxId", "outcome"],
                         "additionalProperties": false
                       }
                     },
@@ -22047,17 +22661,10 @@
                           },
                           "outcome": {
                             "type": "string",
-                            "enum": [
-                              "revoked",
-                              "already_revoked",
-                              "failed"
-                            ]
+                            "enum": ["revoked", "already_revoked", "failed"]
                           }
                         },
-                        "required": [
-                          "keyId",
-                          "outcome"
-                        ],
+                        "required": ["keyId", "outcome"],
                         "additionalProperties": false
                       }
                     },
@@ -22078,18 +22685,10 @@
                           },
                           "outcome": {
                             "type": "string",
-                            "enum": [
-                              "cancelled",
-                              "already_closed",
-                              "not_found",
-                              "failed"
-                            ]
+                            "enum": ["cancelled", "already_closed", "not_found", "failed"]
                           }
                         },
-                        "required": [
-                          "workflowId",
-                          "outcome"
-                        ],
+                        "required": ["workflowId", "outcome"],
                         "additionalProperties": false
                       }
                     },
@@ -22166,9 +22765,7 @@
             }
           }
         },
-        "required": [
-          "items"
-        ],
+        "required": ["items"],
         "additionalProperties": false
       },
       "KillTriggerRequest": {
@@ -22176,11 +22773,7 @@
         "properties": {
           "scope": {
             "type": "string",
-            "enum": [
-              "run",
-              "asset",
-              "tenant"
-            ]
+            "enum": ["run", "asset", "tenant"]
           },
           "scopeRefId": {
             "type": "string",
@@ -22191,10 +22784,7 @@
             "maxLength": 2000
           }
         },
-        "required": [
-          "scope",
-          "reason"
-        ],
+        "required": ["scope", "reason"],
         "additionalProperties": false
       },
       "KillTriggerResponse": {
@@ -22206,13 +22796,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "initiated",
-              "propagating",
-              "halted",
-              "partially_halted",
-              "failed"
-            ]
+            "enum": ["initiated", "propagating", "halted", "partially_halted", "failed"]
           },
           "triggeredAt": {
             "type": "string",
@@ -22220,11 +22804,7 @@
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
           }
         },
-        "required": [
-          "killEventId",
-          "status",
-          "triggeredAt"
-        ],
+        "required": ["killEventId", "status", "triggeredAt"],
         "additionalProperties": false
       },
       "PatchStandingAuthorisation": {
@@ -22250,10 +22830,7 @@
                   "properties": {
                     "effect": {
                       "type": "string",
-                      "enum": [
-                        "include",
-                        "exclude"
-                      ]
+                      "enum": ["include", "exclude"]
                     },
                     "host": {},
                     "cidr": {},
@@ -22288,25 +22865,17 @@
                       }
                     }
                   },
-                  "required": [
-                    "effect"
-                  ],
+                  "required": ["effect"],
                   "additionalProperties": false
                 }
               }
             },
-            "required": [
-              "rules"
-            ],
+            "required": ["rules"],
             "additionalProperties": false
           },
           "maxIntrusiveness": {
             "type": "string",
-            "enum": [
-              "passive",
-              "active_safe",
-              "state_changing"
-            ]
+            "enum": ["passive", "active_safe", "state_changing"]
           },
           "preApprovedTestClasses": {
             "maxItems": 50,
@@ -22336,11 +22905,7 @@
                 "maximum": 2592000000
               }
             },
-            "required": [
-              "costCapUsd",
-              "maxRequests",
-              "maxDurationMs"
-            ],
+            "required": ["costCapUsd", "maxRequests", "maxDurationMs"],
             "additionalProperties": false
           },
           "testWindows": {
@@ -22365,11 +22930,7 @@
                   "maximum": 9007199254740991
                 }
               },
-              "required": [
-                "cron",
-                "timezone",
-                "durationMs"
-              ],
+              "required": ["cron", "timezone", "durationMs"],
               "additionalProperties": false
             }
           },
@@ -22391,13 +22952,7 @@
         "properties": {
           "effort": {
             "type": "string",
-            "enum": [
-              "low",
-              "medium",
-              "high",
-              "xhigh",
-              "max"
-            ]
+            "enum": ["low", "medium", "high", "xhigh", "max"]
           },
           "maxTurns": {
             "type": "integer",
@@ -22418,11 +22973,7 @@
       "PersonaOverrideView": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "persona",
-          "override",
-          "updatedAt"
-        ],
+        "required": ["persona", "override", "updatedAt"],
         "properties": {
           "persona": {
             "type": "string",
@@ -22459,10 +23010,7 @@
             ]
           },
           "updatedAt": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "date-time"
           }
         }
@@ -22470,9 +23018,7 @@
       "PersonaRegistryList": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "items"
-        ],
+        "required": ["items"],
         "properties": {
           "items": {
             "type": "array",
@@ -22519,11 +23065,7 @@
           },
           "tierAlias": {
             "type": "string",
-            "enum": [
-              "deep",
-              "standard",
-              "fast"
-            ]
+            "enum": ["deep", "standard", "fast"]
           },
           "effective": {
             "type": "object",
@@ -22534,13 +23076,7 @@
               },
               "effort": {
                 "type": "string",
-                "enum": [
-                  "low",
-                  "medium",
-                  "high",
-                  "xhigh",
-                  "max"
-                ]
+                "enum": ["low", "medium", "high", "xhigh", "max"]
               },
               "maxTurns": {
                 "type": "integer",
@@ -22552,24 +23088,14 @@
                 "exclusiveMinimum": 0
               }
             },
-            "required": [
-              "model",
-              "effort",
-              "maxTurns",
-              "maxBudgetUsd"
-            ],
+            "required": ["model", "effort", "maxTurns", "maxBudgetUsd"],
             "additionalProperties": false
           },
           "overridden": {
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "effort",
-                "maxTurns",
-                "maxBudgetUsd",
-                "lowerStandardTier"
-              ]
+              "enum": ["effort", "maxTurns", "maxBudgetUsd", "lowerStandardTier"]
             }
           },
           "allowedTools": {
@@ -22611,11 +23137,7 @@
           },
           "intrusivenessCeiling": {
             "type": "string",
-            "enum": [
-              "passive",
-              "active_safe",
-              "state_changing"
-            ]
+            "enum": ["passive", "active_safe", "state_changing"]
           },
           "requiresSubmission": {
             "type": "boolean"
@@ -22635,11 +23157,7 @@
                 },
                 "tierAlias": {
                   "type": "string",
-                  "enum": [
-                    "deep",
-                    "standard",
-                    "fast"
-                  ]
+                  "enum": ["deep", "standard", "fast"]
                 },
                 "allowedTools": {
                   "type": "array",
@@ -22649,12 +23167,7 @@
                   }
                 }
               },
-              "required": [
-                "name",
-                "description",
-                "tierAlias",
-                "allowedTools"
-              ],
+              "required": ["name", "description", "tierAlias", "allowedTools"],
               "additionalProperties": false
             }
           }
@@ -22715,22 +23228,24 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "path",
-                "message",
-                "code"
-              ],
+              "required": ["path", "message", "code"],
               "additionalProperties": false
             }
           }
         },
-        "required": [
-          "type",
-          "title",
-          "status",
-          "code",
-          "traceId"
-        ],
+        "required": ["type", "title", "status", "code", "traceId"],
+        "additionalProperties": false
+      },
+      "RejectStandingAuthorisation": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": ["reason"],
         "additionalProperties": false
       },
       "SignupAccepted": {
@@ -22741,9 +23256,7 @@
             "const": "verification_requested"
           }
         },
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "additionalProperties": false
       },
       "SignupRequest": {
@@ -22761,10 +23274,7 @@
             "maxLength": 100
           }
         },
-        "required": [
-          "email",
-          "orgName"
-        ],
+        "required": ["email", "orgName"],
         "additionalProperties": false
       },
       "SignupVerified": {
@@ -22787,11 +23297,7 @@
                 "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
               }
             },
-            "required": [
-              "outcome",
-              "tenantId",
-              "slug"
-            ],
+            "required": ["outcome", "tenantId", "slug"],
             "additionalProperties": false
           },
           {
@@ -22802,9 +23308,7 @@
                 "const": "existing_account"
               }
             },
-            "required": [
-              "outcome"
-            ],
+            "required": ["outcome"],
             "additionalProperties": false
           }
         ]
@@ -22818,9 +23322,7 @@
             "maxLength": 512
           }
         },
-        "required": [
-          "token"
-        ],
+        "required": ["token"],
         "additionalProperties": false
       },
       "StandingAuthorisation": {
@@ -22849,10 +23351,7 @@
                   "properties": {
                     "effect": {
                       "type": "string",
-                      "enum": [
-                        "include",
-                        "exclude"
-                      ]
+                      "enum": ["include", "exclude"]
                     },
                     "host": {},
                     "cidr": {},
@@ -22887,25 +23386,17 @@
                       }
                     }
                   },
-                  "required": [
-                    "effect"
-                  ],
+                  "required": ["effect"],
                   "additionalProperties": false
                 }
               }
             },
-            "required": [
-              "rules"
-            ],
+            "required": ["rules"],
             "additionalProperties": false
           },
           "maxIntrusiveness": {
             "type": "string",
-            "enum": [
-              "passive",
-              "active_safe",
-              "state_changing"
-            ]
+            "enum": ["passive", "active_safe", "state_changing"]
           },
           "preApprovedTestClasses": {
             "type": "array",
@@ -22932,11 +23423,7 @@
                 "maximum": 2592000000
               }
             },
-            "required": [
-              "costCapUsd",
-              "maxRequests",
-              "maxDurationMs"
-            ],
+            "required": ["costCapUsd", "maxRequests", "maxDurationMs"],
             "additionalProperties": false
           },
           "testWindows": {
@@ -22960,11 +23447,7 @@
                   "maximum": 9007199254740991
                 }
               },
-              "required": [
-                "cron",
-                "timezone",
-                "durationMs"
-              ],
+              "required": ["cron", "timezone", "durationMs"],
               "additionalProperties": false
             }
           },
@@ -23017,13 +23500,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "draft",
-              "pending_approval",
-              "active",
-              "expired",
-              "revoked"
-            ]
+            "enum": ["draft", "pending_approval", "active", "expired", "revoked"]
           },
           "revocationReason": {
             "anyOf": [
@@ -23141,22 +23618,11 @@
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
                     }
                   },
-                  "required": [
-                    "runId",
-                    "firstSeenAt",
-                    "lastSeenAt"
-                  ],
+                  "required": ["runId", "firstSeenAt", "lastSeenAt"],
                   "additionalProperties": false
                 }
               },
-              "required": [
-                "id",
-                "kind",
-                "label",
-                "confidence",
-                "degree",
-                "provenance"
-              ],
+              "required": ["id", "kind", "label", "confidence", "degree", "provenance"],
               "additionalProperties": false
             }
           },
@@ -23167,14 +23633,7 @@
               "properties": {
                 "kind": {
                   "type": "string",
-                  "enum": [
-                    "RESOLVES_TO",
-                    "EXPOSES",
-                    "RUNS",
-                    "SERVES",
-                    "HAS_PARAM",
-                    "CAN_ACCESS"
-                  ]
+                  "enum": ["RESOLVES_TO", "EXPOSES", "RUNS", "SERVES", "HAS_PARAM", "CAN_ACCESS"]
                 },
                 "from": {
                   "type": "string",
@@ -23187,11 +23646,7 @@
                   "maxLength": 4096
                 }
               },
-              "required": [
-                "kind",
-                "from",
-                "to"
-              ],
+              "required": ["kind", "from", "to"],
               "additionalProperties": false
             }
           },
@@ -23209,10 +23664,7 @@
                 "maximum": 9007199254740991
               }
             },
-            "required": [
-              "nodes",
-              "edges"
-            ],
+            "required": ["nodes", "edges"],
             "additionalProperties": false
           },
           "truncated": {
@@ -23229,9 +23681,7 @@
                 "type": "boolean"
               }
             },
-            "required": [
-              "hasNextPage"
-            ],
+            "required": ["hasNextPage"],
             "additionalProperties": false
           },
           "clusteredBy": {
@@ -23283,11 +23733,7 @@
           "defaultAssessmentMode": {
             "default": "grey",
             "type": "string",
-            "enum": [
-              "black",
-              "grey",
-              "white"
-            ]
+            "enum": ["black", "grey", "white"]
           },
           "defaultNotificationEmail": {
             "type": "string",
@@ -23307,10 +23753,7 @@
             ]
           }
         },
-        "required": [
-          "displayTimezone",
-          "defaultAssessmentMode"
-        ],
+        "required": ["displayTimezone", "defaultAssessmentMode"],
         "additionalProperties": false
       },
       "TenantSettingsPatch": {
@@ -23322,11 +23765,7 @@
           },
           "defaultAssessmentMode": {
             "type": "string",
-            "enum": [
-              "black",
-              "grey",
-              "white"
-            ]
+            "enum": ["black", "grey", "white"]
           },
           "defaultNotificationEmail": {
             "anyOf": [
@@ -23376,11 +23815,7 @@
               "defaultAssessmentMode": {
                 "default": "grey",
                 "type": "string",
-                "enum": [
-                  "black",
-                  "grey",
-                  "white"
-                ]
+                "enum": ["black", "grey", "white"]
               },
               "defaultNotificationEmail": {
                 "type": "string",
@@ -23400,10 +23835,7 @@
                 ]
               }
             },
-            "required": [
-              "displayTimezone",
-              "defaultAssessmentMode"
-            ],
+            "required": ["displayTimezone", "defaultAssessmentMode"],
             "additionalProperties": false
           },
           "region": {
@@ -23415,11 +23847,7 @@
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
           }
         },
-        "required": [
-          "settings",
-          "region",
-          "updatedAt"
-        ],
+        "required": ["settings", "region", "updatedAt"],
         "additionalProperties": false
       },
       "TestCaseCreate": {
@@ -23427,12 +23855,7 @@
         "properties": {
           "class": {
             "type": "string",
-            "enum": [
-              "passive",
-              "active_safe",
-              "state_changing",
-              "destructive"
-            ]
+            "enum": ["passive", "active_safe", "state_changing", "destructive"]
           },
           "title": {
             "type": "string",
@@ -23464,11 +23887,7 @@
                 }
               }
             },
-            "required": [
-              "owasp",
-              "wstg",
-              "asvs"
-            ],
+            "required": ["owasp", "wstg", "asvs"],
             "additionalProperties": false
           },
           "cweCandidates": {
@@ -23519,12 +23938,7 @@
                 "maximum": 1099511627776
               }
             },
-            "required": [
-              "maxRequests",
-              "maxRps",
-              "maxConcurrency",
-              "maxBytes"
-            ],
+            "required": ["maxRequests", "maxRps", "maxConcurrency", "maxBytes"],
             "additionalProperties": false
           },
           "oracle": {
@@ -23542,10 +23956,7 @@
                 "additionalProperties": {}
               }
             },
-            "required": [
-              "type",
-              "params"
-            ],
+            "required": ["type", "params"],
             "additionalProperties": {}
           },
           "negativeControl": {
@@ -23565,10 +23976,7 @@
                     "additionalProperties": {}
                   }
                 },
-                "required": [
-                  "type",
-                  "params"
-                ],
+                "required": ["type", "params"],
                 "additionalProperties": {}
               },
               {
@@ -23595,12 +24003,7 @@
         "properties": {
           "class": {
             "type": "string",
-            "enum": [
-              "passive",
-              "active_safe",
-              "state_changing",
-              "destructive"
-            ]
+            "enum": ["passive", "active_safe", "state_changing", "destructive"]
           },
           "title": {
             "type": "string",
@@ -23632,11 +24035,7 @@
                 }
               }
             },
-            "required": [
-              "owasp",
-              "wstg",
-              "asvs"
-            ],
+            "required": ["owasp", "wstg", "asvs"],
             "additionalProperties": false
           },
           "cweCandidates": {
@@ -23687,12 +24086,7 @@
                 "maximum": 1099511627776
               }
             },
-            "required": [
-              "maxRequests",
-              "maxRps",
-              "maxConcurrency",
-              "maxBytes"
-            ],
+            "required": ["maxRequests", "maxRps", "maxConcurrency", "maxBytes"],
             "additionalProperties": false
           },
           "oracle": {
@@ -23710,10 +24104,7 @@
                 "additionalProperties": {}
               }
             },
-            "required": [
-              "type",
-              "params"
-            ],
+            "required": ["type", "params"],
             "additionalProperties": {}
           },
           "negativeControl": {
@@ -23733,10 +24124,7 @@
                     "additionalProperties": {}
                   }
                 },
-                "required": [
-                  "type",
-                  "params"
-                ],
+                "required": ["type", "params"],
                 "additionalProperties": {}
               },
               {
@@ -23760,12 +24148,7 @@
           },
           "class": {
             "type": "string",
-            "enum": [
-              "passive",
-              "active_safe",
-              "state_changing",
-              "destructive"
-            ]
+            "enum": ["passive", "active_safe", "state_changing", "destructive"]
           },
           "title": {
             "type": "string"
@@ -23786,10 +24169,7 @@
             ]
           },
           "statusReason": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "refs": {
             "type": "object",
@@ -23816,11 +24196,7 @@
                 }
               }
             },
-            "required": [
-              "owasp",
-              "wstg",
-              "asvs"
-            ],
+            "required": ["owasp", "wstg", "asvs"],
             "additionalProperties": false
           },
           "cweCandidates": {
@@ -23865,12 +24241,7 @@
                 "maximum": 1099511627776
               }
             },
-            "required": [
-              "maxRequests",
-              "maxRps",
-              "maxConcurrency",
-              "maxBytes"
-            ],
+            "required": ["maxRequests", "maxRps", "maxConcurrency", "maxBytes"],
             "additionalProperties": false
           },
           "oracle": {
@@ -23890,10 +24261,7 @@
                     "additionalProperties": {}
                   }
                 },
-                "required": [
-                  "type",
-                  "params"
-                ],
+                "required": ["type", "params"],
                 "additionalProperties": {}
               },
               {
@@ -23918,10 +24286,7 @@
                     "additionalProperties": {}
                   }
                 },
-                "required": [
-                  "type",
-                  "params"
-                ],
+                "required": ["type", "params"],
                 "additionalProperties": {}
               },
               {
@@ -23982,12 +24347,7 @@
                 },
                 "status": {
                   "type": "string",
-                  "enum": [
-                    "draft",
-                    "proposed",
-                    "approved",
-                    "superseded"
-                  ]
+                  "enum": ["draft", "proposed", "approved", "superseded"]
                 },
                 "createdAt": {
                   "type": "string",
@@ -24000,28 +24360,15 @@
                   "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                 }
               },
-              "required": [
-                "planId",
-                "runId",
-                "version",
-                "status",
-                "createdAt",
-                "updatedAt"
-              ],
+              "required": ["planId", "runId", "version", "status", "createdAt", "updatedAt"],
               "additionalProperties": false
             }
           },
           "nextCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
-        "required": [
-          "items",
-          "nextCursor"
-        ],
+        "required": ["items", "nextCursor"],
         "additionalProperties": false
       },
       "TestPlanView": {
@@ -24042,12 +24389,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "draft",
-              "proposed",
-              "approved",
-              "superseded"
-            ]
+            "enum": ["draft", "proposed", "approved", "superseded"]
           },
           "createdAt": {
             "type": "string",
@@ -24074,12 +24416,7 @@
                 },
                 "class": {
                   "type": "string",
-                  "enum": [
-                    "passive",
-                    "active_safe",
-                    "state_changing",
-                    "destructive"
-                  ]
+                  "enum": ["passive", "active_safe", "state_changing", "destructive"]
                 },
                 "title": {
                   "type": "string"
@@ -24100,10 +24437,7 @@
                   ]
                 },
                 "statusReason": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 },
                 "refs": {
                   "type": "object",
@@ -24130,11 +24464,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "owasp",
-                    "wstg",
-                    "asvs"
-                  ],
+                  "required": ["owasp", "wstg", "asvs"],
                   "additionalProperties": false
                 },
                 "cweCandidates": {
@@ -24179,12 +24509,7 @@
                       "maximum": 1099511627776
                     }
                   },
-                  "required": [
-                    "maxRequests",
-                    "maxRps",
-                    "maxConcurrency",
-                    "maxBytes"
-                  ],
+                  "required": ["maxRequests", "maxRps", "maxConcurrency", "maxBytes"],
                   "additionalProperties": false
                 },
                 "oracle": {
@@ -24204,10 +24529,7 @@
                           "additionalProperties": {}
                         }
                       },
-                      "required": [
-                        "type",
-                        "params"
-                      ],
+                      "required": ["type", "params"],
                       "additionalProperties": {}
                     },
                     {
@@ -24232,10 +24554,7 @@
                           "additionalProperties": {}
                         }
                       },
-                      "required": [
-                        "type",
-                        "params"
-                      ],
+                      "required": ["type", "params"],
                       "additionalProperties": {}
                     },
                     {
@@ -24275,15 +24594,7 @@
             }
           }
         },
-        "required": [
-          "planId",
-          "runId",
-          "version",
-          "status",
-          "createdAt",
-          "updatedAt",
-          "cases"
-        ],
+        "required": ["planId", "runId", "version", "status", "createdAt", "updatedAt", "cases"],
         "additionalProperties": false
       }
     }

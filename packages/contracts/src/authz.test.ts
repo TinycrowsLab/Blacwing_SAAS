@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createStandingAuthorisationSchema,
   patchStandingAuthorisationSchema,
+  rejectStandingAuthorisationSchema,
   SA_MAX_ASSETS,
 } from './authz.js';
 
@@ -88,6 +89,22 @@ describe('patchStandingAuthorisationSchema', () => {
     ).toBe(false);
     expect(
       patchStandingAuthorisationSchema.safeParse({ maxIntrusiveness: 'destructive' }).success,
+    ).toBe(false);
+  });
+});
+
+describe('rejectStandingAuthorisationSchema', () => {
+  it('accepts a reason and trims it', () => {
+    expect(rejectStandingAuthorisationSchema.parse({ reason: '  scope too broad  ' })).toEqual({
+      reason: 'scope too broad',
+    });
+  });
+
+  it('refuses a blank or missing reason, and any unknown key', () => {
+    expect(rejectStandingAuthorisationSchema.safeParse({ reason: '   ' }).success).toBe(false);
+    expect(rejectStandingAuthorisationSchema.safeParse({}).success).toBe(false);
+    expect(
+      rejectStandingAuthorisationSchema.safeParse({ reason: 'ok', approverId: 'x' }).success,
     ).toBe(false);
   });
 });

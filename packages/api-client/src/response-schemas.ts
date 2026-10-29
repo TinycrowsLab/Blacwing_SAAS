@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 import {
+  assetListResponseSchema,
+  testCaseViewSchema,
+  testPlanPageSchema,
+  testPlanViewSchema,
   assessmentRequestListResponseSchema,
   assessmentRequestResponseSchema,
   auditActionSchema,
@@ -142,4 +146,13 @@ export const RESPONSE_SCHEMAS: Readonly<
   getStandingAuthorisation: { 200: standingAuthorisationDtoSchema },
   updateStandingAuthorisation: { 200: standingAuthorisationDtoSchema },
   submitStandingAuthorisation: { 200: standingAuthorisationDtoSchema },
+  approveStandingAuthorisation: { 200: standingAuthorisationDtoSchema },
+  rejectStandingAuthorisation: { 200: standingAuthorisationDtoSchema },
+  createTestPlanVersion: { 201: testPlanViewSchema },
+  listTestPlanVersions: { 200: testPlanPageSchema },
+  getTestPlanVersion: { 200: testPlanViewSchema },
+  addTestCase: { 201: testCaseViewSchema },
+  updateTestCase: { 200: testCaseViewSchema },
+  removeTestCase: { 200: testCaseViewSchema },
+  listAssets: { 200: assetListResponseSchema },
 };

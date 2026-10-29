@@ -13,6 +13,13 @@ import {
 } from '@blackwing/config';
 import { MIN_SECRET_LENGTH } from '@blackwing/crypto';
 
+import {
+  STEPUP_ACR_MAX_CHARS,
+  STEPUP_DEFAULT_ACR,
+  STEPUP_DEFAULT_MAX_AGE_S,
+  STEPUP_MAX_AGE_LIMIT_S,
+} from './authorisations/step-up.js';
+
 /**
  * Code default for `API_PORT` (API-001, #53). The shared dev host map runs the API on 13400 because the
  * web console owns 3000 there; `.env.example` sets that.
@@ -241,6 +248,17 @@ export const apiEnvShape = {
   KEYCLOAK_ADMIN_REALM: z.string().min(1).max(KEYCLOAK_NAME_MAX).optional(),
   KEYCLOAK_ORG_ADMIN_CLIENT_ID: z.string().min(1).max(KEYCLOAK_NAME_MAX).optional(),
   KEYCLOAK_ORG_ADMIN_SECRET_PATH: z.string().min(1).max(KEYCLOAK_PATH_MAX).optional(),
+  /**
+   * Step-up for approving a standing authorisation (AUTHZ-008): the largest age, in seconds, of the approver's last
+   * authentication, and the authentication context class it must assert (the realm's strong acr, IAM-009).
+   */
+  AUTHZ_STEPUP_MAX_AGE_S: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(STEPUP_MAX_AGE_LIMIT_S)
+    .default(STEPUP_DEFAULT_MAX_AGE_S),
+  AUTHZ_STEPUP_ACR: z.string().trim().min(1).max(STEPUP_ACR_MAX_CHARS).default(STEPUP_DEFAULT_ACR),
 } as const;
 
 export const apiEnvSchema = z.object(apiEnvShape);

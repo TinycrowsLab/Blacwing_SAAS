@@ -79,6 +79,15 @@ export const standingAuthorisationDtoSchema = z.strictObject({
 });
 export type StandingAuthorisationDto = z.infer<typeof standingAuthorisationDtoSchema>;
 
+/**
+ * `POST /v1/standing-authorisations/:id/reject` body (AUTHZ-008). A rejection needs a reason, recorded with the
+ * gate decision, because it sends the draft back to its requester. Blank text is refused.
+ */
+export const rejectStandingAuthorisationSchema = z.strictObject({
+  reason: z.string().trim().min(1).max(LIMITS.reasonMax),
+});
+export type RejectStandingAuthorisationInput = z.infer<typeof rejectStandingAuthorisationSchema>;
+
 /** `GET /v1/standing-authorisations` query: a cursor page in id order (§9). `limit` is capped by the service. */
 export const standingAuthorisationListQuerySchema = z.strictObject({
   cursor: z.string().min(1).max(LIMITS.urlMax).optional(),

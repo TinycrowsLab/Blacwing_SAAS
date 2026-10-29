@@ -2,6 +2,7 @@ import {
   createStandingAuthorisationSchema,
   idempotencyKeySchema,
   patchStandingAuthorisationSchema,
+  rejectStandingAuthorisationSchema,
   standingAuthorisationDtoSchema,
 } from '@blackwing/contracts';
 
@@ -18,6 +19,8 @@ import type { ErrorCode } from '@blackwing/errors';
 const BASE = '/v1/standing-authorisations';
 const ITEM = `${BASE}/{id}`;
 const SUBMIT = `${BASE}/{id}/submit`;
+const APPROVE = `${BASE}/{id}/approve`;
+const REJECT = `${BASE}/{id}/reject`;
 
 /** Session or bearer, as every tenant route (§9). */
 const SECURITY = [{ bearerAuth: [] }, { sessionCookie: [] }];
@@ -94,12 +97,25 @@ const MUTATION_ERRORS: readonly ErrorCode[] = [
   'SCOPE_DESTRUCTIVE_FORBIDDEN',
 ];
 
-/** Standing authorisations (AUTHZ-002): draft, read, list, patch and submit for approval. */
+/** The error set of approve and reject: the decision refusals (AUTHZ-008) on top of the concurrency and lifecycle ones. */
+const DECISION_ERRORS: readonly ErrorCode[] = [
+  'VALIDATION_FAILED',
+  'FORBIDDEN',
+  'NOT_FOUND',
+  'PRECONDITION_REQUIRED',
+  'PRECONDITION_FAILED',
+  'AUTHZ_ILLEGAL_TRANSITION',
+  'AUTHZ_SOD_VIOLATION',
+  'AUTHZ_SIGNER_UNAVAILABLE',
+];
+
+/** Standing authorisations (AUTHZ-002, AUTHZ-008): draft, read, list, patch, submit, approve and reject. */
 export function standingAuthorisationsOpenApiModule(): OpenApiModule {
   const schemas: JsonObject = {};
   registerSchema(schemas, 'StandingAuthorisation', standingAuthorisationDtoSchema);
   registerSchema(schemas, 'CreateStandingAuthorisation', createStandingAuthorisationSchema);
   registerSchema(schemas, 'PatchStandingAuthorisation', patchStandingAuthorisationSchema);
+  registerSchema(schemas, 'RejectStandingAuthorisation', rejectStandingAuthorisationSchema);
   const single = (description: string): JsonObject => ({
     description,
     headers: ETAG_HEADER,
@@ -118,7 +134,7 @@ export function standingAuthorisationsOpenApiModule(): OpenApiModule {
   return {
     tag: 'standing-authorisations',
     description:
-      'Standing authorisations (AUTHZ-002): the customer-signed, expiring permission to test assets. Drafts are created, read, changed and submitted for approval here.',
+      'Standing authorisations (AUTHZ-002, AUTHZ-008): the customer-signed, expiring permission to test assets. Drafts are created, read, changed and submitted for approval here; an asset owner approves (signing it) or rejects.',
     paths: {
       [BASE]: {
         post: {
@@ -228,6 +244,37 @@ export function standingAuthorisationsOpenApiModule(): OpenApiModule {
           responses: {
             '200': single('The standing authorisation in pending_approval and its ETag.'),
             ...errorResponses(MUTATION_ERRORS),
+          },
+        },
+      },
+      [APPROVE]: {
+        post: {
+          operationId: 'approveStandingAuthorisation',
+          tags: tag,
+          summary: 'Approve and sign a pending standing authorisation',
+          description:
+            'Requires If-Match. The caller must hold asset_owner and must not be the requester (AUTHZ_SOD_VIOLATION). The session must have authenticated freshly with the step-up acr (AUTHZ_STEPUP_REQUIRED, 401). The approval signs the canonical envelope and moves the SA to active, in one transaction.',
+          security: SECURITY,
+          parameters: [ID_PARAM, IF_MATCH_PARAM],
+          responses: {
+            '200': single('The active, signed standing authorisation and its ETag.'),
+            ...errorResponses([...DECISION_ERRORS, 'AUTHZ_STEPUP_REQUIRED']),
+          },
+        },
+      },
+      [REJECT]: {
+        post: {
+          operationId: 'rejectStandingAuthorisation',
+          tags: tag,
+          summary: 'Reject a pending standing authorisation',
+          description:
+            'Requires If-Match and a reason. The SA returns to draft for its requester; the reason is recorded with the gate decision.',
+          security: SECURITY,
+          parameters: [ID_PARAM, IF_MATCH_PARAM],
+          requestBody: body('RejectStandingAuthorisation'),
+          responses: {
+            '200': single('The draft standing authorisation and its ETag.'),
+            ...errorResponses(DECISION_ERRORS),
           },
         },
       },

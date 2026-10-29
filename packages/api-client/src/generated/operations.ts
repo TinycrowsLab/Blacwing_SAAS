@@ -9,6 +9,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: ['If-Match', 'Idempotency-Key'],
   },
+  approveStandingAuthorisation: {
+    method: 'POST',
+    path: '/v1/standing-authorisations/{id}/approve',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
+  },
   createAssessmentRequest: {
     method: 'POST',
     path: '/v1/assessment-requests',
@@ -166,6 +173,13 @@ export const OPERATIONS = {
     pathParams: ['persona'],
     queryParams: [],
     requiredHeaders: [],
+  },
+  rejectStandingAuthorisation: {
+    method: 'POST',
+    path: '/v1/standing-authorisations/{id}/reject',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
   },
   removeTestCase: {
     method: 'DELETE',

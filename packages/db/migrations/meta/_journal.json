@@ -155,6 +155,13 @@
       "when": 1793309987981,
       "tag": "20261029213947_evidence_items_and_chain_binding",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793313794593,
+      "tag": "20261029224314_standing_authorisation_envelope_hash",
+      "breakpoints": true
     }
   ]
 }
