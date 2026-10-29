@@ -42,6 +42,7 @@ const golden = JSON.parse(
 /** sha256(JCS({permissions, roles})) per released catalogue version. Append-only. */
 const RELEASED_DIGESTS: Readonly<Record<number, string>> = {
   1: '94b2f8ca5dd8b0594b6ab5c1c0823c5c42cb4ca18b164a484db1633f4ebdd298',
+  2: '9438d61a035a0aec87515d3a63b592292fcb63870fbf2047049bc5f798f6c3b8',
 };
 
 const digest = (): string =>

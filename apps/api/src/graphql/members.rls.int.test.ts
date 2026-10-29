@@ -13,7 +13,7 @@ import { createApiApp, type ApiApp } from '../bootstrap/create-app.js';
 import { createHttpMetrics } from '../bootstrap/metrics.js';
 import { loadApiConfig } from '../config.js';
 import { GraphqlApiModule } from './module.js';
-import { createPgMemberReadStore } from './postgres.js';
+import { createPgAssessmentReadStore, createPgMemberReadStore } from './postgres.js';
 
 import type { TenantPrincipal } from '@blackwing/db/tenant-context';
 
@@ -108,7 +108,15 @@ describe('GraphQL endpoint over Postgres (RLS)', () => {
         };
         return principal;
       },
-      imports: [GraphqlApiModule.forRoot({ config, logger, metrics, store })],
+      imports: [
+        GraphqlApiModule.forRoot({
+          config,
+          logger,
+          metrics,
+          store,
+          assessments: createPgAssessmentReadStore(createDatabase(handle.appPool)),
+        }),
+      ],
     });
     await app.app.getHttpAdapter().getInstance().ready();
     const res = await app.app.inject({

@@ -2,9 +2,71 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+"""A scoping-form request in the caller tenant."""
+type AssessmentRequest {
+  """Ids of the assets under test."""
+  assetIds: [ID!]!
+  assets: [AssetRef!]!
+
+  """ISO-8601 UTC."""
+  createdAt: String!
+  id: ID!
+  inputManifestId: ID
+  maxIntrusiveness: String!
+
+  """Run mode (contract RUN_MODES)."""
+  mode: String!
+  objective: String!
+  publicId: String!
+
+  """The user who created the request."""
+  requestedBy: ID!
+  saId: ID
+  standingAuthorisation: SARef
+
+  """draft, submitted, withdrawn, promoted or rejected."""
+  status: String!
+
+  """ISO-8601 UTC."""
+  updatedAt: String!
+}
+
+type AssessmentRequestConnection {
+  edges: [AssessmentRequestEdge!]!
+  pageInfo: PageInfo!
+}
+
+type AssessmentRequestEdge {
+  cursor: String!
+  node: AssessmentRequest!
+}
+
+"""An asset under test, by id."""
+type AssetRef {
+  id: ID!
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+}
+
 type Query {
+  """One assessment request of the caller tenant, or null."""
+  assessmentRequest(id: ID!): AssessmentRequest
+
+  """
+  Assessment requests of the caller tenant (Relay connection, newest first).
+  """
+  assessmentRequests(after: String, first: Int, mode: String, status: String): AssessmentRequestConnection!
+
   """Memberships of the caller tenant."""
   tenantMembers(first: Int): [TenantMember!]!
+}
+
+"""A standing authorisation, by id."""
+type SARef {
+  id: ID!
 }
 
 """A membership of the caller tenant."""

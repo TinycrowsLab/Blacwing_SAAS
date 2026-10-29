@@ -13,7 +13,7 @@ import { createHttpMetrics } from '../bootstrap/metrics.js';
 import { loadApiConfig, type ApiConfig } from '../config.js';
 import { GraphqlApiModule } from './module.js';
 
-import type { MemberReadStore, MemberRow, UserRow } from './store.js';
+import type { AssessmentReadStore, MemberReadStore, MemberRow, UserRow } from './store.js';
 import type { TenantPrincipal } from '@blackwing/db/tenant-context';
 
 const TENANT_A = '0198f0a0-0000-7000-8000-00000000000a';
@@ -80,6 +80,13 @@ function fakeStore(seed: Readonly<Record<string, Seed>> = SEED) {
   return { store, findCalls };
 }
 
+/** An assessment store with no rows: this suite covers the member reads only. */
+const NO_ASSESSMENTS: AssessmentReadStore = {
+  rolesOf: () => Promise.resolve([]),
+  listRequests: () => Promise.resolve([]),
+  findRequest: () => Promise.resolve(undefined),
+};
+
 const BASE_ENV = { WEB_ORIGIN: 'http://localhost:3000' };
 
 let current: ApiApp | undefined;
@@ -105,7 +112,9 @@ async function boot(
     logger,
     metrics,
     tenantPrincipalSource: (request) => principalOf(request.headers['x-test-principal']),
-    imports: [GraphqlApiModule.forRoot({ config, logger, metrics, store })],
+    imports: [
+      GraphqlApiModule.forRoot({ config, logger, metrics, store, assessments: NO_ASSESSMENTS }),
+    ],
   });
   await app.app.getHttpAdapter().getInstance().ready();
   current = app;

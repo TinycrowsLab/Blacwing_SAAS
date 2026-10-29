@@ -5,6 +5,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { MercuriusDriver, type MercuriusDriverConfig } from '@nestjs/mercurius';
 import { NoSchemaIntrospectionCustomRule } from 'graphql';
 
+import { AssessmentRequestsResolver } from './assessment-requests.resolver.js';
 import { formatGraphqlErrors, registerGraphqlProblemCodes } from './errors.js';
 import {
   createQueryLimitsRule,
@@ -21,9 +22,9 @@ import {
   type PersistedManifestFiles,
   type PersistedManifests,
 } from './persisted.js';
-import { GRAPHQL_MEMBER_STORE, GRAPHQL_METRICS } from './tokens.js';
+import { GRAPHQL_ASSESSMENT_STORE, GRAPHQL_MEMBER_STORE, GRAPHQL_METRICS } from './tokens.js';
 
-import type { MemberReadStore } from './store.js';
+import type { AssessmentReadStore, MemberReadStore } from './store.js';
 import type { HttpMetrics } from '../bootstrap/metrics.js';
 import type { ApiConfig } from '../config.js';
 import type { Logger } from '@blackwing/logger';
@@ -44,6 +45,8 @@ export interface GraphqlModuleOptions {
   readonly metrics: HttpMetrics;
   /** Tenant-scoped read port of the resolvers (Postgres in production). */
   readonly store: MemberReadStore;
+  /** Tenant-scoped read port of the assessment-request resolvers (SCOPE-001; Postgres in production). */
+  readonly assessments: AssessmentReadStore;
   /** The persisted-query manifests; loaded from `apps/api/graphql/` at boot when omitted. */
   readonly persisted?: PersistedManifests;
 }
@@ -65,7 +68,7 @@ function queryLimitsOf(config: Readonly<ApiConfig>): QueryLimits {
 @Module({})
 export class GraphqlApiModule {
   static forRoot(options: GraphqlModuleOptions): DynamicModule {
-    const { config, logger, store } = options;
+    const { config, logger, store, assessments } = options;
     const metrics: GraphqlMetrics = createGraphqlMetrics(options.metrics.registry);
     const limits = queryLimitsOf(config);
     const production = config.NODE_ENV === 'production';
@@ -120,8 +123,10 @@ export class GraphqlApiModule {
       imports: [GraphQLModule.forRoot<MercuriusDriverConfig>(mercurius)],
       providers: [
         { provide: GRAPHQL_MEMBER_STORE, useValue: store },
+        { provide: GRAPHQL_ASSESSMENT_STORE, useValue: assessments },
         { provide: GRAPHQL_METRICS, useValue: metrics },
         MembersResolver,
+        AssessmentRequestsResolver,
       ],
     };
   }

@@ -8,7 +8,7 @@ import { loadApiConfig } from '../config.js';
 import { GraphqlApiModule } from './module.js';
 import { persistedHash, type PersistedManifests } from './persisted.js';
 
-import type { MemberReadStore } from './store.js';
+import type { AssessmentReadStore, MemberReadStore } from './store.js';
 import type { TenantPrincipal } from '@blackwing/db/tenant-context';
 
 const TENANT = '0198f0a0-0000-7000-8000-00000000000a';
@@ -18,6 +18,13 @@ const MEMBERS = 'query Members { tenantMembers { userId roles } }';
 const MEMBERS_ID = persistedHash(MEMBERS);
 const RETIRED = 'query Retired { tenantMembers { userId } }';
 const RETIRED_ID = persistedHash(RETIRED);
+
+/** No assessment rows: this suite covers the persisted-query gate, not the request reads. */
+const assessments: AssessmentReadStore = {
+  rolesOf: () => Promise.resolve([]),
+  listRequests: () => Promise.resolve([]),
+  findRequest: () => Promise.resolve(undefined),
+};
 
 const store: MemberReadStore = {
   listMembers: () => Promise.resolve([{ userId: 'usr_a1', roles: ['admin'] }]),
@@ -53,7 +60,7 @@ async function boot(env: Record<string, string>, persisted: PersistedManifests):
     logger,
     metrics,
     tenantPrincipalSource: (request) => principalOf(request.headers['x-test-principal']),
-    imports: [GraphqlApiModule.forRoot({ config, logger, metrics, store, persisted })],
+    imports: [GraphqlApiModule.forRoot({ config, logger, metrics, store, assessments, persisted })],
   });
   await app.app.getHttpAdapter().getInstance().ready();
   current = app;

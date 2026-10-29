@@ -7,7 +7,7 @@ import { createHttpMetrics } from '../bootstrap/metrics.js';
 import { loadApiConfig } from '../config.js';
 import { GraphqlApiModule } from './module.js';
 
-import type { MemberReadStore } from './store.js';
+import type { AssessmentReadStore, MemberReadStore } from './store.js';
 
 /**
  * The store of the schema emitter: the schema is built from the decorators, and no operation runs, so a
@@ -16,6 +16,12 @@ import type { MemberReadStore } from './store.js';
 const SCHEMA_ONLY_STORE: MemberReadStore = {
   listMembers: () => Promise.reject(new Error('the schema emitter runs no operations')),
   findUsers: () => Promise.reject(new Error('the schema emitter runs no operations')),
+};
+
+const SCHEMA_ONLY_ASSESSMENTS: AssessmentReadStore = {
+  rolesOf: () => Promise.reject(new Error('the schema emitter runs no operations')),
+  listRequests: () => Promise.reject(new Error('the schema emitter runs no operations')),
+  findRequest: () => Promise.reject(new Error('the schema emitter runs no operations')),
 };
 
 /**
@@ -31,7 +37,15 @@ export async function emitGraphqlSchema(): Promise<void> {
     config,
     logger,
     metrics,
-    imports: [GraphqlApiModule.forRoot({ config, logger, metrics, store: SCHEMA_ONLY_STORE })],
+    imports: [
+      GraphqlApiModule.forRoot({
+        config,
+        logger,
+        metrics,
+        store: SCHEMA_ONLY_STORE,
+        assessments: SCHEMA_ONLY_ASSESSMENTS,
+      }),
+    ],
   });
   await app.close();
 }
