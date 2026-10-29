@@ -17,5 +17,14 @@
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1146.0",
+    "@blackwing/contracts": "workspace:*",
+    "@blackwing/crypto": "workspace:*",
+    "@blackwing/db": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/logger": "workspace:*",
+    "@opentelemetry/api": "catalog:"
   }
 }

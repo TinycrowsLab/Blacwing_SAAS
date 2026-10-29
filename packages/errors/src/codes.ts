@@ -38,6 +38,12 @@ const DEFINITIONS = {
   PRECONDITION_REQUIRED: { status: 428, title: 'Precondition required', retryable: false },
   RATE_LIMITED: { status: 429, title: 'Too many requests', retryable: true },
   ILLEGAL_RUN_TRANSITION: { status: 409, title: 'Illegal run state transition', retryable: false },
+  // Evidence binding (EVIDENCE, #724): a missing, altered or out-of-chain evidence item. The finding is Suspected.
+  EVIDENCE_INTEGRITY_FAILED: {
+    status: 422,
+    title: 'Evidence integrity check failed',
+    retryable: false,
+  },
   // Gate 1 (test plan approval, #877) refusals. The requester's refusal reuses SOD_VIOLATION (F31, below).
   // Gate 1 decision refused because the run is no longer waiting at Gate 1 (already decided or moved on).
   GATE1_NOT_PENDING: { status: 409, title: 'Approval gate is no longer pending', retryable: false },

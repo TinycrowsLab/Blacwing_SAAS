@@ -6,6 +6,7 @@ import { oracleSchema } from './entities/test-case.js';
 import { intrusivenessClassSchema } from './intrusiveness.js';
 import { LIMITS } from './limits.js';
 import { cweIdSchema, isoDateTimeSchema, sha256HexSchema, uuidV7Schema } from './primitives.js';
+import { EVIDENCE_OBJECT_BYTES_MAX } from './validation/evidence.js';
 
 /**
  * Contracts of the internal Run Broker API (API-014, #66; CONTEXT_PACK §4.1/§9). The broker is reachable
@@ -33,8 +34,6 @@ const CONTENT_TYPE_MAX = 255;
 const EVIDENCE_IDS_MAX = 50;
 /** Longest redacted tool-input summary a `tool.invoked` event carries. */
 export const TOOL_AUDIT_SUMMARY_MAX = 1024;
-/** 5 GiB: the largest single evidence object the broker will register. */
-const EVIDENCE_BYTES_MAX = 5_368_709_120;
 
 /** What a token may do. Each stub endpoint requires exactly one scope. */
 export const BROKER_SCOPES = [
@@ -120,7 +119,7 @@ export const brokerEvidenceRequestSchema = z.strictObject({
   ...boundIdsShape,
   kind: z.enum(['http_exchange', 'screenshot', 'log', 'file', 'other']),
   sha256: sha256HexSchema,
-  sizeBytes: z.int().nonnegative().max(EVIDENCE_BYTES_MAX),
+  sizeBytes: z.int().nonnegative().max(EVIDENCE_OBJECT_BYTES_MAX),
   contentType: z.string().min(1).max(CONTENT_TYPE_MAX),
   description: z.string().max(ACTION_MAX).optional(),
 });

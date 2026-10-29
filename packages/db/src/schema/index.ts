@@ -13,3 +13,4 @@ export * from './assets.js';
 export * from './runs.js';
 export * from './test-plans.js';
 export * from './findings.js';
+export * from './evidence.js';

@@ -80,6 +80,20 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, findingId, runId],
     );
   },
+  evidence_items: async (tx, tenantId) => {
+    const runId = newId();
+    await tx.query(
+      `INSERT INTO evidence_items (id, tenant_id, run_id, sequence, kind, role, object_key, sha256, size, content_type, captured_at, chain)
+       VALUES ($1, $2, $3, 1, 'response', 'positive', $4, $5, 4, 'text/plain', now(), $5)`,
+      [
+        newId(),
+        tenantId,
+        runId,
+        `${tenantId}/${runId}/iso`,
+        createHash('sha256').update('iso').digest('hex'),
+      ],
+    );
+  },
   input_manifests: async (tx, tenantId) => {
     await tx.query(`INSERT INTO input_manifests (id, tenant_id) VALUES ($1, $2)`, [
       newId(),

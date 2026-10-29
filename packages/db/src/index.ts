@@ -127,6 +127,14 @@ export {
   type TenantContextMetrics,
   type TenantPrincipal,
 } from './tenant-context.js';
+export {
+  type AppendEvidenceInput,
+  type EvidenceItemRow,
+  EvidenceRepository,
+  type EvidenceRepositoryOptions,
+  type FindingForBinding,
+  type OccurrenceForBinding,
+} from './evidence.repository.js';
 export * from './schema/index.js';
 export * from './columns.js';
 export * from './vector.js';

@@ -19,6 +19,7 @@ import {
 import {
   type BaselineStatus,
   baselineStatusSchema,
+  type EvidenceChainRef,
   type FindingStatus,
   findingStatusSchema,
 } from '@blackwing/contracts';
@@ -185,6 +186,11 @@ export const findingOccurrences = pgTable(
     occurrenceStatus: text('occurrence_status').notNull(),
     /** Head hash of the evidence chain at detection time (SHA-256 hex), or null. */
     evidenceChainHead: text('evidence_chain_head'),
+    /** The bound evidence chain, in order (EVIDENCE, #724): references only, never bytes. Empty until bound. */
+    evidenceRefs: jsonb('evidence_refs')
+      .$type<EvidenceChainRef[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     detectedAt: timestamp('detected_at', { withTimezone: true, mode: 'date' }).notNull(),
     ...timestamps(),
   },
@@ -199,6 +205,10 @@ export const findingOccurrences = pgTable(
       foreignColumns: [findings.tenantId, findings.id],
     }),
     check('finding_occurrences_status_check', sql`length(${t.occurrenceStatus}) BETWEEN 1 AND 120`),
+    check(
+      'finding_occurrences_evidence_refs_check',
+      sql`jsonb_typeof(${t.evidenceRefs}) = 'array' AND octet_length(${t.evidenceRefs}::text) <= 8192`,
+    ),
     check(
       'finding_occurrences_evidence_chain_head_check',
       sql`${t.evidenceChainHead} IS NULL OR ${t.evidenceChainHead} ~ '^[0-9a-f]{64}$'`,

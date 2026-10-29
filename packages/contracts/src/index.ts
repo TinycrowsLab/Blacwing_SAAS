@@ -686,6 +686,20 @@ export {
   OracleObservationSchema,
 } from './validation/oracle.js';
 export {
+  bindEvidenceInputSchema,
+  type BindEvidenceInput,
+  EVIDENCE_KINDS,
+  EVIDENCE_OBJECT_BYTES_MAX,
+  EVIDENCE_ROLES,
+  evidenceChainRefSchema,
+  type EvidenceChainRef,
+  type EvidenceKind,
+  evidenceKindSchema,
+  type EvidenceRole,
+  evidenceRoleSchema,
+  MAX_BOUND_EVIDENCE,
+} from './validation/evidence.js';
+export {
   endpointRefSchema,
   type EndpointRef,
   MAX_REPLAY_INPUT_REFS,
