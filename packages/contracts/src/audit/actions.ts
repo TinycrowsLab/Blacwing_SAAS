@@ -626,6 +626,28 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     isAlwaysAudited: true,
     description: 'A test case was soft-removed from a draft test plan version (PLAN-005).',
   },
+  // asset lifecycle after registration (ASSET-002, #355). Appended: the catalogue is additive-only.
+  {
+    action: 'asset.updated',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'An asset was changed. The event names the changed fields, never their values.',
+  },
+  {
+    action: 'asset.deleted',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'An asset was soft-deleted. Its row and history are retained.',
+  },
+  {
+    action: 'asset.owner_assigned',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'An asset owner was assigned or changed.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

@@ -1,0 +1,43 @@
+import { AppError, type AppErrorOptions } from '@blackwing/errors';
+
+/**
+ * Asset API errors (ASSET-002, #355). Each carries a registry code, so the problem+json filter answers
+ * the status and the stable `code` without any mapping table here.
+ */
+
+/** `ASSET_STALE_WRITE` (409): the `If-Match` ETag no longer matches the asset (optimistic concurrency). */
+export class AssetStaleWriteError extends AppError {
+  declare readonly code: 'ASSET_STALE_WRITE';
+  constructor(options: AppErrorOptions = {}) {
+    super('ASSET_STALE_WRITE', 'asset was modified concurrently', {
+      detail: 'The asset was modified; re-fetch it and retry with the current ETag.',
+      ...options,
+    });
+  }
+}
+
+/** `ASSET_IN_USE` (409): the asset is referenced by an active standing authorisation or run. */
+export class AssetInUseError extends AppError {
+  declare readonly code: 'ASSET_IN_USE';
+  constructor(options: AppErrorOptions = {}) {
+    super('ASSET_IN_USE', 'asset is referenced by an active authorisation or run', {
+      detail:
+        'The asset is referenced by an active standing authorisation or run and cannot be deleted.',
+      ...options,
+    });
+  }
+}
+
+/**
+ * `ASSET_INVALID_IDENTIFIER` (422): an identifier does not normalise for its asset type. The detail names
+ * the position and the rule, never the value, so a rejected credential-bearing URL is not echoed back.
+ */
+export class AssetInvalidIdentifierError extends AppError {
+  declare readonly code: 'ASSET_INVALID_IDENTIFIER';
+  constructor(index: number, reason: string, options: AppErrorOptions = {}) {
+    super('ASSET_INVALID_IDENTIFIER', 'asset identifier is invalid', {
+      detail: `identifiers[${String(index)}]: ${reason}.`,
+      ...options,
+    });
+  }
+}

@@ -28,7 +28,14 @@ import {
   VERIFICATION_STATUSES,
 } from '@blackwing/contracts';
 
-import { idColumn, softDelete, tenantIdColumn, tenantIdIndex, timestamps } from '../columns.js';
+import {
+  idColumn,
+  softDelete,
+  stateVersion,
+  tenantIdColumn,
+  tenantIdIndex,
+  timestamps,
+} from '../columns.js';
 import { TENANT_PREDICATE } from './columns.js';
 import { users } from './tenancy.js';
 
@@ -83,6 +90,11 @@ export const assets = pgTable(
     }),
     /** The F6 environment attestation (`assetAttestationSchema`), written by ASSET-004. */
     attestation: jsonb('attestation').$type<Record<string, unknown>>(),
+    /** Optimistic concurrency for the REST API (`ETag` / `If-Match`, ASSET-002). Bumped by every write. */
+    ...stateVersion(),
+    /** `Idempotency-Key` of the create that made this row, and the digest of that request's body (ASSET-002). */
+    idempotencyKey: text('idempotency_key'),
+    idempotencyFingerprint: text('idempotency_fingerprint'),
     ...softDelete(),
     ...timestamps(),
   },
@@ -95,10 +107,19 @@ export const assets = pgTable(
     index('assets_type_idx').on(t.type),
     index('assets_verification_status_idx').on(t.verificationStatus),
     index('assets_identifiers_gin_idx').using('gin', t.identifiers),
+    // A replayed create with the same `Idempotency-Key` resolves to the row it made (per tenant).
+    uniqueIndex('assets_tenant_idempotency_key_idx')
+      .on(t.tenantId, t.idempotencyKey)
+      .where(sql`${t.idempotencyKey} IS NOT NULL`),
     // Lookups and lists read live assets only; soft-deleted rows stay out of the index.
     index('assets_live_tenant_type_idx')
       .on(t.tenantId, t.type)
       .where(sql`${t.deletedAt} IS NULL`),
+    check('assets_state_version_check', sql`${t.stateVersion} >= 0`),
+    check(
+      'assets_idempotency_check',
+      sql`(${t.idempotencyKey} IS NULL) = (${t.idempotencyFingerprint} IS NULL)`,
+    ),
     check(
       'assets_public_id_check',
       sql`starts_with(${t.publicId}, 'asset_') AND length(${t.publicId}) > 6`,

@@ -1,26 +1,53 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 
-import { AssetListController } from './controller.js';
-import { AssetListService, type AssetListServiceDeps } from './service.js';
-import { ASSET_LIST_SERVICE } from './tokens.js';
+import { AssetRepository as AssetListReader, type Database } from '@blackwing/db';
 
-export type AssetListModuleOptions = AssetListServiceDeps;
+import { AssetsController } from './controller.js';
+import { createAssetMetrics, type AssetMetrics } from './metrics.js';
+import { createCedarAssetPolicy } from './policy.js';
+import { AssetRepository } from './repository.js';
+import { AssetService } from './service.js';
+import { ASSET_METRICS, ASSET_SERVICE } from './tokens.js';
+import { API_LOGGER } from '../bootstrap/tokens.js';
+
+import type { Logger } from '@blackwing/logger';
+import type { Registry } from 'prom-client';
+
+export interface AssetsModuleOptions {
+  /** The app role's database handle (`createDatabase(pool)`). Every query runs under `withTenant`. */
+  readonly database: Database;
+  /** The API's metrics registry, so the asset counters appear on `/metrics`. */
+  readonly registry: Registry;
+}
 
 /**
- * Mounts `GET /v1/assets`. The store is the `AssetRepository` of @blackwing/db in a deployment, and the memberships
- * port is the tenant-scoped reader of RBAC-001. Mount it through `createApiApp({ imports })` under the global tenant guard.
+ * The asset registry module (ASSET-002): `/v1/assets`. Mounted by the API bootstrap through
+ * `createApiApp({ imports: [AssetsModule.forRoot(...)] })`; it needs the tenant guard (`tenantPrincipalSource`)
+ * to be installed, otherwise every route answers 401 (fail closed).
  */
-@Module({})
-export class AssetListModule {
-  static forRoot(options: AssetListModuleOptions): DynamicModule {
-    const service = new AssetListService({
-      store: options.store,
-      memberships: options.memberships,
-    });
+@Module({ controllers: [AssetsController] })
+export class AssetsModule {
+  static forRoot(options: AssetsModuleOptions): DynamicModule {
     return {
-      module: AssetListModule,
-      controllers: [AssetListController],
-      providers: [{ provide: ASSET_LIST_SERVICE, useValue: service }],
+      module: AssetsModule,
+      providers: [
+        {
+          provide: ASSET_METRICS,
+          useFactory: (): AssetMetrics => createAssetMetrics(options.registry),
+        },
+        {
+          provide: ASSET_SERVICE,
+          inject: [ASSET_METRICS, API_LOGGER],
+          useFactory: (metrics: AssetMetrics, logger: Logger) =>
+            new AssetService({
+              repository: new AssetRepository({ db: options.database }),
+              projections: new AssetListReader({ db: options.database }),
+              policy: createCedarAssetPolicy(),
+              metrics,
+              logger,
+            }),
+        },
+      ],
     };
   }
 }

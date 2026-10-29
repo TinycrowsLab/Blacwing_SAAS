@@ -26,6 +26,7 @@
   "dependencies": {
     "@blackwing/agents": "workspace:*",
     "@blackwing/audit": "workspace:*",
+    "@blackwing/audit": "workspace:*",
     "@blackwing/config": "workspace:*",
     "@blackwing/contracts": "workspace:*",
     "@blackwing/crypto": "workspace:*",

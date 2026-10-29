@@ -49,7 +49,7 @@
     },
     {
       "name": "assets",
-      "description": "Assets of the tenant, read-only. The scoping wizard lists the verified ones; an unverified asset cannot be targeted (§8.10)."
+      "description": "Asset registry: register, read, list, update and retire assets."
     },
     {
       "name": "standing-authorisations",
@@ -262,7 +262,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -386,6 +386,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -778,7 +798,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -902,6 +922,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -1195,7 +1235,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1322,6 +1362,26 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "KEYCLOAK_CONFLICT": {
                     "summary": "Identity provider conflict",
                     "value": {
@@ -1347,7 +1407,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1544,6 +1604,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "CVSS_VECTOR_SCORE_MISMATCH": {
                     "summary": "CVSS score does not match its vector",
                     "value": {
@@ -1715,7 +1785,10 @@
                 "test_plan.version_created",
                 "test_case.created",
                 "test_case.updated",
-                "test_case.removed"
+                "test_case.removed",
+                "asset.updated",
+                "asset.deleted",
+                "asset.owner_assigned"
               ]
             },
             "example": "kill.fired"
@@ -2028,7 +2101,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2152,6 +2225,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -2516,7 +2609,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2640,6 +2733,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -2945,7 +3058,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3069,6 +3182,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -3372,7 +3505,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3499,6 +3632,26 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "KEYCLOAK_CONFLICT": {
                     "summary": "Identity provider conflict",
                     "value": {
@@ -3524,7 +3677,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3718,6 +3871,16 @@
                       "title": "Invalid audit event",
                       "status": 422,
                       "code": "AUDIT_EVENT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -4300,7 +4463,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4427,6 +4590,26 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "KEYCLOAK_CONFLICT": {
                     "summary": "Identity provider conflict",
                     "value": {
@@ -4452,7 +4635,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4646,6 +4829,16 @@
                       "title": "Invalid audit event",
                       "status": 422,
                       "code": "AUDIT_EVENT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -4930,7 +5123,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5054,6 +5247,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -5428,7 +5641,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5552,6 +5765,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -5957,7 +6190,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6081,6 +6314,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -6675,7 +6928,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6799,6 +7052,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -7367,7 +7640,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7491,6 +7764,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -8090,7 +8383,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8217,6 +8510,26 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "KEYCLOAK_CONFLICT": {
                     "summary": "Identity provider conflict",
                     "value": {
@@ -8242,7 +8555,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8436,6 +8749,16 @@
                       "title": "Invalid audit event",
                       "status": 422,
                       "code": "AUDIT_EVENT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -9033,7 +9356,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9160,6 +9483,26 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "KEYCLOAK_CONFLICT": {
                     "summary": "Identity provider conflict",
                     "value": {
@@ -9217,7 +9560,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9411,6 +9754,16 @@
                       "title": "Invalid audit event",
                       "status": 422,
                       "code": "AUDIT_EVENT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -10015,7 +10368,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -10142,6 +10495,26 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "KEYCLOAK_CONFLICT": {
                     "summary": "Identity provider conflict",
                     "value": {
@@ -10167,7 +10540,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -10361,6 +10734,16 @@
                       "title": "Invalid audit event",
                       "status": 422,
                       "code": "AUDIT_EVENT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -10975,7 +11358,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11099,6 +11482,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -11635,7 +12038,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11762,6 +12165,26 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "KEYCLOAK_CONFLICT": {
                     "summary": "Identity provider conflict",
                     "value": {
@@ -11787,7 +12210,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11981,6 +12404,16 @@
                       "title": "Invalid audit event",
                       "status": 422,
                       "code": "AUDIT_EVENT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -12599,7 +13032,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12726,6 +13159,26 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "KEYCLOAK_CONFLICT": {
                     "summary": "Identity provider conflict",
                     "value": {
@@ -12761,7 +13214,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12955,6 +13408,16 @@
                       "title": "Invalid audit event",
                       "status": 422,
                       "code": "AUDIT_EVENT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -14187,7 +14650,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14314,6 +14777,26 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "KEYCLOAK_CONFLICT": {
                     "summary": "Identity provider conflict",
                     "value": {
@@ -14349,7 +14832,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14546,6 +15029,16 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "CVSS_VECTOR_SCORE_MISMATCH": {
                     "summary": "CVSS score does not match its vector",
                     "value": {
@@ -14596,11 +15089,9 @@
       }
     },
     "/assets": {
-      "get": {
+      "post": {
         "tags": ["assets"],
-        "operationId": "listAssets",
-        "summary": "List the tenant assets, optionally filtered by verification state",
-        "description": "Needs asset:read. Only the fields the scoping wizard needs are returned.",
+        "operationId": "createAsset",
         "security": [
           {
             "bearerAuth": []
@@ -14609,57 +15100,181 @@
             "sessionCookie": []
           }
         ],
+        "summary": "Register an asset",
+        "description": "Creates an asset in the caller’s tenant, owned by `ownerUserId` (who must be a member). Identifiers are normalised; the asset starts `unverified` and cannot be targeted until verified (§8.10).",
         "parameters": [
           {
-            "name": "verificationStatus",
-            "in": "query",
+            "name": "Idempotency-Key",
+            "in": "header",
             "required": false,
-            "description": "Only assets in this verification state.",
+            "description": "Optional. A replay with the same key and body returns the asset the first request created (200); the same key with a different body answers 422.",
             "schema": {
               "type": "string",
-              "enum": ["unverified", "pending", "verified", "rejected"]
+              "minLength": 8,
+              "maxLength": 255,
+              "pattern": "^[\\x21-\\x7e]+$"
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAssetBody"
+              },
+              "example": {
+                "type": "web_app",
+                "name": "Customer portal",
+                "identifiers": [
+                  {
+                    "kind": "url",
+                    "value": "https://portal.example.com"
+                  }
+                ],
+                "environment": "staging",
+                "ownerUserId": "0198f0a0-0000-7000-8000-00000000000a"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "The assets of the caller tenant.",
+            "description": "Replay of an earlier create with the same `Idempotency-Key`: the same asset.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AssetList"
+                  "$ref": "#/components/schemas/AssetView"
+                },
+                "example": {
+                  "id": "0198f0a0-0000-7000-8000-0000000000e1",
+                  "publicId": "asset_0r3h7k4xw0c8g1n5p2q6v9m3yt",
+                  "type": "web_app",
+                  "name": "Customer portal",
+                  "identifiers": [
+                    {
+                      "kind": "url",
+                      "value": "https://portal.example.com/"
+                    }
+                  ],
+                  "environment": "staging",
+                  "ownerUserId": "0198f0a0-0000-7000-8000-00000000000a",
+                  "verificationStatus": "unverified",
+                  "verificationMethod": null,
+                  "etag": "\"v1\"",
+                  "createdAt": "2026-10-30T10:00:00.000Z",
+                  "updatedAt": "2026-10-30T10:00:00.000Z",
+                  "warnings": []
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created. The `ETag` header carries the asset version.",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                },
+                "example": {
+                  "id": "0198f0a0-0000-7000-8000-0000000000e1",
+                  "publicId": "asset_0r3h7k4xw0c8g1n5p2q6v9m3yt",
+                  "type": "web_app",
+                  "name": "Customer portal",
+                  "identifiers": [
+                    {
+                      "kind": "url",
+                      "value": "https://portal.example.com/"
+                    }
+                  ],
+                  "environment": "staging",
+                  "ownerUserId": "0198f0a0-0000-7000-8000-00000000000a",
+                  "verificationStatus": "unverified",
+                  "verificationMethod": null,
+                  "etag": "\"v1\"",
+                  "createdAt": "2026-10-30T10:00:00.000Z",
+                  "updatedAt": "2026-10-30T10:00:00.000Z",
+                  "warnings": []
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 },
                 "examples": {
-                  "verified": {
-                    "summary": "One verified asset",
+                  "INVALID_CURSOR": {
+                    "summary": "Invalid cursor",
                     "value": {
-                      "items": [
-                        {
-                          "id": "0198f0a0-0000-7000-8000-0000000000e1",
-                          "name": "Juice Shop (lab)",
-                          "type": "web_app",
-                          "environment": "dev",
-                          "verificationStatus": "verified"
-                        }
-                      ]
+                      "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+                      "title": "Invalid cursor",
+                      "status": 400,
+                      "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SIGNUP_TOKEN_INVALID": {
+                    "summary": "Signup token invalid or expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+                      "title": "Signup token invalid or expired",
+                      "status": 400,
+                      "code": "SIGNUP_TOKEN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
                 }
               }
             }
           },
-          "400": {
-            "description": "The query has an unknown or invalid parameter.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
           "401": {
-            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14675,77 +15290,39 @@
                       "code": "UNAUTHENTICATED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
-                  },
-                  "AUTH_NO_CREDENTIALS": {
-                    "summary": "No credentials presented",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
-                      "title": "No credentials presented",
-                      "status": 401,
-                      "code": "AUTH_NO_CREDENTIALS",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "AUTH_INVALID_TOKEN": {
-                    "summary": "Invalid credentials",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
-                      "title": "Invalid credentials",
-                      "status": 401,
-                      "code": "AUTH_INVALID_TOKEN",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "AUTH_EXPIRED": {
-                    "summary": "Credentials expired",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
-                      "title": "Credentials expired",
-                      "status": 401,
-                      "code": "AUTH_EXPIRED",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "AUTHZ_STEPUP_REQUIRED": {
-                    "summary": "Step up authentication required",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
-                      "title": "Step up authentication required",
-                      "status": 401,
-                      "code": "AUTHZ_STEPUP_REQUIRED",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "SBX_UNAUTHENTICATED": {
-                    "summary": "Run token required",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
-                      "title": "Run token required",
-                      "status": 401,
-                      "code": "SBX_UNAUTHENTICATED",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "SERVICE_AUTH_FAILED": {
-                    "summary": "Service authentication failed",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
-                      "title": "Service authentication failed",
-                      "status": 401,
-                      "code": "SERVICE_AUTH_FAILED",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
                   }
                 }
               }
             }
           },
           "403": {
-            "description": "The caller may not read assets in this tenant.",
+            "description": "Problem details; code is one of TENANT_CONTEXT_MISSING, FORBIDDEN.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "TENANT_CONTEXT_MISSING": {
+                    "summary": "Tenant context missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+                      "title": "Tenant context missing",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
                 }
               }
             }
@@ -14843,7 +15420,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14970,6 +15547,26 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "KEYCLOAK_CONFLICT": {
                     "summary": "Identity provider conflict",
                     "value": {
@@ -14995,7 +15592,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, IDEMPOTENCY_KEY_MISMATCH, ASSET_INVALID_IDENTIFIER.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15012,166 +15609,6 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
-                  "EVIDENCE_INTEGRITY_FAILED": {
-                    "summary": "Evidence integrity check failed",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
-                      "title": "Evidence integrity check failed",
-                      "status": 422,
-                      "code": "EVIDENCE_INTEGRITY_FAILED",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "SCOPE_INVALID_CLASS": {
-                    "summary": "Invalid intrusiveness class",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
-                      "title": "Invalid intrusiveness class",
-                      "status": 422,
-                      "code": "SCOPE_INVALID_CLASS",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "SCOPE_INVALID_BUDGET": {
-                    "summary": "Invalid request budget",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
-                      "title": "Invalid request budget",
-                      "status": 422,
-                      "code": "SCOPE_INVALID_BUDGET",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "SCOPE_INVALID_RULE": {
-                    "summary": "Invalid scope rule",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
-                      "title": "Invalid scope rule",
-                      "status": 422,
-                      "code": "SCOPE_INVALID_RULE",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "AUTHZ_INVALID_WINDOW": {
-                    "summary": "Invalid standing authorisation window",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
-                      "title": "Invalid standing authorisation window",
-                      "status": 422,
-                      "code": "AUTHZ_INVALID_WINDOW",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "AUTHZ_ASSET_UNVERIFIED": {
-                    "summary": "Asset is not verified for this tenant",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/AUTHZ_ASSET_UNVERIFIED",
-                      "title": "Asset is not verified for this tenant",
-                      "status": 422,
-                      "code": "AUTHZ_ASSET_UNVERIFIED",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "PERSONA_UNKNOWN": {
-                    "summary": "Unknown persona",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
-                      "title": "Unknown persona",
-                      "status": 422,
-                      "code": "PERSONA_UNKNOWN",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "PERSONA_FORBIDDEN_TOOL": {
-                    "summary": "Forbidden tool in persona",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL",
-                      "title": "Forbidden tool in persona",
-                      "status": 422,
-                      "code": "PERSONA_FORBIDDEN_TOOL",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "PERSONA_INVALID": {
-                    "summary": "Invalid persona definition",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/PERSONA_INVALID",
-                      "title": "Invalid persona definition",
-                      "status": 422,
-                      "code": "PERSONA_INVALID",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "ENVELOPE_INVALID": {
-                    "summary": "Invalid secret envelope",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
-                      "title": "Invalid secret envelope",
-                      "status": 422,
-                      "code": "ENVELOPE_INVALID",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "PROMPT_INVALID": {
-                    "summary": "Invalid prompt file",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/PROMPT_INVALID",
-                      "title": "Invalid prompt file",
-                      "status": 422,
-                      "code": "PROMPT_INVALID",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "PROMPT_PLACEHOLDER_MISSING": {
-                    "summary": "Prompt placeholder unfilled",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
-                      "title": "Prompt placeholder unfilled",
-                      "status": 422,
-                      "code": "PROMPT_PLACEHOLDER_MISSING",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "INVALID_SECRET_REF": {
-                    "summary": "Invalid secret reference",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
-                      "title": "Invalid secret reference",
-                      "status": 422,
-                      "code": "INVALID_SECRET_REF",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "SBX_IMAGE_MISSING": {
-                    "summary": "Sandbox image missing",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/SBX_IMAGE_MISSING",
-                      "title": "Sandbox image missing",
-                      "status": 422,
-                      "code": "SBX_IMAGE_MISSING",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "KILL_SCOPE_INVALID": {
-                    "summary": "Invalid kill scope",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
-                      "title": "Invalid kill scope",
-                      "status": 422,
-                      "code": "KILL_SCOPE_INVALID",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "KILL_REF_REQUIRED": {
-                    "summary": "Kill scope reference required",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
-                      "title": "Kill scope reference required",
-                      "status": 422,
-                      "code": "KILL_REF_REQUIRED",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
                   "IDEMPOTENCY_KEY_MISMATCH": {
                     "summary": "Idempotency key reused with a different request",
                     "value": {
@@ -15182,23 +15619,13 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
-                  "AUDIT_EVENT_INVALID": {
-                    "summary": "Invalid audit event",
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
                     "value": {
-                      "type": "https://errors.blackwing.dev/AUDIT_EVENT_INVALID",
-                      "title": "Invalid audit event",
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
                       "status": 422,
-                      "code": "AUDIT_EVENT_INVALID",
-                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
-                    }
-                  },
-                  "CVSS_VECTOR_SCORE_MISMATCH": {
-                    "summary": "CVSS score does not match its vector",
-                    "value": {
-                      "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
-                      "title": "CVSS score does not match its vector",
-                      "status": 422,
-                      "code": "CVSS_VECTOR_SCORE_MISMATCH",
+                      "code": "ASSET_INVALID_IDENTIFIER",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -15221,6 +15648,1684 @@
                       "title": "Too many requests",
                       "status": 429,
                       "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["assets"],
+        "operationId": "listAssets",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "summary": "List assets (cursor pages, newest first)",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["web_app", "api", "host", "network_range", "source_repo"]
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["prod", "staging", "dev", "test"]
+            }
+          },
+          {
+            "name": "verificationStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["unverified", "pending", "verified", "rejected"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the projection (the scoping wizard fields). `nextCursor` is null on the last page. Each item’s `id` is the UUID; the full view is on `GET /v1/assets/{id}`.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "0198f0a0-0000-7000-8000-0000000000e1",
+                      "name": "Juice Shop (lab)",
+                      "type": "web_app",
+                      "environment": "dev",
+                      "verificationStatus": "verified"
+                    }
+                  ],
+                  "nextCursor": null,
+                  "hasMore": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INVALID_CURSOR": {
+                    "summary": "Invalid cursor",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+                      "title": "Invalid cursor",
+                      "status": 400,
+                      "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SIGNUP_TOKEN_INVALID": {
+                    "summary": "Signup token invalid or expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+                      "title": "Signup token invalid or expired",
+                      "status": 400,
+                      "code": "SIGNUP_TOKEN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of TENANT_CONTEXT_MISSING, FORBIDDEN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "TENANT_CONTEXT_MISSING": {
+                    "summary": "Tenant context missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+                      "title": "Tenant context missing",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PERSONA_NOT_DEFINED": {
+                    "summary": "Persona not defined",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+                      "title": "Persona not defined",
+                      "status": 404,
+                      "code": "PERSONA_NOT_DEFINED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PROMPT_NO_RELEASED_VERSION": {
+                    "summary": "No released prompt version",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+                      "title": "No released prompt version",
+                      "status": 404,
+                      "code": "PROMPT_NO_RELEASED_VERSION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_FOUND": {
+                    "summary": "Run not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+                      "title": "Run not found",
+                      "status": 404,
+                      "code": "RUN_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_NOT_FOUND": {
+                    "summary": "Secret not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+                      "title": "Secret not found",
+                      "status": 404,
+                      "code": "SECRET_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEYCLOAK_NOT_FOUND": {
+                    "summary": "Identity provider resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+                      "title": "Identity provider resource not found",
+                      "status": 404,
+                      "code": "KEYCLOAK_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PLAN_NOT_FOUND": {
+                    "summary": "Test plan not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+                      "title": "Test plan not found",
+                      "status": 404,
+                      "code": "PLAN_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TEST_CASE_NOT_FOUND": {
+                    "summary": "Test case not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+                      "title": "Test case not found",
+                      "status": 404,
+                      "code": "TEST_CASE_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "CONFLICT": {
+                    "summary": "Conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONFLICT",
+                      "title": "Conflict",
+                      "status": 409,
+                      "code": "CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ILLEGAL_RUN_TRANSITION": {
+                    "summary": "Illegal run state transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+                      "title": "Illegal run state transition",
+                      "status": 409,
+                      "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "GATE1_NOT_PENDING": {
+                    "summary": "Approval gate is no longer pending",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+                      "title": "Approval gate is no longer pending",
+                      "status": 409,
+                      "code": "GATE1_NOT_PENDING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "GATE1_PLAN_STALE": {
+                    "summary": "Test plan changed since it was loaded",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+                      "title": "Test plan changed since it was loaded",
+                      "status": 409,
+                      "code": "GATE1_PLAN_STALE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "GATE1_EXPIRED": {
+                    "summary": "Approval window expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+                      "title": "Approval window expired",
+                      "status": 409,
+                      "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_NOT_DRAFT": {
+                    "summary": "Standing authorisation is not a draft",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_NOT_DRAFT",
+                      "title": "Standing authorisation is not a draft",
+                      "status": 409,
+                      "code": "AUTHZ_NOT_DRAFT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEK_DISABLED": {
+                    "summary": "Key version disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEK_DISABLED",
+                      "title": "Key version disabled",
+                      "status": 409,
+                      "code": "KEK_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "DB_SERIALIZATION_CONFLICT": {
+                    "summary": "Database serialization conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+                      "title": "Database serialization conflict",
+                      "status": 409,
+                      "code": "DB_SERIALIZATION_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_ALREADY_IN_PROGRESS": {
+                    "summary": "Kill already in progress",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+                      "title": "Kill already in progress",
+                      "status": 409,
+                      "code": "KILL_ALREADY_IN_PROGRESS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "RUN_NOT_ACTIVE": {
+                    "summary": "Run is not active",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+                      "title": "Run is not active",
+                      "status": 409,
+                      "code": "RUN_NOT_ACTIVE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_DISABLED": {
+                    "summary": "Secret disabled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+                      "title": "Secret disabled",
+                      "status": 409,
+                      "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KEYCLOAK_CONFLICT": {
+                    "summary": "Identity provider conflict",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+                      "title": "Identity provider conflict",
+                      "status": 409,
+                      "code": "KEYCLOAK_CONFLICT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PLAN_VERSION_IMMUTABLE": {
+                    "summary": "Approved test plan version is immutable",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+                      "title": "Approved test plan version is immutable",
+                      "status": 409,
+                      "code": "PLAN_VERSION_IMMUTABLE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED, IDEMPOTENCY_KEY_MISMATCH, ASSET_INVALID_IDENTIFIER.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_MISMATCH": {
+                    "summary": "Idempotency key reused with a different request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+                      "title": "Idempotency key reused with a different request",
+                      "status": 422,
+                      "code": "IDEMPOTENCY_KEY_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/{id}": {
+      "get": {
+        "tags": ["assets"],
+        "operationId": "getAsset",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "summary": "Get one asset",
+        "description": "A soft-deleted asset is `404`, as is an id of another tenant (never `403`, §8.6).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Public asset id (`asset_…`).",
+            "schema": {
+              "type": "string",
+              "pattern": "^asset_[0-9a-hjkmnp-tv-z]{26}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The asset. The `ETag` header is the value to send back in `If-Match`.",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                },
+                "example": {
+                  "id": "0198f0a0-0000-7000-8000-0000000000e1",
+                  "publicId": "asset_0r3h7k4xw0c8g1n5p2q6v9m3yt",
+                  "type": "web_app",
+                  "name": "Customer portal",
+                  "identifiers": [
+                    {
+                      "kind": "url",
+                      "value": "https://portal.example.com/"
+                    }
+                  ],
+                  "environment": "staging",
+                  "ownerUserId": "0198f0a0-0000-7000-8000-00000000000a",
+                  "verificationStatus": "unverified",
+                  "verificationMethod": null,
+                  "etag": "\"v1\"",
+                  "createdAt": "2026-10-30T10:00:00.000Z",
+                  "updatedAt": "2026-10-30T10:00:00.000Z",
+                  "warnings": []
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INVALID_CURSOR": {
+                    "summary": "Invalid cursor",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+                      "title": "Invalid cursor",
+                      "status": 400,
+                      "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SIGNUP_TOKEN_INVALID": {
+                    "summary": "Signup token invalid or expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+                      "title": "Signup token invalid or expired",
+                      "status": 400,
+                      "code": "SIGNUP_TOKEN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of TENANT_CONTEXT_MISSING, FORBIDDEN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "TENANT_CONTEXT_MISSING": {
+                    "summary": "Tenant context missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+                      "title": "Tenant context missing",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of ASSET_STALE_WRITE, ASSET_IN_USE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED, ASSET_INVALID_IDENTIFIER.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Problem details; code is one of PRECONDITION_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PRECONDITION_REQUIRED": {
+                    "summary": "Precondition required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+                      "title": "Precondition required",
+                      "status": 428,
+                      "code": "PRECONDITION_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["assets"],
+        "operationId": "updateAsset",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "summary": "Update an asset (optimistic concurrency)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Public asset id (`asset_…`).",
+            "schema": {
+              "type": "string",
+              "pattern": "^asset_[0-9a-hjkmnp-tv-z]{26}$"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "description": "The ETag from the last GET (or the write that produced the current version). Required; a stale value answers 409 `ASSET_STALE_WRITE`.",
+            "schema": {
+              "type": "string",
+              "example": "\"v1\""
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssetBody"
+              },
+              "example": {
+                "name": "Customer portal (EU)"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated. The `ETag` header carries the new version.",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                },
+                "example": {
+                  "id": "0198f0a0-0000-7000-8000-0000000000e1",
+                  "publicId": "asset_0r3h7k4xw0c8g1n5p2q6v9m3yt",
+                  "type": "web_app",
+                  "name": "Customer portal",
+                  "identifiers": [
+                    {
+                      "kind": "url",
+                      "value": "https://portal.example.com/"
+                    }
+                  ],
+                  "environment": "staging",
+                  "ownerUserId": "0198f0a0-0000-7000-8000-00000000000a",
+                  "verificationStatus": "unverified",
+                  "verificationMethod": null,
+                  "etag": "\"v1\"",
+                  "createdAt": "2026-10-30T10:00:00.000Z",
+                  "updatedAt": "2026-10-30T10:00:00.000Z",
+                  "warnings": []
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INVALID_CURSOR": {
+                    "summary": "Invalid cursor",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+                      "title": "Invalid cursor",
+                      "status": 400,
+                      "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SIGNUP_TOKEN_INVALID": {
+                    "summary": "Signup token invalid or expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+                      "title": "Signup token invalid or expired",
+                      "status": 400,
+                      "code": "SIGNUP_TOKEN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of TENANT_CONTEXT_MISSING, FORBIDDEN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "TENANT_CONTEXT_MISSING": {
+                    "summary": "Tenant context missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+                      "title": "Tenant context missing",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of ASSET_STALE_WRITE, ASSET_IN_USE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Problem details; code is one of PRECONDITION_FAILED, ETAG_MISMATCH.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PRECONDITION_FAILED": {
+                    "summary": "Precondition failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PRECONDITION_FAILED",
+                      "title": "Precondition failed",
+                      "status": 412,
+                      "code": "PRECONDITION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ETAG_MISMATCH": {
+                    "summary": "ETag mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ETAG_MISMATCH",
+                      "title": "ETag mismatch",
+                      "status": 412,
+                      "code": "ETAG_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED, ASSET_INVALID_IDENTIFIER.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Problem details; code is one of PRECONDITION_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PRECONDITION_REQUIRED": {
+                    "summary": "Precondition required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+                      "title": "Precondition required",
+                      "status": 428,
+                      "code": "PRECONDITION_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["assets"],
+        "operationId": "deleteAsset",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "summary": "Soft-delete an asset",
+        "description": "The row is kept (audit history); the asset disappears from GET and list. Answers the retired asset. Refused with `409 ASSET_IN_USE` while an active or pending standing authorisation covers it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Public asset id (`asset_…`).",
+            "schema": {
+              "type": "string",
+              "pattern": "^asset_[0-9a-hjkmnp-tv-z]{26}$"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "description": "Optional. When present, must match the current ETag.",
+            "schema": {
+              "type": "string",
+              "example": "\"v1\""
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted. The body is the retired asset; the `ETag` header is its final version.",
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                },
+                "example": {
+                  "id": "0198f0a0-0000-7000-8000-0000000000e1",
+                  "publicId": "asset_0r3h7k4xw0c8g1n5p2q6v9m3yt",
+                  "type": "web_app",
+                  "name": "Customer portal",
+                  "identifiers": [
+                    {
+                      "kind": "url",
+                      "value": "https://portal.example.com/"
+                    }
+                  ],
+                  "environment": "staging",
+                  "ownerUserId": "0198f0a0-0000-7000-8000-00000000000a",
+                  "verificationStatus": "unverified",
+                  "verificationMethod": null,
+                  "etag": "\"v1\"",
+                  "createdAt": "2026-10-30T10:00:00.000Z",
+                  "updatedAt": "2026-10-30T10:00:00.000Z",
+                  "warnings": []
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INVALID_CURSOR": {
+                    "summary": "Invalid cursor",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+                      "title": "Invalid cursor",
+                      "status": 400,
+                      "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SIGNUP_TOKEN_INVALID": {
+                    "summary": "Signup token invalid or expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+                      "title": "Signup token invalid or expired",
+                      "status": 400,
+                      "code": "SIGNUP_TOKEN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of TENANT_CONTEXT_MISSING, FORBIDDEN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "TENANT_CONTEXT_MISSING": {
+                    "summary": "Tenant context missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+                      "title": "Tenant context missing",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "summary": "Resource not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_FOUND",
+                      "title": "Resource not found",
+                      "status": 404,
+                      "code": "NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of ASSET_STALE_WRITE, ASSET_IN_USE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Problem details; code is one of PRECONDITION_FAILED, ETAG_MISMATCH.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PRECONDITION_FAILED": {
+                    "summary": "Precondition failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PRECONDITION_FAILED",
+                      "title": "Precondition failed",
+                      "status": 412,
+                      "code": "PRECONDITION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ETAG_MISMATCH": {
+                    "summary": "ETag mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ETAG_MISMATCH",
+                      "title": "ETag mismatch",
+                      "status": 412,
+                      "code": "ETAG_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED, ASSET_INVALID_IDENTIFIER.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Problem details; code is one of PRECONDITION_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PRECONDITION_REQUIRED": {
+                    "summary": "Precondition required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+                      "title": "Precondition required",
+                      "status": 428,
+                      "code": "PRECONDITION_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Problem details; code is one of INTERNAL.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INTERNAL": {
+                    "summary": "Internal server error",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INTERNAL",
+                      "title": "Internal server error",
+                      "status": 500,
+                      "code": "INTERNAL",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -15978,7 +18083,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16102,6 +18207,26 @@
                       "title": "Secret disabled",
                       "status": 409,
                       "code": "SECRET_DISABLED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -16452,7 +18577,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16579,6 +18704,26 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "KEYCLOAK_CONFLICT": {
                     "summary": "Identity provider conflict",
                     "value": {
@@ -16604,7 +18749,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16798,6 +18943,16 @@
                       "title": "Invalid audit event",
                       "status": 422,
                       "code": "AUDIT_EVENT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -21194,7 +23349,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -21321,6 +23476,26 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "KEYCLOAK_CONFLICT": {
                     "summary": "Identity provider conflict",
                     "value": {
@@ -21346,7 +23521,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -21540,6 +23715,16 @@
                       "title": "Invalid audit event",
                       "status": 422,
                       "code": "AUDIT_EVENT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -21778,7 +23963,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -21905,6 +24090,26 @@
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
+                  "ASSET_STALE_WRITE": {
+                    "summary": "Stale asset write",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+                      "title": "Stale asset write",
+                      "status": 409,
+                      "code": "ASSET_STALE_WRITE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_IN_USE": {
+                    "summary": "Asset in use",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+                      "title": "Asset in use",
+                      "status": 409,
+                      "code": "ASSET_IN_USE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "KEYCLOAK_CONFLICT": {
                     "summary": "Identity provider conflict",
                     "value": {
@@ -21930,7 +24135,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, CVSS_VECTOR_SCORE_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -22124,6 +24329,16 @@
                       "title": "Invalid audit event",
                       "status": 422,
                       "code": "AUDIT_EVENT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -22743,7 +24958,35 @@
         },
         "additionalProperties": false
       },
-      "AssetList": {
+      "AssetListQuery": {
+        "type": "object",
+        "properties": {
+          "verificationStatus": {
+            "type": "string",
+            "enum": ["unverified", "pending", "verified", "rejected"]
+          },
+          "type": {
+            "type": "string",
+            "enum": ["web_app", "api", "host", "network_range", "source_repo"]
+          },
+          "environment": {
+            "type": "string",
+            "enum": ["prod", "staging", "dev", "test"]
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "additionalProperties": false
+      },
+      "AssetPage": {
         "type": "object",
         "properties": {
           "items": {
@@ -22776,9 +25019,125 @@
               "required": ["id", "name", "type", "environment", "verificationStatus"],
               "additionalProperties": false
             }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hasMore": {
+            "type": "boolean"
           }
         },
         "required": ["items"],
+        "additionalProperties": false
+      },
+      "AssetView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "publicId": {
+            "type": "string",
+            "pattern": "^asset_[0-9a-hjkmnp-tv-z]{26}$"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["web_app", "api", "host", "network_range", "source_repo"]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "identifiers": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": ["host", "url", "cidr", "repo"]
+                },
+                "value": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": ["kind", "value"],
+              "additionalProperties": false
+            }
+          },
+          "environment": {
+            "type": "string",
+            "enum": ["prod", "staging", "dev", "test"]
+          },
+          "ownerUserId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": ["unverified", "pending", "verified", "rejected"]
+          },
+          "verificationMethod": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["dns_txt", "http_file", "manual_letter"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "etag": {
+            "type": "string",
+            "pattern": "^\"v\\d+\"$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        },
+        "required": [
+          "id",
+          "publicId",
+          "type",
+          "name",
+          "identifiers",
+          "environment",
+          "ownerUserId",
+          "verificationStatus",
+          "verificationMethod",
+          "etag",
+          "createdAt",
+          "updatedAt",
+          "warnings"
+        ],
         "additionalProperties": false
       },
       "AuditEventView": {
@@ -22892,7 +25251,10 @@
               "test_plan.version_created",
               "test_case.created",
               "test_case.updated",
-              "test_case.removed"
+              "test_case.removed",
+              "asset.updated",
+              "asset.deleted",
+              "asset.owner_assigned"
             ]
           },
           "severity": {
@@ -22965,6 +25327,51 @@
             "description": "Hex previous hash; null on the genesis row. Only with includeChain=true."
           }
         }
+      },
+      "CreateAssetBody": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["web_app", "api", "host", "network_range", "source_repo"]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "identifiers": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": ["host", "url", "cidr", "repo"]
+                },
+                "value": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048
+                }
+              },
+              "required": ["kind", "value"],
+              "additionalProperties": false
+            }
+          },
+          "environment": {
+            "type": "string",
+            "enum": ["prod", "staging", "dev", "test"]
+          },
+          "ownerUserId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          }
+        },
+        "required": ["type", "name", "identifiers", "environment", "ownerUserId"],
+        "additionalProperties": false
       },
       "CreateStandingAuthorisation": {
         "type": "object",
@@ -26832,6 +29239,46 @@
           }
         },
         "required": ["planId", "runId", "version", "status", "createdAt", "updatedAt", "cases"],
+        "additionalProperties": false
+      },
+      "UpdateAssetBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "identifiers": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": ["host", "url", "cidr", "repo"]
+                },
+                "value": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048
+                }
+              },
+              "required": ["kind", "value"],
+              "additionalProperties": false
+            }
+          },
+          "environment": {
+            "type": "string",
+            "enum": ["prod", "staging", "dev", "test"]
+          },
+          "ownerUserId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          }
+        },
         "additionalProperties": false
       }
     }

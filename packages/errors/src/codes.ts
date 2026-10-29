@@ -297,6 +297,11 @@ const DEFINITIONS = {
   // the current version (drop `?v=`) or re-pin to the version that is current now.
   SECRET_VERSION_RETIRED: { status: 410, title: 'Secret version retired', retryable: false },
   RUN_KILLED: { status: 423, title: 'Run killed', retryable: false },
+  // Asset API (ASSET-002, #355). A PATCH whose If-Match ETag is stale, or a delete of an asset that an active
+  // standing authorisation still covers.
+  ASSET_STALE_WRITE: { status: 409, title: 'Stale asset write', retryable: false },
+  ASSET_IN_USE: { status: 409, title: 'Asset in use', retryable: false },
+  ASSET_INVALID_IDENTIFIER: { status: 422, title: 'Invalid asset identifier', retryable: false },
   EXTERNAL_BACKEND_UNAVAILABLE: {
     status: 503,
     title: 'External secret backend unavailable',

@@ -96,7 +96,10 @@
         "test_plan.version_created",
         "test_case.created",
         "test_case.updated",
-        "test_case.removed"
+        "test_case.removed",
+        "asset.updated",
+        "asset.deleted",
+        "asset.owner_assigned"
       ]
     },
     "severity": {

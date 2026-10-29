@@ -194,6 +194,18 @@ export {
   listAssetsQuerySchema,
 } from './entities/asset-api.js';
 export {
+  ASSET_IDENTIFIER_LIMIT,
+  ASSET_TYPE_IDENTIFIER_KIND,
+  type AssetIdentifierInput,
+  assetIdentifierInputSchema,
+  type AssetView,
+  assetViewSchema,
+  type CreateAssetBody,
+  createAssetBodySchema,
+  type UpdateAssetBody,
+  updateAssetBodySchema,
+} from './asset-api.js';
+export {
   type AuthorisableIntrusiveness,
   authorisableIntrusivenessSchema,
   type Intrusiveness,

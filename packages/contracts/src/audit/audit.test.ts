@@ -107,6 +107,9 @@ const RELEASED_ACTIONS = [
   'test_case.created',
   'test_case.updated',
   'test_case.removed',
+  'asset.updated',
+  'asset.deleted',
+  'asset.owner_assigned',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

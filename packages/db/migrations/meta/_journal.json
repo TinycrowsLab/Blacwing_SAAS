@@ -162,6 +162,13 @@
       "when": 1793313794593,
       "tag": "20261029224314_standing_authorisation_envelope_hash",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793317804852,
+      "tag": "20261029235004_asset_api_versioning",
+      "breakpoints": true
     }
   ]
 }

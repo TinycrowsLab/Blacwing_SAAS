@@ -178,6 +178,7 @@ export {
 } from './repository.js';
 export {
   AssetRepository,
+  type AssetListPage,
   type AssetListRow,
   type AssetRepositoryOptions,
 } from './asset.repository.js';
