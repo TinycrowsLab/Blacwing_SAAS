@@ -628,7 +628,10 @@ export interface components {
         | 'authz.gate.decision'
         | 'authz.sa.updated'
         | 'authz.sa.submitted'
-        | 'run.surface.viewed';
+        | 'run.surface.viewed'
+        | 'scope.request.updated'
+        | 'scope.request.submitted'
+        | 'scope.request.withdrawn';
       /** @enum {string} */
       severity: 'info' | 'notice' | 'warning' | 'critical';
       /** @description Who acted. `email` is only returned to auditors. */
@@ -1602,7 +1605,10 @@ export interface operations {
           | 'authz.gate.decision'
           | 'authz.sa.updated'
           | 'authz.sa.submitted'
-          | 'run.surface.viewed';
+          | 'run.surface.viewed'
+          | 'scope.request.updated'
+          | 'scope.request.submitted'
+          | 'scope.request.withdrawn';
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */
         targetId?: string;
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */

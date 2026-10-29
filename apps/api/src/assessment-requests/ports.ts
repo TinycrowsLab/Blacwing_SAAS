@@ -23,6 +23,7 @@ export interface AssessmentRequestStore {
     id: string,
     expectedStateVersion: number,
     patch: AssessmentRequestUpdate,
+    actorId: string,
   ): Promise<AssessmentRequestRow>;
   transition(
     id: string,
@@ -36,6 +37,8 @@ export interface AssessmentRequestStore {
 export interface AssetFact {
   readonly id: string;
   readonly verificationStatus: VerificationStatus;
+  /** The owner, for the asset-level Cedar check (`assessment/policy.ts`). */
+  readonly ownerUserId: string;
 }
 
 /** Asset lookup. Tenant-scoped: an asset of another tenant is simply absent from the result. */
@@ -47,6 +50,8 @@ export interface AssetCatalog {
 export interface StandingAuthorisationFact {
   readonly id: string;
   readonly status: 'draft' | 'pending_approval' | 'active' | 'expired' | 'revoked';
+  /** The start of the SA window; the SA is not active before it. */
+  readonly validFrom: Date;
   readonly expiresAt: Date;
   readonly assetIds: readonly string[];
   /** Include/exclude rules, `{ rules: [...] }` (SCOPE-002). */

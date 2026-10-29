@@ -68,6 +68,7 @@ beforeEach(async () => {
     [`${TENANT_A}:${SA_EXPIRED_A}`]: {
       ...activeSaA(),
       id: SA_EXPIRED_A,
+      validFrom: new Date('2025-01-01T00:00:00.000Z'),
       expiresAt: new Date('2026-01-01T00:00:00.000Z'),
     },
     [`${TENANT_B}:${SA_B}`]: { ...activeSaA(), id: SA_B, assetIds: [ASSET_VERIFIED_B] },

@@ -89,7 +89,10 @@
         "authz.gate.decision",
         "authz.sa.updated",
         "authz.sa.submitted",
-        "run.surface.viewed"
+        "run.surface.viewed",
+        "scope.request.updated",
+        "scope.request.submitted",
+        "scope.request.withdrawn"
       ]
     },
     "severity": {

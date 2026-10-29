@@ -249,3 +249,18 @@ export {
   type StandingAuthorisationWrite,
 } from './standing-authorisation.repository.js';
 export { unverifiedAssetIds } from './asset-verification.repository.js';
+
+export {
+  AssetCatalogRepository,
+  type AssetCatalogEntry,
+  type AssetCatalogRepositoryOptions,
+} from './asset-catalog.repository.js';
+export {
+  StandingAuthorisationReader,
+  type StandingAuthorisationEntry,
+  type StandingAuthorisationReaderOptions,
+} from './standing-authorisation-reader.repository.js';
+export {
+  TenantHaltRepository,
+  type TenantHaltRepositoryOptions,
+} from './tenant-halt.repository.js';

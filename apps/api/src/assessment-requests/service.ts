@@ -19,10 +19,12 @@ import { requireIfMatch, versionEtag } from '../concurrency/index.js';
 import { FieldValidationError } from '../errors/problem-errors.js';
 
 import type { AssessmentRequestMetrics } from './metrics.js';
+import type { AssessmentPolicyEngine, AssessmentPolicyPrincipal } from './policy.js';
 import type {
   AssessmentRequestMemberships,
   AssessmentRequestStore,
   AssetCatalog,
+  AssetFact,
   StandingAuthorisationReader,
   TenantHaltState,
 } from './ports.js';
@@ -70,6 +72,8 @@ export interface AssessmentRequestServiceDeps {
   readonly metrics: AssessmentRequestMetrics;
   readonly logger: Pick<Logger, 'info'>;
   readonly tracer?: Tracer;
+  /** The asset-level policy (Cedar): may the caller act on this asset (SCOPE-005 requirement 6). */
+  readonly policy: AssessmentPolicyEngine;
   /** Clock of the submit gate (SA expiry). Tests pass a fixed instant. */
   readonly now?: () => Date;
 }
@@ -124,8 +128,8 @@ export class AssessmentRequestService {
     principal: AssessmentRequestPrincipal,
     body: CreateAssessmentRequest,
   ): Promise<AssessmentRequestView> {
-    await this.authorise(principal, 'assessment:create');
-    await this.requireAssetsInTenant(principal.tenantId, body.assetIds);
+    const roles = await this.authorise(principal, 'assessment:create');
+    await this.requireAssetAccess(principal, roles, body.assetIds);
     const createInput: AssessmentRequestCreate = {
       mode: body.mode,
       objective: body.objective,
@@ -170,11 +174,10 @@ export class AssessmentRequestService {
     ifMatch: string | undefined,
     body: PatchAssessmentRequest,
   ): Promise<AssessmentRequestView> {
-    await this.authorise(principal, 'assessment:create');
+    const roles = await this.authorise(principal, 'assessment:create');
     const current = await this.findOrNotFound(requestPublicId);
     const { expectedVersion } = requireIfMatch(versionEtag(current.stateVersion), ifMatch);
-    if (body.assetIds !== undefined)
-      await this.requireAssetsInTenant(principal.tenantId, body.assetIds);
+    if (body.assetIds !== undefined) await this.requireAssetAccess(principal, roles, body.assetIds);
     const { budgets, ...fields } = body;
     const patch: AssessmentRequestUpdate =
       budgets === undefined
@@ -184,6 +187,7 @@ export class AssessmentRequestService {
       current.id,
       expectedVersion ?? current.stateVersion,
       patch,
+      principal.actorId,
     );
     return viewOf(row);
   }
@@ -197,7 +201,7 @@ export class AssessmentRequestService {
     requestPublicId: string,
   ): Promise<AssessmentRequestView> {
     return this.inSpan(SUBMIT_SPAN, requestPublicId, async () => {
-      await this.authorise(principal, 'assessment:create');
+      const roles = await this.authorise(principal, 'assessment:create');
       const current = await this.findOrNotFound(requestPublicId);
       if (await this.deps.halts.isHalted(principal.tenantId)) {
         this.deps.metrics.submitted('halted');
@@ -207,6 +211,7 @@ export class AssessmentRequestService {
       if (assets.length !== new Set(current.assetIds).size) {
         throw new NotFoundError('assessment request asset not found');
       }
+      this.authoriseAssets(principal, roles, assets);
       const saId = current.saId;
       const sa =
         saId === null
@@ -268,9 +273,10 @@ export class AssessmentRequestService {
     requestPublicId: string,
     ifMatch: string | undefined,
   ): Promise<AssessmentRequestView> {
-    await this.authorise(principal, 'assessment:create');
+    const roles = await this.authorise(principal, 'assessment:create');
     const current = await this.findOrNotFound(requestPublicId);
     const { expectedVersion } = requireIfMatch(versionEtag(current.stateVersion), ifMatch);
+    await this.requireAssetAccess(principal, roles, current.assetIds);
     const row = await this.deps.store.transition(
       current.id,
       expectedVersion ?? current.stateVersion,
@@ -284,13 +290,14 @@ export class AssessmentRequestService {
   private async authorise(
     principal: AssessmentRequestPrincipal,
     permission: Permission,
-  ): Promise<void> {
+  ): Promise<readonly string[]> {
     const roles = await this.rolesOf(principal);
     if (!hasPermission(roles, permission)) {
       throw new ForbiddenError('the caller may not manage assessment requests', {
         detail: `Missing permission ${permission} in this tenant.`,
       });
     }
+    return roles;
   }
 
   /** Reads are open to every member of the tenant (a membership with at least one role). */
@@ -319,15 +326,45 @@ export class AssessmentRequestService {
     return row;
   }
 
-  /** Every named asset must exist in the tenant; a missing or foreign one is a uniform 404 (no existence leak). */
-  private async requireAssetsInTenant(
-    tenantId: string,
+  /**
+   * Every named asset must exist in the tenant (a missing or foreign one is a uniform 404, no existence leak), and the
+   * caller must be allowed to act on each one (Cedar, SCOPE-005 requirement 6).
+   */
+  private async requireAssetAccess(
+    principal: AssessmentRequestPrincipal,
+    roles: readonly string[],
     assetIds: readonly string[],
   ): Promise<void> {
     if (assetIds.length === 0) return;
-    const found = await this.deps.assets.findInTenant(tenantId, assetIds);
+    const found = await this.deps.assets.findInTenant(principal.tenantId, assetIds);
     if (found.length !== new Set(assetIds).size) {
       throw new NotFoundError('assessment request asset not found');
+    }
+    this.authoriseAssets(principal, roles, found);
+  }
+
+  /** Cedar: the caller may act on each of these assets. A refusal is a 403 that names no asset. */
+  private authoriseAssets(
+    principal: AssessmentRequestPrincipal,
+    roles: readonly string[],
+    assets: readonly AssetFact[],
+  ): void {
+    const who: AssessmentPolicyPrincipal = {
+      userId: principal.actorId,
+      tenantId: principal.tenantId,
+      roles,
+    };
+    for (const asset of assets) {
+      const decision = this.deps.policy.authorize(who, {
+        id: asset.id,
+        tenantId: principal.tenantId,
+        ownerUserIds: [asset.ownerUserId],
+      });
+      if (decision !== 'allow') {
+        throw new ForbiddenError('the caller may not act on these assets', {
+          detail: 'The asset policy does not allow this action on one of the named assets.',
+        });
+      }
     }
   }
 

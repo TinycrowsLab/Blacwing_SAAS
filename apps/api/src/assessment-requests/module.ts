@@ -2,6 +2,7 @@ import { type DynamicModule, Module } from '@nestjs/common';
 
 import { AssessmentRequestController } from './controller.js';
 import { createAssessmentRequestMetrics } from './metrics.js';
+import { createCedarAssessmentPolicy, type AssessmentPolicyEngine } from './policy.js';
 import { AssessmentRequestService, type AssessmentRequestServiceDeps } from './service.js';
 import { ASSESSMENT_REQUEST_SERVICE } from './tokens.js';
 
@@ -20,6 +21,8 @@ export interface AssessmentRequestModuleOptions extends Pick<
 > {
   /** Registry the scoping-form counters live on. */
   readonly registry: Registry;
+  /** Asset-level policy. Absent: the Cedar baseline set (`createCedarAssessmentPolicy`). */
+  readonly policy?: AssessmentPolicyEngine;
 }
 
 /**
@@ -36,6 +39,7 @@ export class AssessmentRequestModule {
       standingAuthorisations: options.standingAuthorisations,
       memberships: options.memberships,
       halts: options.halts,
+      policy: options.policy ?? createCedarAssessmentPolicy(),
       logger: options.logger,
       metrics: createAssessmentRequestMetrics(options.registry),
       ...(options.tracer === undefined ? {} : { tracer: options.tracer }),

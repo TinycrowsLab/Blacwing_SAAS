@@ -579,6 +579,27 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     isAlwaysAudited: true,
     description: 'A caller read the surface graph of a run through the console endpoint.',
   },
+  // assessment request draft, submit and withdraw (SCOPE-005): appended, so the released order above is untouched
+  {
+    action: 'scope.request.updated',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description:
+      'An assessment request draft was edited; metadata records the request and the actor.',
+  },
+  {
+    action: 'scope.request.submitted',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description:
+      'An assessment request was submitted and bound to a standing authorisation; metadata records the SA and the assets.',
+  },
+  {
+    action: 'scope.request.withdrawn',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description: 'An assessment request was withdrawn by its requester.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

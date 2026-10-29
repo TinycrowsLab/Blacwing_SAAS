@@ -11,7 +11,10 @@ import { checkSubmission, type SubmitCheckInput } from './submit-checks.js';
 
 import type { AssetFact, StandingAuthorisationFact } from './ports.js';
 
-const verified: AssetFact[] = [{ id: ASSET_VERIFIED_A, verificationStatus: 'verified' }];
+const OWNER = '0198f0a0-0000-7000-8000-0000000000e1';
+const verified: AssetFact[] = [
+  { id: ASSET_VERIFIED_A, verificationStatus: 'verified', ownerUserId: OWNER },
+];
 const request = (overrides: Partial<SubmitCheckInput> = {}): SubmitCheckInput => ({
   assetIds: [ASSET_VERIFIED_A],
   saId: 'sa',
@@ -63,7 +66,7 @@ describe('checkSubmission (SCOPE-005 submit gate)', () => {
   it('reports ASSET_NOT_VERIFIED for a pending or unverified asset, addressed by index', () => {
     const failures = checkSubmission(
       request({ assetIds: [ASSET_VERIFIED_A, ASSET_UNVERIFIED_A] }),
-      [...verified, { id: ASSET_UNVERIFIED_A, verificationStatus: 'pending' }],
+      [...verified, { id: ASSET_UNVERIFIED_A, verificationStatus: 'pending', ownerUserId: OWNER }],
       sa(),
       NOW,
     );
@@ -147,7 +150,7 @@ describe('checkSubmission (SCOPE-005 submit gate)', () => {
         scopeRules: { rules: [{ effect: 'include', host: 'x.example.test' }] },
         budgets: { costCapUsd: 99 },
       }),
-      [{ id: ASSET_UNVERIFIED_A, verificationStatus: 'unverified' }],
+      [{ id: ASSET_UNVERIFIED_A, verificationStatus: 'unverified', ownerUserId: OWNER }],
       sa({ maxIntrusiveness: 'active_safe' }),
       NOW,
     );

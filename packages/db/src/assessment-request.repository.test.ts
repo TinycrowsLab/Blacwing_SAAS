@@ -89,19 +89,19 @@ describe('AssessmentRequestRepository.updateDraft input validation', () => {
     ['a tenant change', { tenantId: newId() }],
     ['an intrusiveness of destructive', { maxIntrusiveness: 'destructive' }],
   ])('rejects %s before SQL (status only moves through transition)', async (_name, patch) => {
-    await expect(repo().updateDraft(newId(), 0, patch)).rejects.toThrow(ValidationError);
+    await expect(repo().updateDraft(newId(), 0, patch, newId())).rejects.toThrow(ValidationError);
   });
 
   it('rejects a malformed id or version before SQL', async () => {
-    await expect(repo().updateDraft('areq_1', 0, { objective: 'x' })).rejects.toThrow(
+    await expect(repo().updateDraft('areq_1', 0, { objective: 'x' }, newId())).rejects.toThrow(
       ValidationError,
     );
-    await expect(repo().updateDraft(newId(), -1, { objective: 'x' })).rejects.toThrow(
+    await expect(repo().updateDraft(newId(), -1, { objective: 'x' }, newId())).rejects.toThrow(
       ValidationError,
     );
-    await expect(repo().updateDraft(newId(), 2_147_483_648, { objective: 'x' })).rejects.toThrow(
-      ValidationError,
-    );
+    await expect(
+      repo().updateDraft(newId(), 2_147_483_648, { objective: 'x' }, newId()),
+    ).rejects.toThrow(ValidationError);
   });
 });
 

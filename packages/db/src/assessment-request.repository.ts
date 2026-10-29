@@ -65,9 +65,18 @@ const idSchema = z.uuid();
 const MAX_STATE_VERSION = 2_147_483_647;
 const versionSchema = z.number().int().min(0).max(MAX_STATE_VERSION);
 
-/** Audit event of a request: `scope.request.created` (no `from`) or `scope.request.status_changed`. */
+/**
+ * Audit event of a request (§8.8): `scope.request.created`, `scope.request.updated` (a draft edit),
+ * `scope.request.submitted` (with the bound SA and the assets), `scope.request.withdrawn`, or any other
+ * `scope.request.status_changed` (`from` to `to`).
+ */
 export interface AssessmentRequestAuditEvent {
-  readonly action: 'scope.request.created' | 'scope.request.status_changed';
+  readonly action:
+    | 'scope.request.created'
+    | 'scope.request.updated'
+    | 'scope.request.submitted'
+    | 'scope.request.withdrawn'
+    | 'scope.request.status_changed';
   readonly tenantId: string;
   readonly requestId: string;
   readonly publicId: string;
@@ -75,6 +84,10 @@ export interface AssessmentRequestAuditEvent {
   readonly from?: AssessmentRequestStatus;
   readonly to: AssessmentRequestStatus;
   readonly actorId: string;
+  /** Set on `scope.request.submitted`: the standing authorisation the request is bound to. */
+  readonly saId?: string;
+  /** Set on `scope.request.submitted`: the assets the submitted request names. */
+  readonly assetIds?: readonly string[];
 }
 
 /**
@@ -201,18 +214,21 @@ export class AssessmentRequestRepository {
 
   /**
    * Edits a draft. The row must still be `draft` and at `expectedStateVersion` (optimistic concurrency, If-Match
-   * at the API). A stale version is `ConcurrencyError` (412), a non-draft is `ConflictError` (409).
+   * at the API). A stale version is `ConcurrencyError` (412), a non-draft is `ConflictError` (409). The edit and its
+   * `scope.request.updated` audit event commit together.
    */
   async updateDraft(
     id: string,
     expectedStateVersion: number,
     patch: unknown,
+    actorId: string,
   ): Promise<AssessmentRequestRow> {
     const rowId = parseInput(idSchema, id, 'id');
     const version = parseInput(versionSchema, expectedStateVersion, 'expectedStateVersion');
     const values = parseInput(updateSchema, patch, 'assessment request update');
-    return this.run('updateDraft', async (tx, tenantId) => {
-      const updated = await tx
+    const actor = parseInput(idSchema, actorId, 'actor');
+    const row = await this.run('updateDraft', async (tx, tenantId) => {
+      const [updated] = await tx
         .update(assessmentRequests)
         .set({ ...values, stateVersion: sql`${assessmentRequests.stateVersion} + 1` })
         .where(
@@ -224,9 +240,23 @@ export class AssessmentRequestRepository {
           ),
         )
         .returning();
-      if (updated[0] !== undefined) return { row: updated[0], rowCount: 1 };
-      throw await this.explainMiss(tx, tenantId, rowId, version);
+      if (updated === undefined) throw await this.explainMiss(tx, tenantId, rowId, version);
+      await this.options.audit(
+        {
+          action: 'scope.request.updated',
+          tenantId,
+          requestId: updated.id,
+          publicId: updated.publicId,
+          mode: updated.mode,
+          to: 'draft',
+          actorId: actor,
+        },
+        tx,
+      );
+      return { row: updated, rowCount: 1 };
     });
+    this.afterCommit('update', row, 'draft');
+    return row;
   }
 
   /**
@@ -277,7 +307,7 @@ export class AssessmentRequestRepository {
       if (updated === undefined) throw new ConcurrencyError('assessment request');
       await this.options.audit(
         {
-          action: 'scope.request.status_changed',
+          action: auditActionFor(target),
           tenantId,
           requestId: updated.id,
           publicId: updated.publicId,
@@ -285,6 +315,9 @@ export class AssessmentRequestRepository {
           from: current.status,
           to: target,
           actorId: actor,
+          ...(target === 'submitted' && updated.saId !== null
+            ? { saId: updated.saId, assetIds: [...updated.assetIds] }
+            : {}),
         },
         tx,
       );
@@ -326,7 +359,7 @@ export class AssessmentRequestRepository {
 
   /** Metric and structured log line, after the transaction committed (a rolled-back change is not counted). */
   private afterCommit(
-    op: 'create' | 'transition',
+    op: 'create' | 'update' | 'transition',
     row: AssessmentRequestRow,
     to: AssessmentRequestStatus,
     from?: AssessmentRequestStatus,
@@ -365,6 +398,13 @@ export class AssessmentRequestRepository {
       ? new ConflictError('assessment request was modified concurrently')
       : new ConcurrencyError('assessment request');
   }
+}
+
+/** The audit action of a status change: submit and withdraw have their own catalogue entries (§8.8). */
+function auditActionFor(to: AssessmentRequestStatus): AssessmentRequestAuditEvent['action'] {
+  if (to === 'submitted') return 'scope.request.submitted';
+  if (to === 'withdrawn') return 'scope.request.withdrawn';
+  return 'scope.request.status_changed';
 }
 
 /** Maps a Postgres error to the typed error set: FK and CHECK violations become client errors. */

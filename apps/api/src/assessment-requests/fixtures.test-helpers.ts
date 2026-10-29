@@ -14,6 +14,8 @@ import type {
   TenantHaltState,
 } from './ports.js';
 
+/** The owner of every fixture asset. The appsec engineers of the fixtures may act on it (Cedar, `policy.ts`). */
+export const ASSET_OWNER = '0198f0a0-0000-7000-8000-0000000000a9';
 export const TENANT_A = '0198f0a0-0000-7000-8000-00000000000a';
 export const TENANT_B = '0198f0a0-0000-7000-8000-00000000000b';
 export const ADMIN_A = '0198f0a0-0000-7000-8000-0000000000a1';
@@ -155,7 +157,8 @@ export function memoryAssets(
       const found: AssetFact[] = [];
       for (const id of assetIds) {
         const status = assets[id];
-        if (status !== undefined) found.push({ id, verificationStatus: status });
+        if (status !== undefined)
+          found.push({ id, verificationStatus: status, ownerUserId: ASSET_OWNER });
       }
       return Promise.resolve(found);
     },
@@ -186,6 +189,7 @@ export function activeSaA(): StandingAuthorisationFact {
   return {
     id: SA_A,
     status: 'active',
+    validFrom: new Date('2026-01-01T00:00:00.000Z'),
     expiresAt: new Date('2027-01-01T00:00:00.000Z'),
     assetIds: [ASSET_VERIFIED_A, ASSET_UNVERIFIED_A],
     scopeRules: { rules: [GRANTED_RULE] },

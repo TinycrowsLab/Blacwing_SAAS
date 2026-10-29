@@ -100,6 +100,9 @@ const RELEASED_ACTIONS = [
   'authz.sa.updated',
   'authz.sa.submitted',
   'run.surface.viewed',
+  'scope.request.updated',
+  'scope.request.submitted',
+  'scope.request.withdrawn',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

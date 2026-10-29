@@ -74,7 +74,7 @@ export function checkSubmission(
   }
   if (sa.expiresAt.getTime() <= now.getTime() || sa.status === 'expired') {
     fail('SA_EXPIRED', 'saId');
-  } else if (sa.status !== 'active') {
+  } else if (sa.status !== 'active' || now.getTime() < sa.validFrom.getTime()) {
     fail('SA_NOT_ACTIVE', 'saId');
   }
 

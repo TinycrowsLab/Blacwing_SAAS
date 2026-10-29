@@ -166,9 +166,9 @@ describe('tenant isolation', () => {
   it('another tenant cannot edit or transition a request (NotFound, the row is unchanged)', async () => {
     const created = await makeRepo().repo.create(createInput());
     const other = makeRepo({}, tenantB).repo;
-    await expect(other.updateDraft(created.id, 0, { objective: 'hijack' })).rejects.toThrow(
-      NotFoundError,
-    );
+    await expect(
+      other.updateDraft(created.id, 0, { objective: 'hijack' }, requester),
+    ).rejects.toThrow(NotFoundError);
     await expect(other.transition(created.id, 0, 'withdrawn', requester)).rejects.toThrow(
       NotFoundError,
     );
@@ -234,7 +234,7 @@ describe('updateDraft', () => {
   it('applies the patch and bumps state_version on the matching version', async () => {
     const { repo } = makeRepo();
     const created = await repo.create(createInput({ objective: 'before edit' }));
-    const updated = await repo.updateDraft(created.id, 0, { objective: 'after edit' });
+    const updated = await repo.updateDraft(created.id, 0, { objective: 'after edit' }, requester);
     expect(updated.objective).toBe('after edit');
     expect(updated.stateVersion).toBe(1);
     expect(updated.requestedBy).toBe(requester);
@@ -243,19 +243,19 @@ describe('updateDraft', () => {
   it('refuses a stale version (optimistic concurrency, 412)', async () => {
     const { repo } = makeRepo();
     const created = await repo.create(createInput());
-    await repo.updateDraft(created.id, 0, { objective: 'first writer' });
-    await expect(repo.updateDraft(created.id, 0, { objective: 'lost writer' })).rejects.toThrow(
-      ConcurrencyError,
-    );
+    await repo.updateDraft(created.id, 0, { objective: 'first writer' }, requester);
+    await expect(
+      repo.updateDraft(created.id, 0, { objective: 'lost writer' }, requester),
+    ).rejects.toThrow(ConcurrencyError);
   });
 
   it('refuses an edit once the request left draft (409)', async () => {
     const { repo } = makeRepo();
     const created = await repo.create(createInput());
     await repo.transition(created.id, 0, 'withdrawn', requester);
-    await expect(repo.updateDraft(created.id, 1, { objective: 'too late' })).rejects.toThrow(
-      ConflictError,
-    );
+    await expect(
+      repo.updateDraft(created.id, 1, { objective: 'too late' }, requester),
+    ).rejects.toThrow(ConflictError);
   });
 });
 
@@ -269,7 +269,7 @@ describe('transition', () => {
     expect(moved.stateVersion).toBe(1);
     expect(events.at(-1)).toEqual(
       expect.objectContaining({
-        action: 'scope.request.status_changed',
+        action: 'scope.request.withdrawn',
         requestId: created.id,
         from: 'draft',
         to: 'withdrawn',
