@@ -53,7 +53,7 @@ const asset = {
   id: ID(3),
   tenantId: ID(1),
   type: 'web_app',
-  identifiers: ['https://app.example.test'],
+  identifiers: [{ kind: 'url', value: 'https://app.example.test' }],
   environment: 'staging',
   ownerUserId: ID(2),
   verificationStatus: 'verified',

@@ -111,7 +111,7 @@ describe('factories produce entities that pass their Zod contracts', () => {
   it('uses reserved example domains only', () => {
     const g = createFactories();
     expect(g.makeUser().email).toMatch(/@example\.test$/);
-    expect(g.makeAsset().identifiers.every((id) => id.includes('.example.test'))).toBe(true);
+    expect(g.makeAsset().identifiers.every((id) => id.value.includes('.example.test'))).toBe(true);
   });
 });
 

@@ -7,6 +7,7 @@ import { createHash, generateKeyPairSync, sign } from 'node:crypto';
 import {
   type Asset,
   assetSchema,
+  type AssetIdentifier,
   type Role,
   type StandingAuthorisation,
   standingAuthorisationSchema,
@@ -219,7 +220,8 @@ interface SeedMembershipRow {
 interface SeedAssetRow {
   readonly id: Uuid;
   readonly type: Asset['type'];
-  readonly identifiers: readonly string[];
+  readonly name: string;
+  readonly identifiers: readonly AssetIdentifier[];
   readonly environment: Asset['environment'];
   readonly ownerUserId: Uuid;
   readonly verificationStatus: 'verified';
@@ -259,15 +261,18 @@ type Access = 'allow' | 'deny';
 interface SeedRoleMatrixRow {
   readonly id: Uuid;
   readonly assetId: Uuid;
-  readonly name: string;
-  readonly roles: readonly string[];
-  /** functions × roles → expected access (F9). */
-  readonly matrix: readonly {
-    readonly function: string;
-    readonly method: string;
-    readonly path: string;
-    readonly expected: Readonly<Record<string, Access>>;
-  }[];
+  readonly version: number;
+  readonly active: boolean;
+  /** `{ roles, functions }`: functions × roles → expected access (F9). The database stores it as one object. */
+  readonly matrix: {
+    readonly roles: readonly string[];
+    readonly functions: readonly {
+      readonly function: string;
+      readonly method: string;
+      readonly path: string;
+      readonly expected: Readonly<Record<string, Access>>;
+    }[];
+  };
 }
 
 /** Everything written under the tenant context. */
@@ -360,7 +365,7 @@ function juiceShopTarget(rawUrl: string): { url: string; host: string; port: num
 
 /** Juice Shop functions × roles → expected access (F9). */
 const ROLE_MATRIX_ROLES = ['anonymous', 'customer', 'admin'] as const;
-const ROLE_MATRIX: SeedRoleMatrixRow['matrix'] = [
+const ROLE_MATRIX_FUNCTIONS: SeedRoleMatrixRow['matrix']['functions'] = [
   {
     function: 'search_products',
     method: 'GET',
@@ -411,7 +416,8 @@ export function buildTenantSeedPlan(input: TenantSeedInput): TenantSeedPlan {
   const asset: SeedAssetRow = {
     id: seedUuid(`${tenantId}:asset:juice-shop`),
     type: 'web_app',
-    identifiers: [target.url],
+    name: 'Juice Shop (local lab)',
+    identifiers: [{ kind: 'url', value: target.url }],
     environment: 'dev',
     ownerUserId: userIds.owner,
     verificationStatus: 'verified',
@@ -494,9 +500,9 @@ export function buildTenantSeedPlan(input: TenantSeedInput): TenantSeedPlan {
   const roleMatrix: SeedRoleMatrixRow = {
     id: seedUuid(`${asset.id}:role-matrix`),
     assetId: asset.id,
-    name: 'Juice Shop baseline',
-    roles: ROLE_MATRIX_ROLES,
-    matrix: ROLE_MATRIX,
+    version: 1,
+    active: true,
+    matrix: { roles: ROLE_MATRIX_ROLES, functions: ROLE_MATRIX_FUNCTIONS },
   };
 
   return { tenantId, memberships, asset, credentials, standingAuthorisation, roleMatrix };

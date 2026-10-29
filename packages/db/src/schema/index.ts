@@ -8,3 +8,4 @@ export * from './tenancy.js';
 export * from './signups.js';
 export * from './authorisation.js';
 export * from './gate-decisions.js';
+export * from './assets.js';

@@ -137,7 +137,7 @@ export function createFactories(options: FactoryOptions = {}): Factories {
         id: newId(),
         tenantId: newId(),
         type: 'web_app',
-        identifiers: [`https://asset-${n}.example.test`],
+        identifiers: [{ kind: 'url', value: `https://asset-${n}.example.test` }],
         environment: 'staging',
         ownerUserId: newId(),
         verificationStatus: 'verified',

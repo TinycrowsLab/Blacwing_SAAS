@@ -21,6 +21,7 @@ import {
   withPostgres,
 } from '@blackwing/testing/containers';
 
+import { publicId } from './columns.js';
 import { migrateDatabase } from './index.js';
 
 import type pg from 'pg';
@@ -106,6 +107,50 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [tenantId, userId],
     );
   },
+  assets: async (tx, tenantId) => {
+    await insertAsset(tx, tenantId);
+  },
+  asset_credentials: async (tx, tenantId) => {
+    const assetId = await insertAsset(tx, tenantId);
+    await tx.query(
+      `INSERT INTO asset_credentials (id, tenant_id, asset_id, role_name, secret_ref, login_recipe, mfa_type)
+       VALUES ($1, $2, $3, 'customer', 'openbao://secret/data/tenants/iso/customer', '{}'::jsonb, 'none')`,
+      [newId(), tenantId, assetId],
+    );
+  },
+  role_matrices: async (tx, tenantId) => {
+    const assetId = await insertAsset(tx, tenantId);
+    await tx.query(
+      `INSERT INTO role_matrices (id, tenant_id, asset_id, version, matrix, active)
+       VALUES ($1, $2, $3, 1, '{}'::jsonb, true)`,
+      [newId(), tenantId, assetId],
+    );
+  },
+  asset_tags: async (tx, tenantId) => {
+    const assetId = await insertAsset(tx, tenantId);
+    await tx.query(
+      `INSERT INTO asset_tags (tenant_id, asset_id, key, value) VALUES ($1, $2, 'env', 'iso')`,
+      [tenantId, assetId],
+    );
+  },
+  asset_groups: async (tx, tenantId) => {
+    await tx.query(`INSERT INTO asset_groups (id, tenant_id, name) VALUES ($1, $2, 'iso group')`, [
+      newId(),
+      tenantId,
+    ]);
+  },
+  asset_group_members: async (tx, tenantId) => {
+    const assetId = await insertAsset(tx, tenantId);
+    const groupId = newId();
+    await tx.query(
+      `INSERT INTO asset_groups (id, tenant_id, name) VALUES ($1, $2, 'iso members')`,
+      [groupId, tenantId],
+    );
+    await tx.query(
+      `INSERT INTO asset_group_members (tenant_id, group_id, asset_id) VALUES ($1, $2, $3)`,
+      [tenantId, groupId, assetId],
+    );
+  },
   soc_contacts: async (tx, tenantId) => {
     await tx.query(
       `INSERT INTO soc_contacts (id, tenant_id, name, email) VALUES ($1, $2, 'SOC desk', 'soc@example.test')`,
@@ -126,7 +171,37 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, `sa_${randomBytes(8).toString('hex')}`, [newId()], newId()],
     );
   },
+  gate_decisions: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO gate_decisions (decision_id, tenant_id, run_id, gate, kind, dedupe_key, summary, requested_at, timeout_at)
+       VALUES ($1, $2, $3, 2, 'tool_deferred', $4, 'iso decision', now(), now() + interval '1 hour')`,
+      [newId(), tenantId, newId(), `iso-${randomBytes(8).toString('hex')}`],
+    );
+  },
 };
+
+/** An asset row (and the user that owns it, the users table being global). Returns the asset id. */
+async function insertAsset(tx: pg.PoolClient, tenantId: string): Promise<string> {
+  const userId = newId();
+  await tx.query(`INSERT INTO users (id, keycloak_sub, email) VALUES ($1, $2, $3)`, [
+    userId,
+    `iso-${userId}`,
+    `iso-${userId}@example.test`,
+  ]);
+  const assetId = newId();
+  await tx.query(
+    `INSERT INTO assets (id, tenant_id, public_id, type, name, identifiers, environment, owner_user_id, verification_status)
+     VALUES ($1, $2, $3, 'web_app', 'iso asset', $4::jsonb, 'dev', $5, 'unverified')`,
+    [
+      assetId,
+      tenantId,
+      publicId('asset', assetId),
+      JSON.stringify([{ kind: 'url', value: 'https://iso.example.test' }]),
+      userId,
+    ],
+  );
+  return assetId;
+}
 
 let db: PostgresHandle;
 const tenantA = newId();

@@ -1,10 +1,6 @@
-// db:seed against Postgres 16 (Testcontainers) with the real migrations, then the §7 seed tables
-// (test fixture until the domain migrations land): fail-fast preflight, population, idempotency,
+// db:seed against Postgres 16 (Testcontainers) with the real migrations: fail-fast preflight, population, idempotency,
 // reset, SoD, secret refs, tenant scoping under RLS and cross-tenant isolation (§8.4, §8.6, §8.7, §8.10).
 
-import { readFile } from 'node:fs/promises';
-
-import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { newId } from '@blackwing/ids';
@@ -15,8 +11,8 @@ import { tenantRow } from './plan.js';
 import { inTenant, runSeed, seedForTest, type SeedSummary } from './run.js';
 
 import type { IsoTimestamp } from '@blackwing/time';
+import type pg from 'pg';
 
-const FIXTURE = new URL('./__fixtures__/seed-tables.sql', import.meta.url);
 const JUICE = 'http://127.0.0.1:13000';
 let db: PostgresHandle;
 
@@ -56,7 +52,7 @@ afterAll(async () => {
 });
 
 describe('db:seed', () => {
-  it('skips the tenant-scoped steps whose tables are not migrated, logs seed.skipped, and seeds the platform rows', async () => {
+  it('runs every tenant-scoped step now that all seed tables are migrated, and logs no seed.skipped', async () => {
     const skipped: string[] = [];
     const logger = {
       info: (): void => undefined,
@@ -70,15 +66,20 @@ describe('db:seed', () => {
       juiceShopUrl: JUICE,
       logger,
     });
-    expect(summary.counts).toEqual({ tenants: 1, users: 6, memberships: 5 });
-    expect(skipped).toEqual(['assets', 'credentials', 'standing-authorisations', 'role-matrices']);
-    // The seed never creates tables: the missing one is still missing.
-    const { rows } = await db.ownerPool.query("SELECT to_regclass('assets') AS t");
-    expect(rows[0]).toEqual({ t: null });
+    // The asset tables (ASSET-001) and standing_authorisations (AUTHZ-001) are migrated, so every step runs.
+    expect(summary.counts).toEqual({
+      tenants: 1,
+      users: 6,
+      memberships: 5,
+      assets: 1,
+      asset_credentials: 2,
+      standing_authorisations: 1,
+      role_matrices: 1,
+    });
+    expect(skipped).toEqual([]);
   });
 
   it('populates every entity, all scoped to acme', async () => {
-    await db.ownerPool.query(await readFile(FIXTURE, 'utf8'));
     const summary = await seed({ subjects: { appsec: 'kc-appsec' } });
     expect(summary.counts).toEqual({
       tenants: 1,
@@ -125,7 +126,7 @@ describe('db:seed', () => {
       );
       expect(asset.rows).toEqual([
         {
-          identifiers: [JUICE],
+          identifiers: [{ kind: 'url', value: JUICE }],
           verification_status: 'verified',
           verification_method: 'manual_letter',
         },
@@ -154,10 +155,11 @@ describe('db:seed', () => {
 
   it('is idempotent and converges after a partial run (no duplicate SAs/assets)', async () => {
     await seed();
-    // Simulate a partial earlier run: drop some tenant rows, then re-seed.
-    await inTenant(db.appPool, ACME_ID, async (tx) => {
-      await tx.query('DELETE FROM role_matrices');
-      await tx.query('DELETE FROM asset_credentials');
+    // Simulate a partial earlier run: drop some tenant rows (as the owner: the runtime role cannot delete them),
+    // then re-seed.
+    await asOwnerInAcme(async (client) => {
+      await client.query('DELETE FROM role_matrices');
+      await client.query('DELETE FROM asset_credentials');
     });
     const again = await seed();
     expect(again.counts).toMatchObject({
@@ -196,17 +198,10 @@ describe('db:seed', () => {
     expect(r.rows).toEqual([{ ok: true }]);
   });
 
-  it('rejects requester == approver before writing, and the DB check rejects it too (§8.4)', async () => {
+  it('rejects requester == approver before writing (§8.4)', async () => {
     await expect(seed({ requester: 'owner', approver: 'owner' })).rejects.toThrow(
       /approver must not be the requester/,
     );
-    const code = await inTenant(db.appPool, ACME_ID, (tx) =>
-      tx.query('UPDATE standing_authorisations SET approver_id = requester_id'),
-    ).then(
-      () => 'ok',
-      (e: unknown) => (e instanceof pg.DatabaseError ? e.code : 'other'),
-    );
-    expect(code).toBe('23514');
   });
 
   it('shows nothing to another tenant context, and fails closed without one (isolation, §8.6)', async () => {

@@ -84,7 +84,7 @@ describe('buildTenantSeedPlan', () => {
     const { asset } = build();
     expect(asset).toMatchObject({
       type: 'web_app',
-      identifiers: ['http://127.0.0.1:13000'],
+      identifiers: [{ kind: 'url', value: 'http://127.0.0.1:13000' }],
       environment: 'dev',
       ownerUserId: userIds.owner,
       verificationStatus: 'verified',
@@ -150,8 +150,8 @@ describe('buildTenantSeedPlan', () => {
 
   it('builds a role matrix covering every role for every function', () => {
     const { roleMatrix } = build();
-    for (const row of roleMatrix.matrix)
-      expect(Object.keys(row.expected).sort()).toEqual([...roleMatrix.roles].sort());
+    for (const row of roleMatrix.matrix.functions)
+      expect(Object.keys(row.expected).sort()).toEqual([...roleMatrix.matrix.roles].sort());
   });
 
   it('rejects a Juice Shop URL with credentials or a bad scheme', () => {

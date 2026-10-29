@@ -15,6 +15,8 @@ const T = {
   uuidArray: ['_uuid'],
   json: ['jsonb'],
   timestamp: ['timestamptz'],
+  integer: ['int4'],
+  boolean: ['bool'],
 } as const satisfies Record<string, readonly string[]>;
 
 type ColumnType = keyof typeof T;
@@ -44,8 +46,10 @@ const SEED_SCHEMA_CONTRACT = Object.freeze({
   assets: {
     id: 'uuid',
     tenant_id: 'uuid',
+    public_id: 'text',
     type: 'text',
-    identifiers: 'textArray',
+    name: 'text',
+    identifiers: 'json',
     environment: 'text',
     owner_user_id: 'uuid',
     verification_status: 'text',
@@ -85,9 +89,9 @@ const SEED_SCHEMA_CONTRACT = Object.freeze({
     id: 'uuid',
     tenant_id: 'uuid',
     asset_id: 'uuid',
-    name: 'text',
-    roles: 'textArray',
+    version: 'integer',
     matrix: 'json',
+    active: 'boolean',
     ...timestamps,
   },
 } as const satisfies Record<string, Record<string, ColumnType>>);

@@ -113,6 +113,13 @@
       "when": 1793300000100,
       "tag": "20261029200100_gate_decisions",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793305800000,
+      "tag": "20261029203000_asset_inventory",
+      "breakpoints": true
     }
   ]
 }

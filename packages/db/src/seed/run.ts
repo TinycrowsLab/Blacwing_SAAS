@@ -6,6 +6,7 @@ import { TenantContextMissingError } from '@blackwing/errors';
 import { isUuidV7, newId, type Uuid } from '@blackwing/ids';
 import { type IsoTimestamp, nowIso } from '@blackwing/time';
 
+import { publicId } from '../columns.js';
 import {
   buildTenantSeedPlan,
   type PersonaKey,
@@ -178,19 +179,24 @@ async function upsertTenantRows(
   const a = plan.asset;
   if (steps.has('assets'))
     await tx.query(
-      `INSERT INTO assets (id, tenant_id, type, identifiers, environment, owner_user_id,
-       verification_status, verification_method, attestation, created_at, updated_at)
-     VALUES ($1, $2, $3, $4::text[], $5, $6, $7, $8, $9::jsonb, now(), now())
-     ON CONFLICT (id) DO UPDATE SET type = EXCLUDED.type, identifiers = EXCLUDED.identifiers,
+      `INSERT INTO assets (id, tenant_id, public_id, type, name, identifiers, environment, owner_user_id,
+       verification_status, verification_method, verified_at, attestation, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10,
+       CASE WHEN $9 = 'verified' THEN now() END, $11::jsonb, now(), now())
+     ON CONFLICT (id) DO UPDATE SET type = EXCLUDED.type, name = EXCLUDED.name,
+       identifiers = EXCLUDED.identifiers,
        environment = EXCLUDED.environment, owner_user_id = EXCLUDED.owner_user_id,
        verification_status = EXCLUDED.verification_status,
-       verification_method = EXCLUDED.verification_method, attestation = EXCLUDED.attestation,
+       verification_method = EXCLUDED.verification_method,
+       verified_at = EXCLUDED.verified_at, attestation = EXCLUDED.attestation,
        updated_at = now()`,
       [
         a.id,
         tenantId,
+        publicId('asset', a.id),
         a.type,
-        a.identifiers,
+        a.name,
+        json(a.identifiers),
         a.environment,
         a.ownerUserId,
         a.verificationStatus,
@@ -212,11 +218,11 @@ async function upsertTenantRows(
   const s = plan.standingAuthorisation;
   if (steps.has('standing-authorisations'))
     await tx.query(
-      `INSERT INTO standing_authorisations (id, tenant_id, asset_ids, scope_rules, max_intrusiveness,
+      `INSERT INTO standing_authorisations (id, tenant_id, public_id, asset_ids, scope_rules, max_intrusiveness,
        pre_approved_test_classes, default_budgets, test_windows, valid_from, expires_at, requester_id,
        approver_id, signature, signing_key_id, status, created_at, updated_at)
-     VALUES ($1, $2, $3::uuid[], $4::jsonb, $5, $6::text[], $7::jsonb, $8::jsonb, $9, $10, $11, $12,
-       $13, $14, $15, now(), now())
+     VALUES ($1, $2, $3, $4::uuid[], $5::jsonb, $6, $7::text[], $8::jsonb, $9::jsonb, $10, $11, $12, $13,
+       $14, $15, $16, now(), now())
      ON CONFLICT (id) DO UPDATE SET asset_ids = EXCLUDED.asset_ids, scope_rules = EXCLUDED.scope_rules,
        max_intrusiveness = EXCLUDED.max_intrusiveness,
        pre_approved_test_classes = EXCLUDED.pre_approved_test_classes,
@@ -228,6 +234,7 @@ async function upsertTenantRows(
       [
         s.id,
         tenantId,
+        publicId('sa', s.id),
         s.assetIds,
         json(s.scopeRules),
         s.maxIntrusiveness,
@@ -246,11 +253,11 @@ async function upsertTenantRows(
   const r = plan.roleMatrix;
   if (steps.has('role-matrices'))
     await tx.query(
-      `INSERT INTO role_matrices (id, tenant_id, asset_id, name, roles, matrix, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5::text[], $6::jsonb, now(), now())
-     ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, roles = EXCLUDED.roles,
-       matrix = EXCLUDED.matrix, updated_at = now()`,
-      [r.id, tenantId, r.assetId, r.name, r.roles, json(r.matrix)],
+      `INSERT INTO role_matrices (id, tenant_id, asset_id, version, matrix, active, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6, now(), now())
+     ON CONFLICT (id) DO UPDATE SET version = EXCLUDED.version, matrix = EXCLUDED.matrix,
+       active = EXCLUDED.active, updated_at = now()`,
+      [r.id, tenantId, r.assetId, r.version, json(r.matrix), r.active],
     );
 }
 
@@ -333,10 +340,12 @@ export async function runSeed(options: SeedOptions): Promise<SeedSummary> {
     log?.warn({ seeder: skip.name, reason: skip.reason }, 'seed.skipped');
   }
   const steps = new Set(selection.run);
-  await inTenant(options.appPool, tenantId, async (tx) => {
-    if (reset) await deleteSeededRows(tx, plan, present);
-    await upsertTenantRows(tx, plan, steps);
-  });
+  // A reset deletes rows the runtime role may not delete (assets and role matrices are soft-deleted or versioned,
+  // never removed by bw_app: migration 20261029162611). It runs as the owner under the same tenant context, so
+  // FORCE RLS still applies; the upsert then runs as the runtime role as before.
+  if (reset)
+    await inTenant(options.ownerPool, tenantId, (tx) => deleteSeededRows(tx, plan, present));
+  await inTenant(options.appPool, tenantId, (tx) => upsertTenantRows(tx, plan, steps));
   const rows = rowsPerStep(plan);
   for (const name of selection.run) {
     log?.info({ seeder: name, rows: rows[name] ?? 0 }, 'seed.seeded');

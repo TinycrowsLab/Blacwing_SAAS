@@ -50,8 +50,8 @@ random other tenant sees nothing. It fails if any seeded row leaks.
   (`packages/db/src/seed/schema-contract.ts`). The platform tables (`tenants`, `users`) must exist, or the run
   stops before writing anything and names what is missing. A tenant-scoped step whose tables are missing (or
   whose dependency was skipped) is skipped and logged as `seed.skipped` with the missing table or column, and
-  the rest of the seed still runs. Run `pnpm db:migrate` to create them. The integration test uses a test-only
-  fixture (`src/seed/__fixtures__/seed-tables.sql`) that follows the §7 RLS pattern.
+  the rest of the seed still runs. Run `pnpm db:migrate` to create them. The integration test runs against the
+  real migrations, so every tenant-scoped table (assets, credentials, role matrices, standing authorisations) exists.
 - **Separation of duties (§8.4).** A plan where the requester is also the approver is rejected before any
   write.
 - **Keycloak subjects.** With admin credentials set, the seed looks up each user's `sub` in the dev realm.
