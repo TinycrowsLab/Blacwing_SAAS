@@ -534,6 +534,22 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'config_change',
     description: 'A standing authorisation changed state (from, to and the acting principal).',
   },
+  // standing-authorisation signing (AUTHZ-004, #376): appended; the event carries the key id and the
+  // envelope hash, never key material or the signature itself.
+  {
+    action: 'authz.sa.signed',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A standing authorisation envelope was signed with a Transit signing key version.',
+  },
+  {
+    action: 'authz.signing_key.rotated',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'The standing-authorisation signing key was rotated to a new Transit version.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

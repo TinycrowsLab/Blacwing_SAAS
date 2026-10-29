@@ -212,6 +212,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'KEYCLOAK_CONFLICT',
   // Subclassed by @blackwing/domain/sod (#352) as SodViolationError.
   'SOD_VIOLATION',
+  // Raised by @blackwing/secrets' standing-authorisation signer (AUTHZ-004) as a plain AppError.
+  'AUTHZ_SIGNER_UNAVAILABLE',
 ];
 
 describe('AppError subclasses', () => {

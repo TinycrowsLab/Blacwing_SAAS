@@ -288,6 +288,13 @@ const DEFINITIONS = {
   // approvers, an approver outside the eligible roles, or a missing actor (fail closed). A refusal of an authorisation
   // boundary (403), never retried unchanged. The error class lives in @blackwing/domain/sod.
   SOD_VIOLATION: { status: 403, title: 'Separation of duties violated', retryable: false },
+  // Standing-authorisation signing (AUTHZ-004, #376): OpenBao Transit unreachable or unusable. Fail closed:
+  // the SA stays pending and nothing is signed or persisted, so the caller retries later.
+  AUTHZ_SIGNER_UNAVAILABLE: {
+    status: 503,
+    title: 'Authorisation signer unavailable',
+    retryable: true,
+  },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

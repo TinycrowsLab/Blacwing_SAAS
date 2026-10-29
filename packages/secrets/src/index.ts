@@ -37,6 +37,21 @@ export {
 } from './envelope.js';
 export { createTransit, type TransitClient } from './transit.js';
 
+// Standing-authorisation JWS signing on Transit and its JWK Set (AUTHZ-004, §8.7/§8.8).
+export {
+  createSigningKeyService,
+  DEFAULT_JWKS_TTL_S,
+  DEFAULT_SIGNING_KEY_NAME,
+  DEFAULT_TRANSIT_MOUNT,
+  signingConfigFromEnv,
+  type SignedEnvelope,
+  type SigningAuditEvent,
+  type SigningConfig,
+  type SigningKeyService,
+  type SigningKeyServiceDeps,
+  type SigningMetrics,
+} from './signing.js';
+
 // Per-run redaction registry and its internal endpoint (SECRETS-007, §8.7).
 export {
   createRedactionRegistry,

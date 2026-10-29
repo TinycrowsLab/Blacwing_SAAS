@@ -201,6 +201,18 @@ for t in $TENANTS; do
   expect "configure transit key $key" 200 204
 done
 
+# Standing-authorisation signing key (AUTHZ-004, #376): Ed25519, non-exportable, created once. Rotation
+# adds versions through the signing role; old versions keep verifying existing SAs.
+api GET "transit/keys/bw-sa-signing"
+if [[ "$HTTP_CODE" == 404 ]]; then
+  api POST "transit/keys/bw-sa-signing" '{"type":"ed25519","exportable":false,"allow_plaintext_backup":false}'
+  expect "create transit key bw-sa-signing" 200 204
+  log "created transit/keys/bw-sa-signing"
+else
+  expect "read transit key bw-sa-signing" 200
+  log "transit/keys/bw-sa-signing already exists"
+fi
+
 # --- 4. platform placeholder secrets (written only when absent) ---------------------------------
 put_secret() {
   local path="$1" data="$2"
@@ -271,7 +283,7 @@ if [[ -z "$(jq -r '.data["approle/"].type // empty' <<<"$auths")" ]]; then
   expect 'enable approle' 200 204
   log "enabled auth/approle/"
 fi
-for role in bw-kek-app bw-kek-provisioner; do
+for role in bw-kek-app bw-kek-provisioner bw-sa-signing; do
   put_policy "$role" "$(cat "$SCRIPT_DIR/policies/$role.hcl")"
   api POST "auth/approle/role/$role" "$(jq -cn --arg p "$role" '{
     token_policies: [$p], token_ttl: "1h", token_max_ttl: "4h", secret_id_num_uses: 0, secret_id_ttl: 0

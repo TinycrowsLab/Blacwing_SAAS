@@ -105,6 +105,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   SECRET_VERSION_RETIRED: 410,
   RUN_KILLED: 423,
   EXTERNAL_BACKEND_UNAVAILABLE: 503,
+  AUTHZ_SIGNER_UNAVAILABLE: 503,
   GRAPH_CONFIG_MISSING: 500,
   GRAPH_POOL_TIMEOUT: 503,
   GRAPH_MIGRATION_DRIFT: 500,
@@ -128,7 +129,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(100);
+    expect(ERROR_CODE_LIST).toHaveLength(101);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -153,7 +154,7 @@ describe('error-code registry', () => {
     );
   });
 
-  it('marks only RATE_LIMITED, TX_RETRY_EXHAUSTED, TEMPORAL_UNAVAILABLE, DB_UNAVAILABLE, DB_SERIALIZATION_CONFLICT, SBX_DRIVER_UNAVAILABLE, KEK_UNAVAILABLE, EXTERNAL_BACKEND_UNAVAILABLE, GRAPH_POOL_TIMEOUT, GRAPH_MIGRATION_LOCKED and KEYCLOAK_UNAVAILABLE as retryable', () => {
+  it('marks only RATE_LIMITED, TX_RETRY_EXHAUSTED, TEMPORAL_UNAVAILABLE, DB_UNAVAILABLE, DB_SERIALIZATION_CONFLICT, SBX_DRIVER_UNAVAILABLE, KEK_UNAVAILABLE, EXTERNAL_BACKEND_UNAVAILABLE, GRAPH_POOL_TIMEOUT, GRAPH_MIGRATION_LOCKED, KEYCLOAK_UNAVAILABLE and AUTHZ_SIGNER_UNAVAILABLE as retryable', () => {
     expect(ERROR_CODE_LIST.filter((code) => ERROR_CODES[code].retryable)).toEqual([
       'RATE_LIMITED',
       'TX_RETRY_EXHAUSTED',
@@ -166,6 +167,7 @@ describe('error-code registry', () => {
       'GRAPH_POOL_TIMEOUT',
       'GRAPH_MIGRATION_LOCKED',
       'KEYCLOAK_UNAVAILABLE',
+      'AUTHZ_SIGNER_UNAVAILABLE',
     ]);
   });
 
@@ -322,6 +324,7 @@ describe('error-code registry', () => {
       | 'KEYCLOAK_NOT_FOUND'
       | 'KEYCLOAK_CONFLICT'
       | 'SOD_VIOLATION'
+      | 'AUTHZ_SIGNER_UNAVAILABLE'
       | 'INTERNAL'
     >();
     expectTypeOf<HttpStatusOf<'NOT_FOUND'>>().toEqualTypeOf<404>();
