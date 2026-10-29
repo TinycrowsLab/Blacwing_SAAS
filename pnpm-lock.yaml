@@ -1294,6 +1294,12 @@ importers:
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../errors
+      '@blackwing/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@opentelemetry/api':
+        specifier: 'catalog:'
+        version: 1.9.1
     devDependencies:
       '@blackwing/agents':
         specifier: workspace:*

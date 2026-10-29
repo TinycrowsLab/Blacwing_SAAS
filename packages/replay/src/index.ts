@@ -24,6 +24,39 @@ export {
   JUICE_SHOP_SQLI_TEST_CASE_ID,
   juiceShopScopeRules,
 } from './juice-shop-sqli.js';
+export { createLabEgress, createLocalSandboxProvider, LAB_PROBE_TIMEOUT_MS } from './adapters.js';
+export {
+  createOracleDispatcher,
+  type DispatchOutcome,
+  type OracleDispatcher,
+  type OracleEvaluator,
+  UnknownOracleError,
+} from './dispatch.js';
+export {
+  createExpiryGate,
+  type AuthorisationGate,
+  type Egress,
+  type EvidenceCapture,
+  type EvidenceReader,
+  isStateChanging,
+  MAX_EXCHANGE_BODY_BYTES,
+  MAX_PROVISION_ATTEMPTS,
+  type RawObservation,
+  type RawObservation as ReplayObservation,
+  ReplayEngine,
+  type ReplayEngineDeps,
+  type ReplayExchange,
+  type ReplayAudit,
+  type ReplayAuditEvent,
+  type ReplayStatus as ReplayRunStatus,
+  type ReversalJournal,
+  type RunOptions,
+  type Sandbox,
+  type SandboxProvider,
+  type StepHandler,
+  type StepHandlers,
+} from './engine.js';
+export { noopReplayMetrics, REPLAY_TRACER, type ReplayMetrics } from './telemetry.js';
 export {
   type Fetcher,
   type ObservedExchange,

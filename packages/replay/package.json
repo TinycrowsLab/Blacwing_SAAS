@@ -17,7 +17,9 @@
   "dependencies": {
     "@blackwing/contracts": "workspace:*",
     "@blackwing/domain": "workspace:*",
-    "@blackwing/errors": "workspace:*"
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/logger": "workspace:*",
+    "@opentelemetry/api": "catalog:"
   },
   "devDependencies": {
     "@blackwing/agents": "workspace:*",

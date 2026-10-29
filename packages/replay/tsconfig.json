@@ -10,6 +10,7 @@
     { "path": "../agents" },
     { "path": "../contracts" },
     { "path": "../domain" },
+    { "path": "../logger" },
     { "path": "../errors" }
   ]
 }
