@@ -186,6 +186,14 @@ export {
   verificationStatusSchema,
 } from './entities/asset.js';
 export {
+  type AssetListItem,
+  assetListItemSchema,
+  type AssetListResponse,
+  assetListResponseSchema,
+  type ListAssetsQuery,
+  listAssetsQuerySchema,
+} from './entities/asset-api.js';
+export {
   type AuthorisableIntrusiveness,
   authorisableIntrusivenessSchema,
   type Intrusiveness,
@@ -229,6 +237,7 @@ export {
   type AssessmentRequestListResponse,
   assessmentRequestListResponseSchema,
   type AssessmentRequestResponse,
+  ASSESSMENT_REQUEST_ASSETS_MAX,
   assessmentRequestPublicIdSchema,
   assessmentRequestResponseSchema,
   type CreateAssessmentRequest,

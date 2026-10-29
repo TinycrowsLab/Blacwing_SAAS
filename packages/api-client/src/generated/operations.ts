@@ -107,6 +107,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  listAssets: {
+    method: 'GET',
+    path: '/v1/assets',
+    pathParams: [],
+    queryParams: ['verificationStatus'],
+    requiredHeaders: [],
+  },
   listAuditEvents: {
     method: 'GET',
     path: '/v1/audit/events',

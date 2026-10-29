@@ -101,6 +101,7 @@ const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   getTenantSettings: 'tenant',
   updateTenantSettings: 'tenant',
   listAssessmentRequests: 'assessment-requests',
+  listAssets: 'assets',
   createAssessmentRequest: 'assessment-requests',
   getAssessmentRequest: 'assessment-requests',
   updateAssessmentRequest: 'assessment-requests',
@@ -165,6 +166,7 @@ describe('public OpenAPI document', () => {
       'getTenantSettings',
       'getTestPlanVersion',
       'listAssessmentRequests',
+      'listAssets',
       'listAuditEvents',
       'listKillEvents',
       'listPersonas',
@@ -184,7 +186,7 @@ describe('public OpenAPI document', () => {
       'verifySignup',
       'withdrawAssessmentRequest',
     ]);
-    expect(countOperations(doc)).toBe(33);
+    expect(countOperations(doc)).toBe(34);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -248,6 +250,7 @@ describe('public OpenAPI document', () => {
       'signup',
       'tenant',
       'assessment-requests',
+      'assets',
       'standing-authorisations',
       'test-plans',
     ]);
@@ -309,7 +312,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(33);
+    expect(result.operations).toBe(34);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

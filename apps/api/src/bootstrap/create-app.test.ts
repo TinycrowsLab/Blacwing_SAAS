@@ -134,7 +134,7 @@ describe('createApiApp', () => {
     expect(page.statusCode).toBe(200);
     const spec = await h.app.inject({ method: 'GET', url: '/v1/docs/openapi.json' });
     expect(spec.json<{ openapi: string }>().openapi).toBe('3.1.0');
-    expect(await h.metrics.registry.metrics()).toMatch(/openapi_operations_total 33/);
+    expect(await h.metrics.registry.metrics()).toMatch(/openapi_operations_total 34/);
   });
 
   it('serves the smoke controller under /v1', async () => {

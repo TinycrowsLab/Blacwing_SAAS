@@ -177,6 +177,11 @@ export {
   type TenantContextSource,
 } from './repository.js';
 export {
+  AssetRepository,
+  type AssetListRow,
+  type AssetRepositoryOptions,
+} from './asset.repository.js';
+export {
   AssessmentRequestRepository,
   type AssessmentRequestAuditEvent,
   type AssessmentRequestAuditHook,
