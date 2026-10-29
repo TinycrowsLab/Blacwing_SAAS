@@ -1,0 +1,202 @@
+{
+  "version": 1,
+  "description": "RFC 8785 JCS vectors shared by the TypeScript canonicaliser (@blackwing/crypto) and the Go verifier (AUTHZ-006). canonical is the exact UTF-8 text; sha256 is the lowercase hex digest of those bytes.",
+  "vectors": [
+    {
+      "id": "empty-object",
+      "input": {},
+      "canonical": "{}",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "id": "empty-array",
+      "input": [],
+      "canonical": "[]",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "nested-sort-whitespace",
+      "input": {
+        "b": 1,
+        "a": {
+          "d": [
+            3,
+            {
+              "z": null,
+              "y": true
+            }
+          ],
+          "c": "x"
+        }
+      },
+      "canonical": "{\"a\":{\"c\":\"x\",\"d\":[3,{\"y\":true,\"z\":null}]},\"b\":1}",
+      "sha256": "ed45e0178e969ddf5d46ba3e98938beb16da48860f92ffd66b1ff338fdf3361b"
+    },
+    {
+      "id": "utf16-code-unit-order",
+      "input": {
+        "😀": 2,
+        "€": 1,
+        "a": 3
+      },
+      "canonical": "{\"a\":3,\"€\":1,\"😀\":2}",
+      "sha256": "ef67991f04b9c6820c41cc799fe74070e73df7f5233baca621b41f9865b4555f"
+    },
+    {
+      "id": "prefix-key-order",
+      "input": {
+        "ab": 1,
+        "a": 2,
+        "aa": 3
+      },
+      "canonical": "{\"a\":2,\"aa\":3,\"ab\":1}",
+      "sha256": "abe7f8dbad9be7d8350375e9f700971d9ede8b495b11de253f710abead9de862"
+    },
+    {
+      "id": "non-bmp-raw-utf8",
+      "input": ["𝄞"],
+      "canonical": "[\"𝄞\"]",
+      "sha256": "e2cdd5850c61bbc135757df8cacba6f484f0309da20ba09f49532efe81fb4f7d"
+    },
+    {
+      "id": "control-char-escapes",
+      "input": ["\u0000\b\t\n\f\r\u001f"],
+      "canonical": "[\"\\u0000\\b\\t\\n\\f\\r\\u001f\"]",
+      "sha256": "b9ec4b5375fbc841a5e9f2c7d749f4b624f25c4768ce98c515d30da64ca5cdf4"
+    },
+    {
+      "id": "quote-backslash-slash",
+      "input": ["\"\\/"],
+      "canonical": "[\"\\\"\\\\/\"]",
+      "sha256": "244bbe3526e28d8ac76ae9a551fb1c1dbe7d4d05ad3586aead5f4d00e09b02d4"
+    },
+    {
+      "id": "key-escapes-sorted",
+      "input": {
+        "a\\b": 2,
+        "a\"b": 1,
+        "\n": 3
+      },
+      "canonical": "{\"\\n\":3,\"a\\\"b\":1,\"a\\\\b\":2}",
+      "sha256": "db91242a4a05b54a3d0d4191eec948e09e77ed404aa1bc905baa8e41645ab4f9"
+    },
+    {
+      "id": "negative-zero",
+      "input": [0, 0],
+      "canonical": "[0,0]",
+      "sha256": "3d5812abc84c11768aa73a732c85d75dbed439188f5bb3239e9b762ea31d9862"
+    },
+    {
+      "id": "exponent-threshold-1e21",
+      "input": [1e21, 1e20],
+      "canonical": "[1e+21,100000000000000000000]",
+      "sha256": "122469d04905bd124a9d10cd4668873d2ba763facd0f163e226e97a404a94187"
+    },
+    {
+      "id": "small-exponent",
+      "input": [1e-6, 1e-7],
+      "canonical": "[0.000001,1e-7]",
+      "sha256": "19ca01c5d07894d9ce68294ad32b64d9c2a851c244ae8010e0a2b8a26f3734a0"
+    },
+    {
+      "id": "max-safe-integer-plus-one",
+      "input": [9007199254740993],
+      "canonical": "[9007199254740992]",
+      "sha256": "5dc10964d69741c9924433db7b0e8fe5b0ac6fac6a5dd6d142b8c4e05e2162c3"
+    },
+    {
+      "id": "float-precision-edges",
+      "input": [0.1, 1.5, 123.456, 5e-324, 1.7976931348623157e308],
+      "canonical": "[0.1,1.5,123.456,5e-324,1.7976931348623157e+308]",
+      "sha256": "049a71f866468afc36a303c5f0194dbaf06dae2e271b17577d9540215ac30484"
+    },
+    {
+      "id": "literals",
+      "input": [true, false, null],
+      "canonical": "[true,false,null]",
+      "sha256": "4d0f18de2133118249c26acc481838d4f6bb6bc1de882d99abbd19ae9397e8df"
+    },
+    {
+      "id": "null-member-kept",
+      "input": {
+        "approverId": null,
+        "x": 1
+      },
+      "canonical": "{\"approverId\":null,\"x\":1}",
+      "sha256": "e090a571e0fcd65eb6d4fe15958a79dd2e6b3121094f7bdb463485461eb78766"
+    },
+    {
+      "id": "deep-nesting",
+      "input": {
+        "a": [
+          [
+            [
+              {
+                "c": 1,
+                "b": []
+              }
+            ]
+          ]
+        ]
+      },
+      "canonical": "{\"a\":[[[{\"b\":[],\"c\":1}]]]}",
+      "sha256": "aaa6e7bd466eed38679008abe790a43409158c116f27539b63699af0faaf58a3"
+    },
+    {
+      "id": "array-order-preserved",
+      "input": [
+        3,
+        1,
+        2,
+        {
+          "b": 1,
+          "a": 2
+        }
+      ],
+      "canonical": "[3,1,2,{\"a\":2,\"b\":1}]",
+      "sha256": "5e21d54df1a71703f6f25216ff0c5dbd78bca73255f936a50c0128cb5e801c5b"
+    },
+    {
+      "id": "bmp-non-ascii-value",
+      "input": {
+        "name": "Zoë ünïcode"
+      },
+      "canonical": "{\"name\":\"Zoë ünïcode\"}",
+      "sha256": "a04ca726df68fdadc9b53e0306f5d85d2171821a292e6114e1be865233de9296"
+    },
+    {
+      "id": "sa-envelope-pre-approval",
+      "input": {
+        "saId": "01900000-0000-7000-8000-000000000001",
+        "tenantId": "01900000-0000-7000-8000-000000000002",
+        "assetIds": [
+          "01900000-0000-7000-8000-000000000003",
+          "01900000-0000-7000-8000-000000000004"
+        ],
+        "scopeRules": {
+          "rules": [
+            {
+              "effect": "include",
+              "host": "app.example.test"
+            }
+          ]
+        },
+        "maxIntrusiveness": "passive",
+        "preApprovedTestClasses": ["header-audit"],
+        "defaultBudgets": {
+          "costCapUsd": 5,
+          "maxRequests": 1000,
+          "maxDurationMs": 3600000
+        },
+        "testWindows": [],
+        "validFrom": "2026-01-01T00:00:00.000Z",
+        "expiresAt": "2026-02-01T00:00:00.000Z",
+        "requesterId": "01900000-0000-7000-8000-000000000005",
+        "approverId": null,
+        "version": 1
+      },
+      "canonical": "{\"approverId\":null,\"assetIds\":[\"01900000-0000-7000-8000-000000000003\",\"01900000-0000-7000-8000-000000000004\"],\"defaultBudgets\":{\"costCapUsd\":5,\"maxDurationMs\":3600000,\"maxRequests\":1000},\"expiresAt\":\"2026-02-01T00:00:00.000Z\",\"maxIntrusiveness\":\"passive\",\"preApprovedTestClasses\":[\"header-audit\"],\"requesterId\":\"01900000-0000-7000-8000-000000000005\",\"saId\":\"01900000-0000-7000-8000-000000000001\",\"scopeRules\":{\"rules\":[{\"effect\":\"include\",\"host\":\"app.example.test\"}]},\"tenantId\":\"01900000-0000-7000-8000-000000000002\",\"testWindows\":[],\"validFrom\":\"2026-01-01T00:00:00.000Z\",\"version\":1}",
+      "sha256": "d3e2c44e85868d127912f72565a248c822ab5b70424740be7c47df807c9e88bb"
+    }
+  ]
+}

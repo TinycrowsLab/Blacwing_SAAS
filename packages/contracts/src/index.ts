@@ -193,6 +193,12 @@ export {
   canTransitionAssessmentRequest,
 } from './entities/assessment-request.js';
 export {
+  projectSaEnvelope,
+  SA_ENVELOPE_VERSION,
+  type SaEnvelope,
+  saEnvelopeSchema,
+} from './entities/sa-envelope.js';
+export {
   type Run,
   type RunMode,
   RUN_MODES,

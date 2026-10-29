@@ -13,8 +13,12 @@
     "test": "vitest run",
     "typecheck": "tsc -b --pretty false"
   },
+  "dependencies": {
+    "@blackwing/contracts": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "catalog:",
+    "fast-check": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
