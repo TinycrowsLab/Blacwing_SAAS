@@ -5,13 +5,26 @@
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { NotFoundError, ValidationError } from '@blackwing/errors';
+import {
+  EtagMismatchError,
+  NotFoundError,
+  PlanVersionImmutableError,
+  TestCaseNotFoundError,
+  TestPlanNotFoundError,
+  ValidationError,
+} from '@blackwing/errors';
 import { newId } from '@blackwing/ids';
 import { type PostgresHandle, withPostgres } from '@blackwing/testing/containers';
 
 import { createDatabase, migrateDatabase } from './index.js';
 import { ConcurrencyError } from './repository.js';
-import { type TestPlanWithCases, TestPlanRepository } from './test-plans.repository.js';
+import {
+  type TestPlanAuditEvent,
+  type TestPlanWithCases,
+  TestPlanRepository,
+} from './test-plans.repository.js';
+
+import type { PlannedTestCase } from '@blackwing/contracts';
 
 let db: PostgresHandle;
 const tenantA = newId();
@@ -29,21 +42,26 @@ async function pgCode(promise: Promise<unknown>): Promise<string | undefined> {
 }
 
 function makeRepo(tenant: string = tenantA) {
-  return new TestPlanRepository({ db: createDatabase(db.appPool), tenant: () => tenant });
+  return new TestPlanRepository({
+    db: createDatabase(db.appPool),
+    tenant: () => tenant,
+    audit: () => undefined,
+  });
 }
 
-const planned = (overrides: Record<string, unknown> = {}) => ({
-  class: 'active_safe',
-  title: 'Reflected parameter in search',
-  refs: { owasp: ['A03:2021'], wstg: ['WSTG-INPV-01'], asvs: ['5.3.3'] },
-  cweCandidates: ['CWE-79'],
-  targets: ['https://app.example.test/search'],
-  roles: ['anonymous'],
-  budget: { maxRequests: 50, maxRps: 2, maxConcurrency: 2, maxBytes: 1_000_000 },
-  oracle: { type: 'response.contains', params: { needle: 'probe-token' } },
-  negativeControl: null,
-  ...overrides,
-});
+const planned = (overrides: Record<string, unknown> = {}) =>
+  ({
+    class: 'active_safe',
+    title: 'Reflected parameter in search',
+    refs: { owasp: ['A03:2021'], wstg: ['WSTG-INPV-01'], asvs: ['5.3.3'] },
+    cweCandidates: ['CWE-79'],
+    targets: ['https://app.example.test/search'],
+    roles: ['anonymous'],
+    budget: { maxRequests: 50, maxRps: 2, maxConcurrency: 2, maxBytes: 1_000_000 },
+    oracle: { type: 'response.contains', params: { needle: 'probe-token' } },
+    negativeControl: null,
+    ...overrides,
+  }) as PlannedTestCase;
 
 /** Inserts a run for a tenant (bypassing the repository). */
 async function insertRun(tenantId: string): Promise<string> {
@@ -430,5 +448,179 @@ describe('append-only history and timestamps', () => {
     const row = before.rows[0] as { updated_at: Date };
     const next = after.rows[0] as { updated_at: Date };
     expect(next.updated_at.getTime()).toBeGreaterThan(row.updated_at.getTime());
+  });
+});
+
+describe('case edits, removal and audit (PLAN-005)', () => {
+  /** A repository that records each audit event and can be told to fail the audit append. */
+  function recordingRepo(tenant: string, events: TestPlanAuditEvent[], failAudit = false) {
+    return new TestPlanRepository({
+      db: createDatabase(db.appPool),
+      tenant: () => tenant,
+      audit: (event) => {
+        if (failAudit) throw new Error('audit append refused');
+        events.push(event);
+      },
+    });
+  }
+
+  /** A run with one draft version and one case in tenant A. */
+  async function draftWithCase() {
+    const events: TestPlanAuditEvent[] = [];
+    const repo = recordingRepo(tenantA, events);
+    const runId = await insertRun(tenantA);
+    const created = await repo.createVersion({ runId, createdBy: creator, cases: [] });
+    const added = await repo.addCase(created.plan.id, {
+      actorId: creator,
+      expectedUpdatedAt: created.plan.updatedAt,
+      values: planned(),
+    });
+    return {
+      events,
+      repo,
+      runId,
+      planId: created.plan.id,
+      caseId: added.testCase.id,
+      added,
+      draftUpdatedAt: created.plan.updatedAt,
+    };
+  }
+
+  it('creates a version and audits it in the same transaction', async () => {
+    const events: TestPlanAuditEvent[] = [];
+    const runId = await insertRun(tenantA);
+    const created = await recordingRepo(tenantA, events).createVersion({
+      runId,
+      createdBy: creator,
+      cases: [planned()],
+    });
+    expect(events).toEqual([
+      expect.objectContaining({
+        action: 'test_plan.version_created',
+        planId: created.plan.id,
+        version: 1,
+        caseCount: 1,
+      }),
+    ]);
+  });
+
+  it('adds a case under a compare-and-set on the plan version, and bumps the plan version', async () => {
+    const { events, repo, planId, added, draftUpdatedAt } = await draftWithCase();
+    expect(added.testCase.status).toBe('proposed');
+    expect(events.map((e) => e.action)).toEqual(['test_plan.version_created', 'test_case.created']);
+    expect(added.plan.updatedAt.getTime()).toBeGreaterThan(draftUpdatedAt.getTime());
+    // A caller that still holds the pre-add version is refused: the plan moved on.
+    await expect(
+      repo.addCase(planId, {
+        actorId: creator,
+        expectedUpdatedAt: draftUpdatedAt,
+        values: planned({ title: 'Stale write' }),
+      }),
+    ).rejects.toBeInstanceOf(EtagMismatchError);
+  });
+
+  it('refuses a destructive case and a case on an approved version', async () => {
+    const { repo, planId, caseId } = await draftWithCase();
+    const current = await repo.findById(planId);
+    await expect(
+      repo.addCase(planId, {
+        actorId: creator,
+        expectedUpdatedAt: current?.plan.updatedAt ?? new Date(0),
+        values: planned({ class: 'destructive' }),
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    await db.withTenant(tenantA, (tx) =>
+      tx.query("UPDATE test_plans SET status = 'approved' WHERE id = $1", [planId]),
+    );
+    await expect(
+      repo.updateCase(caseId, {
+        actorId: creator,
+        expectedUpdatedAt: current?.cases[0]?.updatedAt ?? new Date(0),
+        patch: { title: 'Edited after approval' },
+      }),
+    ).rejects.toBeInstanceOf(PlanVersionImmutableError);
+  });
+
+  it('updates a case only under its own updated_at and refuses a second stale update', async () => {
+    const { events, repo, planId, caseId, added } = await draftWithCase();
+    const updated = await repo.updateCase(caseId, {
+      actorId: creator,
+      expectedUpdatedAt: added.testCase.updatedAt,
+      patch: { title: 'Unicode ✓ 検査', targets: ['https://app.example.test/search?q=1'] },
+    });
+    expect(updated.testCase.title).toBe('Unicode ✓ 検査');
+    expect(events.at(-1)).toMatchObject({
+      action: 'test_case.updated',
+      changedFields: ['targets', 'title'],
+    });
+    await expect(
+      repo.updateCase(caseId, {
+        actorId: creator,
+        expectedUpdatedAt: added.testCase.updatedAt,
+        patch: { title: 'Lost update' },
+      }),
+    ).rejects.toBeInstanceOf(EtagMismatchError);
+    expect((await repo.findById(planId))?.cases[0]?.title).toBe('Unicode ✓ 検査');
+  });
+
+  it('soft-removes a case once; a second removal changes nothing and audits nothing', async () => {
+    const { events, repo, caseId, added } = await draftWithCase();
+    const first = await repo.removeCase(caseId, {
+      actorId: creator,
+      expectedUpdatedAt: added.testCase.updatedAt,
+    });
+    expect(first).toMatchObject({ changed: true, testCase: { status: 'removed' } });
+    const second = await repo.removeCase(caseId, {
+      actorId: creator,
+      expectedUpdatedAt: added.testCase.updatedAt,
+    });
+    expect(second.changed).toBe(false);
+    expect(events.filter((e) => e.action === 'test_case.removed')).toHaveLength(1);
+    await expect(
+      repo.updateCase(caseId, {
+        actorId: creator,
+        expectedUpdatedAt: first.testCase.updatedAt,
+        patch: { title: 'Revive' },
+      }),
+    ).rejects.toBeInstanceOf(TestCaseNotFoundError);
+  });
+
+  it('rolls the write back when the audit append fails', async () => {
+    const { planId, runId } = await draftWithCase();
+    const current = await makeRepo(tenantA).findById(planId);
+    const failing = recordingRepo(tenantA, [], true);
+    await expect(
+      failing.addCase(planId, {
+        actorId: creator,
+        expectedUpdatedAt: current?.plan.updatedAt ?? new Date(0),
+        values: planned({ title: 'Never committed' }),
+      }),
+    ).rejects.toThrow('audit append refused');
+    const after = await makeRepo(tenantA).findVersion(runId, 1);
+    expect(after?.cases.map((c) => c.title)).not.toContain('Never committed');
+  });
+
+  it('is invisible across tenants: tenant B finds, edits and removes nothing of tenant A', async () => {
+    const { runId, planId, caseId, added } = await draftWithCase();
+    const other = makeRepo(tenantB);
+    expect(await other.findVersion(runId, 1)).toBeUndefined();
+    expect(await other.findCase(caseId)).toBeUndefined();
+    await expect(
+      other.updateCase(caseId, {
+        actorId: creator,
+        expectedUpdatedAt: added.testCase.updatedAt,
+        patch: { title: 'cross' },
+      }),
+    ).rejects.toBeInstanceOf(TestCaseNotFoundError);
+    await expect(
+      other.addCase(planId, {
+        actorId: creator,
+        expectedUpdatedAt: added.plan.updatedAt,
+        values: planned(),
+      }),
+    ).rejects.toBeInstanceOf(TestPlanNotFoundError);
+    await expect(
+      other.removeCase(caseId, { actorId: creator, expectedUpdatedAt: added.testCase.updatedAt }),
+    ).rejects.toBeInstanceOf(TestCaseNotFoundError);
   });
 });

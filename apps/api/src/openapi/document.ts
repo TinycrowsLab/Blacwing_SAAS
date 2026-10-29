@@ -12,6 +12,7 @@ import { runEventsOpenApiModule } from '../run-events/openapi.js';
 import { signupOpenApiModule } from '../signup/openapi.js';
 import { surfaceOpenApiModule } from '../surface/openapi.js';
 import { tenantSettingsOpenApiModule } from '../tenant-settings/openapi.js';
+import { testPlansOpenApiModule } from '../test-plans/openapi.js';
 
 /** Largest page a client may request (§9). */
 export const PAGE_LIMIT_MAX = 200;
@@ -64,6 +65,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     tenantSettingsOpenApiModule(),
     assessmentRequestOpenApiModule(),
     standingAuthorisationsOpenApiModule(),
+    testPlansOpenApiModule(),
   ];
 }
 

@@ -103,6 +103,10 @@ const RELEASED_ACTIONS = [
   'scope.request.updated',
   'scope.request.submitted',
   'scope.request.withdrawn',
+  'test_plan.version_created',
+  'test_case.created',
+  'test_case.updated',
+  'test_case.removed',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

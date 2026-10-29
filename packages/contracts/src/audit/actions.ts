@@ -600,6 +600,32 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     isAlwaysAudited: true,
     description: 'An assessment request was withdrawn by its requester.',
   },
+  // test plans (PLAN-005, #395): appended; metadata carries ids, versions and the changed field names only
+  {
+    action: 'test_plan.version_created',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description:
+      'A new numbered test plan version was created for a run (PLAN-005, metadata carries the version).',
+  },
+  {
+    action: 'test_case.created',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description: 'A test case was added to a draft test plan version (PLAN-005).',
+  },
+  {
+    action: 'test_case.updated',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description: 'A test case of a draft test plan version was edited (PLAN-005).',
+  },
+  {
+    action: 'test_case.removed',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description: 'A test case was soft-removed from a draft test plan version (PLAN-005).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

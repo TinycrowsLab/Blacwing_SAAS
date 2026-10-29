@@ -2,7 +2,7 @@
 
 The public `/v1` REST API, version 0.0.0. This page is generated from [`openapi.json`](openapi.json) by `pnpm openapi:generate`; do not edit it by hand. CI fails when it is stale.
 
-It documents 27 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
+It documents 33 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
 
 The internal Run Broker API (`/internal/broker`) is not part of this reference.
 
@@ -45,6 +45,13 @@ The internal Run Broker API (`/internal/broker`) is not part of this reference.
   - [GET /standing-authorisations/{id}](#get-standing-authorisationsid)
   - [PATCH /standing-authorisations/{id}](#patch-standing-authorisationsid)
   - [POST /standing-authorisations/{id}/submit](#post-standing-authorisationsidsubmit)
+- test-plans
+  - [GET /runs/{runId}/test-plans](#get-runsrunidtest-plans)
+  - [POST /runs/{runId}/test-plans](#post-runsrunidtest-plans)
+  - [GET /runs/{runId}/test-plans/{version}](#get-runsrunidtest-plansversion)
+  - [POST /test-plans/{planId}/cases](#post-test-plansplanidcases)
+  - [DELETE /test-cases/{caseId}](#delete-test-casescaseid)
+  - [PATCH /test-cases/{caseId}](#patch-test-casescaseid)
 
 ## kill
 
@@ -203,7 +210,7 @@ Example: Kill not permitted.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -279,9 +286,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -437,6 +468,18 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -657,7 +700,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -813,6 +856,18 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -1080,7 +1135,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -1240,9 +1295,21 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -1254,6 +1321,18 @@ Example: Validation failed.
   "title": "Validation failed",
   "status": 422,
   "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -1523,18 +1602,18 @@ Requires audit:read (auditor, org_admin). Newest first, by (occurredAt, seq). Th
 - Operation ID: `listAuditEvents`
 - Authentication: `bearerAuth` or `sessionCookie`
 
-| Parameter      | In    | Required | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Description                               |
-| -------------- | ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `actorId`      | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |                                           |
-| `action`       | query | no       | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"` |                                           |
-| `targetId`     | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |                                           |
-| `runId`        | query | no       | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |                                           |
-| `outcome`      | query | no       | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |                                           |
-| `from`         | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                           |
-| `to`           | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                           |
-| `includeChain` | query | no       | enum: `"true"`, `"false"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Auditors only: include hash and prevHash. |
-| `cursor`       | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |                                           |
-| `limit`        | query | no       | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |                                           |
+| Parameter      | In    | Required | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Description                               |
+| -------------- | ----- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `actorId`      | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                           |
+| `action`       | query | no       | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"` |                                           |
+| `targetId`     | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                           |
+| `runId`        | query | no       | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |                                           |
+| `outcome`      | query | no       | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |                                           |
+| `from`         | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |                                           |
+| `to`           | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |                                           |
+| `includeChain` | query | no       | enum: `"true"`, `"false"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Auditors only: include hash and prevHash. |
+| `cursor`       | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                           |
+| `limit`        | query | no       | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |                                           |
 
 #### Response 200
 
@@ -1642,7 +1721,7 @@ Example: Tenant context missing.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -1718,9 +1797,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -1876,6 +1979,18 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -2081,7 +2196,7 @@ Example: Forbidden.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2157,9 +2272,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2315,6 +2454,18 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -2508,7 +2659,7 @@ Example: Run not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2664,6 +2815,18 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -2915,7 +3078,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -3075,9 +3238,21 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -3089,6 +3264,18 @@ Example: Validation failed.
   "title": "Validation failed",
   "status": 422,
   "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -3723,7 +3910,7 @@ Example: Tenant context missing.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -3799,9 +3986,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -3961,9 +4172,21 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -3975,6 +4198,18 @@ Example: Validation failed.
   "title": "Validation failed",
   "status": 422,
   "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -4409,7 +4644,7 @@ Example: Persona not defined.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -4565,6 +4800,18 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -4771,7 +5018,7 @@ Example: Tenant context missing.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -4847,9 +5094,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -5005,6 +5276,18 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -5242,7 +5525,7 @@ Example: Persona override field not permitted.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -5318,9 +5601,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -5476,6 +5783,18 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -5958,7 +6277,7 @@ Example: Separation of duties violated.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6034,9 +6353,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6192,6 +6535,18 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -6657,7 +7012,7 @@ Example: Separation of duties violated.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6733,9 +7088,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6891,6 +7270,18 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -7382,7 +7773,7 @@ Example: Separation of duties violated.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7458,9 +7849,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7620,9 +8035,21 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7634,6 +8061,18 @@ Example: Validation failed.
   "title": "Validation failed",
   "status": 422,
   "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -8337,7 +8776,7 @@ Example: Separation of duties violated.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -8413,9 +8852,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -8575,9 +9038,21 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 412
 
-Problem details; code is one of PRECONDITION_FAILED.
+Problem details; code is one of PRECONDITION_FAILED, ETAG_MISMATCH.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -8593,9 +9068,21 @@ Example: Precondition failed.
 }
 ```
 
+Example: ETag mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ETAG_MISMATCH",
+  "title": "ETag mismatch",
+  "status": 412,
+  "code": "ETAG_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -8607,6 +9094,18 @@ Example: Validation failed.
   "title": "Validation failed",
   "status": 422,
   "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -9333,7 +9832,7 @@ Example: Separation of duties violated.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -9409,9 +9908,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -9571,9 +10094,21 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -9585,6 +10120,18 @@ Example: Validation failed.
   "title": "Validation failed",
   "status": 422,
   "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -10314,7 +10861,7 @@ Example: Separation of duties violated.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -10390,9 +10937,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -10548,6 +11119,18 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -11052,7 +11635,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -11212,9 +11795,21 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -11226,6 +11821,18 @@ Example: Validation failed.
   "title": "Validation failed",
   "status": 422,
   "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -11941,7 +12548,7 @@ Example: Separation of duties violated.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -12017,9 +12624,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -12179,6 +12810,18 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 412
 
 The ETag is stale.
@@ -12187,7 +12830,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -12199,6 +12842,18 @@ Example: Validation failed.
   "title": "Validation failed",
   "status": 422,
   "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -12916,7 +13571,7 @@ Example: Separation of duties violated.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -12988,6 +13643,30 @@ Example: Identity provider resource not found.
   "title": "Identity provider resource not found",
   "status": 404,
   "code": "KEYCLOAK_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -13495,7 +14174,7 @@ Example: Separation of duties violated.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13571,9 +14250,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13733,6 +14436,18 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 412
 
 The ETag is stale.
@@ -13741,7 +14456,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13753,6 +14468,18 @@ Example: Validation failed.
   "title": "Validation failed",
   "status": 422,
   "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -14185,7 +14912,7 @@ Example: Forbidden.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -14261,9 +14988,33 @@ Example: Identity provider resource not found.
 }
 ```
 
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -14419,6 +15170,18 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -15067,7 +15830,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -15227,9 +15990,21 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID, CVSS_VECTOR_SCORE_MISMATCH.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -15241,6 +16016,18 @@ Example: Validation failed.
   "title": "Validation failed",
   "status": 422,
   "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -16275,6 +17062,1930 @@ Example: Too many requests.
 }
 ```
 
+## test-plans
+
+Editable test plans: numbered versions per run, and the cases inside a draft version. An approved version is immutable.
+
+### GET /runs/{runId}/test-plans
+
+**List the versions of a run plan**
+
+- Operation ID: `listTestPlanVersions`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter | In    | Required | Type          | Description |
+| --------- | ----- | -------- | ------------- | ----------- |
+| `runId`   | path  | yes      | string (uuid) |             |
+| `cursor`  | query | no       | string        |             |
+| `limit`   | query | no       | integer       |             |
+
+#### Response 200
+
+A page of versions, oldest first.
+
+Content type `application/json`: [TestPlanPage](#testplanpage).
+
+Example: The first page, with a cursor for the next.
+
+```json
+{
+  "items": [
+    {
+      "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+      "runId": "0198f0a0-0000-7000-8000-0000000000e1",
+      "version": 1,
+      "status": "approved",
+      "createdAt": "2026-10-01T09:00:00.000Z",
+      "updatedAt": "2026-10-01T09:30:00.000Z"
+    }
+  ],
+  "nextCursor": "djoxDQ"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of PLAN_VERSION_IMMUTABLE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 412
+
+Problem details; code is one of ETAG_MISMATCH.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: ETag mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ETAG_MISMATCH",
+  "title": "ETag mismatch",
+  "status": 412,
+  "code": "ETAG_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 413
+
+Problem details; code is one of PLAN_PAYLOAD_TOO_LARGE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Test plan payload too large.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_PAYLOAD_TOO_LARGE",
+  "title": "Test plan payload too large",
+  "status": 413,
+  "code": "PLAN_PAYLOAD_TOO_LARGE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 428
+
+Problem details; code is one of PRECONDITION_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Precondition required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+  "title": "Precondition required",
+  "status": 428,
+  "code": "PRECONDITION_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### POST /runs/{runId}/test-plans
+
+**Create the next version of a run plan**
+
+Copies the non-removed cases of the newest version into a new draft. Requires Idempotency-Key: a retry returns the original version.
+
+- Operation ID: `createTestPlanVersion`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter         | In     | Required | Type          | Description                                                                   |
+| ----------------- | ------ | -------- | ------------- | ----------------------------------------------------------------------------- |
+| `runId`           | path   | yes      | string (uuid) |                                                                               |
+| `Idempotency-Key` | header | yes      | string        | Makes a retry return the original result instead of a second write (API-008). |
+
+#### Response 201
+
+The new version.
+
+| Header | Description                                                            |
+| ------ | ---------------------------------------------------------------------- |
+| `ETag` | Strong validator of this state. Send it back in If-Match to change it. |
+
+Content type `application/json`: [TestPlanView](#testplanview).
+
+Example: A draft version with one case.
+
+```json
+{
+  "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+  "runId": "0198f0a0-0000-7000-8000-0000000000e1",
+  "version": 2,
+  "status": "draft",
+  "createdAt": "2026-10-01T10:00:00.000Z",
+  "updatedAt": "2026-10-01T10:00:00.000Z",
+  "cases": [
+    {
+      "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
+      "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+      "class": "passive",
+      "title": "Login rate limit is enforced",
+      "status": "proposed",
+      "statusReason": null,
+      "refs": {
+        "owasp": ["A07"],
+        "wstg": ["WSTG-ATHN-03"],
+        "asvs": ["2.2.1"]
+      },
+      "cweCandidates": ["CWE-307"],
+      "targets": ["https://app.example.test/login"],
+      "roles": ["anonymous"],
+      "budget": {
+        "maxRequests": 50,
+        "maxRps": 2,
+        "maxConcurrency": 1,
+        "maxBytes": 1048576
+      },
+      "oracle": {
+        "type": "status_code",
+        "params": {
+          "expected": 429
+        }
+      },
+      "negativeControl": null,
+      "createdAt": "2026-10-01T10:00:00.000Z",
+      "updatedAt": "2026-10-01T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### Response 400
+
+Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of PLAN_VERSION_IMMUTABLE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 412
+
+Problem details; code is one of ETAG_MISMATCH.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: ETag mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ETAG_MISMATCH",
+  "title": "ETag mismatch",
+  "status": 412,
+  "code": "ETAG_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 413
+
+Problem details; code is one of PLAN_PAYLOAD_TOO_LARGE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Test plan payload too large.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_PAYLOAD_TOO_LARGE",
+  "title": "Test plan payload too large",
+  "status": 413,
+  "code": "PLAN_PAYLOAD_TOO_LARGE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 428
+
+Problem details; code is one of PRECONDITION_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Precondition required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+  "title": "Precondition required",
+  "status": 428,
+  "code": "PRECONDITION_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### GET /runs/{runId}/test-plans/{version}
+
+**Read one plan version with its cases**
+
+- Operation ID: `getTestPlanVersion`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter | In   | Required | Type          | Description |
+| --------- | ---- | -------- | ------------- | ----------- |
+| `runId`   | path | yes      | string (uuid) |             |
+| `version` | path | yes      | integer       |             |
+
+#### Response 200
+
+The version and its cases.
+
+| Header | Description                                                            |
+| ------ | ---------------------------------------------------------------------- |
+| `ETag` | Strong validator of this state. Send it back in If-Match to change it. |
+
+Content type `application/json`: [TestPlanView](#testplanview).
+
+Example: A draft version with one case.
+
+```json
+{
+  "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+  "runId": "0198f0a0-0000-7000-8000-0000000000e1",
+  "version": 2,
+  "status": "draft",
+  "createdAt": "2026-10-01T10:00:00.000Z",
+  "updatedAt": "2026-10-01T10:00:00.000Z",
+  "cases": [
+    {
+      "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
+      "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+      "class": "passive",
+      "title": "Login rate limit is enforced",
+      "status": "proposed",
+      "statusReason": null,
+      "refs": {
+        "owasp": ["A07"],
+        "wstg": ["WSTG-ATHN-03"],
+        "asvs": ["2.2.1"]
+      },
+      "cweCandidates": ["CWE-307"],
+      "targets": ["https://app.example.test/login"],
+      "roles": ["anonymous"],
+      "budget": {
+        "maxRequests": 50,
+        "maxRps": 2,
+        "maxConcurrency": 1,
+        "maxBytes": 1048576
+      },
+      "oracle": {
+        "type": "status_code",
+        "params": {
+          "expected": 429
+        }
+      },
+      "negativeControl": null,
+      "createdAt": "2026-10-01T10:00:00.000Z",
+      "updatedAt": "2026-10-01T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### Response 400
+
+Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of PLAN_VERSION_IMMUTABLE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 412
+
+Problem details; code is one of ETAG_MISMATCH.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: ETag mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ETAG_MISMATCH",
+  "title": "ETag mismatch",
+  "status": 412,
+  "code": "ETAG_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 413
+
+Problem details; code is one of PLAN_PAYLOAD_TOO_LARGE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Test plan payload too large.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_PAYLOAD_TOO_LARGE",
+  "title": "Test plan payload too large",
+  "status": 413,
+  "code": "PLAN_PAYLOAD_TOO_LARGE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 428
+
+Problem details; code is one of PRECONDITION_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Precondition required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+  "title": "Precondition required",
+  "status": 428,
+  "code": "PRECONDITION_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### POST /test-plans/{planId}/cases
+
+**Add a test case to a draft plan version**
+
+Requires If-Match (the plan ETag) and Idempotency-Key. An approved or superseded version answers 409 PLAN_VERSION_IMMUTABLE.
+
+- Operation ID: `addTestCase`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter         | In     | Required | Type          | Description                                                                              |
+| ----------------- | ------ | -------- | ------------- | ---------------------------------------------------------------------------------------- |
+| `planId`          | path   | yes      | string (uuid) |                                                                                          |
+| `If-Match`        | header | yes      | string        | The ETag from the last read. A stale value answers 412 ETAG_MISMATCH, a missing one 428. |
+| `Idempotency-Key` | header | yes      | string        | Makes a retry return the original result instead of a second write (API-008).            |
+
+**Request body** (required)
+
+Content type `application/json`: [TestCaseCreate](#testcasecreate).
+
+Example: A passive check.
+
+```json
+{
+  "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
+  "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+  "class": "passive",
+  "title": "Login rate limit is enforced",
+  "status": "proposed",
+  "statusReason": null,
+  "refs": {
+    "owasp": ["A07"],
+    "wstg": ["WSTG-ATHN-03"],
+    "asvs": ["2.2.1"]
+  },
+  "cweCandidates": ["CWE-307"],
+  "targets": ["https://app.example.test/login"],
+  "roles": ["anonymous"],
+  "budget": {
+    "maxRequests": 50,
+    "maxRps": 2,
+    "maxConcurrency": 1,
+    "maxBytes": 1048576
+  },
+  "oracle": {
+    "type": "status_code",
+    "params": {
+      "expected": 429
+    }
+  },
+  "negativeControl": null,
+  "createdAt": "2026-10-01T10:00:00.000Z",
+  "updatedAt": "2026-10-01T10:00:00.000Z"
+}
+```
+
+#### Response 201
+
+The new case and its ETag.
+
+| Header | Description                                                            |
+| ------ | ---------------------------------------------------------------------- |
+| `ETag` | Strong validator of this state. Send it back in If-Match to change it. |
+
+Content type `application/json`: [TestCaseView](#testcaseview).
+
+Example: A proposed case.
+
+```json
+{
+  "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
+  "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+  "class": "passive",
+  "title": "Login rate limit is enforced",
+  "status": "proposed",
+  "statusReason": null,
+  "refs": {
+    "owasp": ["A07"],
+    "wstg": ["WSTG-ATHN-03"],
+    "asvs": ["2.2.1"]
+  },
+  "cweCandidates": ["CWE-307"],
+  "targets": ["https://app.example.test/login"],
+  "roles": ["anonymous"],
+  "budget": {
+    "maxRequests": 50,
+    "maxRps": 2,
+    "maxConcurrency": 1,
+    "maxBytes": 1048576
+  },
+  "oracle": {
+    "type": "status_code",
+    "params": {
+      "expected": 429
+    }
+  },
+  "negativeControl": null,
+  "createdAt": "2026-10-01T10:00:00.000Z",
+  "updatedAt": "2026-10-01T10:00:00.000Z"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of PLAN_VERSION_IMMUTABLE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 412
+
+Problem details; code is one of ETAG_MISMATCH.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: ETag mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ETAG_MISMATCH",
+  "title": "ETag mismatch",
+  "status": 412,
+  "code": "ETAG_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 413
+
+Problem details; code is one of PLAN_PAYLOAD_TOO_LARGE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Test plan payload too large.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_PAYLOAD_TOO_LARGE",
+  "title": "Test plan payload too large",
+  "status": 413,
+  "code": "PLAN_PAYLOAD_TOO_LARGE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 428
+
+Problem details; code is one of PRECONDITION_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Precondition required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+  "title": "Precondition required",
+  "status": 428,
+  "code": "PRECONDITION_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### DELETE /test-cases/{caseId}
+
+**Remove a test case from a draft plan version**
+
+Soft-removes the case (status removed). Removing an already removed case answers 200 and writes nothing. Otherwise requires If-Match.
+
+- Operation ID: `removeTestCase`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter  | In     | Required | Type          | Description                                                                              |
+| ---------- | ------ | -------- | ------------- | ---------------------------------------------------------------------------------------- |
+| `caseId`   | path   | yes      | string (uuid) |                                                                                          |
+| `If-Match` | header | no       | string        | The ETag from the last read. A stale value answers 412 ETAG_MISMATCH, a missing one 428. |
+
+#### Response 200
+
+The removed case.
+
+| Header | Description                                                            |
+| ------ | ---------------------------------------------------------------------- |
+| `ETag` | Strong validator of this state. Send it back in If-Match to change it. |
+
+Content type `application/json`: [TestCaseView](#testcaseview).
+
+Example: A proposed case.
+
+```json
+{
+  "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
+  "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+  "class": "passive",
+  "title": "Login rate limit is enforced",
+  "status": "proposed",
+  "statusReason": null,
+  "refs": {
+    "owasp": ["A07"],
+    "wstg": ["WSTG-ATHN-03"],
+    "asvs": ["2.2.1"]
+  },
+  "cweCandidates": ["CWE-307"],
+  "targets": ["https://app.example.test/login"],
+  "roles": ["anonymous"],
+  "budget": {
+    "maxRequests": 50,
+    "maxRps": 2,
+    "maxConcurrency": 1,
+    "maxBytes": 1048576
+  },
+  "oracle": {
+    "type": "status_code",
+    "params": {
+      "expected": 429
+    }
+  },
+  "negativeControl": null,
+  "createdAt": "2026-10-01T10:00:00.000Z",
+  "updatedAt": "2026-10-01T10:00:00.000Z"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of PLAN_VERSION_IMMUTABLE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 412
+
+Problem details; code is one of ETAG_MISMATCH.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: ETag mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ETAG_MISMATCH",
+  "title": "ETag mismatch",
+  "status": 412,
+  "code": "ETAG_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 413
+
+Problem details; code is one of PLAN_PAYLOAD_TOO_LARGE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Test plan payload too large.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_PAYLOAD_TOO_LARGE",
+  "title": "Test plan payload too large",
+  "status": 413,
+  "code": "PLAN_PAYLOAD_TOO_LARGE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 428
+
+Problem details; code is one of PRECONDITION_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Precondition required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+  "title": "Precondition required",
+  "status": 428,
+  "code": "PRECONDITION_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### PATCH /test-cases/{caseId}
+
+**Edit a test case of a draft plan version**
+
+Requires If-Match (the case ETag). Only the sent fields change.
+
+- Operation ID: `updateTestCase`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter  | In     | Required | Type          | Description                                                                              |
+| ---------- | ------ | -------- | ------------- | ---------------------------------------------------------------------------------------- |
+| `caseId`   | path   | yes      | string (uuid) |                                                                                          |
+| `If-Match` | header | yes      | string        | The ETag from the last read. A stale value answers 412 ETAG_MISMATCH, a missing one 428. |
+
+**Request body** (required)
+
+Content type `application/json`: [TestCasePatch](#testcasepatch).
+
+Example: Retitle.
+
+```json
+{
+  "title": "Login rate limit is enforced"
+}
+```
+
+#### Response 200
+
+The case after the change.
+
+| Header | Description                                                            |
+| ------ | ---------------------------------------------------------------------- |
+| `ETag` | Strong validator of this state. Send it back in If-Match to change it. |
+
+Content type `application/json`: [TestCaseView](#testcaseview).
+
+Example: A proposed case.
+
+```json
+{
+  "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
+  "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+  "class": "passive",
+  "title": "Login rate limit is enforced",
+  "status": "proposed",
+  "statusReason": null,
+  "refs": {
+    "owasp": ["A07"],
+    "wstg": ["WSTG-ATHN-03"],
+    "asvs": ["2.2.1"]
+  },
+  "cweCandidates": ["CWE-307"],
+  "targets": ["https://app.example.test/login"],
+  "roles": ["anonymous"],
+  "budget": {
+    "maxRequests": 50,
+    "maxRps": 2,
+    "maxConcurrency": 1,
+    "maxBytes": 1048576
+  },
+  "oracle": {
+    "type": "status_code",
+    "params": {
+      "expected": 429
+    }
+  },
+  "negativeControl": null,
+  "createdAt": "2026-10-01T10:00:00.000Z",
+  "updatedAt": "2026-10-01T10:00:00.000Z"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of PLAN_VERSION_IMMUTABLE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 412
+
+Problem details; code is one of ETAG_MISMATCH.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: ETag mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ETAG_MISMATCH",
+  "title": "ETag mismatch",
+  "status": 412,
+  "code": "ETAG_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 413
+
+Problem details; code is one of PLAN_PAYLOAD_TOO_LARGE.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Test plan payload too large.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_PAYLOAD_TOO_LARGE",
+  "title": "Test plan payload too large",
+  "status": 413,
+  "code": "PLAN_PAYLOAD_TOO_LARGE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 428
+
+Problem details; code is one of PRECONDITION_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Precondition required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+  "title": "Precondition required",
+  "status": 428,
+  "code": "PRECONDITION_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 ## Schemas
 
 ### AssessmentRequest
@@ -16837,23 +19548,23 @@ Full schema:
 
 ### AuditEventView
 
-| Property      | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Required | Description                                                              |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ |
-| `id`          | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | yes      |                                                                          |
-| `seq`         | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | yes      |                                                                          |
-| `occurredAt`  | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | yes      |                                                                          |
-| `action`      | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"` | yes      |                                                                          |
-| `severity`    | enum: `"info"`, `"notice"`, `"warning"`, `"critical"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | yes      |                                                                          |
-| `actor`       | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | yes      | Who acted. `email` is only returned to auditors.                         |
-| `target`      | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | yes      |                                                                          |
-| `outcome`     | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | yes      |                                                                          |
-| `reason`      | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | yes      |                                                                          |
-| `metadata`    | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | yes      | Empty for callers that are not auditors.                                 |
-| `metadataRef` | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | no       | Only returned to auditors.                                               |
-| `traceId`     | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | yes      |                                                                          |
-| `runId`       | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | yes      |                                                                          |
-| `hash`        | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | no       | Hex SHA-256 chain hash. Only with includeChain=true.                     |
-| `prevHash`    | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | no       | Hex previous hash; null on the genesis row. Only with includeChain=true. |
+| Property      | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Required | Description                                                              |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ |
+| `id`          | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | yes      |                                                                          |
+| `seq`         | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | yes      |                                                                          |
+| `occurredAt`  | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | yes      |                                                                          |
+| `action`      | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"` | yes      |                                                                          |
+| `severity`    | enum: `"info"`, `"notice"`, `"warning"`, `"critical"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | yes      |                                                                          |
+| `actor`       | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | yes      | Who acted. `email` is only returned to auditors.                         |
+| `target`      | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | yes      |                                                                          |
+| `outcome`     | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | yes      |                                                                          |
+| `reason`      | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | yes      |                                                                          |
+| `metadata`    | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | yes      | Empty for callers that are not auditors.                                 |
+| `metadataRef` | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | no       | Only returned to auditors.                                               |
+| `traceId`     | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | yes      |                                                                          |
+| `runId`       | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | yes      |                                                                          |
+| `hash`        | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | no       | Hex SHA-256 chain hash. Only with includeChain=true.                     |
+| `prevHash`    | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | no       | Hex previous hash; null on the genesis row. Only with includeChain=true. |
 
 Full schema:
 
@@ -16965,7 +19676,11 @@ Full schema:
         "run.surface.viewed",
         "scope.request.updated",
         "scope.request.submitted",
-        "scope.request.withdrawn"
+        "scope.request.withdrawn",
+        "test_plan.version_created",
+        "test_case.created",
+        "test_case.updated",
+        "test_case.removed"
       ]
     },
     "severity": {
@@ -19432,6 +22147,845 @@ Full schema:
     }
   },
   "required": ["settings", "region", "updatedAt"],
+  "additionalProperties": false
+}
+```
+
+### TestCaseCreate
+
+| Property          | Type                                                                    | Required | Description |
+| ----------------- | ----------------------------------------------------------------------- | -------- | ----------- |
+| `class`           | enum: `"passive"`, `"active_safe"`, `"state_changing"`, `"destructive"` | yes      |             |
+| `title`           | string                                                                  | yes      |             |
+| `refs`            | object                                                                  | yes      |             |
+| `cweCandidates`   | array of string                                                         | yes      |             |
+| `targets`         | array of string                                                         | yes      |             |
+| `roles`           | array of string                                                         | yes      |             |
+| `budget`          | object                                                                  | yes      |             |
+| `oracle`          | object                                                                  | yes      |             |
+| `negativeControl` | object or null                                                          | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "class": {
+      "type": "string",
+      "enum": ["passive", "active_safe", "state_changing", "destructive"]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "refs": {
+      "type": "object",
+      "properties": {
+        "owasp": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "wstg": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "asvs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": ["owasp", "wstg", "asvs"],
+      "additionalProperties": false
+    },
+    "cweCandidates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^CWE-[1-9][0-9]{0,4}$"
+      }
+    },
+    "targets": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2048
+      }
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      }
+    },
+    "budget": {
+      "type": "object",
+      "properties": {
+        "maxRequests": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 10000000
+        },
+        "maxRps": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1000
+        },
+        "maxConcurrency": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 256
+        },
+        "maxBytes": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 1099511627776
+        }
+      },
+      "required": ["maxRequests", "maxRps", "maxConcurrency", "maxBytes"],
+      "additionalProperties": false
+    },
+    "oracle": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "params": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        }
+      },
+      "required": ["type", "params"],
+      "additionalProperties": {}
+    },
+    "negativeControl": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1
+            },
+            "params": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          },
+          "required": ["type", "params"],
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "class",
+    "title",
+    "refs",
+    "cweCandidates",
+    "targets",
+    "roles",
+    "budget",
+    "oracle",
+    "negativeControl"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TestCasePatch
+
+| Property          | Type                                                                    | Required | Description |
+| ----------------- | ----------------------------------------------------------------------- | -------- | ----------- |
+| `class`           | enum: `"passive"`, `"active_safe"`, `"state_changing"`, `"destructive"` | no       |             |
+| `title`           | string                                                                  | no       |             |
+| `refs`            | object                                                                  | no       |             |
+| `cweCandidates`   | array of string                                                         | no       |             |
+| `targets`         | array of string                                                         | no       |             |
+| `roles`           | array of string                                                         | no       |             |
+| `budget`          | object                                                                  | no       |             |
+| `oracle`          | object                                                                  | no       |             |
+| `negativeControl` | object or null                                                          | no       |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "class": {
+      "type": "string",
+      "enum": ["passive", "active_safe", "state_changing", "destructive"]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "refs": {
+      "type": "object",
+      "properties": {
+        "owasp": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "wstg": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "asvs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": ["owasp", "wstg", "asvs"],
+      "additionalProperties": false
+    },
+    "cweCandidates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^CWE-[1-9][0-9]{0,4}$"
+      }
+    },
+    "targets": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2048
+      }
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      }
+    },
+    "budget": {
+      "type": "object",
+      "properties": {
+        "maxRequests": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 10000000
+        },
+        "maxRps": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1000
+        },
+        "maxConcurrency": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 256
+        },
+        "maxBytes": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 1099511627776
+        }
+      },
+      "required": ["maxRequests", "maxRps", "maxConcurrency", "maxBytes"],
+      "additionalProperties": false
+    },
+    "oracle": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "params": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        }
+      },
+      "required": ["type", "params"],
+      "additionalProperties": {}
+    },
+    "negativeControl": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1
+            },
+            "params": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          },
+          "required": ["type", "params"],
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+### TestCaseView
+
+| Property          | Type                                                                                                                                                     | Required | Description |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------- |
+| `caseId`          | string                                                                                                                                                   | yes      |             |
+| `planId`          | string                                                                                                                                                   | yes      |             |
+| `class`           | enum: `"passive"`, `"active_safe"`, `"state_changing"`, `"destructive"`                                                                                  | yes      |             |
+| `title`           | string                                                                                                                                                   | yes      |             |
+| `status`          | enum: `"proposed"`, `"approved"`, `"removed"`, `"executing"`, `"executed"`, `"skipped"`, `"blocked"`, `"failed"`, `"model_declined"`, `"not_applicable"` | yes      |             |
+| `statusReason`    | any                                                                                                                                                      | yes      |             |
+| `refs`            | object                                                                                                                                                   | yes      |             |
+| `cweCandidates`   | array of string                                                                                                                                          | yes      |             |
+| `targets`         | array of string                                                                                                                                          | yes      |             |
+| `roles`           | array of string                                                                                                                                          | yes      |             |
+| `budget`          | object                                                                                                                                                   | yes      |             |
+| `oracle`          | object or null                                                                                                                                           | yes      |             |
+| `negativeControl` | object or null                                                                                                                                           | yes      |             |
+| `createdAt`       | string (date-time)                                                                                                                                       | yes      |             |
+| `updatedAt`       | string (date-time)                                                                                                                                       | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "caseId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "planId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "class": {
+      "type": "string",
+      "enum": ["passive", "active_safe", "state_changing", "destructive"]
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "proposed",
+        "approved",
+        "removed",
+        "executing",
+        "executed",
+        "skipped",
+        "blocked",
+        "failed",
+        "model_declined",
+        "not_applicable"
+      ]
+    },
+    "statusReason": {
+      "type": ["string", "null"]
+    },
+    "refs": {
+      "type": "object",
+      "properties": {
+        "owasp": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "wstg": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "asvs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": ["owasp", "wstg", "asvs"],
+      "additionalProperties": false
+    },
+    "cweCandidates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "budget": {
+      "type": "object",
+      "properties": {
+        "maxRequests": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 10000000
+        },
+        "maxRps": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1000
+        },
+        "maxConcurrency": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 256
+        },
+        "maxBytes": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 1099511627776
+        }
+      },
+      "required": ["maxRequests", "maxRps", "maxConcurrency", "maxBytes"],
+      "additionalProperties": false
+    },
+    "oracle": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1
+            },
+            "params": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          },
+          "required": ["type", "params"],
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "negativeControl": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1
+            },
+            "params": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          },
+          "required": ["type", "params"],
+          "additionalProperties": {}
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    }
+  },
+  "required": [
+    "caseId",
+    "planId",
+    "class",
+    "title",
+    "status",
+    "statusReason",
+    "refs",
+    "cweCandidates",
+    "targets",
+    "roles",
+    "budget",
+    "oracle",
+    "negativeControl",
+    "createdAt",
+    "updatedAt"
+  ],
+  "additionalProperties": false
+}
+```
+
+### TestPlanPage
+
+| Property     | Type            | Required | Description |
+| ------------ | --------------- | -------- | ----------- |
+| `items`      | array of object | yes      |             |
+| `nextCursor` | any             | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "runId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "status": {
+            "type": "string",
+            "enum": ["draft", "proposed", "approved", "superseded"]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": ["planId", "runId", "version", "status", "createdAt", "updatedAt"],
+        "additionalProperties": false
+      }
+    },
+    "nextCursor": {
+      "type": ["string", "null"]
+    }
+  },
+  "required": ["items", "nextCursor"],
+  "additionalProperties": false
+}
+```
+
+### TestPlanView
+
+| Property    | Type                                                        | Required | Description |
+| ----------- | ----------------------------------------------------------- | -------- | ----------- |
+| `planId`    | string                                                      | yes      |             |
+| `runId`     | string                                                      | yes      |             |
+| `version`   | integer                                                     | yes      |             |
+| `status`    | enum: `"draft"`, `"proposed"`, `"approved"`, `"superseded"` | yes      |             |
+| `createdAt` | string (date-time)                                          | yes      |             |
+| `updatedAt` | string (date-time)                                          | yes      |             |
+| `cases`     | array of object                                             | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "planId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "proposed", "approved", "superseded"]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "caseId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "planId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "class": {
+            "type": "string",
+            "enum": ["passive", "active_safe", "state_changing", "destructive"]
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "proposed",
+              "approved",
+              "removed",
+              "executing",
+              "executed",
+              "skipped",
+              "blocked",
+              "failed",
+              "model_declined",
+              "not_applicable"
+            ]
+          },
+          "statusReason": {
+            "type": ["string", "null"]
+          },
+          "refs": {
+            "type": "object",
+            "properties": {
+              "owasp": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "wstg": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "asvs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": ["owasp", "wstg", "asvs"],
+            "additionalProperties": false
+          },
+          "cweCandidates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "budget": {
+            "type": "object",
+            "properties": {
+              "maxRequests": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 10000000
+              },
+              "maxRps": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1000
+              },
+              "maxConcurrency": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 256
+              },
+              "maxBytes": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 1099511627776
+              }
+            },
+            "required": ["maxRequests", "maxRps", "maxConcurrency", "maxBytes"],
+            "additionalProperties": false
+          },
+          "oracle": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "params": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "required": ["type", "params"],
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "negativeControl": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "params": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "required": ["type", "params"],
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "caseId",
+          "planId",
+          "class",
+          "title",
+          "status",
+          "statusReason",
+          "refs",
+          "cweCandidates",
+          "targets",
+          "roles",
+          "budget",
+          "oracle",
+          "negativeControl",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["planId", "runId", "version", "status", "createdAt", "updatedAt", "cases"],
   "additionalProperties": false
 }
 ```

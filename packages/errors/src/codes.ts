@@ -349,6 +349,18 @@ const DEFINITIONS = {
     title: 'Authorisation signer unavailable',
     retryable: true,
   },
+  // Test plans (PLAN-005, #395, §9). An id outside the caller's tenant is indistinguishable from a missing
+  // one (404). Editing an approved version is refused (409) and the client forks a new version. An If-Match
+  // that no longer names the current state is 412 with its own code; a payload over the 8 KiB ceiling is 413.
+  PLAN_NOT_FOUND: { status: 404, title: 'Test plan not found', retryable: false },
+  TEST_CASE_NOT_FOUND: { status: 404, title: 'Test case not found', retryable: false },
+  PLAN_VERSION_IMMUTABLE: {
+    status: 409,
+    title: 'Approved test plan version is immutable',
+    retryable: false,
+  },
+  ETAG_MISMATCH: { status: 412, title: 'ETag mismatch', retryable: false },
+  PLAN_PAYLOAD_TOO_LARGE: { status: 413, title: 'Test plan payload too large', retryable: false },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

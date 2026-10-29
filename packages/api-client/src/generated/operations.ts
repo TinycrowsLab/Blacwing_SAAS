@@ -2,6 +2,13 @@
 // Do not edit by hand: `pnpm test` fails when this file is stale.
 
 export const OPERATIONS = {
+  addTestCase: {
+    method: 'POST',
+    path: '/v1/test-plans/{planId}/cases',
+    pathParams: ['planId'],
+    queryParams: [],
+    requiredHeaders: ['If-Match', 'Idempotency-Key'],
+  },
   createAssessmentRequest: {
     method: 'POST',
     path: '/v1/assessment-requests',
@@ -13,6 +20,13 @@ export const OPERATIONS = {
     method: 'POST',
     path: '/v1/standing-authorisations',
     pathParams: [],
+    queryParams: [],
+    requiredHeaders: ['Idempotency-Key'],
+  },
+  createTestPlanVersion: {
+    method: 'POST',
+    path: '/v1/runs/{runId}/test-plans',
+    pathParams: ['runId'],
     queryParams: [],
     requiredHeaders: ['Idempotency-Key'],
   },
@@ -79,6 +93,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  getTestPlanVersion: {
+    method: 'GET',
+    path: '/v1/runs/{runId}/test-plans/{version}',
+    pathParams: ['runId', 'version'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   listAssessmentRequests: {
     method: 'GET',
     path: '/v1/assessment-requests',
@@ -125,10 +146,24 @@ export const OPERATIONS = {
     queryParams: ['cursor', 'limit'],
     requiredHeaders: [],
   },
+  listTestPlanVersions: {
+    method: 'GET',
+    path: '/v1/runs/{runId}/test-plans',
+    pathParams: ['runId'],
+    queryParams: ['cursor', 'limit'],
+    requiredHeaders: [],
+  },
   putPersonaOverride: {
     method: 'PUT',
     path: '/v1/personas/{persona}/override',
     pathParams: ['persona'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
+  removeTestCase: {
+    method: 'DELETE',
+    path: '/v1/test-cases/{caseId}',
+    pathParams: ['caseId'],
     queryParams: [],
     requiredHeaders: [],
   },
@@ -185,6 +220,13 @@ export const OPERATIONS = {
     method: 'PATCH',
     path: '/v1/tenant/settings',
     pathParams: [],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
+  },
+  updateTestCase: {
+    method: 'PATCH',
+    path: '/v1/test-cases/{caseId}',
+    pathParams: ['caseId'],
     queryParams: [],
     requiredHeaders: ['If-Match'],
   },

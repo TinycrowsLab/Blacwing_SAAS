@@ -770,3 +770,4 @@ export {
   type GateSubjectType,
   gateSubjectTypeSchema,
 } from './gate/decision.js';
+export * from './test-plan-api.js';

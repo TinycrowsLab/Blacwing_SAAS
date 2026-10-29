@@ -21,7 +21,7 @@ const untouchedDb = new Proxy(
 const TENANT = newId();
 
 function repo(tenant: () => string | undefined = () => TENANT) {
-  return new TestPlanRepository({ db: untouchedDb, tenant });
+  return new TestPlanRepository({ db: untouchedDb, tenant, audit: () => undefined });
 }
 
 /** A valid planned test case; each case overrides one field. */

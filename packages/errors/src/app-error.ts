@@ -262,3 +262,55 @@ export class InternalError extends AppError {
     super('INTERNAL', message, options);
   }
 }
+
+/** `PLAN_NOT_FOUND` (404): the test plan does not exist in the caller's tenant (cross-tenant ids look the same). */
+export class TestPlanNotFoundError extends AppError {
+  declare readonly code: 'PLAN_NOT_FOUND';
+  constructor(options: AppErrorOptions = {}) {
+    super('PLAN_NOT_FOUND', 'test plan not found', {
+      detail: 'The test plan does not exist.',
+      ...options,
+    });
+  }
+}
+
+/** `TEST_CASE_NOT_FOUND` (404): the test case does not exist, or has been removed from its plan. */
+export class TestCaseNotFoundError extends AppError {
+  declare readonly code: 'TEST_CASE_NOT_FOUND';
+  constructor(options: AppErrorOptions = {}) {
+    super('TEST_CASE_NOT_FOUND', 'test case not found', {
+      detail: 'The test case does not exist or has been removed.',
+      ...options,
+    });
+  }
+}
+
+/** `PLAN_VERSION_IMMUTABLE` (409): an approved plan version cannot be edited; the client POSTs a new version. */
+export class PlanVersionImmutableError extends AppError {
+  declare readonly code: 'PLAN_VERSION_IMMUTABLE';
+  constructor(options: AppErrorOptions = {}) {
+    super('PLAN_VERSION_IMMUTABLE', 'approved test plan version is immutable', {
+      detail: 'This plan version is approved. Create a new version to make changes.',
+      ...options,
+    });
+  }
+}
+
+/** `ETAG_MISMATCH` (412): the `If-Match` ETag no longer names the current state of the resource. */
+export class EtagMismatchError extends AppError {
+  declare readonly code: 'ETAG_MISMATCH';
+  constructor(options: AppErrorOptions = {}) {
+    super('ETAG_MISMATCH', 'ETag does not match the current resource', {
+      detail: 'The resource was modified; re-fetch it and retry with the new ETag.',
+      ...options,
+    });
+  }
+}
+
+/** `PLAN_PAYLOAD_TOO_LARGE` (413): a test case payload (targets, budget, oracle) exceeds its ceiling. */
+export class PlanPayloadTooLargeError extends AppError {
+  declare readonly code: 'PLAN_PAYLOAD_TOO_LARGE';
+  constructor(detail: string, options: AppErrorOptions = {}) {
+    super('PLAN_PAYLOAD_TOO_LARGE', 'test plan payload too large', { detail, ...options });
+  }
+}
