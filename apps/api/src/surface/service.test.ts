@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { surfaceRunViewSchema } from '@blackwing/contracts';
+import { type SurfaceNode, surfaceRunViewSchema } from '@blackwing/contracts';
 import { AppError } from '@blackwing/errors';
 
 import {
@@ -155,6 +155,12 @@ describe('surface view: the served view', () => {
         inScope: true,
         confidence: 0.9,
         degree: 2,
+        provenance: {
+          runId: RUN,
+          tool: 'nmap',
+          firstSeenAt: '2026-10-29T10:00:00.000Z',
+          lastSeenAt: '2026-10-29T10:05:00.000Z',
+        },
       },
       {
         id: key(ssh),
@@ -162,6 +168,12 @@ describe('surface view: the served view', () => {
         label: 'hub.example.test:22/tcp',
         confidence: 0.9,
         degree: 1,
+        provenance: {
+          runId: RUN,
+          tool: 'nmap',
+          firstSeenAt: '2026-10-29T10:00:00.000Z',
+          lastSeenAt: '2026-10-29T10:05:00.000Z',
+        },
       },
       {
         id: key(web),
@@ -169,6 +181,12 @@ describe('surface view: the served view', () => {
         label: 'hub.example.test:443/tcp',
         confidence: 0.9,
         degree: 1,
+        provenance: {
+          runId: RUN,
+          tool: 'nmap',
+          firstSeenAt: '2026-10-29T10:00:00.000Z',
+          lastSeenAt: '2026-10-29T10:05:00.000Z',
+        },
       },
     ]);
     expect(view.edges).toEqual([
@@ -224,12 +242,65 @@ describe('surface view: the served view', () => {
     expect(graph.calls[0]?.query).toEqual({
       kinds: ['host', 'service'],
       minConfidence: 0.4,
+      inScopeOnly: false,
       limit: 100,
       nodeCap: 2000,
       edgeCap: 4000,
     });
     expect(graph.calls[0]?.tenantId).toBe(TENANT);
     expect(graph.calls[0]?.runId).toBe(RUN);
+  });
+});
+
+describe('surface view: scope filter and provenance summary', () => {
+  it('forwards the in-scope-only switch to the graph, off by default', async () => {
+    const { service, graph } = build();
+    await service.get(principal(), RUN, { inScopeOnly: 'true' });
+    await service.get(principal(), RUN, {});
+    expect(graph.calls.map((call) => call.query.inScopeOnly)).toEqual([true, false]);
+  });
+
+  it('refuses an in-scope-only flag that is not true or false (INVALID_QUERY)', async () => {
+    const { service, graph } = build();
+    expect(await codeOf(service.get(principal(), RUN, { inScopeOnly: 'yes' }))).toBe(
+      'INVALID_QUERY',
+    );
+    expect(graph.calls).toHaveLength(0);
+  });
+
+  it('refuses a cursor issued for the other scope setting (INVALID_CURSOR)', async () => {
+    const graph = new FakeGraph(surfaceOf([{ node: hub, degree: 1 }]));
+    const { service } = build({ graph });
+    const view = await service.get(principal(), RUN, { inScopeOnly: 'false' });
+    expect(
+      await codeOf(
+        service.get(principal(), RUN, {
+          inScopeOnly: 'true',
+          cursor: view.pageInfo.endCursor ?? '',
+        }),
+      ),
+    ).toBe('INVALID_CURSOR');
+  });
+
+  it('summarises provenance to run, tool and times: session, persona and evidence ids never leave the graph', async () => {
+    const leaky = {
+      ...hub,
+      provenance: {
+        ...hub.provenance,
+        agentSessionId: 'sess-secret',
+        persona: 'recon-lead',
+        sourceEvidenceId: 'ev-raw-123',
+      },
+    } as SurfaceNode;
+    const { service } = build({ graph: new FakeGraph(surfaceOf([{ node: leaky, degree: 0 }])) });
+    const [node] = (await service.get(principal(), RUN, {})).nodes;
+    expect(node?.provenance).toEqual({
+      runId: RUN,
+      tool: 'nmap',
+      firstSeenAt: '2026-10-29T10:00:00.000Z',
+      lastSeenAt: '2026-10-29T10:05:00.000Z',
+    });
+    expect(JSON.stringify(node)).not.toMatch(/sess-secret|recon-lead|ev-raw-123/);
   });
 });
 

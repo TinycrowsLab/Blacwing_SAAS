@@ -1247,6 +1247,14 @@ export interface components {
         inScope?: boolean;
         confidence: number;
         degree: number;
+        provenance: {
+          runId: string;
+          tool?: string;
+          /** Format: date-time */
+          firstSeenAt: string;
+          /** Format: date-time */
+          lastSeenAt: string;
+        };
       }[];
       edges: {
         /** @enum {string} */
@@ -2166,6 +2174,8 @@ export interface operations {
         kinds?: string;
         /** @description Keep nodes and edges with provenance confidence at least this (0 to 1). */
         minConfidence?: number;
+        /** @description true keeps only nodes not marked out of scope (hosts with inScope false are dropped). The graph applies it, so truncation and totals reflect the filter. */
+        inScopeOnly?: 'true' | 'false';
         /** @description Opaque cursor: the pageInfo.endCursor of the previous page. */
         cursor?: string;
         /** @description Nodes per page, 1 to 200. Larger or non-numeric values answer 400 INVALID_QUERY. */
@@ -2195,7 +2205,13 @@ export interface operations {
            *           "label": "api.example.test",
            *           "inScope": true,
            *           "confidence": 0.9,
-           *           "degree": 1
+           *           "degree": 1,
+           *           "provenance": {
+           *             "runId": "01890a5d-ac96-774b-bcce-b302099a8058",
+           *             "tool": "nmap",
+           *             "firstSeenAt": "2026-10-29T10:00:00.000Z",
+           *             "lastSeenAt": "2026-10-29T10:05:00.000Z"
+           *           }
            *         }
            *       ],
            *       "edges": [],

@@ -68,6 +68,17 @@ describe('Cypher templates bind $tenantId', () => {
     }
   });
 
+  it('applies the in-scope filter to every run-surface template, so it is enforced in the graph', () => {
+    for (const template of [
+      runSurfaceNodeCountCypher(),
+      runSurfaceEdgeCountCypher(),
+      runSurfaceRankedCypher(),
+    ]) {
+      expect(template).toContain('NOT $inScopeOnly OR');
+      expect(template).toContain('.inScope IS NULL OR');
+    }
+  });
+
   it('ranks and caps the run surface in Cypher, not in application code', () => {
     const ranked = runSurfaceRankedCypher();
     expect(ranked).toContain('count(r) AS degree');

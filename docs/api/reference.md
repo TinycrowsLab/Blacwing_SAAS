@@ -2521,13 +2521,14 @@ Requires run:read in the caller tenant and the Cedar surface policy (an asset ow
 - Operation ID: `getRunSurface`
 - Authentication: `bearerAuth` or `sessionCookie`
 
-| Parameter       | In    | Required | Type          | Description                                                                                       |
-| --------------- | ----- | -------- | ------------- | ------------------------------------------------------------------------------------------------- |
-| `runId`         | path  | yes      | string (uuid) |                                                                                                   |
-| `kinds`         | query | no       | string        | Comma-separated node kinds to keep (asset, host, service, technology, endpoint, parameter, role). |
-| `minConfidence` | query | no       | number        | Keep nodes and edges with provenance confidence at least this (0 to 1).                           |
-| `cursor`        | query | no       | string        | Opaque cursor: the pageInfo.endCursor of the previous page.                                       |
-| `limit`         | query | no       | integer       | Nodes per page, 1 to 200. Larger or non-numeric values answer 400 INVALID_QUERY.                  |
+| Parameter       | In    | Required | Type                      | Description                                                                                                                                              |
+| --------------- | ----- | -------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `runId`         | path  | yes      | string (uuid)             |                                                                                                                                                          |
+| `kinds`         | query | no       | string                    | Comma-separated node kinds to keep (asset, host, service, technology, endpoint, parameter, role).                                                        |
+| `minConfidence` | query | no       | number                    | Keep nodes and edges with provenance confidence at least this (0 to 1).                                                                                  |
+| `inScopeOnly`   | query | no       | enum: `"true"`, `"false"` | true keeps only nodes not marked out of scope (hosts with inScope false are dropped). The graph applies it, so truncation and totals reflect the filter. |
+| `cursor`        | query | no       | string                    | Opaque cursor: the pageInfo.endCursor of the previous page.                                                                                              |
+| `limit`         | query | no       | integer                   | Nodes per page, 1 to 200. Larger or non-numeric values answer 400 INVALID_QUERY.                                                                         |
 
 #### Response 200
 
@@ -2546,7 +2547,13 @@ Example: Example.
       "label": "api.example.test",
       "inScope": true,
       "confidence": 0.9,
-      "degree": 1
+      "degree": 1,
+      "provenance": {
+        "runId": "01890a5d-ac96-774b-bcce-b302099a8058",
+        "tool": "nmap",
+        "firstSeenAt": "2026-10-29T10:00:00.000Z",
+        "lastSeenAt": "2026-10-29T10:05:00.000Z"
+      }
     }
   ],
   "edges": [],
@@ -22606,9 +22613,35 @@ Full schema:
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "provenance": {
+            "type": "object",
+            "properties": {
+              "runId": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              "tool": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "firstSeenAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              },
+              "lastSeenAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              }
+            },
+            "required": ["runId", "firstSeenAt", "lastSeenAt"],
+            "additionalProperties": false
           }
         },
-        "required": ["id", "kind", "label", "confidence", "degree"],
+        "required": ["id", "kind", "label", "confidence", "degree", "provenance"],
         "additionalProperties": false
       }
     },

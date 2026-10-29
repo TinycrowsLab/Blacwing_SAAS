@@ -23,6 +23,8 @@ export interface SurfaceQuery {
   /** Node kinds to keep; absent keeps every kind. */
   readonly kinds?: readonly SurfaceNodeKind[];
   readonly minConfidence: number;
+  /** Drop hosts marked out of scope; nodes of other kinds carry no scope flag and are kept. */
+  readonly inScopeOnly: boolean;
   /** The opaque cursor of the page to continue, as the server issued it. */
   readonly cursor?: string;
   readonly limit: number;
@@ -31,6 +33,7 @@ export interface SurfaceQuery {
 const querySchema = z.object({
   kinds: z.string().max(GRAPH_VIZ_KINDS_PARAM_MAX).optional(),
   minConfidence: z.string().regex(UNIT_INTERVAL).transform(Number).optional(),
+  inScopeOnly: z.enum(['true', 'false']).optional(),
   cursor: z.string().min(1).max(MAX_CURSOR_LENGTH).optional(),
   limit: z
     .string()
@@ -72,6 +75,7 @@ export function parseSurfaceQuery(raw: Readonly<Record<string, unknown>>): Surfa
   return {
     ...(kinds === undefined ? {} : { kinds }),
     minConfidence: parsed.data.minConfidence ?? 0,
+    inScopeOnly: parsed.data.inScopeOnly === 'true',
     ...(parsed.data.cursor === undefined ? {} : { cursor: parsed.data.cursor }),
     limit: parsed.data.limit ?? GRAPH_VIZ_DEFAULT_LIMIT,
   };

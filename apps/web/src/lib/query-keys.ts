@@ -39,6 +39,9 @@ export function createResourceKeys<Id extends string = string>(resource: string)
 /** Query-key factory used by every console query (CONSOLE-005). Feature epics add their resources here. */
 export const qk = {
   runs: createResourceKeys('runs'),
+  /** The surface view of one run for one filter state (`runs/:id/surface`, GRAPH-006); pages are infinite. */
+  surface: (runId: string, filters: ListFilters): readonly [string, string, string, object] =>
+    ['runs', runId, 'surface', normalise(filters)] as const,
   /** Read-only GraphQL operations, keyed by operation name and variables (CONSOLE-005 / GRAPHQL client). */
   graphql: (operationName: string, variables: object): readonly [string, string, object] =>
     ['graphql', operationName, variables] as const,

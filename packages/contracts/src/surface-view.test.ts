@@ -9,6 +9,12 @@ const NODE = {
   inScope: true,
   confidence: 0.9,
   degree: 1,
+  provenance: {
+    runId: '018f2a6e-1c00-7000-8000-000000000001',
+    tool: 'nmap',
+    firstSeenAt: '2026-10-01T10:00:00.000Z',
+    lastSeenAt: '2026-10-01T10:05:00.000Z',
+  },
 };
 
 const VIEW = {
@@ -29,6 +35,24 @@ describe('surface run view contract', () => {
   it('rejects a field outside the view, so raw graph properties never reach the wire', () => {
     const leaked = { ...VIEW, nodes: [{ ...NODE, banner: 'nginx 1.25' }] };
     expect(surfaceRunViewSchema.safeParse(leaked).success).toBe(false);
+  });
+
+  it('keeps the provenance summary to run, tool and times: session, persona and evidence never reach the wire', () => {
+    const withSession = {
+      ...NODE,
+      provenance: { ...NODE.provenance, agentSessionId: 'sess-1' },
+    };
+    const withEvidence = {
+      ...NODE,
+      provenance: { ...NODE.provenance, sourceEvidenceId: 'ev-1' },
+    };
+    expect(surfaceRunViewSchema.safeParse({ ...VIEW, nodes: [withSession] }).success).toBe(false);
+    expect(surfaceRunViewSchema.safeParse({ ...VIEW, nodes: [withEvidence] }).success).toBe(false);
+  });
+
+  it('requires the provenance summary of every node', () => {
+    const bare = { ...NODE, provenance: undefined };
+    expect(surfaceRunViewSchema.safeParse({ ...VIEW, nodes: [bare] }).success).toBe(false);
   });
 
   it('rejects a layout hint other than the asset cluster', () => {

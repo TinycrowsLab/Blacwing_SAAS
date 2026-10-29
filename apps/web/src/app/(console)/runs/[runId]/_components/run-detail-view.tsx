@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -92,6 +94,14 @@ export function RunDetailView({
         {...(killControl ? { killSlot: killControl } : {})}
       />
       <RunStateTimeline state={run.state} pauseReason={run.pauseReason} />
+      <nav aria-label="Run views" className="text-sm">
+        <Link
+          href={`/runs/${run.publicId}/surface`}
+          className="text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          View attack surface
+        </Link>
+      </nav>
       {error !== null && (
         <p role="status" className="text-sm text-warning" data-testid="run-stale-warning">
           Live refresh is failing; the state shown may be out of date.

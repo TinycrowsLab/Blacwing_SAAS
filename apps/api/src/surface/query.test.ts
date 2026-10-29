@@ -6,7 +6,14 @@ import { parseSurfaceQuery } from './query.js';
 
 describe('parseSurfaceQuery', () => {
   it('applies the defaults: every kind, no confidence floor, a page of 100', () => {
-    expect(parseSurfaceQuery({})).toEqual({ minConfidence: 0, limit: 100 });
+    expect(parseSurfaceQuery({})).toEqual({ minConfidence: 0, inScopeOnly: false, limit: 100 });
+  });
+
+  it('reads the in-scope-only switch as a strict true or false', () => {
+    expect(parseSurfaceQuery({ inScopeOnly: 'true' }).inScopeOnly).toBe(true);
+    expect(parseSurfaceQuery({ inScopeOnly: 'false' }).inScopeOnly).toBe(false);
+    expect(() => parseSurfaceQuery({ inScopeOnly: '1' })).toThrow(AppError);
+    expect(() => parseSurfaceQuery({ inScopeOnly: 'TRUE' })).toThrow(AppError);
   });
 
   it('parses a kind list, a confidence floor, a limit and a cursor', () => {
@@ -20,6 +27,7 @@ describe('parseSurfaceQuery', () => {
     ).toEqual({
       kinds: ['host', 'service'],
       minConfidence: 0.5,
+      inScopeOnly: false,
       limit: 200,
       cursor: 'abc.def',
     });

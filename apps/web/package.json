@@ -48,6 +48,7 @@
     "next": "15.5.28",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "react-force-graph-2d": "1.29.1",
     "react-hook-form": "7.90.0",
     "zod": "catalog:"
   }

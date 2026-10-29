@@ -17,6 +17,7 @@ const CURSOR_SECRET = 'x'.repeat(CURSOR_SECRET_LENGTH);
 
 const PROVENANCE = {
   runId: RUN,
+  tool: 'nmap',
   confidence: 0.9,
   firstSeenAt: '2026-10-29T10:00:00.000Z',
   lastSeenAt: '2026-10-29T10:05:00.000Z',

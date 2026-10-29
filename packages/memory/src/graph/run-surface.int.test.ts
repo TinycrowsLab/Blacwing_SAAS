@@ -82,6 +82,14 @@ const SERVICES = [
   service(TENANT_A, 'hub.example.test', 443),
 ];
 const ALL_NODES = [HUB, LEAF, LEAF_LOW, ...SERVICES];
+// A host of the other run that is marked out of scope: the in-scope filter must drop it.
+const OUT_OF_SCOPE_HOST: SurfaceNode = {
+  kind: 'host',
+  tenantId: TENANT_A,
+  provenance: provenance(OTHER_RUN_ID),
+  hostname: 'out-of-scope.example.test',
+  inScope: false,
+};
 const ALL_KEYS = ALL_NODES.map((node) => naturalKey(node));
 
 beforeAll(async () => {
@@ -104,10 +112,14 @@ beforeAll(async () => {
     },
     { runtime },
   );
-  // A node of another run in the same tenant must never appear in RUN_ID's surface.
+  // A node of another run in the same tenant must never appear in RUN_ID's surface. One host of that run is marked
+  // out of scope, for the in-scope filter.
   await withTenantGraph(
     TENANT_A,
-    (repo) => repo.writeNode(host(TENANT_A, 'other-run.example.test', OTHER_RUN_ID)),
+    async (repo) => {
+      await repo.writeNode(host(TENANT_A, 'other-run.example.test', OTHER_RUN_ID));
+      await repo.writeNode(OUT_OF_SCOPE_HOST);
+    },
     { runtime },
   );
 }, 180_000);
@@ -118,7 +130,10 @@ afterAll(async () => {
 });
 
 async function readAll(
-  query: Partial<typeof QUERY> & { readonly kinds?: readonly ('host' | 'service')[] },
+  query: Partial<typeof QUERY> & {
+    readonly kinds?: readonly ('host' | 'service')[];
+    readonly inScopeOnly?: boolean;
+  },
   runId = RUN_ID,
   tenantId = TENANT_A,
 ) {
@@ -134,6 +149,21 @@ describe('run surface read against Neo4j 5', () => {
     expect(surface.nodes.map((entry) => naturalKey(entry.node))).not.toContain(
       naturalKey(host(TENANT_A, 'other-run.example.test', OTHER_RUN_ID)),
     );
+  });
+
+  it('drops hosts marked out of scope when asked, and keeps nodes that carry no scope flag', async () => {
+    const hostnames = (surface: { readonly nodes: readonly { readonly node: SurfaceNode }[] }) =>
+      surface.nodes.map((entry) =>
+        entry.node.kind === 'host' ? entry.node.hostname : entry.node.kind,
+      );
+    const all = await readAll({}, OTHER_RUN_ID);
+    expect(hostnames(all)).toContain('out-of-scope.example.test');
+    const inScope = await readAll({ inScopeOnly: true }, OTHER_RUN_ID);
+    expect(hostnames(inScope)).toEqual(['other-run.example.test']);
+    expect(inScope.totals.nodes).toBe(1);
+    // Services carry no scope flag at all: the filter must not drop them.
+    const surface = await readAll({ inScopeOnly: true });
+    expect(surface.totals.nodes).toBe(ALL_NODES.length);
   });
 
   it('ranks by degree, so the cap keeps the hub, and returns only edges within the kept nodes', async () => {

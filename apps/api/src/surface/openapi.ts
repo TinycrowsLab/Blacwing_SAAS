@@ -71,6 +71,14 @@ export function surfaceOpenApiModule(): OpenApiModule {
               schema: { type: 'number', minimum: 0, maximum: 1, default: 0 },
             },
             {
+              name: 'inScopeOnly',
+              in: 'query',
+              required: false,
+              description:
+                'true keeps only nodes not marked out of scope (hosts with inScope false are dropped). The graph applies it, so truncation and totals reflect the filter.',
+              schema: { type: 'string', enum: ['true', 'false'], default: 'false' },
+            },
+            {
               name: 'cursor',
               in: 'query',
               required: false,
@@ -101,6 +109,12 @@ export function surfaceOpenApiModule(): OpenApiModule {
                         inScope: true,
                         confidence: 0.9,
                         degree: 1,
+                        provenance: {
+                          runId: '01890a5d-ac96-774b-bcce-b302099a8058',
+                          tool: 'nmap',
+                          firstSeenAt: '2026-10-29T10:00:00.000Z',
+                          lastSeenAt: '2026-10-29T10:05:00.000Z',
+                        },
                       },
                     ],
                     edges: [],

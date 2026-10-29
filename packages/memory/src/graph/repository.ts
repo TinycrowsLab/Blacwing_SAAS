@@ -145,6 +145,8 @@ export interface RunSurfaceQuery {
   readonly kinds?: readonly SurfaceNodeKind[];
   /** Keep nodes and edges whose provenance confidence is at least this (0 to 1). */
   readonly minConfidence: number;
+  /** Drop hosts marked out of scope (`inScope = false`); nodes of other kinds carry no scope flag and stay. */
+  readonly inScopeOnly?: boolean;
   /** Natural key of the last node of the previous page; the page continues after it. */
   readonly after?: string;
   /** Page size, 1 to {@link LIST_PAGE_MAX}. */
@@ -186,6 +188,7 @@ const runIdsSchema = z.array(runIdSchema).max(SUMMARY_RUNS_MAX);
 const runSurfaceQuerySchema = z.object({
   kinds: z.array(surfaceNodeKindSchema).min(1).optional(),
   minConfidence: z.number().min(0).max(1),
+  inScopeOnly: z.boolean().optional(),
   after: keySchema.optional(),
   limit: z.int().min(1).max(LIST_PAGE_MAX),
   nodeCap: z.int().min(1),
@@ -469,6 +472,7 @@ export class SurfaceGraphRepository {
       runId: parsedRunId,
       kinds: parsed.kinds === undefined ? null : [...parsed.kinds],
       minConfidence: parsed.minConfidence,
+      inScopeOnly: parsed.inScopeOnly === true,
     };
     return this.#transact('readRunSurface', 'READ', async (tx) => {
       const read = async (cypher: string, params: Record<string, unknown>) =>

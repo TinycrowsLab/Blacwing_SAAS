@@ -226,6 +226,22 @@ describe('surface-graph repository: run surface read (GRAPH-006)', () => {
     expect((edgeQuery?.params.limit as { toNumber(): number }).toNumber()).toBe(2);
   });
 
+  it('sends the scope filter to every surface query, off unless the caller asks for in-scope only', async () => {
+    const graph = fakeGraphRouted(() => []);
+    const repo = new SurfaceGraphRepository(graph.runtime);
+    await withTenantGraph(TENANT_A, () => repo.readRunSurface(RUN_ID, RUN_QUERY), {
+      runtime: graph.runtime,
+    });
+    await withTenantGraph(
+      TENANT_A,
+      () => repo.readRunSurface(RUN_ID, { ...RUN_QUERY, inScopeOnly: true }),
+      { runtime: graph.runtime },
+    );
+    const flags = graph.queries.map((q) => q.params.inScopeOnly);
+    expect(flags.slice(0, 2)).toEqual([false, false]);
+    expect(flags.slice(-2)).toEqual([true, true]);
+  });
+
   it('sends no edge query for an empty surface and answers empty totals', async () => {
     const graph = fakeGraphRouted((cypher) =>
       cypher.includes('count(n)') || cypher.includes('count(r) AS count') ? [countRow(0)] : [],

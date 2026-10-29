@@ -20,7 +20,7 @@ import {
 } from '@blackwing/errors';
 
 import { GRAPH_VIZ_MAX_EDGES, GRAPH_VIZ_MAX_NODES } from './limits.js';
-import { parseSurfaceQuery } from './query.js';
+import { parseSurfaceQuery, type SurfaceQuery } from './query.js';
 import { TRACER_NAME } from '../bootstrap/request-context.js';
 
 import type { SurfaceMetrics } from './metrics.js';
@@ -87,24 +87,40 @@ function clip(value: string): string {
 }
 
 function nodeView(node: SurfaceNode, degree: number): SurfaceNodeView {
+  const { provenance } = node;
   return {
     id: naturalKey(node),
     kind: node.kind,
     label: clip(labelOf(node)),
     ...(node.kind === 'host' ? { inScope: node.inScope } : {}),
-    confidence: node.provenance.confidence,
+    confidence: provenance.confidence,
     degree,
+    provenance: {
+      runId: provenance.runId,
+      ...(provenance.tool === undefined ? {} : { tool: provenance.tool }),
+      firstSeenAt: provenance.firstSeenAt,
+      lastSeenAt: provenance.lastSeenAt,
+    },
   };
 }
 
-/** The cursor signature: a cursor is valid only for the run, the kinds and the confidence it was issued for. */
+/**
+ * The cursor signature: a cursor is valid only for the run and the filters it was issued for, so a page cannot be
+ * replayed against a different selection.
+ */
 function signatureOf(
   runId: string,
-  kinds: readonly string[] | undefined,
-  minConfidence: number,
+  query: Pick<SurfaceQuery, 'kinds' | 'minConfidence' | 'inScopeOnly'>,
 ): string {
   return createHash('sha256')
-    .update(JSON.stringify({ runId, kinds: kinds ?? null, minConfidence }))
+    .update(
+      JSON.stringify({
+        runId,
+        kinds: query.kinds ?? null,
+        minConfidence: query.minConfidence,
+        inScopeOnly: query.inScopeOnly,
+      }),
+    )
     .digest('base64url');
 }
 
@@ -182,12 +198,13 @@ export class SurfaceService {
     );
     if (!allowed) throw notPermitted();
 
-    const signature = signatureOf(runId, query.kinds, query.minConfidence);
+    const signature = signatureOf(runId, query);
     const after =
       query.cursor === undefined ? undefined : this.#decodeCursor(query.cursor, signature);
     const surface = await this.#deps.graph.readRunSurface(tenantId, runId, {
       ...(query.kinds === undefined ? {} : { kinds: query.kinds }),
       minConfidence: query.minConfidence,
+      inScopeOnly: query.inScopeOnly,
       ...(after === undefined ? {} : { after }),
       limit: query.limit,
       nodeCap: this.#nodeCap,

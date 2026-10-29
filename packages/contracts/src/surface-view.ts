@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { runStateSchema } from './entities/run.js';
+import { isoDateTimeSchema, uuidV7Schema } from './primitives.js';
 import { surfaceEdgeKindSchema, surfaceNodeKindSchema } from './surface.js';
 
 /**
@@ -18,6 +19,17 @@ const VIEW_KEY_MAX = 4096;
 /** Longest label carried for one node. */
 export const SURFACE_VIEW_LABEL_MAX = 256;
 
+/**
+ * How a node was found: the run, the tool that reported it and when. A summary for the inspector, never the raw
+ * evidence, the agent session or the persona (those stay in the graph).
+ */
+const surfaceNodeProvenanceViewSchema = z.strictObject({
+  runId: uuidV7Schema,
+  tool: z.string().min(1).max(SURFACE_VIEW_LABEL_MAX).optional(),
+  firstSeenAt: isoDateTimeSchema,
+  lastSeenAt: isoDateTimeSchema,
+});
+
 /** One node of the view. `id` is the node's natural key, unique within the tenant. */
 export const surfaceNodeViewSchema = z.strictObject({
   id: z.string().min(1).max(VIEW_KEY_MAX),
@@ -27,6 +39,7 @@ export const surfaceNodeViewSchema = z.strictObject({
   confidence: z.number().min(0).max(1),
   /** Edges of this node among the nodes of the view (the basis of the server-side selection). */
   degree: z.int().min(0),
+  provenance: surfaceNodeProvenanceViewSchema,
 });
 export type SurfaceNodeView = z.infer<typeof surfaceNodeViewSchema>;
 

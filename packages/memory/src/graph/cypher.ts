@@ -134,8 +134,9 @@ export function runEndpointsCypher(): string {
 
 /**
  * The candidate predicate of the run surface for one node or edge variable: in the ambient tenant, first seen or
- * last refreshed by the run (`provenance_runId`), of the wanted kinds (all kinds when `$kinds` is null) and at least
- * `$minConfidence`. Every term is parameterised; only the variable name is interpolated, and it is one of this file's.
+ * last refreshed by the run (`provenance_runId`), of the wanted kinds (all kinds when `$kinds` is null), at least
+ * `$minConfidence`, and not marked out of scope when `$inScopeOnly` is set. Every term is parameterised; only the
+ * variable name is interpolated, and it is one of this file's.
  */
 function candidate(variable: string): string {
   return [
@@ -143,6 +144,7 @@ function candidate(variable: string): string {
     `${variable}.provenance_runId = $runId`,
     `($kinds IS NULL OR ${variable}.kind IN $kinds)`,
     `${variable}.provenance_confidence >= $minConfidence`,
+    `(NOT $inScopeOnly OR ${variable}.inScope IS NULL OR ${variable}.inScope = true)`,
   ].join(' AND ');
 }
 

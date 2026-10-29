@@ -76,7 +76,7 @@ export const OPERATIONS = {
     method: 'GET',
     path: '/v1/runs/{runId}/surface',
     pathParams: ['runId'],
-    queryParams: ['kinds', 'minConfidence', 'cursor', 'limit'],
+    queryParams: ['kinds', 'minConfidence', 'inScopeOnly', 'cursor', 'limit'],
     requiredHeaders: [],
   },
   getStandingAuthorisation: {
