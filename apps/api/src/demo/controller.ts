@@ -3,10 +3,11 @@
 // Fail closed: a missing or wrong token is 401, an unknown user is 401, and nothing else is reachable.
 import { timingSafeEqual } from 'node:crypto';
 
-import { Controller, Get, Headers, HttpCode, HttpStatus, Inject, Param, Post } from '@nestjs/common';
+import { Controller, Get, Headers, HttpCode, HttpStatus, Inject, Param, Post, UseFilters } from '@nestjs/common';
 import { z } from 'zod';
 
 import { DEMO_INTRUSIVENESS, DEMO_TEST_CASE } from './catalogue.js';
+import { DemoRefusalFilter } from './filter.js';
 import { REPORT_FORMATS, renderReport, type ReportFormat } from './report.js';
 import { DemoRefusal, type DemoActor, type DemoService } from './service.js';
 import { DEMO_CONFIG, DEMO_SERVICE, DEMO_STORE } from './tokens.js';
@@ -63,6 +64,7 @@ function tokenMatches(presented: string | undefined, expected: string): boolean 
 }
 
 @PublicRoute()
+@UseFilters(DemoRefusalFilter)
 @Controller('demo')
 export class DemoController {
   constructor(
