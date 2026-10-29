@@ -236,7 +236,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -260,6 +260,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -615,7 +625,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -639,6 +649,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -707,7 +727,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -751,6 +771,16 @@
                       "title": "Invalid scope rule",
                       "status": 422,
                       "code": "SCOPE_INVALID_RULE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_INVALID_WINDOW": {
+                    "summary": "Invalid standing authorisation window",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+                      "title": "Invalid standing authorisation window",
+                      "status": 422,
+                      "code": "AUTHZ_INVALID_WINDOW",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -1022,7 +1052,9 @@
                 "tenant.settings_updated",
                 "auth.operator_login",
                 "auth.operator_logout",
-                "auth.operator_session_revoked"
+                "auth.operator_session_revoked",
+                "authz.sa.created",
+                "authz.sa.state_changed"
               ]
             },
             "example": "kill.fired"
@@ -1314,7 +1346,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1338,6 +1370,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -1704,7 +1746,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1728,6 +1770,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -2076,7 +2128,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2100,6 +2152,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -2168,7 +2230,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2212,6 +2274,16 @@
                       "title": "Invalid scope rule",
                       "status": 422,
                       "code": "SCOPE_INVALID_RULE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_INVALID_WINDOW": {
+                    "summary": "Invalid standing authorisation window",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+                      "title": "Invalid standing authorisation window",
+                      "status": 422,
+                      "code": "AUTHZ_INVALID_WINDOW",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -2608,7 +2680,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2632,6 +2704,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -3008,7 +3090,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3032,6 +3114,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -3439,7 +3531,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3463,6 +3555,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -4021,7 +4123,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4045,6 +4147,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -4577,7 +4689,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4601,6 +4713,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -5152,7 +5274,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5176,6 +5298,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -5244,7 +5376,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5288,6 +5420,16 @@
                       "title": "Invalid scope rule",
                       "status": 422,
                       "code": "SCOPE_INVALID_RULE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_INVALID_WINDOW": {
+                    "summary": "Invalid standing authorisation window",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+                      "title": "Invalid standing authorisation window",
+                      "status": 422,
+                      "code": "AUTHZ_INVALID_WINDOW",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -5907,7 +6049,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, AUTHZ_ILLEGAL_TRANSITION, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, RUN_NOT_ACTIVE, SECRET_DISABLED, KEYCLOAK_CONFLICT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5931,6 +6073,16 @@
                       "title": "Illegal run state transition",
                       "status": 409,
                       "code": "ILLEGAL_RUN_TRANSITION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ILLEGAL_TRANSITION": {
+                    "summary": "Illegal standing authorisation transition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+                      "title": "Illegal standing authorisation transition",
+                      "status": 409,
+                      "code": "AUTHZ_ILLEGAL_TRANSITION",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -6021,7 +6173,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, AUDIT_EVENT_INVALID.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6065,6 +6217,16 @@
                       "title": "Invalid scope rule",
                       "status": 422,
                       "code": "SCOPE_INVALID_RULE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_INVALID_WINDOW": {
+                    "summary": "Invalid standing authorisation window",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+                      "title": "Invalid standing authorisation window",
+                      "status": 422,
+                      "code": "AUTHZ_INVALID_WINDOW",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -6410,7 +6572,9 @@
               "tenant.settings_updated",
               "auth.operator_login",
               "auth.operator_logout",
-              "auth.operator_session_revoked"
+              "auth.operator_session_revoked",
+              "authz.sa.created",
+              "authz.sa.state_changed"
             ]
           },
           "severity": {
