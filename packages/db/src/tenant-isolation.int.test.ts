@@ -45,6 +45,41 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [id, tenantId, `areq_${id.replaceAll('-', '')}`, newId()],
     );
   },
+  findings: async (tx, tenantId) => {
+    const id = newId();
+    await tx.query(
+      `INSERT INTO findings (id, tenant_id, public_id, fingerprint, title, class, asset_id, location, status, run_id, first_seen_run_id, last_seen_run_id)
+       VALUES ($1, $2, $3, $4, 'iso finding', 'iso_class', $5, '{"urlTemplate":"/iso"}', 'candidate', $5, $5, $5)`,
+      [
+        id,
+        tenantId,
+        `fnd_${id.replaceAll('-', '')}`,
+        createHash('sha256').update(randomBytes(8)).digest('hex'),
+        newId(),
+      ],
+    );
+  },
+  finding_occurrences: async (tx, tenantId) => {
+    const findingId = newId();
+    const runId = newId();
+    await tx.query(
+      `INSERT INTO findings (id, tenant_id, public_id, fingerprint, title, class, asset_id, location, status, run_id, first_seen_run_id, last_seen_run_id)
+       VALUES ($1, $2, $3, $4, 'iso finding', 'iso_class', $5, '{"urlTemplate":"/iso"}', 'candidate', $6, $6, $6)`,
+      [
+        findingId,
+        tenantId,
+        `fnd_${findingId.replaceAll('-', '')}`,
+        createHash('sha256').update(randomBytes(8)).digest('hex'),
+        newId(),
+        runId,
+      ],
+    );
+    await tx.query(
+      `INSERT INTO finding_occurrences (id, tenant_id, finding_id, run_id, occurrence_status, detected_at)
+       VALUES ($1, $2, $3, $4, 'detected', now())`,
+      [newId(), tenantId, findingId, runId],
+    );
+  },
   input_manifests: async (tx, tenantId) => {
     await tx.query(`INSERT INTO input_manifests (id, tenant_id) VALUES ($1, $2)`, [
       newId(),

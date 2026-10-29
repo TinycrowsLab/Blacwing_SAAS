@@ -84,16 +84,17 @@ export const findingSchema = z
     fingerprint: sha256HexSchema,
     title: labelSchema,
     class: z.string().min(1).max(LIMITS.shortTextMax),
-    cweId: cweIdSchema,
-    owaspCategory: z.string().min(1).max(LIMITS.shortTextMax),
-    severity: severitySchema,
+    cweId: cweIdSchema.nullable(),
+    owaspCategory: z.string().min(1).max(LIMITS.shortTextMax).nullable(),
+    /** Null until the validator scores the finding (FINDING-005). */
+    severity: severitySchema.nullable(),
     location: findingLocationSchema,
     status: findingStatusSchema,
     baselineStatus: baselineStatusSchema.nullable(),
     firstSeenRunId: uuidV7Schema,
     lastSeenRunId: uuidV7Schema,
-    /** Validator confidence in [0, 1]. */
-    confidence: z.number().min(0).max(1),
+    /** Validator confidence in [0, 1]; null until it is judged (FINDING-007). */
+    confidence: z.number().min(0).max(1).nullable(),
     acceptedRisk: acceptedRiskSchema.nullable(),
     releasedBy: uuidV7Schema.nullable(),
     releasedAt: isoDateTimeSchema.nullable(),

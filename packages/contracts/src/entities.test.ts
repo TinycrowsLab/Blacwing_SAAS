@@ -431,6 +431,24 @@ describe('finding (§3.4)', () => {
     ).toBe(true);
   });
 
+  it('accepts the unscored, untriaged shape the database stores before FINDING-005/007', () => {
+    expect(
+      findingSchema.safeParse({
+        ...finding,
+        severity: null,
+        confidence: null,
+        cweId: null,
+        owaspCategory: null,
+        baselineStatus: null,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects an unknown lifecycle status and an unknown baseline status', () => {
+    expect(findingSchema.safeParse({ ...finding, status: 'pwned' }).success).toBe(false);
+    expect(findingSchema.safeParse({ ...finding, baselineStatus: 'stale' }).success).toBe(false);
+  });
+
   it('rejects out-of-range scores and confidences', () => {
     expect(findingSchema.safeParse({ ...finding, confidence: 1.5 }).success).toBe(false);
     expect(

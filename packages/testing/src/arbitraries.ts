@@ -151,6 +151,6 @@ export const findingArbitrary = (): fc.Arbitrary<Finding> =>
       const base = factories.makeFinding();
       return factories.makeFinding({
         ...overrides,
-        severity: { ...base.severity, cvssV4Score: score / TENTHS },
+        severity: base.severity === null ? null : { ...base.severity, cvssV4Score: score / TENTHS },
       });
     });
