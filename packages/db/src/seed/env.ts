@@ -22,6 +22,13 @@ export const seedEnvSchema = z.object({
   BW_TARGET_JUICE_SHOP_URL: zUrl({ protocols: ['http:', 'https:'] }).default(
     'http://127.0.0.1:13000',
   ),
+  /**
+   * The address the egress gateway targets (#880): the compose service name on the lab network. It must
+   * never be `localhost`; the seeded private-range rule is refused otherwise.
+   */
+  BW_TARGET_JUICE_SHOP_GATEWAY_URL: zUrl({ protocols: ['http:', 'https:'] }).default(
+    'http://juice-shop:3000',
+  ),
   BW_DEV_KEYCLOAK_PUBLIC_URL: zUrl({ protocols: ['http:', 'https:'] }).default(
     'http://localhost:18080',
   ),

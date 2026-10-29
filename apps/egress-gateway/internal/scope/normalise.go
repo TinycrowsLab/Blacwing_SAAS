@@ -107,6 +107,14 @@ func fromAddr(a netip.Addr) u128 {
 	return u128{binary.BigEndian.Uint64(b[:8]), binary.BigEndian.Uint64(b[8:])}
 }
 
+// addr returns the address in its netip form (IPv4-mapped values stay mapped).
+func (a u128) addr() netip.Addr {
+	var b [16]byte
+	binary.BigEndian.PutUint64(b[:8], a.hi)
+	binary.BigEndian.PutUint64(b[8:], a.lo)
+	return netip.AddrFrom16(b)
+}
+
 func (a u128) mask(prefix int) u128 {
 	switch {
 	case prefix <= 0:

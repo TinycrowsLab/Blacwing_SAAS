@@ -121,6 +121,18 @@ used in audit events; secret fields contribute only whether they are set.
 `redis://127.0.0.1:16379/0` and a snapshot path under `bin/dev/` that does not exist,
 so the dev gateway stays not ready.
 
+## Private-range scope (lab only, #880)
+
+Blocked ranges stay blocked unless a scope rule explicitly includes the address (CONTEXT_PACK §8.2).
+Loopback (`127.0.0.0/8`, `::1`), link-local (`169.254.0.0/16`, `fe80::/10`) and the metadata addresses are
+**never** admitted, not even by a rule that names them. Any other private range needs a rule that the lab
+gate (`internal/scope/lab.go`, `ParseLabRules`) admits: `BW_ENV` is `dev` or `test`, the lab asset passed the
+dev attest path, and the rule's cidr sits inside a verified lab network that is itself private. The gateway
+snapshot loader must use `ParseLabRules`, so a refused rule never loads. Dials are re-checked against the
+pinned IP at connect time (`netguard.DialControl`), so a DNS answer that moves to another private address is
+refused. A redirect that leaves the rule is out of scope (`proxy.RedirectInScope`). The TypeScript rule-creation
+gate is `assertLabScope` in `@blackwing/contracts` and uses the same table.
+
 ## Management plane and readiness
 
 The management plane is its own listener and mux; data planes never share it.

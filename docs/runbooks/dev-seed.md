@@ -23,8 +23,9 @@ is written. A step left out by `--only` is not reported as skipped. `--reset` cl
 whatever `--only` says, so a reset never leaves a child row behind its deleted asset.
 
 It reads `.env` at the repository root: `DATABASE_URL` (app role, RLS applies), `MIGRATION_DATABASE_URL`
-(owner role, platform rows only), `BW_TARGET_JUICE_SHOP_URL` (default `http://127.0.0.1:13000`) and,
-optionally, `BW_DEV_KEYCLOAK_PUBLIC_URL`, `BW_DEV_KEYCLOAK_REALM`, `BW_DEV_KEYCLOAK_ADMIN_USER` and
+(owner role, platform rows only), `BW_TARGET_JUICE_SHOP_URL` (default `http://127.0.0.1:13000`, used by e2e),
+`BW_TARGET_JUICE_SHOP_GATEWAY_URL` (default `http://juice-shop:3000`, the compose service name the egress
+gateway targets; the seed refuses `localhost` and loopback) and, optionally, `BW_DEV_KEYCLOAK_PUBLIC_URL`, `BW_DEV_KEYCLOAK_REALM`, `BW_DEV_KEYCLOAK_ADMIN_USER` and
 `BW_DEV_KEYCLOAK_ADMIN_PASSWORD`. `${VAR}` references in `.env` are expanded.
 
 ## What it writes

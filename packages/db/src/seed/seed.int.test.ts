@@ -13,7 +13,7 @@ import { inTenant, runSeed, seedForTest, type SeedSummary } from './run.js';
 import type { IsoTimestamp } from '@blackwing/time';
 import type pg from 'pg';
 
-const JUICE = 'http://127.0.0.1:13000';
+const JUICE = 'http://juice-shop:3000';
 let db: PostgresHandle;
 
 const seed = (over: Partial<Parameters<typeof seedForTest>[0]> = {}): Promise<SeedSummary> =>

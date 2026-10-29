@@ -18,6 +18,7 @@ import {
 import { assertSeedSchema, CORE_SEED_TABLES, findSeedSchemaProblems } from './schema-contract.js';
 import { selectSeeders } from './seeders.js';
 
+import type { LabRuleEnv } from '@blackwing/contracts';
 import type pg from 'pg';
 
 /**
@@ -66,7 +67,10 @@ export interface SeedOptions {
   readonly ownerPool: pg.Pool;
   /** App-role pool (`DATABASE_URL`, no BYPASSRLS): every tenant-scoped row. */
   readonly appPool: pg.Pool;
+  /** The Juice Shop address the egress gateway targets (the lab service name, #880). */
   readonly juiceShopUrl: string;
+  /** `BW_ENV` for the private-range lab gate (`dev` or `test`). */
+  readonly labEnv?: LabRuleEnv;
   /** Keycloak `sub` per persona; personas absent here keep (or get) a `pending:` subject. */
   readonly subjects?: Partial<Record<PersonaKey, string>>;
   /** Delete the seeded tenant rows first (`db:seed:reset`). */
@@ -330,9 +334,21 @@ export async function runSeed(options: SeedOptions): Promise<SeedSummary> {
     tenantId,
     userIds,
     juiceShopUrl: options.juiceShopUrl,
+    ...(options.labEnv === undefined ? {} : { labEnv: options.labEnv }),
     ...(options.requester === undefined ? {} : { requester: options.requester }),
     ...(options.approver === undefined ? {} : { approver: options.approver }),
   });
+  log?.info(
+    {
+      event: 'scope.private_rule_created',
+      tenant: 'acme',
+      asset: 'juice-shop',
+      privateRules: plan.labScope.privateRuleCount,
+      labNetworks: plan.labScope.labNetworks,
+      labEnv: options.labEnv ?? 'dev',
+    },
+    'audit',
+  );
   const problems = await findSeedSchemaProblems(options.ownerPool);
   const selection = selectSeeders({ only: options.only, problems });
   const present = new Set(TENANT_TABLES.filter((table) => !problems.has(table)));

@@ -241,7 +241,10 @@ second Traefik, `traefik-targets` (profile `targets-tls`), lives only on `bw-tar
 `pnpm dev:tls` setup) and browse `https://juice.bw.localhost:13443`. There is no bw-dev <-> bw-targets bridge.
 
 **E2E / seed contract.** `BW_TARGET_JUICE_SHOP_URL` (default `http://127.0.0.1:13000`) is the URL `pnpm test:e2e`
-and the DEVENV-011 seeded verified asset must use for Juice Shop. `pnpm targets:smoke` brings Juice Shop up,
+must use for Juice Shop. The seeded verified asset is addressed by the gateway URL
+`BW_TARGET_JUICE_SHOP_GATEWAY_URL` (default `http://juice-shop:3000`, the service name on `bw-targets`). The
+`bw-targets` network has a fixed lab subnet, `172.30.250.0/24` (#880): the seed admits that range as the only
+private-range scope rule, and only in `dev` or `test` for the verified lab asset. Loopback is never in scope. `pnpm targets:smoke` brings Juice Shop up,
 asserts it answers on that URL and, via `docker inspect`, that its networks are exactly `[bw-targets]`.
 
 **crAPI.** Its gateway template also needs a chatbot upstream. The real `crapi-chatbot` needs an online LLM key,

@@ -119,6 +119,7 @@ export {
   type ScopeTarget,
   scopeTargetSchema,
 } from './scope.js';
+export { assertLabScope, type LabRuleEnv, type LabScopeDecision } from './scope-lab.js';
 export { type RunEvent, runEventSchema, runEventTypeSchema } from './entities/run-event.js';
 export {
   checkTimestamps,

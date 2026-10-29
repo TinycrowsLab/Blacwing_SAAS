@@ -1,6 +1,7 @@
 package proxy_test
 
 import (
+	"net/netip"
 	"net/url"
 	"testing"
 
@@ -46,4 +47,29 @@ func TestRedirectInScope(t *testing.T) {
 	assert.False(t, proxy.RedirectInScope(nil, "/x", rs, g))
 	assert.False(t, proxy.RedirectInScope(base, "/x", rs, nil))
 	assert.False(t, proxy.RedirectInScope(base, "http://app.example.test/", nil, g), "no scope fails closed")
+}
+
+// A lab rule admits only the lab address; a redirect from the lab to loopback, metadata or another
+// private address is out of scope (#880).
+func TestRedirectFromLabToPrivateIsOutOfScope(t *testing.T) {
+	rs, err := scope.ParseLabRules([]byte(`{"rules":[
+	 {"effect":"include","host":"juice-shop","ports":[3000]},
+	 {"effect":"include","cidr":"172.30.250.0/24","ports":[3000]}]}`), scope.LabContext{
+		Env: scope.EnvDev, Verified: true, Networks: []netip.Prefix{netip.MustParsePrefix("172.30.250.0/24")},
+	})
+	require.NoError(t, err)
+	base, _ := url.Parse("http://juice-shop:3000/rest/products")
+	g := netguard.Default()
+	cases := map[string]bool{
+		"http://juice-shop:3000/next":        true,
+		"http://172.30.250.7:3000/next":      true,
+		"http://127.0.0.1:3000/next":         false,
+		"http://[::1]:3000/next":             false,
+		"http://169.254.169.254/latest/meta": false,
+		"http://172.30.251.7:3000/next":      false,
+		"http://10.0.0.1:3000/next":          false,
+	}
+	for loc, want := range cases {
+		assert.Equal(t, want, proxy.RedirectInScope(base, loc, rs, g), loc)
+	}
 }

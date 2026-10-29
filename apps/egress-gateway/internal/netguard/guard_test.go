@@ -63,9 +63,34 @@ func TestExplicitScopeOverridesBlock(t *testing.T) {
 	assert.True(t, netguard.IsBlocked(ip, scopeIPs{netip.MustParsePrefix("10.1.0.0/24")}))
 	// An IPv4-mapped form is matched against the IPv4 scope rule.
 	assert.False(t, netguard.IsBlocked(netip.MustParseAddr("::ffff:10.0.0.5"), scopeIPs{netip.MustParsePrefix("10.0.0.5/32")}))
-	// Metadata too, but only when named explicitly.
+	// Metadata, loopback and link-local are never opened by scope (#880, §8.2).
 	md := netip.MustParseAddr("169.254.169.254")
-	assert.False(t, netguard.IsBlocked(md, scopeIPs{netip.MustParsePrefix("169.254.169.254/32")}))
+	assert.True(t, netguard.IsBlocked(md, scopeIPs{netip.MustParsePrefix("169.254.169.254/32")}))
+}
+
+// Loopback, link-local and the metadata service stay denied even when a scope rule names them.
+func TestNeverInScopeIgnoresScope(t *testing.T) {
+	for _, s := range []string{
+		"127.0.0.1", "127.9.9.9", "::1", "169.254.169.254", "169.254.1.1", "fe80::1", "fd00:ec2::254",
+		"::ffff:127.0.0.1", "64:ff9b::7f00:1",
+	} {
+		ip := netip.MustParseAddr(s)
+		all := scopeIPs{netip.PrefixFrom(ip, ip.BitLen()), netip.MustParsePrefix("0.0.0.0/0"), netip.MustParsePrefix("::/0")}
+		v := netguard.Default().Check(ip, all)
+		assert.True(t, v.Blocked, s)
+		assert.True(t, netguard.IsBlocked(ip, all), s)
+	}
+	// The same rule still admits a private address that is not loopback, link-local or metadata.
+	assert.False(t, netguard.IsBlocked(netip.MustParseAddr("10.9.9.9"), scopeIPs{netip.MustParsePrefix("10.0.0.0/8")}))
+}
+
+func TestNeverInScopePrefixes(t *testing.T) {
+	for _, s := range []string{"127.0.0.0/8", "127.0.0.1/32", "0.0.0.0/0", "169.254.169.254/32", "169.254.0.0/16", "::1/128", "fe80::/10", "::/0"} {
+		assert.True(t, netguard.NeverInScope(netip.MustParsePrefix(s)), s)
+	}
+	for _, s := range []string{"10.0.0.0/8", "172.30.250.0/24", "fd00::/64", "93.184.216.0/24"} {
+		assert.False(t, netguard.NeverInScope(netip.MustParsePrefix(s)), s)
+	}
 }
 
 func TestExtraBlocked(t *testing.T) {
@@ -198,7 +223,9 @@ func TestPropertyBlockedCIDRs(t *testing.T) {
 				ip := netip.AddrFrom4(b4)
 				require.True(t, netguard.IsBlocked(ip, nil), ip.String())
 				require.True(t, netguard.IsBlocked(netip.AddrFrom16(ip.As16()), nil), "mapped "+ip.String())
-				require.False(t, netguard.IsBlocked(ip, scopeIPs{netip.PrefixFrom(ip, 32)}))
+				if !netguard.NeverInScope(p) {
+					require.False(t, netguard.IsBlocked(ip, scopeIPs{netip.PrefixFrom(ip, 32)}))
+				}
 				continue
 			}
 			for i := p.Bits(); i < 128; i++ {
@@ -213,6 +240,9 @@ func TestPropertyBlockedCIDRs(t *testing.T) {
 				continue
 			}
 			require.True(t, netguard.IsBlocked(ip, nil), ip.String())
+			if !netguard.NeverInScope(p) {
+				require.False(t, netguard.IsBlocked(ip, scopeIPs{netip.PrefixFrom(ip, 128)}), ip.String())
+			}
 		}
 	}
 }

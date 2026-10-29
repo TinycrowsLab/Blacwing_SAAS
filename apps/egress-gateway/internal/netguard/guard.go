@@ -48,6 +48,13 @@ var (
 	)
 	nat64 = netip.MustParsePrefix("64:ff9b::/96")
 
+	// neverInScope is the part of the table that no scope rule can open (#880, §8.2): loopback,
+	// link-local (which includes the metadata service) and the metadata addresses. An include rule
+	// that names one of them is still refused, both at rule creation and at dial time.
+	neverInScope = mustPrefixes(
+		"127.0.0.0/8", "::1/128", "169.254.0.0/16", "fe80::/10", "169.254.169.254/32", "fd00:ec2::254/128",
+	)
+
 	shared = &Guard{prefixes: defaultBlocked}
 )
 
@@ -152,15 +159,18 @@ func (g *Guard) Check(ip netip.Addr, scope ScopeRules) Verdict {
 		return Verdict{Blocked: true, Reason: ReasonInvalid}
 	}
 	ip = canonical(ip)
-	if scope != nil && scope.IPInScope(ip) {
-		return Verdict{}
-	}
 	if nat64.Contains(ip) {
 		b := ip.As16()
 		return g.Check(netip.AddrFrom4([4]byte(b[12:])), scope)
 	}
 	if p, ok := first(metadataPrefixes, ip); ok {
 		return Verdict{Blocked: true, Reason: ReasonMetadata, CIDR: p}
+	}
+	if p, ok := first(neverInScope, ip); ok {
+		return Verdict{Blocked: true, Reason: ReasonRange, CIDR: p}
+	}
+	if scope != nil && scope.IPInScope(ip) {
+		return Verdict{}
 	}
 	if p, ok := first(g.prefixes, ip); ok {
 		return Verdict{Blocked: true, Reason: ReasonRange, CIDR: p}
@@ -169,6 +179,33 @@ func (g *Guard) Check(ip netip.Addr, scope ScopeRules) Verdict {
 		return Verdict{Blocked: true, Reason: ReasonExtra, CIDR: p}
 	}
 	return Verdict{}
+}
+
+// NeverInScope reports whether p overlaps the loopback, link-local or metadata ranges. Such a
+// prefix is never admitted by a scope rule (#880), so rule creation must reject it.
+func NeverInScope(p netip.Prefix) bool { return overlapsAny(neverInScope, p) }
+
+// Blocked reports whether p overlaps any built-in blocked range. A scope rule that does is a
+// private-range rule and needs the lab gate (internal/scope).
+func Blocked(p netip.Prefix) bool { return overlapsAny(defaultBlocked, p) || NeverInScope(p) }
+
+// BlockedContains reports whether p lies entirely inside one built-in blocked range. The lab gate uses it to refuse lab networks that are public.
+func BlockedContains(p netip.Prefix) bool {
+	for _, q := range defaultBlocked {
+		if q.Bits() <= p.Bits() && q.Contains(p.Addr()) {
+			return true
+		}
+	}
+	return false
+}
+
+func overlapsAny(ps []netip.Prefix, p netip.Prefix) bool {
+	for _, q := range ps {
+		if q.Overlaps(p) {
+			return true
+		}
+	}
+	return false
 }
 
 // IsBlocked is Check(ip, scope).Blocked.

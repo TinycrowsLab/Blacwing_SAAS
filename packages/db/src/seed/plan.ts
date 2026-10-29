@@ -6,8 +6,11 @@ import { createHash, generateKeyPairSync, sign } from 'node:crypto';
 
 import {
   type Asset,
+  assertLabScope,
   assetSchema,
   type AssetIdentifier,
+  type LabRuleEnv,
+  type LabScopeDecision,
   type Role,
   type StandingAuthorisation,
   standingAuthorisationSchema,
@@ -119,6 +122,12 @@ export const SEED_PERSONAS: readonly SeedPersona[] = Object.freeze([
     roles: null,
   },
 ]);
+
+/**
+ * The compose lab network (`bw-targets`, #880): the only private range the seed admits, and only as
+ * a dev scope rule for the verified Juice Shop lab asset. Matches the subnet in docker-compose.dev.yml.
+ */
+export const SEED_LAB_CIDR = '172.30.250.0/24';
 
 /** Lifetime of the seeded SA, counted from the seed time (re-seeding renews it). */
 const SEED_SA_LIFETIME = '90d';
@@ -283,6 +292,8 @@ export interface TenantSeedPlan {
   readonly credentials: readonly SeedCredentialRow[];
   readonly standingAuthorisation: SeedStandingAuthorisationRow;
   readonly roleMatrix: SeedRoleMatrixRow;
+  /** The lab gate's decision on the seeded private-range rule (#880). */
+  readonly labScope: LabScopeDecision;
 }
 
 export interface TenantSeedInput {
@@ -290,8 +301,15 @@ export interface TenantSeedInput {
   readonly tenantId: Uuid;
   /** `users.id` per persona, as stored. */
   readonly userIds: Readonly<Record<PersonaKey, Uuid>>;
-  /** The local Juice Shop target (`BW_TARGET_JUICE_SHOP_URL`, DEVENV-012). */
+  /**
+   * The Juice Shop address the egress gateway targets: the compose service name on the lab network
+   * (`BW_TARGET_JUICE_SHOP_GATEWAY_URL`, #880). Never `localhost`.
+   */
   readonly juiceShopUrl: string;
+  /** The verified lab network (default {@link SEED_LAB_CIDR}). */
+  readonly labCidr?: string;
+  /** `BW_ENV` for the lab gate (default `dev`). Seeding refuses everything else before this runs. */
+  readonly labEnv?: LabRuleEnv;
   /** Who requests and who approves the SA (defaults: AppSec requests, the Asset Owner approves). */
   readonly requester?: PersonaKey;
   readonly approver?: PersonaKey;
@@ -332,18 +350,21 @@ export function devSign(body: unknown): { signature: string; signingKeyId: strin
 
 /**
  * The seeded SA's scope rules (SCOPE-002 model): the Juice Shop origin on its port, minus one admin
- * path. An IP-literal target (e.g. `127.0.0.1`) is addressed by `cidr`, a hostname by `host`.
+ * path. An IP-literal target (e.g. `127.0.0.1`) is addressed by `cidr`, a hostname by `host`. The
+ * lab cidr admits the address the compose service name resolves to; the lab gate decides whether it
+ * may (#880).
  */
-function seedScopeRules(target: {
-  host: string;
-  port: number;
-}): StandingAuthorisation['scopeRules'] {
+function seedScopeRules(
+  target: { host: string; port: number },
+  labCidr: string,
+): StandingAuthorisation['scopeRules'] {
   const bare = target.host.replace(/^\[(.*)\]$/, '$1');
   const ip = normaliseIp(bare);
   const address = ip === null ? { host: target.host } : { cidr: ip };
   return parseScopeRules({
     rules: [
       { effect: 'include', ...address, ports: [target.port] },
+      { effect: 'include', cidr: labCidr, ports: [target.port] },
       { effect: 'exclude', ...address, paths: ['/rest/admin/application-version'] },
     ],
   });
@@ -405,6 +426,7 @@ const ROLE_MATRIX_FUNCTIONS: SeedRoleMatrixRow['matrix']['functions'] = [
 export function buildTenantSeedPlan(input: TenantSeedInput): TenantSeedPlan {
   const { now, tenantId, userIds } = input;
   const target = juiceShopTarget(input.juiceShopUrl);
+  const labCidr = input.labCidr ?? SEED_LAB_CIDR;
   const requesterId = userIds[input.requester ?? 'appsec'];
   const approverId = userIds[input.approver ?? 'owner'];
   assertSeparationOfDuties(requesterId, approverId);
@@ -464,13 +486,25 @@ export function buildTenantSeedPlan(input: TenantSeedInput): TenantSeedPlan {
     return row;
   });
 
+  const scopeRules = seedScopeRules(target, labCidr);
+  const labScope = assertLabScope({
+    env: input.labEnv ?? 'dev',
+    asset: {
+      environment: asset.environment,
+      verificationStatus: asset.verificationStatus,
+      verificationMethod: asset.verificationMethod,
+    },
+    labNetworks: [labCidr],
+    rules: scopeRules,
+  });
+
   const validFrom = now;
   const expiresAt = toIso(addDuration(fromIso(now), SEED_SA_LIFETIME));
   const body = {
     id: seedUuid(`${tenantId}:sa:juice-shop`),
     tenantId,
     assetIds: [asset.id],
-    scopeRules: seedScopeRules(target),
+    scopeRules,
     maxIntrusiveness: 'active_safe' as const,
     preApprovedTestClasses: ['passive', 'active_safe'],
     defaultBudgets: { costCapUsd: 5, maxRequests: 5_000, maxDurationMs: 3_600_000 },
@@ -505,5 +539,13 @@ export function buildTenantSeedPlan(input: TenantSeedInput): TenantSeedPlan {
     matrix: { roles: ROLE_MATRIX_ROLES, functions: ROLE_MATRIX_FUNCTIONS },
   };
 
-  return { tenantId, memberships, asset, credentials, standingAuthorisation, roleMatrix };
+  return {
+    tenantId,
+    memberships,
+    asset,
+    credentials,
+    standingAuthorisation,
+    roleMatrix,
+    labScope,
+  };
 }

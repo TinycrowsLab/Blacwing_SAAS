@@ -13,6 +13,7 @@ import {
   devSign,
   PERSONA_KEYS,
   type PersonaKey,
+  SEED_LAB_CIDR,
   SEED_PERSONAS,
   seedUuid,
   tenantRow,
@@ -30,7 +31,7 @@ const build = (over: Partial<Parameters<typeof buildTenantSeedPlan>[0]> = {}) =>
     now: NOW,
     tenantId,
     userIds,
-    juiceShopUrl: 'http://127.0.0.1:13000',
+    juiceShopUrl: 'http://juice-shop:3000',
     ...over,
   });
 
@@ -80,11 +81,11 @@ describe('buildTenantSeedPlan', () => {
     expect(plan.memberships.find((m) => m.userId === userIds.owner)?.roles).toEqual(owner?.roles);
   });
 
-  it('seeds a verified (targetable, §8.10) web_app asset at the local Juice Shop', () => {
+  it('seeds a verified (targetable, §8.10) web_app asset at the lab Juice Shop service name', () => {
     const { asset } = build();
     expect(asset).toMatchObject({
       type: 'web_app',
-      identifiers: [{ kind: 'url', value: 'http://127.0.0.1:13000' }],
+      identifiers: [{ kind: 'url', value: 'http://juice-shop:3000' }],
       environment: 'dev',
       ownerUserId: userIds.owner,
       verificationStatus: 'verified',
@@ -267,5 +268,42 @@ describe('lookupSubjects (Keycloak users absent)', () => {
       expect(result.unavailable).toBeDefined();
       expect(result.unavailable).not.toContain('kc-admin-pw-sentinel');
     }
+  });
+});
+
+describe('private-range lab gate (#880)', () => {
+  const cidrRules = (plan: ReturnType<typeof build>) => plan.standingAuthorisation.scopeRules.rules;
+
+  it('seeds the compose service name, never localhost, and the dev lab cidr rule', () => {
+    const plan = build();
+    expect(plan.asset.identifiers).toEqual([{ kind: 'url', value: 'http://juice-shop:3000' }]);
+    const lab = cidrRules(plan).find((r) => r.effect === 'include' && r.cidr === SEED_LAB_CIDR);
+    expect(lab?.ports).toEqual([3000]);
+    expect(plan.labScope).toEqual({ privateRuleCount: 1, labNetworks: [SEED_LAB_CIDR] });
+  });
+
+  it('keeps the admin path excluded and the host rule for the service name', () => {
+    const rules = cidrRules(build());
+    expect(rules).toContainEqual({ effect: 'include', host: 'juice-shop', ports: [3000] });
+    expect(rules).toContainEqual({
+      effect: 'exclude',
+      host: 'juice-shop',
+      paths: ['/rest/admin/application-version'],
+    });
+  });
+
+  it('refuses a localhost target, since loopback is never in scope', () => {
+    expect(() => build({ juiceShopUrl: 'http://127.0.0.1:13000' })).toThrow(/never in scope/);
+    expect(() => build({ juiceShopUrl: 'http://localhost:13000' })).not.toThrow();
+  });
+
+  it('refuses the lab cidr outside dev and test, and for a public lab network', () => {
+    expect(() => build({ labEnv: 'production' })).toThrow(/BW_ENV dev or test/);
+    expect(() => build({ labEnv: 'staging' })).toThrow(/BW_ENV dev or test/);
+    expect(() => build({ labCidr: '93.184.216.0/24' })).toThrow(/not a private range/);
+  });
+
+  it('admits the test environment as well', () => {
+    expect(build({ labEnv: 'test' }).labScope.privateRuleCount).toBe(1);
   });
 });

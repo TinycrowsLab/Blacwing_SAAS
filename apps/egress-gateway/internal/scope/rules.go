@@ -58,6 +58,7 @@ type rule struct {
 	host     string // canonical; may start with "*."
 	hasHost  bool
 	cidr     *cidrT
+	prefix   netip.Prefix // the cidr as a netip.Prefix (IPv4 unmapped); invalid when no cidr
 	ports    []portSpec
 	paths    []pathPattern
 	methods  []string
@@ -192,6 +193,7 @@ func parseRule(index int, item json.RawMessage) (*rule, error) {
 			return nil, errors.New("cidr is not a valid CIDR")
 		}
 		r.cidr = &c
+		r.prefix = unmapPrefix(c)
 	}
 	if err := parsePorts(r, raw.Ports); err != nil {
 		return nil, err
@@ -212,6 +214,18 @@ func parseRule(index int, item json.RawMessage) (*rule, error) {
 	}
 	r.finish(effect)
 	return r, nil
+}
+
+// unmapPrefix converts a parsed 128-bit CIDR back to a netip.Prefix, IPv4 unmapped, so the lab gate
+// can compare it with the IPv4 blocked-range table.
+func unmapPrefix(c cidrT) netip.Prefix {
+	addr := c.network.addr()
+	bits := c.prefix
+	if addr.Is4In6() && bits >= v4MapBits {
+		addr = addr.Unmap()
+		bits -= v4MapBits
+	}
+	return netip.PrefixFrom(addr, bits)
 }
 
 func parseList(m json.RawMessage, field string) ([]json.RawMessage, error) {

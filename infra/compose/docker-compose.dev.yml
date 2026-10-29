@@ -867,9 +867,14 @@ networks:
     driver: bridge
 
   # Dedicated network for the vulnerable targets; deliberately separate from bw-dev (DEVENV-012).
+  # The fixed subnet is the verified lab network (#880): the seed admits exactly this range as a dev
+  # private-range scope rule (SEED_LAB_CIDR in packages/db/src/seed/plan.ts). Keep the two in step.
   bw-targets:
     name: bw-targets
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.250.0/24
 
 volumes:
   pgdata:

@@ -58,7 +58,8 @@ async function main(): Promise<void> {
     await runSeed({
       ownerPool,
       appPool,
-      juiceShopUrl: env.BW_TARGET_JUICE_SHOP_URL,
+      juiceShopUrl: env.BW_TARGET_JUICE_SHOP_GATEWAY_URL,
+      labEnv: env.NODE_ENV === 'test' ? 'test' : 'dev',
       subjects,
       reset,
       ...(only === undefined ? {} : { only }),
