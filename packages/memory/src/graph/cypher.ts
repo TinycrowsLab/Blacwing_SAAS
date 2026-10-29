@@ -6,7 +6,7 @@
 import type { SurfaceEdgeKind, SurfaceNodeKind } from '@blackwing/contracts';
 
 /** The Neo4j label of each node kind. */
-export const NODE_LABELS: Readonly<Record<SurfaceNodeKind, string>> = Object.freeze({
+const NODE_LABELS: Readonly<Record<SurfaceNodeKind, string>> = Object.freeze({
   asset: 'Asset',
   host: 'Host',
   service: 'Service',

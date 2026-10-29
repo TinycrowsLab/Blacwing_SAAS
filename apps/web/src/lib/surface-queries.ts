@@ -1,11 +1,5 @@
 import { defineQuery } from './graphql-client.js';
 
-/** One count of a kind (a node kind or a relationship type) in a run's surface. */
-export interface SurfaceKindCount {
-  readonly kind: string;
-  readonly count: number;
-}
-
 /** The surface summary of one run, as the console dashboard tiles read it (GRAPH-004, API-009). */
 export interface SurfaceSummaryData {
   readonly surfaceSummary: {
