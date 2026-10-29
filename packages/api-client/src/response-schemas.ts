@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 import {
+  assessmentRequestListResponseSchema,
+  assessmentRequestResponseSchema,
   auditActionSchema,
   auditOutcomeSchema,
   auditSeveritySchema,
@@ -10,6 +12,7 @@ import {
   killTriggerResponseSchema,
   signupAcceptedSchema,
   signupVerifiedSchema,
+  standingAuthorisationDtoSchema,
   tenantSettingsResponseSchema,
 } from '@blackwing/contracts';
 
@@ -96,6 +99,13 @@ const personaRegistryViewSchema = z.strictObject({
 
 const personaRegistryListSchema = z.strictObject({ items: z.array(personaRegistryViewSchema) });
 
+/** One cursor page of standing authorisations (`Page<StandingAuthorisationDto>`, AUTHZ-002). */
+const standingAuthorisationPageSchema = z.strictObject({
+  items: z.array(standingAuthorisationDtoSchema),
+  nextCursor: z.string().min(1).nullable(),
+  hasMore: z.boolean(),
+});
+
 /**
  * Zod schema per successful status of every operation (non-prod response validation). The record is
  * keyed by every `OperationId`, so an operation added to the spec fails to compile until it is mapped.
@@ -119,4 +129,15 @@ export const RESPONSE_SCHEMAS: Readonly<
   getGate1Plan: { 200: gate1PlanViewSchema },
   decideGate1: { 200: gate1DecisionResponseSchema },
   updateTenantSettings: { 200: tenantSettingsResponseSchema },
+  listAssessmentRequests: { 200: assessmentRequestListResponseSchema },
+  createAssessmentRequest: { 201: assessmentRequestResponseSchema },
+  getAssessmentRequest: { 200: assessmentRequestResponseSchema },
+  updateAssessmentRequest: { 200: assessmentRequestResponseSchema },
+  submitAssessmentRequest: { 200: assessmentRequestResponseSchema },
+  withdrawAssessmentRequest: { 200: assessmentRequestResponseSchema },
+  createStandingAuthorisation: { 201: standingAuthorisationDtoSchema },
+  listStandingAuthorisations: { 200: standingAuthorisationPageSchema },
+  getStandingAuthorisation: { 200: standingAuthorisationDtoSchema },
+  updateStandingAuthorisation: { 200: standingAuthorisationDtoSchema },
+  submitStandingAuthorisation: { 200: standingAuthorisationDtoSchema },
 };

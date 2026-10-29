@@ -108,6 +108,17 @@ const DEFINITIONS = {
     title: 'Invalid standing authorisation window',
     retryable: false,
   },
+  // Standing-authorisation API (AUTHZ-002): only a draft can be edited, and a submitted SA needs verified assets.
+  AUTHZ_NOT_DRAFT: {
+    status: 409,
+    title: 'Standing authorisation is not a draft',
+    retryable: false,
+  },
+  AUTHZ_ASSET_UNVERIFIED: {
+    status: 422,
+    title: 'Asset is not verified for this tenant',
+    retryable: false,
+  },
   // Persona-definition validation (REGISTRY-001, §4.5/§8.11). Malformed or forbidden definitions are
   // rejected at load/CI time: invalid input (422); a persona that is not registered yet is 404.
   PERSONA_UNKNOWN: { status: 422, title: 'Unknown persona', retryable: false },

@@ -558,6 +558,20 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'gate_decision',
     description: 'A gate decision (approved, rejected, deferred or auto-approved) was recorded.',
   },
+  {
+    action: 'authz.sa.updated',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A draft standing authorisation was changed (the changed field names only).',
+  },
+  {
+    action: 'authz.sa.submitted',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A standing authorisation was submitted for approval (draft to pending_approval).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

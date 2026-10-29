@@ -4,6 +4,7 @@ import { ERROR_CODES, type ErrorCode } from '@blackwing/errors';
 import { errorResponses, type JsonObject, jsonSchema, type OpenApiModule } from './schema.js';
 import { assessmentRequestOpenApiModule } from '../assessment-requests/openapi.js';
 import { auditOpenApiPaths, auditOpenApiSchemas } from '../audit-query/openapi.js';
+import { standingAuthorisationsOpenApiModule } from '../authorisations/openapi.js';
 import { gate1OpenApiModule } from '../gate1/openapi.js';
 import { killOpenApiDocument } from '../kill/openapi.js';
 import { personaOpenApiModule } from '../personas/openapi.js';
@@ -60,6 +61,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     signupOpenApiModule(),
     tenantSettingsOpenApiModule(),
     assessmentRequestOpenApiModule(),
+    standingAuthorisationsOpenApiModule(),
   ];
 }
 

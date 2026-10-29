@@ -105,6 +105,11 @@ const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   updateAssessmentRequest: 'assessment-requests',
   submitAssessmentRequest: 'assessment-requests',
   withdrawAssessmentRequest: 'assessment-requests',
+  createStandingAuthorisation: 'standing-authorisations',
+  listStandingAuthorisations: 'standing-authorisations',
+  getStandingAuthorisation: 'standing-authorisations',
+  updateStandingAuthorisation: 'standing-authorisations',
+  submitStandingAuthorisation: 'standing-authorisations',
 };
 
 describe('public OpenAPI document', () => {
@@ -139,28 +144,33 @@ describe('public OpenAPI document', () => {
     }
     expect(ids.sort()).toEqual([
       'createAssessmentRequest',
+      'createStandingAuthorisation',
       'decideGate1',
       'getAssessmentRequest',
       'getGate1Plan',
       'getKillEvent',
       'getPersona',
       'getPersonaOverride',
+      'getStandingAuthorisation',
       'getTenantSettings',
       'listAssessmentRequests',
       'listAuditEvents',
       'listKillEvents',
       'listPersonas',
+      'listStandingAuthorisations',
       'putPersonaOverride',
       'requestSignup',
       'streamRunEvents',
       'submitAssessmentRequest',
+      'submitStandingAuthorisation',
       'triggerKill',
       'updateAssessmentRequest',
+      'updateStandingAuthorisation',
       'updateTenantSettings',
       'verifySignup',
       'withdrawAssessmentRequest',
     ]);
-    expect(countOperations(doc)).toBe(21);
+    expect(countOperations(doc)).toBe(26);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -223,6 +233,7 @@ describe('public OpenAPI document', () => {
       'signup',
       'tenant',
       'assessment-requests',
+      'standing-authorisations',
     ]);
   });
 });
@@ -282,7 +293,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(21);
+    expect(result.operations).toBe(26);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

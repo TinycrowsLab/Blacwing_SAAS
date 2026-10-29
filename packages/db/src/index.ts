@@ -229,3 +229,15 @@ export {
 } from './outbox-relay.js';
 
 export { type AuditSqlTxLike, toAuditSqlTx } from './audit-sql-tx.js';
+export {
+  type NewStandingAuthorisation,
+  type StandingAuthorisationAuditAction,
+  type StandingAuthorisationAuditEvent,
+  type StandingAuthorisationAuditHook,
+  type StandingAuthorisationFields,
+  type StandingAuthorisationRecord,
+  StandingAuthorisationRepository,
+  type StandingAuthorisationRepositoryOptions,
+  type StandingAuthorisationWrite,
+} from './standing-authorisation.repository.js';
+export { unverifiedAssetIds } from './asset-verification.repository.js';

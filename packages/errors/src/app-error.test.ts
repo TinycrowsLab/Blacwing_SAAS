@@ -190,6 +190,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   // Raised by @blackwing/domain's standing-authorisation lifecycle (AUTHZ-001) as plain AppError subclasses.
   'AUTHZ_ILLEGAL_TRANSITION',
   'AUTHZ_INVALID_WINDOW',
+  'AUTHZ_NOT_DRAFT',
+  'AUTHZ_ASSET_UNVERIFIED',
   // Raised by @blackwing/audit (AUDIT-003) as AuditEventInvalidError.
   'AUDIT_EVENT_INVALID',
   // SeedForbiddenInProdError, @blackwing/db (DEVENV-011, #75).

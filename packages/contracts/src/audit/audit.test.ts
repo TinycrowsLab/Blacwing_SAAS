@@ -97,6 +97,8 @@ const RELEASED_ACTIONS = [
   'authz.sa.signed',
   'authz.signing_key.rotated',
   'authz.gate.decision',
+  'authz.sa.updated',
+  'authz.sa.submitted',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

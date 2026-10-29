@@ -9,6 +9,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  createStandingAuthorisation: {
+    method: 'POST',
+    path: '/v1/standing-authorisations',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: ['Idempotency-Key'],
+  },
   decideGate1: {
     method: 'POST',
     path: '/v1/runs/{runId}/gate1/decisions',
@@ -48,6 +55,13 @@ export const OPERATIONS = {
     method: 'GET',
     path: '/v1/personas/{persona}/override',
     pathParams: ['persona'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
+  getStandingAuthorisation: {
+    method: 'GET',
+    path: '/v1/standing-authorisations/{id}',
+    pathParams: ['id'],
     queryParams: [],
     requiredHeaders: [],
   },
@@ -97,6 +111,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  listStandingAuthorisations: {
+    method: 'GET',
+    path: '/v1/standing-authorisations',
+    pathParams: [],
+    queryParams: ['cursor', 'limit'],
+    requiredHeaders: [],
+  },
   putPersonaOverride: {
     method: 'PUT',
     path: '/v1/personas/{persona}/override',
@@ -125,6 +146,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: ['Idempotency-Key'],
   },
+  submitStandingAuthorisation: {
+    method: 'POST',
+    path: '/v1/standing-authorisations/{id}/submit',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
+  },
   triggerKill: {
     method: 'POST',
     path: '/v1/kill',
@@ -135,6 +163,13 @@ export const OPERATIONS = {
   updateAssessmentRequest: {
     method: 'PATCH',
     path: '/v1/assessment-requests/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
+  },
+  updateStandingAuthorisation: {
+    method: 'PATCH',
+    path: '/v1/standing-authorisations/{id}',
     pathParams: ['id'],
     queryParams: [],
     requiredHeaders: ['If-Match'],

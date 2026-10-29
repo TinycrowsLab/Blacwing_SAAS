@@ -201,6 +201,18 @@ export {
   testWindowSchema,
 } from './entities/authorisation.js';
 export {
+  createStandingAuthorisationSchema,
+  type CreateStandingAuthorisationInput,
+  patchStandingAuthorisationSchema,
+  type PatchStandingAuthorisationInput,
+  SA_MAX_ASSETS,
+  SA_MAX_LIST_ITEMS,
+  type StandingAuthorisationDto,
+  standingAuthorisationDtoSchema,
+  standingAuthorisationListQuerySchema,
+  type StandingAuthorisationListQuery,
+} from './authz.js';
+export {
   ASSESSMENT_REQUEST_STATUSES,
   ASSESSMENT_REQUEST_TRANSITIONS,
   type AssessmentRequestStatus,
