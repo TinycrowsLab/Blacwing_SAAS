@@ -23,41 +23,55 @@ const A = '0198f0a0-0000-7000-8000-0000000000e1';
 const B = '0198f0a0-0000-7000-8000-0000000000e2';
 
 describe('wizard steps', () => {
-  it('accepts only the three named steps', () => {
+  it('accepts only the four named steps', () => {
     expect(isWizardStep('mode')).toBe(true);
     expect(isWizardStep('assets')).toBe(true);
     expect(isWizardStep('objective')).toBe(true);
-    expect(isWizardStep('scope')).toBe(false);
+    expect(isWizardStep('scope')).toBe(true);
+    expect(isWizardStep('submit')).toBe(false);
     expect(isWizardStep('../mode')).toBe(false);
     expect(isWizardStep(undefined)).toBe(false);
   });
 
-  it('points at the first incomplete step: mode, then assets, then the objective', () => {
-    expect(firstIncompleteStep({ mode: null, assetIds: [] })).toBe('mode');
-    expect(firstIncompleteStep({ mode: 'grey', assetIds: [] })).toBe('assets');
-    expect(firstIncompleteStep({ mode: 'grey', assetIds: [A] })).toBe('objective');
+  const none = { mode: null, assetIds: [], objective: '', saId: null };
+
+  it('points at the first incomplete step: mode, assets, objective, then the scope', () => {
+    expect(firstIncompleteStep(none)).toBe('mode');
+    expect(firstIncompleteStep({ ...none, mode: 'grey' })).toBe('assets');
+    expect(firstIncompleteStep({ ...none, mode: 'grey', assetIds: [A] })).toBe('objective');
+    expect(firstIncompleteStep({ ...none, mode: 'grey', assetIds: [A], objective: '  ' })).toBe(
+      'objective',
+    );
+    expect(
+      firstIncompleteStep({ mode: 'grey', assetIds: [A], objective: 'Test', saId: null }),
+    ).toBe('scope');
   });
 
   it('refuses a deep link to a later step of an incomplete draft and allows the first incomplete step', () => {
-    const noMode = { mode: null, assetIds: [] };
-    expect(canShowStep('objective', noMode)).toBe(false);
-    expect(canShowStep('assets', noMode)).toBe(false);
-    expect(canShowStep('mode', noMode)).toBe(true);
+    expect(canShowStep('objective', none)).toBe(false);
+    expect(canShowStep('assets', none)).toBe(false);
+    expect(canShowStep('mode', none)).toBe(true);
 
-    const noAssets = { mode: 'black' as const, assetIds: [] };
+    const noAssets = { ...none, mode: 'black' as const };
     expect(canShowStep('assets', noAssets)).toBe(true);
     expect(canShowStep('objective', noAssets)).toBe(false);
 
-    const complete = { mode: 'black' as const, assetIds: [A] };
+    const noObjective = { ...none, mode: 'black' as const, assetIds: [A] };
+    expect(canShowStep('objective', noObjective)).toBe(true);
+    expect(canShowStep('scope', noObjective)).toBe(false);
+
+    const complete = { ...noObjective, objective: 'Test' };
     expect(canShowStep('mode', complete)).toBe(true);
     expect(canShowStep('objective', complete)).toBe(true);
+    expect(canShowStep('scope', complete)).toBe(true);
   });
 
   it('moves to the neighbouring step and stops at both ends', () => {
     expect(neighbourStep('assets', 1)).toBe('objective');
     expect(neighbourStep('assets', -1)).toBe('mode');
     expect(neighbourStep('mode', -1)).toBeUndefined();
-    expect(neighbourStep('objective', 1)).toBeUndefined();
+    expect(neighbourStep('objective', 1)).toBe('scope');
+    expect(neighbourStep('scope', 1)).toBeUndefined();
   });
 });
 
@@ -136,7 +150,7 @@ describe('URL state', () => {
       mode: 'white',
       assets: `${A},not-a-uuid,${A},${B}`,
     });
-    expect(state).toEqual({ mode: 'white', assetIds: [A, B], objective: '' });
+    expect(state).toEqual({ mode: 'white', assetIds: [A, B], objective: '', saId: null });
   });
 
   it('ignores an unknown mode, and a repeated parameter takes the first value', () => {
@@ -144,6 +158,7 @@ describe('URL state', () => {
       mode: null,
       assetIds: [],
       objective: '',
+      saId: null,
     });
     expect(readWizardState({ mode: ['grey', 'black'] }).mode).toBe('grey');
   });

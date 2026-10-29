@@ -14,35 +14,40 @@ import {
 } from '@blackwing/contracts';
 
 /** The wizard steps in order. The URL names one of them: `/assessments/new/<step>`. */
-export const WIZARD_STEPS = ['mode', 'assets', 'objective'] as const;
+export const WIZARD_STEPS = ['mode', 'assets', 'objective', 'scope'] as const;
 export type WizardStep = (typeof WIZARD_STEPS)[number];
 
 export function isWizardStep(value: unknown): value is WizardStep {
   return typeof value === 'string' && (WIZARD_STEPS as readonly string[]).includes(value);
 }
 
-/** Answers the wizard has so far. `mode` is null until chosen; the objective is the last answer. */
+/**
+ * Answers the wizard has so far. `mode` is null until chosen; `objective` is '' until saved (it creates the draft);
+ * `saId` is null until the standing authorisation is chosen on the scope step.
+ */
 export interface WizardState {
   readonly mode: RunMode | null;
   readonly assetIds: readonly string[];
   readonly objective: string;
+  readonly saId: string | null;
 }
 
+/** The answers `firstIncompleteStep` and `canShowStep` read. */
+export type WizardAnswers = Pick<WizardState, 'mode' | 'assetIds' | 'objective' | 'saId'>;
+
 /**
- * The first step whose answer is still missing. The objective is the last step, so it is the answer when the
- * earlier two are complete. A later step is never shown before this one (deep links are redirected here).
+ * The first step whose answer is still missing, in step order. The scope step is last: it is the answer once the
+ * other three are complete. A later step is never shown before this one (deep links are redirected here).
  */
-export function firstIncompleteStep(state: Pick<WizardState, 'mode' | 'assetIds'>): WizardStep {
+export function firstIncompleteStep(state: WizardAnswers): WizardStep {
   if (state.mode === null) return 'mode';
   if (state.assetIds.length === 0) return 'assets';
-  return 'objective';
+  if (state.objective.trim() === '') return 'objective';
+  return 'scope';
 }
 
 /** True when `step` may be shown for this state: it is the first incomplete step or one before it. */
-export function canShowStep(
-  step: WizardStep,
-  state: Pick<WizardState, 'mode' | 'assetIds'>,
-): boolean {
+export function canShowStep(step: WizardStep, state: WizardAnswers): boolean {
   return WIZARD_STEPS.indexOf(step) <= WIZARD_STEPS.indexOf(firstIncompleteStep(state));
 }
 
@@ -159,6 +164,7 @@ export function readWizardState(
     mode: mode.success ? mode.data : null,
     assetIds: [...new Set(assetIds)],
     objective: '',
+    saId: null,
   };
 }
 

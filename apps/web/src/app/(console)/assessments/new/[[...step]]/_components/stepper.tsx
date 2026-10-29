@@ -4,7 +4,7 @@ import {
   canShowStep,
   WIZARD_STEPS,
   wizardHref,
-  type WizardState,
+  type WizardAnswers,
   type WizardStep,
 } from '../wizard-model';
 
@@ -12,11 +12,12 @@ const STEP_LABELS: Readonly<Record<WizardStep, string>> = {
   mode: 'Mode',
   assets: 'Assets',
   objective: 'Objective',
+  scope: 'Scope',
 };
 
 export interface StepperProps {
   readonly current: WizardStep;
-  readonly answers: Pick<WizardState, 'mode' | 'assetIds'>;
+  readonly answers: WizardAnswers;
   readonly requestId: string | null;
 }
 

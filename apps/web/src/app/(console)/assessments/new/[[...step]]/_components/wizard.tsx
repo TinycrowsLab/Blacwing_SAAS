@@ -23,6 +23,7 @@ import {
 import { StepAssets } from './step-assets';
 import { StepMode } from './step-mode';
 import { StepObjective } from './step-objective';
+import { type ScopeAnswer, StepScope } from './step-scope';
 import { Stepper } from './stepper';
 
 import type { AssessmentRequestResponse, RunMode } from '@blackwing/contracts';
@@ -40,7 +41,8 @@ export interface AssessmentWizardProps {
 type SaveInput =
   | { readonly step: 'mode'; readonly mode: RunMode }
   | { readonly step: 'assets'; readonly assetIds: string[] }
-  | { readonly step: 'objective'; readonly objective: string };
+  | { readonly step: 'objective'; readonly objective: string }
+  | ({ readonly step: 'scope' } & ScopeAnswer);
 
 type SaveOutcome =
   | {
@@ -89,12 +91,26 @@ export function AssessmentWizard({ step, requestId, urlAnswers }: AssessmentWiza
     retry: false,
     refetchOnWindowFocus: false,
   });
+  // Re-read on every visit to the scope step, so an SA that changed or expired meanwhile is re-validated.
+  const saQuery = useQuery({
+    queryKey: assessmentWizardKeys.standingAuthorisations,
+    queryFn: ({ signal }) => api.standingAuthorisations(signal),
+    enabled: step === 'scope',
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 0,
+  });
 
   const draft = draftQuery.data ?? null;
   const answers: WizardState =
     draft === null
-      ? { mode: urlAnswers.mode, assetIds: [...urlAnswers.assetIds], objective: '' }
-      : { mode: draft.mode, assetIds: draft.assetIds, objective: draft.objective };
+      ? { mode: urlAnswers.mode, assetIds: [...urlAnswers.assetIds], objective: '', saId: null }
+      : {
+          mode: draft.mode,
+          assetIds: draft.assetIds,
+          objective: draft.objective,
+          saId: draft.saId,
+        };
   const waitingForDraft = requestId !== null && draft === null && !draftQuery.isError;
 
   const redirectTo =
@@ -117,7 +133,14 @@ export function AssessmentWizard({ step, requestId, urlAnswers }: AssessmentWiza
             ? { mode: input.mode }
             : input.step === 'assets'
               ? { assetIds: input.assetIds }
-              : { objective: input.objective };
+              : input.step === 'objective'
+                ? { objective: input.objective }
+                : {
+                    saId: input.saId,
+                    scopeRules: { rules: input.scopeRules },
+                    maxIntrusiveness: input.maxIntrusiveness,
+                    budgets: input.budgets,
+                  };
         const updated = await api.patch(draft.id, draft.stateVersion, body);
         return { kind: 'draft', draft: updated };
       }
@@ -136,6 +159,9 @@ export function AssessmentWizard({ step, requestId, urlAnswers }: AssessmentWiza
           mode: urlAnswers.mode,
           assetIds: input.assetIds,
         };
+      }
+      if (input.step !== 'objective') {
+        throw new Error('A draft is needed before this step can be saved.');
       }
       if (urlAnswers.mode === null || urlAnswers.assetIds.length === 0) {
         throw new Error(
@@ -166,12 +192,12 @@ export function AssessmentWizard({ step, requestId, urlAnswers }: AssessmentWiza
         mode: outcome.draft.mode,
         assetIds: outcome.draft.assetIds,
       };
-      if (input.step === 'objective') {
-        router.replace(wizardHref('objective', answersNow));
-        return;
-      }
       const next = neighbourStep(step, 1);
-      if (next !== undefined) router.push(wizardHref(next, answersNow));
+      if (next === undefined) return;
+      // The objective creates the draft, so it replaces the URL (no back-button loop); earlier saves push.
+      const href = wizardHref(next, answersNow);
+      if (input.step === 'objective') router.replace(href);
+      else router.push(href);
     },
   });
 
@@ -265,6 +291,16 @@ export function AssessmentWizard({ step, requestId, urlAnswers }: AssessmentWiza
               pending={pending}
               savedDraftId={draft?.id ?? null}
               onSubmit={(objective) => saveStep({ step: 'objective', objective })}
+            />
+          ) : null}
+          {step === 'scope' && draft !== null ? (
+            <StepScope
+              draft={draft}
+              standingAuthorisations={saQuery.data}
+              loading={saQuery.isPending}
+              pending={pending}
+              saved={save.isSuccess && save.variables.step === 'scope'}
+              onSubmit={(answer) => saveStep({ step: 'scope', ...answer })}
             />
           ) : null}
         </>
