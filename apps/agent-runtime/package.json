@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "build": "tsc -b --pretty false",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "typecheck": "tsc -b --pretty false"
@@ -19,8 +20,15 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "catalog:",
     "@blackwing/agents": "workspace:*",
+    "@blackwing/config": "workspace:*",
     "@blackwing/contracts": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/logger": "workspace:*",
+    "@blackwing/mcp-tools": "workspace:*",
+    "@opentelemetry/api": "catalog:",
+    "prom-client": "catalog:",
     "zod": "catalog:"
   }
 }

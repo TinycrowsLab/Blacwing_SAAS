@@ -93,6 +93,8 @@ const SUBCLASSES: readonly (readonly [
 
 /** Codes whose subclass lives in the package that owns the failure, not here. */
 const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
+  // Agent session descriptor, @blackwing/agent-runtime (RUNTIME-001): thrown as a plain AppError.
+  'AGENT_BRIEF_TOO_LARGE',
   'CONFIG_INVALID', // ConfigValidationError, @blackwing/config
   // Gate1Error, apps/api Gate 1 approval API (#877): plain AppError subclass with these codes.
   'GATE1_NOT_PENDING',

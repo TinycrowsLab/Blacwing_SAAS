@@ -6,5 +6,24 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/agents" }, { "path": "../../packages/contracts" }]
+  "references": [
+    {
+      "path": "../../packages/agents"
+    },
+    {
+      "path": "../../packages/config"
+    },
+    {
+      "path": "../../packages/contracts"
+    },
+    {
+      "path": "../../packages/errors"
+    },
+    {
+      "path": "../../packages/logger"
+    },
+    {
+      "path": "../../packages/mcp-tools"
+    }
+  ]
 }

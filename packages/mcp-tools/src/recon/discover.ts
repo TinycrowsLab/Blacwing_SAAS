@@ -211,6 +211,7 @@ export async function discoverServices(
     ...deps.provenance,
     tool,
     toolVersion: deps.toolVersions[tool],
+    sourceKind: 'active',
     confidence,
     observedAt: now(),
   });

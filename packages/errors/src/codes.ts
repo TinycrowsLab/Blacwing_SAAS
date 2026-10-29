@@ -151,6 +151,8 @@ const DEFINITIONS = {
     retryable: false,
   },
   PROMPT_TOO_LARGE: { status: 413, title: 'Composed prompt too large', retryable: false },
+  // Agent session descriptor (RUNTIME-001, #463): a brief over 256 KiB is refused before any model call.
+  AGENT_BRIEF_TOO_LARGE: { status: 413, title: 'Agent brief too large', retryable: false },
   // `secret_ref` URI grammar (SECRETS-003, §8.7): a malformed reference is invalid input, rejected at parse time.
   INVALID_SECRET_REF: { status: 422, title: 'Invalid secret reference', retryable: false },
   CONFIG_INVALID: { status: 500, title: 'Invalid configuration', retryable: false },

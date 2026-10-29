@@ -689,3 +689,16 @@ export {
   type Gate1PlanView,
   type Gate1TestCase,
 } from './entities/gate1.js';
+export {
+  AGENT_BRIEF_MAX_BYTES,
+  AGENT_EFFORT_LEVELS,
+  AGENT_SESSION_PERSONAS,
+  AGENT_SESSION_RECORD_SUFFIX,
+  type AgentSessionDescriptor,
+  type AgentSessionPersona,
+  type AgentSessionRecord,
+  agentEffortSchema,
+  agentSessionDescriptorSchema,
+  agentSessionPersonaSchema,
+  agentSessionRecordSchema,
+} from './agent-session.js';
