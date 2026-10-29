@@ -178,6 +178,32 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, newId(), `iso-${randomBytes(8).toString('hex')}`],
     );
   },
+  runs: async (tx, tenantId) => {
+    await tx.query(`INSERT INTO runs (id, tenant_id) VALUES ($1, $2)`, [newId(), tenantId]);
+  },
+  // A plan and its case need a run in the same tenant (composite FKs), so one seeder writes the chain.
+  test_plans: async (tx, tenantId) => {
+    const runId = newId();
+    await tx.query(`INSERT INTO runs (id, tenant_id) VALUES ($1, $2)`, [runId, tenantId]);
+    await tx.query(
+      `INSERT INTO test_plans (id, tenant_id, run_id, version) VALUES ($1, $2, $3, 1)`,
+      [newId(), tenantId, runId],
+    );
+  },
+  test_cases: async (tx, tenantId) => {
+    const runId = newId();
+    const planId = newId();
+    await tx.query(`INSERT INTO runs (id, tenant_id) VALUES ($1, $2)`, [runId, tenantId]);
+    await tx.query(
+      `INSERT INTO test_plans (id, tenant_id, run_id, version) VALUES ($1, $2, $3, 1)`,
+      [planId, tenantId, runId],
+    );
+    await tx.query(
+      `INSERT INTO test_cases (id, tenant_id, test_plan_id, class, title, targets, budget)
+       VALUES ($1, $2, $3, 'passive', 'iso case', '[{"host":"iso.example.test"}]', '{"maxRequests":10}')`,
+      [newId(), tenantId, planId],
+    );
+  },
 };
 
 /** An asset row (and the user that owns it, the users table being global). Returns the asset id. */

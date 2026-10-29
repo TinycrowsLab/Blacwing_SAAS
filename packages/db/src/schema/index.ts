@@ -9,3 +9,5 @@ export * from './signups.js';
 export * from './authorisation.js';
 export * from './gate-decisions.js';
 export * from './assets.js';
+export * from './runs.js';
+export * from './test-plans.js';

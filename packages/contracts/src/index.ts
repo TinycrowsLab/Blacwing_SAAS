@@ -220,6 +220,7 @@ export {
   runModeSchema,
   type RunPauseReason,
   runPauseReasonSchema,
+  RUN_STATES,
   runSchema,
   type RunState,
   runStateSchema,
@@ -240,11 +241,15 @@ export {
   testCaseBudgetSchema,
   testCaseSchema,
   type TestCaseStatus,
+  TEST_CASE_STATUSES,
   testCaseStatusSchema,
   TEST_CASE_STATUSES_WITH_REASON,
+  TEST_PLAN_STATUSES,
   type TestPlan,
   testPlanJsonSchema,
   testPlanSchema,
+  type TestPlanStatus,
+  testPlanStatusSchema,
 } from './entities/test-case.js';
 export {
   type AcceptedRisk,

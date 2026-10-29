@@ -103,3 +103,20 @@ Operational notes: a large HNSW build needs `maintenance_work_mem` headroom, so 
 runs the migration. ANN queries show up in the slow-query log under `<=>` and `<->`. Metrics are deferred to
 MEMORY. `CREATE EXTENSION` runs as its own statement in the migration with `IF NOT EXISTS`, so a re-run after a
 partial apply is safe. The integration test for these helpers is `src/vector.int.test.ts` (Testcontainers).
+
+## Test plans and test cases (PLAN-001)
+
+`src/schema/test-plans.ts` holds `test_plans` (one row per plan version, `(run_id, version)` unique) and
+`test_cases` (one row per proposed case, §7). `src/schema/runs.ts` is the minimal `runs` table they reference:
+ORCH extends it, the test-plan tables do not change for that. `TestPlanRepository` (`src/test-plans.repository.ts`)
+writes the next version with its cases in one transaction and reads plans back, through `withTenant`.
+
+- Enums come from `@blackwing/contracts` (`TEST_PLAN_STATUSES`, `TEST_CASE_STATUSES`, `INTRUSIVENESS_CLASSES`,
+  `RUN_STATES`), so the database and the contracts cannot drift (the schema unit test compares them).
+- `destructive` is storable (provenance) but cannot be approved, executing or executed (CHECK, §8.3). The repository
+  refuses to plan it at all, before any transaction.
+- A case that is approved, executing or executed must carry its declared oracle (CHECK, §8.11).
+- Size limit: the API layer (PLAN-005) caps `targets`, `budget`, `oracle` and `negative_control` at 16 KiB each.
+  The migration's CHECK is a 64 KiB backstop, so an oversized value fails closed.
+- Titles and refs are UTF-8 text with no truncation; the API enforces their length.
+- Concurrent writers of one run race on `(run_id, version)`: the loser gets `ConcurrencyError` (412) and retries.

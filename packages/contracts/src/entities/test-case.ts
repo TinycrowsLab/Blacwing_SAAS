@@ -12,7 +12,7 @@ import {
 import { intrusivenessSchema } from './authorisation.js';
 
 /** `test_cases.status` (§7). */
-export const testCaseStatusSchema = z.enum([
+export const TEST_CASE_STATUSES = [
   'proposed',
   'approved',
   'removed',
@@ -23,8 +23,14 @@ export const testCaseStatusSchema = z.enum([
   'failed',
   'model_declined',
   'not_applicable',
-]);
+] as const;
+export const testCaseStatusSchema = z.enum(TEST_CASE_STATUSES);
 export type TestCaseStatus = z.infer<typeof testCaseStatusSchema>;
+
+/** `test_plans.status` (§7, PLAN-001). A plan version is a draft until it is proposed, then approved or superseded. */
+export const TEST_PLAN_STATUSES = ['draft', 'proposed', 'approved', 'superseded'] as const;
+export const testPlanStatusSchema = z.enum(TEST_PLAN_STATUSES);
+export type TestPlanStatus = z.infer<typeof testPlanStatusSchema>;
 
 /** Statuses that must carry a `statusReason`. */
 export const TEST_CASE_STATUSES_WITH_REASON: readonly TestCaseStatus[] = Object.freeze([

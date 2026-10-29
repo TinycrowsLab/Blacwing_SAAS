@@ -24,7 +24,7 @@ export type RunTrigger = z.infer<typeof runTriggerSchema>;
  * Run states, §3.3. The transition rules (guards, actors, audit) live in `packages/domain/run`; this is
  * only the set of values `runs.state` may hold.
  */
-export const runStateSchema = z.enum([
+export const RUN_STATES = [
   'draft',
   'preflight',
   'recon',
@@ -42,7 +42,8 @@ export const runStateSchema = z.enum([
   'killed',
   'failed',
   'expired',
-]);
+] as const;
+export const runStateSchema = z.enum(RUN_STATES);
 export type RunState = z.infer<typeof runStateSchema>;
 
 /** Terminal run states (§3.3). */

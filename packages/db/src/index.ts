@@ -179,6 +179,14 @@ export {
   type AssessmentRequestUpdate,
 } from './assessment-request.repository.js';
 export {
+  type TestCaseRow,
+  type TestPlanCreate,
+  TestPlanRepository,
+  type TestPlanRepositoryOptions,
+  type TestPlanRow,
+  type TestPlanWithCases,
+} from './test-plans.repository.js';
+export {
   type TenantSettingsAuditEvent,
   type TenantSettingsAuditHook,
   type TenantSettingsChange,
