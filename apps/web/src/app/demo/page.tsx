@@ -1,9 +1,9 @@
 // DEMO-STORY dashboard: the starting point of the story. Shows what is pending and the next click.
 import Link from 'next/link';
 
-import { StatusPill } from '../../components/demo/status-pill';
 import { demoApi } from './_lib/demo-api';
 import { dashboardSchema } from './_lib/schemas';
+import { StatusPill } from '../../components/demo/status-pill';
 import { getSession } from '../../lib/session';
 
 import type { ReactNode } from 'react';

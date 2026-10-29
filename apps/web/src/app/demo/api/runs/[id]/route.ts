@@ -1,6 +1,6 @@
 // DEMO-STORY: the browser's poll for the live timeline. Proxies to the demo API as the signed-in user.
-import { DemoApiError, demoApi } from '../../../_lib/demo-api';
 import { getSession } from '../../../../../lib/session';
+import { DemoApiError, demoApi } from '../../../_lib/demo-api';
 
 export const dynamic = 'force-dynamic';
 

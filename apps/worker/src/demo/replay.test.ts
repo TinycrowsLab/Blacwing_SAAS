@@ -71,9 +71,9 @@ describe('probeUrl and scope', () => {
     expect(probeUrl(PINS.asset.baseUrl, PINS, "apple'")).toBe('http://127.0.0.1:3001/rest/products/search?q=apple%27');
   });
   it('refuses a host, a path or a method outside the scope', () => {
-    expect(() => assertInScope('http://example.com/rest/products/search?q=a', PINS)).toThrow(ScopeRefusal);
-    expect(() => assertInScope('http://127.0.0.1:3001/api/Users', PINS)).toThrow(ScopeRefusal);
-    expect(() => assertInScope('http://127.0.0.1:3001/rest/products/search?q=a', { ...PINS, scope: { ...PINS.scope, method: 'POST' } })).toThrow(ScopeRefusal);
+    expect(() => { assertInScope('http://example.com/rest/products/search?q=a', PINS); }).toThrow(ScopeRefusal);
+    expect(() => { assertInScope('http://127.0.0.1:3001/api/Users', PINS); }).toThrow(ScopeRefusal);
+    expect(() => { assertInScope('http://127.0.0.1:3001/rest/products/search?q=a', { ...PINS, scope: { ...PINS.scope, method: 'POST' } }); }).toThrow(ScopeRefusal);
   });
 });
 

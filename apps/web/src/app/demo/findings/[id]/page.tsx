@@ -5,13 +5,18 @@ import { notFound } from 'next/navigation';
 import { z } from 'zod';
 
 import { StatusPill } from '../../../../components/demo/status-pill';
+import { getSession } from '../../../../lib/session';
 import { DemoApiError, demoApi } from '../../_lib/demo-api';
 import { findingSchema } from '../../_lib/schemas';
-import { getSession } from '../../../../lib/session';
 
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
+
+/** Text from an untyped JSON field, or empty. */
+const text = (value: unknown): string => (typeof value === 'string' ? value : '');
+
+const HTTP_NOT_FOUND = 404;
 
 const probeSchema = z.object({
   recorded: z.boolean().optional(),
@@ -42,7 +47,7 @@ export default async function DemoFindingPage({
   try {
     finding = findingSchema.parse(await demoApi(session, `/findings/${encodeURIComponent(id)}`));
   } catch (caught) {
-    if (caught instanceof DemoApiError && caught.status === 404) notFound();
+    if (caught instanceof DemoApiError && caught.status === HTTP_NOT_FOUND) notFound();
     throw caught;
   }
   const evidence = probeSchema.parse(finding.evidence);
@@ -85,7 +90,7 @@ export default async function DemoFindingPage({
       <section className="space-y-2">
         <h2 className="text-lg font-semibold">Confirmed by deterministic replay</h2>
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          Oracle <code>{String(finding.oracle.id ?? '')}</code> (error signature <code>{String((finding.oracle.params as { signature?: unknown } | undefined)?.signature ?? '')}</code>) matched on every replay, and did not match on the negative control.
+          Oracle <code>{text(finding.oracle.id)}</code> (error signature <code>{text((finding.oracle.params as { signature?: unknown } | undefined)?.signature)}</code>) matched on every replay, and did not match on the negative control.
         </p>
         <table className="w-full max-w-2xl border-collapse text-sm">
           <thead>
@@ -141,9 +146,9 @@ export default async function DemoFindingPage({
         <h2 className="text-lg font-semibold">Location</h2>
         <p>
           <code>
-            {String(finding.location.method ?? '')} {String(finding.location.urlTemplate ?? '')}
+            {text(finding.location.method)} {text(finding.location.urlTemplate)}
           </code>{' '}
-          parameter <code>{String(finding.location.parameter ?? '')}</code>
+          parameter <code>{text(finding.location.parameter)}</code>
         </p>
       </section>
     </article>

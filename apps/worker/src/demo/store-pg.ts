@@ -1,7 +1,6 @@
 // DEMO-STORY runner persistence over `pg` (demo schema only, see migration 20261029200000_demo_story_schema).
-import type { RunnerStore, FindingInsert, QueuedRun } from './runner.js';
-import type { ReplayPins } from './replay.js';
-import type { StageEvent } from './replay.js';
+import type { ReplayPins, StageEvent } from './replay.js';
+import type { FindingInsert, QueuedRun, RunnerStore } from './runner.js';
 import type pg from 'pg';
 
 /** Claims the oldest queued run in one statement; SKIP LOCKED lets several runners poll safely. */

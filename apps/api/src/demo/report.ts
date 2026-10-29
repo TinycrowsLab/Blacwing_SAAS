@@ -26,7 +26,7 @@ const textOf = (value: unknown, fallback: string): string =>
 const ID_PREFIX_LENGTH = 8;
 
 const esc = (value: unknown): string =>
-  (typeof value === 'string' ? value : JSON.stringify(value) ?? '')
+  (typeof value === 'string' ? value : (JSON.stringify(value) as string | undefined) ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')

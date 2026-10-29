@@ -3,9 +3,9 @@ import Link from 'next/link';
 import { z } from 'zod';
 
 import { StatusPill } from '../../../components/demo/status-pill';
+import { getSession } from '../../../lib/session';
 import { demoApi } from '../_lib/demo-api';
 import { assetSchema } from '../_lib/schemas';
-import { getSession } from '../../../lib/session';
 
 import type { ReactNode } from 'react';
 

@@ -37,7 +37,7 @@ export function RunTimeline({ runId, initial }: { readonly runId: string; readon
         }
       })();
     }, POLL_MS);
-    return () => window.clearInterval(timer);
+    return () => { window.clearInterval(timer); };
   }, [runId, run.state]);
 
   return (

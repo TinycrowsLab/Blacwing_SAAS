@@ -1,10 +1,10 @@
 // DEMO-STORY: create an assessment request (scope, intrusiveness class, budget). Submitting goes to Gate 1.
 import { z } from 'zod';
 
-import { createRequestAction } from '../../actions';
+import { getSession } from '../../../../lib/session';
 import { demoApi } from '../../_lib/demo-api';
 import { assetSchema } from '../../_lib/schemas';
-import { getSession } from '../../../../lib/session';
+import { createRequestAction } from '../../actions';
 
 import type { ReactNode } from 'react';
 

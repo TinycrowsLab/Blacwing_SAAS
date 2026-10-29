@@ -1,6 +1,6 @@
 // DEMO-STORY: the finding report as a download (HTML or Markdown), rendered by the demo API.
-import { DemoApiError, demoApi } from '../../../../_lib/demo-api';
 import { getSession } from '../../../../../../lib/session';
+import { DemoApiError, demoApi } from '../../../../_lib/demo-api';
 
 export const dynamic = 'force-dynamic';
 

@@ -3,13 +3,15 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { RunTimeline } from '../../../../components/demo/run-timeline';
+import { getSession } from '../../../../lib/session';
 import { DemoApiError, demoApi } from '../../_lib/demo-api';
 import { type DemoRun, runSchema } from '../../_lib/schemas';
-import { getSession } from '../../../../lib/session';
 
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
+
+const HTTP_NOT_FOUND = 404;
 
 export default async function DemoRunPage({
   params,
@@ -23,7 +25,7 @@ export default async function DemoRunPage({
   try {
     run = runSchema.parse(await demoApi(session, `/runs/${encodeURIComponent(id)}?afterSeq=0`));
   } catch (caught) {
-    if (caught instanceof DemoApiError && caught.status === 404) notFound();
+    if (caught instanceof DemoApiError && caught.status === HTTP_NOT_FOUND) notFound();
     throw caught;
   }
   return (

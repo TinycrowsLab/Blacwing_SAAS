@@ -1,12 +1,13 @@
 // DEMO-STORY runner process (`pnpm demo` starts it as the `demo-runner` service). Refuses to start unless
 // BW_DEMO_MODE=1, so a production worker can never run the demo runner by accident. Dev only.
-import { createLogger } from '@blackwing/logger';
-import { defineConfig } from '@blackwing/config';
-import { z } from 'zod';
 import pg from 'pg';
+import { z } from 'zod';
 
-import { pgRunnerStore } from './store-pg.js';
+import { defineConfig } from '@blackwing/config';
+import { createLogger } from '@blackwing/logger';
+
 import { httpGet, pollOnce } from './runner.js';
+import { pgRunnerStore } from './store-pg.js';
 
 const POLL_INTERVAL_MS = 1000;
 const STAGE_DELAY_MS = 900;

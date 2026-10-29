@@ -5,6 +5,7 @@ import type { Session } from '../../../lib/session';
 
 const DEFAULT_DEMO_API_ORIGIN = 'http://127.0.0.1:13400';
 const REQUEST_TIMEOUT_MS = 8000;
+const HTTP_SERVICE_UNAVAILABLE = 503;
 
 export class DemoApiError extends Error {
   override readonly name = 'DemoApiError';
@@ -42,7 +43,7 @@ export async function demoApi<T = unknown>(
   init: { readonly method?: 'GET' | 'POST'; readonly body?: unknown } = {},
 ): Promise<T> {
   const token = process.env.BW_DEMO_INTERNAL_TOKEN ?? '';
-  if (token === '') throw new DemoApiError(503, 'demo_not_configured', 'BW_DEMO_INTERNAL_TOKEN is not set.');
+  if (token === '') throw new DemoApiError(HTTP_SERVICE_UNAVAILABLE, 'demo_not_configured', 'BW_DEMO_INTERNAL_TOKEN is not set.');
   const origin = process.env.BW_DEMO_API_ORIGIN ?? DEFAULT_DEMO_API_ORIGIN;
   const response = await fetch(new URL(`/v1/demo${path}`, origin), {
     method: init.method ?? 'GET',

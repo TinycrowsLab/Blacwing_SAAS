@@ -4,14 +4,16 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { StatusPill } from '../../../../components/demo/status-pill';
-import { decideRequestAction, startRunAction } from '../../actions';
+import { getSession } from '../../../../lib/session';
 import { DemoApiError, demoApi } from '../../_lib/demo-api';
 import { type DemoRequest, requestSchema } from '../../_lib/schemas';
-import { getSession } from '../../../../lib/session';
+import { decideRequestAction, startRunAction } from '../../actions';
 
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
+
+const HTTP_NOT_FOUND = 404;
 
 export default async function DemoRequestPage({
   params,
@@ -30,7 +32,7 @@ export default async function DemoRequestPage({
   try {
     request = requestSchema.parse(await demoApi(session, `/requests/${encodeURIComponent(id)}`));
   } catch (caught) {
-    if (caught instanceof DemoApiError && caught.status === 404) notFound();
+    if (caught instanceof DemoApiError && caught.status === HTTP_NOT_FOUND) notFound();
     throw caught;
   }
   const isRequester = request.viewerIsRequester;
