@@ -79,6 +79,8 @@ export interface KillEventStore {
    */
   insertOrGet(input: KillEventInsert): Promise<KillEventInsertResult>;
   get(tenantId: string, killEventId: string): Promise<KillEvent | null>;
+  /** The tenant's most recent kill events, newest first (`limit` rows at most). */
+  recent(tenantId: string, limit: number): Promise<readonly KillEvent[]>;
 }
 
 /** The message KILL-004's `KillPropagationWorkflow` receives. */

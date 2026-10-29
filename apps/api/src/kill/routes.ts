@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { trace } from '@opentelemetry/api';
 import { z } from 'zod';
 
-import { uuidV7Schema } from '@blackwing/contracts';
+import { MAX_PAGE_LIMIT, uuidV7Schema } from '@blackwing/contracts';
 import {
   type ErrorEnvironment,
   isAppError,
@@ -40,6 +40,12 @@ export interface KillRoutesOptions {
 }
 
 const idParamsSchema = z.strictObject({ id: uuidV7Schema });
+
+/** `GET /v1/kill` page size: the console's history view asks for at most one screenful by default. */
+const KILL_LIST_DEFAULT_LIMIT = 50;
+const listQuerySchema = z.strictObject({
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).default(KILL_LIST_DEFAULT_LIMIT),
+});
 
 /** Maps any thrown error to RFC 9457 problem+json (shared by the kill and SOC kill routes). */
 export function problemErrorHandler(
@@ -119,6 +125,19 @@ export function registerKillRoutes(app: FastifyInstance, options: KillRoutesOpti
         .header('location', `${KILL_ROUTE}/${response.killEventId}`)
         .header('cache-control', 'no-store')
         .send(response);
+    });
+
+    scope.get(KILL_ROUTE, async (request, reply) => {
+      const principal = await options.authenticate(request);
+      const query = listQuerySchema.safeParse(request.query);
+      if (!query.success) {
+        throw new ValidationError('invalid kill list query', {
+          detail: `limit must be an integer from 1 to ${String(MAX_PAGE_LIMIT)}`,
+        });
+      }
+      const events = await options.service.list(principal, query.data.limit);
+      const items = events.map(({ id, ...rest }) => ({ killEventId: id, ...rest }));
+      return reply.status(HTTP_OK).header('cache-control', 'no-store').send({ items });
     });
 
     scope.get(KILL_EVENT_ROUTE, async (request, reply) => {

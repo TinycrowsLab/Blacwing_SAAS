@@ -48,6 +48,13 @@ export const OPERATIONS = {
     ],
     requiredHeaders: [],
   },
+  listKillEvents: {
+    method: 'GET',
+    path: '/v1/kill',
+    pathParams: [],
+    queryParams: ['limit'],
+    requiredHeaders: [],
+  },
   listPersonas: {
     method: 'GET',
     path: '/v1/personas',

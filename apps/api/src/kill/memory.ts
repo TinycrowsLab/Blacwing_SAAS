@@ -59,6 +59,15 @@ export class InMemoryKillEventStore implements KillEventStore {
     return Promise.resolve(event?.tenantId === tenantId ? event : null);
   }
 
+  recent(tenantId: string, limit: number): Promise<readonly KillEvent[]> {
+    const rows = [...this.events.values()]
+      .filter((e) => e.tenantId === tenantId)
+      .reverse()
+      .sort((a, b) => Date.parse(b.triggeredAt) - Date.parse(a.triggeredAt))
+      .slice(0, limit);
+    return Promise.resolve(rows);
+  }
+
   /** Test helper: every stored event of one tenant. */
   list(tenantId: string): readonly KillEvent[] {
     return [...this.events.values()].filter((e) => e.tenantId === tenantId);

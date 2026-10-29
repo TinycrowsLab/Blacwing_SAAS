@@ -223,6 +223,15 @@ export class KillService {
     return event;
   }
 
+  /** The tenant's kill history, newest first. Reading kill events needs `run:read`, as `get` does. */
+  async list(principal: KillPrincipal, limit: number): Promise<readonly KillEvent[]> {
+    const tenantId = this.requireTenant(principal);
+    if (!hasPermission(principal.roles, 'run:read')) {
+      throw new KillApiError('KILL_FORBIDDEN', 'reading kill events requires run:read');
+    }
+    return this.deps.store.recent(tenantId, limit);
+  }
+
   private requireTenant(principal: KillPrincipal): string {
     if (principal.tenantId === null || principal.tenantId.length === 0) {
       throw new AuthError('no tenant context on the authenticated principal', {

@@ -4,6 +4,7 @@ import { runDetailSchema } from './run-detail';
 import { loadRun } from './run-detail.server';
 
 const run = {
+  id: '01890a5d-ac96-774b-bcce-b302099a8058',
   publicId: 'run_01JABC7Q3M',
   state: 'executing',
   pauseReason: null,

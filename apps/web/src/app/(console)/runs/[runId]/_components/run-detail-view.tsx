@@ -14,6 +14,7 @@ import {
 import { RunDetailHeader, type RunDetailHeaderProps } from './run-detail-header';
 import { RunStateTimeline } from './run-state-timeline';
 import { useRun } from './use-run';
+import { KillControl } from '../../../../../components/kill/kill-control';
 import { isApiError } from '../../../../../lib/api-error';
 
 import type { RunDetail } from '../../../../../lib/run-detail';
@@ -27,6 +28,8 @@ export interface RunDetailViewProps {
   readonly initialRun: RunDetail;
   readonly streamConnected?: boolean;
   readonly killSlot?: RunDetailHeaderProps['killSlot'];
+  /** Roles of the signed-in user; with them the page mounts the run's kill control (F33). */
+  readonly roles?: readonly string[];
   /** Slots the live-run components mount into (LIVERUN-004 to 009). */
   readonly activity?: ReactNode;
   readonly testCases?: ReactNode;
@@ -48,6 +51,7 @@ export function RunDetailView({
   initialRun,
   streamConnected,
   killSlot,
+  roles,
   activity,
   testCases,
   gates,
@@ -62,6 +66,13 @@ export function RunDetailView({
     return <NotFound />;
   }
   if (run === undefined) return <ErrorState error={isApiError(error) ? error : {}} />;
+  // The run's kill control (F33): hidden for a role that may not stop runs and once the run is terminal.
+  const killControl =
+    killSlot ??
+    (roles === undefined
+      ? undefined
+      : ({ terminal }: { terminal: boolean }) =>
+          terminal ? null : <KillControl scope="run" scopeRefId={run.id} roles={roles} />);
   return (
     <div className="space-y-6">
       <Breadcrumb>
@@ -75,7 +86,11 @@ export function RunDetailView({
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <RunDetailHeader run={run} updatedAt={updatedAt} {...(killSlot ? { killSlot } : {})} />
+      <RunDetailHeader
+        run={run}
+        updatedAt={updatedAt}
+        {...(killControl ? { killSlot: killControl } : {})}
+      />
       <RunStateTimeline state={run.state} pauseReason={run.pauseReason} />
       {error !== null && (
         <p role="status" className="text-sm text-warning" data-testid="run-stale-warning">

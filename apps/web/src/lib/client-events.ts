@@ -3,6 +3,7 @@ export type ClientEventName =
   | 'error_boundary_trip'
   | 'permission_denied_view'
   | 'kill_requested'
+  | 'kill_triggered_ui'
   | 'gate_panel_rendered'
   | 'help_popover_opened'
   | 'empty_state_cta_click';

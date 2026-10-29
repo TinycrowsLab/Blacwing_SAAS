@@ -171,51 +171,75 @@ function checkScopeRef(
  * tenant RLS policy and are written and read only through the operator role. Halt timings are
  * server-generated; `haltMs` is computed by the kill service, never taken from client input.
  */
-export const killEventSchema = z
-  .strictObject({
-    id: uuidV7Schema,
-    tenantId: uuidV7Schema.nullable(),
-    scope: killScopeSchema,
-    scopeRefId: uuidV7Schema.nullable(),
-    source: killSourceSchema,
-    actorType: z.string().min(1).max(LIMITS.keyMax),
-    actorRef: z.string().min(1).max(LIMITS.subjectMax),
-    reason: z
-      .string()
-      .max(LIMITS.reasonMax)
-      .refine((value) => value.trim().length > 0, 'must not be blank'),
-    status: killEventStatusSchema,
-    triggeredAt: isoDateTimeSchema,
-    egressBlockedAt: isoDateTimeSchema.nullable(),
-    sandboxesTerminatedAt: isoDateTimeSchema.nullable(),
-    keysRevokedAt: isoDateTimeSchema.nullable(),
-    workflowsCancelledAt: isoDateTimeSchema.nullable(),
-    completedAt: isoDateTimeSchema.nullable(),
-    haltMs: z.int().nonnegative().max(LIMITS.int32Max).nullable(),
-    affected: killAffectedSchema,
-    reenabledAt: isoDateTimeSchema.nullable(),
-    reenabledBy: uuidV7Schema.nullable(),
-    ...timestampsShape,
-  })
-  .superRefine((event, ctx) => {
-    checkTimestamps(event, ctx);
-    checkScopeRef(event, ctx);
-    if (event.tenantId === null && event.scope !== 'global') {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['tenantId'],
-        message: 'only a global kill event may have no tenant',
-      });
-    }
-    if ((event.reenabledAt === null) !== (event.reenabledBy === null)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['reenabledBy'],
-        message: 'reenabledAt and reenabledBy are set together',
-      });
-    }
-  });
+const killEventFields = z.strictObject({
+  id: uuidV7Schema,
+  tenantId: uuidV7Schema.nullable(),
+  scope: killScopeSchema,
+  scopeRefId: uuidV7Schema.nullable(),
+  source: killSourceSchema,
+  actorType: z.string().min(1).max(LIMITS.keyMax),
+  actorRef: z.string().min(1).max(LIMITS.subjectMax),
+  reason: z
+    .string()
+    .max(LIMITS.reasonMax)
+    .refine((value) => value.trim().length > 0, 'must not be blank'),
+  status: killEventStatusSchema,
+  triggeredAt: isoDateTimeSchema,
+  egressBlockedAt: isoDateTimeSchema.nullable(),
+  sandboxesTerminatedAt: isoDateTimeSchema.nullable(),
+  keysRevokedAt: isoDateTimeSchema.nullable(),
+  workflowsCancelledAt: isoDateTimeSchema.nullable(),
+  completedAt: isoDateTimeSchema.nullable(),
+  haltMs: z.int().nonnegative().max(LIMITS.int32Max).nullable(),
+  affected: killAffectedSchema,
+  reenabledAt: isoDateTimeSchema.nullable(),
+  reenabledBy: uuidV7Schema.nullable(),
+  ...timestampsShape,
+});
+
+/** The cross-field rules of a kill event row; shared by the row and its wire view. */
+function checkKillEvent(
+  event: Omit<z.infer<typeof killEventFields>, 'id'>,
+  ctx: RefinementContext,
+): void {
+  checkTimestamps(event, ctx);
+  checkScopeRef(event, ctx);
+  if (event.tenantId === null && event.scope !== 'global') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['tenantId'],
+      message: 'only a global kill event may have no tenant',
+    });
+  }
+  if ((event.reenabledAt === null) !== (event.reenabledBy === null)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['reenabledBy'],
+      message: 'reenabledAt and reenabledBy are set together',
+    });
+  }
+}
+
+export const killEventSchema = killEventFields.superRefine((event, ctx) => {
+  checkKillEvent(event, ctx);
+});
 export type KillEvent = z.infer<typeof killEventSchema>;
+
+/**
+ * A kill event as the API answers `GET /v1/kill/{id}` and lists it: the same row with its id named
+ * `killEventId`, matching the trigger response (KILL-003, KILL-007).
+ */
+export const killEventViewSchema = killEventFields
+  .omit({ id: true })
+  .extend({ killEventId: uuidV7Schema })
+  .superRefine((event, ctx) => {
+    checkKillEvent(event, ctx);
+  });
+export type KillEventView = z.infer<typeof killEventViewSchema>;
+
+/** `GET /v1/kill`: the tenant's most recent kill events, newest first. */
+export const killEventListSchema = z.strictObject({ items: z.array(killEventViewSchema) });
+export type KillEventList = z.infer<typeof killEventListSchema>;
 
 /** A locale tag such as `en` or `en-GB`. */
 const localeSchema = z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, 'must be a BCP 47 tag');

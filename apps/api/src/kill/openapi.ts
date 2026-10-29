@@ -1,8 +1,10 @@
 import {
   idempotencyKeySchema,
+  killEventListSchema,
   killEventSchema,
   killTriggerRequestSchema,
   killTriggerResponseSchema,
+  MAX_PAGE_LIMIT,
   problemSchema,
 } from '@blackwing/contracts';
 
@@ -22,6 +24,14 @@ export const KILL_TRIGGER_ERROR_CODES = [
   'KILL_REF_REQUIRED',
   'VALIDATION_FAILED',
   'IDEMPOTENCY_KEY_MISMATCH',
+  'INTERNAL',
+] as const satisfies readonly ErrorCode[];
+
+/** Error codes `GET /v1/kill` can answer with. */
+const KILL_LIST_ERROR_CODES = [
+  'UNAUTHENTICATED',
+  'KILL_FORBIDDEN',
+  'VALIDATION_FAILED',
   'INTERNAL',
 ] as const satisfies readonly ErrorCode[];
 
@@ -130,6 +140,62 @@ export function killOpenApiDocument(): JsonObject {
             ...errorResponses(KILL_TRIGGER_ERROR_CODES),
           },
         },
+        get: {
+          operationId: 'listKillEvents',
+          summary: "The tenant's most recent kill events, newest first",
+          security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+          parameters: [
+            {
+              name: 'limit',
+              in: 'query',
+              required: false,
+              schema: { type: 'integer', minimum: 1, maximum: MAX_PAGE_LIMIT, default: 50 },
+            },
+          ],
+          responses: {
+            '200': {
+              description: 'The kill history of the caller tenant, newest first.',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/KillEventList' },
+                  examples: {
+                    history: {
+                      summary: 'The newest kill of the tenant',
+                      value: {
+                        items: [
+                          {
+                            killEventId: EXAMPLE_ID,
+                            tenantId: EXAMPLE_RUN,
+                            scope: 'asset',
+                            scopeRefId: EXAMPLE_RUN,
+                            source: 'console',
+                            actorType: 'user',
+                            actorRef: EXAMPLE_RUN,
+                            reason: 'change freeze',
+                            status: 'initiated',
+                            triggeredAt: EXAMPLE_AT,
+                            egressBlockedAt: null,
+                            sandboxesTerminatedAt: null,
+                            keysRevokedAt: null,
+                            workflowsCancelledAt: null,
+                            completedAt: null,
+                            haltMs: null,
+                            affected: {},
+                            reenabledAt: null,
+                            reenabledBy: null,
+                            createdAt: EXAMPLE_AT,
+                            updatedAt: EXAMPLE_AT,
+                          },
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            ...errorResponses(KILL_LIST_ERROR_CODES),
+          },
+        },
       },
       [`${KILL_ROUTE}/{id}`]: {
         get: {
@@ -189,6 +255,7 @@ export function killOpenApiDocument(): JsonObject {
         KillTriggerRequest: jsonSchema(killTriggerRequestSchema),
         KillTriggerResponse: jsonSchema(killTriggerResponseSchema),
         KillEvent: killEventViewSchema(),
+        KillEventList: jsonSchema(killEventListSchema),
         Problem: jsonSchema(problemSchema),
       },
     },

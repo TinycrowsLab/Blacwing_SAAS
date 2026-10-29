@@ -20,6 +20,9 @@ const killEventViewSchema = z.preprocess((value: unknown) => {
   return { ...rest, id: killEventId };
 }, killEventSchema);
 
+/** `GET /v1/kill`: the tenant's kill history, newest first. */
+const killEventListSchema = z.strictObject({ items: z.array(killEventViewSchema) });
+
 /** One ledger row as `GET /v1/audit/events` serves it (`AuditEventView`); the other fields are not re-checked here. */
 const auditEventViewSchema = z.looseObject({
   id: z.uuid(),
@@ -99,6 +102,7 @@ export const RESPONSE_SCHEMAS: Readonly<
   Record<OperationId, Readonly<Partial<Record<number, z.ZodType>>>>
 > = {
   getKillEvent: { 200: killEventViewSchema },
+  listKillEvents: { 200: killEventListSchema },
   listAuditEvents: { 200: auditEventsPageSchema },
   // text/event-stream, not JSON: there is no body schema to check, so the client returns it unparsed.
   streamRunEvents: {},

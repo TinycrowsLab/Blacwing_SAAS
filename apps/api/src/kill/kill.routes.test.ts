@@ -42,7 +42,10 @@ async function server(h: Harness = harness()): Promise<{ app: FastifyInstance; h
   const counting = new Proxy(service, {
     get(target, prop, receiver) {
       const value: unknown = Reflect.get(target, prop, receiver);
-      if (typeof value === 'function' && (prop === 'trigger' || prop === 'get')) {
+      if (
+        typeof value === 'function' &&
+        (prop === 'trigger' || prop === 'get' || prop === 'list')
+      ) {
         return (...args: unknown[]) => {
           handlerCalls += 1;
           return (value as (...a: unknown[]) => unknown).apply(target, args);
@@ -257,5 +260,60 @@ describe('kill authz e2e matrix (role x scope)', { timeout: 30_000 }, () => {
     expect(h.audit.records.map((r) => r.action)).toEqual([action]);
     const expected = status === 202 ? { status: 'initiated' } : { code: 'KILL_FORBIDDEN' };
     expect(res.json()).toMatchObject(expected);
+  });
+});
+
+describe('GET /v1/kill (tenant kill history)', { timeout: 30_000 }, () => {
+  const list = (app: FastifyInstance, token: string, query = '') =>
+    app.inject({
+      method: 'GET',
+      url: `/v1/kill${query}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+  it('answers the tenant history newest first, with killEventId and no-store', async () => {
+    const { app } = await server();
+    const run = await post(app, 'appsec', { scope: 'run', scopeRefId: LIVE_RUN, reason: 'spike' });
+    const asset = await post(app, 'appsec', {
+      scope: 'asset',
+      scopeRefId: OWNED_ASSET,
+      reason: 'change freeze',
+    });
+    const res = await list(app, 'admin');
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['cache-control']).toBe('no-store');
+    const body = res.json<{ items: { killEventId: string; scope: string; id?: string }[] }>();
+    expect(body.items.map((item) => item.killEventId)).toEqual([
+      asset.json<{ killEventId: string }>().killEventId,
+      run.json<{ killEventId: string }>().killEventId,
+    ]);
+    expect(body.items[0]).toMatchObject({ scope: 'asset', scopeRefId: OWNED_ASSET });
+    expect(body.items[0]).not.toHaveProperty('id');
+  });
+
+  it('answers an empty list for a tenant without kills', async () => {
+    const { app } = await server();
+    const res = await list(app, 'admin');
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ items: [] });
+  });
+
+  it('honours limit and rejects one outside 1 to 200 with VALIDATION_FAILED', async () => {
+    const { app } = await server();
+    await post(app, 'appsec', { scope: 'run', scopeRefId: LIVE_RUN, reason: 'spike' });
+    const one = await list(app, 'admin', '?limit=1');
+    expect(one.json<{ items: unknown[] }>().items).toHaveLength(1);
+    for (const query of ['?limit=0', '?limit=201', '?limit=abc']) {
+      const res = await list(app, 'admin', query);
+      expect(res.statusCode).toBe(422);
+      expect(res.json()).toMatchObject({ code: 'VALIDATION_FAILED' });
+    }
+  });
+
+  it('rejects a revoked token before the handler runs (401)', async () => {
+    const { app } = await server();
+    const res = await list(app, 'revoked');
+    expect(res.statusCode).toBe(401);
+    expect(handlerCalls).toBe(0);
   });
 });

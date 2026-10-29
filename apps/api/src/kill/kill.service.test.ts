@@ -2,7 +2,16 @@ import { describe, expect, it } from 'vitest';
 
 import { getActivityContext } from '@blackwing/telemetry';
 
-import { DONE_RUN, harness, LIVE_RUN, principal, TENANT_A } from './fixtures.test-helpers.js';
+import {
+  DONE_RUN,
+  harness,
+  LIVE_RUN,
+  OWNED_ASSET,
+  principal,
+  RUN_B,
+  TENANT_A,
+  TENANT_B,
+} from './fixtures.test-helpers.js';
 import { InMemoryKillAuditSink } from './memory.js';
 import {
   KILL_TRIGGER_SPAN,
@@ -290,5 +299,59 @@ describe('Temporal kill signaler', () => {
       triggeredAt: '2026-10-20T10:00:00.000Z',
     });
     expect(seen).toBe(TENANT_A);
+  });
+});
+
+describe('KillService.list (tenant kill history)', () => {
+  it('lists only the caller tenant, newest first, and honours the limit', async () => {
+    const h = harness();
+    const run = await h.service.trigger({
+      principal: appsec,
+      body: runKill,
+      idempotencyKey: 'list-key-0001',
+      traceId: null,
+    });
+    const asset = await h.service.trigger({
+      principal: appsec,
+      body: { scope: 'asset', scopeRefId: OWNED_ASSET, reason: 'change freeze' },
+      idempotencyKey: 'list-key-0002',
+      traceId: null,
+    });
+    await h.service.trigger({
+      principal: principal(['appsec_engineer'], { tenantId: TENANT_B }),
+      body: { scope: 'run', scopeRefId: RUN_B, reason: 'other tenant' },
+      idempotencyKey: 'list-key-0003',
+      traceId: null,
+    });
+
+    const listed = await h.service.list(appsec, 50);
+    expect(listed.map((event) => event.id)).toEqual([
+      asset.response.killEventId,
+      run.response.killEventId,
+    ]);
+    expect(listed.every((event) => event.tenantId === TENANT_A)).toBe(true);
+    const newestOnly = await h.service.list(appsec, 1);
+    expect(newestOnly.map((event) => event.id)).toEqual([asset.response.killEventId]);
+  });
+
+  it('answers an empty history for a tenant that never killed anything', async () => {
+    const h = harness();
+    expect(await h.service.list(appsec, 50)).toEqual([]);
+  });
+
+  it('requires run:read and tenant context before reading anything', async () => {
+    const h = harness();
+    await h.service.trigger({
+      principal: appsec,
+      body: runKill,
+      idempotencyKey: 'list-key-0004',
+      traceId: null,
+    });
+    await expect(h.service.list(principal([]), 50)).rejects.toMatchObject({
+      code: 'KILL_FORBIDDEN',
+    });
+    await expect(
+      h.service.list(principal(['org_admin'], { tenantId: null }), 50),
+    ).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
   });
 });

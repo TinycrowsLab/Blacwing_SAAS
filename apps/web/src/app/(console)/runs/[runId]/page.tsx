@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 
 import { RunDetailView } from './_components/run-detail-view';
 import { getRun } from '../../../../lib/run-detail.server';
+import { getSession } from '../../../../lib/session';
 
 import type { ReactNode } from 'react';
 
@@ -18,5 +19,6 @@ export default async function RunDetailPage({
   if (run === null) notFound();
   // Structured log: low-cardinality route plus the public run id (no secrets in either).
   process.stdout.write(`${JSON.stringify({ route: '/runs/[runId]', runId })}\n`);
-  return <RunDetailView runId={runId} initialRun={run} />;
+  const session = await getSession();
+  return <RunDetailView runId={runId} initialRun={run} roles={session?.roles ?? []} />;
 }

@@ -18,8 +18,12 @@ const notFound = vi.fn((): never => {
 vi.mock('next/navigation', () => ({ notFound: () => notFound() }));
 const getRun = vi.fn<(id: string) => Promise<RunDetail | null>>();
 vi.mock('../../../../lib/run-detail.server', () => ({ getRun: (id: string) => getRun(id) }));
+vi.mock('../../../../lib/session', () => ({
+  getSession: () => Promise.resolve({ roles: ['org_admin'] }),
+}));
 
 const base: RunDetail = {
+  id: '01890a5d-ac96-774b-bcce-b302099a8058',
   publicId: 'run_01JABC7Q3M',
   state: 'executing',
   pauseReason: null,

@@ -86,6 +86,7 @@ describe('schema to OpenAPI 3.1 fragment', () => {
 const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   triggerKill: 'kill',
   getKillEvent: 'kill',
+  listKillEvents: 'kill',
   listAuditEvents: 'audit',
   streamRunEvents: 'runs',
   listPersonas: 'personas',
@@ -134,6 +135,7 @@ describe('public OpenAPI document', () => {
       'getPersonaOverride',
       'getTenantSettings',
       'listAuditEvents',
+      'listKillEvents',
       'listPersonas',
       'putPersonaOverride',
       'requestSignup',
@@ -142,7 +144,7 @@ describe('public OpenAPI document', () => {
       'updateTenantSettings',
       'verifySignup',
     ]);
-    expect(countOperations(doc)).toBe(12);
+    expect(countOperations(doc)).toBe(13);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -262,7 +264,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(12);
+    expect(result.operations).toBe(13);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });
