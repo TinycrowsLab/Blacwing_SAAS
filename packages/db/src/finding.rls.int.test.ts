@@ -43,8 +43,7 @@ function createInput(overrides: Record<string, unknown> = {}) {
     fingerprint: fingerprint(newId()),
     title: 'Missing authorisation on /admin',
     class: 'broken_access_control',
-    cweId: 'CWE-284',
-    owaspCategory: 'A01:2021',
+    refs: { cwe: ['CWE-22'], owasp: 'A01' },
     assetId: newId(),
     location: { method: 'GET', urlTemplate: '/admin', parameter: null, file: null, line: null },
     runId,
@@ -66,8 +65,8 @@ function rawInsert(tenant: string, values: RawFinding = {}): Promise<unknown> {
   return db.withTenant(tenant, (tx) =>
     tx.query(
       `INSERT INTO findings
-         (id, tenant_id, public_id, fingerprint, title, class, asset_id, location, status, baseline_status, run_id, first_seen_run_id, last_seen_run_id)
-       VALUES ($1, $2, $3, $4, 'raw', 'raw_class', $5, $6, $7, $8, $9, $9, $9)`,
+         (id, tenant_id, public_id, fingerprint, title, class, asset_id, location, status, baseline_status, run_id, first_seen_run_id, last_seen_run_id, cwe_id, owasp_category)
+       VALUES ($1, $2, $3, $4, 'raw', 'raw_class', $5, $6, $7, $8, $9, $9, $9, 'CWE-89', 'A03')`,
       [
         id,
         tenant,
@@ -111,6 +110,49 @@ describe('create', () => {
     await expect(repo.create({ ...input, title: 'a different title' })).rejects.toThrow(
       ConflictError,
     );
+  });
+
+  it('classifies from the curated mapping and records the mapping version (FINDING-004)', async () => {
+    const row = await repoFor(tenantA).create(
+      createInput({ class: 'webapi.injection.sql', refs: undefined }),
+    );
+    expect(row).toMatchObject({
+      cweId: 'CWE-89',
+      owaspCategory: 'A03',
+      mappingVersion: '1.0.0',
+      unmapped: false,
+      classification: { cweCandidates: ['CWE-89'], apiTop10: null, wstg: ['WSTG-INPV-05'] },
+    });
+  });
+
+  it('prefers the specialist-declared CWE over the curated default and keeps the default as a candidate', async () => {
+    const row = await repoFor(tenantA).create(
+      createInput({ class: 'webapi.injection.sql', refs: { cwe: ['CWE-79'] } }),
+    );
+    expect(row.cweId).toBe('CWE-79');
+    expect(row.classification).toMatchObject({ cweCandidates: ['CWE-79', 'CWE-89'] });
+  });
+
+  it('flags a finding with no known CWE or OWASP category as unmapped, without inventing an id', async () => {
+    const row = await repoFor(tenantA).create(
+      createInput({ class: 'raw.unknown_class', refs: {} }),
+    );
+    expect(row).toMatchObject({ cweId: null, owaspCategory: null, unmapped: true });
+    expect(row.mappingVersion).toBe('1.0.0');
+  });
+
+  it('refuses an unmapped=false row that has no CWE or OWASP category (findings_mapped_check)', async () => {
+    const id = newId();
+    const code = await pgCode(
+      db.withTenant(tenantA, (tx) =>
+        tx.query(
+          `INSERT INTO findings (id, tenant_id, public_id, fingerprint, title, class, asset_id, location, status, run_id, first_seen_run_id, last_seen_run_id)
+           VALUES ($1, $2, $3, $4, 'raw', 'raw_class', $5, '{"urlTemplate":"/x"}', 'candidate', $6, $6, $6)`,
+          [id, tenantA, `fnd_${id.replaceAll('-', '')}`, fingerprint(id), newId(), newId()],
+        ),
+      ),
+    );
+    expect(code).toBe('23514');
   });
 
   it('allows the same fingerprint in another tenant', async () => {

@@ -1,0 +1,98 @@
+{
+  "version": "1.0.0",
+  "mappings": {
+    "webapi.injection.sql": {
+      "cweCandidates": ["CWE-89"],
+      "owaspTop10": "A03",
+      "wstg": ["WSTG-INPV-05"]
+    },
+    "webapi.injection.os_command": {
+      "cweCandidates": ["CWE-78"],
+      "owaspTop10": "A03",
+      "wstg": ["WSTG-INPV-12"]
+    },
+    "webapi.injection.ldap": {
+      "cweCandidates": ["CWE-90"],
+      "owaspTop10": "A03",
+      "wstg": ["WSTG-INPV-06"]
+    },
+    "webapi.injection.nosql": {
+      "cweCandidates": ["CWE-943"],
+      "owaspTop10": "A03",
+      "wstg": ["WSTG-INPV-05"]
+    },
+    "webapi.xss.client_side": {
+      "cweCandidates": ["CWE-79"],
+      "owaspTop10": "A03",
+      "wstg": ["WSTG-INPV-01", "WSTG-CLNT-01"]
+    },
+    "webapi.ssrf": {
+      "cweCandidates": ["CWE-918"],
+      "owaspTop10": "A10",
+      "apiTop10": "API7",
+      "wstg": ["WSTG-INPV-19"]
+    },
+    "webapi.info.verbose_error": {
+      "cweCandidates": ["CWE-209"],
+      "owaspTop10": "A05",
+      "wstg": ["WSTG-ERRH-01", "WSTG-ERRH-02"]
+    },
+    "webapi.info.sensitive_data": {
+      "cweCandidates": ["CWE-200", "CWE-525"],
+      "owaspTop10": "A02",
+      "wstg": ["WSTG-ATHN-06"]
+    },
+    "webapi.config.security_headers": {
+      "cweCandidates": ["CWE-693"],
+      "owaspTop10": "A05",
+      "wstg": ["WSTG-CONF-07", "WSTG-CONF-12"]
+    },
+    "webapi.config.cookie_flags": {
+      "cweCandidates": ["CWE-614", "CWE-1004"],
+      "owaspTop10": "A05",
+      "wstg": ["WSTG-SESS-02"]
+    },
+    "webapi.config.cors": {
+      "cweCandidates": ["CWE-942"],
+      "owaspTop10": "A05",
+      "wstg": ["WSTG-CLNT-07"]
+    },
+    "webapi.xxe": {
+      "cweCandidates": ["CWE-611"],
+      "owaspTop10": "A05",
+      "wstg": ["WSTG-INPV-07"]
+    },
+    "webapi.ssti": {
+      "cweCandidates": ["CWE-1336"],
+      "owaspTop10": "A03",
+      "wstg": ["WSTG-INPV-18"]
+    },
+    "webapi.path_traversal": {
+      "cweCandidates": ["CWE-22"],
+      "owaspTop10": "A01",
+      "wstg": ["WSTG-ATHZ-01"]
+    },
+    "webapi.open_redirect": {
+      "cweCandidates": ["CWE-601"],
+      "owaspTop10": "A01",
+      "wstg": ["WSTG-CLNT-04"]
+    },
+    "webapi.mass_assignment": {
+      "cweCandidates": ["CWE-915"],
+      "owaspTop10": "A01",
+      "apiTop10": "API3",
+      "wstg": []
+    },
+    "webapi.file_upload": {
+      "cweCandidates": ["CWE-434"],
+      "owaspTop10": "A04",
+      "wstg": ["WSTG-BUSL-09"]
+    },
+    "webapi.graphql.exposure": {
+      "cweCandidates": ["CWE-200"],
+      "owaspTop10": "A05",
+      "apiTop10": "API8",
+      "wstg": ["WSTG-APIT-01"]
+    }
+  }
+}

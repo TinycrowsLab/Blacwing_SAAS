@@ -61,6 +61,25 @@ export const findingLocationSchema = z.strictObject({
 });
 export type FindingLocation = z.infer<typeof findingLocationSchema>;
 
+/** Version of the curated class-to-standard mapping that classified a finding (CONTEXT_PACK §8.9). */
+export const mappingVersionSchema = z.string().regex(/^[0-9]+\.[0-9]+\.[0-9]+$/, 'must be semver');
+
+/**
+ * What the classifier kept beside the primary CWE and OWASP category (FINDING-004): every candidate CWE, the
+ * API Security Top 10 category and the WSTG test refs. Stored as jsonb, so the reporter sees the alternatives.
+ */
+const MAX_CANDIDATE_CWES = 8;
+const MAX_CLASSIFICATION_WSTG = 16;
+export const findingClassificationSchema = z.strictObject({
+  cweCandidates: z.array(cweIdSchema).max(MAX_CANDIDATE_CWES),
+  apiTop10: z
+    .string()
+    .regex(/^API([1-9]|10)$/, 'must be an API Security Top 10 id')
+    .nullable(),
+  wstg: z.array(z.string().regex(/^WSTG-[A-Z]{4}-[0-9]{2}$/)).max(MAX_CLASSIFICATION_WSTG),
+});
+export type FindingClassification = z.infer<typeof findingClassificationSchema>;
+
 /** An `accepted_risk` triage decision needs a reason and an expiry (§3.4). */
 export const acceptedRiskSchema = z.strictObject({
   reason: z.string().min(1).max(LIMITS.reasonMax),
@@ -86,6 +105,11 @@ export const findingSchema = z
     class: z.string().min(1).max(LIMITS.shortTextMax),
     cweId: cweIdSchema.nullable(),
     owaspCategory: z.string().min(1).max(LIMITS.shortTextMax).nullable(),
+    /** Mapping version recorded at classification (§8.9); null only for a row written before FINDING-004. */
+    mappingVersion: mappingVersionSchema.nullable(),
+    /** True when the finding has no primary CWE or no OWASP category: it awaits analyst review. */
+    unmapped: z.boolean(),
+    classification: findingClassificationSchema.nullable(),
     /** Null until the validator scores the finding (FINDING-005). */
     severity: severitySchema.nullable(),
     location: findingLocationSchema,
@@ -115,6 +139,13 @@ export const findingSchema = z
         code: 'custom',
         path: ['acceptedRisk'],
         message: 'acceptedRisk is set exactly when the status is accepted_risk',
+      });
+    }
+    if (!finding.unmapped && (finding.cweId === null || finding.owaspCategory === null)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['unmapped'],
+        message: 'a finding without a CWE or OWASP category is unmapped',
       });
     }
     if (finding.location.urlTemplate === null && finding.location.file === null) {

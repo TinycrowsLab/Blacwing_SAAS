@@ -6,6 +6,7 @@ import {
   jsonb,
   numeric,
   pgPolicy,
+  boolean,
   pgTable,
   type PgTableExtraConfigValue,
   text,
@@ -42,6 +43,7 @@ import { TENANT_PREDICATE } from './columns.js';
 /** Byte caps on the jsonb columns (FINDING-001 edge cases): large context belongs in an evidence reference. */
 export const FINDING_LOCATION_MAX_BYTES = 8192;
 export const FINDING_SEVERITY_MAX_BYTES = 4096;
+export const FINDING_CLASSIFICATION_MAX_BYTES = 4096;
 
 /** SQL `IN (...)` list from a constant tuple (values are compile-time constants, never input). */
 function inList(values: readonly string[]) {
@@ -70,6 +72,12 @@ export const findings = pgTable(
     class: text('class').notNull(),
     cweId: text('cwe_id'),
     owaspCategory: text('owasp_category'),
+    /** Version of the curated mapping that classified the finding (`mappingVersionSchema`), §8.9. */
+    mappingVersion: text('mapping_version'),
+    /** True when there is no primary CWE or no OWASP category: the finding awaits analyst review (FINDING-004). */
+    unmapped: boolean('unmapped').notNull().default(false),
+    /** Candidate CWEs, API Top 10 and WSTG refs the classifier kept (`findingClassificationSchema`). */
+    classification: jsonb('classification').$type<Record<string, unknown>>(),
     /** CVSS vectors and score (`severitySchema`); null until the validator scores the finding (FINDING-005). */
     severity: jsonb('severity').$type<Record<string, unknown>>(),
     assetId: uuid('asset_id').notNull(),
@@ -102,6 +110,19 @@ export const findings = pgTable(
       sql`starts_with(${t.publicId}, 'fnd_') AND length(${t.publicId}) > 4`,
     ),
     check('findings_fingerprint_check', sql`${t.fingerprint} ~ '^[0-9a-f]{64}$'`),
+    check(
+      'findings_mapping_version_check',
+      sql`${t.mappingVersion} IS NULL OR ${t.mappingVersion} ~ '^[0-9]+\\.[0-9]+\\.[0-9]+$'`,
+    ),
+    // A mapped finding names its primary CWE and OWASP category; only an unmapped one may lack them.
+    check(
+      'findings_mapped_check',
+      sql`${t.unmapped} OR (${t.cweId} IS NOT NULL AND ${t.owaspCategory} IS NOT NULL)`,
+    ),
+    check(
+      'findings_classification_check',
+      sql`${t.classification} IS NULL OR (jsonb_typeof(${t.classification}) = 'object' AND octet_length(${t.classification}::text) <= ${sql.raw(String(FINDING_CLASSIFICATION_MAX_BYTES))})`,
+    ),
     check('findings_title_check', sql`length(${t.title}) BETWEEN 1 AND 200`),
     check('findings_class_check', sql`length(${t.class}) BETWEEN 1 AND 120`),
     check('findings_cwe_id_check', sql`${t.cweId} IS NULL OR ${t.cweId} ~ '^CWE-[1-9][0-9]{0,4}$'`),

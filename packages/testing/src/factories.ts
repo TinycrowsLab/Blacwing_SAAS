@@ -245,8 +245,11 @@ export function createFactories(options: FactoryOptions = {}): Factories {
         fingerprint: createHash('sha256').update(`finding:${seed}:${n}`).digest('hex'),
         title: `Finding ${n}`,
         class: 'broken_access_control',
-        cweId: 'CWE-284',
-        owaspCategory: 'A01:2021',
+        cweId: 'CWE-22',
+        owaspCategory: 'A01',
+        mappingVersion: '1.0.0',
+        unmapped: false,
+        classification: { cweCandidates: ['CWE-22'], apiTop10: null, wstg: ['WSTG-ATHZ-01'] },
         severity: {
           cvssV4Vector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N',
           cvssV4Score: 6.9,

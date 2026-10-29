@@ -125,8 +125,11 @@ const finding = {
   fingerprint: 'a'.repeat(64),
   title: 'Broken access control on /admin',
   class: 'broken_access_control',
-  cweId: 'CWE-284',
-  owaspCategory: 'A01:2021',
+  cweId: 'CWE-22',
+  owaspCategory: 'A01',
+  mappingVersion: '1.0.0',
+  unmapped: false,
+  classification: { cweCandidates: ['CWE-22'], apiTop10: null, wstg: ['WSTG-ATHZ-01'] },
   severity: {
     cvssV4Vector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N',
     cvssV4Score: 8.7,
@@ -439,9 +442,29 @@ describe('finding (§3.4)', () => {
         confidence: null,
         cweId: null,
         owaspCategory: null,
+        unmapped: true,
         baselineStatus: null,
       }).success,
     ).toBe(true);
+  });
+
+  it('requires an unmapped flag for a finding without a CWE or OWASP category', () => {
+    expect(findingSchema.safeParse({ ...finding, cweId: null }).success).toBe(false);
+    expect(findingSchema.safeParse({ ...finding, owaspCategory: null }).success).toBe(false);
+    expect(findingSchema.safeParse({ ...finding, cweId: null, unmapped: true }).success).toBe(true);
+  });
+
+  it('accepts a classification with a null mapping version only when it is absent', () => {
+    expect(
+      findingSchema.safeParse({ ...finding, mappingVersion: null, classification: null }).success,
+    ).toBe(true);
+    expect(findingSchema.safeParse({ ...finding, mappingVersion: 'v1' }).success).toBe(false);
+    expect(
+      findingSchema.safeParse({
+        ...finding,
+        classification: { cweCandidates: ['CWE-0'], apiTop10: null, wstg: [] },
+      }).success,
+    ).toBe(false);
   });
 
   it('rejects an unknown lifecycle status and an unknown baseline status', () => {

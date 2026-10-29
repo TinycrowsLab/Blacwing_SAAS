@@ -31,8 +31,7 @@ function validCreate(overrides: Record<string, unknown> = {}) {
     fingerprint: FINGERPRINT,
     title: 'Broken access control on /admin',
     class: 'broken_access_control',
-    cweId: 'CWE-284',
-    owaspCategory: 'A01:2021',
+    refs: { cwe: ['CWE-22'], owasp: 'A01' },
     assetId: newId(),
     location: { method: 'GET', urlTemplate: '/admin', parameter: null, file: null, line: null },
     runId,
@@ -66,7 +65,13 @@ describe('FindingRepository.create input validation', () => {
     ['an empty title', { title: '' }],
     ['a title over the label limit', { title: 'x'.repeat(201) }],
     ['a class that is empty', { class: '' }],
-    ['a CWE that does not look like CWE-<n>', { cweId: 'CWE-0' }],
+    ['a CWE that does not look like CWE-<n>', { refs: { cwe: ['CWE-0'] } }],
+    ['a CWE outside the pinned list', { refs: { cwe: ['CWE-99999'] } }],
+    ['an OWASP category that does not exist', { refs: { owasp: 'A11' } }],
+    ['an API id where the OWASP Top 10 id belongs', { refs: { owasp: 'API1' } }],
+    ['a WSTG id that does not exist', { refs: { wstg: ['WSTG-XXXX-99'] } }],
+    ['an unknown key inside refs (strict)', { refs: { cweId: 'CWE-89' } }],
+    ['a CWE set directly on the input (classifier-owned)', { cweId: 'CWE-89' }],
     ['a non-uuid asset', { assetId: 'not-a-uuid' }],
     ['a confidence above 1', { confidence: 1.5 }],
     ['an unknown field (strict)', { tenantId: newId() }],
@@ -122,6 +127,12 @@ describe('FindingRepository.update and list input validation', () => {
       ValidationError,
     );
     await expect(r.update(newId(), 0, { status: 'hacked' })).rejects.toThrow(ValidationError);
+  });
+
+  it('refuses a CWE or OWASP category in a patch: the classifier owns them', async () => {
+    const r = repo();
+    await expect(r.update(newId(), 0, { cweId: 'CWE-89' })).rejects.toThrow(ValidationError);
+    await expect(r.update(newId(), 0, { owaspCategory: 'A03' })).rejects.toThrow(ValidationError);
   });
 
   it('refuses a malformed id or a negative or non-integer expected version', async () => {

@@ -8,7 +8,6 @@ import { z } from 'zod';
 
 import {
   baselineStatusSchema,
-  cweIdSchema,
   findingLocationSchema,
   findingStatusSchema,
   LIMITS,
@@ -16,6 +15,7 @@ import {
   severitySchema,
   uuidV7Schema,
 } from '@blackwing/contracts';
+import { candidateRefsSchema, classifyFinding } from '@blackwing/domain';
 import {
   ConflictError,
   NotFoundError,
@@ -96,13 +96,16 @@ const severityCapped = severitySchema.refine(
  * `create` input. The tenant is never accepted: it is the ambient tenant of the call. A new finding starts as
  * `candidate` unless the caller says otherwise; the database refuses a status that needs a release or an
  * accepted-risk record (`findings_released_check`, `findings_accepted_risk_check`).
+ *
+ * The CWE and OWASP category are not inputs: `refs` are the standard ids the specialist declared, and the
+ * classifier (FINDING-004) sets the primary ids, the mapping version and the `unmapped` flag from them and the
+ * curated mapping. An id that is not in the pinned lists is refused.
  */
 const createSchema = z.strictObject({
   fingerprint: sha256HexSchema,
   title: nfcText(LIMITS.labelMax),
   class: nfcText(LIMITS.shortTextMax),
-  cweId: cweIdSchema.nullish(),
-  owaspCategory: nfcText(LIMITS.shortTextMax).nullish(),
+  refs: candidateRefsSchema.optional(),
   severity: severityCapped.nullish(),
   assetId: uuidV7Schema,
   location: locationSchema,
@@ -116,7 +119,9 @@ const createSchema = z.strictObject({
 
 /**
  * Patch of a finding's mutable fields. The release and accepted-risk records are not writable here: they are
- * set only by the triage flow (FINDING-002), which owns their checks. Empty patches are refused.
+ * set only by the triage flow (FINDING-002), which owns their checks. The CWE and OWASP category are set at
+ * creation by the classifier, so a patch does not carry them: re-classifying is a flow of its own. Empty
+ * patches are refused.
  */
 const updateSchema = z
   .strictObject({
@@ -124,8 +129,6 @@ const updateSchema = z
     baselineStatus: baselineStatusSchema.nullable().optional(),
     severity: severityCapped.nullable().optional(),
     confidence: z.number().min(0).max(1).nullable().optional(),
-    cweId: cweIdSchema.nullable().optional(),
-    owaspCategory: nfcText(LIMITS.shortTextMax).nullable().optional(),
     lastSeenRunId: uuidV7Schema.optional(),
   })
   .refine((patch) => Object.keys(patch).length > 0, { message: 'patch is empty' });
@@ -183,7 +186,8 @@ export class FindingRepository {
   async create(input: unknown): Promise<FindingRow> {
     const values = parseInput(createSchema, input, 'finding');
     const id = newId();
-    return this.run('create', async (tx, tenantId) => {
+    const classified = classifyFinding(values.class, values.refs ?? {});
+    const row = await this.run('create', async (tx, tenantId) => {
       const [inserted] = await tx
         .insert(findings)
         .values({
@@ -193,8 +197,11 @@ export class FindingRepository {
           fingerprint: values.fingerprint,
           title: values.title,
           class: values.class,
-          cweId: values.cweId ?? null,
-          owaspCategory: values.owaspCategory ?? null,
+          cweId: classified.cweId,
+          owaspCategory: classified.owaspCategory,
+          mappingVersion: classified.mappingVersion,
+          unmapped: classified.unmapped,
+          classification: classified.detail,
           severity: values.severity ?? null,
           assetId: values.assetId,
           location: values.location,
@@ -209,6 +216,19 @@ export class FindingRepository {
       if (inserted === undefined) throw new Error('finding insert returned no row');
       return { row: inserted, rowCount: 1 };
     });
+    this.options.logger?.info(
+      {
+        entity: 'finding',
+        op: 'classify',
+        cweId: classified.cweId,
+        owaspCategory: classified.owaspCategory,
+        cweTop25: classified.cweTop25,
+        unmapped: classified.unmapped,
+        mappingVersion: classified.mappingVersion,
+      },
+      'finding.classify',
+    );
+    return row;
   }
 
   /** One finding by id, or `undefined` (also for another tenant's finding: RLS and the tenant filter). */

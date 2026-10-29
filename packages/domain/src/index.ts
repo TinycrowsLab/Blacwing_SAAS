@@ -182,3 +182,18 @@ export {
   type ResolveReconManifestOptions,
   resolveReconManifest,
 } from './recon/manifest.js';
+
+export { type Classification, classifyFinding } from './findings/classify.js';
+export {
+  DEFAULT_MAPPING_DATASET,
+  loadMappingDataset,
+  type MappingDataset,
+  type MappingEntry,
+} from './findings/mappings.js';
+export {
+  candidateRefsSchema,
+  type CandidateRefs,
+  cweRefSchema,
+  owaspTop10RefSchema,
+  parseTaxon,
+} from './findings/taxonomy.js';
