@@ -87,6 +87,7 @@ export function findingRow(
     lastSeenRunId: RUN_A,
     confidence: 0.9,
     acceptedRisk: null,
+    duplicateOf: null,
     releasedBy: null,
     releasedAt: null,
     createdAt,

@@ -79,6 +79,16 @@ function labelOf(node: SurfaceNode): string {
       return `${node.location}:${node.name}`;
     case 'role':
       return node.roleName;
+    case 'spec_document':
+      return node.title ?? node.specKind;
+    case 'schema_object':
+      return node.name;
+    case 'auth_scheme':
+      return node.name;
+    case 'source_route':
+      return node.handler;
+    case 'config_item':
+      return `${node.scope}:${node.key}`;
   }
 }
 

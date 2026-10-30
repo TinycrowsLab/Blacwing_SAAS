@@ -8,7 +8,6 @@ import { NoSchemaIntrospectionCustomRule } from 'graphql';
 import { AssessmentRequestsResolver } from './assessment-requests.resolver.js';
 import { AssetsResolver } from './assets.resolver.js';
 import { formatGraphqlErrors, registerGraphqlProblemCodes } from './errors.js';
-import { DashboardAssetCountResolver, DashboardResolver } from '../dashboard/dashboard.resolver.js';
 import { FindingsResolver } from './findings.resolver.js';
 import {
   createQueryLimitsRule,
@@ -41,6 +40,7 @@ import {
   GRAPHQL_METRICS,
   GRAPHQL_SURFACE_STORE,
 } from './tokens.js';
+import { DashboardAssetCountResolver, DashboardResolver } from '../dashboard/dashboard.resolver.js';
 
 import type {
   AssessmentReadStore,
