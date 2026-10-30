@@ -9,6 +9,9 @@
 !infra/docker/sandbox/entrypoint.sh
 !infra/docker/sandbox/install-tools.sh
 !infra/docker/sandbox/tools.pin.json
+!infra/docker/sandbox/scanners.pin.json
+!infra/docker/sandbox/tools/install-tools.mjs
+!infra/docker/sandbox/tools/bw-sqlmap.mjs
 **/node_modules
 **/.turbo
 **/dist

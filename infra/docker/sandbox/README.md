@@ -21,10 +21,27 @@ The binaries are root-owned and read-only for `bw`, and nothing fetches tool upd
 Bump a tool by changing its entry (version, URL and sha256 together) in a reviewed change; Renovate (IMAGE-011) opens
 those bumps. Licences: see `docs/architecture/third-party-notices.md`.
 
+## Pinned pentest scanners (IMAGE-002, #601)
+
+`scanners.pin.json` pins `ffuf`, `fingerprintx`, `testssl.sh`, `gitleaks`, `opengrep`, `trivy`, `sqlmap` and `jq`
+(name, exact version, SPDX licence, source, download URL and sha256 per architecture; Go modules by their `h1:` zip
+hash). The `tools` stage runs `tools/install-tools.mjs`, which fetches each artifact, fails the build on any digest
+mismatch or failing version probe, and installs into `/opt/bw/tools` (`bin/` on PATH, `lib/` off PATH, `manifest.json`
+lists what shipped). The runtime stage copies that tree root-owned, so uid 10001 cannot replace a tool. The
+ProjectDiscovery tools stay in `tools.pin.json` (#600) so their installer and guard are unchanged.
+
+- Licence posture: `testssl.sh` (GPL-2.0), `sqlmap` (GPL-2.0) and `opengrep` (LGPL-2.1) run as separate processes, never
+  linked into Blackwing code.
+- `sqlmap` is reached only through `bw-sqlmap` (`tools/bw-sqlmap.mjs`), which allow-lists safe options, forces batch
+  mode and rate limits, and refuses destructive or out-of-band options. The raw tool is not on PATH.
+- nmap and Semgrep are excluded by design. The image test asserts they are absent.
+- Static guard: `node scripts/check-sandbox-tools.mjs` (run by `pnpm check:sandbox-image`).
+- Unit tests: `node --test scripts/check-sandbox-tools.test.mjs scripts/install-tools.test.mjs scripts/bw-sqlmap.test.mjs`.
+
 Runtime contract (SANDBOX): user `bw` uid/gid 10001, read-only rootfs, `/workspace` and `/tmp` as tmpfs owned by
 10001, all capabilities dropped. The entrypoint exits 78 with a clear message if `/workspace` is not writable and 77 if run as root.
 
-Checks: `pnpm check:sandbox-image` (static: Dockerfile, dockerignore and the tools pin), `pnpm test:sandbox-image`
+Checks: `pnpm check:sandbox-image` (static: Dockerfile, dockerignore, both tool pins), `pnpm test:sandbox-image`
 (builds and runs the image; also proves the checksum guard refuses a mismatched archive).
 
 ## Seccomp profile (SANDBOX-007)

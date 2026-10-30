@@ -85,7 +85,7 @@ describe('checkSandboxDockerfile', () => {
   it('requires the runtime stage to copy the binaries from the tools stage', () => {
     assert.ok(
       errs(df.replace('COPY --from=tools', 'COPY --from=builder')).some((e) =>
-        e.includes('copy the pinned binaries'),
+        e.includes('copy the pinned toolchain'),
       ),
     );
   });
@@ -101,9 +101,19 @@ describe('checkSandboxDockerfile', () => {
     );
   });
 
-  it('expects exactly three stages', () => {
+  it('expects exactly four stages (builder, gotool, tools, runtime)', () => {
+    assert.ok(errs(`${df}\nFROM \${NODE_IMAGE} AS extra\n`).some((e) => e.includes('four stages')));
+  });
+  it('requires the Go toolchain stage and a digest-pinned GO_IMAGE', () => {
     assert.ok(
-      errs(`${df}\nFROM \${NODE_IMAGE} AS extra\n`).some((e) => e.includes('three stages')),
+      errs(df.replace(/^FROM \S+ AS gotool$/m, 'FROM ${NODE_IMAGE} AS other')).some((e) =>
+        e.includes('gotool'),
+      ),
+    );
+    assert.ok(
+      errs(df.replace(/^ARG GO_IMAGE=.*$/m, 'ARG GO_IMAGE=golang:1.26')).some((e) =>
+        e.includes('GO_IMAGE'),
+      ),
     );
   });
 
@@ -116,6 +126,11 @@ describe('checkSandboxDockerfile', () => {
     assert.ok(
       errs(df, ig.replace('!infra/docker/sandbox/tools.pin.json\n', '')).some((e) =>
         e.includes('tools.pin.json'),
+      ),
+    );
+    assert.ok(
+      errs(df, ig.replace('!infra/docker/sandbox/scanners.pin.json\n', '')).some((e) =>
+        e.includes('scanners.pin.json'),
       ),
     );
   });

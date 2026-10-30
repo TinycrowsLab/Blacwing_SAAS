@@ -1,4 +1,4 @@
-// Static guard for the bw-sandbox base Dockerfile (IMAGE-001, #599) and its pinned ProjectDiscovery
+// Static guard for the bw-sandbox Dockerfile (IMAGE-001, #599) and its pinned ProjectDiscovery
 // tools (IMAGE-002, #600). Pure text checks, no Docker. Asserts: digest-pinned base, builder/tools/runtime
 // stages, fixed uid 10001 `bw` user, the final USER is `bw`, the standard /opt/bw + /etc/bw directories,
 // root-owned tools, safe env defaults, a HEALTHCHECK, no secrets, OCI labels, and a complete
@@ -9,14 +9,17 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { checkToolPins } from './check-sandbox-tools.mjs';
+
 export const SANDBOX_DOCKERFILE = 'infra/docker/sandbox/Dockerfile';
 export const SANDBOX_DOCKERIGNORE = 'infra/docker/sandbox/Dockerfile.dockerignore';
 export const SANDBOX_TOOLS_PIN = 'infra/docker/sandbox/tools.pin.json';
+export const SANDBOX_SCANNER_PINS = 'infra/docker/sandbox/scanners.pin.json';
 export const REQUIRED_TOOLS = ['subfinder', 'dnsx', 'httpx', 'naabu', 'katana', 'nuclei'];
 const SEMVER = /^\d+\.\d+\.\d+$/;
 const SHA256 = /^[0-9a-f]{64}$/;
 const DIGEST = /@sha256:[0-9a-f]{64}/;
-const EXPECTED_STAGES = 3; // builder, tools, runtime
+const EXPECTED_STAGES = 4; // builder, gotool, tools, runtime
 const ARG_PREFIX_LENGTH = 4; // "ARG "
 const USER_PREFIX_LENGTH = 5; // "USER "
 
@@ -48,7 +51,7 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
 
   const froms = lines.filter((l) => l.startsWith('FROM '));
   if (froms.length !== EXPECTED_STAGES)
-    errors.push('expected exactly three stages (builder, tools, runtime)');
+    errors.push('expected exactly four stages (builder, gotool, tools, runtime)');
   for (const f of froms) {
     const ref = f.split(/\s+/)[1] ?? '';
     const resolved = ref.replace(/\$\{(\w+)\}/g, (_, /** @type {string} */ k) => args.get(k) ?? '');
@@ -58,10 +61,22 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
   if (!/^FROM \S+ AS builder$/m.test(dockerfile)) errors.push('missing builder stage');
   if (!/^FROM \S+ AS runtime$/m.test(dockerfile)) errors.push('missing runtime stage');
   if (!/^FROM \S+ AS tools$/m.test(dockerfile)) errors.push('missing tools stage');
+  if (!/^FROM \S+ AS gotool$/m.test(dockerfile)) errors.push('missing gotool stage');
+  if (!/^ARG GO_IMAGE=\S+@sha256:[0-9a-f]{64}$/m.test(dockerfile)) {
+    errors.push('GO_IMAGE must be pinned by @sha256: digest');
+  }
   if (!lines.some((l) => l.startsWith('RUN sh /pin/install-tools.sh /pin/tools.pin.json')))
     errors.push('tools stage must run install-tools.sh against tools.pin.json');
-  if (!lines.some((l) => /^COPY --from=tools\b.*\/opt\/bw\/tools\/bin\/ /.test(l)))
-    errors.push('runtime stage must copy the pinned binaries from the tools stage');
+  if (!lines.some((l) => /^COPY --from=tools\b.* \/opt\/bw\/tools \/opt\/bw\/tools$/.test(l)))
+    errors.push('runtime stage must copy the pinned toolchain (bin and lib) from the tools stage');
+  if (
+    !lines.some(
+      (l) =>
+        l.startsWith('RUN ') &&
+        l.includes('node /build/install-tools.mjs /build/scanners.pin.json'),
+    )
+  )
+    errors.push('tools stage must run tools/install-tools.mjs against scanners.pin.json');
   if (lines.some((l) => /chown -R [^&]*\/opt\/bw\/tools/.test(l)))
     errors.push('/opt/bw/tools must stay root-owned (bw must not replace pinned binaries)');
 
@@ -96,7 +111,13 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
   if (!/^\*$/m.test(dockerignore) || !/^!apps\/agent-runtime$/m.test(dockerignore)) {
     errors.push('Dockerfile.dockerignore must exclude everything then allow-list the build inputs');
   }
-  for (const input of ['install-tools.sh', 'tools.pin.json']) {
+  for (const input of [
+    'install-tools.sh',
+    'tools.pin.json',
+    'scanners.pin.json',
+    'tools/install-tools.mjs',
+    'tools/bw-sqlmap.mjs',
+  ]) {
     if (
       !new RegExp(`^!infra/docker/sandbox/${input.replaceAll('.', '\\.')}$`, 'm').test(dockerignore)
     )
@@ -159,6 +180,7 @@ export function checkRepo(root) {
   return [
     ...checkSandboxDockerfile(read(SANDBOX_DOCKERFILE), read(SANDBOX_DOCKERIGNORE)),
     ...checkToolsPin(read(SANDBOX_TOOLS_PIN)),
+    ...checkToolPins(JSON.parse(read(SANDBOX_SCANNER_PINS))),
   ];
 }
 
