@@ -316,6 +316,13 @@
       "when": 1793404997696,
       "tag": "20261031000317_virtual_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1793408373950,
+      "tag": "20261031005933_role_sessions_store",
+      "breakpoints": true
     }
   ]
 }

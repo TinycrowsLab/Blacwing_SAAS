@@ -9,7 +9,9 @@
   "references": [
     { "path": "../../packages/config" },
     { "path": "../../packages/contracts" },
+    { "path": "../../packages/db" },
     { "path": "../../packages/errors" },
+    { "path": "../../packages/ids" },
     { "path": "../../packages/logger" },
     { "path": "../../packages/secrets" },
     { "path": "../../packages/telemetry" },

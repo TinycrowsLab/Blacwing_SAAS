@@ -28,3 +28,4 @@ export * from './notifications.js';
 export * from './schedules.js';
 export * from './reversal-journal.js';
 export * from './tenant-policies.js';
+export * from './role-sessions.js';

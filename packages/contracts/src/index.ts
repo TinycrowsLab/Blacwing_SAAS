@@ -1252,3 +1252,4 @@ export {
 } from './findings/whitebox.js';
 export * from './notify.js';
 export * from './reversal.js';
+export * from './stored-session.js';

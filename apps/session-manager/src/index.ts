@@ -49,6 +49,20 @@ export {
 } from './errors.js';
 export { type SessionManagerMetrics, createSessionManagerMetrics } from './metrics.js';
 export { internalSessionRoutes } from './routes.js';
+export {
+  createPgSessionPort,
+  createSessionStore,
+  createValkeySessionMirror,
+  mirrorKey,
+  type PutSessionInput,
+  type PutSessionResult,
+  type SessionMirror,
+  type SessionPort,
+  type SessionStore,
+  type SessionStoreDeps,
+  type SessionStoreOp,
+  type StoredSessionRecord,
+} from './session-store.js';
 export { redactLogValue } from './redaction.js';
 export { createOpenBaoProbe, createPostgresProbe, createValkeyProbe } from './probes.js';
 export {

@@ -389,3 +389,8 @@ export {
   TenantPolicyRepository,
   type TenantPolicyRepositoryOptions,
 } from './tenant-policy.repository.js';
+export {
+  roleSessionRepository,
+  type RoleSessionWrite,
+  type TerminalStoredSessionStatus,
+} from './role-sessions.repository.js';

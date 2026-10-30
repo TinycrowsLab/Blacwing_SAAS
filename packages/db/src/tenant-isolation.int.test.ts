@@ -450,6 +450,17 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, planId],
     );
   },
+  // A stored session names a run and an asset of its own tenant (composite FKs). Only ciphertext is written.
+  role_sessions: async (tx, tenantId) => {
+    const runId = newId();
+    const assetId = await insertAsset(tx, tenantId);
+    await tx.query(`INSERT INTO runs (id, tenant_id) VALUES ($1, $2)`, [runId, tenantId]);
+    await tx.query(
+      `INSERT INTO role_sessions (id, tenant_id, run_id, asset_id, role_name, kind, enc_material, enc_key_ref, expires_at)
+       VALUES ($1, $2, $3, $4, 'iso.role', 'cookie', '\\x00', 'tenant-iso@v1', now() + interval '1 hour')`,
+      [newId(), tenantId, runId, assetId],
+    );
+  },
   // A journal entry names a run and a test case of its own tenant (composite FKs): one seeder writes the chain.
   reversal_journal_entries: async (tx, tenantId) => {
     const runId = newId();
