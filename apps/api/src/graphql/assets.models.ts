@@ -17,6 +17,18 @@ export class AssetFilterModel {
 
   @Field(() => String, { nullable: true, description: 'Environment: prod, staging, dev or test.' })
   readonly environment?: string;
+
+  @Field(() => String, { nullable: true, description: 'Assets with a tag of this key.' })
+  readonly tagKey?: string;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'With tagKey: only assets whose tag has this value.',
+  })
+  readonly tagValue?: string;
+
+  @Field(() => String, { nullable: true, description: 'Assets in the group with this name.' })
+  readonly group?: string;
 }
 
 /**

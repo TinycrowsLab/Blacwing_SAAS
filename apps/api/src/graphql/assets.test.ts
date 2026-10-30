@@ -208,6 +208,36 @@ describe('assets query', () => {
     ).rejects.toThrow(ValidationError);
   });
 
+  it('passes the tag and group filters to the store and refuses malformed ones', async () => {
+    const { store, members } = fixture();
+    const api = resolver(store);
+    const ctx = contextFor(members, store, DEV);
+    const spy = vi.spyOn(store, 'listAssets');
+    await api.assets(
+      ctx,
+      Object.assign(new AssetFilterModel(), {
+        tagKey: ' owner-team ',
+        tagValue: 'blue',
+        group: 'Public web',
+      }),
+    );
+    expect(spy).toHaveBeenLastCalledWith(
+      TENANT_A,
+      expect.objectContaining({
+        filter: { tagKey: 'owner-team', tagValue: 'blue', group: 'Public web' },
+      }),
+    );
+    await expect(
+      api.assets(ctx, Object.assign(new AssetFilterModel(), { tagValue: 'blue' })),
+    ).rejects.toThrow('tagValue needs a tagKey');
+    await expect(
+      api.assets(ctx, Object.assign(new AssetFilterModel(), { tagKey: 'k'.repeat(65) })),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      api.assets(ctx, Object.assign(new AssetFilterModel(), { group: '   ' })),
+    ).rejects.toThrow(ValidationError);
+  });
+
   it('refuses a malformed cursor and a limit outside 1 to 200', async () => {
     const { store, members } = fixture();
     const api = resolver(store);

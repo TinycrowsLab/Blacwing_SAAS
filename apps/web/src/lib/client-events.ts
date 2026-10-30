@@ -8,7 +8,10 @@ export type ClientEventName =
   | 'gate1.decision.submitted'
   | 'help_popover_opened'
   | 'empty_state_cta_click'
-  | 'surface_graph_rendered';
+  | 'surface_graph_rendered'
+  | 'asset_list_rendered'
+  | 'asset_created'
+  | 'asset_create_failed';
 
 /** Redaction-safe payload: event, route name and the two support identifiers. Nothing else can be added. */
 export interface ClientEvent {

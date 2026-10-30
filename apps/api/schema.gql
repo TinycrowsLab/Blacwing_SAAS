@@ -69,6 +69,15 @@ input AssetFilter {
   """Environment: prod, staging, dev or test."""
   environment: String
 
+  """Assets in the group with this name."""
+  group: String
+
+  """Assets with a tag of this key."""
+  tagKey: String
+
+  """With tagKey: only assets whose tag has this value."""
+  tagValue: String
+
   """Asset type: web_app, api, host, network_range or source_repo."""
   type: String
 

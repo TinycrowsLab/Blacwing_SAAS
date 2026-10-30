@@ -10,6 +10,8 @@ import { type PostgresHandle, withPostgres } from '@blackwing/testing/containers
 
 import { createPgAssetReadStore } from './postgres.js';
 
+import type { AssetFilter } from './store.js';
+
 let handle: PostgresHandle;
 const tenantA = newId();
 const tenantB = newId();
@@ -156,6 +158,21 @@ describe('asset read store over Postgres (RLS)', () => {
     const store = createPgAssetReadStore(createDatabase(handle.appPool));
     expect(await store.rolesOf(tenantA, ownerA)).toEqual(['developer']);
     expect(await store.rolesOf(tenantB, ownerA)).toEqual([]);
+  });
+
+  it('filters by tag key and value, and by group name, inside the caller tenant only', async () => {
+    const store = createPgAssetReadStore(createDatabase(handle.appPool));
+    const ids = async (tenantId: string, filter: AssetFilter) =>
+      (await store.listAssets(tenantId, { filter, limit: 50 })).map((row) => row.id);
+    expect(await ids(tenantA, { tagKey: 'env' })).toEqual([assetA]);
+    expect(await ids(tenantA, { tagKey: 'env', tagValue: 'staging' })).toEqual([assetA]);
+    expect(await ids(tenantA, { tagKey: 'env', tagValue: 'prod' })).toEqual([]);
+    expect(await ids(tenantA, { tagKey: 'team' })).toEqual([]);
+    expect(await ids(tenantA, { group: 'Payments' })).toEqual([assetA]);
+    expect(await ids(tenantA, { group: 'Unknown' })).toEqual([]);
+    // Tenant B holds neither the tag nor the group, so the same filter reads nothing there.
+    expect(await ids(tenantB, { tagKey: 'env' })).toEqual([]);
+    expect(await ids(tenantB, { group: 'Payments' })).toEqual([]);
   });
 
   it('fails closed without a valid tenant id', async () => {

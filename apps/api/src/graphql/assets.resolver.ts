@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   assetEnvironmentSchema,
   assetTypeSchema,
+  LIMITS,
   verificationStatusSchema,
 } from '@blackwing/contracts';
 import { hasPermission } from '@blackwing/domain';
@@ -98,6 +99,20 @@ function enumFilter<S extends z.ZodType<string>>(
   return parsed.data;
 }
 
+/** One optional free-text filter: 1 to `max` characters once trimmed, or refused (never silently dropped). */
+function textFilter(
+  value: string | null | undefined,
+  max: number,
+  name: string,
+): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const trimmed = value.trim();
+  if (trimmed.length === 0 || trimmed.length > max) {
+    throw new ValidationError(`${name} must be 1 to ${String(max)} characters`);
+  }
+  return trimmed;
+}
+
 /** The filter of the list, validated against the contracts. */
 function filterOf(filter: AssetFilterModel | undefined): AssetFilter {
   const verificationStatus = enumFilter(
@@ -107,10 +122,19 @@ function filterOf(filter: AssetFilterModel | undefined): AssetFilter {
   );
   const type = enumFilter(filter?.type, assetTypeSchema, 'type');
   const environment = enumFilter(filter?.environment, assetEnvironmentSchema, 'environment');
+  const tagKey = textFilter(filter?.tagKey, LIMITS.keyMax, 'tagKey');
+  const tagValue = textFilter(filter?.tagValue, LIMITS.labelMax, 'tagValue');
+  if (tagValue !== undefined && tagKey === undefined) {
+    throw new ValidationError('tagValue needs a tagKey');
+  }
+  const group = textFilter(filter?.group, LIMITS.labelMax, 'group');
   return {
     ...(verificationStatus === undefined ? {} : { verificationStatus }),
     ...(type === undefined ? {} : { type }),
     ...(environment === undefined ? {} : { environment }),
+    ...(tagKey === undefined ? {} : { tagKey }),
+    ...(tagValue === undefined ? {} : { tagValue }),
+    ...(group === undefined ? {} : { group }),
   };
 }
 

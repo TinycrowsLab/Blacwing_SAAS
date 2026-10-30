@@ -137,6 +137,11 @@ export interface AssetFilter {
   readonly verificationStatus?: VerificationStatus;
   readonly type?: AssetType;
   readonly environment?: AssetEnvironment;
+  /** Assets carrying a tag with this key (and `tagValue`, when given). */
+  readonly tagKey?: string;
+  readonly tagValue?: string;
+  /** Assets that are members of the group with this name. */
+  readonly group?: string;
 }
 
 /** Keyset position of the asset list: the last row of the previous page (`createdAt` desc, then `id` desc). */

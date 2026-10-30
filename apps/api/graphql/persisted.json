@@ -1,3 +1,4 @@
 {
+  "159ea7d69a9a7d27b232d962709f321bdd281d9570661c911e00747476b54506": "query Assets($filter: AssetFilter, $cursor: String, $limit: Int) {\n  assets(filter: $filter, cursor: $cursor, limit: $limit) {\n    hasMore\n    nextCursor\n    items {\n      id\n      name\n      type\n      environment\n      verification {\n        status\n      }\n      owner {\n        name\n      }\n      tags {\n        key\n        value\n      }\n      groups {\n        name\n      }\n    }\n  }\n}",
   "182d3800f54bafce2b740a06dd6a35053b3fe7540ae5d82cd7134c4acff40d2b": "query SurfaceSummary($runId: ID!) {\n  surfaceSummary(runId: $runId) {\n    runId\n    nodeCounts {\n      kind\n      count\n    }\n    edgeCounts {\n      kind\n      count\n    }\n    topTechnologies {\n      name\n      count\n    }\n    endpointCount\n    inScopeEndpointCount\n  }\n}"
 }

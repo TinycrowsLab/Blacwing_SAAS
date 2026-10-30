@@ -173,6 +173,42 @@ export function createPgAssetReadStore(db: Database): AssetReadStore {
         if (filter.type !== undefined) conditions.push(eq(assets.type, filter.type));
         if (filter.environment !== undefined)
           conditions.push(eq(assets.environment, filter.environment));
+        if (filter.tagKey !== undefined) {
+          const tagged = and(eq(assetTags.tenantId, tenantId), eq(assetTags.key, filter.tagKey));
+          conditions.push(
+            inArray(
+              assets.id,
+              tx
+                .select({ id: assetTags.assetId })
+                .from(assetTags)
+                .where(
+                  filter.tagValue === undefined
+                    ? tagged
+                    : and(tagged, eq(assetTags.value, filter.tagValue)),
+                ),
+            ),
+          );
+        }
+        if (filter.group !== undefined) {
+          conditions.push(
+            inArray(
+              assets.id,
+              tx
+                .select({ id: assetGroupMembers.assetId })
+                .from(assetGroupMembers)
+                .innerJoin(
+                  assetGroups,
+                  and(
+                    eq(assetGroups.tenantId, assetGroupMembers.tenantId),
+                    eq(assetGroups.id, assetGroupMembers.groupId),
+                  ),
+                )
+                .where(
+                  and(eq(assetGroupMembers.tenantId, tenantId), eq(assetGroups.name, filter.group)),
+                ),
+            ),
+          );
+        }
         if (after !== undefined) {
           conditions.push(
             sql`(${createdAt}, ${assets.id}) < (${after.createdAt.toISOString()}::timestamptz, ${after.id}::uuid)`,
