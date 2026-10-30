@@ -108,30 +108,58 @@ export function adaptRedis(redis: Redis): ValkeyLike {
  * dead Valkey becomes a 503 instead of a hung request.
  */
 export function createValkey(url: string): ValkeyLike {
+  let redis: Redis | undefined;
   let client: ValkeyLike | undefined;
-  const get = (): ValkeyLike => {
-    if (client !== undefined) return client;
-    const redis = new Redis(url, {
-      enableOfflineQueue: false,
-      maxRetriesPerRequest: 1,
-      connectTimeout: CONNECT_TIMEOUT_MS,
-    });
-    // Connection errors surface through the failing command; an unhandled 'error' event would crash.
-    redis.on('error', () => undefined);
-    client = adaptRedis(redis);
+  // Without an offline queue a command sent before the socket is up is rejected, so wait (bounded)
+  // for the connection to become ready instead of failing the first request after startup.
+  const get = async (): Promise<ValkeyLike> => {
+    if (redis === undefined || client === undefined) {
+      redis = new Redis(url, {
+        enableOfflineQueue: false,
+        maxRetriesPerRequest: 1,
+        connectTimeout: CONNECT_TIMEOUT_MS,
+      });
+      // Connection errors surface through the failing command; an unhandled 'error' event would crash.
+      redis.on('error', () => undefined);
+      client = adaptRedis(redis);
+    }
+    const connection = redis;
+    if (connection.status !== 'ready') {
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error('valkey connect timeout'));
+        }, CONNECT_TIMEOUT_MS);
+        const onReady = (): void => {
+          cleanup();
+          resolve();
+        };
+        const onClose = (): void => {
+          cleanup();
+          reject(new Error('valkey connection closed'));
+        };
+        const cleanup = (): void => {
+          clearTimeout(timer);
+          connection.off('ready', onReady);
+          connection.off('close', onClose);
+        };
+        connection.once('ready', onReady);
+        connection.once('close', onClose);
+      });
+    }
     return client;
   };
   return {
-    get: (key) => get().get(key),
-    setPx: (key, value, ms, mode) => get().setPx(key, value, ms, mode),
-    del: (key) => get().del(key),
-    delMany: (keys) => get().delMany(keys),
-    delIfEquals: (key, token) => get().delIfEquals(key, token),
-    mget: (keys) => get().mget(keys),
-    sadd: (key, member) => get().sadd(key, member),
-    srem: (key, members) => get().srem(key, members),
-    sscan: (key, cursor, count) => get().sscan(key, cursor, count),
-    pexpire: (key, ms) => get().pexpire(key, ms),
+    get: async (key) => (await get()).get(key),
+    setPx: async (key, value, ms, mode) => (await get()).setPx(key, value, ms, mode),
+    del: async (key) => (await get()).del(key),
+    delMany: async (keys) => (await get()).delMany(keys),
+    delIfEquals: async (key, token) => (await get()).delIfEquals(key, token),
+    mget: async (keys) => (await get()).mget(keys),
+    sadd: async (key, member) => (await get()).sadd(key, member),
+    srem: async (key, members) => (await get()).srem(key, members),
+    sscan: async (key, cursor, count) => (await get()).sscan(key, cursor, count),
+    pexpire: async (key, ms) => (await get()).pexpire(key, ms),
   };
 }
 
