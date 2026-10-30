@@ -1,0 +1,6 @@
+apiVersion: v2
+name: blackwing
+description: Blackwing umbrella chart (#44) - the long-running applications (web, api, worker, model-gateway, egress-gateway, session-manager, sandbox-controller) on the k3s cluster. Image digests come from the CI hand-off, never from tags.
+type: application
+version: 0.1.0
+appVersion: '0.1.0'

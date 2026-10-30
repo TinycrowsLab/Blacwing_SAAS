@@ -1,0 +1,319 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Blackwing umbrella chart values (#44)",
+  "type": "object",
+  "required": ["global", "apps"],
+  "additionalProperties": false,
+  "properties": {
+    "global": {
+      "type": "object",
+      "required": ["environment", "images", "sandbox", "otel"],
+      "additionalProperties": false,
+      "properties": {
+        "environment": {
+          "type": "string",
+          "enum": ["dev", "staging", "prod"]
+        },
+        "images": {
+          "type": "object",
+          "description": "Digest-pinned image refs from the CI-007 images.json hand-off. A tag, or a digest for another image, is rejected.",
+          "required": [
+            "web",
+            "api",
+            "worker",
+            "model-gateway",
+            "egress-gateway",
+            "session-manager",
+            "sandbox-controller"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "web": {
+              "type": "string",
+              "pattern": "^ghcr\\.io/tinycrowslab/bw-web@sha256:[0-9a-f]{64}$"
+            },
+            "api": {
+              "type": "string",
+              "pattern": "^ghcr\\.io/tinycrowslab/bw-api@sha256:[0-9a-f]{64}$"
+            },
+            "worker": {
+              "type": "string",
+              "pattern": "^ghcr\\.io/tinycrowslab/bw-worker@sha256:[0-9a-f]{64}$"
+            },
+            "model-gateway": {
+              "type": "string",
+              "pattern": "^ghcr\\.io/tinycrowslab/bw-model-gateway@sha256:[0-9a-f]{64}$"
+            },
+            "egress-gateway": {
+              "type": "string",
+              "pattern": "^ghcr\\.io/tinycrowslab/bw-egress-gateway@sha256:[0-9a-f]{64}$"
+            },
+            "session-manager": {
+              "type": "string",
+              "pattern": "^ghcr\\.io/tinycrowslab/bw-session-manager@sha256:[0-9a-f]{64}$"
+            },
+            "sandbox-controller": {
+              "type": "string",
+              "pattern": "^ghcr\\.io/tinycrowslab/bw-sandbox-controller@sha256:[0-9a-f]{64}$"
+            }
+          }
+        },
+        "sandbox": {
+          "type": "object",
+          "required": ["imageRef"],
+          "additionalProperties": false,
+          "properties": {
+            "imageRef": {
+              "type": "string",
+              "description": "IMAGE-012's surfaced bw-sandbox digest (infra/docker/sandbox/IMAGE_DIGEST).",
+              "pattern": "^ghcr\\.io/tinycrowslab/bw-sandbox@sha256:[0-9a-f]{64}$"
+            }
+          }
+        },
+        "otel": {
+          "type": "object",
+          "required": ["endpoint"],
+          "additionalProperties": false,
+          "properties": {
+            "endpoint": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https?://"
+            }
+          }
+        }
+      }
+    },
+    "apps": {
+      "type": "object",
+      "required": [
+        "web",
+        "api",
+        "worker",
+        "model-gateway",
+        "egress-gateway",
+        "session-manager",
+        "sandbox-controller"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "web": {
+          "$ref": "#/$defs/app"
+        },
+        "api": {
+          "$ref": "#/$defs/app"
+        },
+        "worker": {
+          "$ref": "#/$defs/app"
+        },
+        "model-gateway": {
+          "$ref": "#/$defs/app"
+        },
+        "egress-gateway": {
+          "$ref": "#/$defs/app"
+        },
+        "session-manager": {
+          "$ref": "#/$defs/app"
+        },
+        "sandbox-controller": {
+          "$ref": "#/$defs/app"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "quantity": {
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)?(m|Ki|Mi|Gi)?$"
+    },
+    "resources": {
+      "type": "object",
+      "required": ["requests", "limits"],
+      "additionalProperties": false,
+      "properties": {
+        "requests": {
+          "type": "object",
+          "required": ["cpu", "memory"],
+          "additionalProperties": false,
+          "properties": {
+            "cpu": {
+              "$ref": "#/$defs/quantity"
+            },
+            "memory": {
+              "$ref": "#/$defs/quantity"
+            }
+          }
+        },
+        "limits": {
+          "type": "object",
+          "required": ["cpu", "memory"],
+          "additionalProperties": false,
+          "properties": {
+            "cpu": {
+              "$ref": "#/$defs/quantity"
+            },
+            "memory": {
+              "$ref": "#/$defs/quantity"
+            }
+          }
+        }
+      }
+    },
+    "app": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "pool",
+        "replicas",
+        "ports",
+        "probePort",
+        "probes",
+        "secretName",
+        "automountServiceAccountToken",
+        "runAsUser",
+        "env",
+        "resources",
+        "hpa",
+        "pdb"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "pool": {
+          "type": "string",
+          "description": "Node pool label (blackwing.io/pool). The sandbox pool is never an app pool.",
+          "enum": ["control-plane", "egress"]
+        },
+        "replicas": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ports": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["name", "port"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z0-9]([a-z0-9-]{0,13}[a-z0-9])?$"
+              },
+              "port": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "protocol": {
+                "type": "string",
+                "enum": ["TCP", "UDP"]
+              }
+            }
+          }
+        },
+        "probePort": {
+          "type": "string"
+        },
+        "probes": {
+          "type": "object",
+          "required": ["liveness", "readiness"],
+          "additionalProperties": false,
+          "properties": {
+            "liveness": {
+              "type": "string",
+              "pattern": "^/"
+            },
+            "readiness": {
+              "type": "string",
+              "pattern": "^/"
+            }
+          }
+        },
+        "secretName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Secret populated by the SECRETS epic. Read through envFrom only."
+        },
+        "automountServiceAccountToken": {
+          "type": "boolean"
+        },
+        "runAsUser": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "env": {
+          "type": "object",
+          "description": "Non-secret configuration only. Secret-looking keys are refused.",
+          "propertyNames": {
+            "not": {
+              "pattern": "(?i)(secret|password|token|key)$"
+            }
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "resources": {
+          "$ref": "#/$defs/resources"
+        },
+        "hpa": {
+          "type": "object",
+          "required": ["enabled", "minReplicas", "maxReplicas", "targetCPUUtilizationPercentage"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "minReplicas": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "maxReplicas": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "targetCPUUtilizationPercentage": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "pdb": {
+          "type": "object",
+          "required": ["enabled", "minAvailable"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "minAvailable": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "migrations": {
+          "type": "object",
+          "required": ["enabled", "command"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "command": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

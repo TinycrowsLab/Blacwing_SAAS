@@ -1,0 +1,38 @@
+# Dev (the single-node k3s host). Smaller footprint; PDBs off because one replica cannot be drained
+# with minAvailable 1. Images still come from the CI hand-off (merge the generated images file with -f).
+global:
+  environment: dev
+  otel:
+    endpoint: http://otel-collector.bw-system.svc.cluster.local:4318
+
+apps:
+  web:
+    replicas: 1
+    pdb: { enabled: false, minAvailable: 1 }
+    resources:
+      requests: { cpu: 50m, memory: 128Mi }
+      limits: { cpu: '500m', memory: 320Mi }
+  api:
+    replicas: 1
+    pdb: { enabled: false, minAvailable: 1 }
+    resources:
+      requests: { cpu: 100m, memory: 192Mi }
+      limits: { cpu: '1', memory: 512Mi }
+  worker:
+    replicas: 1
+    pdb: { enabled: false, minAvailable: 1 }
+    resources:
+      requests: { cpu: 100m, memory: 192Mi }
+      limits: { cpu: '1', memory: 512Mi }
+  model-gateway:
+    replicas: 1
+    pdb: { enabled: false, minAvailable: 1 }
+  egress-gateway:
+    replicas: 1
+    pdb: { enabled: false, minAvailable: 1 }
+    resources:
+      requests: { cpu: 100m, memory: 96Mi }
+      limits: { cpu: '1', memory: 256Mi }
+  sandbox-controller:
+    replicas: 1
+    pdb: { enabled: false, minAvailable: 1 }

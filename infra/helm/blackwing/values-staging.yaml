@@ -1,0 +1,15 @@
+# Staging: production shape (two replicas, PDBs on, HPAs on for the stateless tier) at a smaller size.
+global:
+  environment: staging
+  otel:
+    endpoint: http://otel-collector.bw-system.svc.cluster.local:4318
+
+apps:
+  web:
+    hpa: { enabled: true, minReplicas: 2, maxReplicas: 4, targetCPUUtilizationPercentage: 70 }
+  api:
+    hpa: { enabled: true, minReplicas: 2, maxReplicas: 4, targetCPUUtilizationPercentage: 70 }
+  worker:
+    hpa: { enabled: true, minReplicas: 2, maxReplicas: 4, targetCPUUtilizationPercentage: 70 }
+  model-gateway:
+    hpa: { enabled: true, minReplicas: 2, maxReplicas: 4, targetCPUUtilizationPercentage: 70 }

@@ -1,0 +1,1 @@
+{{- include "bw.app" (dict "root" . "name" "sandbox-controller" "extraEnv" (dict "SBX_IMAGE_DIGEST" .Values.global.sandbox.imageRef)) }}

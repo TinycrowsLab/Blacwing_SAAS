@@ -1,0 +1,79 @@
+{{- $app := .Values.apps.api -}}
+{{- if and $app.enabled $app.migrations.enabled }}
+# Drizzle migrations as a Helm hook. It runs before install and before every upgrade, and a failed Job
+# blocks the release (`helm upgrade --atomic` then rolls back). Its ConfigMap is a hook too, so it
+# exists before the Job starts, and it carries the same configuration as the api pods.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-migrate-config
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: '-10'
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+  labels:
+    {{- include "bw.labels" . | nindent 4 }}
+    app.kubernetes.io/name: db-migrate
+    blackwing.io/component: db-migrate
+data:
+  {{- include "bw.configData" (dict "root" . "name" "api" "app" $app "extraEnv" (dict)) | nindent 2 }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: '-5'
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+  labels:
+    {{- include "bw.labels" . | nindent 4 }}
+    app.kubernetes.io/name: db-migrate
+    blackwing.io/component: db-migrate
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        {{- include "bw.labels" . | nindent 8 }}
+        app.kubernetes.io/name: db-migrate
+        blackwing.io/component: db-migrate
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      nodeSelector:
+        blackwing.io/pool: {{ $app.pool }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ $app.runAsUser }}
+        runAsGroup: {{ $app.runAsUser }}
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: db-migrate
+          image: {{ include "bw.image" (dict "root" . "name" "api") | quote }}
+          imagePullPolicy: IfNotPresent
+          command:
+            {{- toYaml $app.migrations.command | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: db-migrate-config
+            - secretRef:
+                name: {{ $app.secretName }}
+                optional: false
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ['ALL']
+          resources:
+            {{- toYaml $app.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

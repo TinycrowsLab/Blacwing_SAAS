@@ -1,0 +1,18 @@
+# Production: the defaults in values.yaml, with HPAs on for the stateless tier. Every image digest
+# still comes from the signed CI publish (CI-007 images.json, IMAGE-012 bw-sandbox digest).
+global:
+  environment: prod
+  otel:
+    endpoint: http://otel-collector.bw-system.svc.cluster.local:4318
+
+apps:
+  web:
+    hpa: { enabled: true, minReplicas: 2, maxReplicas: 6, targetCPUUtilizationPercentage: 70 }
+  api:
+    hpa: { enabled: true, minReplicas: 2, maxReplicas: 8, targetCPUUtilizationPercentage: 70 }
+  worker:
+    hpa: { enabled: true, minReplicas: 2, maxReplicas: 6, targetCPUUtilizationPercentage: 70 }
+  model-gateway:
+    hpa: { enabled: true, minReplicas: 2, maxReplicas: 8, targetCPUUtilizationPercentage: 70 }
+  egress-gateway:
+    hpa: { enabled: true, minReplicas: 2, maxReplicas: 8, targetCPUUtilizationPercentage: 60 }

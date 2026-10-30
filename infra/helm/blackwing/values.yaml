@@ -1,0 +1,246 @@
+# Blackwing umbrella chart values (#44). Defaults are production-shaped; values-dev/staging/prod.yaml
+# override per environment. Install into the bw-system namespace (where bw-ingress routes web and api).
+#
+# Required inputs that have no safe default and make `helm template` fail on purpose:
+#   global.environment       dev | staging | prod
+#   global.images.<app>      digest-pinned ref, populated by `node scripts/helm-images.mjs` from the
+#                            CI-007 images.json hand-off (never a tag, never hand-typed)
+#   global.sandbox.imageRef  digest-pinned bw-sandbox ref from IMAGE-012's infra/docker/sandbox/IMAGE_DIGEST
+#
+# Secrets are never set here. Each app reads its Secret through envFrom (secretRef, optional: false),
+# so a missing Secret stops the pod at creation instead of starting it with defaults.
+
+global:
+  environment: ''
+  images: {}
+  sandbox:
+    imageRef: ''
+  otel:
+    endpoint: http://otel-collector.bw-system.svc.cluster.local:4318
+
+# The per-run bw-sandbox pod is NOT a Deployment here: sandbox-controller creates it at runtime
+# and receives its digest through SBX_IMAGE_DIGEST (global.sandbox.imageRef).
+apps:
+  web:
+    enabled: true
+    pool: control-plane
+    replicas: 2
+    ports:
+      - name: http
+        port: 3000
+    probePort: http
+    probes:
+      liveness: /healthz
+      readiness: /readyz
+    secretName: web-secrets
+    automountServiceAccountToken: false
+    runAsUser: 1000
+    env: {}
+    resources:
+      requests: { cpu: 100m, memory: 192Mi }
+      limits: { cpu: '500m', memory: 384Mi }
+    hpa:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  api:
+    enabled: true
+    pool: control-plane
+    replicas: 2
+    # /v1 and /graphql are the public Service `api` (bw-ingress routes only those paths). The Run
+    # Broker (/internal/broker) has its own Service `api-broker`, which is ClusterIP and never routed.
+    ports:
+      - name: http
+        port: 13400
+    probePort: http
+    probes:
+      liveness: /healthz
+      readiness: /readyz
+    secretName: api-secrets
+    automountServiceAccountToken: false
+    runAsUser: 1000
+    env:
+      API_PORT: '13400'
+    resources:
+      requests: { cpu: 250m, memory: 256Mi }
+      limits: { cpu: '1', memory: 512Mi }
+    hpa:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+    # Drizzle migrations run as a pre-install/pre-upgrade hook Job with the api image (the DB epic
+    # owns the migration entrypoint; `migrate-main.ts` is the one in packages/db). A failed Job
+    # blocks the upgrade, and `helm upgrade --atomic` rolls the release back.
+    migrations:
+      enabled: true
+      command: ['node', 'node_modules/@blackwing/db/src/migrate-main.ts']
+
+  worker:
+    enabled: true
+    pool: control-plane
+    replicas: 2
+    ports:
+      - name: health
+        port: 13800
+    probePort: health
+    probes:
+      liveness: /healthz
+      readiness: /readyz
+    secretName: worker-secrets
+    automountServiceAccountToken: false
+    runAsUser: 1000
+    env:
+      WORKER_HEALTH_PORT: '13800'
+    resources:
+      requests: { cpu: 250m, memory: 256Mi }
+      limits: { cpu: '1', memory: 768Mi }
+    hpa:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  model-gateway:
+    enabled: true
+    pool: control-plane
+    replicas: 2
+    ports:
+      - name: http
+        port: 8081
+    probePort: http
+    probes:
+      liveness: /healthz
+      readiness: /readyz
+    secretName: model-gateway-secrets
+    automountServiceAccountToken: false
+    runAsUser: 1000
+    env:
+      GATEWAY_PORT: '8081'
+    resources:
+      requests: { cpu: 250m, memory: 256Mi }
+      limits: { cpu: '1', memory: 512Mi }
+    hpa:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  # Egress tier: the gateway runs on the `egress` node pool (public egress leaves from there). Its
+  # listeners are reached only through NetworkPolicies (INFRA-011); no Ingress is ever created for them.
+  egress-gateway:
+    enabled: true
+    pool: egress
+    replicas: 2
+    ports:
+      - name: proxy
+        port: 13128
+      - name: socks
+        port: 11080
+      - name: dns-udp
+        port: 15353
+        protocol: UDP
+      - name: dns-tcp
+        port: 15353
+        protocol: TCP
+      - name: mgmt
+        port: 13129
+    probePort: mgmt
+    probes:
+      liveness: /healthz
+      readiness: /readyz
+    secretName: egress-gateway-secrets
+    automountServiceAccountToken: false
+    # The Go image runs as distroless `nonroot` (uid 65532).
+    runAsUser: 65532
+    env:
+      GATEWAY_HTTP_PROXY_ADDR: '0.0.0.0:13128'
+      GATEWAY_SOCKS_ADDR: '0.0.0.0:11080'
+      GATEWAY_DNS_ADDR: '0.0.0.0:15353'
+      GATEWAY_MGMT_ADDR: '0.0.0.0:13129'
+    resources:
+      requests: { cpu: 250m, memory: 128Mi }
+      limits: { cpu: '2', memory: 512Mi }
+    hpa:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 60
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  session-manager:
+    enabled: true
+    pool: control-plane
+    replicas: 1
+    ports:
+      - name: mgmt
+        port: 7080
+    probePort: mgmt
+    probes:
+      liveness: /healthz
+      readiness: /readyz
+    secretName: session-manager-secrets
+    automountServiceAccountToken: false
+    runAsUser: 1000
+    env:
+      SM_MGMT_ADDR: '0.0.0.0:7080'
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits: { cpu: '500m', memory: 256Mi }
+    hpa:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 3
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: false
+      minAvailable: 1
+
+  sandbox-controller:
+    enabled: true
+    pool: control-plane
+    replicas: 2
+    ports:
+      - name: mgmt
+        port: 7070
+    probePort: mgmt
+    probes:
+      liveness: /healthz
+      readiness: /readyz
+    secretName: sandbox-controller-secrets
+    # The controller creates sandbox pods through the Kubernetes API, so it is the only app that mounts
+    # a ServiceAccount token. Its Role/RoleBinding belongs to the sandbox-controller issue.
+    automountServiceAccountToken: true
+    runAsUser: 1000
+    env:
+      SBX_MGMT_ADDR: '0.0.0.0:7070'
+      SBX_DRIVER: kubernetes
+      SBX_NAMESPACE: bw-runs
+      SBX_RUNTIME_CLASS: gvisor
+    resources:
+      requests: { cpu: 250m, memory: 256Mi }
+      limits: { cpu: '1', memory: 512Mi }
+    hpa:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 4
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      minAvailable: 1

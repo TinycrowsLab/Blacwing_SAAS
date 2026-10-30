@@ -1,0 +1,28 @@
+{{- $app := .Values.apps.api -}}
+{{- if $app.enabled }}
+# The Run Broker (/internal/broker) on its own Service. It is ClusterIP and no Ingress or IngressRoute
+# is ever rendered for it (bw-ingress lists only /v1 and /graphql); NetworkPolicies (INFRA-011) limit
+# it to the sandbox network.
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-broker
+  labels:
+    {{- include "bw.labels" . | nindent 4 }}
+    app.kubernetes.io/name: api-broker
+    blackwing.io/component: api
+    blackwing.io/exposure: cluster-internal
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/name: api
+    blackwing.io/component: api
+  ports:
+    {{- range $app.ports }}
+    - name: {{ .name }}
+      port: {{ .port }}
+      targetPort: {{ .name }}
+      protocol: TCP
+    {{- end }}
+{{- end }}
