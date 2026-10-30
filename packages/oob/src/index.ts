@@ -16,3 +16,11 @@ export {
   INTERACTSH_PROTOCOL_VERSION,
   MAX_RECORDS_PER_POLL,
 } from './protocol.js';
+export {
+  correlateInteraction,
+  type CorrelationQuery,
+  OOB_CHANNELS,
+  OOB_CORRELATION_WINDOW_MAX_MS,
+  type OobChannel,
+  type OobHit,
+} from './correlate.js';

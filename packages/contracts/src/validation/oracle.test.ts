@@ -47,7 +47,11 @@ const VALID_BINDINGS: Record<OracleBindingType, unknown> = {
     declaredAt: DECLARED_AT,
     params: { signature: 'SQLSTATE class 42' },
   },
-  file_read: { type: 'file_read', declaredAt: DECLARED_AT, params: { marker: 'root:x:0:0' } },
+  file_read: {
+    type: 'file_read',
+    declaredAt: DECLARED_AT,
+    params: { marker: 'blackwing-sentinel-01' },
+  },
   header_cookie: {
     type: 'header_cookie',
     declaredAt: DECLARED_AT,
@@ -108,6 +112,28 @@ describe('OracleBindingSchema', () => {
       extra: true,
     });
     expect(result.success).toBe(false);
+  });
+
+  it('accepts smtp as an oob channel and rejects an unknown one', () => {
+    const base = { type: 'oob', declaredAt: DECLARED_AT };
+    expect(
+      OracleBindingSchema.safeParse({ ...base, params: { channel: 'smtp', windowMs: 1000 } })
+        .success,
+    ).toBe(true);
+    expect(
+      OracleBindingSchema.safeParse({ ...base, params: { channel: 'ftp', windowMs: 1000 } })
+        .success,
+    ).toBe(false);
+  });
+
+  it('accepts only a benign sentinel id as a file_read marker (path, traversal or value refused)', () => {
+    const base = { type: 'file_read', declaredAt: DECLARED_AT };
+    for (const marker of ['blackwing-sentinel-01', 'bw_marker-7']) {
+      expect(OracleBindingSchema.safeParse({ ...base, params: { marker } }).success).toBe(true);
+    }
+    for (const marker of ['../../etc/passwd', '/etc/shadow', 'root:x:0:0', '.env', 'ab', '']) {
+      expect(OracleBindingSchema.safeParse({ ...base, params: { marker } }).success).toBe(false);
+    }
   });
 
   it('rejects an out-of-range oob window', () => {

@@ -19,6 +19,7 @@
     "@blackwing/domain": "workspace:*",
     "@blackwing/errors": "workspace:*",
     "@blackwing/logger": "workspace:*",
+    "@blackwing/oob": "workspace:*",
     "@opentelemetry/api": "catalog:"
   },
   "devDependencies": {

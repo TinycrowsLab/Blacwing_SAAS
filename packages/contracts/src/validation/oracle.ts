@@ -53,8 +53,22 @@ const HTTP_STATUS_MIN = 100;
 const HTTP_STATUS_MAX = 599;
 /** Longest injected-delay window a timing check may declare (one minute). */
 const TIMING_DELTA_MAX_MS = 60_000;
+/** Fewest timed samples a timing verdict may rest on; below this a median is not meaningful. */
+export const TIMING_SAMPLES_MIN = 3;
+/** Most timed samples a timing check may declare. */
+export const TIMING_SAMPLES_MAX = 50;
+/** Samples used when a timing binding does not declare its own count. */
+export const TIMING_SAMPLES_DEFAULT = 5;
 /** Longest window an out-of-band callback is awaited (five minutes). */
 export const OOB_WINDOW_MAX_MS = 300_000;
+
+/**
+ * A benign sentinel id: a harmless, in-scope marker the lab placed in a file that must not be reachable. It is a short
+ * token of letters, digits, `_` and `-`, so it can never express a path, a separator or a credential-shaped value.
+ */
+export const benignSentinelIdSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]{4,128}$/, 'must be a benign sentinel id, not a path or a value');
 
 const httpStatusSchema = z.int().min(HTTP_STATUS_MIN).max(HTTP_STATUS_MAX);
 /** A lowercase persona or role key, as used in access checks and pins. */
@@ -96,7 +110,7 @@ export const accessMatrixParamsSchema = z
   );
 
 /** Typed `params` per oracle type. Each shape is strict and holds check parameters only, never a payload. */
-const oracleParamsSchemas = {
+export const oracleParamsSchemas = {
   marker: z.strictObject({ token: nfcTextSchema(LIMITS.shortTextMax) }),
   status_diff: z.strictObject({
     expectedStatus: httpStatusSchema,
@@ -105,14 +119,16 @@ const oracleParamsSchemas = {
   timing_baseline: z.strictObject({
     baselineMs: z.int().min(0).max(TIMING_DELTA_MAX_MS),
     minDeltaMs: z.int().min(1).max(TIMING_DELTA_MAX_MS),
+    /** Timed samples per side the verdict needs. Absent means `TIMING_SAMPLES_DEFAULT`. */
+    samples: z.int().min(TIMING_SAMPLES_MIN).max(TIMING_SAMPLES_MAX).optional(),
   }),
   oob: z.strictObject({
-    channel: z.enum(['dns', 'http']),
+    channel: z.enum(['dns', 'http', 'smtp']),
     windowMs: z.int().min(1).max(OOB_WINDOW_MAX_MS),
   }),
   access_matrix: accessMatrixParamsSchema,
   error_signature: z.strictObject({ signature: nfcTextSchema(LIMITS.shortTextMax) }),
-  file_read: z.strictObject({ marker: nfcTextSchema(LIMITS.shortTextMax) }),
+  file_read: z.strictObject({ marker: benignSentinelIdSchema }),
   header_cookie: z.strictObject({
     target: z.enum(['header', 'cookie']),
     name: httpTokenSchema,

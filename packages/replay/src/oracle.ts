@@ -28,6 +28,13 @@ export interface ErrorSignatureOracle {
 export interface OracleVerdict {
   readonly matched: boolean;
   readonly signature?: string;
+  /** Why the verdict is what it is, as a stable short code. Never a response body or a payload. */
+  readonly reason?: string;
+  /**
+   * The audit event type a fired verdict must be recorded under, for oracle types that name one. The evaluator is
+   * synchronous and pure, so the caller writes the event to the audit ledger.
+   */
+  readonly auditEvent?: string;
 }
 
 /** Evaluates an error-signature oracle against one recorded response. Pure and deterministic. */

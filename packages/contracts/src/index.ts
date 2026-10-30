@@ -1063,13 +1063,18 @@ export {
   ACCESS_MATRIX_COMPARISON_MAX,
   accessMatrixParamsSchema,
   authzIdSchema,
+  benignSentinelIdSchema,
   ORACLE_BINDING_TYPES,
   type OracleBinding,
   OracleBindingSchema,
   type OracleBindingType,
   oracleBindingTypeSchema,
+  oracleParamsSchemas,
   type OracleObservation,
   OracleObservationSchema,
+  TIMING_SAMPLES_DEFAULT,
+  TIMING_SAMPLES_MAX,
+  TIMING_SAMPLES_MIN,
 } from './validation/oracle.js';
 export {
   isOracleSpec,

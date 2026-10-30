@@ -1592,6 +1592,9 @@ importers:
       '@blackwing/logger':
         specifier: workspace:*
         version: link:../logger
+      '@blackwing/oob':
+        specifier: workspace:*
+        version: link:../oob
       '@opentelemetry/api':
         specifier: 'catalog:'
         version: 1.9.1

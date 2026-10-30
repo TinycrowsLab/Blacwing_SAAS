@@ -26,6 +26,27 @@ export {
 } from './juice-shop-sqli.js';
 export { createLabEgress, createLocalSandboxProvider, LAB_PROBE_TIMEOUT_MS } from './adapters.js';
 export {
+  ACCESS_MATRIX_AUDIT_EVENT,
+  ACCESS_MATRIX_REASONS,
+  accessMatrixEvaluator,
+  assertBenignSentinel,
+  createSignalEvaluators,
+  FILE_READ_REASONS,
+  fileReadEvaluator,
+  noopOracleMetrics,
+  OOB_AUDIT_EVENT,
+  OOB_REASONS,
+  oobEvaluator,
+  type OobSignal,
+  type OracleMetrics,
+  type ReplaySignals,
+  type RoleAccess,
+  type SignalStore,
+  TIMING_REASONS,
+  timingBaselineEvaluator,
+  type TimingSignal,
+} from './oracles/index.js';
+export {
   createOracleDispatcher,
   type DispatchOutcome,
   type OracleDispatcher,

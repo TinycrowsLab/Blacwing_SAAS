@@ -11,6 +11,7 @@
     { "path": "../contracts" },
     { "path": "../domain" },
     { "path": "../logger" },
-    { "path": "../errors" }
+    { "path": "../errors" },
+    { "path": "../oob" }
   ]
 }
