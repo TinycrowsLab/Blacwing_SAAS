@@ -15,6 +15,7 @@ import { personaOpenApiModule } from '../personas/openapi.js';
 import { runEventsOpenApiModule } from '../run-events/openapi.js';
 import { signupOpenApiModule } from '../signup/openapi.js';
 import { surfaceOpenApiModule } from '../surface/openapi.js';
+import { tenantProfileOpenApiModule } from '../tenant-profile/openapi.js';
 import { tenantSettingsOpenApiModule } from '../tenant-settings/openapi.js';
 import { testPlansOpenApiModule } from '../test-plans/openapi.js';
 
@@ -83,6 +84,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     personaOpenApiModule(),
     signupOpenApiModule(),
     tenantSettingsOpenApiModule(),
+    tenantProfileOpenApiModule(),
     assessmentRequestOpenApiModule(),
     assetOpenApiModule(),
     standingAuthorisationsOpenApiModule(),

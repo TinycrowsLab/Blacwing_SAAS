@@ -13,6 +13,7 @@ export {
   CrossTenantAccessError,
   EtagMismatchError,
   ForbiddenError,
+  ForbiddenRoleError,
   IllegalRunTransitionError,
   InternalError,
   isAppError,

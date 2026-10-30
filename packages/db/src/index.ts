@@ -229,6 +229,14 @@ export {
   type TenantSettingsWrite,
 } from './tenant-settings.repository.js';
 export {
+  type OrgSettingsAuditEvent,
+  type OrgSettingsAuditHook,
+  type TenantProfileRecord,
+  TenantProfileRepository,
+  type TenantProfileRepositoryOptions,
+  type TenantProfileWrite,
+} from './tenant-profile.repository.js';
+export {
   createPgPersonaOverrideStore,
   type PersonaOverrideColumns,
   type PgPersonaOverrideStore,

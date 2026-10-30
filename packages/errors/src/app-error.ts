@@ -98,6 +98,14 @@ export class AuthError extends AppError {
   }
 }
 
+/** `FORBIDDEN_ROLE` (403): the caller's tenant role does not grant the action (ADMIN-001 org settings). */
+export class ForbiddenRoleError extends AppError {
+  declare readonly code: 'FORBIDDEN_ROLE';
+  constructor(message?: string, options?: AppErrorOptions) {
+    super('FORBIDDEN_ROLE', message, options);
+  }
+}
+
 /** `FORBIDDEN` (403): authenticated, but RBAC or Cedar denies the action. */
 export class ForbiddenError extends AppError {
   declare readonly code: 'FORBIDDEN';

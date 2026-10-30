@@ -55,6 +55,8 @@ export const tenantSettingsSchema = z.strictObject({
   /** PII: redacted in audit diffs and logs (see {@link TENANT_SETTINGS_PII_KEYS}). */
   defaultNotificationEmail: z.email().optional(),
   weekStartsOn: weekStartsOnSchema.optional(),
+  /** PII: the organisation's support contact (ADMIN-001), redacted in audit diffs and logs. */
+  supportContactEmail: z.email().optional(),
 });
 export type TenantSettings = z.infer<typeof tenantSettingsSchema>;
 
@@ -67,12 +69,14 @@ export const tenantSettingsPatchSchema = z.strictObject({
   defaultAssessmentMode: runModeSchema.optional(),
   defaultNotificationEmail: z.email().nullable().optional(),
   weekStartsOn: weekStartsOnSchema.nullable().optional(),
+  supportContactEmail: z.email().nullable().optional(),
 });
 export type TenantSettingsPatch = z.infer<typeof tenantSettingsPatchSchema>;
 
 /** Settings keys whose values are personal data: audit and logs record the key, never the value. */
 export const TENANT_SETTINGS_PII_KEYS: readonly string[] = Object.freeze([
   'defaultNotificationEmail',
+  'supportContactEmail',
 ]);
 
 /** What `GET` and `PATCH` answer: the settings, the read-only data region and the last change. */

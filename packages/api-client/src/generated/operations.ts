@@ -121,6 +121,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  getCurrentTenant: {
+    method: 'GET',
+    path: '/v1/tenants/current',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   getFinding: {
     method: 'GET',
     path: '/v1/findings/{id}',
@@ -369,6 +376,13 @@ export const OPERATIONS = {
     method: 'PATCH',
     path: '/v1/assets/{id}',
     pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
+  },
+  updateCurrentTenant: {
+    method: 'PATCH',
+    path: '/v1/tenants/current',
+    pathParams: [],
     queryParams: [],
     requiredHeaders: ['If-Match'],
   },

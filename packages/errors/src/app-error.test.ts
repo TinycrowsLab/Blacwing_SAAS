@@ -12,6 +12,7 @@ import {
   ConflictError,
   CrossTenantAccessError,
   ForbiddenError,
+  ForbiddenRoleError,
   IllegalRunTransitionError,
   InternalError,
   isAppError,
@@ -43,6 +44,12 @@ const SUBCLASSES: readonly (readonly [
   ],
   ['AuthError', 'UNAUTHENTICATED', (o) => new AuthError('no session', o), AuthError],
   ['ForbiddenError', 'FORBIDDEN', (o) => new ForbiddenError('denied', o), ForbiddenError],
+  [
+    'ForbiddenRoleError',
+    'FORBIDDEN_ROLE',
+    (o) => new ForbiddenRoleError('denied', o),
+    ForbiddenRoleError,
+  ],
   ['NotFoundError', 'NOT_FOUND', (o) => new NotFoundError('missing', o), NotFoundError],
   // Test plans (PLAN-005, #395): the typed errors the test plan API and store raise.
   [

@@ -32,6 +32,8 @@ const DEFINITIONS = {
   AUTH_INVALID_TOKEN: { status: 401, title: 'Invalid credentials', retryable: false },
   AUTH_EXPIRED: { status: 401, title: 'Credentials expired', retryable: false },
   FORBIDDEN: { status: 403, title: 'Forbidden', retryable: false },
+  // The caller's tenant role does not grant the action (org settings, ADMIN-001). A refusal, never retried unchanged.
+  FORBIDDEN_ROLE: { status: 403, title: 'Role does not permit this action', retryable: false },
   NOT_FOUND: { status: 404, title: 'Resource not found', retryable: false },
   CONFLICT: { status: 409, title: 'Conflict', retryable: false },
   PRECONDITION_FAILED: { status: 412, title: 'Precondition failed', retryable: false },

@@ -66,7 +66,7 @@ describe('tenantSettingsSchema', () => {
   });
 
   it('lists the personal-data keys that audit and logs must redact', () => {
-    expect(TENANT_SETTINGS_PII_KEYS).toEqual(['defaultNotificationEmail']);
+    expect(TENANT_SETTINGS_PII_KEYS).toEqual(['defaultNotificationEmail', 'supportContactEmail']);
   });
 });
 

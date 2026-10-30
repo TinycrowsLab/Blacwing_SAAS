@@ -24,6 +24,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   AUTH_INVALID_TOKEN: 401,
   AUTH_EXPIRED: 401,
   FORBIDDEN: 403,
+  FORBIDDEN_ROLE: 403,
   NOT_FOUND: 404,
   CONFLICT: 409,
   PRECONDITION_FAILED: 412,
@@ -200,7 +201,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(172);
+    expect(ERROR_CODE_LIST).toHaveLength(173);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -310,6 +311,7 @@ describe('error-code registry', () => {
       | 'AUTH_INVALID_TOKEN'
       | 'AUTH_EXPIRED'
       | 'FORBIDDEN'
+      | 'FORBIDDEN_ROLE'
       | 'NOT_FOUND'
       | 'CONFLICT'
       | 'PRECONDITION_FAILED'

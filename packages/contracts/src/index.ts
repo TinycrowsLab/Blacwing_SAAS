@@ -221,6 +221,17 @@ export {
   weekStartsOnSchema,
 } from './entities/tenant-settings.js';
 export {
+  type OrgProfile,
+  orgProfileSchema,
+  ORG_NAME_MAX_LENGTH,
+  type OrgSettings,
+  type OrgSettingsPatch,
+  orgNameSchema,
+  orgSettingsPatchSchema,
+  orgSettingsSchema,
+  supportContactEmailSchema,
+} from './entities/org-settings.js';
+export {
   ASSET_ENVIRONMENTS,
   ASSET_IDENTIFIER_KINDS,
   ASSET_JSON_MAX_BYTES,
