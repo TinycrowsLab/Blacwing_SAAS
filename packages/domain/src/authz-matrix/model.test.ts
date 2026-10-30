@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { OracleBindingSchema } from '@blackwing/contracts';
+import {
+  compatibleNegativeControlKinds,
+  OracleBindingSchema,
+  parseOracleSpec,
+} from '@blackwing/contracts';
 
 import {
   ACCESS_CONTROL_CLASSES,
   accessMatrixBinding,
+  accessMatrixOracleSpec,
+  alternateRoleNegativeControl,
   AUTHZ_MATRIX_CELLS_METRIC,
   AUTHZ_MATRIX_CELLS_METRIC_LABELS,
   AuthorisationMatrixSchema,
@@ -452,5 +458,59 @@ describe('negative-control templates', () => {
         actingRole: 'admin',
       }),
     ).toBeUndefined();
+  });
+});
+
+describe('PLAN oracle spec and negative-control projections (#695)', () => {
+  const check = {
+    functionId: 'view_basket',
+    objectId: 'basket_7',
+    actingRole: 'admin',
+    comparisonRoles: ['customer'],
+    expected: 'deny',
+  } as const;
+  const options = {
+    roleMatrixId: '0190d2a4-7b1e-7c3a-9f2e-1a2b3c4d5e6f',
+    observedVia: 'status',
+    description: 'The admin is denied the basket that the customer owns.',
+    declaredAt: DECLARED_AT,
+  } as const;
+
+  it('projects a PLAN access_matrix spec that the shared catalogue accepts unchanged', () => {
+    const spec = accessMatrixOracleSpec(sampleMatrix(), check, options);
+    expect(spec).toMatchObject({
+      type: 'access_matrix',
+      readOnly: true,
+      intrusiveness: 'passive',
+      params: { functionId: 'view_basket', expected: 'deny', observedVia: 'status' },
+    });
+    expect(parseOracleSpec(spec)).toEqual(spec);
+  });
+
+  it('refuses a spec for a check that names an undeclared cell, or a malformed observation', () => {
+    expect(() =>
+      accessMatrixOracleSpec(sampleMatrix(), { ...check, functionId: 'nope' }, options),
+    ).toThrow(AuthzMatrixError);
+    expect(() =>
+      accessMatrixOracleSpec(sampleMatrix(), check, {
+        ...options,
+        observedVia: 'cookie' as 'status',
+      }),
+    ).toThrow();
+  });
+
+  it('projects the selected control role as a PLAN alternate_role negative control, bound to access_matrix', () => {
+    const control = alternateRoleNegativeControl('customer');
+    expect(control).toMatchObject({
+      kind: 'alternate_role',
+      oracleMustNotFire: true,
+      params: { roleId: 'customer' },
+    });
+    expect(compatibleNegativeControlKinds('access_matrix')).toContain(control.kind);
+  });
+
+  it('refuses a negative control whose role id is not a role id, so nothing else rides in the control', () => {
+    expect(() => alternateRoleNegativeControl('Customer Role')).toThrow();
+    expect(() => alternateRoleNegativeControl('')).toThrow();
   });
 });

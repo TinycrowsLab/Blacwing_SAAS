@@ -3,8 +3,12 @@ import { z } from 'zod';
 import {
   authzIdSchema,
   LIMITS,
+  type NegativeControlSpec,
+  negativeControlSpecSchema,
   type OracleBinding,
   OracleBindingSchema,
+  type OracleSpec,
+  parseOracleSpec,
   roleIdSchema,
 } from '@blackwing/contracts';
 import { AppError } from '@blackwing/errors';
@@ -435,4 +439,48 @@ export function accessMatrixBinding(
     );
   }
   return binding.data;
+}
+
+/**
+ * The PLAN oracle spec for one access-matrix check: the declared catalogue entry (`ORACLE_SPEC_TYPES`), which
+ * names the matrix by `roleMatrixId` and carries no acting role. The check is first validated against the matrix
+ * (`accessMatrixBinding`), so a spec can only name a real cell. The spec is validated with `parseOracleSpec`.
+ */
+export function accessMatrixOracleSpec(
+  matrix: AuthorisationMatrix,
+  check: AccessMatrixCheck,
+  options: {
+    roleMatrixId: string;
+    observedVia: 'status' | 'body_shape';
+    description: string;
+    declaredAt: string;
+  },
+): OracleSpec {
+  accessMatrixBinding(matrix, check, options.declaredAt);
+  return parseOracleSpec({
+    type: 'access_matrix',
+    description: options.description,
+    readOnly: true,
+    intrusiveness: 'passive',
+    params: {
+      roleMatrixId: options.roleMatrixId,
+      functionId: check.functionId,
+      expected: check.expected,
+      observedVia: options.observedVia,
+    },
+  });
+}
+
+/**
+ * The PLAN negative control for an access-matrix check: the `alternate_role` kind, which PLAN binds to
+ * `access_matrix` (`compatibleNegativeControlKinds`). It names the comparison role the control replays with. The
+ * role id is validated first, and the spec is validated by PLAN's negative-control schema.
+ */
+export function alternateRoleNegativeControl(roleId: string): NegativeControlSpec {
+  return negativeControlSpecSchema.parse({
+    kind: 'alternate_role',
+    description: `Replay the cell with ${roleIdSchema.parse(roleId)}, a role the matrix entitles to the same access.`,
+    oracleMustNotFire: true,
+    params: { roleId: roleIdSchema.parse(roleId) },
+  });
 }

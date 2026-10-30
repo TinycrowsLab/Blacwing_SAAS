@@ -284,6 +284,8 @@ export {
   ACCESS_CONTROL_CLASSES,
   type AccessMatrixCheck,
   accessMatrixBinding,
+  accessMatrixOracleSpec,
+  alternateRoleNegativeControl,
   AUTHZ_HTTP_METHODS,
   type AuthzHttpMethod,
   AUTHZ_MATRIX_CELLS_METRIC,
