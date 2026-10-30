@@ -123,7 +123,10 @@
         "scope.manifest.upload_requested",
         "scope.manifest.upload_completed",
         "scope.manifest.upload_deleted",
-        "authz.sa.expired"
+        "authz.sa.expired",
+        "service_account.created",
+        "service_account.updated",
+        "service_account.disabled"
       ]
     },
     "severity": {
@@ -253,7 +256,8 @@
             "session",
             "platform",
             "assessment_request",
-            "input_manifest"
+            "input_manifest",
+            "service_account"
           ]
         },
         "id": {

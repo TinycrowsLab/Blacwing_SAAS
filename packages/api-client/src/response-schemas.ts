@@ -29,6 +29,10 @@ import {
   surfaceRunViewSchema,
   tenantSettingsResponseSchema,
   notificationChannelViewSchema,
+  inputManifestSpecObjectSchema,
+  inputManifestUploadGrantSchema,
+  inputManifestUploadRemovedSchema,
+  serviceAccountSchema,
 } from '@blackwing/contracts';
 
 import type { OperationId } from './generated/operations.js';
@@ -156,6 +160,18 @@ export const RESPONSE_SCHEMAS: Readonly<
   deleteNotificationChannel: { 200: notificationChannelViewSchema },
   getCurrentTenant: { 200: orgProfileSchema },
   updateCurrentTenant: { 200: orgProfileSchema },
+  listServiceAccounts: {
+    200: z
+      .object({ items: z.array(serviceAccountSchema), nextCursor: z.string().nullable() })
+      .strict(),
+  },
+  createServiceAccount: { 201: serviceAccountSchema },
+  getServiceAccount: { 200: serviceAccountSchema },
+  updateServiceAccount: { 200: serviceAccountSchema },
+  disableServiceAccount: { 200: serviceAccountSchema },
+  createInputManifestUpload: { 201: inputManifestUploadGrantSchema },
+  completeInputManifestUpload: { 200: inputManifestSpecObjectSchema },
+  deleteInputManifestUpload: { 200: inputManifestUploadRemovedSchema },
   getGate1Plan: { 200: gate1PlanViewSchema },
   getRunSurface: { 200: surfaceRunViewSchema },
   submitGate1: { 200: gate1SubmitResponseSchema },

@@ -72,6 +72,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  createServiceAccount: {
+    method: 'POST',
+    path: '/v1/service-accounts',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   createStandingAuthorisation: {
     method: 'POST',
     path: '/v1/standing-authorisations',
@@ -120,6 +127,13 @@ export const OPERATIONS = {
     pathParams: ['runId', 'version'],
     queryParams: ['against'],
     requiredHeaders: [],
+  },
+  disableServiceAccount: {
+    method: 'DELETE',
+    path: '/v1/service-accounts/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
   },
   getAssessmentRequest: {
     method: 'GET',
@@ -203,6 +217,13 @@ export const OPERATIONS = {
     path: '/v1/runs/{runId}/surface',
     pathParams: ['runId'],
     queryParams: ['kinds', 'minConfidence', 'inScopeOnly', 'cursor', 'limit'],
+    requiredHeaders: [],
+  },
+  getServiceAccount: {
+    method: 'GET',
+    path: '/v1/service-accounts/{id}',
+    pathParams: ['id'],
+    queryParams: [],
     requiredHeaders: [],
   },
   getStandingAuthorisation: {
@@ -300,6 +321,13 @@ export const OPERATIONS = {
     path: '/v1/personas',
     pathParams: [],
     queryParams: [],
+    requiredHeaders: [],
+  },
+  listServiceAccounts: {
+    method: 'GET',
+    path: '/v1/service-accounts',
+    pathParams: [],
+    queryParams: ['cursor', 'limit'],
     requiredHeaders: [],
   },
   listStandingAuthorisations: {
@@ -417,6 +445,13 @@ export const OPERATIONS = {
   updateOncallRoster: {
     method: 'PATCH',
     path: '/v1/oncall/rosters/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
+  },
+  updateServiceAccount: {
+    method: 'PATCH',
+    path: '/v1/service-accounts/{id}',
     pathParams: ['id'],
     queryParams: [],
     requiredHeaders: ['If-Match'],

@@ -836,6 +836,28 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'A standing authorisation reached its expires_at and moved from active to expired.',
   },
+  // service accounts: non-human tenant principals (RBAC-005), every change audited (§8.8)
+  {
+    action: 'service_account.created',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A service account was created.',
+  },
+  {
+    action: 'service_account.updated',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A service account was updated (name, description, roles or status).',
+  },
+  {
+    action: 'service_account.disabled',
+    defaultSeverity: 'warning',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A service account was disabled; its tokens stop authenticating.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

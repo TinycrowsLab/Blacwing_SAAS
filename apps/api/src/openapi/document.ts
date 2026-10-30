@@ -12,6 +12,7 @@ import { killOpenApiDocument } from '../kill/openapi.js';
 import { notificationChannelsOpenApiModule } from '../notification-channels/openapi.js';
 import { oncallOpenApiDocument } from '../oncall/openapi.js';
 import { personaOpenApiModule } from '../personas/openapi.js';
+import { serviceAccountOpenApiModule } from '../rbac/openapi.js';
 import { runEventsOpenApiModule } from '../run-events/openapi.js';
 import { inputManifestOpenApiModule } from '../scoping/openapi.js';
 import { signupOpenApiModule } from '../signup/openapi.js';
@@ -94,6 +95,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     findingOpenApiModule(),
     oncallOpenApiModule(),
     notificationChannelsOpenApiModule(),
+    serviceAccountOpenApiModule(),
   ];
 }
 
