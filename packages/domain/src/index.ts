@@ -346,6 +346,20 @@ export {
   selectControlRole,
 } from './authz-matrix/model.js';
 export {
+  AUTHZ_RATE_LIMITED_STATUS,
+  AUTHZ_READ_METHODS,
+  AUTHZ_SKIP_REASONS,
+  type AuthzCellResult,
+  type AuthzEngineOptions,
+  type AuthzEnginePorts,
+  type AuthzReadMethod,
+  type AuthzReplayRequest,
+  type AuthzReplayResult,
+  type AuthzRunCounts,
+  type AuthzRunResult,
+  runAuthzMatrix,
+} from './authz-matrix/engine.js';
+export {
   ACCESS_BODY_WINDOW,
   ACCESS_MATRIX_REASONS,
   ACCESS_MATRIX_VERDICTS,
