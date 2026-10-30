@@ -51,6 +51,7 @@ export const evidenceRefsSchema = z.array(evidenceRefSchema).max(LIMITS.shortTex
 
 const HTTP_STATUS_MIN = 100;
 const HTTP_STATUS_MAX = 599;
+const httpStatusSchema = z.int().min(HTTP_STATUS_MIN).max(HTTP_STATUS_MAX);
 /** Longest injected-delay window a timing check may declare (one minute). */
 const TIMING_DELTA_MAX_MS = 60_000;
 /** Fewest timed samples a timing verdict may rest on; below this a median is not meaningful. */
@@ -70,7 +71,6 @@ export const benignSentinelIdSchema = z
   .string()
   .regex(/^[A-Za-z0-9_-]{4,128}$/, 'must be a benign sentinel id, not a path or a value');
 
-const httpStatusSchema = z.int().min(HTTP_STATUS_MIN).max(HTTP_STATUS_MAX);
 /** A lowercase persona or role key, as used in access checks and pins. */
 export const roleKeySchema = z
   .string()
@@ -109,13 +109,80 @@ export const accessMatrixParamsSchema = z
     'the acting role cannot be its own comparison role',
   );
 
-/** Typed `params` per oracle type. Each shape is strict and holds check parameters only, never a payload. */
-export const oracleParamsSchemas = {
-  marker: z.strictObject({ token: nfcTextSchema(LIMITS.shortTextMax) }),
-  status_diff: z.strictObject({
+/** Where a marker token must appear: the raw body, a response header value, or the visible text of an HTML body. */
+const MARKER_LOCATIONS = ['body', 'header', 'dom'] as const;
+/** Where an error signature is searched: the body or the response headers. */
+const ERROR_SIGNATURE_SCOPES = ['body', 'header'] as const;
+/** Security attributes a cookie check can require (RFC 6265bis and the SameSite draft). */
+const COOKIE_ATTRIBUTES = ['HttpOnly', 'Secure', 'SameSite'] as const;
+const HEADER_DISALLOWED_VALUE_MAX = 120;
+
+export const markerParamsSchema = z.strictObject({
+  token: nfcTextSchema(LIMITS.shortTextMax),
+  location: z.enum(MARKER_LOCATIONS).default('body'),
+});
+
+/** A status differential: the probe must return `expectedStatus`, and that must differ from the recorded baseline. */
+export const statusDiffParamsSchema = z
+  .strictObject({
     expectedStatus: httpStatusSchema,
     baselineStatus: httpStatusSchema,
-  }),
+  })
+  .refine(
+    (params) => params.expectedStatus !== params.baselineStatus,
+    'expected and baseline statuses must differ',
+  );
+
+export const errorSignatureParamsSchema = z.strictObject({
+  signature: nfcTextSchema(LIMITS.shortTextMax),
+  scope: z.enum(ERROR_SIGNATURE_SCOPES).default('body'),
+});
+
+/**
+ * A header or cookie assertion. `expectation: 'present'` fails when the header is missing, and `'absent'` fails
+ * when it is set. A cookie assertion names one security `attribute` and fails on the cookie's attribute state.
+ * A header assertion may name a `disallowedValue` (for example `*` on `Access-Control-Allow-Origin`) that fails when
+ * the header carries exactly that value.
+ */
+export const headerCookieParamsSchema = z
+  .strictObject({
+    target: z.enum(['header', 'cookie']),
+    name: httpTokenSchema,
+    expectation: z.enum(['present', 'absent']),
+    attribute: z.enum(COOKIE_ATTRIBUTES).optional(),
+    disallowedValue: nfcTextSchema(HEADER_DISALLOWED_VALUE_MAX).optional(),
+  })
+  .superRefine((params, ctx) => {
+    if (params.target === 'cookie' && params.attribute === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'a cookie assertion must name an attribute',
+        path: ['attribute'],
+      });
+    }
+    if (params.target === 'header' && params.attribute !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'only a cookie assertion names an attribute',
+        path: ['attribute'],
+      });
+    }
+    if (
+      params.disallowedValue !== undefined &&
+      (params.target !== 'header' || params.expectation !== 'present')
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'a disallowed value applies only to a header that must be present',
+        path: ['disallowedValue'],
+      });
+    }
+  });
+
+/** Typed `params` per oracle type. Each shape is strict and holds check parameters only, never a payload. */
+export const oracleParamsSchemas = {
+  marker: markerParamsSchema,
+  status_diff: statusDiffParamsSchema,
   timing_baseline: z.strictObject({
     baselineMs: z.int().min(0).max(TIMING_DELTA_MAX_MS),
     minDeltaMs: z.int().min(1).max(TIMING_DELTA_MAX_MS),
@@ -127,13 +194,9 @@ export const oracleParamsSchemas = {
     windowMs: z.int().min(1).max(OOB_WINDOW_MAX_MS),
   }),
   access_matrix: accessMatrixParamsSchema,
-  error_signature: z.strictObject({ signature: nfcTextSchema(LIMITS.shortTextMax) }),
+  error_signature: errorSignatureParamsSchema,
   file_read: z.strictObject({ marker: benignSentinelIdSchema }),
-  header_cookie: z.strictObject({
-    target: z.enum(['header', 'cookie']),
-    name: httpTokenSchema,
-    expectation: z.enum(['present', 'absent']),
-  }),
+  header_cookie: headerCookieParamsSchema,
   code_plus_runtime: CodePlusRuntimeOracleSchema.shape.params,
 } as const;
 

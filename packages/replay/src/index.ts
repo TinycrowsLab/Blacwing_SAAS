@@ -6,10 +6,12 @@ export const version = '0.0.0';
 
 export { httpFetcher } from './fetcher.js';
 export { assertLabTarget, LAB_HOSTS, type LabTarget } from './lab-guard.js';
+export { createDeterministicEvaluators, OracleBaselineMissingError } from './oracles/index.js';
 export {
   bodyDigest,
   evaluateErrorSignature,
   type ErrorSignatureOracle,
+  type ObservedHeader,
   type ObservedResponse,
   type OracleVerdict,
 } from './oracle.js';

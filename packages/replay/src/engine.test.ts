@@ -9,6 +9,8 @@ import {
   type EvidenceCapture,
   type EvidenceReader,
   MAX_EXCHANGE_BODY_BYTES,
+  MAX_EXCHANGE_HEADER_VALUE_CHARS,
+  MAX_EXCHANGE_HEADERS,
   MAX_PROVISION_ATTEMPTS,
   ReplayEngine,
   type ReplayEngineDeps,
@@ -170,6 +172,35 @@ describe('ReplayEngine.run', () => {
       proxyUrl: 'http://egress.local:3128',
     });
     expect(h.terminated).toHaveBeenCalledTimes(2);
+  });
+
+  it('carries the response headers of a probe into the exchange, bounded in count and value length', async () => {
+    const many = Array.from({ length: MAX_EXCHANGE_HEADERS + 5 }, (_, index) => ({
+      name: `x-${index}`,
+      value: 'v',
+    }));
+    const h = harness();
+    h.egress.request.mockResolvedValueOnce({
+      status: 200,
+      body: 'ok',
+      headers: [
+        { name: 'set-cookie', value: 'sid=1; HttpOnly' },
+        { name: 'long', value: 'a'.repeat(MAX_EXCHANGE_HEADER_VALUE_CHARS + 10) },
+        ...many,
+      ],
+    });
+    const observation = await new ReplayEngine(h.deps).run(specFixture());
+    const headers = observation.exchanges[0]?.headers ?? [];
+
+    expect(headers[0]).toEqual({ name: 'set-cookie', value: 'sid=1; HttpOnly' });
+    expect(headers[1]?.value).toHaveLength(MAX_EXCHANGE_HEADER_VALUE_CHARS);
+    expect(headers).toHaveLength(MAX_EXCHANGE_HEADERS);
+  });
+
+  it('leaves the headers unset when the transport reports none, so no oracle assumes a missing header', async () => {
+    const h = harness();
+    const observation = await new ReplayEngine(h.deps).run(specFixture());
+    expect(observation.exchanges[0]).not.toHaveProperty('headers');
   });
 
   it('records the pins, the attempts and the replay duration from the injected clock', async () => {

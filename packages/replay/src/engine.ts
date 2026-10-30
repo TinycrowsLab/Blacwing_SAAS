@@ -1,6 +1,6 @@
 import { isAppError, ScopeViolationError, ValidationError } from '@blackwing/errors';
 
-import { bodyDigest, type ObservedResponse } from './oracle.js';
+import { bodyDigest, type ObservedHeader, type ObservedResponse } from './oracle.js';
 import { log, markSpanError, tracer, type ReplayMetrics } from './telemetry.js';
 
 import type { ReplaySpec, ReplayStep, RunPins } from '@blackwing/contracts';
@@ -17,6 +17,10 @@ import type { Span } from '@opentelemetry/api';
 export const MAX_PROVISION_ATTEMPTS = 3;
 /** Longest body kept in memory per exchange. The full body goes to evidence (§4.3), never into the result. */
 export const MAX_EXCHANGE_BODY_BYTES = 65_536;
+/** Most response headers kept per exchange. Extra headers are dropped, never read into memory. */
+export const MAX_EXCHANGE_HEADERS = 128;
+/** Longest value kept per response header. A longer value is cut, and the cut is never read as a match. */
+export const MAX_EXCHANGE_HEADER_VALUE_CHARS = 4_096;
 
 /** A running sandbox. `terminate` must always be called, including when the replay fails. */
 export interface Sandbox {
@@ -128,6 +132,8 @@ export interface ReplayExchange {
   readonly bodySha256: string;
   readonly truncated: boolean;
   readonly evidenceRef: string;
+  /** Response headers, present only when the transport reported them. A handler step may report none. */
+  readonly headers?: readonly ObservedHeader[];
 }
 
 export interface RawObservation {
@@ -155,6 +161,7 @@ export function isStateChanging(step: ReplayStep): boolean {
 interface Observed {
   readonly status: number | null;
   readonly body: string;
+  readonly headers?: readonly ObservedHeader[];
 }
 
 export class ReplayEngine {
@@ -319,7 +326,7 @@ export class ReplayEngine {
           url: step.endpoint.urlTemplate,
           body: input,
         });
-        return { status: response.status, body: response.body };
+        return observedFrom(response);
       }
       case 'tcp_probe':
         await this.deps.egress.probe(step.host, step.port);
@@ -332,7 +339,7 @@ export class ReplayEngine {
           throw new ValidationError(`no handler is registered for the ${step.kind} step`);
         }
         const response = await handler(step, input);
-        return { status: response.status, body: response.body };
+        return observedFrom(response);
       }
     }
   }
@@ -368,8 +375,24 @@ export class ReplayEngine {
       bodySha256: bodyDigest(observed.body),
       truncated,
       evidenceRef,
+      ...(observed.headers === undefined ? {} : { headers: boundedHeaders(observed.headers) }),
     };
   }
+}
+
+/** Keeps the in-memory header list within its bounds. Only the first headers are kept, and long values are cut. */
+function boundedHeaders(headers: readonly ObservedHeader[]): ObservedHeader[] {
+  return headers.slice(0, MAX_EXCHANGE_HEADERS).map(({ name, value }) => ({
+    name,
+    value: value.slice(0, MAX_EXCHANGE_HEADER_VALUE_CHARS),
+  }));
+}
+
+/** Keeps the observed fields of a response, and its headers only when the transport returned them. */
+function observedFrom(response: ObservedResponse): Observed {
+  return response.headers === undefined
+    ? { status: response.status, body: response.body }
+    : { status: response.status, body: response.body, headers: response.headers };
 }
 
 /**

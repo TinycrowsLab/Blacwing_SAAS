@@ -1,7 +1,11 @@
 import { accessMatrixEvaluator } from './access-matrix.js';
+import { evaluateErrorSignatureBinding } from './error-signature.js';
 import { fileReadEvaluator } from './file-read.js';
+import { evaluateHeaderCookie } from './header-cookie.js';
+import { evaluateMarker } from './marker.js';
 import { noopOracleMetrics, observeEvaluator, type OracleMetrics } from './observe.js';
 import { oobEvaluator } from './out-of-band.js';
+import { evaluateStatusDiff } from './status-diff.js';
 import { timingBaselineEvaluator } from './timing-baseline.js';
 
 import type { OracleEvaluator } from '../dispatch.js';
@@ -16,6 +20,7 @@ export {
 export { OOB_AUDIT_EVENT, OOB_REASONS, oobEvaluator } from './out-of-band.js';
 export { noopOracleMetrics, type OracleMetrics } from './observe.js';
 export { TIMING_REASONS, timingBaselineEvaluator } from './timing-baseline.js';
+export { OracleBaselineMissingError } from './shared.js';
 export type { OobSignal, ReplaySignals, RoleAccess, SignalStore, TimingSignal } from './signals.js';
 
 /**
@@ -36,4 +41,20 @@ export function createSignalEvaluators(
   return new Map(
     [...raw].map(([type, evaluator]) => [type, observeEvaluator(type, evaluator, metrics)]),
   );
+}
+
+/**
+ * The four deterministic evaluators (VALIDATE-004), keyed by the oracle type the binding declares. Each one is wrapped
+ * for span, metric and log output exactly like the signal evaluators, so the dispatcher routes to them by `oracle.type`.
+ */
+export function createDeterministicEvaluators(
+  metrics: OracleMetrics = noopOracleMetrics,
+): ReadonlyMap<string, OracleEvaluator> {
+  const raw: readonly (readonly [string, OracleEvaluator])[] = [
+    ['marker', evaluateMarker],
+    ['status_diff', evaluateStatusDiff],
+    ['error_signature', evaluateErrorSignatureBinding],
+    ['header_cookie', evaluateHeaderCookie],
+  ];
+  return new Map(raw.map(([type, evaluator]) => [type, observeEvaluator(type, evaluator, metrics)]));
 }

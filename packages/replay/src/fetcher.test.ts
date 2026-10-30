@@ -16,6 +16,14 @@ beforeEach(async () => {
       response.end();
       return;
     }
+    if (request.url === '/cookies') {
+      response.writeHead(200, {
+        'content-type': 'text/html',
+        'set-cookie': ['sid=1; HttpOnly', 'pref=2; Path=/'],
+      });
+      response.end('ok');
+      return;
+    }
     response.writeHead(500, { 'content-type': 'text/html' });
     response.end('<title>SQLITE_ERROR: near</title>');
   });
@@ -35,10 +43,20 @@ afterEach(async () => {
 
 describe('httpFetcher', () => {
   it('returns the status and the decoded body of a GET', async () => {
-    await expect(httpFetcher(`${origin}/search`)).resolves.toEqual({
-      status: 500,
-      body: '<title>SQLITE_ERROR: near</title>',
-    });
+    const result = await httpFetcher(`${origin}/search`);
+    expect(result).toMatchObject({ status: 500, body: '<title>SQLITE_ERROR: near</title>' });
+  });
+
+  it('returns lowercased headers and one entry per Set-Cookie value', async () => {
+    const result = await httpFetcher(`${origin}/cookies`);
+    expect(result.headers).toEqual(
+      expect.arrayContaining([
+        { name: 'content-type', value: 'text/html' },
+        { name: 'set-cookie', value: 'sid=1; HttpOnly' },
+        { name: 'set-cookie', value: 'pref=2; Path=/' },
+      ]),
+    );
+    expect(result.headers?.filter((header) => header.name === 'set-cookie')).toHaveLength(2);
   });
 
   it('refuses to follow a redirect out of the verified scope (fails closed)', async () => {

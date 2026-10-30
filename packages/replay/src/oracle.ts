@@ -6,10 +6,17 @@ import { createHash } from 'node:crypto';
  * a finding by model output (§8.11). Oracles inspect a response; they send nothing.
  */
 
-/** The response an oracle inspects: status and the decoded body, nothing else. */
+/** One response header. `name` is lowercased; a repeated header (such as `Set-Cookie`) yields one entry per value. */
+export interface ObservedHeader {
+  readonly name: string;
+  readonly value: string;
+}
+
+/** The response an oracle inspects: status, the decoded body and, when the transport returned them, the headers. */
 export interface ObservedResponse {
   readonly status: number;
   readonly body: string;
+  readonly headers?: readonly ObservedHeader[];
 }
 
 /**

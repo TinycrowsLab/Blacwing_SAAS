@@ -67,6 +67,83 @@ const VALID_BINDINGS: Record<OracleBindingType, unknown> = {
   },
 };
 
+describe('OracleBindingSchema: deterministic evaluator params', () => {
+  const bind = (type: string, params: unknown) =>
+    OracleBindingSchema.safeParse({ type, declaredAt: DECLARED_AT, params });
+
+  it('defaults a marker to a body location and accepts header and dom', () => {
+    const parsed = bind('marker', { token: 'probe-1' });
+    expect(parsed.success && parsed.data.type === 'marker' && parsed.data.params.location).toBe(
+      'body',
+    );
+    expect(bind('marker', { token: 'probe-1', location: 'header' }).success).toBe(true);
+    expect(bind('marker', { token: 'probe-1', location: 'query' }).success).toBe(false);
+  });
+
+  it('refuses a status differential whose expected and baseline statuses are equal', () => {
+    expect(bind('status_diff', { expectedStatus: 200, baselineStatus: 200 }).success).toBe(false);
+  });
+
+  it('defaults an error signature to a body scope and accepts a header scope', () => {
+    const parsed = bind('error_signature', { signature: 'SQLSTATE' });
+    expect(
+      parsed.success && parsed.data.type === 'error_signature' && parsed.data.params.scope,
+    ).toBe('body');
+    expect(bind('error_signature', { signature: 'PHP', scope: 'header' }).success).toBe(true);
+    expect(bind('error_signature', { signature: 'PHP', scope: 'url' }).success).toBe(false);
+  });
+
+  it('accepts a cookie attribute check and a header disallowed value', () => {
+    expect(
+      bind('header_cookie', {
+        target: 'cookie',
+        name: 'session',
+        expectation: 'present',
+        attribute: 'HttpOnly',
+      }).success,
+    ).toBe(true);
+    expect(
+      bind('header_cookie', {
+        target: 'header',
+        name: 'Access-Control-Allow-Origin',
+        expectation: 'present',
+        disallowedValue: '*',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('refuses a cookie check without an attribute, an attribute on a header, and a value on a cookie', () => {
+    expect(
+      bind('header_cookie', { target: 'cookie', name: 'session', expectation: 'present' }).success,
+    ).toBe(false);
+    expect(
+      bind('header_cookie', {
+        target: 'header',
+        name: 'Server',
+        expectation: 'absent',
+        attribute: 'Secure',
+      }).success,
+    ).toBe(false);
+    expect(
+      bind('header_cookie', {
+        target: 'cookie',
+        name: 'session',
+        expectation: 'present',
+        attribute: 'Secure',
+        disallowedValue: '*',
+      }).success,
+    ).toBe(false);
+    expect(
+      bind('header_cookie', {
+        target: 'header',
+        name: 'Server',
+        expectation: 'absent',
+        disallowedValue: 'nginx',
+      }).success,
+    ).toBe(false);
+  });
+});
+
 describe('OracleBindingSchema', () => {
   it.each(ORACLE_BINDING_TYPES.map((type) => [type]))('parses one valid example of %s', (type) => {
     const binding = VALID_BINDINGS[type];
@@ -171,7 +248,7 @@ describe('OracleBindingSchema', () => {
       declaredAt: DECLARED_AT,
       params: { token: decomposed },
     });
-    expect(parsed.params).toEqual({ token: 'café' });
+    expect(parsed.params).toEqual({ token: 'café', location: 'body' });
   });
 
   it('rejects text params with control characters or that are empty', () => {

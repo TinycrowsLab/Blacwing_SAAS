@@ -1,4 +1,5 @@
 import type { RawObservation, ReplayExchange } from '../engine.js';
+import type { ObservedHeader } from '../oracle.js';
 
 const SHA256_HEX_LENGTH = 64;
 const ZERO_DIGEST = '0'.repeat(SHA256_HEX_LENGTH);
@@ -33,4 +34,16 @@ export function exchange(overrides: Partial<ReplayExchange> = {}): ReplayExchang
     evidenceRef: 'evidence://replay/0',
     ...overrides,
   };
+}
+
+/** A recorded observation with the given status (completed by default), for the deterministic evaluators. */
+export function observation(
+  exchanges: readonly ReplayExchange[],
+  status: RawObservation['status'] = 'completed',
+): RawObservation {
+  return { ...observationWith(exchanges), status, oracleType: 'marker' };
+}
+
+export function header(name: string, value: string): ObservedHeader {
+  return { name, value };
 }
