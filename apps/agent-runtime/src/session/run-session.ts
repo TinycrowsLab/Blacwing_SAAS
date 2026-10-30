@@ -6,6 +6,8 @@ import {
 } from '@blackwing/contracts';
 
 import { ALWAYS_DISALLOWED, buildToolGate, denialReason } from './tool-gate.js';
+import { PDP_TIMEOUT_MS_DEFAULT } from '../env.js';
+import { createPreToolUseHook } from '../hooks/pre-tool-use.js';
 
 import type { RuntimeMetrics } from '../metrics.js';
 import type { Options } from '@anthropic-ai/claude-agent-sdk';
@@ -73,6 +75,8 @@ export interface SessionPorts {
   readonly sdkVersion: string;
   readonly log: SessionLog;
   readonly metrics: RuntimeMetrics;
+  /** Bound on each PreToolUse policy decision (`BW_PDP_TIMEOUT_MS`). Defaults to 1500 ms. */
+  readonly pdpTimeoutMs?: number;
 }
 
 export interface SessionSummary {
@@ -91,6 +95,7 @@ export interface SessionSummary {
 export function buildRunOptions(
   descriptor: AgentSessionDescriptor,
   abortController: AbortController,
+  hooks?: Options['hooks'],
 ): Options {
   const gate = buildToolGate(descriptor);
   return {
@@ -105,7 +110,39 @@ export function buildRunOptions(
     disallowedTools: [...gate.disallowedTools],
     canUseTool: gate.canUseTool,
     abortController,
+    ...(hooks === undefined ? {} : { hooks }),
   };
+}
+
+/**
+ * The session's `PreToolUse` hook registration (RUNTIME-005). Every tool call is decided by the PDP through the
+ * broker before it runs, and each decision is counted and timed.
+ */
+function preToolUseHooks(
+  descriptor: AgentSessionDescriptor,
+  ports: SessionPorts,
+): NonNullable<Options['hooks']> {
+  const hook = createPreToolUseHook(
+    {
+      broker: ports.broker,
+      timeoutMs: ports.pdpTimeoutMs ?? PDP_TIMEOUT_MS_DEFAULT,
+      metrics: {
+        decided: (labels) => {
+          ports.metrics.pretoolDecisions.inc(labels);
+        },
+        latency: (ms) => {
+          ports.metrics.pdpLatency.observe(ms);
+        },
+      },
+      log: ports.log,
+    },
+    {
+      subtaskId: descriptor.subtaskId ?? null,
+      testCaseId: descriptor.testCaseId ?? null,
+      roleId: descriptor.roleId ?? null,
+    },
+  );
+  return { PreToolUse: [{ hooks: [(input) => hook(input)] }] };
 }
 
 /** Longest tool name written to the denial log. A model-chosen name is untrusted, so it is bounded. */
@@ -161,12 +198,13 @@ async function drive(
   descriptor: AgentSessionDescriptor,
   runQuery: RunQuery,
   abortController: AbortController,
+  hooks: Options['hooks'],
 ): Promise<SessionResultMessage> {
   let result: SessionResultMessage | undefined;
   try {
     const stream = runQuery({
       prompt: descriptor.brief,
-      options: buildRunOptions(descriptor, abortController),
+      options: buildRunOptions(descriptor, abortController, hooks),
     });
     for await (const message of stream) {
       if (message.type === 'result' && isResult(message)) result = message;
@@ -203,7 +241,12 @@ export async function runSession(
   await assertBrokerReady(ports.broker);
 
   ports.metrics.sessionsStarted.inc({ persona: descriptor.persona });
-  const result = await drive(descriptor, ports.runQuery, new AbortController());
+  const result = await drive(
+    descriptor,
+    ports.runQuery,
+    new AbortController(),
+    preToolUseHooks(descriptor, ports),
+  );
   recordDenials(descriptor, result.permission_denials, ports);
   const record = agentSessionRecordSchema.parse({
     sessionId: descriptor.sessionId,

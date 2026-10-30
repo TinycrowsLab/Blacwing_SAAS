@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { type Mock, describe, expect, it, vi } from 'vitest';
 
 import { AGENT_SESSION_RECORD_SUFFIX, type AgentSessionDescriptor } from '@blackwing/contracts';
 
@@ -14,6 +14,7 @@ import {
   SessionExit,
 } from './run-session.js';
 
+import type { HookInput, Options } from '@anthropic-ai/claude-agent-sdk';
 import type { BrokerClient } from '@blackwing/mcp-tools';
 
 const TENANT = '01920000-0000-7000-8000-000000000001';
@@ -425,5 +426,122 @@ describe('buildRunOptions', () => {
     expect((await decide('mcp__shell__run', {}, context))?.behavior).toBe('deny');
     expect((await decide('Bash', {}, context))?.behavior).toBe('deny');
     expect((await decide('Read', { path: '/workspace/a' }, context))?.behavior).toBe('allow');
+  });
+});
+
+describe('runSession: PreToolUse hook (RUNTIME-005)', () => {
+  const SIGNAL = new AbortController().signal;
+  const bashCall = (command: string): HookInput =>
+    ({
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Bash',
+      tool_input: { command },
+      tool_use_id: 'toolu_1',
+      session_id: SESSION,
+    }) as unknown as HookInput;
+
+  /** Captures the SDK options a session is started with, and yields a success result. */
+  function capturingQuery(): { readonly runQuery: RunQuery; readonly seen: Options[] } {
+    const seen: Options[] = [];
+    const runQuery: RunQuery = ({ options }) => {
+      seen.push(options);
+      return resultStream();
+    };
+    return { runQuery, seen };
+  }
+
+  /** A broker whose PDP answers `pdp`, and whose other posts succeed. */
+  function pdpBroker(pdp: () => Promise<unknown>): { broker: BrokerClient; post: Mock } {
+    const get = vi.fn(() =>
+      Promise.resolve({
+        runId: RUN,
+        state: 'executing',
+        active: true,
+        observedAt: '2026-10-29T10:00:00.000Z',
+      }),
+    );
+    const post = vi.fn((suffix: string) =>
+      suffix === 'pdp/evaluate' ? pdp() : Promise.resolve(undefined),
+    );
+    return {
+      broker: { get: get as BrokerClient['get'], post: post as BrokerClient['post'] },
+      post,
+    };
+  }
+
+  async function runWithHook(
+    broker: BrokerClient,
+  ): Promise<{ readonly hook: (input: HookInput) => Promise<unknown> }> {
+    const { runQuery, seen } = capturingQuery();
+    await runSession(DESCRIPTOR, {
+      broker,
+      runQuery,
+      sdkVersion: '0.3.308',
+      metrics: createRuntimeMetrics(),
+      log: fakeLog(),
+    });
+    const matcher = seen[0]?.hooks?.PreToolUse?.[0];
+    const callback = matcher?.hooks[0];
+    if (callback === undefined) throw new Error('PreToolUse hook must be registered');
+    return { hook: (input) => callback(input, 'toolu_1', { signal: SIGNAL }) };
+  }
+
+  it('registers one PreToolUse hook on the SDK options', async () => {
+    const { runQuery, seen } = capturingQuery();
+    await runSession(DESCRIPTOR, {
+      broker: fakeBroker(),
+      runQuery,
+      sdkVersion: '0.3.308',
+      metrics: createRuntimeMetrics(),
+      log: fakeLog(),
+    });
+    expect(seen[0]?.hooks?.PreToolUse).toHaveLength(1);
+  });
+
+  it('returns the PDP allow for a call the PDP accepts, asking the broker for it', async () => {
+    const { broker, post } = pdpBroker(() =>
+      Promise.resolve({ decision: 'allow', reason: 'in_envelope' }),
+    );
+    const { hook } = await runWithHook(broker);
+    const out = await hook(bashCall('curl https://lab.example.test/'));
+    expect(out).toMatchObject({
+      hookSpecificOutput: { permissionDecision: 'allow', permissionDecisionReason: 'in_envelope' },
+    });
+    expect(post).toHaveBeenCalledWith('pdp/evaluate', expect.anything(), expect.anything());
+  });
+
+  it('denies a call with the PDP reason when the PDP denies it', async () => {
+    const { broker } = pdpBroker(() =>
+      Promise.resolve({ decision: 'deny', reason: 'out_of_scope' }),
+    );
+    const { hook } = await runWithHook(broker);
+    const out = await hook(bashCall('curl https://other.example.test/'));
+    expect(out).toMatchObject({
+      hookSpecificOutput: { permissionDecision: 'deny', permissionDecisionReason: 'out_of_scope' },
+    });
+  });
+
+  it('fails closed with pdp_unavailable when the PDP call errors, never allow', async () => {
+    const { broker } = pdpBroker(() => Promise.reject(new Error('503')));
+    const { hook } = await runWithHook(broker);
+    const out = await hook(bashCall('ls'));
+    expect(out).toMatchObject({
+      hookSpecificOutput: {
+        permissionDecision: 'deny',
+        permissionDecisionReason: 'pdp_unavailable',
+      },
+    });
+  });
+});
+
+describe('buildRunOptions hooks (RUNTIME-005)', () => {
+  it('adds no hooks key when no hooks are given', () => {
+    const options = buildRunOptions(DESCRIPTOR, new AbortController());
+    expect(options).not.toHaveProperty('hooks');
+  });
+
+  it('passes the given hooks through unchanged', () => {
+    const hooks = { PreToolUse: [{ hooks: [] }] };
+    expect(buildRunOptions(DESCRIPTOR, new AbortController(), hooks).hooks).toBe(hooks);
   });
 });

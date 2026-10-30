@@ -5,6 +5,8 @@ import {
   brokerCandidateRequestSchema,
   brokerEvidenceRequestSchema,
   brokerJournalRequestSchema,
+  brokerPdpDecisionSchema,
+  brokerPdpEvaluateRequestSchema,
   brokerStateResponseSchema,
   brokerToolAuditRequestSchema,
   engagementDispatchInputSchema,
@@ -32,6 +34,7 @@ import {
   BROKER_ENGAGEMENT_TEST_CASE_STATUS_ROUTE,
   BROKER_EVIDENCE_ROUTE,
   BROKER_JOURNAL_ROUTE,
+  BROKER_PDP_EVALUATE_ROUTE,
   BROKER_STATE_ROUTE,
   BROKER_TOOL_AUDIT_ROUTE,
 } from './routes.js';
@@ -177,6 +180,29 @@ export function brokerOpenApiDocument(): JsonObject {
         'REVERSAL',
         brokerJournalRequestSchema,
       ),
+      [toOpenApiPath(BROKER_PDP_EVALUATE_ROUTE)]: {
+        post: {
+          operationId: 'evaluatePdp',
+          summary: 'Decide one PreToolUse tool call (allow or deny)',
+          description:
+            'Evaluates a tool call against the run envelope, scope and journal facts the broker loads. Answers 501 until the PDP is wired; the runtime then denies (fail closed).',
+          security: [{ runToken: [] }],
+          parameters: [runIdParameter],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': { schema: jsonSchema(brokerPdpEvaluateRequestSchema) },
+            },
+          },
+          responses: {
+            ...responses(['VALIDATION_FAILED', 'RUN_NOT_ACTIVE']),
+            '200': {
+              description: 'The decision and its stable reason.',
+              content: { 'application/json': { schema: jsonSchema(brokerPdpDecisionSchema) } },
+            },
+          },
+        },
+      },
       [toOpenApiPath(BROKER_TOOL_AUDIT_ROUTE)]: writeOperation(
         'recordToolInvocation',
         'Record a tool.invoked audit event',

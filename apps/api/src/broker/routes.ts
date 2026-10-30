@@ -5,11 +5,14 @@ import { z } from 'zod';
 
 import {
   BROKER_BASE_PATH,
+  type BrokerPdpDecision,
   type BrokerPrincipal,
   type BrokerScope,
   brokerCandidateRequestSchema,
   brokerEvidenceRequestSchema,
   brokerJournalRequestSchema,
+  brokerPdpDecisionSchema,
+  brokerPdpEvaluateRequestSchema,
   brokerToolAuditRequestSchema,
   engagementDispatchInputSchema,
   engagementMarkTestCaseInputSchema,
@@ -38,6 +41,7 @@ import { createTenantContextMetrics } from '../tenant/metrics.js';
 
 import type { EngagementPort, EngagementRef } from './engagement.js';
 import type { SourceGuard } from './network.js';
+import type { PdpService } from './pdp.js';
 import type { BrokerAuditSink, BrokerRunReader } from './ports.js';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 
@@ -49,6 +53,8 @@ export const BROKER_EVIDENCE_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/evidence`;
 export const BROKER_JOURNAL_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/journal`;
 export const BROKER_TOOL_AUDIT_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/tool-audit`;
 export const BROKER_STATE_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/state`;
+/** The PreToolUse decision of the agent runtime (RUNTIME-005, #467). */
+export const BROKER_PDP_EVALUATE_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/pdp/evaluate`;
 
 /** Engagement endpoints the orchestrator's MCP tools call (MCP-012, #677). */
 export const BROKER_ENGAGEMENT_STATE_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/engagement/state`;
@@ -76,6 +82,8 @@ export interface BrokerRoutesOptions {
   readonly rateLimit?: BrokerRateLimit;
   /** The engagement endpoints' adapters. Unwired, they answer `NOT_IMPLEMENTED`. */
   readonly engagement?: EngagementPort;
+  /** The PreToolUse decision service. Unwired, the PDP endpoint answers `NOT_IMPLEMENTED` and the hook denies. */
+  readonly pdp?: PdpService;
   readonly now?: () => number;
   readonly environment?: ErrorEnvironment;
   readonly problems?: ProblemDetailsMapper;
@@ -155,6 +163,23 @@ const ENDPOINTS: readonly Endpoint[] = [
     body: null,
   },
 ];
+
+/** The PDP endpoint, wired only with a `PdpService` (RUNTIME-005). */
+function pdpEndpoint(service: PdpService | undefined): Endpoint {
+  const base: Endpoint = {
+    route: BROKER_PDP_EVALUATE_ROUTE,
+    action: 'broker.pdp.evaluate',
+    scope: 'pdp:evaluate',
+    owner: 'PDP',
+    body: brokerPdpEvaluateRequestSchema,
+  };
+  if (service === undefined) return base;
+  return {
+    ...base,
+    handle: async ({ ref, body }) =>
+      service.evaluate(ref, brokerPdpEvaluateRequestSchema.parse(body)),
+  };
+}
 
 const terminalStates: ReadonlySet<string> = new Set(TERMINAL_RUN_STATES);
 
@@ -353,6 +378,7 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
     endpoint: Endpoint,
     outcome: 'success' | 'denied' | 'rejected' | 'not_implemented' | 'error',
     error: unknown,
+    decided?: BrokerPdpDecision,
   ): Promise<void> => {
     try {
       await options.audit.record({
@@ -370,6 +396,7 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
         sessionId: principal.sessionId,
         tokenId: principal.tokenId,
         traceId: traceIdOf(),
+        ...(decided === undefined ? {} : { decision: decided.decision, reason: decided.reason }),
       });
     } catch (auditError) {
       metrics.auditFailures.inc({ endpoint: endpoint.route });
@@ -496,7 +523,11 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
               params: pathParams.success ? pathParams.data : {},
               body: request.body,
             });
-            await record(principal, endpoint, 'success', null);
+            const decided =
+              endpoint.route === BROKER_PDP_EVALUATE_ROUTE
+                ? brokerPdpDecisionSchema.parse(result)
+                : undefined;
+            await record(principal, endpoint, 'success', null, decided);
             log.info(
               { event: 'broker.request', action: endpoint.action, outcome: 'success' },
               'broker request',
@@ -526,7 +557,12 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
         }
       };
 
-      for (const endpoint of [...ENDPOINTS, ...engagementEndpoints(options.engagement)]) {
+      const endpoints = [
+        ...ENDPOINTS,
+        pdpEndpoint(options.pdp),
+        ...engagementEndpoints(options.engagement),
+      ];
+      for (const endpoint of endpoints) {
         const handler = async (request: FastifyRequest): Promise<unknown> => {
           const principal = request.brokerPrincipal;
           // Unreachable (the hook always sets it): fail closed rather than serve without a principal.

@@ -12,7 +12,20 @@ export {
   type ScopeExceptionStore,
   type TestCaseStatusStore,
 } from './engagement.js';
-export { InMemoryBrokerAuditSink, InMemoryBrokerRunReader } from './memory.js';
+export {
+  InMemoryBrokerAuditSink,
+  InMemoryBrokerRunReader,
+  InMemoryPdpFactsReader,
+} from './memory.js';
+export {
+  createPdpService,
+  decidePdp,
+  type PdpEnvelope,
+  type PdpFacts,
+  type PdpFactsReader,
+  type PdpRef,
+  type PdpService,
+} from './pdp.js';
 export {
   createSourceGuard,
   InvalidCidrError,

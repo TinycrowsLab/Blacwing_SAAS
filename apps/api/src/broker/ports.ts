@@ -1,4 +1,4 @@
-import type { RunState } from '@blackwing/contracts';
+import type { PdpDecisionValue, PdpReason, RunState } from '@blackwing/contracts';
 
 /**
  * Ports of the Run Broker (API-014). Each adapter is owned elsewhere: the Postgres run reader by the
@@ -36,6 +36,9 @@ export interface BrokerAuditEvent {
   readonly sessionId: string;
   readonly tokenId: string;
   readonly traceId: string;
+  /** Set on a PDP evaluation (RUNTIME-005): the decision and its stable reason. Never the call input. */
+  readonly decision?: PdpDecisionValue;
+  readonly reason?: PdpReason;
 }
 
 /** AUDIT wires `emitAudit` behind this once it lands. A failure never changes the response. */

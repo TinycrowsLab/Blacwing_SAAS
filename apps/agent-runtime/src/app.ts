@@ -47,9 +47,9 @@ export async function runMain(
   source: Readonly<Record<string, string | undefined>>,
   deps: AppDeps = defaultDeps(),
 ): Promise<number> {
-  let descriptorPath: string;
+  let env: ReturnType<typeof loadRuntimeEnv>;
   try {
-    descriptorPath = loadRuntimeEnv(source).BW_SESSION_DESCRIPTOR;
+    env = loadRuntimeEnv(source);
   } catch (error) {
     const code = isConfigValidationError(error) ? 'CONFIG_INVALID' : 'INTERNAL';
     deps.log.warn({ code }, 'session.descriptor_invalid');
@@ -58,7 +58,7 @@ export async function runMain(
 
   let descriptor: AgentSessionDescriptor;
   try {
-    descriptor = parseSessionDescriptor(await readDescriptor(descriptorPath));
+    descriptor = parseSessionDescriptor(await readDescriptor(env.BW_SESSION_DESCRIPTOR));
   } catch (error) {
     const code = error instanceof Error && 'code' in error ? String(error.code) : 'UNREADABLE';
     deps.log.warn({ code }, 'session.descriptor_invalid');
@@ -70,7 +70,7 @@ export async function runMain(
     .getTracer('@blackwing/agent-runtime')
     .startActiveSpan('agent.session', async (span) => {
       try {
-        return await runAgentSession(descriptor, deps, metrics);
+        return await runAgentSession(descriptor, deps, metrics, env.BW_PDP_TIMEOUT_MS);
       } finally {
         span.end();
       }
@@ -82,6 +82,7 @@ async function runAgentSession(
   descriptor: AgentSessionDescriptor,
   deps: AppDeps,
   metrics: RuntimeMetrics,
+  pdpTimeoutMs: number,
 ): Promise<number> {
   try {
     const broker = createBrokerClient({
@@ -95,6 +96,7 @@ async function runAgentSession(
       sdkVersion: deps.sdkVersion,
       log: deps.log,
       metrics,
+      pdpTimeoutMs,
     });
     deps.log.info({ sessionId: summary.sessionId, status: summary.status }, 'session.finished');
     return EXIT_CODES.success;

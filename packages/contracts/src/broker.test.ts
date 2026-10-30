@@ -5,16 +5,19 @@ import {
   BROKER_TOKEN_PREFIX,
   brokerCandidateRequestSchema,
   brokerJournalRequestSchema,
+  brokerPdpDecisionSchema,
+  brokerPdpEvaluateRequestSchema,
   brokerTokenClaimsSchema,
   brokerToolAuditRequestSchema,
+  PDP_TARGETS_MAX,
 } from './index.js';
 
 const ID = '01890a5d-ac96-774b-bcce-b302099a8057';
 
 describe('broker contracts', () => {
-  it('uses the bwrun_ prefix and seven scopes, including the engagement pair', () => {
+  it('uses the bwrun_ prefix and eight scopes, including the engagement pair and pdp:evaluate', () => {
     expect(BROKER_TOKEN_PREFIX).toBe('bwrun_');
-    expect(BROKER_SCOPES).toHaveLength(7);
+    expect(BROKER_SCOPES).toHaveLength(8);
     expect(BROKER_SCOPES).toEqual(expect.arrayContaining(['engagement:read', 'engagement:write']));
   });
 
@@ -73,6 +76,61 @@ describe('broker contracts', () => {
       expect(
         brokerToolAuditRequestSchema.safeParse({ ...audit, inputSummary: 'x'.repeat(1025) })
           .success,
+      ).toBe(false);
+    });
+  });
+
+  describe('PDP evaluate (RUNTIME-005)', () => {
+    const pdpRequest = {
+      toolName: 'Bash',
+      toolUseId: 'toolu_1',
+      targets: ['https://lab.example.test/login'],
+      subtaskId: null,
+      testCaseId: null,
+      roleId: null,
+    };
+
+    it('accepts a call with ids and targets', () => {
+      expect(brokerPdpEvaluateRequestSchema.safeParse(pdpRequest).success).toBe(true);
+    });
+
+    it('rejects unknown fields, so the call input can never ride along', () => {
+      const withInput = { ...pdpRequest, input: { command: 'id' } };
+      expect(brokerPdpEvaluateRequestSchema.safeParse(withInput).success).toBe(false);
+    });
+
+    it('bounds the target list', () => {
+      const tooMany = Array.from({ length: PDP_TARGETS_MAX + 1 }, () => 'a.test');
+      expect(
+        brokerPdpEvaluateRequestSchema.safeParse({ ...pdpRequest, targets: tooMany }).success,
+      ).toBe(false);
+      expect(
+        brokerPdpEvaluateRequestSchema.safeParse({
+          ...pdpRequest,
+          targets: tooMany.slice(0, PDP_TARGETS_MAX),
+        }).success,
+      ).toBe(true);
+    });
+
+    it('rejects an empty tool name and a non-uuid subtask', () => {
+      expect(
+        brokerPdpEvaluateRequestSchema.safeParse({ ...pdpRequest, toolName: '' }).success,
+      ).toBe(false);
+      expect(
+        brokerPdpEvaluateRequestSchema.safeParse({ ...pdpRequest, subtaskId: 'x' }).success,
+      ).toBe(false);
+    });
+
+    it('accepts only allow or deny, with a stable reason', () => {
+      expect(brokerPdpDecisionSchema.parse({ decision: 'allow', reason: 'in_envelope' })).toEqual({
+        decision: 'allow',
+        reason: 'in_envelope',
+      });
+      expect(
+        brokerPdpDecisionSchema.safeParse({ decision: 'defer', reason: 'in_envelope' }).success,
+      ).toBe(false);
+      expect(
+        brokerPdpDecisionSchema.safeParse({ decision: 'deny', reason: 'free text' }).success,
       ).toBe(false);
     });
   });

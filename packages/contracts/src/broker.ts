@@ -43,6 +43,7 @@ export const BROKER_SCOPES = [
   'engagement:write',
   'evidence:write',
   'journal:write',
+  'pdp:evaluate',
   'state:read',
 ] as const;
 export const brokerScopeSchema = z.enum(BROKER_SCOPES);
@@ -162,6 +163,57 @@ export const brokerToolAuditRequestSchema = z.strictObject({
   inputSummary: z.string().max(TOOL_AUDIT_SUMMARY_MAX),
 });
 export type BrokerToolAuditRequest = z.infer<typeof brokerToolAuditRequestSchema>;
+
+/** Most targets one PDP call carries. A call with more is refused, so the decision stays small and bounded. */
+export const PDP_TARGETS_MAX = 16;
+const PDP_NAME_MAX = 256;
+
+/** Decisions the PreToolUse PDP returns. `defer` is RUNTIME-006 and is not part of this contract. */
+const PDP_DECISIONS = ['allow', 'deny'] as const;
+export type PdpDecisionValue = (typeof PDP_DECISIONS)[number];
+
+/**
+ * Why the PDP decided. Stable codes that metrics and audit use as labels. The hook adds the fail-closed codes
+ * (`invalid_input`, `target_unresolved`, `pdp_unavailable`, `pdp_timeout`) when it denies without an answer.
+ */
+const PDP_REASONS = [
+  'in_envelope',
+  'no_envelope',
+  'envelope_not_yet_valid',
+  'envelope_expired',
+  'envelope_revoked',
+  'out_of_scope',
+  'intrusiveness_exceeds_envelope',
+  'destructive_class',
+  'state_change_without_journal',
+  'invalid_input',
+  'target_unresolved',
+  'pdp_unavailable',
+  'pdp_timeout',
+] as const;
+export type PdpReason = (typeof PDP_REASONS)[number];
+
+/**
+ * `POST /internal/broker/runs/{runId}/pdp/evaluate` (RUNTIME-005, #467): one PreToolUse decision. The request
+ * carries ids and the targets the call names, never the call's input. The envelope, scope and journal facts
+ * come from the broker, not from the caller, so the model's claim about scope is never trusted.
+ */
+export const brokerPdpEvaluateRequestSchema = z.strictObject({
+  ...boundIdsShape,
+  toolName: z.string().min(1).max(PDP_NAME_MAX),
+  toolUseId: z.string().min(1).max(PDP_NAME_MAX),
+  targets: z.array(z.string().min(1).max(URL_MAX)).max(PDP_TARGETS_MAX),
+  subtaskId: uuidV7Schema.nullable(),
+  testCaseId: uuidV7Schema.nullable(),
+  roleId: z.string().min(1).max(LIMITS.keyMax).nullable(),
+});
+export type BrokerPdpEvaluateRequest = z.infer<typeof brokerPdpEvaluateRequestSchema>;
+
+export const brokerPdpDecisionSchema = z.strictObject({
+  decision: z.enum(PDP_DECISIONS),
+  reason: z.enum(PDP_REASONS),
+});
+export type BrokerPdpDecision = z.infer<typeof brokerPdpDecisionSchema>;
 
 /** `GET /internal/broker/runs/{runId}/state` (ORCH implements the full view). */
 export const brokerStateResponseSchema = z.strictObject({

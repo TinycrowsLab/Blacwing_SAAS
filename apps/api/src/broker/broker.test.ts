@@ -12,10 +12,15 @@ import { createUuidV7Generator } from '@blackwing/ids';
 import { createLogger } from '@blackwing/logger';
 
 import { loadBrokerConfig } from './config.js';
-import { InMemoryBrokerAuditSink, InMemoryBrokerRunReader } from './memory.js';
+import {
+  InMemoryBrokerAuditSink,
+  InMemoryBrokerRunReader,
+  InMemoryPdpFactsReader,
+} from './memory.js';
 import { createBrokerMetrics } from './metrics.js';
 import { createSourceGuard, InvalidCidrError } from './network.js';
 import { brokerOpenApiDocument } from './openapi.js';
+import { createPdpService, type PdpFacts, type PdpService } from './pdp.js';
 import { registerBrokerRoutes } from './routes.js';
 import {
   createBrokerTokenVerifier,
@@ -110,6 +115,7 @@ function token(overrides: Partial<Parameters<typeof signBrokerToken>[1]> = {}): 
 async function build(
   rateLimit = { limit: 1000, windowMs: 60_000 },
   engagement?: EngagementPort,
+  pdp?: PdpService,
 ): Promise<Ctx> {
   const app = Fastify({ logger: false });
   const runs = new InMemoryBrokerRunReader();
@@ -133,6 +139,7 @@ async function build(
     metrics,
     rateLimit,
     ...(engagement === undefined ? {} : { engagement }),
+    ...(pdp === undefined ? {} : { pdp }),
     now: () => clock.now,
     environment: 'test',
   });
@@ -677,6 +684,146 @@ describe('Run Broker API', () => {
     });
   });
 
+  describe('PDP evaluate (RUNTIME-005)', () => {
+    const PDP_URL = `${BASE}/runs/${RUN}/pdp/evaluate`;
+    const PDP_BODY = {
+      toolName: 'Bash',
+      toolUseId: 'toolu_1',
+      targets: ['https://lab.example.test/login'],
+      subtaskId: SUBTASK,
+      testCaseId: TEST_CASE,
+      roleId: 'auth-specialist',
+    };
+    const facts = (overrides: Partial<PdpFacts> = {}): PdpFacts => ({
+      envelope: {
+        validFrom: new Date(NOW_MS - 1000),
+        expiresAt: new Date(NOW_MS + 60_000),
+        revoked: false,
+        maxIntrusiveness: 'active_safe',
+      },
+      sessionCeiling: 'active_safe',
+      testCaseClass: 'active_safe',
+      reversalJournalPresent: false,
+      inScope: (target) => target === 'https://lab.example.test/login',
+      ...overrides,
+    });
+    const wired = async (pdpFacts: PdpFacts = facts()): Promise<Ctx> => {
+      const reader = new InMemoryPdpFactsReader();
+      reader.set({ tenantId: TENANT, runId: RUN }, pdpFacts);
+      const pdp = createPdpService({ facts: reader, now: () => new Date(NOW_MS) });
+      return build(undefined, undefined, pdp);
+    };
+
+    it('answers 501 and denies (fail closed) while no PDP is wired', async () => {
+      ctx = await build();
+      const res = await call(ctx, { url: PDP_URL, payload: PDP_BODY });
+      expect(res.statusCode).toBe(501);
+      expect(res.json<{ code: string }>().code).toBe('NOT_IMPLEMENTED');
+      expect(ctx.audit.events.at(-1)?.outcome).toBe('not_implemented');
+      expect(ctx.audit.events.at(-1)?.decision).toBeUndefined();
+    });
+
+    it('returns allow for an in-envelope call and audits the decision', async () => {
+      ctx = await wired();
+      const res = await call(ctx, { url: PDP_URL, payload: PDP_BODY });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ decision: 'allow', reason: 'in_envelope' });
+      const event = ctx.audit.events.at(-1);
+      expect(event).toMatchObject({
+        action: 'broker.pdp.evaluate',
+        outcome: 'success',
+        decision: 'allow',
+        reason: 'in_envelope',
+        runId: RUN,
+        tenantId: TENANT,
+      });
+    });
+
+    it('returns deny with the reason for an out-of-scope target and audits it', async () => {
+      ctx = await wired();
+      const res = await call(ctx, {
+        url: PDP_URL,
+        payload: { ...PDP_BODY, targets: ['https://other.example.test/'] },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ decision: 'deny', reason: 'out_of_scope' });
+      expect(ctx.audit.events.at(-1)).toMatchObject({ decision: 'deny', reason: 'out_of_scope' });
+    });
+
+    it('denies a state_changing test case without its journal entry', async () => {
+      ctx = await wired(
+        facts({
+          envelope: {
+            validFrom: new Date(NOW_MS - 1000),
+            expiresAt: new Date(NOW_MS + 60_000),
+            revoked: false,
+            maxIntrusiveness: 'state_changing',
+          },
+          sessionCeiling: 'state_changing',
+          testCaseClass: 'state_changing',
+        }),
+      );
+      const res = await call(ctx, { url: PDP_URL, payload: PDP_BODY });
+      expect(res.json()).toEqual({ decision: 'deny', reason: 'state_change_without_journal' });
+    });
+
+    it('denies an unknown run as no envelope, without revealing the run', async () => {
+      ctx = await build(
+        undefined,
+        undefined,
+        createPdpService({
+          facts: new InMemoryPdpFactsReader(),
+          now: () => new Date(NOW_MS),
+        }),
+      );
+      const res = await call(ctx, { url: PDP_URL, payload: PDP_BODY });
+      expect(res.json()).toEqual({ decision: 'deny', reason: 'no_envelope' });
+    });
+
+    it('refuses a token without the pdp:evaluate scope with 403 and no decision', async () => {
+      ctx = await wired();
+      const scopes = BROKER_SCOPES.filter((scope) => scope !== 'pdp:evaluate');
+      const res = await call(ctx, {
+        url: PDP_URL,
+        payload: PDP_BODY,
+        auth: `Bearer ${token({ scopes: [...scopes] })}`,
+      });
+      expect(res.statusCode).toBe(403);
+      expect(res.json<{ code: string }>().code).toBe('FORBIDDEN');
+    });
+
+    it.each([
+      ['an unknown field', { ...PDP_BODY, input: { command: 'id' } }],
+      ['a non-uuid subtask', { ...PDP_BODY, subtaskId: 'nope' }],
+      [
+        'more targets than allowed',
+        { ...PDP_BODY, targets: Array.from({ length: 17 }, () => 'a.test') },
+      ],
+      ['an empty tool name', { ...PDP_BODY, toolName: '' }],
+    ])('rejects a malformed body (%s) with 422 and no decision', async (_name, payload) => {
+      ctx = await wired();
+      const res = await call(ctx, { url: PDP_URL, payload });
+      expect(res.statusCode).toBe(422);
+      expect(res.json<{ decision?: string }>().decision).toBeUndefined();
+    });
+
+    it('refuses a body that names another run with 403', async () => {
+      ctx = await wired();
+      const res = await call(ctx, { url: PDP_URL, payload: { ...PDP_BODY, runId: OTHER_RUN } });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('fails closed with a 500 when the facts cannot be loaded', async () => {
+      ctx = await build(undefined, undefined, {
+        evaluate: () => Promise.reject(new Error('database down')),
+      });
+      const res = await call(ctx, { url: PDP_URL, payload: PDP_BODY });
+      expect(res.statusCode).toBe(500);
+      expect(res.body).not.toContain('database down');
+      expect(ctx.audit.events.at(-1)?.outcome).toBe('error');
+    });
+  });
+
   describe('run state', () => {
     it.each(['completed', 'cancelled', 'killed', 'failed', 'expired'] as const)(
       'rejects broker writes for a %s run with 409 run_not_active',
@@ -810,6 +957,7 @@ describe('public OpenAPI exclusion', () => {
       `${BASE}/runs/{runId}/engagement/test-cases/status`,
       `${BASE}/runs/{runId}/evidence`,
       `${BASE}/runs/{runId}/journal`,
+      `${BASE}/runs/{runId}/pdp/evaluate`,
       `${BASE}/runs/{runId}/state`,
       `${BASE}/runs/{runId}/tool-audit`,
     ]);
