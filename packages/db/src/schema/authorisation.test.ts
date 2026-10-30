@@ -36,6 +36,7 @@ describe('standing_authorisations schema', () => {
       approver_id: false,
       signature: false,
       signing_key_id: false,
+      envelope_hash: false,
       version: true,
       status: true,
       revocation_reason: false,
