@@ -16,6 +16,20 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: ['If-Match'],
   },
+  cancelAssetVerification: {
+    method: 'DELETE',
+    path: '/v1/assets/{id}/verification',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
+  checkAssetVerification: {
+    method: 'POST',
+    path: '/v1/assets/{id}/verification/check',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   createAssessmentRequest: {
     method: 'POST',
     path: '/v1/assessment-requests',
@@ -82,6 +96,13 @@ export const OPERATIONS = {
   getAsset: {
     method: 'GET',
     path: '/v1/assets/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
+  getAssetVerification: {
+    method: 'GET',
+    path: '/v1/assets/{id}/verification',
     pathParams: ['id'],
     queryParams: [],
     requiredHeaders: [],
@@ -266,6 +287,13 @@ export const OPERATIONS = {
     pathParams: [],
     queryParams: [],
     requiredHeaders: ['Idempotency-Key'],
+  },
+  startAssetVerification: {
+    method: 'POST',
+    path: '/v1/assets/{id}/verification',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
   },
   streamRunEvents: {
     method: 'GET',

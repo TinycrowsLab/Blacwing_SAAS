@@ -228,6 +228,20 @@ export {
   listAssetsQuerySchema,
 } from './entities/asset-api.js';
 export {
+  type AssetVerificationView,
+  assetVerificationViewSchema,
+  type StartVerificationBody,
+  startVerificationBodySchema,
+  VERIFICATION_CHALLENGE_STATUSES,
+  VERIFICATION_TOKEN_BYTES,
+  VERIFICATION_TOKEN_MIN_LENGTH,
+  VERIFICATION_TOKEN_PREFIX,
+  type VerificationChallengeStatus,
+  type VerificationChallengeView,
+  verificationChallengeStatusSchema,
+  verificationChallengeViewSchema,
+} from './entities/asset-verification.js';
+export {
   ASSET_IDENTIFIER_LIMIT,
   ASSET_TYPE_IDENTIFIER_KIND,
   type AssetIdentifierInput,

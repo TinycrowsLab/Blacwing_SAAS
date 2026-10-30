@@ -23,6 +23,34 @@ export {
 } from './authorisation/state.js';
 
 export {
+  addDays,
+  addHours,
+  decideAfterProbe,
+  IllegalVerificationTransitionError,
+  isChallengeExpired,
+  type ProbeDecision,
+  transitionVerification,
+  VERIFICATION_EVENT_TYPES,
+  VERIFICATION_TRANSITIONS,
+  type VerificationEventType,
+} from './assets/verification/machine.js';
+export { base32Encode, newVerificationToken } from './assets/verification/token.js';
+export {
+  DNS_CHALLENGE_LABEL,
+  expectedLocationOf,
+  HTTP_CHALLENGE_PATH,
+  hostOf,
+  type LocationIdentifier,
+} from './assets/verification/location.js';
+export {
+  DEFAULT_VERIFICATION_POLICY,
+  type VerificationPolicy,
+  type VerificationProbe,
+  type VerificationProbeResult,
+  type VerificationProbeTarget,
+} from './assets/verification/probe.js';
+
+export {
   hasPermission,
   knownRoles,
   permissionsForRoles,

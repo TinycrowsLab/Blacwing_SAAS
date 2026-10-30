@@ -340,6 +340,18 @@ const DEFINITIONS = {
   ASSET_STALE_WRITE: { status: 409, title: 'Stale asset write', retryable: false },
   ASSET_IN_USE: { status: 409, title: 'Asset in use', retryable: false },
   ASSET_INVALID_IDENTIFIER: { status: 422, title: 'Invalid asset identifier', retryable: false },
+  // Ownership verification (ASSET-003). A transition the state machine refuses (e.g. verifying a rejected asset),
+  // and a check whose probe is not deployed for the method (fail closed; the asset stays unverified).
+  ASSET_VERIFICATION_ILLEGAL_TRANSITION: {
+    status: 409,
+    title: 'Asset verification transition refused',
+    retryable: false,
+  },
+  ASSET_VERIFICATION_PROBE_UNAVAILABLE: {
+    status: 503,
+    title: 'Verification probe unavailable',
+    retryable: false,
+  },
   EXTERNAL_BACKEND_UNAVAILABLE: {
     status: 503,
     title: 'External secret backend unavailable',

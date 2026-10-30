@@ -13,6 +13,7 @@ export const ASSET_ACTIONS = {
   create: 'Asset::create',
   update: 'Asset::update',
   delete: 'Asset::delete',
+  verify: 'Asset::verify',
 } as const;
 export type AssetAction = (typeof ASSET_ACTIONS)[keyof typeof ASSET_ACTIONS];
 
@@ -35,12 +36,16 @@ permit (principal, action in [Action::"${ASSET_ACTIONS.update}", Action::"${ASSE
 when { principal.tenantId == resource.tenantId && principal.permissions.contains("asset:write") };
 
 @id("asset.owner_scope")
-forbid (principal, action in [Action::"${ASSET_ACTIONS.update}", Action::"${ASSET_ACTIONS.delete}"], resource is Asset)
+forbid (principal, action in [Action::"${ASSET_ACTIONS.update}", Action::"${ASSET_ACTIONS.delete}", Action::"${ASSET_ACTIONS.verify}"], resource is Asset)
 unless {
   principal.roles.contains("appsec_engineer") ||
   principal.roles.contains("org_admin") ||
   resource.ownerUserId == principal.userId
 };
+
+@id("asset.verify")
+permit (principal, action == Action::"${ASSET_ACTIONS.verify}", resource is Asset)
+when { principal.tenantId == resource.tenantId && principal.permissions.contains("asset:verify") };
 
 @id("asset.tenant_isolation")
 forbid (principal, action, resource)

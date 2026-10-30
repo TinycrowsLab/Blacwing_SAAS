@@ -119,6 +119,10 @@ const RELEASED_ACTIONS = [
   'gate1.approved',
   'gate1.changes_requested',
   'gate1.rejected',
+  'asset.verification_started',
+  'asset.verification_passed',
+  'asset.verification_failed',
+  'asset.verification_cancelled',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

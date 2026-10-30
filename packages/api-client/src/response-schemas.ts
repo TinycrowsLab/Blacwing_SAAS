@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   assetListResponseSchema,
+  assetVerificationViewSchema,
   assetViewSchema,
   planDiffSchema,
   testCaseViewSchema,
@@ -174,6 +175,10 @@ export const RESPONSE_SCHEMAS: Readonly<
   getAsset: { 200: assetViewSchema },
   updateAsset: { 200: assetViewSchema },
   deleteAsset: { 200: assetViewSchema },
+  getAssetVerification: { 200: assetVerificationViewSchema },
+  startAssetVerification: { 201: assetVerificationViewSchema },
+  checkAssetVerification: { 200: assetVerificationViewSchema },
+  cancelAssetVerification: { 200: assetVerificationViewSchema },
   validateTestPlan: { 200: planValidationResultSchema },
   listOncallRosters: { 200: oncallRosterPageSchema },
   createOncallRoster: { 201: oncallRosterSchema },

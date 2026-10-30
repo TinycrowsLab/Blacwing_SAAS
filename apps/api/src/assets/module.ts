@@ -1,15 +1,28 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 
-import { AssetRepository as AssetListReader, type Database } from '@blackwing/db';
+import {
+  AssetRepository as AssetListReader,
+  type Database,
+  TenantHaltRepository,
+} from '@blackwing/db';
+import {
+  DEFAULT_VERIFICATION_POLICY,
+  type VerificationPolicy,
+  type VerificationProbe,
+} from '@blackwing/domain';
 
 import { AssetsController } from './controller.js';
 import { createAssetMetrics, type AssetMetrics } from './metrics.js';
 import { createCedarAssetPolicy } from './policy.js';
 import { AssetRepository } from './repository.js';
 import { AssetService } from './service.js';
-import { ASSET_METRICS, ASSET_SERVICE } from './tokens.js';
+import { ASSET_METRICS, ASSET_SERVICE, ASSET_VERIFICATION_SERVICE } from './tokens.js';
+import { AssetVerificationRepository } from './verification-repository.js';
+import { AssetVerificationService } from './verification-service.js';
+import { AssetVerificationController } from './verification.controller.js';
 import { API_LOGGER } from '../bootstrap/tokens.js';
 
+import type { VerificationMethod } from '@blackwing/contracts';
 import type { Logger } from '@blackwing/logger';
 import type { Registry } from 'prom-client';
 
@@ -18,14 +31,33 @@ export interface AssetsModuleOptions {
   readonly database: Database;
   /** The API's metrics registry, so the asset counters appear on `/metrics`. */
   readonly registry: Registry;
+  /**
+   * The deployed verification probes (ASSET-005 DNS, ASSET-006 HTTP). One per method; a method without a probe
+   * answers `503` on check, so an unprobed asset can never become verified.
+   */
+  readonly verificationProbes?: readonly VerificationProbe[];
+  /** Overrides of the verification tunables (`bw.asset.*`); unset keys keep the issue's defaults. */
+  readonly verificationPolicy?: Partial<VerificationPolicy>;
+}
+
+/** The probes keyed by method. Two probes for one method would make the choice silent, so that is refused. */
+function probesByMethod(
+  probes: readonly VerificationProbe[],
+): ReadonlyMap<VerificationMethod, VerificationProbe> {
+  const byMethod = new Map<VerificationMethod, VerificationProbe>();
+  for (const probe of probes) {
+    if (byMethod.has(probe.method)) throw new Error(`two verification probes for ${probe.method}`);
+    byMethod.set(probe.method, probe);
+  }
+  return byMethod;
 }
 
 /**
- * The asset registry module (ASSET-002): `/v1/assets`. Mounted by the API bootstrap through
+ * The asset registry module (ASSET-002, ASSET-003): `/v1/assets`. Mounted by the API bootstrap through
  * `createApiApp({ imports: [AssetsModule.forRoot(...)] })`; it needs the tenant guard (`tenantPrincipalSource`)
  * to be installed, otherwise every route answers 401 (fail closed).
  */
-@Module({ controllers: [AssetsController] })
+@Module({ controllers: [AssetsController, AssetVerificationController] })
 export class AssetsModule {
   static forRoot(options: AssetsModuleOptions): DynamicModule {
     return {
@@ -43,6 +75,21 @@ export class AssetsModule {
               repository: new AssetRepository({ db: options.database }),
               projections: new AssetListReader({ db: options.database }),
               policy: createCedarAssetPolicy(),
+              metrics,
+              logger,
+            }),
+        },
+        {
+          provide: ASSET_VERIFICATION_SERVICE,
+          inject: [ASSET_METRICS, API_LOGGER],
+          useFactory: (metrics: AssetMetrics, logger: Logger) =>
+            new AssetVerificationService({
+              repository: new AssetRepository({ db: options.database }),
+              halts: new TenantHaltRepository({ db: options.database }),
+              verifications: new AssetVerificationRepository(),
+              policy: createCedarAssetPolicy(),
+              probes: probesByMethod(options.verificationProbes ?? []),
+              settings: { ...DEFAULT_VERIFICATION_POLICY, ...options.verificationPolicy },
               metrics,
               logger,
             }),

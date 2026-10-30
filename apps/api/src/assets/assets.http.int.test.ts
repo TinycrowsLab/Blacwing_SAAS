@@ -2,11 +2,12 @@
 // with the tenant guard, RBAC plus Cedar, RLS, optimistic concurrency, idempotent create and the audit chain.
 // Needs Docker (Testcontainers); run with `pnpm --filter @blackwing/api test:int`.
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { assetListResponseSchema } from '@blackwing/contracts';
 import {
   createDatabase,
+  killEvents,
   memberships,
   migrateDatabase,
   publicId,
@@ -24,9 +25,34 @@ import { loadApiConfig } from '../config.js';
 import { AssetsModule } from './module.js';
 
 import type { TenantPrincipal } from '@blackwing/db/tenant-context';
+import type {
+  VerificationProbe,
+  VerificationProbeTarget,
+  VerificationProbeResult,
+} from '@blackwing/domain';
 
 let handle: PostgresHandle;
 let app: ApiApp;
+
+/**
+ * The stub DNS probe the verification suite runs (ASSET-005 will add the real one). Its behaviour is set per test:
+ * `absent` (token not found), `present` (token found) or `throws` (the resolver failed). It records what it was asked.
+ */
+type ProbeMode = 'absent' | 'present' | 'throws';
+let probeMode: ProbeMode = 'absent';
+const probeCalls: VerificationProbeTarget[] = [];
+const dnsStubProbe: VerificationProbe = {
+  method: 'dns_txt',
+  check(target): Promise<VerificationProbeResult> {
+    probeCalls.push(target);
+    if (probeMode === 'throws') return Promise.reject(new Error('resolver unreachable'));
+    return Promise.resolve(
+      probeMode === 'present'
+        ? { outcome: 'passed' }
+        : { outcome: 'not_found', reason: 'token_absent' },
+    );
+  },
+};
 
 const tenantA = newId();
 const tenantB = newId();
@@ -161,7 +187,13 @@ beforeAll(async () => {
     logger,
     metrics,
     tenantPrincipalSource: (request) => principalOf(request.headers),
-    imports: [AssetsModule.forRoot({ database: db(), registry: metrics.registry })],
+    imports: [
+      AssetsModule.forRoot({
+        database: db(),
+        registry: metrics.registry,
+        verificationProbes: [dnsStubProbe],
+      }),
+    ],
   });
   await app.app.getHttpAdapter().getInstance().ready();
 });
@@ -599,5 +631,426 @@ describe('the audit ledger', () => {
       const current = rows[index];
       expect(current?.prev_hash?.equals(previous?.hash ?? Buffer.alloc(0))).toBe(true);
     }
+  });
+});
+
+describe('ownership verification (ASSET-003)', () => {
+  const TOKEN = /^blackwing-site-verification=[A-Z2-7]{52}$/;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  interface Challenge {
+    id: string;
+    method: string;
+    status: string;
+    token: string;
+    expectedLocation: string | null;
+    attempts: number;
+    maxCheckAttempts: number;
+    expiresAt: string;
+    lastCheckedAt: string | null;
+  }
+  interface Verification {
+    assetId: string;
+    verificationStatus: string;
+    verificationMethod: string | null;
+    verifiedAt: string | null;
+    verificationExpiresAt: string | null;
+    challenge: Challenge | null;
+  }
+
+  const startVerification = (caller: Caller, assetId: string, method = 'dns_txt') =>
+    call(caller, 'POST', `/v1/assets/${assetId}/verification`, { payload: { method } });
+  const checkVerification = (caller: Caller, assetId: string) =>
+    call(caller, 'POST', `/v1/assets/${assetId}/verification/check`);
+  const auditActionsOf = (tenant: string) =>
+    queryAs<{ action: string; metadata: Record<string, unknown> }>(
+      tenant,
+      'SELECT action, metadata FROM audit_events WHERE tenant_id = $1 ORDER BY seq',
+      [tenant],
+    );
+
+  beforeEach(() => {
+    probeMode = 'absent';
+    probeCalls.length = 0;
+  });
+
+  it('starts verification: 201, pending, a 32-byte CSPRNG token and its DNS location; the asset is pending', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify start' });
+    const res = await startVerification(ALICE, asset.id);
+    expect(res.statusCode).toBe(201);
+    const view = res.json<Verification>();
+    expect(view.verificationStatus).toBe('pending');
+    expect(view.verificationMethod).toBeNull();
+    expect(view.challenge).toMatchObject({
+      method: 'dns_txt',
+      status: 'pending',
+      attempts: 0,
+      maxCheckAttempts: 20,
+      expectedLocation: '_blackwing-challenge.portal.example.com',
+      lastCheckedAt: null,
+    });
+    expect(view.challenge?.token).toMatch(TOKEN);
+    const ttlHours = (Date.parse(view.challenge?.expiresAt ?? '') - Date.now()) / 3_600_000;
+    expect(ttlHours).toBeGreaterThan(71);
+    expect(ttlHours).toBeLessThanOrEqual(72);
+
+    const got = await call(ALICE, 'GET', `/v1/assets/${asset.id}`);
+    expect(got.json<{ verificationStatus: string }>().verificationStatus).toBe('pending');
+    expect(got.headers.etag).not.toBe(asset.etag);
+  });
+
+  it('names an HTTP location for an http_file challenge, and none for a manual letter', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify locations' });
+    const http = await startVerification(ALICE, asset.id, 'http_file');
+    expect(http.json<Verification>().challenge?.expectedLocation).toBe(
+      'https://portal.example.com/.well-known/blackwing-verify.txt',
+    );
+    const letter = await startVerification(ALICE, asset.id, 'manual_letter');
+    expect(letter.json<Verification>().challenge?.expectedLocation).toBeNull();
+  });
+
+  it('refuses a DNS or HTTP method for an asset with no host identifier, 422, without echoing the value', async () => {
+    const asset = await createAs(ALICE, {
+      name: 'Verify no host',
+      type: 'network_range',
+      identifiers: [{ kind: 'cidr', value: '10.20.0.0/16' }],
+    });
+    const res = await startVerification(ALICE, asset.id, 'dns_txt');
+    expect(res.statusCode).toBe(422);
+    expect(res.json<{ code: string }>().code).toBe('validation_failed');
+    expect(res.body).not.toContain('10.20.0.0');
+    expect(
+      (await call(ALICE, 'GET', `/v1/assets/${asset.id}`)).json<{ verificationStatus: string }>()
+        .verificationStatus,
+    ).toBe('unverified');
+  });
+
+  it('refuses a body with an unknown method or an unknown field, 422', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify bad body' });
+    const unknown = await call(ALICE, 'POST', `/v1/assets/${asset.id}/verification`, {
+      payload: { method: 'carrier_pigeon' },
+    });
+    expect(unknown.statusCode).toBe(422);
+    const extra = await call(ALICE, 'POST', `/v1/assets/${asset.id}/verification`, {
+      payload: { method: 'dns_txt', verificationStatus: 'verified' },
+    });
+    expect(extra.statusCode).toBe(422);
+  });
+
+  it('restarts a pending verification with a new token and a fresh attempt budget, and audits the restart', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify restart' });
+    const first = (await startVerification(ALICE, asset.id)).json<Verification>().challenge;
+    await checkVerification(ALICE, asset.id);
+    const restarted = (await startVerification(ALICE, asset.id)).json<Verification>().challenge;
+    expect(restarted?.id).toBe(first?.id);
+    expect(restarted?.token).not.toBe(first?.token);
+    expect(restarted?.token).toMatch(TOKEN);
+    expect(restarted?.attempts).toBe(0);
+    const started = (await auditActionsOf(tenantA)).filter(
+      (row) => row.action === 'asset.verification_started',
+    );
+    expect(started.at(-1)?.metadata).toMatchObject({ restart: true, newToken: true });
+  });
+
+  it('counts a missed probe as an attempt and keeps the asset pending', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify miss' });
+    await startVerification(ALICE, asset.id);
+    const res = await checkVerification(ALICE, asset.id);
+    expect(res.statusCode).toBe(200);
+    const view = res.json<Verification>();
+    expect(view.verificationStatus).toBe('pending');
+    expect(view.challenge).toMatchObject({ status: 'pending', attempts: 1 });
+    expect(view.challenge?.lastCheckedAt).not.toBeNull();
+  });
+
+  it('gives the probe the token and location stored on the challenge, never a value the client sent', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify probe input' });
+    const started = (await startVerification(ALICE, asset.id)).json<Verification>().challenge;
+    await checkVerification(ALICE, asset.id);
+    expect(probeCalls.at(-1)).toMatchObject({
+      method: 'dns_txt',
+      token: started?.token,
+      expectedLocation: '_blackwing-challenge.portal.example.com',
+    });
+  });
+
+  it('verifies the asset on a passing probe: verified, method and a 90-day expiry, and audits the pass', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify pass' });
+    await startVerification(ALICE, asset.id);
+    probeMode = 'present';
+    const before = Date.now();
+    const res = await checkVerification(ALICE, asset.id);
+    expect(res.statusCode).toBe(200);
+    const view = res.json<Verification>();
+    expect(view.verificationStatus).toBe('verified');
+    expect(view.verificationMethod).toBe('dns_txt');
+    expect(view.challenge?.status).toBe('passed');
+    const expiresInDays = (Date.parse(view.verificationExpiresAt ?? '') - before) / DAY_MS;
+    expect(expiresInDays).toBeGreaterThan(89.99);
+    expect(expiresInDays).toBeLessThanOrEqual(90.01);
+
+    const listed = await call(ALICE, 'GET', '/v1/assets?verificationStatus=verified&limit=200');
+    expect(listed.json<{ items: { id: string }[] }>().items.map((i) => i.id)).toContain(asset.id);
+    const actions = (await auditActionsOf(tenantA)).map((row) => row.action);
+    expect(actions).toContain('asset.verification_passed');
+  });
+
+  it('refuses to start verification of a verified asset, 409 ASSET_VERIFICATION_ILLEGAL_TRANSITION', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify twice' });
+    await startVerification(ALICE, asset.id);
+    probeMode = 'present';
+    await checkVerification(ALICE, asset.id);
+    const res = await startVerification(ALICE, asset.id);
+    expect(res.statusCode).toBe(409);
+    expect(res.json<{ code: string }>().code).toBe('asset_verification_illegal_transition');
+  });
+
+  it('fails the challenge after the attempt budget is spent (20 misses) and returns the asset to unverified', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify exhausted' });
+    await startVerification(ALICE, asset.id);
+    let last: Verification | undefined;
+    for (let attempt = 1; attempt <= 20; attempt += 1) {
+      const res = await checkVerification(ALICE, asset.id);
+      expect(res.statusCode).toBe(200);
+      last = res.json<Verification>();
+      expect(last.challenge?.attempts).toBe(attempt);
+    }
+    expect(last?.verificationStatus).toBe('unverified');
+    expect(last?.challenge?.status).toBe('failed');
+    const failed = (await auditActionsOf(tenantA)).filter(
+      (row) => row.action === 'asset.verification_failed',
+    );
+    expect(failed.at(-1)?.metadata).toMatchObject({ reason: 'attempts_exhausted', attempts: 20 });
+
+    const again = await checkVerification(ALICE, asset.id);
+    expect(again.statusCode).toBe(409);
+    const restart = await startVerification(ALICE, asset.id);
+    expect(restart.statusCode).toBe(201);
+    expect(restart.json<Verification>().challenge?.attempts).toBe(0);
+  });
+
+  it('expires a challenge whose window closed: the challenge expires, the asset is unverified, no probe runs', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify expiry' });
+    await startVerification(ALICE, asset.id);
+    await queryAs(
+      tenantA,
+      `UPDATE verification_challenges SET expires_at = now() - interval '1 minute' WHERE asset_id = $1`,
+      [asset.id],
+    );
+    probeMode = 'present';
+    const res = await checkVerification(ALICE, asset.id);
+    expect(res.statusCode).toBe(200);
+    const view = res.json<Verification>();
+    expect(view.verificationStatus).toBe('unverified');
+    expect(view.challenge?.status).toBe('expired');
+    expect(probeCalls).toHaveLength(0);
+    const failed = (await auditActionsOf(tenantA)).filter(
+      (row) => row.action === 'asset.verification_failed',
+    );
+    expect(failed.at(-1)?.metadata).toMatchObject({ reason: 'challenge_expired' });
+  });
+
+  it('settles an expired challenge when verification is started again, and issues a new one', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify expired restart' });
+    await startVerification(ALICE, asset.id);
+    await queryAs(
+      tenantA,
+      `UPDATE verification_challenges SET expires_at = now() - interval '1 minute' WHERE asset_id = $1`,
+      [asset.id],
+    );
+    const res = await startVerification(ALICE, asset.id, 'http_file');
+    expect(res.statusCode).toBe(201);
+    const view = res.json<Verification>();
+    expect(view.verificationStatus).toBe('pending');
+    expect(view.challenge).toMatchObject({ method: 'http_file', status: 'pending', attempts: 0 });
+    const statuses = await queryAs<{ status: string }>(
+      tenantA,
+      'SELECT status FROM verification_challenges WHERE asset_id = $1 ORDER BY created_at',
+      [asset.id],
+    );
+    expect(statuses.map((row) => row.status)).toEqual(['expired', 'pending']);
+  });
+
+  it('counts a probe that throws as a missed attempt, never a pass', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify probe error' });
+    await startVerification(ALICE, asset.id);
+    probeMode = 'throws';
+    const res = await checkVerification(ALICE, asset.id);
+    expect(res.statusCode).toBe(200);
+    expect(res.json<Verification>()).toMatchObject({
+      verificationStatus: 'pending',
+      challenge: { status: 'pending', attempts: 1 },
+    });
+  });
+
+  it('answers 503 for a method with no deployed probe, and does not spend an attempt', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify no probe' });
+    await startVerification(ALICE, asset.id, 'http_file');
+    const res = await checkVerification(ALICE, asset.id);
+    expect(res.statusCode).toBe(503);
+    expect(res.json<{ code: string }>().code).toBe('asset_verification_probe_unavailable');
+    const state = (
+      await call(ALICE, 'GET', `/v1/assets/${asset.id}/verification`)
+    ).json<Verification>();
+    expect(state.challenge).toMatchObject({ attempts: 0, status: 'pending' });
+    expect(state.verificationStatus).toBe('pending');
+  });
+
+  it('cancels a pending verification: the challenge is cancelled and the asset is unverified; a second cancel is 409', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify cancel' });
+    await startVerification(ALICE, asset.id);
+    const res = await call(ALICE, 'DELETE', `/v1/assets/${asset.id}/verification`);
+    expect(res.statusCode).toBe(200);
+    expect(res.json<Verification>()).toMatchObject({
+      verificationStatus: 'unverified',
+      challenge: { status: 'cancelled' },
+    });
+    const again = await call(ALICE, 'DELETE', `/v1/assets/${asset.id}/verification`);
+    expect(again.statusCode).toBe(409);
+    const actions = (await auditActionsOf(tenantA)).map((row) => row.action);
+    expect(actions).toContain('asset.verification_cancelled');
+  });
+
+  it('refuses a check or cancel on an unverified asset, 409 ILLEGAL_TRANSITION', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify idle' });
+    const check = await checkVerification(ALICE, asset.id);
+    expect(check.statusCode).toBe(409);
+    expect(check.json<{ code: string }>().code).toBe('asset_verification_illegal_transition');
+    const cancel = await call(ALICE, 'DELETE', `/v1/assets/${asset.id}/verification`);
+    expect(cancel.statusCode).toBe(409);
+  });
+
+  it('refuses verification of a rejected asset, 409, with no challenge issued', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify rejected' });
+    await queryAs(tenantA, `UPDATE assets SET verification_status = 'rejected' WHERE id = $1`, [
+      asset.id,
+    ]);
+    const res = await startVerification(ALICE, asset.id);
+    expect(res.statusCode).toBe(409);
+    expect(res.json<{ code: string }>().code).toBe('asset_verification_illegal_transition');
+    const state = (
+      await call(ALICE, 'GET', `/v1/assets/${asset.id}/verification`)
+    ).json<Verification>();
+    expect(state.challenge).toBeNull();
+  });
+
+  it('answers 404 for another tenant on every verification route, and for an unknown id', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify cross-tenant' });
+    await startVerification(ALICE, asset.id);
+    const foreign = [
+      await call(EVE, 'GET', `/v1/assets/${asset.id}/verification`),
+      await startVerification(EVE, asset.id),
+      await checkVerification(EVE, asset.id),
+      await call(EVE, 'DELETE', `/v1/assets/${asset.id}/verification`),
+    ];
+    for (const res of foreign) expect(res.statusCode).toBe(404);
+    const unknown = await call(
+      ALICE,
+      'GET',
+      `/v1/assets/asset_0000000000000000000000000/verification`,
+    );
+    expect(unknown.statusCode).toBe(404);
+    // Eve's refusals changed nothing in tenant A.
+    const state = (
+      await call(ALICE, 'GET', `/v1/assets/${asset.id}/verification`)
+    ).json<Verification>();
+    expect(state.challenge?.status).toBe('pending');
+    expect(state.challenge?.attempts).toBe(0);
+  });
+
+  it('refuses a caller without asset:verify, 403: an auditor, a member with no roles, and a non-owner asset_owner', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify rbac' });
+    expect((await call(CAROL, 'GET', `/v1/assets/${asset.id}/verification`)).statusCode).toBe(403);
+    expect((await startVerification(CAROL, asset.id)).statusCode).toBe(403);
+    expect((await startVerification(NOROLE, asset.id)).statusCode).toBe(403);
+    // bob holds asset:verify as an asset_owner, but he does not own this asset (Cedar owner rule).
+    expect((await startVerification(BOB, asset.id)).statusCode).toBe(403);
+    const state = (
+      await call(ALICE, 'GET', `/v1/assets/${asset.id}/verification`)
+    ).json<Verification>();
+    expect(state.verificationStatus).toBe('unverified');
+    expect(state.challenge).toBeNull();
+  });
+
+  it('lets the owner (an asset_owner) verify their own asset', async () => {
+    const asset = await createAs(BOB, { name: 'Verify own', ownerUserId: bob });
+    expect((await startVerification(BOB, asset.id)).statusCode).toBe(201);
+  });
+
+  it('refuses an unauthenticated caller with 401', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify anon' });
+    expect(
+      (
+        await call(undefined, 'POST', `/v1/assets/${asset.id}/verification`, {
+          payload: { method: 'dns_txt' },
+        })
+      ).statusCode,
+    ).toBe(401);
+    expect(
+      (await call(undefined, 'POST', `/v1/assets/${asset.id}/verification/check`)).statusCode,
+    ).toBe(401);
+  });
+
+  it('serialises two concurrent checks on one challenge: both runs are counted and neither errors', async () => {
+    const asset = await createAs(ALICE, { name: 'Verify concurrent checks' });
+    await startVerification(ALICE, asset.id);
+    const [first, second] = await Promise.all([
+      checkVerification(ALICE, asset.id),
+      checkVerification(ALICE, asset.id),
+    ]);
+    expect(first.statusCode).toBe(200);
+    expect(second.statusCode).toBe(200);
+    const state = (
+      await call(ALICE, 'GET', `/v1/assets/${asset.id}/verification`)
+    ).json<Verification>();
+    expect(state).toMatchObject({
+      verificationStatus: 'pending',
+      challenge: { status: 'pending', attempts: 2 },
+    });
+  });
+
+  it('blocks start and check in a halted tenant (423 KILL_SWITCH_ACTIVE) and still lets the owner cancel', async () => {
+    const asset = await createAs(EVE, { name: 'Verify halted', ownerUserId: eve });
+    expect((await startVerification(EVE, asset.id)).statusCode).toBe(201);
+    await withTenant(db(), tenantB, (tx) =>
+      tx.insert(killEvents).values({
+        id: newId(),
+        tenantId: tenantB,
+        scope: 'tenant',
+        source: 'console',
+        actorType: 'user',
+        actorRef: eve,
+        reason: 'verification halt test',
+      }),
+    );
+    const restart = await startVerification(EVE, asset.id);
+    expect(restart.statusCode).toBe(423);
+    expect(restart.json<{ code: string }>().code).toBe('kill_switch_active');
+    const check = await checkVerification(EVE, asset.id);
+    expect(check.statusCode).toBe(423);
+    const cancel = await call(EVE, 'DELETE', `/v1/assets/${asset.id}/verification`);
+    expect(cancel.statusCode).toBe(200);
+    expect(cancel.json<Verification>()).toMatchObject({
+      verificationStatus: 'unverified',
+      challenge: { status: 'cancelled' },
+    });
+    // The halt also refuses a start on the same asset afterwards, and tenant A is untouched.
+    expect((await startVerification(EVE, asset.id)).statusCode).toBe(423);
+    expect(
+      (await startVerification(ALICE, (await createAs(ALICE, { name: 'Verify other tenant' })).id))
+        .statusCode,
+    ).toBe(201);
+  });
+
+  it('keeps every verification transition in the audit chain, in order', async () => {
+    const actions = (await auditActionsOf(tenantA)).map((row) => row.action);
+    expect(actions).toEqual(
+      expect.arrayContaining([
+        'asset.verification_started',
+        'asset.verification_passed',
+        'asset.verification_failed',
+        'asset.verification_cancelled',
+      ]),
+    );
   });
 });

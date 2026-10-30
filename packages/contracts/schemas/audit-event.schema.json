@@ -108,7 +108,11 @@
         "gate1.submitted",
         "gate1.approved",
         "gate1.changes_requested",
-        "gate1.rejected"
+        "gate1.rejected",
+        "asset.verification_started",
+        "asset.verification_passed",
+        "asset.verification_failed",
+        "asset.verification_cancelled"
       ]
     },
     "severity": {

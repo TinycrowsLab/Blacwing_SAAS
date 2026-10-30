@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { permissionsOf } from './access.js';
 import {
   createCedarAssetPolicy,
   type AssetPolicyPrincipal,
   type AssetPolicyResource,
   ASSET_ACTIONS,
 } from './policy.js';
-import { permissionsOf } from './service.js';
 
 const TENANT_A = '0198f0a0-0000-7000-8000-00000000000a';
 const TENANT_B = '0198f0a0-0000-7000-8000-00000000000b';
@@ -70,6 +70,30 @@ describe('asset Cedar policy: RBAC permission and resource check', () => {
     const admin = principal(BOB, TENANT_A, ['org_admin']);
     expect(engine.authorize(admin, ASSET_ACTIONS.read, assetOf(ALICE)).decision).toBe('allow');
     expect(engine.authorize(admin, ASSET_ACTIONS.update, assetOf(ALICE)).decision).toBe('deny');
+  });
+
+  it('lets an asset owner and an appsec engineer verify their asset, but not an auditor (asset:verify)', () => {
+    const owner = principal(ALICE, TENANT_A, ['asset_owner']);
+    const appsec = principal(BOB, TENANT_A, ['appsec_engineer']);
+    const auditor = principal(BOB, TENANT_A, ['auditor']);
+    expect(engine.authorize(owner, ASSET_ACTIONS.verify, assetOf(ALICE)).decision).toBe('allow');
+    expect(engine.authorize(appsec, ASSET_ACTIONS.verify, assetOf(ALICE)).decision).toBe('allow');
+    expect(engine.authorize(auditor, ASSET_ACTIONS.verify, assetOf(ALICE)).decision).toBe('deny');
+  });
+
+  it('limits verification to the owner unless the caller is an appsec engineer or org admin', () => {
+    const owner = principal(ALICE, TENANT_A, ['asset_owner']);
+    const orgAdmin = principal(BOB, TENANT_A, ['org_admin']);
+    expect(engine.authorize(owner, ASSET_ACTIONS.verify, assetOf(BOB)).decision).toBe('deny');
+    // org_admin holds no asset:verify, so RBAC refuses it before the owner rule matters.
+    expect(engine.authorize(orgAdmin, ASSET_ACTIONS.verify, assetOf(ALICE)).decision).toBe('deny');
+  });
+
+  it('denies verification across tenants, even for an owner', () => {
+    const owner = principal(ALICE, TENANT_A, ['asset_owner']);
+    expect(engine.authorize(owner, ASSET_ACTIONS.verify, assetOf(ALICE, TENANT_B)).decision).toBe(
+      'deny',
+    );
   });
 
   it('denies every action across tenants, whatever the roles say', () => {

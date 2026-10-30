@@ -24,8 +24,11 @@ import {
   type AssetIdentifier,
   LIMITS,
   MFA_TYPES,
+  VERIFICATION_CHALLENGE_STATUSES,
   VERIFICATION_METHODS,
   VERIFICATION_STATUSES,
+  VERIFICATION_TOKEN_MIN_LENGTH,
+  VERIFICATION_TOKEN_PREFIX,
 } from '@blackwing/contracts';
 
 import {
@@ -348,7 +351,65 @@ export const assetGroupMembers = pgTable(
   ],
 );
 
+/**
+ * One ownership-verification challenge of an asset (ASSET-003, §8.10): the token the owner publishes, the location
+ * a probe reads, and the attempt budget. At most one challenge per asset is `pending`; earlier ones stay as history.
+ * The asset row stays the source of truth for the verification status (`assets.verification_status`).
+ */
+export const verificationChallenges = pgTable(
+  'verification_challenges',
+  {
+    id: idColumn(),
+    tenantId: tenantIdColumn(),
+    assetId: uuid('asset_id').notNull(),
+    method: text('method', { enum: VERIFICATION_METHODS }).notNull(),
+    /** `blackwing-site-verification=<base32>`: CSPRNG output, never reused across challenges. */
+    token: text('token').notNull(),
+    /** Where a probe reads the token (DNS name or URL). Null for a manual letter, which has no probe location. */
+    expectedLocation: text('expected_location'),
+    status: text('status', { enum: VERIFICATION_CHALLENGE_STATUSES }).notNull().default('pending'),
+    attempts: integer('attempts').notNull().default(0),
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+    lastCheckedAt: timestamp('last_checked_at', { withTimezone: true, mode: 'date' }),
+    ...timestamps(),
+  },
+  (t): PgTableExtraConfigValue[] => [
+    tenantIdIndex('verification_challenges', t.tenantId),
+    index('verification_challenges_asset_id_idx').on(t.assetId),
+    // The single open challenge of an asset: a second start cannot race past the first.
+    uniqueIndex('verification_challenges_one_pending_per_asset_key')
+      .on(t.assetId)
+      .where(sql`${t.status} = 'pending'`),
+    foreignKey({
+      name: 'verification_challenges_asset_fk',
+      columns: [t.tenantId, t.assetId],
+      foreignColumns: [assets.tenantId, assets.id],
+    }),
+    check(
+      'verification_challenges_token_check',
+      sql`starts_with(${t.token}, '${sql.raw(VERIFICATION_TOKEN_PREFIX)}') AND length(${t.token}) >= ${sql.raw(String(VERIFICATION_TOKEN_MIN_LENGTH))}`,
+    ),
+    check(
+      'verification_challenges_status_check',
+      sql`${t.status} IN (${inList(VERIFICATION_CHALLENGE_STATUSES)})`,
+    ),
+    check(
+      'verification_challenges_method_check',
+      sql`${t.method} IN (${inList(VERIFICATION_METHODS)})`,
+    ),
+    check('verification_challenges_attempts_check', sql`${t.attempts} >= 0`),
+    pgPolicy('verification_challenges_tenant_isolation', {
+      as: 'permissive',
+      for: 'all',
+      to: 'public',
+      using: TENANT_PREDICATE,
+      withCheck: TENANT_PREDICATE,
+    }),
+  ],
+);
+
 export type AssetRow = typeof assets.$inferSelect;
 export type NewAssetRow = typeof assets.$inferInsert;
 export type AssetCredentialRow = typeof assetCredentials.$inferSelect;
 export type RoleMatrixRow = typeof roleMatrices.$inferSelect;
+export type VerificationChallengeRow = typeof verificationChallenges.$inferSelect;

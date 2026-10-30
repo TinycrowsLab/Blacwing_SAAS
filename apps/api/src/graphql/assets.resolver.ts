@@ -31,12 +31,12 @@ import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from './page.js';
 import { ParamTypes } from './param-types.js';
 import { GRAPHQL_ASSETS } from './tokens.js';
 import { GraphqlTraceInterceptor } from './trace.interceptor.js';
+import { permissionsOf } from '../assets/access.js';
 import {
   ASSET_ACTIONS,
   type AssetPolicyResource,
   createCedarAssetPolicy,
 } from '../assets/policy.js';
-import { permissionsOf } from '../assets/service.js';
 import { tenantContextOf } from '../tenant/guard.js';
 
 import type { GraphqlResolverContext } from './members.resolver.js';

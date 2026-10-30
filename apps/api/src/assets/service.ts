@@ -1,42 +1,42 @@
 import { createHash } from 'node:crypto';
 
-import { trace } from '@opentelemetry/api';
 import { and, inArray, sql } from 'drizzle-orm';
 
-import { type AuditEmitter, createAuditEmitter, type AuditEventInput } from '@blackwing/audit';
+import { type AuditEmitter, type AuditEventInput, createAuditEmitter } from '@blackwing/audit';
 import {
   type AssetListResponse,
   type AssetView,
   type CreateAssetBody,
   type ListAssetsQuery,
-  ROLE_PERMISSIONS,
   type UpdateAssetBody,
   idempotencyKeySchema,
-  isRole,
 } from '@blackwing/contracts';
-import {
-  type AssetListPage,
-  fromPublicId,
-  publicId,
-  standingAuthorisations,
-  type TenantTx,
-} from '@blackwing/db';
+import { type AssetListPage, publicId, standingAuthorisations, type TenantTx } from '@blackwing/db';
 import {
   AppError,
-  ForbiddenError,
   NotFoundError,
   PreconditionRequiredError,
   ValidationError,
 } from '@blackwing/errors';
 import { newId } from '@blackwing/ids';
 
+import {
+  assetAuditInput,
+  assetResource,
+  authoriseAsset,
+  inAssetSpan,
+  type AssetCaller,
+  type AssetOperation,
+  memberRolesOf,
+  rowIdOf,
+} from './access.js';
 import { auditSqlTx } from './audit-tx.js';
 import { AssetInUseError, AssetStaleWriteError } from './errors.js';
 import { normaliseIdentifiers } from './identifiers.js';
 import { canonicalize, parseIfMatch, versionEtag, type IfMatch } from '../concurrency/index.js';
 
 import type { AssetMetrics } from './metrics.js';
-import type { AssetAction, AssetPolicyEngine, AssetPolicyResource } from './policy.js';
+import type { AssetPolicyEngine, AssetPolicyResource } from './policy.js';
 import type { AssetPatch, AssetRepository, AssetRow } from './repository.js';
 import type { Logger } from '@blackwing/logger';
 
@@ -96,19 +96,8 @@ export interface AssetServiceDeps {
   readonly logger: Pick<Logger, 'info'>;
 }
 
-const SPAN_PREFIX = 'assets';
 const HTTP_OK = 200;
 const HTTP_CREATED = 201;
-
-/** The permissions a set of roles grants, from the role matrix. Unknown role names grant nothing. */
-export function permissionsOf(roles: readonly string[]): string[] {
-  const granted = new Set<string>();
-  for (const role of roles) {
-    if (!isRole(role)) continue;
-    for (const permission of ROLE_PERMISSIONS[role]) granted.add(permission);
-  }
-  return [...granted].sort();
-}
 
 /** SHA-256 of the canonical create body: equal requests fingerprint equal, a changed body does not. */
 function fingerprintOf(value: unknown): string {
@@ -381,11 +370,9 @@ export class AssetService {
     return row;
   }
 
-  /** The caller's roles in this tenant. A non-member has none: `403`, and no data is read. */
+  /** The caller's roles in this tenant (see `memberRolesOf`). */
   private async memberRoles(tx: TenantTx, userId: string): Promise<readonly string[]> {
-    const roles = await this.deps.repository.rolesOf(tx, userId);
-    if (roles === undefined) throw new ForbiddenError('not a member of this tenant');
-    return roles;
+    return memberRolesOf(this.deps.repository, tx, userId);
   }
 
   /** An owner must be a member of the same tenant (RLS makes any other user invisible here). */
@@ -397,25 +384,14 @@ export class AssetService {
       });
   }
 
-  /** RBAC first (the permission), then the Cedar resource check. Deny unless both allow. */
+  /** RBAC first (the permission), then the Cedar resource check (see `authoriseAsset`). */
   private authorise(
     principal: AssetPrincipal,
     roles: readonly string[],
-    action: 'list' | 'read' | 'create' | 'update' | 'delete',
+    action: AssetOperation,
     resource: AssetPolicyResource,
   ): void {
-    const decision = this.deps.policy.authorize(
-      {
-        userId: principal.userId,
-        tenantId: principal.tenantId,
-        roles,
-        permissions: permissionsOf(roles),
-      },
-      ACTION_ID[action],
-      resource,
-    );
-    if (decision.decision !== 'allow')
-      throw new ForbiddenError('the asset action is not permitted for this caller');
+    authoriseAsset(this.deps.policy, principal, roles, action, resource);
   }
 
   private async replayOf(
@@ -437,60 +413,18 @@ export class AssetService {
   }
 
   private auditInput(
-    principal: AssetPrincipal,
+    principal: AssetCaller,
     action: AuditEventInput['action'],
     row: AssetRow,
     metadata: AuditEventInput['metadata'],
   ): AuditEventInput {
-    return {
-      tenantId: principal.tenantId,
-      action,
-      actor: { type: 'user', id: principal.userId },
-      target: { type: 'asset', id: row.id, publicId: row.publicId },
-      outcome: 'success',
-      ...(metadata === undefined ? {} : { metadata }),
-    };
+    return assetAuditInput(principal, action, row, metadata);
   }
 
   private withSpan<T>(operation: string, fn: () => Promise<T>): Promise<T> {
-    return trace
-      .getTracer('@blackwing/api')
-      .startActiveSpan(`${SPAN_PREFIX}.${operation}`, async (span) => {
-        try {
-          return await fn();
-        } finally {
-          span.end();
-        }
-      });
+    return inAssetSpan(operation, fn);
   }
 }
-
-const ACTION_ID: Record<'list' | 'read' | 'create' | 'update' | 'delete', AssetAction> = {
-  list: 'Asset::list',
-  read: 'Asset::read',
-  create: 'Asset::create',
-  update: 'Asset::update',
-  delete: 'Asset::delete',
-};
-
-function assetResource(row: AssetRow): AssetPolicyResource {
-  return { kind: 'asset', id: row.id, tenantId: row.tenantId, ownerUserId: row.ownerUserId };
-}
-
-/**
- * The row uuid behind a path id: the uuid itself, or the `asset_…` public id. Anything else is not an asset
- * (answered as 404, the same as another tenant's id).
- */
-function rowIdOf(value: string): string | undefined {
-  if (UUID.test(value)) return value.toLowerCase();
-  try {
-    return fromPublicId(value, 'asset');
-  } catch {
-    return undefined;
-  }
-}
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function parseIdempotencyKey(header: string | undefined): string | null {
   if (header === undefined) return null;

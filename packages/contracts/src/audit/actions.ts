@@ -716,6 +716,37 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'gate_decision',
     description: 'Gate 1 rejected the test plan; the run is cancelled.',
   },
+  // ownership verification (ASSET-003, CONTEXT_PACK §8.10). The event names the method and the reason, never the token.
+  {
+    action: 'asset.verification_started',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'Ownership verification was started or restarted for an asset (a new challenge token was issued).',
+  },
+  {
+    action: 'asset.verification_passed',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'approval',
+    description: 'A verification probe found the token and the asset became verified.',
+  },
+  {
+    action: 'asset.verification_failed',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'approval',
+    description:
+      'Verification ended without success (attempts exhausted or challenge expired); the asset is unverified.',
+  },
+  {
+    action: 'asset.verification_cancelled',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A pending verification was cancelled by a user; the asset is unverified.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

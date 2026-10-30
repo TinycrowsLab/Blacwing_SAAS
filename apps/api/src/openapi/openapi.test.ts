@@ -107,6 +107,10 @@ const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   updateTenantSettings: 'tenant',
   listAssessmentRequests: 'assessment-requests',
   listAssets: 'assets',
+  getAssetVerification: 'assets',
+  startAssetVerification: 'assets',
+  cancelAssetVerification: 'assets',
+  checkAssetVerification: 'assets',
   createAsset: 'assets',
   getAsset: 'assets',
   updateAsset: 'assets',
@@ -168,6 +172,8 @@ describe('public OpenAPI document', () => {
     expect(ids.sort()).toEqual([
       'addTestCase',
       'approveStandingAuthorisation',
+      'cancelAssetVerification',
+      'checkAssetVerification',
       'createAssessmentRequest',
       'createAsset',
       'createOncallRoster',
@@ -178,6 +184,7 @@ describe('public OpenAPI document', () => {
       'diffTestPlanVersions',
       'getAssessmentRequest',
       'getAsset',
+      'getAssetVerification',
       'getFinding',
       'getGate1Plan',
       'getKillEvent',
@@ -201,6 +208,7 @@ describe('public OpenAPI document', () => {
       'rejectStandingAuthorisation',
       'removeTestCase',
       'requestSignup',
+      'startAssetVerification',
       'streamRunEvents',
       'submitAssessmentRequest',
       'submitGate1',
@@ -216,7 +224,7 @@ describe('public OpenAPI document', () => {
       'verifySignup',
       'withdrawAssessmentRequest',
     ]);
-    expect(countOperations(doc)).toBe(49);
+    expect(countOperations(doc)).toBe(53);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -344,7 +352,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(49);
+    expect(result.operations).toBe(53);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

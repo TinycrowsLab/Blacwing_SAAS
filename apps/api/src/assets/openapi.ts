@@ -2,10 +2,12 @@ import {
   ASSET_ENVIRONMENTS,
   ASSET_TYPES,
   assetListResponseSchema,
+  assetVerificationViewSchema,
   assetViewSchema,
   createAssetBodySchema,
   idempotencyKeySchema,
   listAssetsQuerySchema,
+  startVerificationBodySchema,
   updateAssetBodySchema,
   VERIFICATION_STATUSES,
 } from '@blackwing/contracts';
@@ -46,6 +48,18 @@ const ASSET_ITEM_ERROR_CODES = [
   'INTERNAL',
 ] as const satisfies readonly ErrorCode[];
 
+/** Error codes a verification route can answer with (ASSET-003). Every route is RBAC-gated by `asset:verify`. */
+const ASSET_VERIFICATION_ERROR_CODES = [
+  'UNAUTHENTICATED',
+  'TENANT_CONTEXT_MISSING',
+  'FORBIDDEN',
+  'NOT_FOUND',
+  'VALIDATION_FAILED',
+  'ASSET_VERIFICATION_ILLEGAL_TRANSITION',
+  'ASSET_VERIFICATION_PROBE_UNAVAILABLE',
+  'INTERNAL',
+] as const satisfies readonly ErrorCode[];
+
 const ASSET_ID = 'asset_0r3h7k4xw0c8g1n5p2q6v9m3yt';
 const OWNER = '0198f0a0-0000-7000-8000-00000000000a';
 const WHEN = '2026-10-30T10:00:00.000Z';
@@ -75,6 +89,35 @@ const idempotencyParameter = {
   description:
     'Optional. A replay with the same key and body returns the asset the first request created (200); the same key with a different body answers 422.',
   schema: jsonSchema(idempotencyKeySchema),
+};
+
+const CHALLENGE_TOKEN =
+  'blackwing-site-verification=3IWPXTKLLIHX6LAEPVZSVHDCCUHTPHZ2YVIH5F7H3JWLKCQY744H';
+const exampleVerification = {
+  assetId: '0198f0a0-0000-7000-8000-0000000000e1',
+  verificationStatus: 'pending',
+  verificationMethod: null,
+  verifiedAt: null,
+  verificationExpiresAt: null,
+  challenge: {
+    id: '0198f0a0-0000-7000-8000-0000000000c1',
+    method: 'dns_txt',
+    status: 'pending',
+    token: CHALLENGE_TOKEN,
+    expectedLocation: '_blackwing-challenge.portal.example.com',
+    attempts: 0,
+    maxCheckAttempts: 20,
+    expiresAt: '2026-11-02T10:00:00.000Z',
+    lastCheckedAt: null,
+    createdAt: WHEN,
+    updatedAt: WHEN,
+  },
+};
+
+const exampleCancelledVerification = {
+  ...exampleVerification,
+  verificationStatus: 'unverified',
+  challenge: { ...exampleVerification.challenge, status: 'cancelled' },
 };
 
 const exampleView = {
@@ -115,6 +158,8 @@ export function assetOpenApiModule(): {
   registerSchema(schemas, 'UpdateAssetBody', updateAssetBodySchema);
   registerSchema(schemas, 'AssetPage', assetListResponseSchema);
   registerSchema(schemas, 'AssetListQuery', listAssetsQuerySchema);
+  registerSchema(schemas, 'StartVerificationBody', startVerificationBodySchema);
+  registerSchema(schemas, 'AssetVerificationView', assetVerificationViewSchema);
 
   const paths: JsonObject = {
     '/v1/assets': {
@@ -260,6 +305,78 @@ export function assetOpenApiModule(): {
             content: jsonContent('AssetView', exampleView),
           },
           ...errorResponses(ASSET_ITEM_ERROR_CODES),
+        },
+      },
+    },
+    '/v1/assets/{id}/verification': {
+      get: {
+        operationId: 'getAssetVerification',
+        tags: ['assets'],
+        security: SECURITY,
+        summary: 'Read the ownership verification of an asset',
+        description:
+          'The asset’s verification state and its latest challenge, token included. Requires `asset:verify`; an id of another tenant is `404`.',
+        parameters: [idParameter],
+        responses: {
+          '200': {
+            description: 'The verification state.',
+            content: jsonContent('AssetVerificationView', exampleVerification),
+          },
+          ...errorResponses(ASSET_VERIFICATION_ERROR_CODES),
+        },
+      },
+      post: {
+        operationId: 'startAssetVerification',
+        tags: ['assets'],
+        security: SECURITY,
+        summary: 'Start ownership verification (issues a challenge token)',
+        description:
+          'Moves an `unverified` asset to `pending` and issues a 32-byte CSPRNG token. Publish the token at `expectedLocation` (a DNS TXT record or a well-known file), then call `…/verification/check`. Starting again while pending restarts the challenge (a new token when `bw.asset.rotateOnRestart`). A verified or rejected asset answers `409`.',
+        parameters: [idParameter],
+        requestBody: {
+          required: true,
+          content: jsonContent('StartVerificationBody', { method: 'dns_txt' }),
+        },
+        responses: {
+          '201': {
+            description: 'Verification started. The challenge carries the token to publish.',
+            content: jsonContent('AssetVerificationView', exampleVerification),
+          },
+          ...errorResponses(ASSET_VERIFICATION_ERROR_CODES),
+        },
+      },
+      delete: {
+        operationId: 'cancelAssetVerification',
+        tags: ['assets'],
+        security: SECURITY,
+        summary: 'Cancel a pending verification',
+        description:
+          'The open challenge is cancelled and the asset is `unverified` again. Only a `pending` asset can be cancelled (`409` otherwise).',
+        parameters: [idParameter],
+        responses: {
+          '200': {
+            description: 'Cancelled. The asset is unverified.',
+            content: jsonContent('AssetVerificationView', exampleCancelledVerification),
+          },
+          ...errorResponses(ASSET_VERIFICATION_ERROR_CODES),
+        },
+      },
+    },
+    '/v1/assets/{id}/verification/check': {
+      post: {
+        operationId: 'checkAssetVerification',
+        tags: ['assets'],
+        security: SECURITY,
+        summary: 'Run one verification probe',
+        description:
+          'Looks for the token at the challenge’s location. A pass verifies the asset for `bw.asset.verificationTtlDays` days. A miss spends one of `bw.asset.maxCheckAttempts`; when the budget is spent the challenge fails and the asset is unverified again. An expired challenge (`bw.asset.challengeTtlHours`) ends the same way. `503` when no probe is deployed for the method; the attempt is not counted.',
+        parameters: [idParameter],
+        responses: {
+          '200': {
+            description: 'The verification state after the probe run.',
+            content: jsonContent('AssetVerificationView', exampleVerification),
+          },
+          ...errorResponses(ASSET_VERIFICATION_ERROR_CODES),
         },
       },
     },

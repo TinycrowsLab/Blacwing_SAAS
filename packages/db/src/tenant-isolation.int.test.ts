@@ -238,6 +238,14 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [tenantId, groupId, assetId],
     );
   },
+  verification_challenges: async (tx, tenantId) => {
+    const assetId = await insertAsset(tx, tenantId);
+    await tx.query(
+      `INSERT INTO verification_challenges (id, tenant_id, asset_id, method, token, expected_location, expires_at)
+       VALUES ($1, $2, $3, 'dns_txt', $4, '_blackwing-challenge.iso.example', now() + interval '72 hours')`,
+      [newId(), tenantId, assetId, `blackwing-site-verification=${'A'.repeat(52)}`],
+    );
+  },
   soc_contacts: async (tx, tenantId) => {
     await tx.query(
       `INSERT INTO soc_contacts (id, tenant_id, name, email) VALUES ($1, $2, 'SOC desk', 'soc@example.test')`,

@@ -41,3 +41,17 @@ export class AssetInvalidIdentifierError extends AppError {
     });
   }
 }
+
+/**
+ * `ASSET_VERIFICATION_PROBE_UNAVAILABLE` (503): no probe is deployed for the challenge's method. The challenge is
+ * not spent (no attempt is counted) and the asset stays unverified: fail closed until ASSET-005/006 deploy one.
+ */
+export class AssetVerificationProbeUnavailableError extends AppError {
+  declare readonly code: 'ASSET_VERIFICATION_PROBE_UNAVAILABLE';
+  constructor(method: string, options: AppErrorOptions = {}) {
+    super('ASSET_VERIFICATION_PROBE_UNAVAILABLE', 'verification probe unavailable', {
+      detail: `No probe is deployed for ${method} verification, so the challenge cannot be checked.`,
+      ...options,
+    });
+  }
+}
