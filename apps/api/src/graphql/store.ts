@@ -1,4 +1,10 @@
-import type { AssessmentRequestStatus, RunMode } from '@blackwing/contracts';
+import type {
+  AssessmentRequestStatus,
+  AssetEnvironment,
+  AssetType,
+  RunMode,
+  VerificationStatus,
+} from '@blackwing/contracts';
 import type { EndpointPage, RunSurfaceSummary } from '@blackwing/memory';
 
 /** One membership of a tenant: which user holds which roles there. */
@@ -105,4 +111,94 @@ export interface SurfaceReadStore {
     runId: string,
     page: { readonly limit: number; readonly after?: string },
   ): Promise<EndpointPage | undefined>;
+}
+
+/** One asset as the GraphQL read model shows it (ASSET registry row, without identifiers or secrets). */
+export interface AssetRow {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly publicId: string;
+  readonly type: AssetType;
+  readonly name: string;
+  readonly environment: AssetEnvironment;
+  readonly verificationStatus: VerificationStatus;
+  readonly verificationMethod: string | null;
+  readonly verifiedAt: Date | null;
+  readonly verificationExpiresAt: Date | null;
+  readonly ownerUserId: string;
+  /** The F6 attestation object, read only to summarise it (its values never leave the store). */
+  readonly attestation: Readonly<Record<string, unknown>> | null;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
+/** Filters of the asset list; each one narrows it and they combine with AND. */
+export interface AssetFilter {
+  readonly verificationStatus?: VerificationStatus;
+  readonly type?: AssetType;
+  readonly environment?: AssetEnvironment;
+}
+
+/** Keyset position of the asset list: the last row of the previous page (`createdAt` desc, then `id` desc). */
+export interface AssetPosition {
+  readonly createdAt: Date;
+  readonly id: string;
+}
+
+/** One asset list read. `limit` is one more than a page so the caller learns whether a next page exists. */
+export interface AssetQuery {
+  readonly filter: AssetFilter;
+  readonly after?: AssetPosition;
+  readonly limit: number;
+}
+
+/** A key/value label of an asset. */
+export interface AssetTagRow {
+  readonly key: string;
+  readonly value: string;
+}
+
+/** A group an asset is a member of. */
+export interface AssetGroupRow {
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * One credential role of an asset. Only the role name, the MFA type and the OpenBao reference cross this port: the
+ * login recipe and any secret value never do (§8.7).
+ */
+export interface CredentialRoleRow {
+  readonly roleName: string;
+  readonly mfaType: string;
+  readonly secretRef: string;
+}
+
+/**
+ * Read port of the asset GraphQL resolvers (ASSET read model, API-009). Every call takes the tenant the guard resolved
+ * and the adapter runs it under that tenant's RLS context, so another tenant's asset, tag, group or role is never
+ * returned (§8.6). Batched reads return one entry per requested asset id; an id with nothing to return is absent.
+ */
+export interface AssetReadStore {
+  /** Roles the user holds in `tenantId`; empty when the user has no membership there (fail closed). */
+  rolesOf(tenantId: string, userId: string): Promise<readonly string[]>;
+  /** Live (not soft-deleted) assets of `tenantId` matching `query`, newest first. */
+  listAssets(tenantId: string, query: AssetQuery): Promise<readonly AssetRow[]>;
+  /** One live asset of `tenantId` by uuid or `asset_` public id; absent for a foreign, missing or deleted asset. */
+  findAsset(tenantId: string, ref: string): Promise<AssetRow | undefined>;
+  /** Tags of the assets among `assetIds`. */
+  tagsOf(
+    tenantId: string,
+    assetIds: readonly string[],
+  ): Promise<ReadonlyMap<string, AssetTagRow[]>>;
+  /** Groups of the assets among `assetIds`. */
+  groupsOf(
+    tenantId: string,
+    assetIds: readonly string[],
+  ): Promise<ReadonlyMap<string, AssetGroupRow[]>>;
+  /** Credential roles of the assets among `assetIds`, without secret values. */
+  credentialRolesOf(
+    tenantId: string,
+    assetIds: readonly string[],
+  ): Promise<ReadonlyMap<string, CredentialRoleRow[]>>;
 }

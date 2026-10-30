@@ -1,4 +1,9 @@
-export { createPgAssessmentReadStore, createPgMemberReadStore } from './postgres.js';
+export {
+  createPgAssessmentReadStore,
+  createPgAssetReadStore,
+  createPgMemberReadStore,
+} from './postgres.js';
+export { AssetsResolver } from './assets.resolver.js';
 export { AssessmentRequestsResolver } from './assessment-requests.resolver.js';
 export { FindingsResolver } from './findings.resolver.js';
 export { SurfaceResolver } from './surface.resolver.js';
@@ -15,10 +20,12 @@ export {
   violatedLimit,
 } from './limits.js';
 export {
+  createAssetLoaders,
   createLoader,
   createRequestLoaders,
   createSurfaceLoaders,
   createTenantLoader,
+  type AssetLoaders,
   type RequestLoaders,
   type SurfaceLoaders,
   type TenantKey,
@@ -46,6 +53,14 @@ export { GraphqlApiModule, type GraphqlModuleOptions } from './module.js';
 export { MembersResolver } from './members.resolver.js';
 export { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from './page.js';
 export {
+  type AssetFilter,
+  type AssetGroupRow,
+  type AssetPosition,
+  type AssetQuery,
+  type AssetReadStore,
+  type AssetRow,
+  type AssetTagRow,
+  type CredentialRoleRow,
   DRAFT_PRIVILEGED_ROLES,
   type AssessmentReadStore,
   type AssessmentRequestPosition,
@@ -58,6 +73,7 @@ export {
 } from './store.js';
 export {
   GRAPHQL_ASSESSMENT_STORE,
+  GRAPHQL_ASSETS,
   GRAPHQL_MEMBER_STORE,
   GRAPHQL_METRICS,
   GRAPHQL_SURFACE_STORE,

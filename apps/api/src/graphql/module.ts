@@ -6,6 +6,7 @@ import { MercuriusDriver, type MercuriusDriverConfig } from '@nestjs/mercurius';
 import { NoSchemaIntrospectionCustomRule } from 'graphql';
 
 import { AssessmentRequestsResolver } from './assessment-requests.resolver.js';
+import { AssetsResolver } from './assets.resolver.js';
 import { formatGraphqlErrors, registerGraphqlProblemCodes } from './errors.js';
 import { FindingsResolver } from './findings.resolver.js';
 import {
@@ -14,7 +15,12 @@ import {
   type QueryLimits,
   type QueryShape,
 } from './limits.js';
-import { createFindingLoaders, createRequestLoaders, createSurfaceLoaders } from './loaders.js';
+import {
+  createAssetLoaders,
+  createFindingLoaders,
+  createRequestLoaders,
+  createSurfaceLoaders,
+} from './loaders.js';
 import { MembersResolver } from './members.resolver.js';
 import { createGraphqlMetrics, type GraphqlMetrics } from './metrics.js';
 import {
@@ -26,13 +32,19 @@ import {
 import { SurfaceResolver } from './surface.resolver.js';
 import {
   GRAPHQL_ASSESSMENT_STORE,
+  GRAPHQL_ASSETS,
   GRAPHQL_FINDINGS,
   GRAPHQL_MEMBER_STORE,
   GRAPHQL_METRICS,
   GRAPHQL_SURFACE_STORE,
 } from './tokens.js';
 
-import type { AssessmentReadStore, MemberReadStore, SurfaceReadStore } from './store.js';
+import type {
+  AssessmentReadStore,
+  AssetReadStore,
+  MemberReadStore,
+  SurfaceReadStore,
+} from './store.js';
 import type { HttpMetrics } from '../bootstrap/metrics.js';
 import type { ApiConfig } from '../config.js';
 import type { FindingService } from '../findings/service.js';
@@ -63,6 +75,11 @@ export interface GraphqlModuleOptions {
    * (fail closed) and the rest of the schema works.
    */
   readonly findings?: FindingService;
+  /**
+   * Tenant-scoped read port of the asset resolvers (ASSET read model; Postgres in production). Absent: the asset
+   * fields answer `GRAPH_QUERY_UNAVAILABLE` (fail closed) and the rest of the schema works.
+   */
+  readonly assets?: AssetReadStore;
   /** The persisted-query manifests; loaded from `apps/api/graphql/` at boot when omitted. */
   readonly persisted?: PersistedManifests;
 }
@@ -86,6 +103,7 @@ export class GraphqlApiModule {
   static forRoot(options: GraphqlModuleOptions): DynamicModule {
     const { config, logger, store, assessments, surface } = options;
     const findings = options.findings ?? null;
+    const assets = options.assets ?? null;
     const metrics: GraphqlMetrics = createGraphqlMetrics(options.metrics.registry);
     const limits = queryLimitsOf(config);
     const production = config.NODE_ENV === 'production';
@@ -140,6 +158,7 @@ export class GraphqlApiModule {
             metrics.dataloaderBatchSize.observe(size);
           }),
           ...createFindingLoaders(findings),
+          ...createAssetLoaders(assets),
         },
       }),
     };
@@ -152,11 +171,13 @@ export class GraphqlApiModule {
         { provide: GRAPHQL_ASSESSMENT_STORE, useValue: assessments },
         { provide: GRAPHQL_SURFACE_STORE, useValue: surface },
         { provide: GRAPHQL_FINDINGS, useValue: findings },
+        { provide: GRAPHQL_ASSETS, useValue: assets },
         { provide: GRAPHQL_METRICS, useValue: metrics },
         MembersResolver,
         AssessmentRequestsResolver,
         SurfaceResolver,
         FindingsResolver,
+        AssetsResolver,
       ],
     };
   }

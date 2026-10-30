@@ -7,7 +7,12 @@ import { createHttpMetrics } from '../bootstrap/metrics.js';
 import { loadApiConfig } from '../config.js';
 import { GraphqlApiModule } from './module.js';
 
-import type { AssessmentReadStore, MemberReadStore, SurfaceReadStore } from './store.js';
+import type {
+  AssessmentReadStore,
+  AssetReadStore,
+  MemberReadStore,
+  SurfaceReadStore,
+} from './store.js';
 
 /**
  * The store of the schema emitter: the schema is built from the decorators, and no operation runs, so a
@@ -28,6 +33,15 @@ const SCHEMA_ONLY_SURFACE: SurfaceReadStore = {
   rolesOf: () => Promise.reject(new Error('the schema emitter runs no operations')),
   summariesOf: () => Promise.reject(new Error('the schema emitter runs no operations')),
   endpointsOf: () => Promise.reject(new Error('the schema emitter runs no operations')),
+};
+
+const SCHEMA_ONLY_ASSETS: AssetReadStore = {
+  rolesOf: () => Promise.reject(new Error('the schema emitter runs no operations')),
+  listAssets: () => Promise.reject(new Error('the schema emitter runs no operations')),
+  findAsset: () => Promise.reject(new Error('the schema emitter runs no operations')),
+  tagsOf: () => Promise.reject(new Error('the schema emitter runs no operations')),
+  groupsOf: () => Promise.reject(new Error('the schema emitter runs no operations')),
+  credentialRolesOf: () => Promise.reject(new Error('the schema emitter runs no operations')),
 };
 
 /**
@@ -51,6 +65,7 @@ export async function emitGraphqlSchema(): Promise<void> {
         store: SCHEMA_ONLY_STORE,
         assessments: SCHEMA_ONLY_ASSESSMENTS,
         surface: SCHEMA_ONLY_SURFACE,
+        assets: SCHEMA_ONLY_ASSETS,
       }),
     ],
   });

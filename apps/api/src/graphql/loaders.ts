@@ -3,7 +3,15 @@ import DataLoader from 'dataloader';
 import { currentTenantId } from '@blackwing/db/tenant-context';
 import { AppError, TenantContextMissingError } from '@blackwing/errors';
 
-import type { MemberReadStore, SurfaceReadStore, UserRow } from './store.js';
+import type {
+  AssetGroupRow,
+  AssetReadStore,
+  AssetTagRow,
+  CredentialRoleRow,
+  MemberReadStore,
+  SurfaceReadStore,
+  UserRow,
+} from './store.js';
 import type { FindingService } from '../findings/service.js';
 import type { FindingOccurrenceRow } from '@blackwing/db';
 import type { RunSurfaceSummary } from '@blackwing/memory';
@@ -137,6 +145,49 @@ export function createFindingLoaders(findings: FindingService | null): FindingLo
         byFinding.set(row.findingId, group);
       }
       return ids.map((id) => byFinding.get(id) ?? []);
+    }),
+  };
+}
+
+/**
+ * Loaders of the asset resolvers (ASSET read model): the tags, groups and credential roles of one asset, batched per
+ * tenant. One asset list page and its nested fields share one read per relation (no N+1). An asset with none of the
+ * relation loads as an empty list.
+ */
+export interface AssetLoaders {
+  readonly assetTags: DataLoader<TenantKey, readonly AssetTagRow[] | undefined, string>;
+  readonly assetGroups: DataLoader<TenantKey, readonly AssetGroupRow[] | undefined, string>;
+  readonly assetCredentialRoles: DataLoader<
+    TenantKey,
+    readonly CredentialRoleRow[] | undefined,
+    string
+  >;
+}
+
+export function createAssetLoaders(
+  store: AssetReadStore | null,
+  observeBatch: (size: number) => void = () => undefined,
+): AssetLoaders {
+  /** The store of a batch; `null` means assets are not configured, so the batch refuses (fail closed). */
+  const storeOf = (): AssetReadStore => {
+    if (store === null) throw new AppError('GRAPH_QUERY_UNAVAILABLE', 'assets are not configured');
+    return store;
+  };
+  return {
+    assetTags: createTenantLoader(async (tenantId, ids) => {
+      observeBatch(ids.length);
+      const byAsset = await storeOf().tagsOf(tenantId, ids);
+      return ids.map((id) => byAsset.get(id) ?? []);
+    }),
+    assetGroups: createTenantLoader(async (tenantId, ids) => {
+      observeBatch(ids.length);
+      const byAsset = await storeOf().groupsOf(tenantId, ids);
+      return ids.map((id) => byAsset.get(id) ?? []);
+    }),
+    assetCredentialRoles: createTenantLoader(async (tenantId, ids) => {
+      observeBatch(ids.length);
+      const byAsset = await storeOf().credentialRolesOf(tenantId, ids);
+      return ids.map((id) => byAsset.get(id) ?? []);
     }),
   };
 }

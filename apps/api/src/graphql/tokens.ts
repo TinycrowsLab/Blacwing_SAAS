@@ -12,3 +12,6 @@ export const GRAPHQL_SURFACE_STORE = Symbol.for('blackwing.api.graphql.surface-s
 
 /** DI token of the {@link FindingService} the finding resolvers read through (FINDING query API). Absent: the fields refuse. */
 export const GRAPHQL_FINDINGS = Symbol.for('blackwing.api.graphql.findings');
+
+/** DI token of the {@link AssetReadStore} the asset resolvers read through (ASSET read model). Absent: the fields refuse. */
+export const GRAPHQL_ASSETS = Symbol.for('blackwing.api.graphql.assets');

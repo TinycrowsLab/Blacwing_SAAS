@@ -41,9 +41,88 @@ type AssessmentRequestEdge {
   node: AssessmentRequest!
 }
 
+"""An asset of the caller tenant."""
+type Asset {
+  attestation: AttestationSummary
+
+  """ISO-8601 UTC time of creation."""
+  createdAt: String!
+  credentialRoles: [CredentialRole!]!
+  environment: String!
+  groups: [AssetGroup!]!
+  id: ID!
+  name: String!
+  owner: User
+
+  """The asset_ public id."""
+  publicId: String!
+  tags: [AssetTag!]!
+  type: String!
+
+  """ISO-8601 UTC time of the last change."""
+  updatedAt: String!
+  verification: VerificationStatus!
+}
+
+"""Filters of the asset list (combined with AND)."""
+input AssetFilter {
+  """Environment: prod, staging, dev or test."""
+  environment: String
+
+  """Asset type: web_app, api, host, network_range or source_repo."""
+  type: String
+
+  """
+  Ownership verification state: unverified, pending, verified or rejected.
+  """
+  verificationStatus: String
+}
+
+"""A group of assets."""
+type AssetGroup {
+  id: ID!
+  name: String!
+}
+
+"""One page of assets (newest first)."""
+type AssetPage {
+  hasMore: Boolean!
+  items: [Asset!]!
+
+  """Pass as `cursor` for the next page."""
+  nextCursor: String
+}
+
 """An asset under test, by id."""
 type AssetRef {
   id: ID!
+}
+
+"""A key/value label of an asset."""
+type AssetTag {
+  key: String!
+  value: String!
+}
+
+"""Summary of the environment attestation (no values)."""
+type AttestationSummary {
+  """Names of the attested keys, in order."""
+  attestedKeys: [String!]!
+
+  """The declared environment type, when attested."""
+  environmentType: String
+}
+
+"""
+A login role of an asset: role name, MFA type and secret reference (never the secret).
+"""
+type CredentialRole {
+  """none, totp, webauthn, sms or push."""
+  mfaType: String!
+  roleName: String!
+
+  """An openbao:// reference to the secret, never its value."""
+  secretRef: String!
 }
 
 """CVSS v4.0 score, band and nomenclature of a finding."""
@@ -203,6 +282,17 @@ type Query {
   """
   assessmentRequests(after: String, first: Int, mode: String, status: String): AssessmentRequestConnection!
 
+  """One asset of the caller tenant (uuid or asset_ public id), or null."""
+  asset(id: ID!): Asset
+
+  """
+  Ownership verification state of one asset of the caller tenant, or null.
+  """
+  assetVerification(id: ID!): VerificationStatus
+
+  """Assets of the caller tenant (keyset page, newest first)."""
+  assets(cursor: String, filter: AssetFilter, limit: Int): AssetPage!
+
   """
   Endpoints of one run of the caller tenant (Relay connection, at most 200 per page).
   """
@@ -268,4 +358,15 @@ type User {
   email: String!
   id: ID!
   name: String
+}
+
+"""Ownership verification state of an asset."""
+type VerificationStatus {
+  """ISO-8601 UTC time the verification expires."""
+  expiresAt: String
+  method: String
+  status: String!
+
+  """ISO-8601 UTC time of verification."""
+  verifiedAt: String
 }
