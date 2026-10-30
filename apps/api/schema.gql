@@ -122,6 +122,23 @@ type AttestationSummary {
   environmentType: String
 }
 
+"""Coverage of one run, or of the newest run of an asset."""
+type CoverageSummary {
+  assetId: ID
+
+  """Executed test cases as a percentage of the planned ones, one decimal."""
+  coveragePercent: Float
+
+  """True once the run is final; the manifest is then immutable."""
+  finalised: Boolean!
+
+  """ISO-8601 UTC, when finalised."""
+  finalisedAt: String
+  runId: ID
+  testCasesExecuted: Int
+  testCasesPlanned: Int
+}
+
 """
 A login role of an asset: role name, MFA type and secret reference (never the secret).
 """
@@ -143,6 +160,89 @@ type Cvss4Score {
   """none, low, medium, high or critical."""
   severity: String!
   vector: String!
+}
+
+"""A count of findings for one asset."""
+type DashboardAssetCount {
+  assetId: ID!
+
+  """Display name of the asset, when it is live and in the caller tenant."""
+  assetName: String
+  count: Int!
+}
+
+"""A count of findings for one key."""
+type DashboardCount {
+  count: Int!
+
+  """
+  The key. A missing value is named: uncategorised (CWE or OWASP) or unscored (severity).
+  """
+  key: String!
+}
+
+"""A finding of a dashboard page (metadata only)."""
+type DashboardFinding {
+  assetId: ID!
+  baselineStatus: String
+
+  """ISO-8601 UTC."""
+  createdAt: String!
+  cweId: String
+  firstSeenRunId: ID!
+  id: ID!
+  lastSeenRunId: ID!
+  owaspCategory: String
+  runId: ID!
+
+  """CVSS v4.0 band; null when unscored."""
+  severity: String
+  status: String!
+  title: String!
+}
+
+"""A page of dashboard findings."""
+type DashboardFindingConnection {
+  hasMore: Boolean!
+  items: [DashboardFinding!]!
+
+  """Pass as `cursor` for the next page."""
+  nextCursor: String
+}
+
+"""
+Filters of the dashboard reads (combined with AND; values of one field with OR).
+"""
+input DashboardFindingFilter {
+  """Assets (UUIDv7)."""
+  assetIds: [ID!]
+
+  """Baseline states: new, open, fixed, returned or not_retested."""
+  baselineStatuses: [String!]
+
+  """CWE ids, such as CWE-89."""
+  cweIds: [String!]
+
+  """OWASP Top 10 categories, A01 to A10."""
+  owaspCategories: [String!]
+
+  """Only findings a human released."""
+  releasedOnly: Boolean
+
+  """Runs (UUIDv7): findings seen in any of them."""
+  runIds: [ID!]
+
+  """Severity buckets: critical, high, medium, low or info."""
+  severities: [String!]
+
+  """Lifecycle statuses."""
+  statuses: [String!]
+}
+
+"""Time bucket of a finding trend: UTC day or ISO week (Monday start)."""
+enum DashboardTrendBucket {
+  day
+  week
 }
 
 """An endpoint discovered for a run."""
@@ -271,6 +371,49 @@ type FindingSeverity {
   cvss4: Cvss4Score!
 }
 
+"""Counts of findings grouped per dimension."""
+type FindingSummary {
+  """By asset."""
+  byAsset: [DashboardAssetCount!]!
+
+  """By baseline state."""
+  byBaselineStatus: [DashboardCount!]!
+
+  """By CWE id."""
+  byCweId: [DashboardCount!]!
+
+  """By OWASP Top 10 category."""
+  byOwaspCategory: [DashboardCount!]!
+
+  """By CVSS v4.0 band (unscored when none)."""
+  bySeverity: [DashboardCount!]!
+
+  """By lifecycle status."""
+  byStatus: [DashboardCount!]!
+
+  """Findings matching the filter."""
+  total: Int!
+}
+
+"""Findings of one asset over time, per baseline state."""
+type FindingTrend {
+  assetId: ID!
+  bucket: DashboardTrendBucket!
+
+  """Ascending by bucket start."""
+  points: [FindingTrendPoint!]!
+}
+
+"""Findings of one asset in one time bucket."""
+type FindingTrendPoint {
+  """Start of the bucket, ISO-8601 UTC."""
+  bucketStart: String!
+
+  """Distinct findings per baseline state."""
+  counts: [DashboardCount!]!
+  total: Int!
+}
+
 """How many of one kind a run holds."""
 type KindCount {
   count: Int!
@@ -303,6 +446,11 @@ type Query {
   assets(cursor: String, filter: AssetFilter, limit: Int): AssetPage!
 
   """
+  Coverage of one run, or of the newest run of one asset (give exactly one).
+  """
+  coverageSummary(assetId: ID, runId: ID): CoverageSummary!
+
+  """
   Endpoints of one run of the caller tenant (Relay connection, at most 200 per page).
   """
   endpoints(after: String, first: Int, runId: ID!): EndpointConnection!
@@ -313,9 +461,24 @@ type Query {
   finding(id: ID!): Finding
 
   """
+  Counts of the caller tenant findings per severity, OWASP, CWE, asset, status and baseline state.
+  """
+  findingSummary(filter: DashboardFindingFilter): FindingSummary!
+
+  """
+  Distinct findings of one asset per UTC day or ISO week, per baseline state.
+  """
+  findingTrend(assetId: ID!, bucket: DashboardTrendBucket!): FindingTrend!
+
+  """
   Findings of the caller tenant (filters as GET /v1/findings, newest first).
   """
   findings(after: String, filter: FindingFilter, first: Int): FindingConnection!
+
+  """
+  A page of the caller tenant findings matching the filter (newest first, at most 200).
+  """
+  findingsConnection(cursor: String, filter: DashboardFindingFilter, limit: Int): DashboardFindingConnection!
 
   """
   Surface summary of one run of the caller tenant (counts, top technologies, endpoints).

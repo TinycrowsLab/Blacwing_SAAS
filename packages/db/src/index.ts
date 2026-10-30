@@ -319,6 +319,15 @@ export {
   withReportSource,
 } from './report-source.repository.js';
 export {
+  type AssetCoverageRow,
+  type CountRow,
+  DashboardRepository,
+  type DashboardPosition,
+  type FindingSummaryRows,
+  type HiddenStatuses,
+  type TrendRow,
+} from './dashboard.repository.js';
+export {
   FindingRepository,
   type FindingOccurrenceRow,
   type FindingPage,

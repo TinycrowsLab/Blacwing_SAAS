@@ -4,6 +4,7 @@ export {
   createPgMemberReadStore,
 } from './postgres.js';
 export { AssetsResolver } from './assets.resolver.js';
+export { DashboardAssetCountResolver, DashboardResolver } from '../dashboard/dashboard.resolver.js';
 export { AssessmentRequestsResolver } from './assessment-requests.resolver.js';
 export { FindingsResolver } from './findings.resolver.js';
 export { SurfaceResolver } from './surface.resolver.js';
@@ -21,6 +22,8 @@ export {
 } from './limits.js';
 export {
   createAssetLoaders,
+  createDashboardLoaders,
+  type DashboardLoaders,
   createLoader,
   createRequestLoaders,
   createSurfaceLoaders,
@@ -74,6 +77,7 @@ export {
 export {
   GRAPHQL_ASSESSMENT_STORE,
   GRAPHQL_ASSETS,
+  GRAPHQL_DASHBOARD,
   GRAPHQL_MEMBER_STORE,
   GRAPHQL_METRICS,
   GRAPHQL_SURFACE_STORE,

@@ -88,6 +88,11 @@ export {
 } from './kill/resolve.js';
 
 export {
+  dashboardSeverityOfBand,
+  dashboardSeverityOfScore,
+  storedBandOfSeverity,
+} from './findings/dashboard-severity.js';
+export {
   assertSeverityMatchesVectors,
   FINDING_CVSS_SPAN,
   FINDING_SEVERITY_METRIC,

@@ -12,6 +12,7 @@ import type {
   SurfaceReadStore,
   UserRow,
 } from './store.js';
+import type { DashboardService } from '../dashboard/service.js';
 import type { FindingService } from '../findings/service.js';
 import type { FindingOccurrenceRow } from '@blackwing/db';
 import type { RunSurfaceSummary } from '@blackwing/memory';
@@ -145,6 +146,27 @@ export function createFindingLoaders(findings: FindingService | null): FindingLo
         byFinding.set(row.findingId, group);
       }
       return ids.map((id) => byFinding.get(id) ?? []);
+    }),
+  };
+}
+
+/** Loaders of the dashboard resolvers: the display names of the assets a summary groups by, batched per tenant. */
+export interface DashboardLoaders {
+  readonly dashboardAssetNames: DataLoader<TenantKey, string | undefined, string>;
+}
+
+/**
+ * Batches the asset names of one request's dashboard summaries (one read per tick, however many groups ask). A batch
+ * runs under the tenant it was keyed by, and `null` service means dashboards are not configured (fail closed).
+ */
+export function createDashboardLoaders(dashboard: DashboardService | null): DashboardLoaders {
+  return {
+    dashboardAssetNames: createTenantLoader(async (tenantId, ids) => {
+      if (dashboard === null) {
+        throw new AppError('GRAPH_QUERY_UNAVAILABLE', 'dashboards are not configured');
+      }
+      const names = await dashboard.assetNamesOf(tenantId, ids);
+      return ids.map((id) => names.get(id));
     }),
   };
 }

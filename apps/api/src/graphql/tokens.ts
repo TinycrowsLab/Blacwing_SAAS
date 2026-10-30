@@ -15,3 +15,6 @@ export const GRAPHQL_FINDINGS = Symbol.for('blackwing.api.graphql.findings');
 
 /** DI token of the {@link AssetReadStore} the asset resolvers read through (ASSET read model). Absent: the fields refuse. */
 export const GRAPHQL_ASSETS = Symbol.for('blackwing.api.graphql.assets');
+
+/** DI token of the {@link DashboardService} the dashboard resolvers read through (DASH-001). Absent: the fields refuse. */
+export const GRAPHQL_DASHBOARD = Symbol.for('blackwing.api.graphql.dashboard');

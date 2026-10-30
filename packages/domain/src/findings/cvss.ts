@@ -103,7 +103,7 @@ const HIGH_FROM = 7;
 const CRITICAL_FROM = 9;
 
 /** Qualitative band of a score (FIRST): 0.0 none, 0.1-3.9 low, 4.0-6.9 medium, 7.0-8.9 high, 9.0-10.0 critical. */
-function bandOf(score: number): CvssSeverityBand {
+export function bandOf(score: number): CvssSeverityBand {
   if (score === 0) return 'none';
   if (score < MEDIUM_FROM) return 'low';
   if (score < HIGH_FROM) return 'medium';

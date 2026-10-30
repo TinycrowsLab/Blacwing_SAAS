@@ -54,7 +54,7 @@ function toModel(row: FindingRow): FindingModel {
 }
 
 /** The caller, from the tenant the guard resolved for the request. Fails closed when there is none. */
-function principalOf(context: GraphqlResolverContext): FindingPrincipal {
+export function principalOf(context: GraphqlResolverContext): FindingPrincipal {
   if (context.req === undefined) {
     throw new TenantContextMissingError('no request on the GraphQL context');
   }

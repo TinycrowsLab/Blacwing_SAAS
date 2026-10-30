@@ -432,6 +432,17 @@ export {
   severitySchema,
 } from './entities/finding.js';
 export {
+  DASHBOARD_PAGE,
+  DASHBOARD_UNCATEGORISED,
+  DASHBOARD_UNSCORED,
+  type DashboardFindingFilter,
+  dashboardFindingFilterSchema,
+  type DashboardSeverity,
+  dashboardSeveritySchema,
+  type DashboardTrendBucket,
+  dashboardTrendBucketSchema,
+} from './dashboard.js';
+export {
   FINDING_DETAIL_INLINE_MAX,
   FINDING_LIST_LIMIT_DEFAULT,
   FINDING_LIST_LIMIT_MAX,

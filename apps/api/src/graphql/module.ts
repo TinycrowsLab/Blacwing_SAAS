@@ -8,6 +8,7 @@ import { NoSchemaIntrospectionCustomRule } from 'graphql';
 import { AssessmentRequestsResolver } from './assessment-requests.resolver.js';
 import { AssetsResolver } from './assets.resolver.js';
 import { formatGraphqlErrors, registerGraphqlProblemCodes } from './errors.js';
+import { DashboardAssetCountResolver, DashboardResolver } from '../dashboard/dashboard.resolver.js';
 import { FindingsResolver } from './findings.resolver.js';
 import {
   createQueryLimitsRule,
@@ -17,6 +18,7 @@ import {
 } from './limits.js';
 import {
   createAssetLoaders,
+  createDashboardLoaders,
   createFindingLoaders,
   createRequestLoaders,
   createSurfaceLoaders,
@@ -33,6 +35,7 @@ import { SurfaceResolver } from './surface.resolver.js';
 import {
   GRAPHQL_ASSESSMENT_STORE,
   GRAPHQL_ASSETS,
+  GRAPHQL_DASHBOARD,
   GRAPHQL_FINDINGS,
   GRAPHQL_MEMBER_STORE,
   GRAPHQL_METRICS,
@@ -47,6 +50,7 @@ import type {
 } from './store.js';
 import type { HttpMetrics } from '../bootstrap/metrics.js';
 import type { ApiConfig } from '../config.js';
+import type { DashboardService } from '../dashboard/service.js';
 import type { FindingService } from '../findings/service.js';
 import type { Logger } from '@blackwing/logger';
 
@@ -76,6 +80,10 @@ export interface GraphqlModuleOptions {
    */
   readonly findings?: FindingService;
   /**
+   * The dashboard read service (DASH-001). Absent: the dashboard fields answer `GRAPH_QUERY_UNAVAILABLE` (fail closed).
+   */
+  readonly dashboard?: DashboardService;
+  /**
    * Tenant-scoped read port of the asset resolvers (ASSET read model; Postgres in production). Absent: the asset
    * fields answer `GRAPH_QUERY_UNAVAILABLE` (fail closed) and the rest of the schema works.
    */
@@ -103,6 +111,7 @@ export class GraphqlApiModule {
   static forRoot(options: GraphqlModuleOptions): DynamicModule {
     const { config, logger, store, assessments, surface } = options;
     const findings = options.findings ?? null;
+    const dashboard = options.dashboard ?? null;
     const assets = options.assets ?? null;
     const metrics: GraphqlMetrics = createGraphqlMetrics(options.metrics.registry);
     const limits = queryLimitsOf(config);
@@ -159,6 +168,7 @@ export class GraphqlApiModule {
           }),
           ...createFindingLoaders(findings),
           ...createAssetLoaders(assets),
+          ...createDashboardLoaders(dashboard),
         },
       }),
     };
@@ -171,6 +181,7 @@ export class GraphqlApiModule {
         { provide: GRAPHQL_ASSESSMENT_STORE, useValue: assessments },
         { provide: GRAPHQL_SURFACE_STORE, useValue: surface },
         { provide: GRAPHQL_FINDINGS, useValue: findings },
+        { provide: GRAPHQL_DASHBOARD, useValue: dashboard },
         { provide: GRAPHQL_ASSETS, useValue: assets },
         { provide: GRAPHQL_METRICS, useValue: metrics },
         MembersResolver,
@@ -178,6 +189,8 @@ export class GraphqlApiModule {
         SurfaceResolver,
         FindingsResolver,
         AssetsResolver,
+        DashboardResolver,
+        DashboardAssetCountResolver,
       ],
     };
   }
