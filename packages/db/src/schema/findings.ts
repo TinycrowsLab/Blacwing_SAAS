@@ -45,6 +45,8 @@ import { TENANT_PREDICATE } from './columns.js';
 export const FINDING_LOCATION_MAX_BYTES = 8192;
 export const FINDING_SEVERITY_MAX_BYTES = 4096;
 export const FINDING_CLASSIFICATION_MAX_BYTES = 4096;
+/** Length cap on each reporter narrative column (`LIMITS.reasonMax`, in characters). */
+const FINDING_NARRATIVE_MAX_CHARS = 2000;
 
 /** SQL `IN (...)` list from a constant tuple (values are compile-time constants, never input). */
 function inList(values: readonly string[]) {
@@ -95,6 +97,17 @@ export const findings = pgTable(
     acceptedRisk: jsonb('accepted_risk').$type<Record<string, unknown>>(),
     releasedBy: uuid('released_by'),
     releasedAt: timestamp('released_at', { withTimezone: true, mode: 'date' }),
+    /**
+     * The reporter's write-up (REGISTRY-021 `finding-report.v1`, REPORT-001). Each is null until the write-up exists;
+     * the report model carries it as data and never renders it as code. Prose only: no payloads, no walkthroughs.
+     */
+    description: text('description'),
+    impact: text('impact'),
+    evidenceNarrative: text('evidence_narrative'),
+    severityRationale: text('severity_rationale'),
+    remediationSummary: text('remediation_summary'),
+    /** ASVS v5.0.0 requirement ids the reporter cites, e.g. `ASVS v5.0.0-4.2.1`. Null until the write-up exists. */
+    asvsRefs: jsonb('asvs_refs').$type<string[]>(),
     ...timestamps(),
     ...stateVersion(),
   },
@@ -164,6 +177,18 @@ export const findings = pgTable(
       sql`${t.acceptedRisk} IS NULL OR jsonb_typeof(${t.acceptedRisk}) = 'object'`,
     ),
     check('findings_state_version_check', sql`${t.stateVersion} >= 0`),
+    check(
+      'findings_narrative_check',
+      sql`(${t.description} IS NULL OR length(${t.description}) BETWEEN 1 AND ${sql.raw(String(FINDING_NARRATIVE_MAX_CHARS))})
+        AND (${t.impact} IS NULL OR length(${t.impact}) BETWEEN 1 AND ${sql.raw(String(FINDING_NARRATIVE_MAX_CHARS))})
+        AND (${t.evidenceNarrative} IS NULL OR length(${t.evidenceNarrative}) BETWEEN 1 AND ${sql.raw(String(FINDING_NARRATIVE_MAX_CHARS))})
+        AND (${t.severityRationale} IS NULL OR length(${t.severityRationale}) BETWEEN 1 AND ${sql.raw(String(FINDING_NARRATIVE_MAX_CHARS))})
+        AND (${t.remediationSummary} IS NULL OR length(${t.remediationSummary}) BETWEEN 1 AND ${sql.raw(String(FINDING_NARRATIVE_MAX_CHARS))})`,
+    ),
+    check(
+      'findings_asvs_refs_check',
+      sql`${t.asvsRefs} IS NULL OR (jsonb_typeof(${t.asvsRefs}) = 'array' AND jsonb_array_length(${t.asvsRefs}) <= 32 AND octet_length(${t.asvsRefs}::text) <= 4096)`,
+    ),
     pgPolicy('findings_tenant_isolation', {
       as: 'permissive',
       for: 'all',

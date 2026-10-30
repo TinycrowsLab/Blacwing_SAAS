@@ -399,6 +399,20 @@ export {
   findingSummarySchema,
 } from './entities/finding-api.js';
 export {
+  coverageEntrySchema,
+  type CoverageEntry,
+  type CoverageSummary,
+  REPORT_MAX_TEST_CASES,
+  REPORT_SCHEMA_VERSION,
+  type ReportAcceptedRisk,
+  type ReportFinding,
+  reportFindingSchema,
+  type ReportModel,
+  reportModelSchema,
+  type RunManifest,
+  runManifestSchema,
+} from './entities/report.js';
+export {
   AUDIT_ACTION_CATALOGUE,
   AUDIT_ACTION_CLASSES,
   AUDIT_ACTIONS,

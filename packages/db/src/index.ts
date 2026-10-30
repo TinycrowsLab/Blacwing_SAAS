@@ -289,6 +289,14 @@ export {
   type TenantHaltRepositoryOptions,
 } from './tenant-halt.repository.js';
 export {
+  type AcceptedRiskCursor,
+  type ReleasedCursor,
+  type ReportFindingRow,
+  type ReportRunRow,
+  type ReportSource,
+  withReportSource,
+} from './report-source.repository.js';
+export {
   FindingRepository,
   type FindingOccurrenceRow,
   type FindingPage,

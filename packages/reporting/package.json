@@ -11,11 +11,24 @@
   "scripts": {
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
-    "typecheck": "tsc -b --pretty false"
+    "typecheck": "tsc -b --pretty false",
+    "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts"
   },
   "devDependencies": {
+    "@blackwing/ids": "workspace:*",
+    "@blackwing/testing": "workspace:*",
     "@types/node": "catalog:",
+    "@types/pg": "8.23.1",
+    "pg": "8.23.1",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@blackwing/contracts": "workspace:*",
+    "@blackwing/db": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/logger": "workspace:*",
+    "@opentelemetry/api": "catalog:",
+    "zod": "catalog:"
   }
 }

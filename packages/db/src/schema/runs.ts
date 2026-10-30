@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { check, pgPolicy, pgTable, text, unique } from 'drizzle-orm/pg-core';
+import { check, jsonb, pgPolicy, pgTable, text, unique, uniqueIndex } from 'drizzle-orm/pg-core';
 
 import { RUN_STATES, runPauseReasonSchema } from '@blackwing/contracts';
 
@@ -30,6 +30,10 @@ export const runs = pgTable(
     pauseReason: text('pause_reason'),
     /** The state a `paused` run resumes to (`resumeTo`); null in every other state. */
     resumeTo: text('resume_to', { enum: RUN_STATES }),
+    /** The `run_…` public id (`publicId('run', id)`). Null until the run is given one (REPORT-001 needs it). */
+    publicId: text('public_id'),
+    /** The run manifest the report reads (`runManifestSchema`): mode, objective, window, assets, provenance. */
+    manifest: jsonb('manifest').$type<Record<string, unknown>>(),
     ...stateVersion(),
     ...timestamps(),
   },
@@ -37,6 +41,12 @@ export const runs = pgTable(
     tenantIdIndex('runs', t.tenantId),
     // Target of the composite foreign keys from child tables: a child can never name another tenant's run.
     unique('runs_tenant_id_id_unique').on(t.tenantId, t.id),
+    uniqueIndex('runs_public_id_key').on(t.publicId),
+    check('runs_public_id_check', sql`${t.publicId} IS NULL OR starts_with(${t.publicId}, 'run_')`),
+    check(
+      'runs_manifest_check',
+      sql`${t.manifest} IS NULL OR jsonb_typeof(${t.manifest}) = 'object'`,
+    ),
     check('runs_state_check', sql`${t.state} IN (${inList(RUN_STATES)})`),
     check(
       'runs_pause_reason_check',
