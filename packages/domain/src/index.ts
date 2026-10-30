@@ -238,6 +238,25 @@ export {
 
 export { type Classification, classifyFinding } from './findings/classify.js';
 export {
+  FindingTriageError,
+  IllegalFindingTransitionError,
+  TRIAGE_AUDIT_ACTION,
+  TRIAGE_GATE,
+  TRIAGE_GATE_DECISION,
+  TRIAGE_TARGETS,
+  TRIAGE_TRANSITION_METRIC,
+  TRIAGE_TRANSITION_METRIC_LABELS,
+  type TriageAuditAction,
+  type TriageAuditIntent,
+  type TriageCanonicalFacts,
+  type TriageFindingFacts,
+  type TriageInput,
+  type TriageState,
+  type TriageTarget,
+  type TriageTransitionResult,
+  transitionFinding,
+} from './findings/triage.js';
+export {
   DEFAULT_MAPPING_DATASET,
   loadMappingDataset,
   type MappingDataset,

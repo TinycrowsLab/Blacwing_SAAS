@@ -780,6 +780,21 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'A notification matched no delivery channel and no fallback recipient, so nothing was enqueued.',
   },
+  // finding triage (TRIAGE-001, CONTEXT_PACK §3.4, §8.8): appended; the event names the finding and its statuses,
+  // never the reason text (the gate decision row keeps it).
+  {
+    action: 'finding.rejected',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description: 'A confirmed finding was rejected as a false positive at triage (Gate 3).',
+  },
+  {
+    action: 'finding.marked_duplicate',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description:
+      'A confirmed finding was marked a duplicate of a canonical finding at triage (Gate 3).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

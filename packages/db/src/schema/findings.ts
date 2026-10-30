@@ -95,6 +95,8 @@ export const findings = pgTable(
     confidence: numeric('confidence', { precision: 4, scale: 3, mode: 'number' }),
     /** Reason and expiry of an `accepted_risk` triage decision (`acceptedRiskSchema`). Set exactly for that status. */
     acceptedRisk: jsonb('accepted_risk').$type<Record<string, unknown>>(),
+    /** The canonical finding of a duplicate (TRIAGE-001, same tenant and asset class). Set exactly for `duplicate`. */
+    duplicateOf: uuid('duplicate_of'),
     releasedBy: uuid('released_by'),
     releasedAt: timestamp('released_at', { withTimezone: true, mode: 'date' }),
     /**
@@ -117,6 +119,8 @@ export const findings = pgTable(
     // Dedup backbone (FINDING-003): one finding per fingerprint within a tenant.
     uniqueIndex('findings_tenant_id_fingerprint_key').on(t.tenantId, t.fingerprint),
     index('findings_tenant_id_status_idx').on(t.tenantId, t.status),
+    // Who duplicates a finding: the triage guard reads it to refuse a duplicate of a duplicate (no chains).
+    index('findings_tenant_id_duplicate_of_idx').on(t.tenantId, t.duplicateOf),
     // Target of the occurrences' composite FK, so an occurrence can never name another tenant's finding.
     unique('findings_tenant_id_id_unique').on(t.tenantId, t.id),
     check(
@@ -176,6 +180,17 @@ export const findings = pgTable(
       'findings_accepted_risk_object_check',
       sql`${t.acceptedRisk} IS NULL OR jsonb_typeof(${t.acceptedRisk}) = 'object'`,
     ),
+    // duplicate_of is set exactly when the status is duplicate, and a finding is never its own canonical finding.
+    check(
+      'findings_duplicate_of_check',
+      sql`((${t.status} = 'duplicate') = (${t.duplicateOf} IS NOT NULL)) AND (${t.duplicateOf} IS NULL OR ${t.duplicateOf} <> ${t.id})`,
+    ),
+    // Same-tenant canonical only: a plain FK would check the target without RLS and could cross tenants.
+    foreignKey({
+      name: 'findings_duplicate_of_fk',
+      columns: [t.tenantId, t.duplicateOf],
+      foreignColumns: [t.tenantId, t.id],
+    }),
     check('findings_state_version_check', sql`${t.stateVersion} >= 0`),
     check(
       'findings_narrative_check',

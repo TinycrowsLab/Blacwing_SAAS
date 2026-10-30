@@ -177,6 +177,11 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   KEYCLOAK_CONFLICT: 409,
   SOD_VIOLATION: 403,
   CVSS_VECTOR_SCORE_MISMATCH: 422,
+  FINDING_ILLEGAL_TRANSITION: 409,
+  TRIAGE_REASON_REQUIRED: 422,
+  TRIAGE_EXPIRY_INVALID: 422,
+  TRIAGE_CANONICAL_INVALID: 422,
+  TRIAGE_PRECONDITION_FAILED: 409,
   GATE2_ILLEGAL_TRANSITION: 409,
   GATE2_ALREADY_DECIDED: 409,
   GATE2_SOD_VIOLATION: 403,
@@ -202,7 +207,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(173);
+    expect(ERROR_CODE_LIST).toHaveLength(179);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -463,6 +468,11 @@ describe('error-code registry', () => {
       | 'KEYCLOAK_CONFLICT'
       | 'SOD_VIOLATION'
       | 'CVSS_VECTOR_SCORE_MISMATCH'
+      | 'FINDING_ILLEGAL_TRANSITION'
+      | 'TRIAGE_REASON_REQUIRED'
+      | 'TRIAGE_EXPIRY_INVALID'
+      | 'TRIAGE_CANONICAL_INVALID'
+      | 'TRIAGE_PRECONDITION_FAILED'
       | 'AUTHZ_SIGNER_UNAVAILABLE'
       | 'GATE2_ILLEGAL_TRANSITION'
       | 'GATE2_ALREADY_DECIDED'

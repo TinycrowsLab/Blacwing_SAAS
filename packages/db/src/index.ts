@@ -326,6 +326,13 @@ export {
   type FindingRow,
 } from './finding.repository.js';
 export {
+  type FindingTriageAuditHook,
+  FindingTriageRepository,
+  type FindingTriageRepositoryOptions,
+  type FindingTriageRequest,
+  type FindingTriageResult,
+} from './finding-triage.repository.js';
+export {
   createGate2Service,
   gate2DatabaseNow,
   type Gate2AuditEvent,

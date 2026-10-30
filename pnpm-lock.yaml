@@ -1128,6 +1128,9 @@ importers:
       '@blackwing/ids':
         specifier: workspace:*
         version: link:../ids
+      '@blackwing/time':
+        specifier: workspace:*
+        version: link:../time
       '@pandatix/js-cvss':
         specifier: 0.4.4
         version: 0.4.4

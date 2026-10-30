@@ -186,6 +186,12 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'ASSET_VERIFICATION_ILLEGAL_TRANSITION',
   'ASSET_VERIFICATION_PROBE_UNAVAILABLE',
   'ASSET_VERIFICATION_METHOD_NOT_APPLICABLE',
+  // IllegalFindingTransitionError and FindingTriageError, @blackwing/domain finding triage (TRIAGE-001).
+  'FINDING_ILLEGAL_TRANSITION',
+  'TRIAGE_REASON_REQUIRED',
+  'TRIAGE_EXPIRY_INVALID',
+  'TRIAGE_CANONICAL_INVALID',
+  'TRIAGE_PRECONDITION_FAILED',
   // Raised as a plain AppError by the audit query API (apps/api audit-query, #86).
   'INVALID_CURSOR',
   // AuthNoCredentialsError, AuthInvalidTokenError and AuthExpiredError, apps/api auth guard (#335).

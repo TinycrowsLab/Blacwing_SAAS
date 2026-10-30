@@ -498,6 +498,27 @@ const DEFINITIONS = {
     title: 'CVSS score does not match its vector',
     retryable: false,
   },
+  // Finding triage (TRIAGE-001, CONTEXT_PACK §3.4): a transition the finding lifecycle does not allow from its
+  // current status is a conflict (409). A missing reason, an invalid or past accepted-risk expiry and an invalid
+  // canonical finding for a duplicate are invalid input (422). A release without a scored severity or bound
+  // evidence is a precondition the finding does not meet (409). The refusals never change the finding.
+  FINDING_ILLEGAL_TRANSITION: {
+    status: 409,
+    title: 'Illegal finding transition',
+    retryable: false,
+  },
+  TRIAGE_REASON_REQUIRED: { status: 422, title: 'Triage reason required', retryable: false },
+  TRIAGE_EXPIRY_INVALID: { status: 422, title: 'Invalid accepted risk expiry', retryable: false },
+  TRIAGE_CANONICAL_INVALID: {
+    status: 422,
+    title: 'Invalid canonical finding for a duplicate',
+    retryable: false,
+  },
+  TRIAGE_PRECONDITION_FAILED: {
+    status: 409,
+    title: 'Finding does not meet the triage precondition',
+    retryable: false,
+  },
   // Standing-authorisation signing (AUTHZ-004, #376): OpenBao Transit unreachable or unusable. Fail closed:
   // the SA stays pending and nothing is signed or persisted, so the caller retries later.
   AUTHZ_SIGNER_UNAVAILABLE: {
