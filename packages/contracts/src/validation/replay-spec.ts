@@ -22,7 +22,7 @@ const VERSION_MAX_LENGTH = 64;
 
 const scriptIdSchema = z.string().regex(/^[a-z][a-z0-9_.-]{0,63}$/, 'must be a script id');
 const versionSchema = z.string().min(1).max(VERSION_MAX_LENGTH);
-const hostnameSchema = z
+export const hostnameSchema = z
   .string()
   .min(1)
   .max(LIMITS.hostnameMax)

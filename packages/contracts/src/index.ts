@@ -1124,6 +1124,16 @@ export {
   runPinsSchema,
 } from './validation/replay-spec.js';
 export {
+  harnessStepSchema,
+  type HarnessStep,
+  POC_HARNESS_MANIFEST_MAX_BYTES,
+  PocHarnessManifestSchema,
+  type PocHarnessManifest,
+  pinnedToolSchema,
+  type PinnedTool,
+  type ToReplaySpec,
+} from './validation/poc-harness.js';
+export {
   MAX_REPLAY_MS,
   MAX_VALIDATION_ATTEMPTS,
   type ValidationOutcome,
