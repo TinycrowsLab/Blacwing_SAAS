@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@blackwing/contracts": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/logger": "workspace:*",
     "@cedar-policy/cedar-wasm": "catalog:"
   },
   "devDependencies": {

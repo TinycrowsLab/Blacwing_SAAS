@@ -1,0 +1,73 @@
+// Blackwing resource-level (ABAC) authorisation schema (#345), evaluated after the RBAC permission guard.
+// Kept apart from blackwing.cedarschema (POLICY-001, digest-pinned and shared with the Go gateway) so that
+// resource checks can evolve without changing that contract. Every entity carries tenantId; the baseline
+// in ../policies/authz/resource.cedar forbids any decision whose principal and resource tenants differ.
+// Shape-compatible with cedar-go: plain entity types, Set<String> attributes, no extensions.
+
+entity User = {
+  tenantId: String,
+  userId: String,
+  roles: Set<String>,
+};
+
+entity ServiceAccount = {
+  tenantId: String,
+  saId: String,
+  scopes: Set<String>,
+  assetIds: Set<String>,
+};
+
+entity Asset = {
+  tenantId: String,
+  assetId: String,
+  ownerUserId: String,
+};
+
+entity StandingAuthorisation = {
+  tenantId: String,
+  saId: String,
+  requesterId: String,
+  assetOwnerIds: Set<String>,
+};
+
+entity Run = {
+  tenantId: String,
+  runId: String,
+  ownerUserId: String,
+};
+
+entity Finding = {
+  tenantId: String,
+  findingId: String,
+  ownerUserId: String,
+};
+
+action "asset:read" appliesTo {
+  principal: [User, ServiceAccount],
+  resource: [Asset],
+  context: {},
+};
+
+action "asset:write" appliesTo {
+  principal: [User],
+  resource: [Asset],
+  context: {},
+};
+
+action "sa:approve" appliesTo {
+  principal: [User],
+  resource: [StandingAuthorisation],
+  context: {},
+};
+
+action "run:read" appliesTo {
+  principal: [User],
+  resource: [Run],
+  context: {},
+};
+
+action "finding:read" appliesTo {
+  principal: [User],
+  resource: [Finding],
+  context: {},
+};

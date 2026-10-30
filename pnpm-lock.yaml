@@ -1439,6 +1439,12 @@ importers:
       '@blackwing/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@blackwing/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@blackwing/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@cedar-policy/cedar-wasm':
         specifier: 'catalog:'
         version: 4.13.0

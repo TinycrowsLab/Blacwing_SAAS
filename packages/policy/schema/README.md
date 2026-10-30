@@ -61,3 +61,13 @@ types (`src/schema.types.ts`) are checked for drift.
 
 After editing the schema: bump `SCHEMA_VERSION` (here and in the header), update `SCHEMA_SHA256`,
 run `pnpm --filter @blackwing/policy gen:schema-types`, and run the policy and egress-gateway tests.
+
+## Resource-level authorisation (#345)
+
+`authz.cedarschema` is a separate, smaller schema for the resource check that runs after the RBAC
+permission guard: `asset:read`, `asset:write`, `sa:approve`, `run:read` and `finding:read` over `User`,
+`ServiceAccount`, `Asset`, `StandingAuthorisation`, `Run` and `Finding`. It is kept apart from
+`blackwing.cedarschema` so that the digest-pinned shared contract does not change with it. Its baseline
+lives in [`../policies/authz/`](../policies/authz/resource.cedar). Evaluate it through `can()` or
+`checkResource()` from `@blackwing/policy`. Both fail closed: a policy that does not validate stops the
+engine from loading, and any evaluation error is a deny.

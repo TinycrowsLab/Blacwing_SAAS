@@ -61,3 +61,22 @@ export {
   type PriceTableResolver,
   type TokenUsage,
 } from './price-table.js';
+export {
+  AUTHZ_ACTIONS,
+  type AuthzAction,
+  type AuthzPrincipal,
+  type AuthzResource,
+  type ServiceAccountPrincipal,
+  type UserPrincipal,
+} from './authz/entities.js';
+export {
+  AuthzPolicyLoadError,
+  authzEngine,
+  can,
+  createAuthzEngine,
+  loadAuthzSources,
+  type AuthzDecision,
+  type AuthzEngine,
+  type AuthzSources,
+} from './authz/engine.js';
+export { checkResource, type AuthzDecisionLog } from './authz/check.js';
