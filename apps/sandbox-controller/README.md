@@ -23,6 +23,10 @@ pnpm --filter sandbox-controller test:int   # Testcontainers Valkey + real proce
 | `SBX_RUNTIME_CLASS` | `gvisor` | RFC 1123 label. |
 | `SBX_IMAGE_DIGEST` | required | Must be pinned `@sha256:` (§8.9); tags are refused. |
 | `SBX_TTL_SECONDS` | `3600` | 1 to 86400. |
+| `SBX_CPU` | `1` | Default CPU cores per sandbox (fractional, up to 16). Requests above the plan ceiling are clamped. |
+| `SBX_MEM_MIB` | `2048` | Default memory per sandbox. Deep-tier personas get 4096 unless the request says otherwise. |
+| `SBX_PIDS` | `512` | Default process limit per sandbox. |
+| `SBX_WORKSPACE_MIB` | `1024` | `/workspace` tmpfs size. Zero is refused. |
 | `SBX_DRAIN_TIMEOUT` | `10s` | Drain budget on SIGTERM/SIGINT. |
 | `SBX_MAX_BODY_BYTES` | `1048576` | Larger bodies get 400 `SBX_BAD_REQUEST`. |
 | `SBX_RUN_TOKEN_SECRET` | required | HMAC key for `bw_run_` tokens, at least 32 characters. Secret. |

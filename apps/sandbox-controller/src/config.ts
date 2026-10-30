@@ -11,7 +11,7 @@ import {
   zSecret,
   zSecretUrl,
 } from '@blackwing/config';
-import { SANDBOX_DRIVER_KINDS } from '@blackwing/contracts';
+import { SANDBOX_DRIVER_KINDS, SANDBOX_LIMITS } from '@blackwing/contracts';
 
 import { SbxConfigInvalidError } from './errors.js';
 
@@ -22,6 +22,11 @@ export type SandboxDriverKind = (typeof SANDBOX_DRIVERS)[number];
 export const DEFAULT_MGMT_ADDR = ':7070';
 const DEFAULT_MGMT_PORT = 7070;
 export const DEFAULT_TTL_SECONDS = 3600;
+/** Per-sandbox sizing defaults (SANDBOX-007). Persona overrides and plan ceilings live in `spec/hardening.ts`. */
+export const DEFAULT_SANDBOX_CPU = 1;
+export const DEFAULT_SANDBOX_MEMORY_MIB = 2048;
+export const DEFAULT_SANDBOX_PIDS = 512;
+export const DEFAULT_SANDBOX_WORKSPACE_MIB = 1024;
 /** `SBX_DRAIN_TIMEOUT` default: 10s. */
 export const DEFAULT_DRAIN_TIMEOUT_MS = 10_000;
 export const DEFAULT_MAX_BODY_BYTES = 1_048_576;
@@ -101,6 +106,24 @@ export const sandboxControllerEnvShape = {
     .default('false')
     .transform((v) => v === 'true'),
   SBX_TTL_SECONDS: positiveInt(MAX_TTL_SECONDS).default(DEFAULT_TTL_SECONDS),
+  /** Default CPU cores per sandbox (fractional allowed); per-request and per-persona values override it. */
+  SBX_CPU: z
+    .string()
+    .regex(/^(?:0?\.[0-9]+|[1-9][0-9]*(?:\.[0-9]+)?)$/, 'must be a positive number of cores')
+    .transform(Number)
+    .refine(
+      (cpu) => cpu <= SANDBOX_LIMITS.maxCpu,
+      `must be at most ${String(SANDBOX_LIMITS.maxCpu)}`,
+    )
+    .default(DEFAULT_SANDBOX_CPU),
+  /** Default memory per sandbox in MiB. */
+  SBX_MEM_MIB: positiveInt(SANDBOX_LIMITS.maxMemoryMiB).default(DEFAULT_SANDBOX_MEMORY_MIB),
+  /** Default process (pids) limit per sandbox. */
+  SBX_PIDS: positiveInt(SANDBOX_LIMITS.maxPids).default(DEFAULT_SANDBOX_PIDS),
+  /** Size of the /workspace tmpfs in MiB; zero is refused because the agent needs room to work. */
+  SBX_WORKSPACE_MIB: positiveInt(SANDBOX_LIMITS.maxMemoryMiB).default(
+    DEFAULT_SANDBOX_WORKSPACE_MIB,
+  ),
   /** Longest wait for in-flight requests on SIGTERM/SIGINT before connections are cut. */
   SBX_DRAIN_TIMEOUT: zDurationMs()
     .refine((ms) => ms > 0, 'must be greater than zero')

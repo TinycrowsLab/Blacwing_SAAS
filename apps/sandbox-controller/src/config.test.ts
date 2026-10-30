@@ -37,6 +37,10 @@ describe('loadSandboxControllerConfig', () => {
     expect(config.SBX_RUNTIME_CLASS).toBe('gvisor');
     expect(config.SBX_TTL_SECONDS).toBe(3600);
     expect(config.SBX_DRAIN_TIMEOUT).toBe(10_000);
+    expect(config.SBX_CPU).toBe(1);
+    expect(config.SBX_MEM_MIB).toBe(2048);
+    expect(config.SBX_PIDS).toBe(512);
+    expect(config.SBX_WORKSPACE_MIB).toBe(1024);
     expect(config.LOG_LEVEL).toBe('info');
     expect(config.SBX_IMAGE_DIGEST).toBe(DIGEST);
     expect(Object.isFrozen(config)).toBe(true);
@@ -97,6 +101,11 @@ describe('loadSandboxControllerConfig', () => {
     ['a non-redis Valkey URL', { VALKEY_URL: 'http://127.0.0.1:16379' }, 'VALKEY_URL'],
     ['a missing Valkey URL', { VALKEY_URL: undefined }, 'VALKEY_URL'],
     ['an unknown log level', { LOG_LEVEL: 'loud' }, 'LOG_LEVEL'],
+    ['a zero workspace size', { SBX_WORKSPACE_MIB: '0' }, 'SBX_WORKSPACE_MIB'],
+    ['a non-numeric memory size', { SBX_MEM_MIB: '2g' }, 'SBX_MEM_MIB'],
+    ['a zero pids limit', { SBX_PIDS: '0' }, 'SBX_PIDS'],
+    ['a zero CPU limit', { SBX_CPU: '0' }, 'SBX_CPU'],
+    ['a CPU above the ceiling', { SBX_CPU: '17' }, 'SBX_CPU'],
   ])('rejects %s', (_label, overrides, key) => {
     expect(invalid(overrides).keys).toContain(key);
   });
