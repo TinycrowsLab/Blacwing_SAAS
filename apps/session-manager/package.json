@@ -9,12 +9,30 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "build": "tsc -b --pretty false",
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
     "lint": "eslint . --max-warnings=0",
-    "test": "vitest run",
+    "test": "vitest run --configLoader runner --config src/vitest.config.ts",
+    "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts",
     "typecheck": "tsc -b --pretty false"
   },
+  "dependencies": {
+    "@blackwing/config": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/logger": "workspace:*",
+    "@opentelemetry/api": "catalog:",
+    "fastify": "catalog:",
+    "ioredis": "5.11.1",
+    "pg": "8.23.1",
+    "prom-client": "catalog:",
+    "zod": "catalog:"
+  },
   "devDependencies": {
+    "@blackwing/testing": "workspace:*",
     "@types/node": "catalog:",
+    "@types/pg": "8.23.1",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

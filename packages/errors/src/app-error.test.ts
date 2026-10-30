@@ -227,6 +227,15 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'SBX_DRIVER_UNAVAILABLE',
   'SBX_RUNTIME_MISSING',
   'SBX_IMAGE_MISSING',
+  // Subclassed by apps/session-manager (SESSION-001).
+  'SM_UNAUTHENTICATED',
+  'SM_TENANT_MISMATCH',
+  'SM_BAD_REQUEST',
+  'SM_CONFIG_INVALID',
+  'SM_RECIPE_INVALID',
+  'SM_LOGIN_FAILED',
+  'SM_LOCKED_OUT',
+  'SM_SESSION_EXPIRED',
   // Raised by apps/api's kill module (KILL-003) as KillApiError / IdempotencyError.
   'KILL_SCOPE_INVALID',
   'KILL_REF_REQUIRED',

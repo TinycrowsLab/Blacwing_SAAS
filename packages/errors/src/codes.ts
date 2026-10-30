@@ -271,6 +271,26 @@ const DEFINITIONS = {
   // DockerDriver (SANDBOX-004): no registered runsc runtime (never fall back to runc); pinned image absent.
   SBX_RUNTIME_MISSING: { status: 500, title: 'Sandbox runtime missing', retryable: false },
   SBX_IMAGE_MISSING: { status: 422, title: 'Sandbox image missing', retryable: false },
+  // Session manager (SESSION-001, #612). Its internal API refuses callers without a valid run-scoped or
+  // control-plane token (401, fail closed) and any caller whose tenant or run does not match the token (403).
+  // A bad body is refused before processing (400); a bad environment stops the process (500).
+  SM_UNAUTHENTICATED: { status: 401, title: 'Session service token required', retryable: false },
+  SM_TENANT_MISMATCH: {
+    status: 403,
+    title: 'Token does not match the tenant or run',
+    retryable: false,
+  },
+  SM_BAD_REQUEST: { status: 400, title: 'Malformed session request', retryable: false },
+  SM_CONFIG_INVALID: {
+    status: 500,
+    title: 'Invalid session manager configuration',
+    retryable: false,
+  },
+  // Recipe, login and session outcomes (SESSION-005..008). Declared here so the codes are stable from day one.
+  SM_RECIPE_INVALID: { status: 422, title: 'Login recipe invalid', retryable: false },
+  SM_LOGIN_FAILED: { status: 422, title: 'Login rejected by the target', retryable: false },
+  SM_LOCKED_OUT: { status: 423, title: 'Role locked out', retryable: true },
+  SM_SESSION_EXPIRED: { status: 401, title: 'Session expired', retryable: false },
   // Kill trigger API (KILL-003, F33/§8.5). Malformed scope input is 422; refusing the caller is 403;
   // `global` is an operator-only path (KILL-013), so the tenant endpoint refuses it with its own code.
   KILL_SCOPE_INVALID: { status: 422, title: 'Invalid kill scope', retryable: false },
