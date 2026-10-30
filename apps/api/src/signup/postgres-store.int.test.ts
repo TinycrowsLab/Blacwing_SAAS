@@ -162,6 +162,21 @@ describe('verify', () => {
         ).rows,
     );
     expect(memberships).toEqual([{ user_id: outcome.userId, roles: ['org_admin'] }]);
+    const retention = await pgHandle.withTenant(
+      outcome.tenantId,
+      async (tx) =>
+        (
+          await tx.query<{ data_class: string; retention_days: number; enabled: boolean }>(
+            'SELECT data_class, retention_days, enabled FROM retention_policies ORDER BY data_class',
+          )
+        ).rows,
+    );
+    expect(retention).toHaveLength(6);
+    expect(retention).toContainEqual({
+      data_class: 'evidence',
+      retention_days: 365,
+      enabled: true,
+    });
     expect(
       await scalar('SELECT status AS v FROM signups WHERE token_hash = $1', [signup.tokenHash]),
     ).toBe('verified');

@@ -60,3 +60,4 @@ export * from './run-events/index.js';
 export * from './surface/index.js';
 export * from './graphql/index.js';
 export * from './signup/index.js';
+export * from './retention/index.js';

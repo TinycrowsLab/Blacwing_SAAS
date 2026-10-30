@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+  retentionPolicySetSchema,
   assetListResponseSchema,
   assetVerificationViewSchema,
   assetViewSchema,
@@ -31,6 +32,7 @@ import {
   surfaceRunViewSchema,
   tenantSettingsResponseSchema,
   notificationChannelViewSchema,
+  notificationRouteViewSchema,
   inputManifestSpecObjectSchema,
   inputManifestUploadGrantSchema,
   inputManifestUploadRemovedSchema,
@@ -155,6 +157,8 @@ export const RESPONSE_SCHEMAS: Readonly<
   streamRunEvents: {},
   requestSignup: { 202: signupAcceptedSchema },
   triggerKill: { 202: killTriggerResponseSchema },
+  getRetentionPolicies: { 200: retentionPolicySetSchema },
+  updateRetentionPolicies: { 200: retentionPolicySetSchema },
   getPersonaOverride: { 200: personaOverrideViewSchema },
   putPersonaOverride: { 200: personaOverrideViewSchema },
   verifySignup: { 200: signupVerifiedSchema },
@@ -168,6 +172,13 @@ export const RESPONSE_SCHEMAS: Readonly<
   getNotificationChannel: { 200: notificationChannelViewSchema },
   updateNotificationChannel: { 200: notificationChannelViewSchema },
   deleteNotificationChannel: { 200: notificationChannelViewSchema },
+  listNotificationRoutes: {
+    200: z.object({ items: z.array(notificationRouteViewSchema) }).strict(),
+  },
+  createNotificationRoute: { 201: notificationRouteViewSchema },
+  getNotificationRoute: { 200: notificationRouteViewSchema },
+  updateNotificationRoute: { 200: notificationRouteViewSchema },
+  deleteNotificationRoute: { 200: notificationRouteViewSchema },
   getCurrentTenant: { 200: orgProfileSchema },
   // Plan quotas (TENANT-009): used against limit per resource; `limit: null` is unlimited.
   getTenantQuotas: {

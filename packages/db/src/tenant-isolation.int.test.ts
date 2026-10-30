@@ -253,6 +253,13 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId],
     );
   },
+  retention_policies: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO retention_policies (id, tenant_id, data_class, retention_days, min_retention_days)
+       VALUES ($1, $2, 'evidence', 365, 30)`,
+      [newId(), tenantId],
+    );
+  },
   secret_versions: async (tx, tenantId) => {
     const secretId = newId();
     await tx.query(

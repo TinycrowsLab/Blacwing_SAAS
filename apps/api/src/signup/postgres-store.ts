@@ -13,6 +13,7 @@ import { InternalError } from '@blackwing/errors';
 import { newId } from '@blackwing/ids';
 
 import { slugBase, slugCandidate } from './slug.js';
+import { seedRetentionDefaults } from '../retention/postgres.js';
 
 import type {
   PendingSignup,
@@ -131,6 +132,8 @@ export class PostgresSignupStore implements SignupStore {
         region: input.region,
       });
       await tx.insert(memberships).values({ tenantId, userId, roles: OWNER_ROLES });
+      // RETAIN-001: a new tenant starts with the platform retention defaults for every data class.
+      await seedRetentionDefaults(tx, tenantId);
 
       const audit = auditTx(tx);
       const actor = { type: 'user', id: userId } as const;

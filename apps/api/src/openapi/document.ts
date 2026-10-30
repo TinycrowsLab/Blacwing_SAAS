@@ -15,6 +15,7 @@ import { oncallOpenApiDocument } from '../oncall/openapi.js';
 import { personaOpenApiModule } from '../personas/openapi.js';
 import { quotaOpenApiModule } from '../quota/openapi.js';
 import { serviceAccountOpenApiModule } from '../rbac/openapi.js';
+import { retentionOpenApiDocument } from '../retention/openapi.js';
 import { runEventsOpenApiModule } from '../run-events/openapi.js';
 import { inputManifestOpenApiModule } from '../scoping/openapi.js';
 import { secretsOpenApiModule } from '../secrets/openapi.js';
@@ -79,6 +80,23 @@ export function oncallOpenApiModule(): OpenApiModule {
   };
 }
 
+/** The retention policy API (RETAIN-001) as a module of the combined document. */
+function retentionOpenApiModule(): OpenApiModule {
+  const source = retentionOpenApiDocument();
+  const schemas = Object.fromEntries(
+    Object.entries((source.components as { schemas: JsonObject }).schemas).filter(
+      ([name]) => name !== 'Problem',
+    ),
+  );
+  return {
+    tag: 'retention',
+    description:
+      'Retention policies per data class, with platform floors and legal hold precedence.',
+    paths: source.paths as JsonObject,
+    schemas,
+  };
+}
+
 /** Every module published in the public spec. Internal routers (`/internal/broker`) are deliberately absent. */
 export function publicOpenApiModules(): readonly OpenApiModule[] {
   return [
@@ -104,6 +122,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     notificationRoutesOpenApiModule(),
     serviceAccountOpenApiModule(),
     secretsOpenApiModule(),
+    retentionOpenApiModule(),
   ];
 }
 

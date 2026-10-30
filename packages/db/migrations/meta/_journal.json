@@ -358,6 +358,13 @@
       "when": 1793516873087,
       "tag": "20261101070753_policy_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1793535365920,
+      "tag": "20261101121605_retention_policies",
+      "breakpoints": true
     }
   ]
 }

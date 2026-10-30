@@ -435,3 +435,9 @@ export {
   type ScheduleSpec,
   WINDOW_DURATION_MAX_MINUTES,
 } from './schedule/cron.js';
+export {
+  type EffectiveRetention,
+  type RetentionPolicyRow,
+  type RetentionSource,
+  resolveRetention,
+} from './retention/resolve.js';

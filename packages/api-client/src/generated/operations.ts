@@ -261,6 +261,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  getRetentionPolicies: {
+    method: 'GET',
+    path: '/v1/retention-policies',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   getRunSurface: {
     method: 'GET',
     path: '/v1/runs/{runId}/surface',
@@ -551,6 +558,13 @@ export const OPERATIONS = {
     method: 'PATCH',
     path: '/v1/oncall/rosters/{id}',
     pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
+  },
+  updateRetentionPolicies: {
+    method: 'PUT',
+    path: '/v1/retention-policies',
+    pathParams: [],
     queryParams: [],
     requiredHeaders: ['If-Match'],
   },

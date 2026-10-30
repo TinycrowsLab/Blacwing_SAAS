@@ -1298,3 +1298,21 @@ export * from './notify.js';
 export * from './reversal.js';
 export * from './stored-session.js';
 export * from './notification-routes.js';
+
+export {
+  RETENTION_DATA_CLASSES,
+  RETENTION_DAYS_MAX,
+  RETENTION_DEFAULTS,
+  RETENTION_POLICY_SET_MAX,
+  type RetentionClassDefaults,
+  type RetentionDataClass,
+  retentionDataClassSchema,
+  type RetentionPolicy,
+  type RetentionPolicySet,
+  retentionPolicySchema,
+  retentionPolicySetSchema,
+  type RetentionPolicyUpdate,
+  type RetentionPolicyUpdateItem,
+  retentionPolicyUpdateItemSchema,
+  retentionPolicyUpdateSchema,
+} from './retention.js';

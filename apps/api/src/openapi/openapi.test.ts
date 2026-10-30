@@ -85,6 +85,13 @@ describe('schema to OpenAPI 3.1 fragment', () => {
 /** The tag each published operation is filed under (the module that owns its route). */
 const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   triggerKill: 'kill',
+  createNotificationRoute: 'notifications',
+  deleteNotificationRoute: 'notifications',
+  getNotificationRoute: 'notifications',
+  listNotificationRoutes: 'notifications',
+  updateNotificationRoute: 'notifications',
+  getRetentionPolicies: 'retention',
+  updateRetentionPolicies: 'retention',
   listOncallRosters: 'oncall',
   createOncallRoster: 'oncall',
   getOncallRoster: 'oncall',
@@ -206,6 +213,7 @@ describe('public OpenAPI document', () => {
       'createAsset',
       'createInputManifestUpload',
       'createNotificationChannel',
+      'createNotificationRoute',
       'createOncallRoster',
       'createSecret',
       'createServiceAccount',
@@ -215,6 +223,7 @@ describe('public OpenAPI document', () => {
       'deleteAsset',
       'deleteInputManifestUpload',
       'deleteNotificationChannel',
+      'deleteNotificationRoute',
       'deleteSecret',
       'diffTestPlanVersions',
       'disableServiceAccount',
@@ -227,9 +236,11 @@ describe('public OpenAPI document', () => {
       'getGate1Plan',
       'getKillEvent',
       'getNotificationChannel',
+      'getNotificationRoute',
       'getOncallRoster',
       'getPersona',
       'getPersonaOverride',
+      'getRetentionPolicies',
       'getRunSurface',
       'getSecret',
       'getServiceAccount',
@@ -243,6 +254,7 @@ describe('public OpenAPI document', () => {
       'listFindings',
       'listKillEvents',
       'listNotificationChannels',
+      'listNotificationRoutes',
       'listOncallRosters',
       'listPersonas',
       'listSecrets',
@@ -266,7 +278,9 @@ describe('public OpenAPI document', () => {
       'updateAsset',
       'updateCurrentTenant',
       'updateNotificationChannel',
+      'updateNotificationRoute',
       'updateOncallRoster',
+      'updateRetentionPolicies',
       'updateSecret',
       'updateServiceAccount',
       'updateStandingAuthorisation',
@@ -276,7 +290,7 @@ describe('public OpenAPI document', () => {
       'verifySignup',
       'withdrawAssessmentRequest',
     ]);
-    expect(countOperations(doc)).toBe(79);
+    expect(countOperations(doc)).toBe(86);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -350,8 +364,10 @@ describe('public OpenAPI document', () => {
       'triage',
       'oncall',
       'notifications',
+      'notifications',
       'rbac',
       'secrets',
+      'retention',
     ]);
   });
 });
@@ -411,7 +427,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(79);
+    expect(result.operations).toBe(86);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

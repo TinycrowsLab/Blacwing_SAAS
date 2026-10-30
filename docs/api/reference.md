@@ -2,7 +2,7 @@
 
 The public `/v1` REST API, version 0.0.0. This page is generated from [`openapi.json`](openapi.json) by `pnpm openapi:generate`; do not edit it by hand. CI fails when it is stale.
 
-It documents 84 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
+It documents 86 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
 
 The internal Run Broker API (`/internal/broker`) is not part of this reference.
 
@@ -124,6 +124,9 @@ The internal Run Broker API (`/internal/broker`) is not part of this reference.
   - [GET /secrets/{id}](#get-secretsid)
   - [PUT /secrets/{id}](#put-secretsid)
   - [DELETE /secrets/{id}](#delete-secretsid)
+- retention
+  - [GET /retention-policies](#get-retention-policies)
+  - [PUT /retention-policies](#put-retention-policies)
 
 ## kill
 
@@ -444,7 +447,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -864,6 +867,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -1096,7 +1123,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -1516,6 +1543,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -1831,7 +1882,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2255,9 +2306,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2353,6 +2428,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -2874,18 +2961,18 @@ Requires audit:read (auditor, org_admin). Newest first, by (occurredAt, seq). Th
 - Operation ID: `listAuditEvents`
 - Authentication: `bearerAuth` or `sessionCookie`
 
-| Parameter      | In    | Required | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Description                               |
-| -------------- | ----- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `actorId`      | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |                                           |
-| `action`       | query | no       | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"scope.preflight.dry_run"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"`, `"asset.updated"`, `"asset.deleted"`, `"asset.owner_assigned"`, `"test_plan.validated"`, `"oncall.roster.updated"`, `"oncall.sod_skipped"`, `"gate2.exception.created"`, `"gate2.decision.recorded"`, `"gate1.submitted"`, `"gate1.approved"`, `"gate1.changes_requested"`, `"gate1.rejected"`, `"asset.verification_started"`, `"asset.verification_passed"`, `"asset.verification_failed"`, `"asset.verification_cancelled"`, `"asset.credential_added"`, `"asset.credential_rotated"`, `"graph.surface.upserted"`, `"notification.channel_changed"`, `"notification.requested"`, `"notification.unrouted"`, `"finding.rejected"`, `"finding.marked_duplicate"`, `"run.envelope_signed"`, `"scope.manifest.upload_requested"`, `"scope.manifest.upload_completed"`, `"scope.manifest.upload_deleted"`, `"authz.sa.expired"`, `"service_account.created"`, `"service_account.updated"`, `"service_account.disabled"`, `"secret.created"`, `"secret.updated"`, `"secret.deleted"`, `"policy.version.created"`, `"policy.activated"`, `"policy.rolled_back"`, `"tenant.quota_exceeded"`, `"tenant.plan_changed"`, `"vkey.minted"`, `"vkey.revoked"` |                                           |
-| `targetId`     | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |                                           |
-| `runId`        | query | no       | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |                                           |
-| `outcome`      | query | no       | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |                                           |
-| `from`         | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |                                           |
-| `to`           | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |                                           |
-| `includeChain` | query | no       | enum: `"true"`, `"false"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Auditors only: include hash and prevHash. |
-| `cursor`       | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |                                           |
-| `limit`        | query | no       | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                           |
+| Parameter      | In    | Required | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Description                               |
+| -------------- | ----- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `actorId`      | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                           |
+| `action`       | query | no       | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"scope.preflight.dry_run"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"`, `"asset.updated"`, `"asset.deleted"`, `"asset.owner_assigned"`, `"test_plan.validated"`, `"oncall.roster.updated"`, `"oncall.sod_skipped"`, `"gate2.exception.created"`, `"gate2.decision.recorded"`, `"gate1.submitted"`, `"gate1.approved"`, `"gate1.changes_requested"`, `"gate1.rejected"`, `"asset.verification_started"`, `"asset.verification_passed"`, `"asset.verification_failed"`, `"asset.verification_cancelled"`, `"asset.credential_added"`, `"asset.credential_rotated"`, `"graph.surface.upserted"`, `"notification.channel_changed"`, `"notification.requested"`, `"notification.unrouted"`, `"finding.rejected"`, `"finding.marked_duplicate"`, `"run.envelope_signed"`, `"scope.manifest.upload_requested"`, `"scope.manifest.upload_completed"`, `"scope.manifest.upload_deleted"`, `"authz.sa.expired"`, `"service_account.created"`, `"service_account.updated"`, `"service_account.disabled"`, `"secret.created"`, `"secret.updated"`, `"secret.deleted"`, `"policy.version.created"`, `"policy.activated"`, `"policy.rolled_back"`, `"tenant.quota_exceeded"`, `"tenant.plan_changed"`, `"vkey.minted"`, `"vkey.revoked"`, `"soc.portal.opened"`, `"policy.snapshot.built"`, `"schedule.created"`, `"schedule.updated"`, `"schedule.paused"`, `"schedule.resumed"`, `"schedule.deleted"` |                                           |
+| `targetId`     | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                           |
+| `runId`        | query | no       | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |                                           |
+| `outcome`      | query | no       | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |                                           |
+| `from`         | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |                                           |
+| `to`           | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |                                           |
+| `includeChain` | query | no       | enum: `"true"`, `"false"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Auditors only: include hash and prevHash. |
+| `cursor`       | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                           |
+| `limit`        | query | no       | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |                                           |
 
 #### Response 200
 
@@ -3119,7 +3206,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -3539,6 +3626,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -3918,7 +4029,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -4338,6 +4449,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -4538,7 +4673,7 @@ Example: Run not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -4958,6 +5093,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -5551,7 +5710,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -5975,9 +6134,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6073,6 +6256,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -7193,7 +7388,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7617,9 +7812,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7715,6 +7934,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -8437,7 +8668,7 @@ Example: Persona not defined.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -8857,6 +9088,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -9237,7 +9492,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -9657,6 +9912,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -10068,7 +10347,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -10488,6 +10767,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -11216,7 +11519,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -11636,6 +11939,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -12335,7 +12662,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -12755,6 +13082,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -13516,7 +13867,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13940,9 +14291,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -14038,6 +14413,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -15263,7 +15650,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -15687,6 +16074,30 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 412
 
 Problem details; code is one of PRECONDITION_FAILED, TRIAGE_CONCURRENCY, ETAG_MISMATCH.
@@ -15731,7 +16142,7 @@ Example: ETag mismatch.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -15827,6 +16238,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -16627,7 +17050,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -17051,9 +17474,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -17149,6 +17596,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -18052,7 +18511,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -18472,6 +18931,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -18971,7 +19454,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -19395,9 +19878,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -19493,6 +20000,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -20741,7 +21260,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -21165,9 +21684,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -21263,6 +21806,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -22514,7 +23069,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -22934,6 +23489,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -23594,7 +24173,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -24018,9 +24597,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -24116,6 +24719,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -25353,7 +25968,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -25777,6 +26392,30 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 412
 
 The ETag is stale.
@@ -25785,7 +26424,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -25881,6 +26520,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -27773,7 +28424,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -27869,6 +28520,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -29102,7 +29765,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -29526,6 +30189,30 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 412
 
 The ETag is stale.
@@ -29534,7 +30221,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -29630,6 +30317,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -35402,7 +36101,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -35498,6 +36197,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -36338,7 +37049,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -36758,6 +37469,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -37538,7 +38273,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -37962,9 +38697,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -38060,6 +38819,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -43478,7 +44249,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -43902,9 +44673,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -44000,6 +44795,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -44697,7 +45504,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -45121,9 +45928,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -45219,6 +46050,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -46518,7 +47361,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -46942,9 +47785,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -47040,6 +47907,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -48209,7 +49088,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -48633,9 +49512,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -48731,6 +49634,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -49991,7 +50906,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -50415,9 +51330,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -50513,6 +51452,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -51265,7 +52216,7 @@ Example: Notification channel is referenced by active routing rules.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -51361,6 +52312,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -52158,7 +53121,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -52582,9 +53545,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -52680,6 +53667,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -53480,7 +54479,7 @@ Example: Notification channel is referenced by active routing rules.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -53576,6 +54575,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -54327,7 +55338,7 @@ Example: Notification channel is referenced by active routing rules.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -54423,6 +55434,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -55330,7 +56353,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -55754,9 +56777,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -55852,6 +56899,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -56565,7 +57624,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -56989,9 +58048,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -57087,6 +58170,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -57868,7 +58963,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -58292,9 +59387,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -58390,6 +59509,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -59173,7 +60304,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -59597,9 +60728,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -59695,6 +60850,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -60406,7 +61573,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -60830,9 +61997,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -60928,6 +62119,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -61819,7 +63022,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -62243,9 +63446,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -62341,6 +63568,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -63093,7 +64332,7 @@ Example: Notification channel is referenced by active routing rules.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -63189,6 +64428,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -63986,7 +65237,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -64410,9 +65661,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -64508,6 +65783,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -65308,7 +66595,7 @@ Example: Notification channel is referenced by active routing rules.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -65404,6 +66691,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -66155,7 +67454,7 @@ Example: Notification channel is referenced by active routing rules.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -66251,6 +67550,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -67158,7 +68469,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -67582,9 +68893,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -67680,6 +69015,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -68393,7 +69740,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -68817,9 +70164,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -68915,6 +70286,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -69696,7 +71079,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -70120,9 +71503,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -70218,6 +71625,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -71001,7 +72420,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -71425,9 +72844,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -71523,6 +72966,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -72234,7 +73689,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -72658,9 +74113,33 @@ Example: Gate exception already decided.
 }
 ```
 
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -72756,6 +74235,18 @@ Example: Invalid scope rule.
   "title": "Invalid scope rule",
   "status": 422,
   "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -73567,7 +75058,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -73987,6 +75478,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -74805,7 +76320,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -75225,6 +76740,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -75571,7 +77110,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -75991,6 +77530,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -76682,7 +78245,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -77102,6 +78665,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -77731,7 +79318,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -78151,6 +79738,30 @@ Example: Gate exception already decided.
   "title": "Gate exception already decided",
   "status": 409,
   "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -78808,6 +80419,2259 @@ Example: Validation failed.
   "title": "Validation failed",
   "status": 422,
   "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 500
+
+Problem details; code is one of INTERNAL.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Internal server error.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INTERNAL",
+  "title": "Internal server error",
+  "status": 500,
+  "code": "INTERNAL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+## retention
+
+Retention policies per data class, with platform floors and legal hold precedence.
+
+### GET /retention-policies
+
+**Read the effective retention policy of every data class**
+
+Requires settings:read. A class without a stored row shows the platform default.
+
+- Operation ID: `getRetentionPolicies`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+#### Response 200
+
+The effective policy set.
+
+| Header | Description                                                     |
+| ------ | --------------------------------------------------------------- |
+| `ETag` | Strong ETag of the policy set; send it back in If-Match on PUT. |
+
+Content type `application/json`: [RetentionPolicySet](#retentionpolicyset).
+
+Example: A tenant that has not changed its policies.
+
+```json
+{
+  "policies": [
+    {
+      "dataClass": "findings",
+      "retentionDays": 730,
+      "minRetentionDays": 90,
+      "enabled": true,
+      "legalHoldOverrides": false,
+      "updatedAt": "2026-10-28T09:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID, NOTIFICATION_CHANNEL_INVALID, NOTIFICATION_ROUTE_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid query.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_QUERY",
+  "title": "Invalid query",
+  "status": 400,
+  "code": "INVALID_QUERY",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid notification channel.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOTIFICATION_CHANNEL_INVALID",
+  "title": "Invalid notification channel",
+  "status": 400,
+  "code": "NOTIFICATION_CHANNEL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid notification routing rule.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOTIFICATION_ROUTE_INVALID",
+  "title": "Invalid notification routing rule",
+  "status": 400,
+  "code": "NOTIFICATION_ROUTE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of NOT_FOUND, POLICY_VERSION_NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_FOUND",
+  "title": "Resource not found",
+  "status": 404,
+  "code": "NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Policy version not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/POLICY_VERSION_NOT_FOUND",
+  "title": "Policy version not found",
+  "status": 404,
+  "code": "POLICY_VERSION_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona not defined.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+  "title": "Persona not defined",
+  "status": 404,
+  "code": "PERSONA_NOT_DEFINED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No released prompt version.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+  "title": "No released prompt version",
+  "status": 404,
+  "code": "PROMPT_NO_RELEASED_VERSION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+  "title": "Run not found",
+  "status": 404,
+  "code": "RUN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+  "title": "Secret not found",
+  "status": 404,
+  "code": "SECRET_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+  "title": "Identity provider resource not found",
+  "status": 404,
+  "code": "KEYCLOAK_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONFLICT",
+  "title": "Conflict",
+  "status": 409,
+  "code": "CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal run state transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+  "title": "Illegal run state transition",
+  "status": 409,
+  "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Standing authorisation expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+  "title": "Standing authorisation expired",
+  "status": 409,
+  "code": "ENVELOPE_SA_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run window closed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+  "title": "Run window closed",
+  "status": 409,
+  "code": "ENVELOPE_WINDOW_CLOSED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Rollback target is not an earlier version.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/POLICY_ROLLBACK_TARGET_NOT_EARLIER",
+  "title": "Rollback target is not an earlier version",
+  "status": 409,
+  "code": "POLICY_ROLLBACK_TARGET_NOT_EARLIER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No active policy version.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/POLICY_NO_ACTIVE_VERSION",
+  "title": "No active policy version",
+  "status": 409,
+  "code": "POLICY_NO_ACTIVE_VERSION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal standing authorisation transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+  "title": "Illegal standing authorisation transition",
+  "status": 409,
+  "code": "AUTHZ_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Standing authorisation is not a draft.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_NOT_DRAFT",
+  "title": "Standing authorisation is not a draft",
+  "status": 409,
+  "code": "AUTHZ_NOT_DRAFT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Key version disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEK_DISABLED",
+  "title": "Key version disabled",
+  "status": 409,
+  "code": "KEK_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Database serialization conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+  "title": "Database serialization conflict",
+  "status": 409,
+  "code": "DB_SERIALIZATION_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill already in progress.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+  "title": "Kill already in progress",
+  "status": 409,
+  "code": "KILL_ALREADY_IN_PROGRESS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No eligible approver.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_NO_ELIGIBLE_APPROVER",
+  "title": "No eligible approver",
+  "status": 409,
+  "code": "GATE2_NO_ELIGIBLE_APPROVER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run is not active.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+  "title": "Run is not active",
+  "status": 409,
+  "code": "RUN_NOT_ACTIVE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid status transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_TRANSITION",
+  "title": "Invalid status transition",
+  "status": 409,
+  "code": "INVALID_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret name already in use.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_NAME_CONFLICT",
+  "title": "Secret name already in use",
+  "status": 409,
+  "code": "SECRET_NAME_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret is still referenced.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_IN_USE",
+  "title": "Secret is still referenced",
+  "status": 409,
+  "code": "SECRET_IN_USE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+  "title": "Secret disabled",
+  "status": 409,
+  "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Stale asset write.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+  "title": "Stale asset write",
+  "status": 409,
+  "code": "ASSET_STALE_WRITE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Asset in use.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+  "title": "Asset in use",
+  "status": 409,
+  "code": "ASSET_IN_USE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Plan quota exceeded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/QUOTA_EXCEEDED",
+  "title": "Plan quota exceeded",
+  "status": 409,
+  "code": "QUOTA_EXCEEDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Asset verification transition refused.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_VERIFICATION_ILLEGAL_TRANSITION",
+  "title": "Asset verification transition refused",
+  "status": 409,
+  "code": "ASSET_VERIFICATION_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credential already exists for this role.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_CRED_DUPLICATE_ROLE",
+  "title": "Credential already exists for this role",
+  "status": 409,
+  "code": "ASSET_CRED_DUPLICATE_ROLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Notification channel name already in use.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CHANNEL_NAME_CONFLICT",
+  "title": "Notification channel name already in use",
+  "status": 409,
+  "code": "CHANNEL_NAME_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Notification channel secret is no longer available.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CHANNEL_SECRET_UNAVAILABLE",
+  "title": "Notification channel secret is no longer available",
+  "status": 409,
+  "code": "CHANNEL_SECRET_UNAVAILABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Notification channel is referenced by active routing rules.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CHANNEL_REFERENCED",
+  "title": "Notification channel is referenced by active routing rules",
+  "status": 409,
+  "code": "CHANNEL_REFERENCED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Triage decision not allowed for this finding status.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_INVALID_TRANSITION",
+  "title": "Triage decision not allowed for this finding status",
+  "status": 409,
+  "code": "TRIAGE_INVALID_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal gate exception transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_ILLEGAL_TRANSITION",
+  "title": "Illegal gate exception transition",
+  "status": 409,
+  "code": "GATE2_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Gate exception already decided.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_ALREADY_DECIDED",
+  "title": "Gate exception already decided",
+  "status": 409,
+  "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, SCOPE_INVALID_MODE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SBX_INPUT_INTEGRITY_FAILED, SBX_SOURCE_SYMLINK_ESCAPE, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, TRIAGE_DUPLICATE_TARGET_INVALID, TRIAGE_RISK_EXPIRY_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan failed validation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_INVALID",
+  "title": "Test plan failed validation",
+  "status": 422,
+  "code": "GATE1_PLAN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run envelope verification failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+  "title": "Run envelope verification failed",
+  "status": 422,
+  "code": "ENVELOPE_VERIFICATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Policy failed validation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/POLICY_VALIDATION_FAILED",
+  "title": "Policy failed validation",
+  "status": 422,
+  "code": "POLICY_VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid intrusiveness class.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
+  "title": "Invalid intrusiveness class",
+  "status": 422,
+  "code": "SCOPE_INVALID_CLASS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid request budget.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
+  "title": "Invalid request budget",
+  "status": 422,
+  "code": "SCOPE_INVALID_BUDGET",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid scope rule.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
+  "title": "Invalid scope rule",
+  "status": 422,
+  "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid assessment mode.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_MODE",
+  "title": "Invalid assessment mode",
+  "status": 422,
+  "code": "SCOPE_INVALID_MODE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Negative control missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NEGATIVE_CONTROL_MISSING",
+  "title": "Negative control missing",
+  "status": 422,
+  "code": "NEGATIVE_CONTROL_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Negative control does not suit the oracle.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NEGATIVE_CONTROL_ORACLE_MISMATCH",
+  "title": "Negative control does not suit the oracle",
+  "status": 422,
+  "code": "NEGATIVE_CONTROL_ORACLE_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid policy builder document.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/POLICY_BUILDER_INVALID",
+  "title": "Invalid policy builder document",
+  "status": 422,
+  "code": "POLICY_BUILDER_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid standing authorisation window.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+  "title": "Invalid standing authorisation window",
+  "status": 422,
+  "code": "AUTHZ_INVALID_WINDOW",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Asset is not verified for this tenant.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ASSET_UNVERIFIED",
+  "title": "Asset is not verified for this tenant",
+  "status": 422,
+  "code": "AUTHZ_ASSET_UNVERIFIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+  "title": "Unknown persona",
+  "status": 422,
+  "code": "PERSONA_UNKNOWN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Forbidden tool in persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL",
+  "title": "Forbidden tool in persona",
+  "status": 422,
+  "code": "PERSONA_FORBIDDEN_TOOL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid persona definition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_INVALID",
+  "title": "Invalid persona definition",
+  "status": 422,
+  "code": "PERSONA_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret envelope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
+  "title": "Invalid secret envelope",
+  "status": 422,
+  "code": "ENVELOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid prompt file.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_INVALID",
+  "title": "Invalid prompt file",
+  "status": 422,
+  "code": "PROMPT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Prompt placeholder unfilled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
+  "title": "Prompt placeholder unfilled",
+  "status": 422,
+  "code": "PROMPT_PLACEHOLDER_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown agent persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AGENT_UNKNOWN_PERSONA",
+  "title": "Unknown agent persona",
+  "status": 422,
+  "code": "AGENT_UNKNOWN_PERSONA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret reference.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
+  "title": "Invalid secret reference",
+  "status": 422,
+  "code": "INVALID_SECRET_REF",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Sandbox image missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_IMAGE_MISSING",
+  "title": "Sandbox image missing",
+  "status": 422,
+  "code": "SBX_IMAGE_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run input failed integrity check.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_INPUT_INTEGRITY_FAILED",
+  "title": "Run input failed integrity check",
+  "status": 422,
+  "code": "SBX_INPUT_INTEGRITY_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Source symlink points outside the checkout.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_SOURCE_SYMLINK_ESCAPE",
+  "title": "Source symlink points outside the checkout",
+  "status": 422,
+  "code": "SBX_SOURCE_SYMLINK_ESCAPE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid kill scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+  "title": "Invalid kill scope",
+  "status": 422,
+  "code": "KILL_SCOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill scope reference required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+  "title": "Kill scope reference required",
+  "status": 422,
+  "code": "KILL_REF_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key reused with a different request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+  "title": "Idempotency key reused with a different request",
+  "status": 422,
+  "code": "IDEMPOTENCY_KEY_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No on call configured.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_NO_ONCALL_CONFIGURED",
+  "title": "No on call configured",
+  "status": 422,
+  "code": "GATE2_NO_ONCALL_CONFIGURED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid audit event.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUDIT_EVENT_INVALID",
+  "title": "Invalid audit event",
+  "status": 422,
+  "code": "AUDIT_EVENT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid asset identifier.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+  "title": "Invalid asset identifier",
+  "status": 422,
+  "code": "ASSET_INVALID_IDENTIFIER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Verification method not applicable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_VERIFICATION_METHOD_NOT_APPLICABLE",
+  "title": "Verification method not applicable",
+  "status": 422,
+  "code": "ASSET_VERIFICATION_METHOD_NOT_APPLICABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: CVSS score does not match its vector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+  "title": "CVSS score does not match its vector",
+  "status": 422,
+  "code": "CVSS_VECTOR_SCORE_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Duplicate target not valid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_DUPLICATE_TARGET_INVALID",
+  "title": "Duplicate target not valid",
+  "status": 422,
+  "code": "TRIAGE_DUPLICATE_TARGET_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Accepted risk expiry not valid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_RISK_EXPIRY_INVALID",
+  "title": "Accepted risk expiry not valid",
+  "status": 422,
+  "code": "TRIAGE_RISK_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Embedding dimension mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/MEMORY_EMBED_DIM_MISMATCH",
+  "title": "Embedding dimension mismatch",
+  "status": 422,
+  "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 500
+
+Problem details; code is one of INTERNAL.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Internal server error.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INTERNAL",
+  "title": "Internal server error",
+  "status": 500,
+  "code": "INTERNAL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### PUT /retention-policies
+
+**Change the retention of one or more data classes**
+
+Requires settings:write and If-Match. Each class may appear once. Values below the platform floor are rejected; enabled:false sets the floor. Changed classes are audited.
+
+- Operation ID: `updateRetentionPolicies`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter  | In     | Required | Type   | Description                                    |
+| ---------- | ------ | -------- | ------ | ---------------------------------------------- |
+| `If-Match` | header | yes      | string | The ETag from the GET this change is based on. |
+
+**Request body** (required)
+
+Content type `application/json`: [RetentionPolicyUpdate](#retentionpolicyupdate).
+
+Example: Shorten evidence to 60 days.
+
+```json
+{
+  "policies": [
+    {
+      "dataClass": "evidence",
+      "retentionDays": 60,
+      "enabled": true
+    }
+  ]
+}
+```
+
+#### Response 200
+
+The policy set after the change.
+
+| Header | Description                                                     |
+| ------ | --------------------------------------------------------------- |
+| `ETag` | Strong ETag of the policy set; send it back in If-Match on PUT. |
+
+Content type `application/json`: [RetentionPolicySet](#retentionpolicyset).
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID, NOTIFICATION_CHANNEL_INVALID, NOTIFICATION_ROUTE_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid query.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_QUERY",
+  "title": "Invalid query",
+  "status": 400,
+  "code": "INVALID_QUERY",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid notification channel.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOTIFICATION_CHANNEL_INVALID",
+  "title": "Invalid notification channel",
+  "status": 400,
+  "code": "NOTIFICATION_CHANNEL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid notification routing rule.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOTIFICATION_ROUTE_INVALID",
+  "title": "Invalid notification routing rule",
+  "status": 400,
+  "code": "NOTIFICATION_ROUTE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Problem details; code is one of NOT_FOUND, POLICY_VERSION_NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_FOUND",
+  "title": "Resource not found",
+  "status": 404,
+  "code": "NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Policy version not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/POLICY_VERSION_NOT_FOUND",
+  "title": "Policy version not found",
+  "status": 404,
+  "code": "POLICY_VERSION_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona not defined.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_NOT_DEFINED",
+  "title": "Persona not defined",
+  "status": 404,
+  "code": "PERSONA_NOT_DEFINED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No released prompt version.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION",
+  "title": "No released prompt version",
+  "status": 404,
+  "code": "PROMPT_NO_RELEASED_VERSION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_FOUND",
+  "title": "Run not found",
+  "status": 404,
+  "code": "RUN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_NOT_FOUND",
+  "title": "Secret not found",
+  "status": 404,
+  "code": "SECRET_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider resource not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND",
+  "title": "Identity provider resource not found",
+  "status": 404,
+  "code": "KEYCLOAK_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+  "title": "Test plan not found",
+  "status": 404,
+  "code": "PLAN_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test case not found.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+  "title": "Test case not found",
+  "status": 404,
+  "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 409
+
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, POLICY_ROLLBACK_TARGET_NOT_EARLIER, POLICY_NO_ACTIVE_VERSION, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_NAME_CONFLICT, SECRET_IN_USE, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, QUOTA_EXCEEDED, ASSET_VERIFICATION_ILLEGAL_TRANSITION, ASSET_CRED_DUPLICATE_ROLE, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, TRIAGE_INVALID_TRANSITION, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED, SCHEDULE_CONFLICT, SCHEDULE_TENANT_SUSPENDED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONFLICT",
+  "title": "Conflict",
+  "status": 409,
+  "code": "CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal run state transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION",
+  "title": "Illegal run state transition",
+  "status": 409,
+  "code": "ILLEGAL_RUN_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval gate is no longer pending.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_NOT_PENDING",
+  "title": "Approval gate is no longer pending",
+  "status": 409,
+  "code": "GATE1_NOT_PENDING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan changed since it was loaded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_STALE",
+  "title": "Test plan changed since it was loaded",
+  "status": 409,
+  "code": "GATE1_PLAN_STALE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approval window expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_EXPIRED",
+  "title": "Approval window expired",
+  "status": 409,
+  "code": "GATE1_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Standing authorisation expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+  "title": "Standing authorisation expired",
+  "status": 409,
+  "code": "ENVELOPE_SA_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run window closed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+  "title": "Run window closed",
+  "status": 409,
+  "code": "ENVELOPE_WINDOW_CLOSED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Rollback target is not an earlier version.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/POLICY_ROLLBACK_TARGET_NOT_EARLIER",
+  "title": "Rollback target is not an earlier version",
+  "status": 409,
+  "code": "POLICY_ROLLBACK_TARGET_NOT_EARLIER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No active policy version.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/POLICY_NO_ACTIVE_VERSION",
+  "title": "No active policy version",
+  "status": 409,
+  "code": "POLICY_NO_ACTIVE_VERSION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal standing authorisation transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION",
+  "title": "Illegal standing authorisation transition",
+  "status": 409,
+  "code": "AUTHZ_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Standing authorisation is not a draft.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_NOT_DRAFT",
+  "title": "Standing authorisation is not a draft",
+  "status": 409,
+  "code": "AUTHZ_NOT_DRAFT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Key version disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEK_DISABLED",
+  "title": "Key version disabled",
+  "status": 409,
+  "code": "KEK_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Database serialization conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT",
+  "title": "Database serialization conflict",
+  "status": 409,
+  "code": "DB_SERIALIZATION_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill already in progress.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS",
+  "title": "Kill already in progress",
+  "status": 409,
+  "code": "KILL_ALREADY_IN_PROGRESS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No eligible approver.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_NO_ELIGIBLE_APPROVER",
+  "title": "No eligible approver",
+  "status": 409,
+  "code": "GATE2_NO_ELIGIBLE_APPROVER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run is not active.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RUN_NOT_ACTIVE",
+  "title": "Run is not active",
+  "status": 409,
+  "code": "RUN_NOT_ACTIVE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid status transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_TRANSITION",
+  "title": "Invalid status transition",
+  "status": 409,
+  "code": "INVALID_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret name already in use.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_NAME_CONFLICT",
+  "title": "Secret name already in use",
+  "status": 409,
+  "code": "SECRET_NAME_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret is still referenced.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_IN_USE",
+  "title": "Secret is still referenced",
+  "status": 409,
+  "code": "SECRET_IN_USE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret disabled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_DISABLED",
+  "title": "Secret disabled",
+  "status": 409,
+  "code": "SECRET_DISABLED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Stale asset write.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_STALE_WRITE",
+  "title": "Stale asset write",
+  "status": 409,
+  "code": "ASSET_STALE_WRITE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Asset in use.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_IN_USE",
+  "title": "Asset in use",
+  "status": 409,
+  "code": "ASSET_IN_USE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Plan quota exceeded.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/QUOTA_EXCEEDED",
+  "title": "Plan quota exceeded",
+  "status": 409,
+  "code": "QUOTA_EXCEEDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Asset verification transition refused.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_VERIFICATION_ILLEGAL_TRANSITION",
+  "title": "Asset verification transition refused",
+  "status": 409,
+  "code": "ASSET_VERIFICATION_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credential already exists for this role.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_CRED_DUPLICATE_ROLE",
+  "title": "Credential already exists for this role",
+  "status": 409,
+  "code": "ASSET_CRED_DUPLICATE_ROLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Notification channel name already in use.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CHANNEL_NAME_CONFLICT",
+  "title": "Notification channel name already in use",
+  "status": 409,
+  "code": "CHANNEL_NAME_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Notification channel secret is no longer available.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CHANNEL_SECRET_UNAVAILABLE",
+  "title": "Notification channel secret is no longer available",
+  "status": 409,
+  "code": "CHANNEL_SECRET_UNAVAILABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Notification channel is referenced by active routing rules.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CHANNEL_REFERENCED",
+  "title": "Notification channel is referenced by active routing rules",
+  "status": 409,
+  "code": "CHANNEL_REFERENCED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Identity provider conflict.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KEYCLOAK_CONFLICT",
+  "title": "Identity provider conflict",
+  "status": 409,
+  "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Triage decision not allowed for this finding status.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_INVALID_TRANSITION",
+  "title": "Triage decision not allowed for this finding status",
+  "status": 409,
+  "code": "TRIAGE_INVALID_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Approved test plan version is immutable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+  "title": "Approved test plan version is immutable",
+  "status": 409,
+  "code": "PLAN_VERSION_IMMUTABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal gate exception transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_ILLEGAL_TRANSITION",
+  "title": "Illegal gate exception transition",
+  "status": 409,
+  "code": "GATE2_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Gate exception already decided.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_ALREADY_DECIDED",
+  "title": "Gate exception already decided",
+  "status": 409,
+  "code": "GATE2_ALREADY_DECIDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule was changed concurrently.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CONFLICT",
+  "title": "Schedule was changed concurrently",
+  "status": 409,
+  "code": "SCHEDULE_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant is suspended and schedules cannot resume.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TENANT_SUSPENDED",
+  "title": "Tenant is suspended and schedules cannot resume",
+  "status": 409,
+  "code": "SCHEDULE_TENANT_SUSPENDED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 412
+
+Problem details; code is one of PRECONDITION_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Precondition failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PRECONDITION_FAILED",
+  "title": "Precondition failed",
+  "status": 412,
+  "code": "PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 428
+
+Problem details; code is one of PRECONDITION_REQUIRED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Precondition required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+  "title": "Precondition required",
+  "status": 428,
+  "code": "PRECONDITION_REQUIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -79846,23 +83710,23 @@ Full schema:
 
 ### AuditEventView
 
-| Property      | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Required | Description                                                              |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ |
-| `id`          | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | yes      |                                                                          |
-| `seq`         | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | yes      |                                                                          |
-| `occurredAt`  | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | yes      |                                                                          |
-| `action`      | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"scope.preflight.dry_run"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"`, `"asset.updated"`, `"asset.deleted"`, `"asset.owner_assigned"`, `"test_plan.validated"`, `"oncall.roster.updated"`, `"oncall.sod_skipped"`, `"gate2.exception.created"`, `"gate2.decision.recorded"`, `"gate1.submitted"`, `"gate1.approved"`, `"gate1.changes_requested"`, `"gate1.rejected"`, `"asset.verification_started"`, `"asset.verification_passed"`, `"asset.verification_failed"`, `"asset.verification_cancelled"`, `"asset.credential_added"`, `"asset.credential_rotated"`, `"graph.surface.upserted"`, `"notification.channel_changed"`, `"notification.requested"`, `"notification.unrouted"`, `"finding.rejected"`, `"finding.marked_duplicate"`, `"run.envelope_signed"`, `"scope.manifest.upload_requested"`, `"scope.manifest.upload_completed"`, `"scope.manifest.upload_deleted"`, `"authz.sa.expired"`, `"service_account.created"`, `"service_account.updated"`, `"service_account.disabled"`, `"secret.created"`, `"secret.updated"`, `"secret.deleted"`, `"policy.version.created"`, `"policy.activated"`, `"policy.rolled_back"`, `"tenant.quota_exceeded"`, `"tenant.plan_changed"`, `"vkey.minted"`, `"vkey.revoked"` | yes      |                                                                          |
-| `severity`    | enum: `"info"`, `"notice"`, `"warning"`, `"critical"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | yes      |                                                                          |
-| `actor`       | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | yes      | Who acted. `email` is only returned to auditors.                         |
-| `target`      | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | yes      |                                                                          |
-| `outcome`     | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | yes      |                                                                          |
-| `reason`      | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | yes      |                                                                          |
-| `metadata`    | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | yes      | Empty for callers that are not auditors.                                 |
-| `metadataRef` | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | no       | Only returned to auditors.                                               |
-| `traceId`     | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | yes      |                                                                          |
-| `runId`       | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | yes      |                                                                          |
-| `hash`        | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | no       | Hex SHA-256 chain hash. Only with includeChain=true.                     |
-| `prevHash`    | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | no       | Hex previous hash; null on the genesis row. Only with includeChain=true. |
+| Property      | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Required | Description                                                              |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ |
+| `id`          | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | yes      |                                                                          |
+| `seq`         | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | yes      |                                                                          |
+| `occurredAt`  | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | yes      |                                                                          |
+| `action`      | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"scope.preflight.dry_run"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"`, `"asset.updated"`, `"asset.deleted"`, `"asset.owner_assigned"`, `"test_plan.validated"`, `"oncall.roster.updated"`, `"oncall.sod_skipped"`, `"gate2.exception.created"`, `"gate2.decision.recorded"`, `"gate1.submitted"`, `"gate1.approved"`, `"gate1.changes_requested"`, `"gate1.rejected"`, `"asset.verification_started"`, `"asset.verification_passed"`, `"asset.verification_failed"`, `"asset.verification_cancelled"`, `"asset.credential_added"`, `"asset.credential_rotated"`, `"graph.surface.upserted"`, `"notification.channel_changed"`, `"notification.requested"`, `"notification.unrouted"`, `"finding.rejected"`, `"finding.marked_duplicate"`, `"run.envelope_signed"`, `"scope.manifest.upload_requested"`, `"scope.manifest.upload_completed"`, `"scope.manifest.upload_deleted"`, `"authz.sa.expired"`, `"service_account.created"`, `"service_account.updated"`, `"service_account.disabled"`, `"secret.created"`, `"secret.updated"`, `"secret.deleted"`, `"policy.version.created"`, `"policy.activated"`, `"policy.rolled_back"`, `"tenant.quota_exceeded"`, `"tenant.plan_changed"`, `"vkey.minted"`, `"vkey.revoked"`, `"soc.portal.opened"`, `"policy.snapshot.built"`, `"schedule.created"`, `"schedule.updated"`, `"schedule.paused"`, `"schedule.resumed"`, `"schedule.deleted"` | yes      |                                                                          |
+| `severity`    | enum: `"info"`, `"notice"`, `"warning"`, `"critical"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | yes      |                                                                          |
+| `actor`       | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | yes      | Who acted. `email` is only returned to auditors.                         |
+| `target`      | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | yes      |                                                                          |
+| `outcome`     | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | yes      |                                                                          |
+| `reason`      | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | yes      |                                                                          |
+| `metadata`    | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | yes      | Empty for callers that are not auditors.                                 |
+| `metadataRef` | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | no       | Only returned to auditors.                                               |
+| `traceId`     | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | yes      |                                                                          |
+| `runId`       | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | yes      |                                                                          |
+| `hash`        | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | no       | Hex SHA-256 chain hash. Only with includeChain=true.                     |
+| `prevHash`    | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | no       | Hex previous hash; null on the genesis row. Only with includeChain=true. |
 
 Full schema:
 
@@ -80021,7 +83885,14 @@ Full schema:
         "tenant.quota_exceeded",
         "tenant.plan_changed",
         "vkey.minted",
-        "vkey.revoked"
+        "vkey.revoked",
+        "soc.portal.opened",
+        "policy.snapshot.built",
+        "schedule.created",
+        "schedule.updated",
+        "schedule.paused",
+        "schedule.resumed",
+        "schedule.deleted"
       ]
     },
     "severity": {
@@ -84931,6 +88802,118 @@ Full schema:
       "maxLength": 2000
     }
   },
+  "additionalProperties": false
+}
+```
+
+### RetentionPolicySet
+
+| Property   | Type            | Required | Description |
+| ---------- | --------------- | -------- | ----------- |
+| `policies` | array of object | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "policies": {
+      "minItems": 6,
+      "maxItems": 6,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dataClass": {
+            "type": "string",
+            "enum": ["findings", "evidence", "logs", "transcripts", "reports", "oob_interactions"]
+          },
+          "retentionDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "minRetentionDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "legalHoldOverrides": {
+            "type": "boolean",
+            "const": false
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "dataClass",
+          "retentionDays",
+          "minRetentionDays",
+          "enabled",
+          "legalHoldOverrides",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["policies"],
+  "additionalProperties": false
+}
+```
+
+### RetentionPolicyUpdate
+
+| Property   | Type            | Required | Description |
+| ---------- | --------------- | -------- | ----------- |
+| `policies` | array of object | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "policies": {
+      "minItems": 1,
+      "maxItems": 6,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dataClass": {
+            "type": "string",
+            "enum": ["findings", "evidence", "logs", "transcripts", "reports", "oob_interactions"]
+          },
+          "retentionDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": ["dataClass", "retentionDays", "enabled"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["policies"],
   "additionalProperties": false
 }
 ```
