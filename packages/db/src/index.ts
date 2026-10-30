@@ -366,3 +366,14 @@ export {
   type ReversalJournalListOptions,
   type UndoStatusMeta,
 } from './reversal-journal.repository.js';
+export {
+  type ActivationResult,
+  type NewPolicyVersion,
+  PolicyVersionNotFoundError,
+  type PolicyVersion,
+  type PolicyVersionSummary,
+  type TenantPolicyAuditEvent,
+  type TenantPolicyAuditHook,
+  TenantPolicyRepository,
+  type TenantPolicyRepositoryOptions,
+} from './tenant-policy.repository.js';

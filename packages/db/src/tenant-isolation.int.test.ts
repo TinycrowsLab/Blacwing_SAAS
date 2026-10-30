@@ -168,6 +168,13 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       tenantId,
     ]);
   },
+  policies: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO policies (id, tenant_id, version, cedar_source, sha256, author)
+       VALUES ($1, $2, 1, '', $3, $4)`,
+      [newId(), tenantId, createHash('sha256').update('').digest('hex'), newId()],
+    );
+  },
   persona_overrides: async (tx, tenantId) => {
     await tx.query(
       `INSERT INTO persona_overrides (tenant_id, persona, max_turns) VALUES ($1, 'osint', 5)`,

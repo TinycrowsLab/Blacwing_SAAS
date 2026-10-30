@@ -73,6 +73,18 @@ const DEFINITIONS = {
     title: 'Run envelope verification failed',
     retryable: false,
   },
+  // Tenant policy versions (POLICY-001). A version id that is not in this tenant is 404 (never a cross-tenant hint);
+  // a source over the size cap is 413; a version that fails validation is 422 and never becomes active; a rollback
+  // must name an earlier version than the active one; a rollback needs an active version to roll back from.
+  POLICY_VERSION_NOT_FOUND: { status: 404, title: 'Policy version not found', retryable: false },
+  POLICY_SOURCE_TOO_LARGE: { status: 413, title: 'Policy source too large', retryable: false },
+  POLICY_VALIDATION_FAILED: { status: 422, title: 'Policy failed validation', retryable: false },
+  POLICY_ROLLBACK_TARGET_NOT_EARLIER: {
+    status: 409,
+    title: 'Rollback target is not an earlier version',
+    retryable: false,
+  },
+  POLICY_NO_ACTIVE_VERSION: { status: 409, title: 'No active policy version', retryable: false },
   // A request that reaches a tenant-scoped path without a resolvable tenant context is refused outright
   // (§7/§8.6 fail closed, TENANT-003): 403, never retried, never served without isolation. A caller with no
   // principal at all is `UNAUTHENTICATED` (401) before this can happen.

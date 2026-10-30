@@ -23,6 +23,7 @@
     { "path": "../../packages/logger" },
     { "path": "../../packages/memory" },
     { "path": "../../packages/notify" },
+    { "path": "../../packages/policy" },
     { "path": "../../packages/telemetry" },
     { "path": "../../packages/secrets" },
     { "path": "../../packages/testing" },

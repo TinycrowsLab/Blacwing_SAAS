@@ -95,3 +95,11 @@ export {
   type AuthzSources,
 } from './authz/engine.js';
 export { checkResource, type AuthzDecisionLog } from './authz/check.js';
+export {
+  assembleEffectivePolicySet,
+  canonicalPolicySource,
+  policySourceSha256,
+  type EffectivePolicySet,
+  type PolicySetLayer,
+  type TenantPolicyVersionRef,
+} from './tenant-policy.js';

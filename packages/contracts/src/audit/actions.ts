@@ -880,6 +880,30 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'config_change',
     description: 'A secret was disabled (soft delete); the value is never recorded.',
   },
+  // Tenant Cedar policy versions (POLICY-001): appended. Metadata carries ids, versions and the sha256 only, never the source.
+  {
+    action: 'policy.version.created',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'A tenant policy version was created (immutable; the active pointer is unchanged).',
+  },
+  {
+    action: 'policy.activated',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A validated tenant policy version became the active one.',
+  },
+  {
+    action: 'policy.rolled_back',
+    defaultSeverity: 'warning',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'The tenant active policy pointer was moved back to an earlier version (history is kept).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

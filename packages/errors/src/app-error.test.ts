@@ -178,6 +178,12 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'CONNECTOR_VALIDATION',
   // Thrown as a plain AppError by @blackwing/telemetry initTelemetry (OBS-001, #298).
   'TELEMETRY_INIT_FAILED',
+  // POLICY_VERSION_NOT_FOUND: PolicyVersionNotFoundError, @blackwing/db (POLICY-001). The others are plain AppErrors in apps/api/src/policies.
+  'POLICY_VERSION_NOT_FOUND',
+  'POLICY_SOURCE_TOO_LARGE',
+  'POLICY_VALIDATION_FAILED',
+  'POLICY_ROLLBACK_TARGET_NOT_EARLIER',
+  'POLICY_NO_ACTIVE_VERSION',
   // EvidenceIntegrityError, @blackwing/evidence (EVIDENCE binding, #724): carries its own code.
   'EVIDENCE_INTEGRITY_FAILED',
   // Gate1Error, apps/api Gate 1 approval API (#877): plain AppError subclass with these codes.

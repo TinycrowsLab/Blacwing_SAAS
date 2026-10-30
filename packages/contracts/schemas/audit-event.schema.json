@@ -129,7 +129,10 @@
         "service_account.disabled",
         "secret.created",
         "secret.updated",
-        "secret.deleted"
+        "secret.deleted",
+        "policy.version.created",
+        "policy.activated",
+        "policy.rolled_back"
       ]
     },
     "severity": {

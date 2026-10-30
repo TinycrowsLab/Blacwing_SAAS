@@ -39,6 +39,7 @@
     "@blackwing/logger": "workspace:*",
     "@blackwing/memory": "workspace:*",
     "@blackwing/notify": "workspace:*",
+    "@blackwing/policy": "workspace:*",
     "@blackwing/secrets": "workspace:*",
     "@blackwing/telemetry": "workspace:*",
     "@blackwing/time": "workspace:*",

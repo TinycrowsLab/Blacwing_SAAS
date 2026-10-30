@@ -385,6 +385,9 @@ importers:
       '@blackwing/notify':
         specifier: workspace:*
         version: link:../../packages/notify
+      '@blackwing/policy':
+        specifier: workspace:*
+        version: link:../../packages/policy
       '@blackwing/secrets':
         specifier: workspace:*
         version: link:../../packages/secrets

@@ -28,6 +28,10 @@ export const LIMITS = Object.freeze({
   /** Tenant slug bounds. */
   slugMin: 3,
   slugMax: 63,
+  /** Tenant Cedar policy source, in UTF-8 bytes (POLICY-001). Larger sources are rejected before storage. */
+  policySourceMaxBytes: 262_144,
+  /** Free-text note on a tenant policy version. */
+  policyNoteMax: 1000,
   /** IANA time-zone names. */
   timezoneMax: 64,
   /** Upper bound for a per-run cost cap, in USD. */

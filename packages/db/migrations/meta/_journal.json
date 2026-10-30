@@ -302,6 +302,13 @@
       "when": 1793400664410,
       "tag": "20261030225104_coverage_entries_and_manifest_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1793401696581,
+      "tag": "20261030230816_tenant_policies",
+      "breakpoints": true
     }
   ]
 }

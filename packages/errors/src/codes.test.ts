@@ -207,6 +207,11 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   OOB_DEREGISTER_FAILED: 502,
   OOB_DECRYPT_FAILED: 502,
   OOB_PROTOCOL_INCOMPATIBLE: 502,
+  POLICY_VERSION_NOT_FOUND: 404,
+  POLICY_SOURCE_TOO_LARGE: 413,
+  POLICY_VALIDATION_FAILED: 422,
+  POLICY_ROLLBACK_TARGET_NOT_EARLIER: 409,
+  POLICY_NO_ACTIVE_VERSION: 409,
   INTERNAL: 500,
 };
 
@@ -220,7 +225,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(192);
+    expect(ERROR_CODE_LIST).toHaveLength(197);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {

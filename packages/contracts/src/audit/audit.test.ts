@@ -140,6 +140,9 @@ const RELEASED_ACTIONS = [
   'secret.created',
   'secret.updated',
   'secret.deleted',
+  'policy.version.created',
+  'policy.activated',
+  'policy.rolled_back',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */
