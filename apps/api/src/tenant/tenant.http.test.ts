@@ -13,6 +13,7 @@ import { createLogger } from '@blackwing/logger';
 import { createApiApp } from '../bootstrap/create-app.js';
 import { loadApiConfig } from '../config.js';
 import { PublicRoute } from './public-route.js';
+import { AuthenticatedOnly } from '../rbac/require-permission.decorator.js';
 
 import type { HttpMetrics } from '../bootstrap/metrics.js';
 import type { Problem } from '@blackwing/contracts';
@@ -38,6 +39,7 @@ let touched = 0;
 
 @Controller('probe')
 class ProbeController {
+  @AuthenticatedOnly()
   @Get('tenant')
   tenant(): { tenantId: string; actorType: string } {
     touched += 1;
@@ -45,6 +47,7 @@ class ProbeController {
     return { tenantId, actorType: actor.type };
   }
 
+  @AuthenticatedOnly()
   @Get('slow')
   async slow(): Promise<{ before: string | undefined; after: string | undefined }> {
     const before = currentTenantId();
@@ -53,9 +56,16 @@ class ProbeController {
     return { before, after: currentTenantId() };
   }
 
+  @AuthenticatedOnly()
   @Post('echo')
   echo(): { tenantId: string } {
     return { tenantId: getTenantContextOrThrow().tenantId };
+  }
+
+  @Get('undeclared')
+  undeclared(): { ok: true } {
+    touched += 1;
+    return { ok: true };
   }
 
   @PublicRoute()
@@ -105,6 +115,18 @@ describe('tenant context guard', () => {
   it('fills the ambient context from a bearer principal', async () => {
     const res = await get('/v1/probe/tenant', `bearer:${TENANT_B}`);
     expect(res.json()).toEqual({ tenantId: TENANT_B, actorType: 'service' });
+  });
+
+  it('refuses a token on a route that declares no RBAC policy, and never runs the handler', async () => {
+    const res = await get('/v1/probe/undeclared', `bearer:${TENANT_A}`);
+    expect(res.statusCode).toBe(403);
+    expect(res.json<Problem>().code).toBe('permission_denied');
+    expect(touched).toBe(0);
+  });
+
+  it('lets a session through a route that declares no RBAC policy', async () => {
+    const res = await get('/v1/probe/undeclared', `session:${TENANT_A}`);
+    expect(res.statusCode).toBe(200);
   });
 
   it('answers 401 with no principal and never runs the handler', async () => {

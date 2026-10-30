@@ -214,6 +214,23 @@ is never read. The Run Broker runs each request in its run token's tenant and an
 same context from `createTenantActivityInterceptors` (`apps/worker/src/tenant`), which re-reads the run's tenant on
 every attempt. Metrics: `bw_tenant_context_missing_total`, `bw_cross_tenant_denied_total`.
 
+## Permission guard (RBAC-003)
+
+`PermissionGuard` runs right after the tenant guard, on the principal it validated, for REST and GraphQL alike
+(`requestOf`). Declare the policy on each handler or resolver, not in the guard:
+
+- `@RequirePermission('run:create')` (every listed permission) or `@RequireAnyPermission(...)` (one of them). The
+  names are the closed `PERMISSIONS` union, so a typo does not compile, and the decorator also rejects one at boot.
+- `@AuthenticatedOnly()` for an endpoint every signed-in caller may reach (for example "who am I").
+- `@PublicRoute()` for probes and the banner (the same opt-out the tenant guard honours).
+
+Deny by default: a route with none of these is refused `403 permission_denied` for a token (`service` or `run`
+actor), so a new token-reachable endpoint fails closed until it declares its policy. A session (`user`) on an
+undeclared route is left to the per-service policies (assets, findings, ...). A caller's effective permissions are
+its roles' union; a token is further intersected with its scopes, so a PAT or CI token never exceeds its owner.
+No principal is `401` before any permission is evaluated. A refusal logs `rbac.denied` at warn with the permission
+and the route template, and increments `bw_rbac_denials_total{permission}`.
+
 ## Rate limiting (CONTEXT_PACK §9, §8 #6)
 
 `src/rate-limit/` is the API's only rate limiter. `RateLimitGuard` is a global guard mounted after the tenant guard,

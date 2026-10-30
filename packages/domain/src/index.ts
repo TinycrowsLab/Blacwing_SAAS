@@ -58,11 +58,15 @@ export {
 } from './assets/verification/probe.js';
 
 export {
+  type AuthorizationPrincipal,
+  effectivePermissions,
   hasPermission,
   knownRoles,
+  type PermissionRequirement,
   permissionsForRoles,
   type RbacOptions,
   type RbacWarnSink,
+  satisfies,
   UNKNOWN_ROLE_WARNING,
 } from './rbac/permissions.js';
 

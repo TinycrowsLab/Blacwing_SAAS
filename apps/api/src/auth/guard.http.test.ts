@@ -26,6 +26,7 @@ import { createSessionCookieValidator, SESSION_RECORD_KEY_PREFIX } from './sessi
 import { createApiApp } from '../bootstrap/create-app.js';
 import { createHttpMetrics } from '../bootstrap/metrics.js';
 import { loadApiConfig } from '../config.js';
+import { AuthenticatedOnly } from '../rbac/require-permission.decorator.js';
 import { PublicRoute } from '../tenant/public-route.js';
 
 import type { AuthOptions } from './module.js';
@@ -37,6 +38,7 @@ const SESSION_KEY = deriveKey('h'.repeat(32));
 
 @Controller('probe')
 class AuthProbeController {
+  @AuthenticatedOnly()
   @Get('tenant')
   tenant(): { tenantId: string; actorType: string } {
     const { tenantId, actor } = getTenantContextOrThrow();

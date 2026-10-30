@@ -1,4 +1,10 @@
-export { TenantContextGuard, tenantContextOf, type TenantPrincipalSource } from './guard.js';
+export {
+  authorizedPrincipalOf,
+  type AuthorizedPrincipal,
+  TenantContextGuard,
+  tenantContextOf,
+  type TenantPrincipalSource,
+} from './guard.js';
 export { TenantContextInterceptor } from './interceptor.js';
 export { createTenantContextMetrics } from './metrics.js';
 export { TenantContextModule, type TenantContextModuleOptions } from './module.js';

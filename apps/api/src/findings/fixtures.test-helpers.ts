@@ -59,6 +59,12 @@ export function findingRow(
       .update(`finding-${String(n)}`)
       .digest('hex'),
     title: `Finding ${String(n)}`,
+    description: null,
+    impact: null,
+    evidenceNarrative: null,
+    severityRationale: null,
+    remediationSummary: null,
+    asvsRefs: null,
     class: 'broken_access_control',
     cweId: 'CWE-285',
     owaspCategory: 'A01',

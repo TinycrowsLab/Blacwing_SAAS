@@ -1,5 +1,6 @@
 import {
   CATALOGUE_VERSION,
+  isPermission,
   isRole,
   type Permission,
   ROLE_PERMISSIONS,
@@ -68,4 +69,52 @@ export function hasPermission(
 /** The known tenant roles in `roles`, deduplicated, in input order. Unknown values are dropped. */
 export function knownRoles(roles: readonly string[]): readonly Role[] {
   return [...new Set(roles.filter(isRole))];
+}
+
+/** Who is calling, as the RBAC guard sees it. `roles` and `scopes` come from validated IAM claims only. */
+export interface AuthorizationPrincipal {
+  /** `user` for a console session; `service` for a PAT or CI token; `run` for a sandboxed run. */
+  readonly actorType: 'user' | 'service' | 'run';
+  readonly roles: readonly string[];
+  /**
+   * Token scopes (PAT / CI). A token can only ever hold a subset of its owner's role permissions. Read for
+   * non-user actors only: a session's scopes are OAuth scopes, not permissions, and never narrow it.
+   */
+  readonly scopes?: readonly string[] | undefined;
+}
+
+/**
+ * The permissions a principal may exercise (RBAC-003). A session (`user`) holds the union of its roles'
+ * permissions. Any other actor is a token: it holds only the permissions its scopes name, and only those
+ * its roles grant, so a token never exceeds its owner. A token without scopes holds nothing (fail closed).
+ * Unknown scope strings grant nothing. Pure and deny by default.
+ */
+export function effectivePermissions(
+  principal: AuthorizationPrincipal,
+  options: RbacOptions = {},
+): ReadonlySet<Permission> {
+  const fromRoles = permissionsForRoles(principal.roles, options);
+  if (principal.actorType === 'user') return fromRoles;
+  const scoped = new Set<Permission>();
+  for (const scope of principal.scopes ?? []) {
+    if (isPermission(scope) && fromRoles.has(scope)) scoped.add(scope);
+  }
+  return scoped;
+}
+
+/** What an endpoint demands: every listed permission (`all`) or at least one of them (`any`). */
+export interface PermissionRequirement {
+  readonly mode: 'all' | 'any';
+  readonly permissions: readonly Permission[];
+}
+
+/** True when `granted` satisfies `requirement`. An empty requirement is never satisfied (deny). */
+export function satisfies(
+  granted: ReadonlySet<Permission>,
+  requirement: PermissionRequirement,
+): boolean {
+  if (requirement.permissions.length === 0) return false;
+  return requirement.mode === 'all'
+    ? requirement.permissions.every((permission) => granted.has(permission))
+    : requirement.permissions.some((permission) => granted.has(permission));
 }

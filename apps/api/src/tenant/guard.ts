@@ -23,13 +23,28 @@ import type { FastifyRequest } from 'fastify';
  */
 export type TenantPrincipalSource = (
   request: FastifyRequest,
-) => TenantPrincipal | null | Promise<TenantPrincipal | null>;
+) => AuthorizedPrincipal | null | Promise<AuthorizedPrincipal | null>;
+
+/**
+ * The validated principal plus the RBAC claims IAM validated with it (RBAC-003). `roles` and `scopes`
+ * come from the same validated source as the tenant fields and are never read from the request.
+ */
+export interface AuthorizedPrincipal extends TenantPrincipal {
+  readonly roles?: readonly string[] | undefined;
+  readonly scopes?: readonly string[] | undefined;
+}
 
 const contexts = new WeakMap<object, TenantContext>();
+const principals = new WeakMap<object, AuthorizedPrincipal>();
 
 /** The context the guard resolved for `request`, if it has run. */
 export function tenantContextOf(request: object): TenantContext | undefined {
   return contexts.get(request);
+}
+
+/** The validated principal (with its RBAC claims) the guard accepted for `request`, if it has run. */
+export function authorizedPrincipalOf(request: object): AuthorizedPrincipal | undefined {
+  return principals.get(request);
 }
 
 /**
@@ -62,6 +77,7 @@ export class TenantContextGuard implements CanActivate {
     if (principal === null) throw new AuthError('no authenticated principal');
     const tenant = resolveTenantContext(principal, this.metrics);
     contexts.set(request, tenant);
+    principals.set(request, principal);
     bindTenant(tenant.tenantId, { actorType: tenant.actor.type });
     return true;
   }

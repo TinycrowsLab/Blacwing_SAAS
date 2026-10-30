@@ -10,10 +10,12 @@ import {
 
 import * as domain from '../index.js';
 import {
+  effectivePermissions,
   hasPermission,
   knownRoles,
   permissionsForRoles,
   type RbacWarnSink,
+  satisfies,
   UNKNOWN_ROLE_WARNING,
 } from './permissions.js';
 
@@ -121,5 +123,89 @@ describe('permissionsForRoles / hasPermission (RBAC-001)', () => {
   it('is exported from the package root', () => {
     expect(domain.permissionsForRoles).toBe(permissionsForRoles);
     expect(domain.hasPermission).toBe(hasPermission);
+    expect(domain.effectivePermissions).toBe(effectivePermissions);
+    expect(domain.satisfies).toBe(satisfies);
+  });
+});
+
+describe('effectivePermissions (RBAC-003)', () => {
+  it('a session holds the union of its roles, and its OAuth scopes never narrow it', () => {
+    const session = effectivePermissions({
+      actorType: 'user',
+      roles: ['developer'],
+      scopes: ['openid', 'profile'],
+    });
+    expect(session).toEqual(new Set(ROLE_PERMISSIONS.developer));
+    expect(effectivePermissions({ actorType: 'user', roles: ['developer'] })).toEqual(session);
+  });
+
+  it('a token is limited to the intersection of its scopes and its owner roles', () => {
+    const token = effectivePermissions({
+      actorType: 'service',
+      roles: ['developer'],
+      scopes: ['run:create', 'finding:release', 'asset:read'],
+    });
+    const ownerHas: readonly string[] = ROLE_PERMISSIONS.developer;
+    const expected = ['run:create', 'finding:release', 'asset:read'].filter((p) =>
+      ownerHas.includes(p),
+    );
+    expect([...token].sort()).toEqual(expected.sort());
+    expect(token.has('finding:release')).toBe(false);
+  });
+
+  it('a token scope the owner roles lack is never granted (no privilege amplification)', () => {
+    const token = effectivePermissions({
+      actorType: 'service',
+      roles: ['auditor'],
+      scopes: ['sa:approve', 'audit:read'],
+    });
+    expect([...token]).toEqual(['audit:read']);
+  });
+
+  it('a token without scopes holds nothing, and so does a run or service with no roles', () => {
+    expect(effectivePermissions({ actorType: 'service', roles: ['admin'] }).size).toBe(0);
+    expect(
+      effectivePermissions({ actorType: 'service', roles: ['developer'], scopes: [] }).size,
+    ).toBe(0);
+    expect(
+      effectivePermissions({ actorType: 'run', roles: ['developer'], scopes: ['run:create'] }).has(
+        'run:create',
+      ),
+    ).toBe(true);
+    expect(effectivePermissions({ actorType: 'user', roles: [] }).size).toBe(0);
+  });
+
+  it('unknown scope strings and unknown roles grant nothing', () => {
+    expect(
+      effectivePermissions({
+        actorType: 'service',
+        roles: ['developer'],
+        scopes: ['*', 'run:*', 'nope:nope'],
+      }).size,
+    ).toBe(0);
+    expect(effectivePermissions({ actorType: 'user', roles: ['superuser'] }).size).toBe(0);
+  });
+});
+
+describe('satisfies (RBAC-003)', () => {
+  const granted = new Set(['run:create', 'asset:read'] as const);
+
+  it('"all" needs every listed permission and "any" needs one', () => {
+    expect(satisfies(granted, { mode: 'all', permissions: ['run:create', 'asset:read'] })).toBe(
+      true,
+    );
+    expect(satisfies(granted, { mode: 'all', permissions: ['run:create', 'sa:approve'] })).toBe(
+      false,
+    );
+    expect(satisfies(granted, { mode: 'any', permissions: ['sa:approve', 'asset:read'] })).toBe(
+      true,
+    );
+    expect(satisfies(granted, { mode: 'any', permissions: ['sa:approve'] })).toBe(false);
+  });
+
+  it('an empty requirement is never satisfied (deny by default)', () => {
+    expect(satisfies(granted, { mode: 'all', permissions: [] })).toBe(false);
+    expect(satisfies(granted, { mode: 'any', permissions: [] })).toBe(false);
+    expect(satisfies(new Set(), { mode: 'all', permissions: ['run:create'] })).toBe(false);
   });
 });

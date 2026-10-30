@@ -23,3 +23,6 @@ export const API_TENANT_PRINCIPAL_SOURCE = Symbol.for('blackwing.api.tenant-prin
 
 /** DI token of the `TenantContextMetrics` (`bw_tenant_context_missing_total`, `bw_cross_tenant_denied_total`). */
 export const API_TENANT_METRICS = Symbol.for('blackwing.api.tenant-metrics');
+
+/** DI token of the `RbacMetrics` (`bw_rbac_denials_total`) the permission guard increments (RBAC-003). */
+export const API_RBAC_METRICS = Symbol.for('blackwing.api.rbac-metrics');

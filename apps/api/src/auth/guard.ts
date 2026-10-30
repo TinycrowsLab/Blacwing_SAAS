@@ -5,8 +5,8 @@ import { AuthNoCredentialsError } from './errors.js';
 import { PUBLIC_ROUTE_KEY } from '../tenant/public-route.js';
 
 import type { Authenticator } from './authenticate.js';
+import type { AuthorizedPrincipal } from '../tenant/guard.js';
 import type { Principal } from '@blackwing/contracts';
-import type { TenantPrincipal } from '@blackwing/db/tenant-context';
 import type { FastifyRequest } from 'fastify';
 
 /** DI token of the {@link Authenticator} the guard runs. */
@@ -63,12 +63,15 @@ export class AuthGuard implements CanActivate {
 /**
  * Adapts the attached principal to the tenant guard's source (TENANT-003). Both the session and the Keycloak
  * token carry their tenant in the session-scoped claim, so the tenant is taken from the validated principal only.
+ * The roles and scopes are the validated claims the RBAC guard evaluates (RBAC-003), never read from the request.
  */
-export function tenantPrincipalFromRequest(request: FastifyRequest): TenantPrincipal | null {
+export function tenantPrincipalFromRequest(request: FastifyRequest): AuthorizedPrincipal | null {
   const principal = principalOf(request);
   if (principal === undefined) return null;
   return {
     actor: { type: principal.kind, id: principal.subjectId },
     sessionTenantId: principal.tenantId,
+    roles: principal.roles,
+    scopes: principal.scopes,
   };
 }

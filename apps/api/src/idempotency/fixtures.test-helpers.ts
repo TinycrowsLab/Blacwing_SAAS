@@ -19,6 +19,7 @@ import { ConflictError, InternalError, ValidationError } from '@blackwing/errors
 
 import { Idempotent } from './interceptor.js';
 import { bindTenant } from '../bootstrap/request-context.js';
+import { AuthenticatedOnly } from '../rbac/require-permission.decorator.js';
 
 import type { FastifyRequest } from 'fastify';
 
@@ -54,6 +55,7 @@ const THING_LOG = Symbol('thing-log');
 
 @Controller('things')
 @UseGuards(TestTenantGuard)
+@AuthenticatedOnly()
 class ThingsController {
   constructor(@Inject(THING_LOG) private readonly log: ThingLog) {}
 
