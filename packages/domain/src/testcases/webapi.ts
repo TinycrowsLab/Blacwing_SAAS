@@ -1,4 +1,5 @@
 import { type Catalogue, defineCatalogue, entryCountsByClass } from './catalogue.js';
+import { pathOf, tokens } from './tokens.js';
 
 import type { SurfaceNode } from '../surface/write.js';
 
@@ -14,23 +15,6 @@ export const WEBAPI_CATALOGUE_METRIC = 'webapi_catalogue_entries_total';
 export const WEBAPI_CATALOGUE_METRIC_LABELS = ['class'] as const;
 
 const BODY_METHODS = new Set(['POST', 'PUT', 'PATCH']);
-
-/** Lowercase word tokens of a name or path: `returnUrl`, `return_url` and `return-url` all give return, url. */
-function tokens(text: string): readonly string[] {
-  return text
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter(Boolean);
-}
-
-function pathOf(url: string): string {
-  try {
-    return new URL(url).pathname;
-  } catch {
-    return url;
-  }
-}
 
 const isParameter = (node: SurfaceNode): node is Extract<SurfaceNode, { type: 'parameter' }> =>
   node.type === 'parameter';

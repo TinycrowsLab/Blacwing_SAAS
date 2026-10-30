@@ -38,6 +38,7 @@ const OWASP_API_TOP10_2023: Readonly<Record<string, string>> = Object.freeze({
 
 /** CWE ids the web/API catalogue references, with their MITRE names. */
 const CWE_NAMES: Readonly<Record<string, string>> = Object.freeze({
+  'CWE-16': 'Configuration',
   'CWE-22': 'Improper Limitation of a Pathname to a Restricted Directory',
   'CWE-78': 'Improper Neutralization of Special Elements used in an OS Command',
   'CWE-79': 'Improper Neutralization of Input During Web Page Generation',
@@ -45,22 +46,33 @@ const CWE_NAMES: Readonly<Record<string, string>> = Object.freeze({
   'CWE-90': 'Improper Neutralization of Special Elements used in an LDAP Query',
   'CWE-200': 'Exposure of Sensitive Information to an Unauthorized Actor',
   'CWE-209': 'Generation of Error Message Containing Sensitive Information',
+  'CWE-295': 'Improper Certificate Validation',
+  'CWE-326': 'Inadequate Encryption Strength',
+  'CWE-327': 'Use of a Broken or Risky Cryptographic Algorithm',
   'CWE-434': 'Unrestricted Upload of File with Dangerous Type',
+  'CWE-521': 'Weak Password Requirements',
   'CWE-525': 'Use of Web Browser Cache Containing Sensitive Information',
+  'CWE-538': 'Insertion of Sensitive Information into Externally-Accessible File or Directory',
   'CWE-601': 'URL Redirection to Untrusted Site',
   'CWE-611': 'Improper Restriction of XML External Entity Reference',
+  'CWE-668': 'Exposure of Resource to Wrong Sphere',
   'CWE-614': "Sensitive Cookie in HTTPS Session Without 'Secure' Attribute",
   'CWE-693': 'Protection Mechanism Failure',
+  'CWE-1035': 'OWASP Top Ten 2017 Category A9: Using Components with Known Vulnerabilities',
+  'CWE-1104': 'Use of Unmaintained Third Party Components',
+  'CWE-1188': 'Insecure Default Initialization of Resource',
   'CWE-915': 'Improperly Controlled Modification of Dynamically-Determined Object Attributes',
   'CWE-918': 'Server-Side Request Forgery',
   'CWE-942': 'Permissive Cross-domain Policy with Untrusted Domains',
   'CWE-943': 'Improper Neutralization of Special Elements in Data Query Logic',
   'CWE-1004': "Sensitive Cookie Without 'HttpOnly' Flag",
+  'CWE-1392': 'Use of Default Credentials',
   'CWE-1336': 'Improper Neutralization of Special Elements Used in a Template Engine',
 });
 
 /** OWASP Web Security Testing Guide test ids the web/API catalogue references. */
 const WSTG_TESTS: Readonly<Record<string, string>> = Object.freeze({
+  'WSTG-ATHN-02': 'Testing for Default Credentials',
   'WSTG-ATHN-06': 'Testing for Browser Cache Weaknesses',
   'WSTG-ATHZ-01': 'Testing Directory Traversal File Include',
   'WSTG-APIT-01': 'Testing GraphQL',
@@ -68,6 +80,11 @@ const WSTG_TESTS: Readonly<Record<string, string>> = Object.freeze({
   'WSTG-CLNT-01': 'Testing for DOM-Based Cross Site Scripting',
   'WSTG-CLNT-04': 'Testing for Client-side URL Redirect',
   'WSTG-CLNT-07': 'Testing Cross Origin Resource Sharing',
+  'WSTG-CRYP-01': 'Testing for Weak Transport Layer Security',
+  'WSTG-CONF-02': 'Test Application Platform Configuration',
+  'WSTG-CONF-04': 'Review Old, Backup and Unreferenced Files for Sensitive Information',
+  'WSTG-CONF-05': 'Enumerate Infrastructure and Application Admin Interfaces',
+  'WSTG-CONF-06': 'Test HTTP Methods',
   'WSTG-CONF-07': 'Test HTTP Strict Transport Security',
   'WSTG-CONF-12': 'Test for Content Security Policy',
   'WSTG-ERRH-01': 'Testing for Improper Error Handling',

@@ -207,6 +207,12 @@ export {
   isKnownWstg,
 } from './testcases/standards.js';
 export {
+  INFRA_CATALOGUE,
+  INFRA_CATALOGUE_METRIC,
+  INFRA_CATALOGUE_METRIC_LABELS,
+  infraCatalogueMetricSamples,
+} from './testcases/infra.js';
+export {
   WEBAPI_CATALOGUE,
   WEBAPI_CATALOGUE_METRIC,
   WEBAPI_CATALOGUE_METRIC_LABELS,

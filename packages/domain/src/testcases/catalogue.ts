@@ -35,6 +35,8 @@ export const ORACLE_TYPES = [
   'out_of_band',
   'access_matrix',
   'file_read_marker',
+  'config_signature',
+  'version_cve',
 ] as const;
 export type OracleType = (typeof ORACLE_TYPES)[number];
 
@@ -83,6 +85,8 @@ const catalogueEntrySchema = z
     // `destructive` is never catalogued (§8.3); the authorisable subset has no such member.
     intrusiveness: authorisableIntrusivenessSchema,
     budgetHint: budgetHintSchema,
+    /** Set on a class that confirms a credential by reference (§8.7): the credential is never in the entry. */
+    requiresReferenceCredentials: z.boolean().optional(),
     appliesTo: z.custom<(node: SurfaceNode) => boolean>(
       (value) => typeof value === 'function',
       'must be a predicate over a surface node',
