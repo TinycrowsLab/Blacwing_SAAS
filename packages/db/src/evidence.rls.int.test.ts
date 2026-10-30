@@ -8,11 +8,20 @@ import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { evidenceChainLink, sha256Hex } from '@blackwing/crypto';
-import { ConflictError, NotFoundError, ValidationError } from '@blackwing/errors';
+import {
+  ConflictError,
+  NotFoundError,
+  TenantContextMissingError,
+  ValidationError,
+} from '@blackwing/errors';
 import { newId } from '@blackwing/ids';
 import { type PostgresHandle, withPostgres } from '@blackwing/testing/containers';
 
-import { type AppendEvidenceInput, EvidenceRepository } from './evidence.repository.js';
+import {
+  type AppendEvidenceInput,
+  EvidenceRepository,
+  ReproArtifactRepository,
+} from './evidence.repository.js';
 import { FindingRepository } from './finding.repository.js';
 import { createDatabase, migrateDatabase } from './index.js';
 import { ConcurrencyError } from './repository.js';
@@ -35,6 +44,10 @@ async function pgCode(promise: Promise<unknown>): Promise<string | undefined> {
 
 function evidenceRepo(tenant: string) {
   return new EvidenceRepository({ db: createDatabase(db.appPool), tenant: () => tenant });
+}
+
+function reproRepo(tenant: string) {
+  return new ReproArtifactRepository({ db: createDatabase(db.appPool), tenant: () => tenant });
 }
 
 function findingRepo(tenant: string) {
@@ -177,6 +190,43 @@ describe('append', () => {
       evidenceRepo(tenantA).append(appendInput(tenantA, newId(), { objectKey: `${tenantB}/x/1` })),
     ).rejects.toThrow(ValidationError);
   });
+
+  it('refuses a negative or oversize size before it reaches the database', async () => {
+    const runId = newId();
+    await expect(
+      evidenceRepo(tenantA).append(appendInput(tenantA, runId, { size: -1 })),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      evidenceRepo(tenantA).append(appendInput(tenantA, runId, { size: 5_368_709_121 })),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it('refuses a content type with Unicode or parameters (allowed-pattern check)', async () => {
+    const runId = newId();
+    for (const contentType of ['tëxt/plain', 'text/plain; charset=utf-8', 'text']) {
+      await expect(
+        evidenceRepo(tenantA).append(appendInput(tenantA, runId, { contentType })),
+      ).rejects.toThrow(ValidationError);
+    }
+  });
+
+  it('refuses an object key with Unicode or a dot segment', async () => {
+    const runId = newId();
+    for (const suffix of ['ünïcode', '../escape']) {
+      await expect(
+        evidenceRepo(tenantA).append(
+          appendInput(tenantA, runId, { objectKey: `${tenantA}/${suffix}` }),
+        ),
+      ).rejects.toThrow(ValidationError);
+    }
+  });
+
+  it('refuses a second item with the same object key as a typed conflict', async () => {
+    const first = await evidenceRepo(tenantA).append(appendInput(tenantA, newId()));
+    await expect(
+      evidenceRepo(tenantA).append(appendInput(tenantA, newId(), { objectKey: first.objectKey })),
+    ).rejects.toThrow(ConflictError);
+  });
 });
 
 describe('tenant isolation', () => {
@@ -202,11 +252,11 @@ describe('tenant isolation', () => {
 });
 
 describe('write-once', () => {
-  it('the runtime role cannot update or delete an item (42501)', async () => {
+  it('the runtime role cannot update an immutable column or delete an item (42501)', async () => {
     const item = await evidenceRepo(tenantA).append(appendInput(tenantA, newId()));
     const update = await pgCode(
       db.withTenant(tenantA, (tx) =>
-        tx.query(`UPDATE evidence_items SET legal_hold = true WHERE id = $1`, [item.id]),
+        tx.query(`UPDATE evidence_items SET size = 1 WHERE id = $1`, [item.id]),
       ),
     );
     const remove = await pgCode(
@@ -356,6 +406,60 @@ describe('legal hold', () => {
   });
 });
 
+describe('updateHold', () => {
+  it('sets legal hold and retention, and leaves the key, digest, size and chain untouched', async () => {
+    const item = await evidenceRepo(tenantA).append(appendInput(tenantA, newId()));
+    const until = new Date('2030-01-01T00:00:00Z');
+    const held = await evidenceRepo(tenantA).updateHold(item.id, {
+      legalHold: true,
+      retentionUntil: until,
+    });
+    expect(held.legalHold).toBe(true);
+    expect(held.retentionUntil?.toISOString()).toBe(until.toISOString());
+    expect(held.objectKey).toBe(item.objectKey);
+    expect(held.sha256).toBe(item.sha256);
+    expect(held.size).toBe(item.size);
+    expect(held.chain).toBe(item.chain);
+    const released = await evidenceRepo(tenantA).updateHold(item.id, { retentionUntil: null });
+    expect(released.retentionUntil).toBeNull();
+    expect(released.legalHold).toBe(true);
+  });
+
+  it('refuses to change the object key or the digest, and names only the field', async () => {
+    const item = await evidenceRepo(tenantA).append(appendInput(tenantA, newId()));
+    for (const field of [{ objectKey: `${tenantA}/swapped` }, { sha256: sha('swap') }]) {
+      await expect(
+        evidenceRepo(tenantA).updateHold(item.id, { legalHold: true, ...field }),
+      ).rejects.toThrow(ValidationError);
+    }
+    const [after] = await evidenceRepo(tenantA).getMany([item.id]);
+    expect(after?.objectKey).toBe(item.objectKey);
+    expect(after?.sha256).toBe(item.sha256);
+    expect(after?.legalHold).toBe(false);
+  });
+
+  it('refuses an empty update', async () => {
+    const item = await evidenceRepo(tenantA).append(appendInput(tenantA, newId()));
+    await expect(evidenceRepo(tenantA).updateHold(item.id, {})).rejects.toThrow(ValidationError);
+  });
+
+  it('is not found for another tenant item, and fails closed without a tenant', async () => {
+    const item = await evidenceRepo(tenantA).append(appendInput(tenantA, newId()));
+    await expect(evidenceRepo(tenantB).updateHold(item.id, { legalHold: true })).rejects.toThrow(
+      NotFoundError,
+    );
+    const [still] = await evidenceRepo(tenantA).getMany([item.id]);
+    expect(still?.legalHold).toBe(false);
+    const anonymous = new EvidenceRepository({
+      db: createDatabase(db.appPool),
+      tenant: () => undefined,
+    });
+    await expect(anonymous.updateHold(item.id, { legalHold: true })).rejects.toThrow(
+      TenantContextMissingError,
+    );
+  });
+});
+
 describe('markSuspected', () => {
   it('marks the finding and occurrence suspected and binds nothing', async () => {
     const { finding, occurrence } = await seedBinding(tenantA, 0);
@@ -384,5 +488,198 @@ describe('markSuspected', () => {
         expectedStateVersion: finding.stateVersion + 2,
       }),
     ).rejects.toThrow(ConcurrencyError);
+  });
+});
+
+describe('public ids', () => {
+  it('assigns the evd_ public id on append, in the canonical base32 form', async () => {
+    const item = await evidenceRepo(tenantA).append(appendInput(tenantA, newId()));
+    expect(item.publicId).toMatch(/^evd_[0-9abcdefghjkmnpqrstvwxyz]{26}$/);
+    expect(item.findingId).toBeNull();
+    expect(item.occurrenceId).toBeNull();
+  });
+
+  it('refuses a public id without the evd_ prefix (database CHECK)', async () => {
+    const runId = newId();
+    const code = await pgCode(
+      db.withTenant(tenantA, (tx) =>
+        tx.query(
+          `INSERT INTO evidence_items (id, public_id, tenant_id, run_id, sequence, kind, role, object_key, sha256, size, content_type, captured_at, chain)
+           VALUES ($1, 'rpa_01fwhe4ydgfk1shh6w1g60eecf', $2, $3, 1, 'response', 'positive', $4, $5, 1, 'text/plain', now(), $5)`,
+          [newId(), tenantA, runId, `${tenantA}/${runId}/pid`, sha('pid')],
+        ),
+      ),
+    );
+    expect(code).toBe('23514');
+  });
+
+  it('refuses a finding link to another tenant (composite foreign key, §8.6)', async () => {
+    const { finding: foreign } = await seedBinding(tenantB, 0);
+    const runId = newId();
+    const code = await pgCode(
+      db.withTenant(tenantA, (tx) =>
+        tx.query(
+          `INSERT INTO evidence_items (id, tenant_id, run_id, finding_id, sequence, kind, role, object_key, sha256, size, content_type, captured_at, chain)
+           VALUES ($1, $2, $3, $4, 1, 'response', 'positive', $5, $6, 1, 'text/plain', now(), $6)`,
+          [newId(), tenantA, runId, foreign.id, `${tenantA}/${runId}/fk`, sha('fk')],
+        ),
+      ),
+    );
+    expect(code).toBe('23503');
+  });
+
+  it('the runtime role cannot rewrite the object key or the digest of an item (42501)', async () => {
+    const item = await evidenceRepo(tenantA).append(appendInput(tenantA, newId()));
+    const key = await pgCode(
+      db.withTenant(tenantA, (tx) =>
+        tx.query(`UPDATE evidence_items SET object_key = $2 WHERE id = $1`, [
+          item.id,
+          `${tenantA}/swapped`,
+        ]),
+      ),
+    );
+    const digest = await pgCode(
+      db.withTenant(tenantA, (tx) =>
+        tx.query(`UPDATE evidence_items SET sha256 = $2 WHERE id = $1`, [item.id, sha('swap')]),
+      ),
+    );
+    expect(key).toBe('42501');
+    expect(digest).toBe('42501');
+    expect((await evidenceRepo(tenantA).getMany([item.id]))[0]?.objectKey).toBe(item.objectKey);
+  });
+});
+
+describe('repro artifacts', () => {
+  const bundleKey = (tenant: string) => `${tenant}/repro/${newId()}.tar.zst`;
+
+  it('records a bundle for a finding and reads it back by id and by finding', async () => {
+    const { finding } = await seedBinding(tenantA, 0);
+    const created = await reproRepo(tenantA).create({
+      findingId: finding.id,
+      bundleKey: bundleKey(tenantA),
+      sha256: sha('bundle'),
+      formatVersion: '1.0',
+      size: 2048,
+    });
+    expect(created.publicId).toMatch(/^rpa_[0-9abcdefghjkmnpqrstvwxyz]{26}$/);
+    expect(await reproRepo(tenantA).get(created.id)).toMatchObject({
+      id: created.id,
+      findingId: finding.id,
+      size: 2048,
+    });
+    expect((await reproRepo(tenantA).listForFinding(finding.id)).map((row) => row.id)).toEqual([
+      created.id,
+    ]);
+  });
+
+  it('is invisible to another tenant on read and on list', async () => {
+    const { finding } = await seedBinding(tenantA, 0);
+    const created = await reproRepo(tenantA).create({
+      findingId: finding.id,
+      bundleKey: bundleKey(tenantA),
+      sha256: sha('visible'),
+      formatVersion: '1.0',
+    });
+    expect(await reproRepo(tenantB).get(created.id)).toBeUndefined();
+    expect(await reproRepo(tenantB).listForFinding(finding.id)).toEqual([]);
+  });
+
+  it('refuses a finding of another tenant (not found, never a cross-tenant link)', async () => {
+    const { finding } = await seedBinding(tenantA, 0);
+    await expect(
+      reproRepo(tenantB).create({
+        findingId: finding.id,
+        bundleKey: bundleKey(tenantB),
+        sha256: sha('cross'),
+        formatVersion: '1.0',
+      }),
+    ).rejects.toThrow(NotFoundError);
+  });
+
+  it('refuses a duplicate bundle key as a typed conflict', async () => {
+    const { finding } = await seedBinding(tenantA, 0);
+    const key = bundleKey(tenantA);
+    await reproRepo(tenantA).create({
+      findingId: finding.id,
+      bundleKey: key,
+      sha256: sha('one'),
+      formatVersion: '1.0',
+    });
+    await expect(
+      reproRepo(tenantA).create({
+        findingId: finding.id,
+        bundleKey: key,
+        sha256: sha('two'),
+        formatVersion: '1.0',
+      }),
+    ).rejects.toThrow(ConflictError);
+  });
+
+  it('refuses an input that breaks the contract: bad digest, traversal key, unknown field', async () => {
+    const { finding } = await seedBinding(tenantA, 0);
+    const base = { findingId: finding.id, bundleKey: bundleKey(tenantA), sha256: sha('ok') };
+    await expect(
+      reproRepo(tenantA).create({ ...base, sha256: 'NOT-HEX', formatVersion: '1.0' }),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      reproRepo(tenantA).create({
+        ...base,
+        bundleKey: `${tenantA}/../escape`,
+        formatVersion: '1.0',
+      }),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      reproRepo(tenantA).create({ ...base, formatVersion: '1.0', body: 'inline' }),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it('refuses a key outside the tenant prefix at the database (CHECK, §8.6)', async () => {
+    const { finding } = await seedBinding(tenantA, 0);
+    await expect(
+      reproRepo(tenantA).create({
+        findingId: finding.id,
+        bundleKey: `${tenantB}/repro/x`,
+        sha256: sha('prefix'),
+        formatVersion: '1.0',
+      }),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it('is write-once for the runtime role (42501)', async () => {
+    const { finding } = await seedBinding(tenantA, 0);
+    const created = await reproRepo(tenantA).create({
+      findingId: finding.id,
+      bundleKey: bundleKey(tenantA),
+      sha256: sha('frozen'),
+      formatVersion: '1.0',
+    });
+    const update = await pgCode(
+      db.withTenant(tenantA, (tx) =>
+        tx.query(`UPDATE repro_artifacts SET sha256 = $2 WHERE id = $1`, [created.id, sha('x')]),
+      ),
+    );
+    const remove = await pgCode(
+      db.withTenant(tenantA, (tx) =>
+        tx.query(`DELETE FROM repro_artifacts WHERE id = $1`, [created.id]),
+      ),
+    );
+    expect(update).toBe('42501');
+    expect(remove).toBe('42501');
+  });
+
+  it('fails closed without a tenant context', async () => {
+    const { finding } = await seedBinding(tenantA, 0);
+    const anonymous = new ReproArtifactRepository({
+      db: createDatabase(db.appPool),
+      tenant: () => undefined,
+    });
+    await expect(
+      anonymous.create({
+        findingId: finding.id,
+        bundleKey: bundleKey(tenantA),
+        sha256: sha('anon'),
+        formatVersion: '1.0',
+      }),
+    ).rejects.toThrow(TenantContextMissingError);
   });
 });

@@ -1,4 +1,6 @@
 ALTER TABLE "findings" ADD COLUMN "duplicate_of" uuid;--> statement-breakpoint
-ALTER TABLE "findings" ADD CONSTRAINT "findings_duplicate_of_fk" FOREIGN KEY ("tenant_id","duplicate_of") REFERENCES "public"."findings"("tenant_id","id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- NOT VALID: the column is new and NULL on every row, so there is nothing to validate. Validating would evaluate the
+-- findings tenant policy, whose current_setting() fails when no tenant is set (fresh migrations, owner role).
+ALTER TABLE "findings" ADD CONSTRAINT "findings_duplicate_of_fk" FOREIGN KEY ("tenant_id","duplicate_of") REFERENCES "public"."findings"("tenant_id","id") ON DELETE no action ON UPDATE no action NOT VALID;--> statement-breakpoint
 CREATE INDEX "findings_tenant_id_duplicate_of_idx" ON "findings" USING btree ("tenant_id","duplicate_of");--> statement-breakpoint
 ALTER TABLE "findings" ADD CONSTRAINT "findings_duplicate_of_check" CHECK ((("findings"."status" = 'duplicate') = ("findings"."duplicate_of" IS NOT NULL)) AND ("findings"."duplicate_of" IS NULL OR "findings"."duplicate_of" <> "findings"."id"));

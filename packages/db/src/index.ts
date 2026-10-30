@@ -135,6 +135,8 @@ export {
   type EvidenceRepositoryOptions,
   type FindingForBinding,
   type OccurrenceForBinding,
+  type ReproArtifactRow,
+  ReproArtifactRepository,
 } from './evidence.repository.js';
 export * from './schema/index.js';
 export * from './columns.js';

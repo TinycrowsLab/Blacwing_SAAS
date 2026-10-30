@@ -133,6 +133,35 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       ],
     );
   },
+  repro_artifacts: async (tx, tenantId) => {
+    const findingId = newId();
+    const runId = newId();
+    await tx.query(
+      `INSERT INTO findings (id, tenant_id, public_id, fingerprint, title, class, asset_id, location, status, run_id, first_seen_run_id, last_seen_run_id, cwe_id, owasp_category)
+       VALUES ($1, $2, $3, $4, 'iso finding', 'iso_class', $5, '{"urlTemplate":"/iso"}', 'candidate', $6, $6, $6, 'CWE-89', 'A03')`,
+      [
+        findingId,
+        tenantId,
+        `fnd_${findingId.replaceAll('-', '')}`,
+        createHash('sha256').update(randomBytes(8)).digest('hex'),
+        newId(),
+        runId,
+      ],
+    );
+    const rpaId = newId();
+    await tx.query(
+      `INSERT INTO repro_artifacts (id, public_id, tenant_id, finding_id, bundle_key, sha256, format_version)
+       VALUES ($1, $2, $3, $4, $5, $6, '1')`,
+      [
+        rpaId,
+        publicId('rpa', rpaId),
+        tenantId,
+        findingId,
+        `${tenantId}/${runId}/repro`,
+        createHash('sha256').update('iso-repro').digest('hex'),
+      ],
+    );
+  },
   input_manifests: async (tx, tenantId) => {
     await tx.query(`INSERT INTO input_manifests (id, tenant_id) VALUES ($1, $2)`, [
       newId(),

@@ -73,6 +73,9 @@ export const SessionId = defineIdType('sess', 'SessionId');
 /** `evd_…` */
 export type EvidenceId = PublicId<'evd'>;
 export const EvidenceId = defineIdType('evd', 'EvidenceId');
+/** `rpa_…` */
+export type ReproArtifactId = PublicId<'rpa'>;
+export const ReproArtifactId = defineIdType('rpa', 'ReproArtifactId');
 /** `tok_…` */
 export type ApiTokenId = PublicId<'tok'>;
 export const ApiTokenId = defineIdType('tok', 'ApiTokenId');
@@ -106,6 +109,7 @@ export const ID_TYPES: { readonly [P in IdPrefix]: IdType<P> } = Object.freeze({
   sub: SubtaskId,
   sess: SessionId,
   evd: EvidenceId,
+  rpa: ReproArtifactId,
   tok: ApiTokenId,
   ten: TenantId,
   usr: UserId,

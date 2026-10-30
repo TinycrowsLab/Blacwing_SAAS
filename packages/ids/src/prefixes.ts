@@ -25,6 +25,8 @@ export const ID_PREFIXES = Object.freeze({
   sess: 'SessionId',
   /** Evidence items (`evidence_items`). */
   evd: 'EvidenceId',
+  /** Repro artifact bundles (`repro_artifacts`). */
+  rpa: 'ReproArtifactId',
   /** API token records (`api_tokens`). The row id, never the `bw_pat_`/`bw_ci_` secret itself. */
   tok: 'ApiTokenId',
   /** Tenants (`tenants`). */

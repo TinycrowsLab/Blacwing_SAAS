@@ -58,6 +58,7 @@ describe('prefix registry', () => {
         'fnd',
         'kill',
         'oob',
+        'rpa',
         'run',
         'sa',
         'sched',

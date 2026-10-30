@@ -2,16 +2,19 @@
 // CONTEXT_PACK §7, §8.6, §8.8). Every method runs through `withTenant`, so RLS confines it and a missing tenant
 // context fails closed. Items are write-once: this class appends and reads them, and never changes one.
 
+import { SpanStatusCode, trace } from '@opentelemetry/api';
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import {
   EVIDENCE_OBJECT_BYTES_MAX,
   type EvidenceChainRef,
+  evidenceContentTypeSchema,
   evidenceKindSchema,
   evidenceRefSchema,
   evidenceRoleSchema,
   LIMITS,
+  reproArtifactCreateSchema,
   sha256HexSchema,
   uuidV7Schema,
 } from '@blackwing/contracts';
@@ -24,9 +27,10 @@ import {
 } from '@blackwing/errors';
 import { newId } from '@blackwing/ids';
 
+import { publicId } from './columns.js';
 import { ConcurrencyError } from './repository.js';
 import { toTenantIsolationError } from './rls.js';
-import { evidenceItems } from './schema/evidence.js';
+import { evidenceItems, reproArtifacts } from './schema/evidence.js';
 import { findingOccurrences, findings } from './schema/findings.js';
 import { currentTenantId } from './tenant-context.js';
 import { unwrapQueryError, type TenantTx, withTenant } from './with-tenant.js';
@@ -35,6 +39,8 @@ import type { Database } from './client.js';
 
 /** One row of `evidence_items`. */
 export type EvidenceItemRow = typeof evidenceItems.$inferSelect;
+/** One row of `repro_artifacts`. */
+export type ReproArtifactRow = typeof reproArtifacts.$inferSelect;
 /** One row of `finding_occurrences`, as the binding reads it. */
 export interface OccurrenceForBinding {
   readonly id: string;
@@ -48,7 +54,11 @@ export interface FindingForBinding {
   readonly stateVersion: number;
 }
 
+/** Span attributes of an evidence query: the run and kind, never a key, digest or body. */
+type SpanAttributes = Readonly<Record<string, string>>;
+
 const UNIQUE_VIOLATION = '23505';
+const FOREIGN_KEY_VIOLATION = '23503';
 const CHECK_VIOLATION = '23514';
 const AWAITING_VALIDATION: readonly string[] = ['candidate', 'validating'];
 
@@ -59,16 +69,26 @@ const appendSchema = z.strictObject({
   objectKey: evidenceRefSchema,
   sha256: sha256HexSchema,
   size: z.int().min(0).max(EVIDENCE_OBJECT_BYTES_MAX),
-  contentType: z
-    .string()
-    .transform((value) => value.normalize('NFC'))
-    .pipe(z.string().min(1).max(LIMITS.shortTextMax)),
+  contentType: evidenceContentTypeSchema,
   capturedAt: z.date(),
   retentionUntil: z.date().nullish(),
   legalHold: z.boolean().default(false),
 });
 
 const idsSchema = z.array(uuidV7Schema).min(1).max(LIMITS.shortTextMax);
+
+/**
+ * The only mutable fields of an evidence item (CONTEXT_PACK §8.8). Strict: naming `objectKey` or `sha256` (or any
+ * other field) is a validation error, so an item's bytes and digest cannot be rewritten through this repository.
+ */
+const holdUpdateSchema = z
+  .strictObject({
+    retentionUntil: z.date().nullable().optional(),
+    legalHold: z.boolean().optional(),
+  })
+  .refine((value) => value.retentionUntil !== undefined || value.legalHold !== undefined, {
+    message: 'at least one of retentionUntil or legalHold is required',
+  });
 
 const bindSchema = z.strictObject({
   findingId: uuidV7Schema,
@@ -112,47 +132,52 @@ export class EvidenceRepository {
   async append(input: AppendEvidenceInput): Promise<EvidenceItemRow> {
     const values = parse(appendSchema, input, 'evidence item');
     const id = newId();
-    return this.run(async (tx, tenantId) => {
-      await tx.execute(
-        sql`SELECT pg_advisory_xact_lock(hashtextextended(${values.runId}::text, 0))`,
-      );
-      const [last] = await tx
-        .select({ sequence: evidenceItems.sequence, chain: evidenceItems.chain })
-        .from(evidenceItems)
-        .where(and(eq(evidenceItems.tenantId, tenantId), eq(evidenceItems.runId, values.runId)))
-        .orderBy(desc(evidenceItems.sequence))
-        .limit(1);
-      const prevChain = last?.chain ?? null;
-      const [inserted] = await tx
-        .insert(evidenceItems)
-        .values({
-          id,
-          tenantId,
-          runId: values.runId,
-          sequence: (last?.sequence ?? 0) + 1,
-          kind: values.kind,
-          role: values.role,
-          objectKey: values.objectKey,
-          sha256: values.sha256,
-          size: values.size,
-          contentType: values.contentType,
-          capturedAt: values.capturedAt,
-          prevChain,
-          chain: evidenceChainLink({
-            prevChain,
-            sha256: values.sha256,
+    return this.run(
+      async (tx, tenantId) => {
+        await tx.execute(
+          sql`SELECT pg_advisory_xact_lock(hashtextextended(${values.runId}::text, 0))`,
+        );
+        const [last] = await tx
+          .select({ sequence: evidenceItems.sequence, chain: evidenceItems.chain })
+          .from(evidenceItems)
+          .where(and(eq(evidenceItems.tenantId, tenantId), eq(evidenceItems.runId, values.runId)))
+          .orderBy(desc(evidenceItems.sequence))
+          .limit(1);
+        const prevChain = last?.chain ?? null;
+        const [inserted] = await tx
+          .insert(evidenceItems)
+          .values({
+            id,
+            publicId: publicId('evd', id),
+            tenantId,
+            runId: values.runId,
+            sequence: (last?.sequence ?? 0) + 1,
             kind: values.kind,
             role: values.role,
-            size: values.size,
             objectKey: values.objectKey,
-          }),
-          retentionUntil: values.retentionUntil ?? null,
-          legalHold: values.legalHold,
-        })
-        .returning();
-      if (inserted === undefined) throw new Error('evidence insert returned no row');
-      return inserted;
-    }, 'append');
+            sha256: values.sha256,
+            size: values.size,
+            contentType: values.contentType,
+            capturedAt: values.capturedAt,
+            prevChain,
+            chain: evidenceChainLink({
+              prevChain,
+              sha256: values.sha256,
+              kind: values.kind,
+              role: values.role,
+              size: values.size,
+              objectKey: values.objectKey,
+            }),
+            retentionUntil: values.retentionUntil ?? null,
+            legalHold: values.legalHold,
+          })
+          .returning();
+        if (inserted === undefined) throw new Error('evidence insert returned no row');
+        return inserted;
+      },
+      'append',
+      { 'run.id': values.runId, 'evidence.kind': values.kind },
+    );
   }
 
   /** The items with these ids, in the stream order they were appended. Unknown and foreign ids are simply absent. */
@@ -166,6 +191,35 @@ export class EvidenceRepository {
         .orderBy(asc(evidenceItems.runId), asc(evidenceItems.sequence));
       return rows;
     }, 'getMany');
+  }
+
+  /**
+   * Sets the retention date and/or the legal hold of one item. This is the only write an existing item accepts: the
+   * object key, digest, size and chain are refused by the schema and by the column grants. Unknown and foreign ids
+   * are not found.
+   */
+  async updateHold(id: string, input: unknown): Promise<EvidenceItemRow> {
+    const rowId = parse(uuidV7Schema, id, 'evidence id');
+    const values = parse(holdUpdateSchema, input, 'evidence hold update');
+    return this.run(
+      async (tx, tenantId) => {
+        const [row] = await tx
+          .update(evidenceItems)
+          .set({
+            ...(values.retentionUntil !== undefined
+              ? { retentionUntil: values.retentionUntil }
+              : {}),
+            ...(values.legalHold !== undefined ? { legalHold: values.legalHold } : {}),
+            updatedAt: new Date(),
+          })
+          .where(and(eq(evidenceItems.tenantId, tenantId), eq(evidenceItems.id, rowId)))
+          .returning();
+        if (row === undefined) throw new NotFoundError('evidence item not found');
+        return row;
+      },
+      'updateHold',
+      { 'evidence.id': rowId },
+    );
   }
 
   /** The finding and the occurrence named by the binding, or `undefined` when either is unknown or foreign. */
@@ -286,22 +340,109 @@ export class EvidenceRepository {
   }
 
   /** Runs `fn` in the ambient tenant's transaction and translates database errors to the typed set. */
-  private async run<R>(fn: (tx: TenantTx, tenantId: string) => Promise<R>, op: string): Promise<R> {
-    const tenantId = this.tenantId();
-    try {
-      return await withTenant(this.options.db, tenantId, (tx) => fn(tx, tenantId));
-    } catch (error) {
-      throw translate(error, op);
-    }
+  private async run<R>(
+    fn: (tx: TenantTx, tenantId: string) => Promise<R>,
+    op: string,
+    attributes?: SpanAttributes,
+  ): Promise<R> {
+    return runInTenant(this.options, fn, op, attributes);
+  }
+}
+
+/**
+ * Repro artifacts: one reproduction bundle per finding (EVIDENCE, CONTEXT_PACK §7). Write-once, like evidence items:
+ * the runtime role may create and read a bundle, never change or remove one (the grants say so).
+ */
+export class ReproArtifactRepository {
+  constructor(private readonly options: EvidenceRepositoryOptions) {}
+
+  /** Records a bundle for a finding of the ambient tenant. A finding of another tenant is simply not found. */
+  async create(input: unknown): Promise<ReproArtifactRow> {
+    const values = parse(reproArtifactCreateSchema, input, 'repro artifact');
+    const id = newId();
+    return runInTenant(
+      this.options,
+      async (tx, tenantId) => {
+        const [inserted] = await tx
+          .insert(reproArtifacts)
+          .values({
+            id,
+            publicId: publicId('rpa', id),
+            tenantId,
+            findingId: values.findingId,
+            bundleKey: values.bundleKey,
+            sha256: values.sha256,
+            formatVersion: values.formatVersion,
+            size: values.size,
+          })
+          .returning();
+        if (inserted === undefined) throw new Error('repro artifact insert returned no row');
+        return inserted;
+      },
+      'create',
+    );
   }
 
-  private tenantId(): string {
-    const tenantId = (this.options.tenant ?? currentTenantId)();
-    if (tenantId === undefined || tenantId === '') {
-      throw new TenantContextMissingError('no tenant context: refusing to run an evidence query');
-    }
-    return tenantId;
+  /** One bundle by its row id, or `undefined` when it is unknown or belongs to another tenant. */
+  async get(id: string): Promise<ReproArtifactRow | undefined> {
+    const rowId = parse(uuidV7Schema, id, 'repro artifact id');
+    return runInTenant(
+      this.options,
+      async (tx, tenantId) => {
+        const [row] = await tx
+          .select()
+          .from(reproArtifacts)
+          .where(and(eq(reproArtifacts.tenantId, tenantId), eq(reproArtifacts.id, rowId)))
+          .limit(1);
+        return row;
+      },
+      'get',
+    );
   }
+
+  /** The bundles of one finding, oldest first. */
+  async listForFinding(findingId: string): Promise<ReproArtifactRow[]> {
+    const rowFindingId = parse(uuidV7Schema, findingId, 'finding id');
+    return runInTenant(
+      this.options,
+      (tx, tenantId) =>
+        tx
+          .select()
+          .from(reproArtifacts)
+          .where(
+            and(eq(reproArtifacts.tenantId, tenantId), eq(reproArtifacts.findingId, rowFindingId)),
+          )
+          .orderBy(asc(reproArtifacts.createdAt), asc(reproArtifacts.id)),
+      'listForFinding',
+    );
+  }
+}
+
+/**
+ * Runs `fn` in the ambient tenant's transaction (the repository's tenant source, or the request context) and maps
+ * database errors to the typed set. A missing tenant fails closed before any query.
+ */
+async function runInTenant<R>(
+  options: EvidenceRepositoryOptions,
+  fn: (tx: TenantTx, tenantId: string) => Promise<R>,
+  op: string,
+  attributes: SpanAttributes = {},
+): Promise<R> {
+  const tenantId = (options.tenant ?? currentTenantId)();
+  if (tenantId === undefined || tenantId === '') {
+    throw new TenantContextMissingError('no tenant context: refusing to run an evidence query');
+  }
+  return trace.getTracer('@blackwing/db').startActiveSpan(`db.evidence.${op}`, async (span) => {
+    span.setAttributes(attributes);
+    try {
+      return await withTenant(options.db, tenantId, (tx) => fn(tx, tenantId));
+    } catch (error) {
+      span.setStatus({ code: SpanStatusCode.ERROR });
+      throw translate(error, op);
+    } finally {
+      span.end();
+    }
+  });
 }
 
 /** Locks the occurrence row of a finding (the first lock in every binding transaction). */
@@ -379,6 +520,11 @@ function translate(error: unknown, op: string): unknown {
   const pgError = unwrapQueryError(error) as { code?: unknown };
   if (pgError.code === UNIQUE_VIOLATION) {
     return new ConflictError(`evidence ${op}: a conflicting row already exists`, { cause: error });
+  }
+  if (pgError.code === FOREIGN_KEY_VIOLATION) {
+    return new NotFoundError(`evidence ${op}: the referenced finding was not found`, {
+      cause: error,
+    });
   }
   if (pgError.code === CHECK_VIOLATION) {
     return new ValidationError('invalid evidence', {

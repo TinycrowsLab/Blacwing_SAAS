@@ -238,6 +238,8 @@ export const findingOccurrences = pgTable(
     tenantIdIndex('finding_occurrences', t.tenantId),
     // One occurrence per finding and run, and the (finding_id, run_id) lookup index.
     uniqueIndex('finding_occurrences_finding_id_run_id_key').on(t.findingId, t.runId),
+    // Target of the composite (tenant_id, occurrence_id) foreign key from evidence_items.
+    unique('finding_occurrences_tenant_id_id_unique').on(t.tenantId, t.id),
     // Composite FK: plain FK checks bypass RLS, so a single-column reference could cross tenants.
     foreignKey({
       name: 'finding_occurrences_finding_fk',

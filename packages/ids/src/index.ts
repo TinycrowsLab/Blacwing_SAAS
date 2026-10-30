@@ -22,6 +22,7 @@ export {
   type IdType,
   KillEventId,
   OobId,
+  ReproArtifactId,
   RunId,
   ScheduleId,
   SessionId,
