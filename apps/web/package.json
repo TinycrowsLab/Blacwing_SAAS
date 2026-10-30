@@ -36,6 +36,7 @@
     "@blackwing/crypto": "workspace:*",
     "@blackwing/domain": "workspace:*",
     "@blackwing/logger": "workspace:*",
+    "@blackwing/telemetry": "workspace:*",
     "@blackwing/ui": "workspace:*",
     "@hookform/resolvers": "6.0.0",
     "@opentelemetry/api": "catalog:",

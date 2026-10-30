@@ -181,6 +181,19 @@ func boolGauge(b bool) float64 {
 	return 0
 }
 
+// Resource is the OpenTelemetry resource shared by every signal: service.name is
+// always ServiceName, so traces and metrics from one process join up.
+func Resource(version string) (*resource.Resource, error) {
+	res, err := resource.Merge(resource.Default(), resource.NewSchemaless(
+		semconv.ServiceName(ServiceName),
+		semconv.ServiceVersion(version),
+	))
+	if err != nil {
+		return nil, fmt.Errorf("otel resource: %w", err)
+	}
+	return res, nil
+}
+
 // NewTracerProvider builds the OpenTelemetry tracer provider. With a non-empty
 // endpoint (OTEL_EXPORTER_OTLP_ENDPOINT, the collector base URL) spans are batched
 // to <endpoint>/v1/traces over OTLP/HTTP; the exporter connects lazily, so an
@@ -188,12 +201,9 @@ func boolGauge(b bool) float64 {
 // recorded but not exported. Extra options (for example a test span recorder) are
 // appended.
 func NewTracerProvider(ctx context.Context, endpoint, version string, extra ...sdktrace.TracerProviderOption) (*sdktrace.TracerProvider, error) {
-	res, err := resource.Merge(resource.Default(), resource.NewSchemaless(
-		semconv.ServiceName(ServiceName),
-		semconv.ServiceVersion(version),
-	))
+	res, err := Resource(version)
 	if err != nil {
-		return nil, fmt.Errorf("otel resource: %w", err)
+		return nil, err
 	}
 	opts := []sdktrace.TracerProviderOption{sdktrace.WithResource(res)}
 	if endpoint != "" {

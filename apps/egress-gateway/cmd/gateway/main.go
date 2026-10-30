@@ -36,6 +36,7 @@ import (
 	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/identity"
 	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/obs"
 	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/server"
+	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/telemetry"
 )
 
 // Build information, overridden at link time by the Makefile
@@ -143,7 +144,7 @@ func cmdRun(ctx context.Context, lookup config.LookupFunc, logOut io.Writer) int
 		slog.String("posture", "deny_all"),
 	)
 
-	tp, err := obs.NewTracerProvider(ctx, cfg.OTLPEndpoint, version)
+	tel, err := telemetry.Setup(ctx, cfg.OTLPEndpoint, version)
 	if err != nil {
 		boot.Error("telemetry setup failed: refusing to start", slog.String("error", err.Error()))
 		return exitError
@@ -151,10 +152,12 @@ func cmdRun(ctx context.Context, lookup config.LookupFunc, logOut io.Writer) int
 	defer func() {
 		flushCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		if ferr := obs.FlushAndShutdown(flushCtx, tp); ferr != nil {
+		if ferr := tel.Shutdown(flushCtx); ferr != nil {
 			boot.Warn("telemetry shutdown failed", slog.String("error", ferr.Error()))
 		}
 	}()
+	tp := tel.Tracer
+	_, startup := tp.Tracer(obs.ServiceName).Start(ctx, "egress.startup")
 
 	metrics := obs.NewMetrics(version, commit)
 	auth, err := identity.NewAuthenticator(identity.Options{Logger: logger, Registerer: metrics.Registry, Tracer: tp.Tracer(obs.ServiceName)})
@@ -173,6 +176,7 @@ func cmdRun(ctx context.Context, lookup config.LookupFunc, logOut io.Writer) int
 		Logger:         logger,
 		Registerer:     metrics.Registry,
 		Tracer:         tp,
+		Meter:          tel.Meter,
 	})
 	if err != nil {
 		boot.Error("http proxy setup failed: refusing to start", slog.String("error", err.Error()))
@@ -193,6 +197,7 @@ func cmdRun(ctx context.Context, lookup config.LookupFunc, logOut io.Writer) int
 		boot.Error("gateway setup failed: refusing to start", slog.String("error", err.Error()))
 		return exitError
 	}
+	startup.End()
 	if err := gw.Run(ctx); err != nil {
 		boot.Error("egress gateway failed", slog.String("error", err.Error()),
 			slog.String("reason", stopReason(ctx)))

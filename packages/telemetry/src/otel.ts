@@ -42,10 +42,12 @@ import {
   samplerRatio,
   type TelemetryConfig,
 } from './config.js';
+import { serviceInstrumentations } from './instrumentations.js';
 import { isExportSuccess, QueuedLogRecordProcessor, QueuedSpanProcessor } from './processors.js';
 
 import type { EnvSource } from '@blackwing/config';
 import type { ExportResult } from '@opentelemetry/core';
+import type { Instrumentation } from '@opentelemetry/instrumentation';
 import type { LogRecordExporter } from '@opentelemetry/sdk-logs';
 
 /** Instrumentation scope of the telemetry package's own self-metrics. */
@@ -75,6 +77,8 @@ export interface InitTelemetryOptions {
   readonly env?: EnvSource | undefined;
   /** Replaces the OTLP exporters, for tests that assert on in-memory exporters. */
   readonly exporters?: TelemetryExporters | undefined;
+  /** Auto-instrumentations to register. Default: {@link serviceInstrumentations} (HTTP, Fastify, NestJS, pg, ioredis). */
+  readonly instrumentations?: readonly Instrumentation[] | undefined;
 }
 
 interface ActiveTelemetry {
@@ -203,6 +207,7 @@ export function initTelemetry(options: InitTelemetryOptions): NodeSDK | undefine
     const sdk = new NodeSDK({
       resource: resourceFor(options, config),
       autoDetectResources: false,
+      instrumentations: [...(options.instrumentations ?? serviceInstrumentations())],
       sampler: buildSampler(config.OTEL_TRACES_SAMPLER, samplerRatio(config)),
       spanProcessors: [
         new QueuedSpanProcessor(exporters.spans, {
@@ -225,6 +230,13 @@ export function initTelemetry(options: InitTelemetryOptions): NodeSDK | undefine
     });
     sdk.start();
     active = { sdk };
+    // Fetched after start(): a meter taken before the global provider is set stays a no-op.
+    metrics
+      .getMeter(TELEMETRY_SCOPE)
+      .createGauge('app_telemetry_initialized', {
+        description: '1 once this process has started the telemetry SDK',
+      })
+      .record(1, { service: options.serviceName });
     log.info(
       {
         component: 'telemetry',

@@ -1,3 +1,5 @@
+import './instrument.js';
+
 import { runApi } from './run.js';
 
 /** Process entry point: see `runApi`. Invalid configuration exits before anything listens. */

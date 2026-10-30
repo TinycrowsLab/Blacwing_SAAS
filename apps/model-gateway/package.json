@@ -19,6 +19,7 @@
     "@blackwing/contracts": "workspace:*",
     "@blackwing/errors": "workspace:*",
     "@blackwing/logger": "workspace:*",
+    "@blackwing/telemetry": "workspace:*",
     "@opentelemetry/api": "catalog:",
     "@opentelemetry/core": "catalog:",
     "fastify": "catalog:",

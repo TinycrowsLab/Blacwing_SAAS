@@ -23,6 +23,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/identity"
 	"github.com/TinycrowsLab/Blacwing_SAAS/apps/egress-gateway/internal/server"
@@ -723,4 +727,56 @@ func TestLogAuditor(t *testing.T) {
 	require.NoError(t, a.RequestDenied(context.Background(), DeniedEvent{Type: AuditEventRequestDenied, Code: "c", MatchedRule: "r"}))
 	assert.Contains(t, sb.String(), "egress.request_denied")
 	assert.Contains(t, sb.String(), `"matched_rule":"r"`)
+}
+
+// TestTelemetryCarriesMetadataOnly proves no span attribute, event or OTLP counter label
+// carries request body bytes or credentials (CONTEXT_PACK §8.7).
+func TestTelemetryCarriesMetadataOnly(t *testing.T) {
+	up := newUpstream(t)
+	rec := tracetest.NewSpanRecorder()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(rec))
+	reader := sdkmetric.NewManualReader()
+	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	f := newFixture(t, func(o *Options, _ *fixture) { o.Tracer, o.Meter = tp, mp })
+
+	const secretBody = "SECRET-BODY-7f3a9c"
+	resp, _ := f.raw(fmt.Sprintf("POST %s/ HTTP/1.1\r\nHost: x\r\nProxy-Authorization: %s\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s",
+		up.URL, f.auth(), len(secretBody), secretBody))
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	spans := rec.Ended()
+	require.NotEmpty(t, spans)
+	for _, s := range spans {
+		for _, kv := range s.Attributes() {
+			assert.NotContains(t, kv.Value.Emit(), secretBody, "span %s attribute %s", s.Name(), kv.Key)
+			assert.NotContains(t, kv.Value.Emit(), goodToken, "span %s attribute %s", s.Name(), kv.Key)
+		}
+		for _, ev := range s.Events() {
+			for _, kv := range ev.Attributes {
+				assert.NotContains(t, kv.Value.Emit(), secretBody)
+			}
+		}
+	}
+
+	var rm metricdata.ResourceMetrics
+	require.NoError(t, reader.Collect(context.Background(), &rm))
+	var sawCounter bool
+	for _, sm := range rm.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name != "egress.http.requests" {
+				continue
+			}
+			sum, ok := m.Data.(metricdata.Sum[int64])
+			require.True(t, ok)
+			for _, dp := range sum.DataPoints {
+				sawCounter = true
+				assert.Equal(t, int64(1), dp.Value)
+				for _, kv := range dp.Attributes.ToSlice() {
+					assert.NotContains(t, kv.Value.Emit(), secretBody)
+					assert.NotContains(t, kv.Value.Emit(), goodToken)
+				}
+			}
+		}
+	}
+	assert.True(t, sawCounter, "egress.http.requests must be exported")
 }

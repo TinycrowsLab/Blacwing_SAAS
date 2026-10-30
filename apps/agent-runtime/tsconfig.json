@@ -23,6 +23,9 @@
       "path": "../../packages/logger"
     },
     {
+      "path": "../../packages/telemetry"
+    },
+    {
       "path": "../../packages/mcp-tools"
     }
   ]

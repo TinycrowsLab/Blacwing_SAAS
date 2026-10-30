@@ -79,6 +79,7 @@
         "architecture/persona-catalogue.md",
         "architecture/egress-gateway.md",
         "architecture/i18n.md",
+        "architecture/observability.md",
         "architecture/storage-buckets.md",
         "architecture/tenant-data-access.md",
         "architecture/tenant-isolation-tests.md",

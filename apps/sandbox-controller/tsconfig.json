@@ -11,6 +11,7 @@
     { "path": "../../packages/contracts" },
     { "path": "../../packages/errors" },
     { "path": "../../packages/logger" },
+    { "path": "../../packages/telemetry" },
     { "path": "../../packages/secrets" },
     { "path": "../../packages/testing" }
   ]

@@ -1,7 +1,11 @@
 package httpproxy
 
 import (
+	"context"
+
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
 // Decision label values of egress_http_requests_total.
@@ -26,9 +30,12 @@ type metrics struct {
 	requests *prometheus.CounterVec
 	upstream *prometheus.CounterVec
 	duration prometheus.Histogram
+	// otelRequests is the OTLP twin of requests (egress.http.requests), exported with
+	// the same bounded decision and method labels.
+	otelRequests metric.Int64Counter
 }
 
-func newMetrics(reg prometheus.Registerer) (*metrics, error) {
+func newMetrics(reg prometheus.Registerer, meter metric.Meter) (*metrics, error) {
 	m := &metrics{
 		requests: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "egress_http_requests_total",
@@ -44,6 +51,12 @@ func newMetrics(reg prometheus.Registerer) (*metrics, error) {
 			Buckets: prometheus.DefBuckets,
 		}),
 	}
+	otelRequests, err := meter.Int64Counter("egress.http.requests",
+		metric.WithDescription("HTTP proxy requests by decision and method (unknown methods are OTHER)."))
+	if err != nil {
+		return nil, err
+	}
+	m.otelRequests = otelRequests
 	for _, d := range []string{decisionAllow, decisionDeny, decisionUnauthenticated, decisionUnavailable} {
 		for _, meth := range append([]string{"OTHER"}, knownMethods...) {
 			m.requests.WithLabelValues(d, meth)
@@ -60,6 +73,14 @@ func newMetrics(reg prometheus.Registerer) (*metrics, error) {
 		}
 	}
 	return m, nil
+}
+
+// countRequest counts one proxy request on both the Prometheus and the OTLP counter.
+// method must already be bounded by methodLabel.
+func (m *metrics) countRequest(decision, method string) {
+	m.requests.WithLabelValues(decision, method).Inc()
+	m.otelRequests.Add(context.Background(), 1, metric.WithAttributes(
+		attribute.String("decision", decision), attribute.String("method", method)))
 }
 
 // methodLabel bounds metric cardinality: attacker-chosen methods collapse to OTHER.

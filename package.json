@@ -62,6 +62,7 @@
     "check:onboarding": "node scripts/check-onboarding.mjs",
     "check:adr": "node scripts/check-adr.mjs --quiet",
     "check:tsconfig": "node scripts/check-tsconfig.mjs",
+    "check:instrument-order": "node scripts/check-instrument-order.mjs",
     "check:turbo": "node scripts/check-turbo.mjs",
     "check:renovate": "node scripts/check-renovate.mjs",
     "check:actions": "node scripts/check-actions.mjs",

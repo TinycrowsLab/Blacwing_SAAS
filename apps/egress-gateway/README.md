@@ -37,7 +37,8 @@ skeleton binary. Delete a `deps.go` file once real code imports its library.
 
 ```
 cmd/gateway          CLI: run | check-config | version | help
-internal/obs         slog JSON logger, Prometheus metrics, OpenTelemetry, stopwatch
+internal/obs         slog JSON logger, Prometheus metrics, OpenTelemetry resource and trace provider, stopwatch
+internal/telemetry   OTel SDK bootstrap: OTLP trace+metric exporters, W3C propagation, global providers (OBS-002)
 internal/server      lifecycle, management plane, readiness, hook interfaces
 internal/config      environment loader (fail closed) and the Secret type
 internal/identity    proxy identity parser (tc/role/sess/run + token), verifier contract, 407/SOCKS mapping
@@ -99,7 +100,7 @@ weakens security.
 | `GATEWAY_DNS_ADDR` | no | `host:port` | `:5353` |
 | `POLICY_SNAPSHOT_PATH` | yes | path of the signed policy snapshot | none |
 | `VALKEY_URL` | yes | `redis://`, `rediss://`, `valkey://`, `valkeys://` URL (stored as `Secret`) | none |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | no | collector base URL, `http(s)://host:port`, no credentials | unset: spans not exported |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | no | collector base URL, `http(s)://host:port`, no credentials; traces go to `/v1/traces`, metrics to `/v1/metrics` | unset: signals not exported |
 | `GATEWAY_DRAIN_TIMEOUT` | no | Go duration in `(0, 5m]` | `10s` |
 | `GATEWAY_READ_TIMEOUT` | no | Go duration in `(0, 5m]`; HTTP proxy request read timeout | `30s` |
 | `GATEWAY_WRITE_TIMEOUT` | no | Go duration in `(0, 5m]`; HTTP proxy response write timeout | `60s` |

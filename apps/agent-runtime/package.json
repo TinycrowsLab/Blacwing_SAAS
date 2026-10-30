@@ -30,6 +30,7 @@
     "@blackwing/errors": "workspace:*",
     "@blackwing/logger": "workspace:*",
     "@blackwing/mcp-tools": "workspace:*",
+    "@blackwing/telemetry": "workspace:*",
     "@opentelemetry/api": "catalog:",
     "@playwright/mcp": "catalog:",
     "playwright-core": "catalog:",

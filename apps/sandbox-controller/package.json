@@ -23,6 +23,7 @@
     "@blackwing/errors": "workspace:*",
     "@blackwing/logger": "workspace:*",
     "@blackwing/secrets": "workspace:*",
+    "@blackwing/telemetry": "workspace:*",
     "@kubernetes/client-node": "1.4.0",
     "@opentelemetry/api": "catalog:",
     "@peculiar/x509": "2.0.0",

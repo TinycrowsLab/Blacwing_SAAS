@@ -21,6 +21,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/metric"
+	metricnoop "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
 
@@ -75,6 +77,8 @@ type Options struct {
 	Logger     *slog.Logger
 	Registerer prometheus.Registerer
 	Tracer     trace.TracerProvider
+	// Meter records the OTLP request counter (default: a no-op meter provider).
+	Meter metric.MeterProvider
 	// Dial opens upstream connections (default net.Dialer with a 10s timeout).
 	Dial func(ctx context.Context, network, addr string) (net.Conn, error)
 	// Listen binds the listener (default net.Listen).
@@ -127,6 +131,9 @@ func New(opts Options) (*Plane, error) {
 	if opts.Tracer == nil {
 		opts.Tracer = noop.NewTracerProvider()
 	}
+	if opts.Meter == nil {
+		opts.Meter = metricnoop.NewMeterProvider()
+	}
 	if opts.UpstreamTimeout <= 0 {
 		opts.UpstreamTimeout = 30 * time.Second
 	}
@@ -140,7 +147,7 @@ func New(opts Options) (*Plane, error) {
 	if opts.Listen == nil {
 		opts.Listen = net.Listen
 	}
-	met, err := newMetrics(opts.Registerer)
+	met, err := newMetrics(opts.Registerer, opts.Meter.Meter(obs.ServiceName))
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +274,7 @@ func (p *Plane) Shutdown(ctx context.Context) error {
 // serve gates every request on readiness, then hands it to goproxy.
 func (p *Plane) serve(w http.ResponseWriter, r *http.Request) {
 	if g := p.gate.Load(); g == nil || !(*g).Ready() {
-		p.met.requests.WithLabelValues(decisionUnavailable, methodLabel(r.Method)).Inc()
+		p.met.countRequest(decisionUnavailable, methodLabel(r.Method))
 		w.Header().Set("Connection", "close")
 		writeProblem(w, http.StatusServiceUnavailable, problem{Code: "gateway_not_ready", Reason: "the gateway is not ready; failing closed"})
 		return
@@ -498,7 +505,7 @@ func (p *Plane) onResponse(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Res
 			st.decision = decisionAllow
 		}
 	}
-	p.met.requests.WithLabelValues(st.decision, methodLabel(st.method)).Inc()
+	p.met.countRequest(st.decision, methodLabel(st.method))
 	p.met.duration.Observe(st.sw.Elapsed().Seconds())
 	attrs := []any{
 		slog.String(obs.FieldRunID, st.id.RunID.String()),
@@ -530,7 +537,7 @@ func (p *Plane) onConnect(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectA
 	defer span.End()
 	st := &reqState{method: http.MethodConnect, span: span, sw: obs.StartStopwatch()}
 	reject := func(resp *http.Response) (*goproxy.ConnectAction, string) {
-		p.met.requests.WithLabelValues(st.decision, "CONNECT").Inc()
+		p.met.countRequest(st.decision, "CONNECT")
 		p.met.duration.Observe(st.sw.Elapsed().Seconds())
 		ctx.Resp = resp
 		return &goproxy.ConnectAction{Action: goproxy.ConnectReject}, host
@@ -573,7 +580,7 @@ func (p *Plane) onConnect(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectA
 	if action == nil {
 		return reject(p.deny(req, st, &denial{status: http.StatusServiceUnavailable, pr: problem{Code: "interception_unavailable", Reason: "TLS interception is not available; the tunnel is refused"}}))
 	}
-	p.met.requests.WithLabelValues(decisionAllow, "CONNECT").Inc()
+	p.met.countRequest(decisionAllow, "CONNECT")
 	p.met.duration.Observe(st.sw.Elapsed().Seconds())
 	p.log.Debug("connect accepted",
 		slog.String(obs.FieldRunID, id.RunID.String()), slog.String("test_case_id", id.TestCaseID.String()),

@@ -110,5 +110,6 @@ describe('initTelemetry with in-memory exporters', () => {
     expect(failing?.events.some((event) => event.name === 'exception')).toBe(true);
 
     expect(exportedMetricNames).toContain('kill.count');
+    expect(exportedMetricNames).toContain('app_telemetry_initialized');
   });
 });

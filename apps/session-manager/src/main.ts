@@ -1,3 +1,5 @@
+import './instrument.js';
+
 import { CONFIG_EXIT_CODE } from '@blackwing/config';
 
 import { loadSessionManagerConfig, type SessionManagerConfig } from './config.js';

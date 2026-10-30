@@ -10,6 +10,7 @@
     { "path": "../../packages/config" },
     { "path": "../../packages/errors" },
     { "path": "../../packages/logger" },
+    { "path": "../../packages/telemetry" },
     { "path": "../../packages/testing" }
   ]
 }
