@@ -11,6 +11,14 @@ export const EXECUTION_WORKFLOW = 'ExecutionWorkflow';
 export const EXECUTION_EVENT_SIGNAL = 'executionEvent';
 /** Signal an approver sends (through the gates API) to decide one Gate 2 request. */
 export const GATE2_DECIDED_SIGNAL = 'gate2Decided';
+/**
+ * Signal the Gate 2 broker (GATE2-002) sends after it persists a `gate2_exceptions` row. It names the
+ * exception only; the workflow reads the state and `timeout_at` back, never trusts the signal for a decision.
+ * Must equal `GATE2_EXCEPTION_RAISED_SIGNAL` in `@blackwing/contracts` (pinned by a test).
+ */
+export const GATE2_EXCEPTION_RAISED_SIGNAL = 'gate2ExceptionRaised';
+/** Signal the gates API sends to decide one Gate 2 exception (GATE2-004). */
+export const GATE2_EXCEPTION_DECISION_SIGNAL = 'gate2Decision';
 /** Signal sent after an operator resumed a paused execution (the API applies the `resume` event). */
 export const EXECUTION_RESUMED_SIGNAL = 'executionResumed';
 /** Query returning {@link ExecutionProgress}. */
@@ -18,6 +26,12 @@ export const EXECUTION_PROGRESS_QUERY = 'executionProgress';
 
 /** Default Gate 2 timeout, `gate2_timeout_minutes` (§4.2, F13). No reply by then means denied. */
 export const DEFAULT_GATE2_TIMEOUT_MINUTES = 30;
+/**
+ * Escalation ladder of a Gate 2 exception, in seconds after the wait starts: page level 0 at once, level 1 at
+ * `GATE2_ESCALATE_1` (120s) and level 2 at `GATE2_ESCALATE_2` (300s). Steps past the decision deadline never fire.
+ */
+// eslint-disable-next-line @typescript-eslint/no-magic-numbers -- escalation offsets in seconds (GATE2_ESCALATE_1, GATE2_ESCALATE_2)
+export const DEFAULT_GATE2_ESCALATION_SECONDS = [0, 120, 300] as const;
 /** Default supervision poll interval, in milliseconds. */
 export const DEFAULT_POLL_MS = 60_000;
 /** Consecutive polls with no progress before the loop counts as stalled (default 10 minutes). */
@@ -43,7 +57,53 @@ export interface ExecutionInput extends ExecutionRef {
   readonly maxMentorInterventions?: number;
   /** Orchestrator crash recoveries (default {@link DEFAULT_MAX_ORCHESTRATOR_RECOVERIES}). */
   readonly maxOrchestratorRecoveries?: number;
+  /** Escalation ladder offsets for broker-raised Gate 2 exceptions (default {@link DEFAULT_GATE2_ESCALATION_SECONDS}). */
+  readonly gate2EscalationSeconds?: readonly number[];
 }
+
+/** Payload of the `gate2Decision` signal. `actorId` is the authenticated approver the gates API resolved. */
+export interface Gate2ExceptionDecisionSignal {
+  readonly exceptionId: string;
+  readonly decision: 'approve_once' | 'deny';
+  readonly actorId: string;
+  readonly reason: string;
+}
+
+/** Payload of the `gate2ExceptionRaised` signal. */
+export interface Gate2ExceptionRaisedSignal {
+  readonly exceptionId: string;
+}
+
+/** Events the workflow applies to a `gate2_exceptions` row (the state machine's `GATE2_EVENT_TYPES`). */
+export type Gate2ExceptionEvent = 'approve' | 'deny' | 'time_out' | 'supersede';
+
+export type Gate2ExceptionState =
+  'pending' | 'approved_once' | 'denied' | 'timed_out' | 'superseded';
+
+/** A refused Gate 2 exception event. A refusal is a value: the exception stays pending (a person may retry). */
+export type Gate2ExceptionRefusal =
+  | 'GATE2_SOD_VIOLATION'
+  | 'GATE2_ALREADY_DECIDED'
+  | 'GATE2_ILLEGAL_TRANSITION'
+  | 'GATE2_DESTRUCTIVE_FORBIDDEN'
+  | 'GATE2_NOT_FOUND';
+
+/** What the workflow reads for one exception: its state, the deadline (`timeout_at`) and the database clock. */
+export interface Gate2ExceptionSnapshot {
+  readonly exceptionId: string;
+  readonly state: Gate2ExceptionState;
+  readonly timeoutAt: string;
+  readonly now: string;
+}
+
+/**
+ * Result of one exception event. `applied`: the event won and is recorded. `lost`: a system event found the
+ * exception already decided (the first committed decision wins). `refused`: the event was not allowed.
+ */
+export type Gate2ExceptionVerdict =
+  | { readonly kind: 'applied'; readonly state: Gate2ExceptionState }
+  | { readonly kind: 'lost'; readonly state: Gate2ExceptionState }
+  | { readonly kind: 'refused'; readonly code: Gate2ExceptionRefusal };
 
 /**
  * Something outside the workflow needs a decision or a reaction. Every free-text field is untrusted
@@ -202,6 +262,28 @@ export interface ExecutionActivities {
   stopOrchestrator(ref: ExecutionRef): Promise<void>;
   /** Reads the frontier and whether the run is still alive. */
   observeFrontier(ref: ExecutionRef): Promise<FrontierSnapshot>;
+  /** Reads a Gate 2 exception of the run (GATE2-001). `null` when it does not belong to the run and tenant. */
+  readGate2Exception(
+    ref: ExecutionRef & { readonly exceptionId: string },
+  ): Promise<Gate2ExceptionSnapshot | null>;
+  /**
+   * Applies one event to a Gate 2 exception through the state machine (separation of duties, default deny,
+   * timeout guard and audit live there). A refused person decision leaves it pending.
+   */
+  decideGate2Exception(
+    ref: ExecutionRef & {
+      readonly exceptionId: string;
+      readonly event: Gate2ExceptionEvent;
+      readonly actor: { readonly kind: 'user' | 'system'; readonly id: string };
+      readonly reason?: string;
+    },
+  ): Promise<Gate2ExceptionVerdict>;
+  /** Pages the on-call roster for one escalation level of a Gate 2 exception. A page is advice: it allows nothing. */
+  pageGate2Escalation(
+    ref: ExecutionRef & { readonly exceptionId: string; readonly level: number },
+  ): Promise<void>;
+  /** Supersedes every pending Gate 2 exception of the run (kill or cancel), so each one denies. Idempotent. */
+  supersedeGate2Exceptions(ref: ExecutionRef): Promise<void>;
   /** Creates (or finds) the pending `gate_decisions` row, pages on-call, audits `gate2.opened`. */
   openGate2(
     ref: ExecutionRef & { readonly request: Gate2Request; readonly timeoutMinutes: number },

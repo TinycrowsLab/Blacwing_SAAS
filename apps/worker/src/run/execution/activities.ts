@@ -5,6 +5,7 @@ import { applyTransition, type RunEvent, type RunStatus } from '@blackwing/domai
 import { ConflictError, NotFoundError } from '@blackwing/errors';
 
 import { sanitiseSummary, toSnapshot } from './frontier.js';
+import { createGate2ExceptionActivities } from './gate2-exception.js';
 
 import type {
   ActivityRuntime,
@@ -13,6 +14,7 @@ import type {
   ExecutionAuditSink,
   ExecutionMetrics,
   ExecutionRunState,
+  Gate2ExceptionStore,
   Gate2Permissions,
   Gate2Row,
   Gate2Store,
@@ -39,6 +41,8 @@ export interface ExecutionActivityDeps {
   readonly frontier: SubtaskFrontier;
   readonly branches: SpecialistBranches;
   readonly gates: Gate2Store;
+  /** Broker-raised Gate 2 exceptions (`gate2_exceptions`, GATE2-004). */
+  readonly gate2Exceptions: Gate2ExceptionStore;
   readonly permissions: Gate2Permissions;
   readonly scopeExceptions: ScopeExceptions;
   readonly advisors: AdvisorySessions;
@@ -211,6 +215,12 @@ export function createExecutionActivities(deps: ExecutionActivityDeps): Executio
   }
 
   return {
+    ...createGate2ExceptionActivities({
+      exceptions: deps.gate2Exceptions,
+      pager: deps.pager,
+      metrics: deps.metrics,
+    }),
+
     async beginExecution(ref) {
       const facts = await deps.runs.load(ref.tenantId, ref.runId);
       if (facts === null) throw new NotFoundError('Run not found for tenant');

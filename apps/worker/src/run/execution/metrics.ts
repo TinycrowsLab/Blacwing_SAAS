@@ -25,7 +25,13 @@ export function createOtelExecutionMetrics(): ExecutionMetrics {
   const mentor = meter.createCounter('blackwing_mentor_interventions_total', {
     description: 'Mentor and reflector interventions by role',
   });
+  const escalations = meter.createCounter('blackwing_gate2_escalations_total', {
+    description: 'Gate 2 escalation pages sent, by escalation level',
+  });
   return {
+    gate2Escalation: (level) => {
+      escalations.add(1, { level: String(level) });
+    },
     gate2: (decision) => {
       gate2.add(1, { decision });
     },

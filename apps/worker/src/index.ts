@@ -107,6 +107,11 @@ export {
 } from './run/execution/frontier.js';
 export { createOtelExecutionMetrics } from './run/execution/metrics.js';
 export { createGate2Store } from './run/execution/gate2-store.js';
+export {
+  createGate2ExceptionActivities,
+  type Gate2ExceptionActivityDeps,
+} from './run/execution/gate2-exception.js';
+export { createPgGate2ExceptionStore } from './run/execution/gate2-exception-store.js';
 export type * from './run/execution/ports.js';
 export * from './run/execution/types.js';
 export {

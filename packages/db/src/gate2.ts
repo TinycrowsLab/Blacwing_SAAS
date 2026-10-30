@@ -17,6 +17,8 @@
 // `gate2AuditInput` + the emitter (`@blackwing/audit`). A failing sink rejects, rolling the whole
 // transaction back: a decision whose audit event cannot be written does not happen (§8.8).
 
+import { and, eq } from 'drizzle-orm';
+
 import {
   type Gate2Decide,
   gate2DecideSchema,
@@ -43,8 +45,8 @@ import { createLogger, type Logger, redactText, withContext } from '@blackwing/l
 
 import { drizzleGate2Store, type Gate2Store } from './gate2-store.js';
 import { redact } from './outbox.js';
+import { gate2Exceptions, type Gate2ExceptionRow } from './schema/gate2.js';
 
-import type { Gate2ExceptionRow } from './schema/gate2.js';
 import type { TenantTx } from './with-tenant.js';
 
 /** What the audit sink receives; `gate2AuditInput` in `@blackwing/audit` maps it to a ledger event. */
@@ -364,6 +366,20 @@ export function createGate2Service(
   }
 
   return { create, decide, get };
+}
+
+/** The database clock inside `tx`: the only "now" the Gate 2 timeout guard trusts (F13). */
+export function gate2DatabaseNow(tx: TenantTx): Promise<Date> {
+  return drizzleGate2Store(tx).now();
+}
+
+/** Ids of the run's exceptions still `pending` in the tenant of `tx` (RLS). */
+export async function pendingGate2ExceptionIds(tx: TenantTx, runId: string): Promise<string[]> {
+  const rows = await tx
+    .select({ id: gate2Exceptions.id })
+    .from(gate2Exceptions)
+    .where(and(eq(gate2Exceptions.runId, runId), eq(gate2Exceptions.state, 'pending')));
+  return rows.map((row) => row.id);
 }
 
 /** The Gate 2 service over the transaction `withTenant` hands to its callback. */

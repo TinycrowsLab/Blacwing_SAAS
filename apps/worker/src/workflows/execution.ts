@@ -33,6 +33,7 @@ import {
   observe,
 } from '../run/execution/frontier.js';
 import {
+  DEFAULT_GATE2_ESCALATION_SECONDS,
   DEFAULT_GATE2_TIMEOUT_MINUTES,
   DEFAULT_MAX_MENTOR_INTERVENTIONS,
   DEFAULT_MAX_ORCHESTRATOR_RECOVERIES,
@@ -42,6 +43,8 @@ import {
   EXECUTION_PROGRESS_QUERY,
   EXECUTION_RESUMED_SIGNAL,
   GATE2_DECIDED_SIGNAL,
+  GATE2_EXCEPTION_DECISION_SIGNAL,
+  GATE2_EXCEPTION_RAISED_SIGNAL,
   type ExecutionActivities,
   type ExecutionEvent,
   type ExecutionInput,
@@ -51,6 +54,9 @@ import {
   type FrontierSnapshot,
   type Gate2DecidedSignal,
   type Gate2Decision,
+  type Gate2ExceptionDecisionSignal,
+  type Gate2ExceptionRaisedSignal,
+  type Gate2ExceptionVerdict,
   type Gate2Request,
   type OrchestratorStopReason,
 } from '../run/execution/types.js';
@@ -58,6 +64,12 @@ import {
 const eventSignal = defineSignal<[ExecutionEvent]>(EXECUTION_EVENT_SIGNAL);
 const gate2Signal = defineSignal<[Gate2DecidedSignal]>(GATE2_DECIDED_SIGNAL);
 const resumedSignal = defineSignal<[{ actorId: string }]>(EXECUTION_RESUMED_SIGNAL);
+const gate2ExceptionRaisedSignal = defineSignal<[Gate2ExceptionRaisedSignal]>(
+  GATE2_EXCEPTION_RAISED_SIGNAL,
+);
+const gate2ExceptionDecisionSignal = defineSignal<[Gate2ExceptionDecisionSignal]>(
+  GATE2_EXCEPTION_DECISION_SIGNAL,
+);
 const dispatchUpdate = defineUpdate<DispatchOutcome, [unknown]>(DISPATCH_SUBTASK_UPDATE);
 const progressQuery = defineQuery<ExecutionProgress>(EXECUTION_PROGRESS_QUERY);
 
@@ -85,6 +97,7 @@ const orchestratorRun = proxyActivities<Pick<ExecutionActivities, 'superviseOrch
 });
 
 const MS_PER_MINUTE = 60_000;
+const MS_PER_SECOND = 1000;
 const RECOVERY_BACKOFF_MS = 5000;
 
 interface Supervision {
@@ -132,6 +145,10 @@ export async function ExecutionWorkflow(input: ExecutionInput): Promise<Executio
   const handled = new Set<string>();
   const decisions: Gate2DecidedSignal[] = [];
   const resumes: { actorId: string }[] = [];
+  const escalation = input.gate2EscalationSeconds ?? DEFAULT_GATE2_ESCALATION_SECONDS;
+  // Broker-raised exceptions (GATE2-002): a signal for one already being waited on is a retry, not a new wait.
+  const raisedExceptions = new Set<string>();
+  const exceptionDecisions: Gate2ExceptionDecisionSignal[] = [];
   const branches = new Set<Promise<void>>();
   let branchesFinished = 0;
   let fatal: Error | null = null;
@@ -148,6 +165,14 @@ export async function ExecutionWorkflow(input: ExecutionInput): Promise<Executio
   });
   setHandler(resumedSignal, (signal) => {
     resumes.push(signal);
+  });
+  setHandler(gate2ExceptionRaisedSignal, (signal) => {
+    if (raisedExceptions.has(signal.exceptionId)) return;
+    raisedExceptions.add(signal.exceptionId);
+    spawn(() => gate2Exception(signal.exceptionId));
+  });
+  setHandler(gate2ExceptionDecisionSignal, (signal) => {
+    exceptionDecisions.push(signal);
   });
   setHandler(progressQuery, () => ({
     phase: state.phase,
@@ -285,6 +310,84 @@ export async function ExecutionWorkflow(input: ExecutionInput): Promise<Executio
       if (decision === 'approved') state.gate2Approved++;
       else state.gate2Denied++;
     } finally {
+      state.gate2Pending--;
+    }
+  }
+
+  /**
+   * GATE2-004: waits on a broker-raised exception until a different, authorised person decides it or its
+   * `timeout_at` passes. The deadline comes from the row and the database clock, never from the workflow's own
+   * arithmetic on the signal's arrival. Escalation pages fire at the configured offsets meanwhile. A refused
+   * decision (separation of duties, a stale decision) leaves the exception pending. Silence is `time_out`: denied.
+   */
+  async function gate2Exception(exceptionId: string): Promise<void> {
+    const opened = await bookkeeping.readGate2Exception({ ...ref, exceptionId });
+    if (opened?.state !== 'pending') return;
+    state.gate2Pending++;
+    state.gate2Opened++;
+    const timers: CancellationScope[] = [];
+    let expired = false;
+    try {
+      const timeoutMs = Math.max(0, Date.parse(opened.timeoutAt) - Date.parse(opened.now));
+      const deadline = new CancellationScope();
+      timers.push(deadline);
+      void deadline
+        .run(() => sleep(timeoutMs))
+        .then(
+          () => {
+            expired = true;
+          },
+          () => undefined,
+        );
+      escalation.forEach((offsetSeconds, level) => {
+        const offsetMs = offsetSeconds * MS_PER_SECOND;
+        if (offsetMs >= timeoutMs) return;
+        const step = new CancellationScope();
+        timers.push(step);
+        // A failed page is tolerated: escalation is advice and the deny default does not depend on it.
+        void step
+          .run(async () => {
+            if (offsetMs > 0) await sleep(offsetMs);
+            await bookkeeping.pageGate2Escalation({ ...ref, exceptionId, level });
+          })
+          .catch(() => undefined);
+      });
+
+      let verdict: Gate2ExceptionVerdict | null = null;
+      for (;;) {
+        await condition(
+          () => expired || exceptionDecisions.some((d) => d.exceptionId === exceptionId),
+        );
+        const at = exceptionDecisions.findIndex((d) => d.exceptionId === exceptionId);
+        if (at < 0) break;
+        const [signal] = exceptionDecisions.splice(at, 1);
+        if (signal === undefined) continue;
+        const result = await bookkeeping.decideGate2Exception({
+          ...ref,
+          exceptionId,
+          event: signal.decision === 'approve_once' ? 'approve' : 'deny',
+          actor: { kind: 'user', id: signal.actorId },
+          reason: signal.reason,
+        });
+        if (result.kind !== 'refused') {
+          verdict = result;
+          break;
+        }
+        // A person's refusal keeps the exception pending. A decision that found it already decided ends the wait.
+        if (result.code === 'GATE2_ALREADY_DECIDED' || result.code === 'GATE2_NOT_FOUND') break;
+      }
+
+      // Nobody decided before the deadline (or the decided state was reached by someone else): record the timeout.
+      verdict ??= await bookkeeping.decideGate2Exception({
+        ...ref,
+        exceptionId,
+        event: 'time_out',
+        actor: { kind: 'system', id: 'gate2-timer' },
+      });
+      if (verdict.kind !== 'refused' && verdict.state === 'approved_once') state.gate2Approved++;
+      else state.gate2Denied++;
+    } finally {
+      for (const scope of timers) scope.cancel();
       state.gate2Pending--;
     }
   }
@@ -487,6 +590,8 @@ export async function ExecutionWorkflow(input: ExecutionInput): Promise<Executio
     await CancellationScope.nonCancellable(async () => {
       await haltSupervision();
       await bookkeeping.abortExecution(ref);
+      // A killed or cancelled run leaves no Gate 2 exception approvable: pending ones are superseded (deny).
+      await bookkeeping.supersedeGate2Exceptions(ref);
     });
     throw err;
   }

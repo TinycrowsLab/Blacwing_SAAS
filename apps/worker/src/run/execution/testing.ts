@@ -1,6 +1,8 @@
+import { applyGate2Event, type Gate2State, type RunStatus } from '@blackwing/domain';
 import { createLogger } from '@blackwing/logger';
 
 import { createExecutionActivities, type ExecutionActivityDeps } from './activities.js';
+import { refusalOf } from './gate2-exception.js';
 
 import type {
   ActivityRuntime,
@@ -9,6 +11,8 @@ import type {
   ExecutionAuditSink,
   ExecutionMetrics,
   ExecutionRunState,
+  Gate2ExceptionRead,
+  Gate2ExceptionStore,
   Gate2Permissions,
   Gate2Row,
   Gate2Store,
@@ -26,10 +30,12 @@ import type {
   ExecutionRef,
   FrontierCounts,
   Gate2Decision,
+  Gate2ExceptionEvent,
+  Gate2ExceptionVerdict,
   Gate2Request,
   OrchestratorStopReason,
 } from './types.js';
-import type { RunStatus } from '@blackwing/domain';
+import type { IntrusivenessClass } from '@blackwing/contracts';
 
 // Test doubles for the execution-phase activities (shared by the unit and integration tests). Not
 // exported from the package.
@@ -272,6 +278,128 @@ class FakeAdvisors implements AdvisorySessions {
   }
 }
 
+interface MemoryException {
+  readonly id: string;
+  readonly runId: string;
+  readonly intrusiveness: IntrusivenessClass;
+  state: Gate2State;
+  version: number;
+  readonly requesterId: string | null;
+  readonly planApproverId: string | null;
+  readonly timeoutAt: Date;
+  decidedBy: string | null;
+}
+
+/**
+ * `gate2_exceptions` double (GATE2-004). Runs the real Gate 2 state machine (`applyGate2Event`), so separation of
+ * duties, default deny and the timeout guard behave as they do in production.
+ */
+export class MemoryGate2Exceptions implements Gate2ExceptionStore {
+  readonly rows = new Map<string, MemoryException>();
+  /** Every applied event, in order. */
+  readonly applied: { exceptionId: string; event: Gate2ExceptionEvent; actorId: string }[] = [];
+  clock: () => Date = () => new Date();
+
+  /** Opens a pending exception due `dueInMs` from now, requested by `requesterId`. */
+  raise(
+    exceptionId: string,
+    dueInMs: number,
+    options: {
+      runId?: string;
+      requesterId?: string | null;
+      planApproverId?: string | null;
+      intrusiveness?: IntrusivenessClass;
+    } = {},
+  ): void {
+    this.rows.set(exceptionId, {
+      id: exceptionId,
+      runId: options.runId ?? REF.runId,
+      intrusiveness: options.intrusiveness ?? 'state_changing',
+      state: 'pending',
+      version: 0,
+      requesterId: options.requesterId === undefined ? REQUESTER : options.requesterId,
+      planApproverId: options.planApproverId ?? null,
+      timeoutAt: new Date(this.clock().getTime() + dueInMs),
+      decidedBy: null,
+    });
+  }
+
+  state(exceptionId: string): Gate2State | undefined {
+    return this.rows.get(exceptionId)?.state;
+  }
+
+  read(_t: string, runId: string, exceptionId: string): Promise<Gate2ExceptionRead | null> {
+    const row = this.rows.get(exceptionId);
+    if (row?.runId !== runId) return Promise.resolve(null);
+    return Promise.resolve({
+      state: row.state,
+      timeoutAt: row.timeoutAt.toISOString(),
+      now: this.clock().toISOString(),
+    });
+  }
+
+  apply(
+    _t: string,
+    runId: string,
+    exceptionId: string,
+    change: {
+      readonly event: Gate2ExceptionEvent;
+      readonly actor: { readonly kind: 'user' | 'system'; readonly id: string };
+      readonly reason?: string;
+    },
+  ): Promise<Gate2ExceptionVerdict> {
+    const row = this.rows.get(exceptionId);
+    if (row?.runId !== runId) {
+      return Promise.resolve({ kind: 'refused', code: 'GATE2_NOT_FOUND' });
+    }
+    if (row.state !== 'pending') {
+      const person = change.event === 'approve' || change.event === 'deny';
+      return Promise.resolve(
+        person
+          ? { kind: 'refused', code: 'GATE2_ALREADY_DECIDED' }
+          : { kind: 'lost', state: row.state },
+      );
+    }
+    try {
+      const result = applyGate2Event(
+        {
+          state: row.state,
+          version: row.version,
+          intrusiveness: row.intrusiveness,
+          requesterId: row.requesterId,
+          planApproverId: row.planApproverId,
+          timeoutAt: row.timeoutAt,
+        },
+        { type: change.event },
+        {
+          actor: change.actor,
+          now: this.clock(),
+          ...(change.reason === undefined ? {} : { reason: change.reason }),
+        },
+      );
+      row.state = result.next.state;
+      row.version = result.next.version;
+      row.decidedBy = result.next.decidedBy;
+      this.applied.push({ exceptionId, event: change.event, actorId: change.actor.id });
+      return Promise.resolve({ kind: 'applied', state: row.state });
+    } catch (error) {
+      const code = refusalOf(error);
+      if (code === undefined) {
+        return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+      }
+      return Promise.resolve({ kind: 'refused', code });
+    }
+  }
+
+  pendingIds(_t: string, runId: string): Promise<readonly string[]> {
+    return Promise.resolve(
+      [...this.rows.values()]
+        .filter((row) => row.runId === runId && row.state === 'pending')
+        .map((row) => row.id),
+    );
+  }
+}
+
 class FakePager implements Pager {
   readonly pages: string[] = [];
 
@@ -299,6 +427,7 @@ class FakeMetrics implements ExecutionMetrics {
   readonly waits: number[] = [];
   dispatches = 0;
   readonly mentors: string[] = [];
+  readonly escalations: number[] = [];
 
   gate2(decision: string): void {
     this.gate2Decisions.push(decision);
@@ -315,6 +444,10 @@ class FakeMetrics implements ExecutionMetrics {
   mentorIntervention(role: string): void {
     this.mentors.push(role);
   }
+
+  gate2Escalation(level: number): void {
+    this.escalations.push(level);
+  }
 }
 
 export interface Harness {
@@ -327,6 +460,7 @@ export interface Harness {
   readonly scopeExceptions: FakeScopeExceptions;
   readonly advisors: FakeAdvisors;
   readonly pager: FakePager;
+  readonly gate2Exceptions: MemoryGate2Exceptions;
   readonly audit: MemoryAudit;
   readonly metrics: FakeMetrics;
   readonly activity: ActivityRuntime & { readonly beats: number; abort(): void };
@@ -343,6 +477,8 @@ export function makeHarness(over: Partial<ExecutionActivityDeps> = {}): Harness 
     (over.scopeExceptions as FakeScopeExceptions | undefined) ?? new FakeScopeExceptions();
   const advisors = (over.advisors as FakeAdvisors | undefined) ?? new FakeAdvisors();
   const pager = (over.pager as FakePager | undefined) ?? new FakePager();
+  const gate2Exceptions =
+    (over.gate2Exceptions as MemoryGate2Exceptions | undefined) ?? new MemoryGate2Exceptions();
   const audit = (over.audit as MemoryAudit | undefined) ?? new MemoryAudit();
   const metrics = (over.metrics as FakeMetrics | undefined) ?? new FakeMetrics();
   const controller = new AbortController();
@@ -362,6 +498,7 @@ export function makeHarness(over: Partial<ExecutionActivityDeps> = {}): Harness 
     frontier,
     branches,
     gates,
+    gate2Exceptions,
     permissions: over.permissions ?? new FakePermissions(),
     scopeExceptions,
     advisors,
@@ -383,6 +520,7 @@ export function makeHarness(over: Partial<ExecutionActivityDeps> = {}): Harness 
     scopeExceptions,
     advisors,
     pager,
+    gate2Exceptions,
     audit,
     metrics,
     activity,

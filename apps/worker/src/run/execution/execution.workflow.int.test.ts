@@ -26,12 +26,18 @@ import {
   EXECUTION_RESUMED_SIGNAL,
   EXECUTION_WORKFLOW,
   GATE2_DECIDED_SIGNAL,
+  GATE2_EXCEPTION_DECISION_SIGNAL,
+  GATE2_EXCEPTION_RAISED_SIGNAL,
   type ExecutionEvent,
   type ExecutionInput,
   type ExecutionProgress,
   type ExecutionResult,
   type Gate2DecidedSignal,
+  type Gate2ExceptionDecisionSignal,
+  type Gate2ExceptionRaisedSignal,
 } from './types.js';
+
+const EXCEPTION = '0190a000-0000-7000-8000-0000000000e1';
 
 const address = process.env.TEMPORAL_ADDRESS ?? '127.0.0.1:17233';
 const namespace = process.env.TEMPORAL_NAMESPACE ?? 'blackwing-dev';
@@ -131,6 +137,23 @@ describe('ExecutionWorkflow on Temporal', () => {
     decision: 'approved' | 'denied',
   ): Promise<void> =>
     h.signal(GATE2_DECIDED_SIGNAL, { decisionId, actorId, decision } satisfies Gate2DecidedSignal);
+
+  const raised = (h: WorkflowHandle, exceptionId: string): Promise<void> =>
+    h.signal(GATE2_EXCEPTION_RAISED_SIGNAL, {
+      exceptionId,
+    } satisfies Gate2ExceptionRaisedSignal);
+  const decideException = (
+    h: WorkflowHandle,
+    exceptionId: string,
+    actorId: string,
+    decision: Gate2ExceptionDecisionSignal['decision'],
+  ): Promise<void> =>
+    h.signal(GATE2_EXCEPTION_DECISION_SIGNAL, {
+      exceptionId,
+      actorId,
+      decision,
+      reason: 'reviewed the call',
+    } satisfies Gate2ExceptionDecisionSignal);
 
   it('starts the orchestrator and ends the phase when the frontier is empty (exec.frontier-drain)', async () => {
     const h = makeHarness();
@@ -309,5 +332,97 @@ describe('ExecutionWorkflow on Temporal', () => {
     const result = await run(h, () => Promise.resolve());
     expect(result).toBeInstanceOf(WorkflowFailedError);
     expect(h.orchestrator.started).toEqual([]);
+  });
+  it('approves a broker-raised exception once when a different person decides in time (GATE2-004)', async () => {
+    const h = makeHarness();
+    workingOrchestrator(h);
+    const result = await run(h, async (handle) => {
+      h.gate2Exceptions.raise(EXCEPTION, 60_000);
+      await raised(handle, EXCEPTION);
+      await until(() => h.pager.pages.length === 1, 'the level 0 page');
+      expect(h.gate2Exceptions.state(EXCEPTION)).toBe('pending');
+      await decideException(handle, EXCEPTION, APPROVER, 'approve_once');
+      await until(() => h.gate2Exceptions.state(EXCEPTION) === 'approved_once', 'the approval');
+      // A duplicate decision after the first one is ignored, never applied.
+      await decideException(handle, EXCEPTION, APPROVER, 'deny');
+      h.frontier.drain();
+    });
+    expect(result).toMatchObject({ gate2Opened: 1, gate2Approved: 1, gate2Denied: 0 });
+    expect(h.gate2Exceptions.applied).toEqual([
+      { exceptionId: EXCEPTION, event: 'approve', actorId: APPROVER },
+    ]);
+    expect(h.metrics.gate2Decisions).toEqual(['approved']);
+  });
+
+  it('denies a broker-raised exception nobody decides before timeout_at, and a late approval cannot revive it (GATE2-004)', async () => {
+    const h = makeHarness();
+    workingOrchestrator(h);
+    const result = await run(h, async (handle) => {
+      h.gate2Exceptions.raise(EXCEPTION, 400);
+      await raised(handle, EXCEPTION);
+      await until(() => h.gate2Exceptions.state(EXCEPTION) === 'timed_out', 'the timeout');
+      await decideException(handle, EXCEPTION, APPROVER, 'approve_once');
+      await sleepMs(300);
+      h.frontier.drain();
+    });
+    expect(result).toMatchObject({ gate2Opened: 1, gate2Approved: 0, gate2Denied: 1 });
+    expect(h.gate2Exceptions.state(EXCEPTION)).toBe('timed_out');
+    expect(h.gate2Exceptions.applied).toEqual([
+      { exceptionId: EXCEPTION, event: 'time_out', actorId: 'gate2-timer' },
+    ]);
+    expect(h.metrics.gate2Decisions).toEqual(['timeout']);
+  }, 60_000);
+
+  it('refuses an approval by the requester and keeps the exception pending until an independent approver decides (GATE2-004)', async () => {
+    const h = makeHarness();
+    workingOrchestrator(h);
+    await run(h, async (handle) => {
+      h.gate2Exceptions.raise(EXCEPTION, 60_000);
+      await raised(handle, EXCEPTION);
+      await decideException(handle, EXCEPTION, REQUESTER, 'approve_once');
+      await sleepMs(300);
+      expect(h.gate2Exceptions.state(EXCEPTION)).toBe('pending');
+      await decideException(handle, EXCEPTION, APPROVER, 'approve_once');
+      await until(() => h.gate2Exceptions.state(EXCEPTION) === 'approved_once', 'the approval');
+      h.frontier.drain();
+    });
+    expect(h.gate2Exceptions.applied).toEqual([
+      { exceptionId: EXCEPTION, event: 'approve', actorId: APPROVER },
+    ]);
+  });
+
+  it('pages the escalation ladder at its offsets, and skips steps past the deadline (GATE2-004)', async () => {
+    const h = makeHarness();
+    workingOrchestrator(h);
+    await run(
+      h,
+      async (handle) => {
+        h.gate2Exceptions.raise(EXCEPTION, 1500);
+        await raised(handle, EXCEPTION);
+        await until(() => h.metrics.escalations.length === 2, 'the escalation ladder');
+        await until(() => h.gate2Exceptions.state(EXCEPTION) === 'timed_out', 'the timeout');
+        h.frontier.drain();
+      },
+      { gate2EscalationSeconds: [0, 0.2, 5] },
+    );
+    // Level 2 is due at 5s, after the 1.5s deadline, so it never fires.
+    expect(h.metrics.escalations).toEqual([0, 1]);
+    expect(h.pager.pages).toHaveLength(2);
+  }, 60_000);
+
+  it('supersedes a pending exception and denies it when the run is killed during the wait (GATE2-004)', async () => {
+    const h = makeHarness();
+    workingOrchestrator(h);
+    const result = await run(h, async (handle) => {
+      h.gate2Exceptions.raise(EXCEPTION, 60_000);
+      await raised(handle, EXCEPTION);
+      await until(() => h.pager.pages.length === 1, 'the level 0 page');
+      await handle.cancel();
+    });
+    expect(result).toBeInstanceOf(WorkflowFailedError);
+    expect(h.gate2Exceptions.state(EXCEPTION)).toBe('superseded');
+    expect(h.gate2Exceptions.applied).toEqual([
+      { exceptionId: EXCEPTION, event: 'supersede', actorId: 'gate2-exception-workflow' },
+    ]);
   });
 });

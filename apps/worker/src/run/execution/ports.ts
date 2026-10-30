@@ -1,6 +1,9 @@
 import type {
   FrontierCounts,
   Gate2Decision,
+  Gate2ExceptionEvent,
+  Gate2ExceptionState,
+  Gate2ExceptionVerdict,
   Gate2Request,
   MentorReason,
   OrchestratorStopReason,
@@ -121,6 +124,40 @@ export interface Gate2Store {
   listPending(tenantId: string, runId: string): Promise<readonly Gate2Row[]>;
 }
 
+/** A `gate2_exceptions` row as the workflow sees it (GATE2-001 owns the table and the state machine). */
+export interface Gate2ExceptionRead {
+  readonly state: Gate2ExceptionState;
+  /** `timeout_at`: when silence becomes a denial. */
+  readonly timeoutAt: string;
+  /** The database clock at the read; the workflow times its wait from it (no wall clock in workflow code). */
+  readonly now: string;
+}
+
+/**
+ * Broker-raised Gate 2 exceptions (`gate2_exceptions`, GATE2-001) in the tenant (RLS). Every method is scoped to
+ * one run: an exception of another run or tenant reads as absent and can never be decided from here.
+ */
+export interface Gate2ExceptionStore {
+  /** `null` when the exception is not this run's. */
+  read(tenantId: string, runId: string, exceptionId: string): Promise<Gate2ExceptionRead | null>;
+  /**
+   * Applies one event in one transaction through the state machine, recording the decision and its audit
+   * event. Refusals are values; a throw means the store could not answer and the activity is retried.
+   */
+  apply(
+    tenantId: string,
+    runId: string,
+    exceptionId: string,
+    change: {
+      readonly event: Gate2ExceptionEvent;
+      readonly actor: { readonly kind: 'user' | 'system'; readonly id: string };
+      readonly reason?: string;
+    },
+  ): Promise<Gate2ExceptionVerdict>;
+  /** Ids of the run's exceptions still `pending`. */
+  pendingIds(tenantId: string, runId: string): Promise<readonly string[]>;
+}
+
 /** RBAC check for deciding Gate 2 (an Asset Owner of the run's assets) in the tenant. */
 export interface Gate2Permissions {
   canDecide(tenantId: string, userId: string): Promise<boolean>;
@@ -183,6 +220,8 @@ export interface ExecutionMetrics {
   dispatch(): void;
   /** `blackwing_mentor_interventions_total{role}`. */
   mentorIntervention(role: 'mentor' | 'reflector'): void;
+  /** `blackwing_gate2_escalations_total{level}`: an escalation page was sent for a Gate 2 exception. */
+  gate2Escalation(level: number): void;
 }
 
 /** Heartbeat and cancellation of the running Temporal activity (injected so units need no worker). */
