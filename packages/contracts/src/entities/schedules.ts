@@ -50,10 +50,7 @@ export const SCHEDULE_CATCH_UP_WINDOW_DEFAULT_MINUTES = 60;
 export const schedulePublicIdSchema = z.string().regex(/^sched_[0-9a-hjkmnp-tv-z]{26}$/);
 
 /** Budgets are numbers only (no secrets, no strings), keyed by a short dimension name. */
-const budgetsSchema = z.record(
-  z.string().min(1).max(LIMITS.keyMax),
-  z.number().finite().nonnegative(),
-);
+const budgetsSchema = z.record(z.string().min(1).max(LIMITS.keyMax), z.number().nonnegative());
 
 const assetIdsSchema = z.array(uuidV7Schema).max(SCHEDULE_ASSET_IDS_MAX);
 
