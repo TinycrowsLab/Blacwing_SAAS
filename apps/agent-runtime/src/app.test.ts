@@ -212,7 +212,7 @@ describe('runMain', () => {
 
     expect(code).toBe(EXIT_CODES.success);
     expect(runQuery.calls).toEqual([
-      { prompt: 'Plan the next subtask. ✓', disallowed: ['WebFetch', 'WebSearch'] },
+      { prompt: 'Plan the next subtask. ✓', disallowed: ['WebFetch', 'WebSearch', 'WebRequest'] },
     ]);
     const posts = broker.requests.filter((r) => r.method === 'POST');
     expect(posts).toHaveLength(1);

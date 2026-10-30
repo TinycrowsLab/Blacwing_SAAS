@@ -24,6 +24,8 @@ import {
 import { AppError } from '@blackwing/errors';
 import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
 
+import { buildToolGate, createCanUseTool, type CanUseTool } from './tool-gate.js';
+
 import type { RuntimeMetrics } from '../metrics.js';
 import type { McpServerConfig, Options } from '@anthropic-ai/claude-agent-sdk';
 
@@ -39,17 +41,6 @@ import type { McpServerConfig, Options } from '@anthropic-ai/claude-agent-sdk';
  * The SDK's own types are not imported here, so the runtime's dependency surface stays unchanged. The shape
  * below is structural and matches the SDK's options and `canUseTool` contract.
  */
-
-/** A `canUseTool` decision, shaped like the SDK's permission result. */
-type ToolDecision =
-  | { readonly behavior: 'allow'; readonly updatedInput: Readonly<Record<string, unknown>> }
-  | { readonly behavior: 'deny'; readonly message: string };
-
-/** Per-call permission gate. Denies anything the persona did not declare (deny by default). */
-export type CanUseTool = (
-  toolName: string,
-  input: Readonly<Record<string, unknown>>,
-) => Promise<ToolDecision>;
 
 export interface SessionOptions {
   readonly model: string;
@@ -82,46 +73,6 @@ export interface SessionOptionsInput {
 }
 
 const BUDGET_INVALID = 'PERSONA_INVALID: remaining budget must be a positive finite number';
-const WILDCARD_ONLY = '*';
-
-/**
- * Matches a declared tool name. A pattern is either an exact name or a name with one trailing `*`
- * (for example `mcp__playwright__*`). The prefix keeps its `__` separator, so `mcp__playwright`
- * never matches `mcp__playwrightx__…`.
- */
-function matchesDeclared(pattern: string, toolName: string): boolean {
-  return pattern.endsWith('*') ? toolName.startsWith(pattern.slice(0, -1)) : pattern === toolName;
-}
-
-/** Rejects a pattern that would allow every tool. Persona data is never trusted to do that. */
-function assertNoCatchAll(patterns: readonly string[]): void {
-  if (patterns.includes(WILDCARD_ONLY)) {
-    throw new PersonaError(
-      'PERSONA_FORBIDDEN_TOOL',
-      'PERSONA_FORBIDDEN_TOOL: catch-all tool pattern',
-    );
-  }
-}
-
-/**
- * Builds the deny-by-default permission gate. A call is allowed only when it matches a declared
- * allowed pattern and no disallowed pattern. Every other call, including unknown names, is denied.
- */
-export function createCanUseTool(
-  allowedTools: readonly string[],
-  disallowedTools: readonly string[],
-): CanUseTool {
-  assertNoCatchAll(allowedTools);
-  return (toolName, input) => {
-    if (disallowedTools.some((p) => matchesDeclared(p, toolName))) {
-      return Promise.resolve({ behavior: 'deny', message: `tool ${toolName} is disallowed` });
-    }
-    if (allowedTools.some((p) => matchesDeclared(p, toolName))) {
-      return Promise.resolve({ behavior: 'allow', updatedInput: input });
-    }
-    return Promise.resolve({ behavior: 'deny', message: `tool ${toolName} is not declared` });
-  };
-}
 
 /** The session budget: the persona default, lowered to the remaining budget when that is smaller. */
 function resolveBudget(persona: PersonaDefinition, remaining: number | undefined): number {
@@ -174,9 +125,9 @@ export function buildSessionOptions(input: SessionOptionsInput): SessionOptions 
  * The SDK options for one agent session (RUNTIME-002, #464; CONTEXT_PACK §4.3, §8.7, §8.11, §4.5).
  *
  * `buildOptions` is the single factory for the mandatory SDK options of a Blackwing session, derived from the
- * validated descriptor. Per-tool gating (`allowedTools`, `canUseTool`), output format, hooks and abort wiring
- * attach to the object it returns elsewhere. Every refusal fails closed with a stable `AppError` code and no
- * partial options are returned.
+ * validated descriptor. The tool gate (`allowedTools`, `disallowedTools`, `canUseTool`) comes from `tool-gate.ts`
+ * (RUNTIME-003). Output format, hooks and abort wiring attach to the object it returns elsewhere. Every refusal fails
+ * closed with a stable `AppError` code and no partial options are returned.
  */
 
 /** Environment keys a session process may see. `env` is built from this list only, never from the host environment. */
@@ -376,7 +327,8 @@ function admittedOtelEnv(
  * Builds the mandatory SDK options for one agent session from its validated descriptor (RUNTIME-002, #464).
  *
  * Settings are never loaded (`settingSources: []`), the environment is an explicit allowlist, the permission
- * mode is `default`, and the mounted MCP servers are exactly the ones the persona's exposure row names. The
+ * mode is `default`, the tool gate (`allowedTools`, `disallowedTools`, `canUseTool`) is assembled by
+ * `buildToolGate` (RUNTIME-003), and the mounted MCP servers are exactly the ones the persona's exposure row names. The
  * refusals (unknown persona, exhausted budget, missing virtual key, missing server, forbidden mode) all throw
  * before the working directory is created, so a refused session leaves no trace.
  */
@@ -385,6 +337,7 @@ export function buildOptions(
   config: AgentOptionsConfig,
 ): Options {
   const serverNames = mcpServerNamesFor(descriptor.persona);
+  const gate = buildToolGate(descriptor);
   const maxBudgetUsd = resolveSessionBudget(descriptor.maxBudgetUsd, config.budgetRemainingUsd);
   const permissionMode = assertPermissionMode(SESSION_PERMISSION_MODE);
   const apiKey = resolveVirtualKey(descriptor, config);
@@ -413,6 +366,9 @@ export function buildOptions(
     includePartialMessages: true,
     thinking,
     mcpServers,
+    allowedTools: [...gate.allowedTools],
+    disallowedTools: [...gate.disallowedTools],
+    canUseTool: gate.canUseTool,
   };
 
   const optionsSha256 = createHash('sha256')
@@ -428,6 +384,8 @@ export function buildOptions(
         thinking,
         includePartialMessages: true,
         mcpServers: serverNames,
+        allowedTools: gate.allowedTools,
+        disallowedTools: gate.disallowedTools,
         envKeys: Object.keys(env).sort(),
       }),
     )

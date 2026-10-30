@@ -21,6 +21,9 @@ export const runSdkQuery: RunQuery = async function* runSdkQuery({ prompt, optio
         num_turns: message.num_turns,
         total_cost_usd: message.total_cost_usd,
         modelUsage: message.modelUsage,
+        permission_denials: message.permission_denials.map((denial) => ({
+          tool_name: denial.tool_name,
+        })),
       };
     }
   }

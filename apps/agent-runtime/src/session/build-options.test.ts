@@ -404,6 +404,40 @@ describe('buildOptions: mounted MCP servers', () => {
   });
 });
 
+describe('buildOptions: tool gate (RUNTIME-003)', () => {
+  const context = { signal: new AbortController().signal, toolUseID: 'tu-1', requestId: 'rq-1' };
+
+  it('carries the allowlist and the always-denied networked built-ins into the options', () => {
+    const opts = buildOptions(
+      descriptor({ allowedTools: ['Read', 'mcp__http__*'], disallowedTools: ['Bash'] }),
+      config(),
+    );
+    expect(opts.allowedTools).toEqual(['Read', 'mcp__http__*']);
+    expect(opts.disallowedTools).toEqual(
+      expect.arrayContaining(['Bash', 'WebFetch', 'WebSearch', 'WebRequest']),
+    );
+  });
+
+  it('wires a deny-by-default canUseTool that never allows an undeclared tool', async () => {
+    const opts = buildOptions(descriptor({ allowedTools: ['Read'] }), config());
+    const decide = opts.canUseTool;
+    if (!decide) throw new Error('canUseTool must be set');
+    await expect(decide('Read', {}, context)).resolves.toMatchObject({ behavior: 'allow' });
+    await expect(decide('WebFetch', {}, context)).resolves.toMatchObject({ behavior: 'deny' });
+    await expect(decide('mcp__shell__run', {}, context)).resolves.toMatchObject({
+      behavior: 'deny',
+    });
+  });
+
+  it('refuses an allowlist that names a networked built-in, before the working directory exists', () => {
+    const error = errorOf(() =>
+      buildOptions(descriptor({ allowedTools: ['Read', 'WebSearch'] }), config()),
+    );
+    expect(error.code).toBe('AGENT_FORBIDDEN_TOOL');
+    expect(existsSync(workspaceDir)).toBe(false);
+  });
+});
+
 describe('buildOptions: audit and observability', () => {
   it('reports the mounted server names, and an options hash that excludes the key', () => {
     const events: unknown[] = [];

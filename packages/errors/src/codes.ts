@@ -203,6 +203,12 @@ const DEFINITIONS = {
     title: 'Agent session budget exhausted',
     retryable: false,
   },
+  // Agent tool gating (RUNTIME-003, #466): a descriptor allowlist that names a networked built-in is refused at build time.
+  AGENT_FORBIDDEN_TOOL: {
+    status: 500,
+    title: 'Forbidden agent tool in allowlist',
+    retryable: false,
+  },
   // `secret_ref` URI grammar (SECRETS-003, §8.7): a malformed reference is invalid input, rejected at parse time.
   INVALID_SECRET_REF: { status: 422, title: 'Invalid secret reference', retryable: false },
   CONFIG_INVALID: { status: 500, title: 'Invalid configuration', retryable: false },

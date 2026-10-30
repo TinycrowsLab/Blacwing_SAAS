@@ -1,4 +1,3 @@
-import { FORBIDDEN_BUILTIN_TOOLS } from '@blackwing/agents';
 import {
   AGENT_SESSION_RECORD_SUFFIX,
   agentSessionRecordSchema,
@@ -6,7 +5,7 @@ import {
   brokerStateResponseSchema,
 } from '@blackwing/contracts';
 
-import { createCanUseTool } from './options.js';
+import { ALWAYS_DISALLOWED, buildToolGate, denialReason } from './tool-gate.js';
 
 import type { RuntimeMetrics } from '../metrics.js';
 import type { Options } from '@anthropic-ai/claude-agent-sdk';
@@ -49,6 +48,8 @@ interface SessionResultMessage {
   readonly num_turns: number;
   readonly total_cost_usd: number;
   readonly modelUsage: Readonly<Record<string, unknown>>;
+  /** The authoritative record of denied tool calls (RUNTIME-003). Names only; the call inputs are never read. */
+  readonly permission_denials?: readonly { readonly tool_name: string }[];
 }
 
 /** One stream message from the SDK. Only results are kept; every other message is ignored here. */
@@ -83,15 +84,15 @@ export interface SessionSummary {
 
 /**
  * Builds the SDK options from the descriptor. The persona's richer options belong to `session/options.ts`
- * (RUNTIME-002). The two built-in tools that bypass the egress path are always disallowed, whatever the
- * descriptor says (§4.3, §4.5). Settings are never loaded from the sandbox, and the permission mode is never
- * `bypassPermissions`.
+ * (RUNTIME-002). The tool gate (allow and deny sets, always-denied networked built-ins, deny-by-default
+ * `canUseTool`) comes from `tool-gate.ts` (RUNTIME-003). Settings are never loaded from the sandbox, and the
+ * permission mode is never `bypassPermissions`.
  */
 export function buildRunOptions(
   descriptor: AgentSessionDescriptor,
   abortController: AbortController,
 ): Options {
-  const disallowedTools = [...new Set([...descriptor.disallowedTools, ...FORBIDDEN_BUILTIN_TOOLS])];
+  const gate = buildToolGate(descriptor);
   return {
     model: descriptor.model,
     effort: descriptor.effort,
@@ -100,11 +101,46 @@ export function buildRunOptions(
     cwd: descriptor.workspaceDir,
     settingSources: [],
     permissionMode: 'default',
-    allowedTools: [...descriptor.allowedTools],
-    disallowedTools,
-    canUseTool: createCanUseTool(descriptor.allowedTools, disallowedTools),
+    allowedTools: [...gate.allowedTools],
+    disallowedTools: [...gate.disallowedTools],
+    canUseTool: gate.canUseTool,
     abortController,
   };
+}
+
+/** Longest tool name written to the denial log. A model-chosen name is untrusted, so it is bounded. */
+const DENIED_TOOL_LOG_MAX = 128;
+
+/**
+ * Records every tool call the SDK denied (RUNTIME-003, §8.11). Each denial is counted by persona, tool and reason,
+ * and logged by name. The tool label is the exact name only when the descriptor declares it, so a model-chosen
+ * name cannot create new metric series. Call inputs are never logged.
+ */
+function recordDenials(
+  descriptor: AgentSessionDescriptor,
+  denials: SessionResultMessage['permission_denials'],
+  ports: SessionPorts,
+): void {
+  const declared = new Set(
+    [...ALWAYS_DISALLOWED, ...descriptor.allowedTools, ...descriptor.disallowedTools].filter(
+      (rule) => !rule.endsWith('*') && !rule.includes('('),
+    ),
+  );
+  for (const denial of denials ?? []) {
+    const reason = denialReason(denial.tool_name, descriptor.disallowedTools);
+    const tool = declared.has(denial.tool_name) ? denial.tool_name : 'other';
+    ports.metrics.toolDenied.inc({ persona: descriptor.persona, tool, reason });
+    ports.log.info(
+      {
+        runId: descriptor.runId,
+        sessionId: descriptor.sessionId,
+        persona: descriptor.persona,
+        tool: denial.tool_name.slice(0, DENIED_TOOL_LOG_MAX),
+        reason,
+      },
+      'tool.denied',
+    );
+  }
 }
 
 /** Checks the run broker before any model call. Any failure, or an inactive run, fails closed (exit 3). */
@@ -168,6 +204,7 @@ export async function runSession(
 
   ports.metrics.sessionsStarted.inc({ persona: descriptor.persona });
   const result = await drive(descriptor, ports.runQuery, new AbortController());
+  recordDenials(descriptor, result.permission_denials, ports);
   const record = agentSessionRecordSchema.parse({
     sessionId: descriptor.sessionId,
     persona: descriptor.persona,

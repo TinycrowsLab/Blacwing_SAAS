@@ -134,6 +134,7 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'AGENT_NO_VIRTUAL_KEY',
   'AGENT_MCP_SERVER_MISSING',
   'AGENT_BUDGET_EXHAUSTED',
+  'AGENT_FORBIDDEN_TOOL',
   'CONFIG_INVALID', // ConfigValidationError, @blackwing/config
   // EvidenceIntegrityError, @blackwing/evidence (EVIDENCE binding, #724): carries its own code.
   'EVIDENCE_INTEGRITY_FAILED',

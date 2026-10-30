@@ -309,6 +309,89 @@ describe('runSession', () => {
   });
 });
 
+/** A `RunQuery` whose result reports the given SDK permission denials, as the real SDK does for denied calls. */
+function denialQuery(tools: readonly string[]): RunQuery {
+  return () =>
+    (async function* denials(): AsyncGenerator<SessionStreamMessage> {
+      await Promise.resolve();
+      yield {
+        type: 'result',
+        subtype: 'success',
+        num_turns: 2,
+        total_cost_usd: 0.1,
+        modelUsage: {},
+        permission_denials: tools.map((tool_name) => ({ tool_name })),
+      };
+    })();
+}
+
+describe('runSession: denied tool calls (RUNTIME-003)', () => {
+  it('counts each SDK-reported denial by persona, tool and reason, and logs its name', async () => {
+    const metrics = createRuntimeMetrics();
+    const log = fakeLog();
+    await runSession(DESCRIPTOR, {
+      broker: fakeBroker(),
+      runQuery: denialQuery(['WebFetch', 'Bash', 'mcp__shell__run']),
+      sdkVersion: '0.3.308',
+      metrics,
+      log,
+    });
+    const text = await metrics.registry.metrics();
+    expect(text).toContain(
+      'agent_tool_denied_total{persona="web-api-specialist",tool="WebFetch",reason="always_disallowed"} 1',
+    );
+    expect(text).toContain(
+      'agent_tool_denied_total{persona="web-api-specialist",tool="Bash",reason="disallowed"} 1',
+    );
+    expect(text).toContain(
+      'agent_tool_denied_total{persona="web-api-specialist",tool="other",reason="not_declared"} 1',
+    );
+    const denialLines = log.lines.filter((line) => line.startsWith('tool.denied '));
+    expect(denialLines).toHaveLength(3);
+    expect(denialLines.join('\n')).toContain('"tool":"mcp__shell__run"');
+  });
+
+  it('keeps a model-chosen tool name out of the metric labels', async () => {
+    const metrics = createRuntimeMetrics();
+    const invented = `mcp__http__${'x'.repeat(40)}`;
+    await runSession(DESCRIPTOR, {
+      broker: fakeBroker(),
+      runQuery: denialQuery([invented]),
+      sdkVersion: '0.3.308',
+      metrics,
+      log: fakeLog(),
+    });
+    expect(await metrics.registry.metrics()).not.toContain(invented);
+  });
+
+  it('records no denial metric when the session reports none', async () => {
+    const metrics = createRuntimeMetrics();
+    await runSession(DESCRIPTOR, {
+      broker: fakeBroker(),
+      runQuery: resultQuery(),
+      sdkVersion: '0.3.308',
+      metrics,
+      log: fakeLog(),
+    });
+    expect(await metrics.registry.metrics()).not.toContain('agent_tool_denied_total{');
+  });
+
+  it('starts no model call when the descriptor allows a networked built-in', async () => {
+    const forbidden: AgentSessionDescriptor = { ...DESCRIPTOR, allowedTools: ['WebSearch'] };
+    const runQuery = resultQuery();
+    await expect(
+      runSession(forbidden, {
+        broker: fakeBroker(),
+        runQuery,
+        sdkVersion: '0.3.308',
+        metrics: createRuntimeMetrics(),
+        log: fakeLog(),
+      }),
+    ).rejects.toBeInstanceOf(SessionExit);
+    expect(runQuery.starts).toBe(0);
+  });
+});
+
 describe('buildRunOptions', () => {
   it('always disallows WebFetch and WebSearch, even when the descriptor omits them', () => {
     const options = buildRunOptions(DESCRIPTOR, new AbortController());
@@ -316,6 +399,11 @@ describe('buildRunOptions', () => {
       expect.arrayContaining(['Bash', 'WebFetch', 'WebSearch']),
     );
     expect(new Set(options.disallowedTools).size).toBe(options.disallowedTools?.length);
+  });
+
+  it('also disallows WebRequest, the third networked built-in', () => {
+    const options = buildRunOptions(DESCRIPTOR, new AbortController());
+    expect(options.disallowedTools).toContain('WebRequest');
   });
 
   it('keeps the permission mode default, reads no sandbox settings, and never bypasses', () => {

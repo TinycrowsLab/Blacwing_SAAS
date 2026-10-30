@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { loadPersona, type PersonaDefinition, type RunContext } from '@blackwing/agents';
 
-import { buildSessionOptions, createCanUseTool, type SessionOptionsInput } from './options.js';
+import { buildSessionOptions, type SessionOptionsInput } from './options.js';
+import { createCanUseTool } from './tool-gate.js';
 
 const persona = loadPersona('web-api-specialist');
 
