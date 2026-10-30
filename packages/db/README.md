@@ -149,3 +149,16 @@ enrichment read (INTEL-007, 009, 010). The shared values (OWASP schemes, sources
 Tests: `src/intel-mirror.rls.int.test.ts` (Testcontainers: read-only reference tables, CHECK negatives, upsert rules,
 tenant isolation of `finding_intel`) and `src/intel-mirror.metrics.test.ts`. The domain schemas are in
 `packages/domain/src/intel/model.test.ts`.
+
+## Cost ledger and price tables (COST-001)
+
+Schema in `src/schema/cost.ts`; the migration is the `*_cost_ledger_price_tables` file in `migrations/`.
+
+- `cost_ledger` is tenant data (RLS, FORCE). It is append-only for the runtime role: `bw_app` has `SELECT, INSERT`
+  and no `UPDATE`, `DELETE` or `TRUNCATE`, so a correction is a compensating row. The unique key
+  `(tenant_id, usage_event_id)` makes ingestion idempotent. Every row pins the `price_tables` row it was priced with.
+- `price_tables` is platform reference data with no `tenant_id`. Tenants read it, `bw_app` cannot write it, and the
+  `bw_operator` role is the only writer. Rows are unique on `(provider, model, version)`; a price change is a new version.
+- Money is `numeric` (never float). The enums and the model-id rule (exact ids, no date suffix) come from
+  `@blackwing/contracts` (`COST_PROVIDERS`, `COST_STAGES`, `costModelIdSchema`) and are also CHECK constraints.
+- Ingestion (COST-002), pricing (COST-003) and aggregation (COST-004) are separate issues.

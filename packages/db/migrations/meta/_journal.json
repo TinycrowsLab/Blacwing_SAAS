@@ -225,6 +225,13 @@
       "when": 1793343351738,
       "tag": "20261030065551_audit_export_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793346504935,
+      "tag": "20261030074824_cost_ledger_and_price_tables",
+      "breakpoints": true
     }
   ]
 }

@@ -150,6 +150,14 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, newId(), newId()],
     );
   },
+  cost_ledger: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO cost_ledger (id, tenant_id, run_id, stage, provider, model, price_table_id,
+         input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cost_usd, usage_event_id, occurred_at)
+       VALUES ($1, $2, $3, 'execution', 'anthropic', 'claude-sonnet-5-5', $4, 100, 50, 0, 0, '0.0010000000', $5, now())`,
+      [newId(), tenantId, newId(), isoPriceTableId, `iso-${newId()}`],
+    );
+  },
   kill_events: async (tx, tenantId) => {
     await tx.query(
       `INSERT INTO kill_events (id, tenant_id, scope, scope_ref_id, source, actor_type, actor_ref, reason)
@@ -359,9 +367,29 @@ async function insertAsset(tx: pg.PoolClient, tenantId: string): Promise<string>
 let db: PostgresHandle;
 const tenantA = newId();
 const tenantB = newId();
+/** A platform price table the cost ledger seeder pins to (price tables are operator-written, not tenant data). */
+let isoPriceTableId = '';
 
 beforeAll(async () => {
   db = await withPostgres({ migrations: (owner) => migrateDatabase(owner) });
+  isoPriceTableId = newId();
+  const client = await db.ownerPool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SET LOCAL ROLE bw_operator');
+    await client.query(
+      `INSERT INTO price_tables (id, provider, model, version, input_per_mtok, output_per_mtok,
+         cache_write_per_mtok, cache_read_per_mtok, effective_from, sha256)
+       VALUES ($1, 'anthropic', 'claude-sonnet-5-5', 1, 3, 15, 3.75, 0.3, now(), $2)`,
+      [isoPriceTableId, 'c'.repeat(64)],
+    );
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 });
 
 afterAll(async () => {
