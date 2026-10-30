@@ -11,10 +11,11 @@ export default async function LoginPage({
   const { error, returnTo } = await searchParams;
   const message = typeof error === 'string' ? loginErrorMessage(error) : undefined;
   // The BFF re-validates returnTo as an internal path; here it is only carried along.
-  const href =
-    typeof returnTo === 'string'
-      ? `/api/auth/login?returnTo=${encodeURIComponent(returnTo)}`
-      : '/api/auth/login';
+  const carry = typeof returnTo === 'string' ? `returnTo=${encodeURIComponent(returnTo)}` : '';
+  const href = carry === '' ? '/api/auth/login' : `/api/auth/login?${carry}`;
+  // Starts Keycloak's Google broker directly (kc_idp_hint). The BFF allow-lists the value; nothing else is passed on.
+  const googleHref =
+    carry === '' ? '/api/auth/login?idp=google' : `/api/auth/login?idp=google&${carry}`;
   return (
     <>
       <div className="flex flex-col items-start gap-4">
@@ -47,6 +48,14 @@ export default async function LoginPage({
       >
         {message === undefined ? 'Continue with single sign-on' : 'Try again'}
       </a>
+      {message === undefined ? (
+        <a
+          className="inline-flex h-11 items-center justify-center rounded-lg border border-border2 bg-surface px-4 text-[14px] font-medium text-foreground no-underline hover:bg-surface2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+          href={googleHref}
+        >
+          Continue with Google
+        </a>
+      ) : null}
     </>
   );
 }

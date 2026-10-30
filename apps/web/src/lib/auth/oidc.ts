@@ -100,7 +100,13 @@ export interface LogoutTokenClaims {
 }
 
 export interface OidcClient {
-  authorizationUrl(params: { state: string; nonce: string; challenge: string }): Promise<URL>;
+  /** `idpHint` (Keycloak `kc_idp_hint`) starts a brokered identity provider directly; the caller allow-lists it. */
+  authorizationUrl(params: {
+    state: string;
+    nonce: string;
+    challenge: string;
+    idpHint?: string | undefined;
+  }): Promise<URL>;
   exchangeCode(params: { code: string; verifier: string; nonce: string }): Promise<TokenSet>;
   refresh(refreshToken: string): Promise<TokenSet>;
   /** RP-initiated logout URL, or `undefined` when the IdP advertises no `end_session_endpoint`. */
@@ -256,7 +262,7 @@ export function createOidcClient(
   }
 
   return {
-    async authorizationUrl({ state, nonce, challenge }) {
+    async authorizationUrl({ state, nonce, challenge, idpHint }) {
       const { doc } = await discover();
       const url = new URL(doc.authorization_endpoint);
       url.search = new URLSearchParams({
@@ -268,6 +274,7 @@ export function createOidcClient(
         nonce,
         code_challenge: challenge,
         code_challenge_method: 'S256',
+        ...(idpHint === undefined ? {} : { kc_idp_hint: idpHint }),
       }).toString();
       return url;
     },

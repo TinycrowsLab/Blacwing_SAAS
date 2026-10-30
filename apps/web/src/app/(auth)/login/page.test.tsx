@@ -35,3 +35,24 @@ describe('login page', () => {
     expect(document.body.innerHTML).not.toContain('onerror');
   });
 });
+
+describe('login page Google option', () => {
+  afterEach(cleanup);
+
+  it('offers Continue with Google that starts the Google broker, next to the normal sign-in', async () => {
+    await renderPage({});
+    expect(screen.getByRole('link', { name: 'Continue with Google' }).getAttribute('href')).toBe(
+      '/api/auth/login?idp=google',
+    );
+    expect(
+      screen.getByRole('link', { name: 'Continue with single sign-on' }).getAttribute('href'),
+    ).toBe('/api/auth/login');
+  });
+
+  it('carries returnTo into the Google start link', async () => {
+    await renderPage({ returnTo: '/demo' });
+    expect(screen.getByRole('link', { name: 'Continue with Google' }).getAttribute('href')).toBe(
+      '/api/auth/login?idp=google&returnTo=%2Fdemo',
+    );
+  });
+});

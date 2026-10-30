@@ -550,3 +550,17 @@ describe('identityFromClaims', () => {
     expect(identityFromClaims({ tenantId: 't' })).toBeNull();
   });
 });
+
+describe('startLogin with an identity provider hint', () => {
+  it('passes the allow-listed hint to the authorization request', async () => {
+    const h = harness();
+    await h.service.startLogin(null, 'google');
+    expect(h.oidc.authorizationUrl.mock.calls[0]?.[0]).toMatchObject({ idpHint: 'google' });
+  });
+
+  it('sends no hint by default', async () => {
+    const h = harness();
+    await h.service.startLogin(null);
+    expect(h.oidc.authorizationUrl.mock.calls[0]?.[0]?.idpHint).toBeUndefined();
+  });
+});

@@ -40,6 +40,7 @@ import {
 } from './session-store.js';
 
 import type { AuthConfig } from './config.js';
+import type { IdpHint } from './idp-hint.js';
 import type { JWTPayload } from 'jose';
 
 const LOGIN_PURPOSE = 'login-cookie';
@@ -138,7 +139,11 @@ type AuthState =
   | { readonly status: 'unavailable' };
 
 export interface AuthService {
-  startLogin(returnTo: string | null): Promise<{ location: string; loginCookie: string }>;
+  /** `idpHint` must already be allow-listed (see `idpHintOf`); it starts that broker directly in Keycloak. */
+  startLogin(
+    returnTo: string | null,
+    idpHint?: IdpHint,
+  ): Promise<{ location: string; loginCookie: string }>;
   completeLogin(input: {
     code: string | undefined;
     state: string | undefined;
@@ -316,7 +321,7 @@ export function createAuthService(deps: AuthDeps): AuthService {
   }
 
   return {
-    async startLogin(returnTo) {
+    async startLogin(returnTo, idpHint) {
       const verifier = randomToken();
       const login = {
         state: randomToken(),
@@ -328,6 +333,7 @@ export function createAuthService(deps: AuthDeps): AuthService {
         state: login.state,
         nonce: login.nonce,
         challenge: codeChallenge(verifier),
+        idpHint,
       });
       return {
         location: url.href,

@@ -55,6 +55,43 @@ Open `http://localhost:3000`, which redirects to the Keycloak login. The sign-in
 The password is `BW_DEV_KEYCLOAK_TEST_USER_PASSWORD` in the repository `.env`. Print it locally with
 `grep BW_DEV_KEYCLOAK_TEST_USER_PASSWORD .env`. Do not paste it into chat or tickets.
 
+## Sign in with Google (optional)
+
+Google is brokered by Keycloak only. The app never talks to Google. The `google` identity provider lives in the
+realm `blackwing-dev`, and the console's `/login` page has a **Continue with Google** link that starts it directly
+(`/api/auth/login?idp=google`, which the BFF turns into Keycloak's `kc_idp_hint=google`). The normal
+**Continue with single sign-on** link is unchanged.
+
+To enable it:
+
+1. In Google Cloud Console, create an OAuth client (type **Web application**). Add the **Authorised JavaScript origin**
+   `http://localhost:18080` and the **Authorised redirect URI**
+   `http://localhost:18080/realms/blackwing-dev/broker/google/endpoint`.
+2. Put the client in the repository `.env` (gitignored, never commit it): `BW_DEV_GOOGLE_CLIENT_ID` and
+   `BW_DEV_GOOGLE_CLIENT_SECRET`.
+3. Run `pnpm demo google`. It upserts the provider (idempotent: run it again after changing the secret) and the demo
+   mappers. Without the two values it prints these instructions and changes nothing. `pnpm demo` runs the same step
+   once Keycloak is up, and continues without Google if it is not configured.
+
+What a first Google sign-in does (demo mode only, `BW_DEMO_MODE=1`, which `pnpm demo` sets):
+
+- The Google IdP mappers give the new Keycloak user the tenant attribute `acme`, the realm roles `appsec-engineer` and
+  `auditor` (requester and read access), and the marker role `bw-demo-google`.
+- The first demo request for that user creates its user row and a membership in the demo tenant `acme` in
+  `blackwing_demo`. The marker is the only way in: a local user without it is still refused (`demo_user_unknown`).
+- Keycloak may show its "Update account information" page once, because the provider asks to review the profile.
+- The banner says the Google sign-in is the requester and read account. **Gate 1 needs a second person:** sign out and
+  sign in as `owner@acme.test` to approve. A Google user cannot approve its own request (separation of duties).
+
+**Security note.** With `pnpm demo google` set up, every Google account that can reach the dev Keycloak gets the demo
+tenant. Keep the dev Keycloak on `localhost`, and do not expose it on the LAN while Google is enabled. The mappers
+are demo-only; a real tenant never uses this realm.
+
+Check it: `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/login` is 200. The page shows both links.
+`curl -s -o /dev/null -w "%{redirect_url}" "http://127.0.0.1:3000/api/auth/login?idp=google"` redirects to
+`.../realms/blackwing-dev/protocol/openid-connect/auth?...kc_idp_hint=google...`. Keycloak then redirects to
+`accounts.google.com`. A second `idp` value (for example `idp=github`) is ignored, not forwarded.
+
 ## Expose it on the LAN
 
 1. Set `DEMO_HOST` to the machine's LAN IP or `0.0.0.0`, then run `pnpm demo`.
@@ -78,6 +115,8 @@ The password is `BW_DEV_KEYCLOAK_TEST_USER_PASSWORD` in the repository `.env`. P
 | Login returns 500 `ConfigValidationError` | `.env.demo` is missing `BW_WEB_SESSION_SECRET`. Delete `.env.demo` and rerun `pnpm demo`. |
 | Port 3000 in use | Another dev server is on it. Set `DEMO_WEB_PORT=3010 pnpm demo` and update the Keycloak URIs. |
 | Keycloak timeout during seed | Keycloak is up on `localhost:18080`. The seed only warns. Users keep a `pending:` subject, so sign-in may still work. |
+| Google button shows Keycloak "identity provider not found" | `pnpm demo google` has not run, or the `google` provider is disabled in realm `blackwing-dev`. |
+| `pnpm demo google` says nothing is configured | `BW_DEV_GOOGLE_CLIENT_ID` or `BW_DEV_GOOGLE_CLIENT_SECRET` is empty in `.env`. |
 | Juice Shop not reachable | `docker logs bw-demo-juice`, or `docker rm -f bw-demo-juice` and rerun `pnpm demo`. |
 
 ## The story, click by click

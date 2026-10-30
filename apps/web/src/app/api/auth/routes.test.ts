@@ -335,3 +335,17 @@ describe('failure handling', () => {
     expect((await login(req('login'))).status).toBe(503);
   });
 });
+
+describe('login route identity hint', () => {
+  it('starts the Google broker only for the allow-listed idp value', async () => {
+    await login(req('login?idp=google&returnTo=%2Fdemo'));
+    expect(state.h.oidc.authorizationUrl.mock.calls.at(-1)?.[0]).toMatchObject({
+      idpHint: 'google',
+    });
+  });
+
+  it('ignores any other idp value instead of forwarding it', async () => {
+    await login(req('login?idp=evil.example&returnTo=%2Fdemo'));
+    expect(state.h.oidc.authorizationUrl.mock.calls.at(-1)?.[0]?.idpHint).toBeUndefined();
+  });
+});
