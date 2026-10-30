@@ -252,6 +252,41 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 </code></pre>
+<h2 id="headless-browser-and-fonts-bundled-in-the-bw-sandbox-image">Headless browser and fonts (bundled in the bw-sandbox image)</h2>
+<p>The sandbox image bundles the Playwright client, the Chromium build it downloads at image build time, and the Debian
+font packages below (IMAGE-005, #603). Pinned versions are in <code>infra/docker/sandbox/tools.pin.json</code>. The
+Playwright packages are the agent runtime&#39;s own pinned dependencies (<code>playwright-core</code>, <code>@playwright/mcp</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Version</th>
+<th>Licence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>playwright-core, @playwright/mcp</td>
+<td>1.63.0, 0.0.80</td>
+<td>Apache-2.0 (Copyright (c) Microsoft Corporation)</td>
+</tr>
+<tr>
+<td>Chromium (Chrome for Testing build, revision 1243)</td>
+<td>153.0.8010.12</td>
+<td>BSD-style and the Chromium component licences; see the build&#39;s <code>LICENSES</code></td>
+</tr>
+<tr>
+<td>fonts-noto-core, fonts-noto-cjk, fonts-noto-color-emoji</td>
+<td>20201225-1, 1:20220127+repack1-1, 2.042-0+deb12u1</td>
+<td>SIL Open Font License 1.1 (Noto fonts)</td>
+</tr>
+<tr>
+<td>fonts-liberation</td>
+<td>1:1.07.4-11</td>
+<td>Per the Debian package copyright file</td>
+</tr>
+</tbody></table>
+<p>The Playwright licence text ships in the installed <code>playwright-core</code> package as <code>LICENSE</code>. Chromium&#39;s licence files ship
+in the browser directory under <code>/opt/bw/browsers</code>.</p>
 </main>
 </div>
 </body>
