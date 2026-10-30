@@ -9,6 +9,8 @@ import {
   SANDBOX_DOCKERFILE,
   SANDBOX_DOCKERIGNORE,
   SANDBOX_TOOLS_PIN,
+  WORKSPACE_MANIFEST,
+  checkBrowserPin,
   checkRepo,
   checkSandboxDockerfile,
   checkToolsPin,
@@ -17,6 +19,7 @@ import { REPO_ROOT } from './test-fixtures.mjs';
 
 const df = readFileSync(path.join(REPO_ROOT, SANDBOX_DOCKERFILE), 'utf8');
 const ig = readFileSync(path.join(REPO_ROOT, SANDBOX_DOCKERIGNORE), 'utf8');
+const workspace = readFileSync(path.join(REPO_ROOT, WORKSPACE_MANIFEST), 'utf8');
 /** @param {string} d @param {string} [i] */
 const errs = (d, i = ig) => checkSandboxDockerfile(d, i);
 
@@ -117,6 +120,31 @@ describe('checkSandboxDockerfile', () => {
     );
   });
 
+  it('requires the runtime stage to install the pinned browser', () => {
+    const step = 'RUN sh /pin/install-browser.sh /pin/tools.pin.json /app \\\n && rm -rf /pin';
+    assert.ok(df.includes(step));
+    assert.ok(errs(df.replace(step, 'RUN true')).some((e) => e.includes('install-browser.sh')));
+    // A browser step placed before the runtime stage would never reach the runtime image.
+    const early = df.replace(step, '').replace(/^FROM \S+ AS builder$/m, `${step}\n$&`);
+    assert.ok(errs(early).some((e) => e.includes('install-browser.sh')));
+  });
+
+  it('sets PLAYWRIGHT_BROWSERS_PATH to the root-owned browser directory', () => {
+    assert.ok(
+      errs(
+        df.replace('PLAYWRIGHT_BROWSERS_PATH=/opt/bw/browsers', 'PLAYWRIGHT_BROWSERS_PATH=/tmp'),
+      ).some((e) => e.includes('PLAYWRIGHT_BROWSERS_PATH')),
+    );
+  });
+
+  it('requires install-browser.sh to be allow-listed in the dockerignore', () => {
+    assert.ok(
+      errs(df, ig.replace('!infra/docker/sandbox/install-browser.sh\n', '')).some((e) =>
+        e.includes('install-browser.sh'),
+      ),
+    );
+  });
+
   it('requires the tools inputs to be allow-listed in the dockerignore', () => {
     assert.ok(
       errs(df, ig.replace('!infra/docker/sandbox/install-tools.sh\n', '')).some((e) =>
@@ -207,5 +235,112 @@ describe('checkToolsPin', () => {
 
   it('rejects a licence other than MIT', () => {
     assert.ok(pinErrs(withTool('katana', { licence: 'GPL-3.0' })).some((e) => e.includes('MIT')));
+  });
+});
+
+describe('checkBrowserPin', () => {
+  const pinText = readFileSync(path.join(REPO_ROOT, SANDBOX_TOOLS_PIN), 'utf8');
+  /** @typedef {{ browser: { playwright: string, playwrightMcp: string, licence: string, chromium: { version: string, revision: string } }, fonts: { package: string, version: string }[] }} BrowserPin */
+  const parsed = /** @type {unknown} */ (JSON.parse(pinText));
+  const pin = /** @type {BrowserPin} */ (parsed);
+  /** @param {unknown} obj @param {string} [ws] */
+  const pinErrs = (obj, ws = workspace) =>
+    checkBrowserPin(typeof obj === 'string' ? obj : JSON.stringify(obj), ws);
+  /** @param {(p: BrowserPin) => void} edit */
+  const edited = (edit) => {
+    const copy = structuredClone(pin);
+    edit(copy);
+    return copy;
+  };
+  /** @param {BrowserPin} p @param {Partial<BrowserPin['fonts'][number]>} change */
+  const withFirstFont = (p, change) => p.fonts.map((f, i) => (i === 0 ? { ...f, ...change } : f));
+
+  it('accepts the committed pin and matches the workspace catalog', () => {
+    assert.deepEqual(checkBrowserPin(pinText, workspace), []);
+  });
+
+  it('rejects text that is not JSON', () => {
+    assert.ok(pinErrs('{').some((e) => e.includes('not valid JSON')));
+  });
+
+  it('requires a browser object', () => {
+    assert.ok(
+      pinErrs(edited((p) => Reflect.deleteProperty(p, 'browser'))).some((e) =>
+        e.includes('"browser"'),
+      ),
+    );
+  });
+
+  it('rejects a Playwright or MCP pin that differs from the workspace catalog', () => {
+    assert.ok(
+      pinErrs(edited((p) => (p.browser.playwright = '1.62.0'))).some((e) =>
+        e.includes('playwright-core'),
+      ),
+    );
+    assert.ok(
+      pinErrs(edited((p) => (p.browser.playwrightMcp = '0.0.79'))).some((e) =>
+        e.includes('@playwright/mcp'),
+      ),
+    );
+  });
+
+  it('fails when the workspace catalog has no Playwright pin at all', () => {
+    const noCatalog = workspace.replace(/playwright-core: .*\n/, '');
+    assert.ok(pinErrs(pin, noCatalog).some((e) => e.includes('playwright-core')));
+  });
+
+  it('rejects a floating or inexact Playwright version', () => {
+    assert.ok(
+      pinErrs(edited((p) => (p.browser.playwright = '^1.63.0'))).some((e) =>
+        e.includes('exact semver'),
+      ),
+    );
+  });
+
+  it('requires an exact Chromium version and a numeric revision', () => {
+    assert.ok(
+      pinErrs(edited((p) => (p.browser.chromium.version = '153'))).some((e) =>
+        e.includes('chromium.version'),
+      ),
+    );
+    assert.ok(
+      pinErrs(edited((p) => (p.browser.chromium.revision = 'latest'))).some((e) =>
+        e.includes('chromium.revision'),
+      ),
+    );
+  });
+
+  it('rejects a licence other than Apache-2.0', () => {
+    assert.ok(
+      pinErrs(edited((p) => (p.browser.licence = 'GPL-3.0'))).some((e) => e.includes('Apache-2.0')),
+    );
+  });
+
+  it('requires the Noto font packages to be pinned', () => {
+    assert.ok(
+      pinErrs(
+        edited((p) => (p.fonts = p.fonts.filter((f) => f.package !== 'fonts-noto-cjk'))),
+      ).some((e) => e.includes('fonts-noto-cjk')),
+    );
+    assert.ok(pinErrs(edited((p) => (p.fonts = []))).some((e) => e.includes('"fonts" array')));
+  });
+
+  it('rejects a font version that is not an exact Debian version', () => {
+    for (const version of ['latest', '', '*']) {
+      assert.ok(
+        pinErrs(edited((p) => (p.fonts = withFirstFont(p, { version })))).some((e) =>
+          e.includes('exact Debian version'),
+        ),
+        version,
+      );
+    }
+  });
+
+  it('rejects an invalid font package name', () => {
+    assert.ok(
+      pinErrs(
+        edited((p) => (p.fonts = withFirstFont(p, { package: 'fonts-noto-core; rm -rf /' }))),
+      ).some((e) => e.includes('package name')),
+    );
   });
 });

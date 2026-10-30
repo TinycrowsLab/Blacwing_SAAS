@@ -1,5 +1,5 @@
 {
-  "$comment": "Pinned ProjectDiscovery tools baked into bw-sandbox (IMAGE-002, #600). Single source of truth for versions, release asset URLs and sha256 digests; read by install-tools.sh and by scripts/check-sandbox-image.mjs. Bump via a reviewed change (Renovate, IMAGE-011). Assets are linux/amd64.",
+  "$comment": "Pinned tooling baked into bw-sandbox. Single source of truth for the ProjectDiscovery tool versions, release asset URLs and sha256 digests (IMAGE-002, #600), and for the headless browser and fonts (IMAGE-005, #603). Read by install-tools.sh, install-browser.sh and by scripts/check-sandbox-image.mjs. Bump via a reviewed change (Renovate, IMAGE-011). Tool assets are linux/amd64.",
   "tools": [
     {
       "name": "subfinder",
@@ -42,6 +42,33 @@
       "url": "https://github.com/projectdiscovery/nuclei/releases/download/v3.11.1/nuclei_3.11.1_linux_amd64.zip",
       "sha256": "ea63d4ae232808cd7c6bc00d0142428e231fab59dae01042246097d195835ab6",
       "licence": "MIT"
+    }
+  ],
+  "browser": {
+    "playwright": "1.63.0",
+    "playwrightMcp": "0.0.80",
+    "chromium": {
+      "revision": "1243",
+      "version": "153.0.8010.12"
+    },
+    "licence": "Apache-2.0"
+  },
+  "fonts": [
+    {
+      "package": "fonts-noto-core",
+      "version": "20201225-1"
+    },
+    {
+      "package": "fonts-noto-cjk",
+      "version": "1:20220127+repack1-1"
+    },
+    {
+      "package": "fonts-noto-color-emoji",
+      "version": "2.042-0+deb12u1"
+    },
+    {
+      "package": "fonts-liberation",
+      "version": "1:1.07.4-11"
     }
   ]
 }

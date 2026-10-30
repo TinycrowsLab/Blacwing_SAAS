@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 #
 # bw-sandbox base image (IMAGE-001 #599): the per-run, non-root, read-only-rootfs sandbox that hosts
-# the agent runtime (apps/agent-runtime, Node 22) and, in later IMAGE issues, the pentest toolchain.
+# the agent runtime (apps/agent-runtime, Node 22), the pinned pentest tools (IMAGE-002) and the headless browser (IMAGE-005).
 # Build context: the repository root (inputs are allow-listed by Dockerfile.dockerignore).
 #   docker build -f infra/docker/sandbox/Dockerfile -t bw-sandbox:dev .
 # Offline build: the stage uses the committed pnpm-lock.yaml (--frozen-lockfile); pre-populate a
@@ -84,10 +84,18 @@ COPY --from=builder --chown=root:root /out /app
 COPY --from=tools --chown=root:root /opt/bw/tools /opt/bw/tools
 COPY --chown=root:root --chmod=0555 infra/docker/sandbox/entrypoint.sh /opt/bw/entrypoint.sh
 
+# Headless Chromium and the pinned fonts (IMAGE-005, #603). The Chromium build is the one the pinned playwright-core
+# downloads at build time into the root-owned /opt/bw/browsers. Nothing downloads at runtime. The script checks every
+# pin against tools.pin.json and smoke-launches the browser as bw. The pin file is removed again afterwards.
+COPY infra/docker/sandbox/tools.pin.json infra/docker/sandbox/install-browser.sh /pin/
+RUN sh /pin/install-browser.sh /pin/tools.pin.json /app \
+ && rm -rf /pin
+
 # No secrets and no provider keys in the image: credentials arrive via the model gateway at run time.
 ENV BW_SANDBOX=1 \
     NODE_ENV=production \
     HOME=/workspace \
+    PLAYWRIGHT_BROWSERS_PATH=/opt/bw/browsers \
     PATH=/opt/bw/tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 WORKDIR /workspace

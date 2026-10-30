@@ -44,6 +44,22 @@ Runtime contract (SANDBOX): user `bw` uid/gid 10001, read-only rootfs, `/workspa
 Checks: `pnpm check:sandbox-image` (static: Dockerfile, dockerignore, both tool pins), `pnpm test:sandbox-image`
 (builds and runs the image; also proves the checksum guard refuses a mismatched archive).
 
+## Headless browser and fonts (IMAGE-005, #603)
+
+The image bakes in the Chromium build that the pinned `playwright-core` downloads, into the root-owned
+`/opt/bw/browsers` (`PLAYWRIGHT_BROWSERS_PATH`). `install-browser.sh` runs in the runtime stage at build time only. It
+checks the installed `playwright-core` and `@playwright/mcp` against `tools.pin.json`, installs the pinned Debian font
+packages (Noto Latin, CJK and colour emoji, plus Liberation), installs Chromium only with `playwright install --with-deps
+chromium`, and smoke-launches it headless as `bw`, checking the Chromium version against the pin. Nothing downloads at
+runtime, so a launch works with `--network none`.
+
+- Versions: `tools.pin.json` `browser` (Playwright, `@playwright/mcp`, Chromium version and revision) and `fonts`. The
+  Playwright pair must equal the `pnpm-workspace.yaml` catalog; `check-sandbox-image` fails otherwise.
+- Launch flags: Playwright's default `--no-sandbox` for Chromium. The container is the isolation boundary (runsc, the
+  read-only rootfs, all capabilities dropped and SANDBOX-007), so Chromium's own namespace sandbox is not relied on.
+- Headful mode is not supported in the sandbox. Only headless Chromium is installed.
+- Build smoke and offline launch are covered by `pnpm test:sandbox-image`.
+
 ## Seccomp profile (SANDBOX-007)
 
 `seccomp/bw-sandbox.json` is the default-deny seccomp profile every sandbox runs under. It allows only the

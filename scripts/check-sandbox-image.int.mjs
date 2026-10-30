@@ -4,7 +4,8 @@
 // proves: uid 10001 with no root process, writes outside /workspace and /tmp fail with a read-only rootfs, the
 // entrypoint starts under bw, a missing tmpfs fails clearly, every pinned tool reports its pinned version, the pinned
 // tools are root-owned and read-only for bw, and the installers refuse a binary whose sha256 does not match its pin
-// (the installer tests download one release archive each).
+// (the installer tests download one release archive each). The pinned headless browser (IMAGE-005, #603) launches
+// with no network, its fonts are at their pinned versions, and its directory is root-owned and not writable by bw.
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -33,6 +34,24 @@ const SCANNER_PIN_PATH = path.join(ROOT, 'infra/docker/sandbox/scanners.pin.json
 const PD_PIN_PATH = path.join(ROOT, 'infra/docker/sandbox/tools.pin.json');
 const INSTALL_TOOLS = path.join(ROOT, 'infra/docker/sandbox/tools/install-tools.mjs');
 const INSTALL_TOOLS_SH = path.join(ROOT, 'infra/docker/sandbox/install-tools.sh');
+/** The pinned Chromium build, fonts and the root-owned browser directory (IMAGE-005, #603). */
+const BROWSERS_PATH = '/opt/bw/browsers';
+const PLAYWRIGHT_INDEX = '/app/node_modules/playwright-core/index.mjs';
+/** The same headless launch as install-browser.sh: prints the Chromium version, exits 1 on a mismatch. */
+const LAUNCH_JS = `const { chromium } = await import(process.argv[1]);
+const browser = await chromium.launch({ headless: true });
+const version = browser.version();
+await browser.close();
+console.log(version);
+if (version !== process.argv[2]) process.exit(1);`;
+/** @type {unknown} */
+const rawBrowserPin = parseJson(readFileSync(PD_PIN_PATH, 'utf8'));
+const BROWSER_VERSION = /** @type {{ browser: { chromium: { version: string } } }} */ (
+  rawBrowserPin
+).browser.chromium.version;
+const PINNED_FONTS = /** @type {{ fonts: { package: string, version: string }[] }} */ (
+  rawBrowserPin
+).fonts;
 const SHA256_HEX_LENGTH = 64;
 const TAG_ENTROPY_BYTES = 4;
 const EX_CONFIG = 78;
@@ -232,6 +251,50 @@ describe('bw-sandbox image', { timeout: 600_000 }, () => {
     const ssl = run(['openssl', 'version']);
     assert.ok(ssl.stdout.includes(String(pins.system.find((s) => s.name === 'openssl')?.version)));
     assert.equal(run(['bash', '--version']).status, 0);
+  });
+
+  it('launches the pinned headless Chromium with no network and no runtime download', () => {
+    const r = run(
+      [
+        'node',
+        '--input-type=module',
+        '-e',
+        LAUNCH_JS,
+        `file://${PLAYWRIGHT_INDEX}`,
+        BROWSER_VERSION,
+      ],
+      [...HARDEN, '--network=none'],
+    );
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.stdout.trim(), BROWSER_VERSION);
+  });
+
+  it('installs the pinned font packages at their pinned versions', () => {
+    const names = PINNED_FONTS.map((f) => f.package);
+    const r = run(
+      ['dpkg-query', '-W', '-f=${Package}=${Version}\\n', ...names],
+      ['--cap-drop=ALL', '--security-opt=no-new-privileges'],
+    );
+    assert.equal(r.status, 0, r.stderr);
+    const installed = new Set(r.stdout.split('\n').filter(Boolean));
+    for (const { package: name, version } of PINNED_FONTS) {
+      assert.ok(installed.has(`${name}=${version}`), `${name} is not ${version}`);
+    }
+  });
+
+  it('keeps the browser root-owned and not writable by bw', () => {
+    // No --read-only here: a writable rootfs proves the directory permissions, not just the mount.
+    const writable = [
+      '--cap-drop=ALL',
+      '--security-opt=no-new-privileges',
+      '--tmpfs=/workspace:uid=10001,gid=10001',
+    ];
+    assert.equal(run(['stat', '-c', '%U', BROWSERS_PATH], writable).stdout.trim(), 'root');
+    const write = run(
+      ['sh', '-c', `touch ${BROWSERS_PATH}/evil 2>/dev/null; touch ${BROWSERS_PATH}/evil`],
+      writable,
+    );
+    assert.notEqual(write.status, 0);
   });
 });
 

@@ -1,9 +1,10 @@
-// Static guard for the bw-sandbox Dockerfile (IMAGE-001, #599) and its pinned ProjectDiscovery
-// tools (IMAGE-002, #600). Pure text checks, no Docker. Asserts: digest-pinned base, builder/tools/runtime
-// stages, fixed uid 10001 `bw` user, the final USER is `bw`, the standard /opt/bw + /etc/bw directories,
-// root-owned tools, safe env defaults, a HEALTHCHECK, no secrets, OCI labels, and a complete
-// tools.pin.json (exact versions, release URLs, sha256, MIT licence). Runtime behaviour is covered by
-// check-sandbox-image.int.mjs.
+// Static guard for the bw-sandbox Dockerfile (IMAGE-001, #599), its pinned ProjectDiscovery
+// tools (IMAGE-002, #600), its pinned scanners (IMAGE-002, #601) and the pinned headless browser and fonts
+// (IMAGE-005, #603). Pure text checks, no Docker. Asserts: digest-pinned base, builder/tools/runtime stages,
+// fixed uid 10001 `bw` user, the final USER is `bw`, the standard /opt/bw + /etc/bw directories, root-owned
+// tools, safe env defaults, a HEALTHCHECK, no secrets, OCI labels, a complete tools.pin.json (exact versions,
+// release URLs, sha256, MIT licence), the browser install step with its env, and that the browser pin matches
+// the workspace's Playwright catalog pins. Runtime behaviour is covered by check-sandbox-image.int.mjs.
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -15,9 +16,15 @@ export const SANDBOX_DOCKERFILE = 'infra/docker/sandbox/Dockerfile';
 export const SANDBOX_DOCKERIGNORE = 'infra/docker/sandbox/Dockerfile.dockerignore';
 export const SANDBOX_TOOLS_PIN = 'infra/docker/sandbox/tools.pin.json';
 export const SANDBOX_SCANNER_PINS = 'infra/docker/sandbox/scanners.pin.json';
+export const WORKSPACE_MANIFEST = 'pnpm-workspace.yaml';
 export const REQUIRED_TOOLS = ['subfinder', 'dnsx', 'httpx', 'naabu', 'katana', 'nuclei'];
+const REQUIRED_FONTS = ['fonts-noto-core', 'fonts-noto-cjk', 'fonts-noto-color-emoji'];
 const SEMVER = /^\d+\.\d+\.\d+$/;
 const SHA256 = /^[0-9a-f]{64}$/;
+const CHROMIUM_VERSION = /^\d+\.\d+\.\d+\.\d+$/;
+const CHROMIUM_REVISION = /^\d+$/;
+const DEBIAN_VERSION = /^(\d+:)?\d[0-9A-Za-z.+~-]*$/;
+const PACKAGE_NAME = /^[a-z0-9][a-z0-9.+-]*$/;
 const DIGEST = /@sha256:[0-9a-f]{64}/;
 const EXPECTED_STAGES = 4; // builder, gotool, tools, runtime
 const ARG_PREFIX_LENGTH = 4; // "ARG "
@@ -79,6 +86,12 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
     errors.push('tools stage must run tools/install-tools.mjs against scanners.pin.json');
   if (lines.some((l) => /chown -R [^&]*\/opt\/bw\/tools/.test(l)))
     errors.push('/opt/bw/tools must stay root-owned (bw must not replace pinned binaries)');
+  const runtimeStart = lines.findLastIndex((l) => /^FROM \S+ AS runtime$/.test(l));
+  const browserStep = lines.findIndex((l) =>
+    l.startsWith('RUN sh /pin/install-browser.sh /pin/tools.pin.json'),
+  );
+  if (browserStep < 0 || browserStep < runtimeStart)
+    errors.push('runtime stage must install the pinned browser with install-browser.sh');
 
   const users = lines.filter((l) => l.startsWith('USER '));
   const finalUser = users.at(-1)?.slice(USER_PREFIX_LENGTH).trim() ?? '';
@@ -99,7 +112,12 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
     if (!dockerfile.includes(dir)) errors.push(`missing directory ${dir}`);
   }
   const env = lines.filter((l) => l.startsWith('ENV ')).join(' ');
-  for (const need of ['BW_SANDBOX=1', 'NODE_ENV=production', '/opt/bw/tools/bin']) {
+  for (const need of [
+    'BW_SANDBOX=1',
+    'NODE_ENV=production',
+    '/opt/bw/tools/bin',
+    'PLAYWRIGHT_BROWSERS_PATH=/opt/bw/browsers',
+  ]) {
     if (!env.includes(need)) errors.push(`ENV must include ${need}`);
   }
   if (/(?:KEY|TOKEN|SECRET|PASSWORD)\w*=/i.test(env)) errors.push('ENV must not carry secrets');
@@ -113,6 +131,7 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
   }
   for (const input of [
     'install-tools.sh',
+    'install-browser.sh',
     'tools.pin.json',
     'scanners.pin.json',
     'tools/install-tools.mjs',
@@ -173,6 +192,73 @@ export function checkToolsPin(text) {
   return errors;
 }
 
+/**
+ * Guards the browser and font pins in tools.pin.json: an exact Playwright pair, a Chromium build (exact version
+ * and Playwright revision), and the Debian font packages with exact versions. The Playwright pair must equal the
+ * workspace catalog (`pnpm-workspace.yaml`), so the image never bakes a browser the runtime does not expect.
+ * @param {string} text tools.pin.json
+ * @param {string} workspace pnpm-workspace.yaml
+ * @returns {string[]} error messages (empty when compliant)
+ */
+export function checkBrowserPin(text, workspace) {
+  /** @type {unknown} */
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return ['tools.pin.json is not valid JSON'];
+  }
+  const pin = /** @type {{ browser?: unknown, fonts?: unknown } | null} */ (raw);
+  const browser =
+    /** @type {{ playwright?: unknown, playwrightMcp?: unknown, licence?: unknown, chromium?: { version?: unknown, revision?: unknown } } | null | undefined} */ (
+      pin?.browser
+    );
+  if (typeof browser !== 'object' || browser === null) {
+    return ['tools.pin.json must pin a "browser" object'];
+  }
+  const errors = [];
+  const { playwright, playwrightMcp, chromium, licence } = browser;
+  if (typeof playwright !== 'string' || !SEMVER.test(playwright))
+    errors.push(`browser: playwright must be an exact semver, got ${JSON.stringify(playwright)}`);
+  if (typeof playwrightMcp !== 'string' || !SEMVER.test(playwrightMcp))
+    errors.push(
+      `browser: playwrightMcp must be an exact semver, got ${JSON.stringify(playwrightMcp)}`,
+    );
+  if (typeof chromium?.version !== 'string' || !CHROMIUM_VERSION.test(chromium.version))
+    errors.push('browser: chromium.version must be an exact four-part Chromium version');
+  if (typeof chromium?.revision !== 'string' || !CHROMIUM_REVISION.test(chromium.revision))
+    errors.push('browser: chromium.revision must be the numeric Playwright revision');
+  if (licence !== 'Apache-2.0') errors.push('browser: licence must be Apache-2.0');
+
+  const catalog = (/** @type {string} */ name) => {
+    const escaped = name.replaceAll(/[/.@]/g, (c) => `\\${c}`);
+    return new RegExp(`^\\s+'?${escaped}'?:\\s*(\\S+)\\s*$`, 'm').exec(workspace)?.[1];
+  };
+  if (typeof playwright === 'string' && catalog('playwright-core') !== playwright)
+    errors.push(
+      `browser: playwright must equal the catalog playwright-core pin in ${WORKSPACE_MANIFEST}`,
+    );
+  if (typeof playwrightMcp === 'string' && catalog('@playwright/mcp') !== playwrightMcp)
+    errors.push(
+      `browser: playwrightMcp must equal the catalog @playwright/mcp pin in ${WORKSPACE_MANIFEST}`,
+    );
+
+  const fonts = Array.isArray(pin?.fonts) ? /** @type {unknown[]} */ (pin.fonts) : [];
+  if (fonts.length === 0) return [...errors, 'tools.pin.json must list a "fonts" array'];
+  const packages = fonts.map((f) => /** @type {{ package?: unknown }} */ (f).package);
+  for (const need of REQUIRED_FONTS) {
+    if (!packages.includes(need)) errors.push(`tools.pin.json is missing font ${need}`);
+  }
+  for (const f of fonts) {
+    const { package: name, version } = /** @type {{ package?: unknown, version?: unknown }} */ (f);
+    if (typeof name !== 'string' || !PACKAGE_NAME.test(name))
+      errors.push(`font package name is invalid: ${JSON.stringify(name)}`);
+    if (typeof version !== 'string' || !DEBIAN_VERSION.test(version))
+      errors.push(`${String(name)}: font version must be an exact Debian version`);
+  }
+  return errors;
+}
+
 /** @param {string} root */
 export function checkRepo(root) {
   /** @param {string} p */
@@ -181,6 +267,7 @@ export function checkRepo(root) {
     ...checkSandboxDockerfile(read(SANDBOX_DOCKERFILE), read(SANDBOX_DOCKERIGNORE)),
     ...checkToolsPin(read(SANDBOX_TOOLS_PIN)),
     ...checkToolPins(JSON.parse(read(SANDBOX_SCANNER_PINS))),
+    ...checkBrowserPin(read(SANDBOX_TOOLS_PIN), read(WORKSPACE_MANIFEST)),
   ];
 }
 
