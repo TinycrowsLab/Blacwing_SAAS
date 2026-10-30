@@ -353,6 +353,24 @@ export {
   type SubmitErrorCode,
 } from './entities/assessment-request-api.js';
 export {
+  createInputManifestUploadSchema,
+  type CreateInputManifestUpload,
+  INPUT_MANIFEST_CONTENT_TYPES,
+  INPUT_MANIFEST_FILENAME_MAX,
+  INPUT_MANIFEST_UPLOAD_KINDS,
+  INPUT_MANIFEST_UPLOAD_STATUSES,
+  type InputManifestSpecObject,
+  inputManifestSpecObjectSchema,
+  type InputManifestUploadGrant,
+  inputManifestUploadGrantSchema,
+  type InputManifestUploadRemoved,
+  inputManifestUploadRemovedSchema,
+  type InputManifestUploadKind,
+  inputManifestUploadKindSchema,
+  type InputManifestUploadStatus,
+  inputManifestUploadStatusSchema,
+} from './entities/input-manifest-upload.js';
+export {
   type Run,
   type RunMode,
   RUN_MODES,

@@ -18,6 +18,7 @@
     { "path": "../../packages/domain" },
     { "path": "../../packages/errors" },
     { "path": "../../packages/events" },
+    { "path": "../../packages/evidence" },
     { "path": "../../packages/ids" },
     { "path": "../../packages/logger" },
     { "path": "../../packages/memory" },

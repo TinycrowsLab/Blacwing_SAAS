@@ -285,6 +285,7 @@ export {
   type StandingAuthorisationWrite,
 } from './standing-authorisation.repository.js';
 export { unverifiedAssetIds } from './asset-verification.repository.js';
+export { type InputManifestRow, InputManifestRepository } from './input-manifest.repository.js';
 
 export {
   AssetCatalogRepository,

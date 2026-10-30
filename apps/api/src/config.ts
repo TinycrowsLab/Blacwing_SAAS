@@ -56,6 +56,13 @@ const DEFAULT_API_IDEMPOTENCY_TTL_S = 86_400;
 const DEFAULT_API_IDEMPOTENCY_LOCK_TTL_S = 120;
 const DEFAULT_API_IDEMPOTENCY_MAX_BODY_BYTES = 65_536;
 
+/** Input-manifest uploads (SCOPE-006): 25 MiB per object, a 5-minute grant, 50 objects per manifest. */
+const DEFAULT_SCOPE_UPLOAD_MAX_BYTES = 26_214_400;
+const DEFAULT_SCOPE_PRESIGN_TTL_MS = 300_000;
+const DEFAULT_SCOPE_MANIFEST_MAX_OBJECTS = 50;
+/** A grant that lives longer than an hour is a standing credential, not an upload window. */
+const SCOPE_PRESIGN_TTL_MS_MAX = 3_600_000;
+
 /** Keycloak JWT validation (#335): the audience this API accepts and the clock-skew leeway. */
 const DEFAULT_API_JWT_AUDIENCE = 'blackwing-api';
 const MAX_API_JWT_AUDIENCE_CHARS = 256;
@@ -126,6 +133,14 @@ export const apiEnvShape = {
   API_PORT: zPort().default(DEFAULT_API_PORT),
   API_HOST: z.string().min(1).default(DEFAULT_API_HOST),
   API_BODY_LIMIT_BYTES: byteCount.default(DEFAULT_API_BODY_LIMIT_BYTES),
+  /** Largest input-manifest object a grant accepts, in bytes (SCOPE-006). */
+  SCOPE_UPLOAD_MAX_BYTES: byteCount.default(DEFAULT_SCOPE_UPLOAD_MAX_BYTES),
+  /** How long a presigned upload grant stays usable, as a duration such as `300s` (SCOPE-006). */
+  SCOPE_PRESIGN_TTL: positiveDuration
+    .refine((ms) => ms <= SCOPE_PRESIGN_TTL_MS_MAX, 'must be at most 1h')
+    .default(DEFAULT_SCOPE_PRESIGN_TTL_MS),
+  /** Most objects one input manifest may hold, counting registered uploads (SCOPE-006). */
+  SCOPE_MANIFEST_MAX_OBJECTS: positiveRate.default(DEFAULT_SCOPE_MANIFEST_MAX_OBJECTS),
   /** Bodies nested deeper than this are rejected with `422` (deep-nesting abuse guard, API-002). */
   API_MAX_JSON_DEPTH: byteCount.default(DEFAULT_API_MAX_JSON_DEPTH),
   /** Honour `X-Forwarded-*` only when true. The API normally sits behind the platform load balancer. */

@@ -22,4 +22,11 @@ export {
   type ObjectBytesSource,
   s3ObjectBytesSource,
 } from './objects.js';
+export {
+  type PresignedPostForm,
+  type PresignPostPolicy,
+  s3UploadObjectStore,
+  type StoredObjectHead,
+  type UploadObjectStore,
+} from './upload-store.js';
 export { type EvidenceMetrics, EVIDENCE_TRACER, noopEvidenceMetrics } from './telemetry.js';

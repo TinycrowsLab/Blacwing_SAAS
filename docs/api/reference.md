@@ -2,7 +2,7 @@
 
 The public `/v1` REST API, version 0.0.0. This page is generated from [`openapi.json`](openapi.json) by `pnpm openapi:generate`; do not edit it by hand. CI fails when it is stale.
 
-It documents 60 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
+It documents 63 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
 
 The internal Run Broker API (`/internal/broker`) is not part of this reference.
 
@@ -53,6 +53,10 @@ The internal Run Broker API (`/internal/broker`) is not part of this reference.
   - [POST /assets/{id}/verification](#post-assetsidverification)
   - [DELETE /assets/{id}/verification](#delete-assetsidverification)
   - [POST /assets/{id}/verification/check](#post-assetsidverificationcheck)
+- input-manifests
+  - [POST /input-manifests/{id}/uploads](#post-input-manifestsiduploads)
+  - [POST /input-manifests/{id}/uploads/{uploadId}/complete](#post-input-manifestsiduploadsuploadidcomplete)
+  - [DELETE /input-manifests/{id}/uploads/{uploadId}](#delete-input-manifestsiduploadsuploadid)
 - standing-authorisations
   - [GET /standing-authorisations](#get-standing-authorisations)
   - [POST /standing-authorisations](#post-standing-authorisations)
@@ -380,7 +384,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -656,6 +660,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -924,7 +952,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -1200,6 +1228,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -1539,7 +1591,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -1819,6 +1871,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -1857,7 +1933,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2221,6 +2297,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -2253,6 +2365,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -2318,18 +2442,18 @@ Requires audit:read (auditor, org_admin). Newest first, by (occurredAt, seq). Th
 - Operation ID: `listAuditEvents`
 - Authentication: `bearerAuth` or `sessionCookie`
 
-| Parameter      | In    | Required | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Description                               |
-| -------------- | ----- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `actorId`      | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |                                           |
-| `action`       | query | no       | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"`, `"asset.updated"`, `"asset.deleted"`, `"asset.owner_assigned"`, `"test_plan.validated"`, `"oncall.roster.updated"`, `"oncall.sod_skipped"`, `"gate2.exception.created"`, `"gate2.decision.recorded"`, `"gate1.submitted"`, `"gate1.approved"`, `"gate1.changes_requested"`, `"gate1.rejected"`, `"asset.verification_started"`, `"asset.verification_passed"`, `"asset.verification_failed"`, `"asset.verification_cancelled"`, `"graph.surface.upserted"`, `"notification.channel_changed"`, `"notification.requested"`, `"notification.unrouted"`, `"run.envelope_signed"` |                                           |
-| `targetId`     | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |                                           |
-| `runId`        | query | no       | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |                                           |
-| `outcome`      | query | no       | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |                                           |
-| `from`         | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |                                           |
-| `to`           | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |                                           |
-| `includeChain` | query | no       | enum: `"true"`, `"false"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Auditors only: include hash and prevHash. |
-| `cursor`       | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |                                           |
-| `limit`        | query | no       | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |                                           |
+| Parameter      | In    | Required | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Description                               |
+| -------------- | ----- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `actorId`      | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |                                           |
+| `action`       | query | no       | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"`, `"asset.updated"`, `"asset.deleted"`, `"asset.owner_assigned"`, `"test_plan.validated"`, `"oncall.roster.updated"`, `"oncall.sod_skipped"`, `"gate2.exception.created"`, `"gate2.decision.recorded"`, `"gate1.submitted"`, `"gate1.approved"`, `"gate1.changes_requested"`, `"gate1.rejected"`, `"asset.verification_started"`, `"asset.verification_passed"`, `"asset.verification_failed"`, `"asset.verification_cancelled"`, `"graph.surface.upserted"`, `"notification.channel_changed"`, `"notification.requested"`, `"notification.unrouted"`, `"finding.rejected"`, `"finding.marked_duplicate"`, `"run.envelope_signed"`, `"scope.manifest.upload_requested"`, `"scope.manifest.upload_completed"`, `"scope.manifest.upload_deleted"` |                                           |
+| `targetId`     | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |                                           |
+| `runId`        | query | no       | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |                                           |
+| `outcome`      | query | no       | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |                                           |
+| `from`         | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |                                           |
+| `to`           | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |                                           |
+| `includeChain` | query | no       | enum: `"true"`, `"false"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Auditors only: include hash and prevHash. |
+| `cursor`       | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |                                           |
+| `limit`        | query | no       | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |                                           |
 
 #### Response 200
 
@@ -2551,7 +2675,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2827,6 +2951,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -3218,7 +3366,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -3494,6 +3642,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -3730,7 +3902,7 @@ Example: Run not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -4006,6 +4178,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -4611,7 +4807,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -4891,6 +5087,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -4929,7 +5149,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -5293,6 +5513,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -5325,6 +5581,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -5965,7 +6233,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6245,6 +6513,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -6283,7 +6575,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6647,6 +6939,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -6679,6 +7007,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -6933,7 +7273,7 @@ Example: Persona not defined.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7209,6 +7549,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -7601,7 +7965,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7877,6 +8241,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -8300,7 +8688,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -8576,6 +8964,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -9316,7 +9728,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -9592,6 +10004,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -10303,7 +10739,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -10579,6 +11015,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -11340,7 +11800,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -11620,6 +12080,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -11658,7 +12142,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -12022,6 +12506,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -12054,6 +12574,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -12787,7 +13319,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13067,6 +13599,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -13135,7 +13691,7 @@ Example: ETag mismatch.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13499,6 +14055,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -13531,6 +14123,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -13863,7 +14467,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -14143,6 +14747,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -14181,7 +14809,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -14545,6 +15173,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -14577,6 +15241,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -15000,7 +15676,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -15276,6 +15952,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -16104,7 +16804,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -16384,6 +17084,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -16422,7 +17146,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -16786,6 +17510,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -16818,6 +17578,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -17577,7 +18349,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -17853,6 +18625,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -18525,7 +19321,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -18805,6 +19601,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -18843,7 +19663,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -19207,6 +20027,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -19239,6 +20095,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -19984,7 +20852,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -20264,6 +21132,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -20308,7 +21200,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -20672,6 +21564,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -20704,6 +21632,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -22198,7 +23138,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -22478,6 +23418,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -22522,7 +23486,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -22886,6 +23850,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -22918,6 +23918,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -23259,7 +24271,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -23535,6 +24547,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -24020,7 +25056,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -24296,6 +25332,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -26756,6 +27816,2334 @@ Example: Verification probe unavailable.
 }
 ```
 
+## input-manifests
+
+Input manifest uploads: presigned POST grants for API specs, Postman collections, GraphQL schemas, HAR captures and config manifests. Uploads are untrusted and stay pending scan until cleared.
+
+### POST /input-manifests/{id}/uploads
+
+**Grant a presigned upload for one input manifest object**
+
+Needs assessment:create. The grant binds the exact content type and kind, and a Content-Length range up to the declared size. The size limit and the object count per manifest are server settings.
+
+- Operation ID: `createInputManifestUpload`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter | In   | Required | Type          | Description                                           |
+| --------- | ---- | -------- | ------------- | ----------------------------------------------------- |
+| `id`      | path | yes      | string (uuid) | The uuid of the input manifest, in the caller tenant. |
+
+**Request body** (required)
+
+Content type `application/json`: [InputManifestUploadCreate](#inputmanifestuploadcreate).
+
+Example: An OpenAPI document.
+
+```json
+{
+  "kind": "openapi",
+  "filename": "payments-api.json",
+  "contentType": "application/json",
+  "sizeBytes": 48213
+}
+```
+
+#### Response 201
+
+The grant: post the form to url with its fields.
+
+Content type `application/json`: [InputManifestUploadGrant](#inputmanifestuploadgrant).
+
+Example: A presigned POST grant.
+
+```json
+{
+  "uploadId": "0198f0a0-0000-7000-8000-000000000101",
+  "kind": "openapi",
+  "objectKey": "inputs/0198f0a0-0000-7000-8000-00000000000a/0198f0a0-0000-7000-8000-0000000000c1/0198f0a0-0000-7000-8000-000000000101-payments-api.json",
+  "method": "POST",
+  "url": "https://storage.example.test/blackwing-inputs",
+  "fields": {
+    "key": "inputs/…/payments-api.json",
+    "Content-Type": "application/json",
+    "policy": "…",
+    "signature": "…"
+  },
+  "expiresAt": "2026-10-30T10:05:00.000Z"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID, NOTIFICATION_CHANNEL_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid query.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_QUERY",
+  "title": "Invalid query",
+  "status": 400,
+  "code": "INVALID_QUERY",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid notification channel.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOTIFICATION_CHANNEL_INVALID",
+  "title": "Invalid notification channel",
+  "status": 400,
+  "code": "NOTIFICATION_CHANNEL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, FORBIDDEN_ROLE, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Role does not permit this action.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN_ROLE",
+  "title": "Role does not permit this action",
+  "status": 403,
+  "code": "FORBIDDEN_ROLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Cross tenant access denied.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CROSS_TENANT_DENIED",
+  "title": "Cross tenant access denied",
+  "status": 403,
+  "code": "CROSS_TENANT_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Seeding forbidden in this environment.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SEED_FORBIDDEN_IN_PROD",
+  "title": "Seeding forbidden in this environment",
+  "status": 403,
+  "code": "SEED_FORBIDDEN_IN_PROD",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISMATCH",
+  "title": "Tenant context mismatch",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Out of authorised scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_VIOLATION",
+  "title": "Out of authorised scope",
+  "status": 403,
+  "code": "SCOPE_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Intrusiveness exceeds the authorised ceiling.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "title": "Intrusiveness exceeds the authorised ceiling",
+  "status": 403,
+  "code": "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive intrusiveness is forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive intrusiveness is forbidden",
+  "status": 403,
+  "code": "SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Budget exceeds the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_BUDGET_EXCEEDS_SA",
+  "title": "Budget exceeds the standing authorisation",
+  "status": 403,
+  "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona override field not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+  "title": "Persona override field not permitted",
+  "status": 403,
+  "code": "OVERRIDE_FIELD_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Model not allowed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/MODEL_NOT_ALLOWED",
+  "title": "Model not allowed",
+  "status": 403,
+  "code": "MODEL_NOT_ALLOWED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AAD_MISMATCH",
+  "title": "Secret context mismatch",
+  "status": 403,
+  "code": "AAD_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Draft prompt forbidden in production.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_DRAFT_FORBIDDEN",
+  "title": "Draft prompt forbidden in production",
+  "status": 403,
+  "code": "PROMPT_DRAFT_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+  "title": "Kill not permitted",
+  "status": 403,
+  "code": "KILL_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Global kill is not allowed on this endpoint.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "title": "Global kill is not allowed on this endpoint",
+  "status": 403,
+  "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Platform operator required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+  "title": "Platform operator required",
+  "status": 403,
+  "code": "NOT_OPERATOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Operator MFA required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+  "title": "Operator MFA required",
+  "status": 403,
+  "code": "OPERATOR_MFA_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_MISMATCH",
+  "title": "Tenant mismatch",
+  "status": 403,
+  "code": "TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret purpose not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_PURPOSE_DENIED",
+  "title": "Secret purpose not permitted",
+  "status": 403,
+  "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SOD_VIOLATION",
+  "title": "Separation of duties violated",
+  "status": 403,
+  "code": "SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Gate exception separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_SOD_VIOLATION",
+  "title": "Gate exception separation of duties violated",
+  "status": 403,
+  "code": "GATE2_SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive gate exception cannot be approved.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive gate exception cannot be approved",
+  "status": 403,
+  "code": "GATE2_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+The manifest is not in this tenant (not_found).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 409
+
+The manifest holds the maximum number of objects (scope_manifest_full).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 413
+
+The declared size is over the limit (scope_upload_too_large).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 422
+
+Body validation failed, or the upload is empty (scope_empty_upload).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### POST /input-manifests/{id}/uploads/{uploadId}/complete
+
+**Register an uploaded object as pending scan**
+
+Needs assessment:create. Reads size, type and sha256 from the store, never from the client. Idempotent: a replay answers the same object. An object whose bytes match one already registered answers that object.
+
+- Operation ID: `completeInputManifestUpload`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter  | In   | Required | Type          | Description                                           |
+| ---------- | ---- | -------- | ------------- | ----------------------------------------------------- |
+| `id`       | path | yes      | string (uuid) | The uuid of the input manifest, in the caller tenant. |
+| `uploadId` | path | yes      | string (uuid) | The uuid of the upload, from the grant.               |
+
+#### Response 200
+
+The registered object.
+
+Content type `application/json`: [InputManifestSpecObject](#inputmanifestspecobject).
+
+Example: Pending scan.
+
+```json
+{
+  "uploadId": "0198f0a0-0000-7000-8000-000000000101",
+  "kind": "openapi",
+  "objectKey": "inputs/0198f0a0-0000-7000-8000-00000000000a/0198f0a0-0000-7000-8000-0000000000c1/0198f0a0-0000-7000-8000-000000000101-payments-api.json",
+  "sha256": "a3f1c2e4b5d6a7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f70",
+  "sizeBytes": 48213,
+  "contentType": "application/json",
+  "status": "uploaded_pending_scan"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID, NOTIFICATION_CHANNEL_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid query.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_QUERY",
+  "title": "Invalid query",
+  "status": 400,
+  "code": "INVALID_QUERY",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid notification channel.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOTIFICATION_CHANNEL_INVALID",
+  "title": "Invalid notification channel",
+  "status": 400,
+  "code": "NOTIFICATION_CHANNEL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, FORBIDDEN_ROLE, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Role does not permit this action.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN_ROLE",
+  "title": "Role does not permit this action",
+  "status": 403,
+  "code": "FORBIDDEN_ROLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Cross tenant access denied.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CROSS_TENANT_DENIED",
+  "title": "Cross tenant access denied",
+  "status": 403,
+  "code": "CROSS_TENANT_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Seeding forbidden in this environment.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SEED_FORBIDDEN_IN_PROD",
+  "title": "Seeding forbidden in this environment",
+  "status": 403,
+  "code": "SEED_FORBIDDEN_IN_PROD",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISMATCH",
+  "title": "Tenant context mismatch",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Out of authorised scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_VIOLATION",
+  "title": "Out of authorised scope",
+  "status": 403,
+  "code": "SCOPE_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Intrusiveness exceeds the authorised ceiling.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "title": "Intrusiveness exceeds the authorised ceiling",
+  "status": 403,
+  "code": "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive intrusiveness is forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive intrusiveness is forbidden",
+  "status": 403,
+  "code": "SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Budget exceeds the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_BUDGET_EXCEEDS_SA",
+  "title": "Budget exceeds the standing authorisation",
+  "status": 403,
+  "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona override field not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+  "title": "Persona override field not permitted",
+  "status": 403,
+  "code": "OVERRIDE_FIELD_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Model not allowed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/MODEL_NOT_ALLOWED",
+  "title": "Model not allowed",
+  "status": 403,
+  "code": "MODEL_NOT_ALLOWED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AAD_MISMATCH",
+  "title": "Secret context mismatch",
+  "status": 403,
+  "code": "AAD_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Draft prompt forbidden in production.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_DRAFT_FORBIDDEN",
+  "title": "Draft prompt forbidden in production",
+  "status": 403,
+  "code": "PROMPT_DRAFT_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+  "title": "Kill not permitted",
+  "status": 403,
+  "code": "KILL_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Global kill is not allowed on this endpoint.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "title": "Global kill is not allowed on this endpoint",
+  "status": 403,
+  "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Platform operator required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+  "title": "Platform operator required",
+  "status": 403,
+  "code": "NOT_OPERATOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Operator MFA required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+  "title": "Operator MFA required",
+  "status": 403,
+  "code": "OPERATOR_MFA_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_MISMATCH",
+  "title": "Tenant mismatch",
+  "status": 403,
+  "code": "TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret purpose not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_PURPOSE_DENIED",
+  "title": "Secret purpose not permitted",
+  "status": 403,
+  "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SOD_VIOLATION",
+  "title": "Separation of duties violated",
+  "status": 403,
+  "code": "SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Gate exception separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_SOD_VIOLATION",
+  "title": "Gate exception separation of duties violated",
+  "status": 403,
+  "code": "GATE2_SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive gate exception cannot be approved.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive gate exception cannot be approved",
+  "status": 403,
+  "code": "GATE2_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+The manifest or upload is not in this tenant (not_found).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 409
+
+The object is not in the store (scope_object_missing).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 413
+
+The stored object is over the size limit (scope_upload_too_large).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 415
+
+The stored type is not allowed for the kind (scope_upload_type_not_allowed).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 422
+
+The stored object is empty (scope_empty_upload).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### DELETE /input-manifests/{id}/uploads/{uploadId}
+
+**Remove an upload that is still pending scan**
+
+Needs assessment:create. Removes the stored object and its registration. An upload that a scan has cleared can no longer be removed; Object Lock retention still applies to retained versions.
+
+- Operation ID: `deleteInputManifestUpload`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter  | In   | Required | Type          | Description                                           |
+| ---------- | ---- | -------- | ------------- | ----------------------------------------------------- |
+| `id`       | path | yes      | string (uuid) | The uuid of the input manifest, in the caller tenant. |
+| `uploadId` | path | yes      | string (uuid) | The uuid of the upload, from the grant.               |
+
+#### Response 200
+
+The upload was removed; the object is gone from the store.
+
+Content type `application/json`: [InputManifestUploadRemoved](#inputmanifestuploadremoved).
+
+Example: A pending upload was removed.
+
+```json
+{
+  "uploadId": "0198f0a0-0000-7000-8000-000000000101",
+  "status": "removed"
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID, NOTIFICATION_CHANNEL_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid query.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_QUERY",
+  "title": "Invalid query",
+  "status": 400,
+  "code": "INVALID_QUERY",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid notification channel.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOTIFICATION_CHANNEL_INVALID",
+  "title": "Invalid notification channel",
+  "status": 400,
+  "code": "NOTIFICATION_CHANNEL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, FORBIDDEN_ROLE, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Role does not permit this action.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN_ROLE",
+  "title": "Role does not permit this action",
+  "status": 403,
+  "code": "FORBIDDEN_ROLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Cross tenant access denied.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CROSS_TENANT_DENIED",
+  "title": "Cross tenant access denied",
+  "status": 403,
+  "code": "CROSS_TENANT_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Seeding forbidden in this environment.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SEED_FORBIDDEN_IN_PROD",
+  "title": "Seeding forbidden in this environment",
+  "status": 403,
+  "code": "SEED_FORBIDDEN_IN_PROD",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISMATCH",
+  "title": "Tenant context mismatch",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Out of authorised scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_VIOLATION",
+  "title": "Out of authorised scope",
+  "status": 403,
+  "code": "SCOPE_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Intrusiveness exceeds the authorised ceiling.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "title": "Intrusiveness exceeds the authorised ceiling",
+  "status": 403,
+  "code": "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive intrusiveness is forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive intrusiveness is forbidden",
+  "status": 403,
+  "code": "SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Budget exceeds the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_BUDGET_EXCEEDS_SA",
+  "title": "Budget exceeds the standing authorisation",
+  "status": 403,
+  "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona override field not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+  "title": "Persona override field not permitted",
+  "status": 403,
+  "code": "OVERRIDE_FIELD_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Model not allowed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/MODEL_NOT_ALLOWED",
+  "title": "Model not allowed",
+  "status": 403,
+  "code": "MODEL_NOT_ALLOWED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AAD_MISMATCH",
+  "title": "Secret context mismatch",
+  "status": 403,
+  "code": "AAD_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Draft prompt forbidden in production.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_DRAFT_FORBIDDEN",
+  "title": "Draft prompt forbidden in production",
+  "status": 403,
+  "code": "PROMPT_DRAFT_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+  "title": "Kill not permitted",
+  "status": 403,
+  "code": "KILL_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Global kill is not allowed on this endpoint.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "title": "Global kill is not allowed on this endpoint",
+  "status": 403,
+  "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Platform operator required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+  "title": "Platform operator required",
+  "status": 403,
+  "code": "NOT_OPERATOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Operator MFA required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+  "title": "Operator MFA required",
+  "status": 403,
+  "code": "OPERATOR_MFA_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_MISMATCH",
+  "title": "Tenant mismatch",
+  "status": 403,
+  "code": "TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret purpose not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_PURPOSE_DENIED",
+  "title": "Secret purpose not permitted",
+  "status": 403,
+  "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SOD_VIOLATION",
+  "title": "Separation of duties violated",
+  "status": 403,
+  "code": "SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Gate exception separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_SOD_VIOLATION",
+  "title": "Gate exception separation of duties violated",
+  "status": 403,
+  "code": "GATE2_SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive gate exception cannot be approved.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive gate exception cannot be approved",
+  "status": 403,
+  "code": "GATE2_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+The manifest or upload is not in this tenant (not_found).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 409
+
+The upload has been scanned and is no longer pending (scope_upload_not_pending).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan failed validation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_INVALID",
+  "title": "Test plan failed validation",
+  "status": 422,
+  "code": "GATE1_PLAN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run envelope verification failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+  "title": "Run envelope verification failed",
+  "status": 422,
+  "code": "ENVELOPE_VERIFICATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid intrusiveness class.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
+  "title": "Invalid intrusiveness class",
+  "status": 422,
+  "code": "SCOPE_INVALID_CLASS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid request budget.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
+  "title": "Invalid request budget",
+  "status": 422,
+  "code": "SCOPE_INVALID_BUDGET",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid scope rule.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
+  "title": "Invalid scope rule",
+  "status": 422,
+  "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Negative control missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NEGATIVE_CONTROL_MISSING",
+  "title": "Negative control missing",
+  "status": 422,
+  "code": "NEGATIVE_CONTROL_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Negative control does not suit the oracle.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NEGATIVE_CONTROL_ORACLE_MISMATCH",
+  "title": "Negative control does not suit the oracle",
+  "status": 422,
+  "code": "NEGATIVE_CONTROL_ORACLE_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid standing authorisation window.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+  "title": "Invalid standing authorisation window",
+  "status": 422,
+  "code": "AUTHZ_INVALID_WINDOW",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Asset is not verified for this tenant.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ASSET_UNVERIFIED",
+  "title": "Asset is not verified for this tenant",
+  "status": 422,
+  "code": "AUTHZ_ASSET_UNVERIFIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+  "title": "Unknown persona",
+  "status": 422,
+  "code": "PERSONA_UNKNOWN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Forbidden tool in persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL",
+  "title": "Forbidden tool in persona",
+  "status": 422,
+  "code": "PERSONA_FORBIDDEN_TOOL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid persona definition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_INVALID",
+  "title": "Invalid persona definition",
+  "status": 422,
+  "code": "PERSONA_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret envelope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
+  "title": "Invalid secret envelope",
+  "status": 422,
+  "code": "ENVELOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid prompt file.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_INVALID",
+  "title": "Invalid prompt file",
+  "status": 422,
+  "code": "PROMPT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Prompt placeholder unfilled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
+  "title": "Prompt placeholder unfilled",
+  "status": 422,
+  "code": "PROMPT_PLACEHOLDER_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown agent persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AGENT_UNKNOWN_PERSONA",
+  "title": "Unknown agent persona",
+  "status": 422,
+  "code": "AGENT_UNKNOWN_PERSONA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret reference.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
+  "title": "Invalid secret reference",
+  "status": 422,
+  "code": "INVALID_SECRET_REF",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Sandbox image missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_IMAGE_MISSING",
+  "title": "Sandbox image missing",
+  "status": 422,
+  "code": "SBX_IMAGE_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid kill scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+  "title": "Invalid kill scope",
+  "status": 422,
+  "code": "KILL_SCOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill scope reference required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+  "title": "Kill scope reference required",
+  "status": 422,
+  "code": "KILL_REF_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key reused with a different request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+  "title": "Idempotency key reused with a different request",
+  "status": 422,
+  "code": "IDEMPOTENCY_KEY_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No on call configured.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_NO_ONCALL_CONFIGURED",
+  "title": "No on call configured",
+  "status": 422,
+  "code": "GATE2_NO_ONCALL_CONFIGURED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid audit event.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUDIT_EVENT_INVALID",
+  "title": "Invalid audit event",
+  "status": 422,
+  "code": "AUDIT_EVENT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid asset identifier.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+  "title": "Invalid asset identifier",
+  "status": 422,
+  "code": "ASSET_INVALID_IDENTIFIER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Verification method not applicable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_VERIFICATION_METHOD_NOT_APPLICABLE",
+  "title": "Verification method not applicable",
+  "status": 422,
+  "code": "ASSET_VERIFICATION_METHOD_NOT_APPLICABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: CVSS score does not match its vector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+  "title": "CVSS score does not match its vector",
+  "status": 422,
+  "code": "CVSS_VECTOR_SCORE_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Embedding dimension mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/MEMORY_EMBED_DIM_MISMATCH",
+  "title": "Embedding dimension mismatch",
+  "status": 422,
+  "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 ## standing-authorisations
 
 Standing authorisations (AUTHZ-002, AUTHZ-008): the customer-signed, expiring permission to test assets. Drafts are created, read, changed and submitted for approval here; an asset owner approves (signing it) or rejects.
@@ -27094,7 +30482,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -27370,6 +30758,30 @@ Example: Identity provider conflict.
   "title": "Identity provider conflict",
   "status": 409,
   "code": "KEYCLOAK_CONFLICT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -28174,7 +31586,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -28454,6 +31866,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -28492,7 +31928,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -28856,6 +32292,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -28888,6 +32360,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -33790,7 +37274,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -34070,6 +37554,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -34108,7 +37616,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -34472,6 +37980,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -34504,6 +38048,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -34733,7 +38289,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -35013,6 +38569,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -35051,7 +38631,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -35415,6 +38995,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -35447,6 +39063,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -35690,7 +39318,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -35970,6 +39598,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -36008,7 +39660,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -36372,6 +40024,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -36404,6 +40092,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -37081,7 +40781,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -37361,6 +41061,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -37399,7 +41123,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -37763,6 +41487,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -37795,6 +41555,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -38563,7 +42335,7 @@ Example: Ticket not found in connector.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -38843,6 +42615,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -38881,7 +42677,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -39245,6 +43041,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -39277,6 +43109,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -39573,7 +43417,7 @@ Example: Notification channel is referenced by active routing rules.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -39937,6 +43781,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -39969,6 +43849,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -40298,7 +44190,7 @@ Example: Resource not found.
 
 #### Response 409
 
-Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
+Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -40578,6 +44470,30 @@ Example: Identity provider conflict.
 }
 ```
 
+Example: Illegal finding transition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION",
+  "title": "Illegal finding transition",
+  "status": 409,
+  "code": "FINDING_ILLEGAL_TRANSITION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Finding does not meet the triage precondition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED",
+  "title": "Finding does not meet the triage precondition",
+  "status": 409,
+  "code": "TRIAGE_PRECONDITION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Approved test plan version is immutable.
 
 ```json
@@ -40616,7 +44532,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -40980,6 +44896,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -41012,6 +44964,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -41344,7 +45308,7 @@ Example: Notification channel is referenced by active routing rules.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -41708,6 +45672,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -41740,6 +45740,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -42035,7 +46047,7 @@ Example: Notification channel is referenced by active routing rules.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -42399,6 +46411,42 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Unknown ticket connector provider.
 
 ```json
@@ -42431,6 +46479,18 @@ Example: Embedding dimension mismatch.
   "title": "Embedding dimension mismatch",
   "status": 422,
   "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -43441,23 +47501,23 @@ Full schema:
 
 ### AuditEventView
 
-| Property      | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Required | Description                                                              |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ |
-| `id`          | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | yes      |                                                                          |
-| `seq`         | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | yes      |                                                                          |
-| `occurredAt`  | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | yes      |                                                                          |
-| `action`      | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"`, `"asset.updated"`, `"asset.deleted"`, `"asset.owner_assigned"`, `"test_plan.validated"`, `"oncall.roster.updated"`, `"oncall.sod_skipped"`, `"gate2.exception.created"`, `"gate2.decision.recorded"`, `"gate1.submitted"`, `"gate1.approved"`, `"gate1.changes_requested"`, `"gate1.rejected"`, `"asset.verification_started"`, `"asset.verification_passed"`, `"asset.verification_failed"`, `"asset.verification_cancelled"`, `"graph.surface.upserted"`, `"notification.channel_changed"`, `"notification.requested"`, `"notification.unrouted"`, `"run.envelope_signed"` | yes      |                                                                          |
-| `severity`    | enum: `"info"`, `"notice"`, `"warning"`, `"critical"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | yes      |                                                                          |
-| `actor`       | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | yes      | Who acted. `email` is only returned to auditors.                         |
-| `target`      | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | yes      |                                                                          |
-| `outcome`     | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | yes      |                                                                          |
-| `reason`      | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | yes      |                                                                          |
-| `metadata`    | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | yes      | Empty for callers that are not auditors.                                 |
-| `metadataRef` | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | no       | Only returned to auditors.                                               |
-| `traceId`     | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | yes      |                                                                          |
-| `runId`       | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | yes      |                                                                          |
-| `hash`        | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | no       | Hex SHA-256 chain hash. Only with includeChain=true.                     |
-| `prevHash`    | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | no       | Hex previous hash; null on the genesis row. Only with includeChain=true. |
+| Property      | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Required | Description                                                              |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ |
+| `id`          | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | yes      |                                                                          |
+| `seq`         | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | yes      |                                                                          |
+| `occurredAt`  | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | yes      |                                                                          |
+| `action`      | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"`, `"asset.updated"`, `"asset.deleted"`, `"asset.owner_assigned"`, `"test_plan.validated"`, `"oncall.roster.updated"`, `"oncall.sod_skipped"`, `"gate2.exception.created"`, `"gate2.decision.recorded"`, `"gate1.submitted"`, `"gate1.approved"`, `"gate1.changes_requested"`, `"gate1.rejected"`, `"asset.verification_started"`, `"asset.verification_passed"`, `"asset.verification_failed"`, `"asset.verification_cancelled"`, `"graph.surface.upserted"`, `"notification.channel_changed"`, `"notification.requested"`, `"notification.unrouted"`, `"finding.rejected"`, `"finding.marked_duplicate"`, `"run.envelope_signed"`, `"scope.manifest.upload_requested"`, `"scope.manifest.upload_completed"`, `"scope.manifest.upload_deleted"` | yes      |                                                                          |
+| `severity`    | enum: `"info"`, `"notice"`, `"warning"`, `"critical"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | yes      |                                                                          |
+| `actor`       | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | yes      | Who acted. `email` is only returned to auditors.                         |
+| `target`      | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | yes      |                                                                          |
+| `outcome`     | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | yes      |                                                                          |
+| `reason`      | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | yes      |                                                                          |
+| `metadata`    | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | yes      | Empty for callers that are not auditors.                                 |
+| `metadataRef` | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | no       | Only returned to auditors.                                               |
+| `traceId`     | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | yes      |                                                                          |
+| `runId`       | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | yes      |                                                                          |
+| `hash`        | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | no       | Hex SHA-256 chain hash. Only with includeChain=true.                     |
+| `prevHash`    | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | no       | Hex previous hash; null on the genesis row. Only with includeChain=true. |
 
 Full schema:
 
@@ -43594,7 +47654,12 @@ Full schema:
         "notification.channel_changed",
         "notification.requested",
         "notification.unrouted",
-        "run.envelope_signed"
+        "finding.rejected",
+        "finding.marked_duplicate",
+        "run.envelope_signed",
+        "scope.manifest.upload_requested",
+        "scope.manifest.upload_completed",
+        "scope.manifest.upload_deleted"
       ]
     },
     "severity": {
@@ -45524,6 +49589,187 @@ Full schema:
     }
   },
   "required": ["runId", "planVersion", "runState", "submittedAt"],
+  "additionalProperties": false
+}
+```
+
+### InputManifestSpecObject
+
+| Property      | Type                                                             | Required | Description |
+| ------------- | ---------------------------------------------------------------- | -------- | ----------- |
+| `uploadId`    | string (uuid)                                                    | yes      |             |
+| `kind`        | enum: `"openapi"`, `"postman"`, `"graphql"`, `"har"`, `"config"` | yes      |             |
+| `objectKey`   | string                                                           | yes      |             |
+| `sha256`      | string                                                           | yes      |             |
+| `sizeBytes`   | integer                                                          | yes      |             |
+| `contentType` | string                                                           | yes      |             |
+| `status`      | enum: `"uploaded_pending_scan"`                                  | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "uploadId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["openapi", "postman", "graphql", "har", "config"]
+    },
+    "objectKey": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sizeBytes": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
+    "contentType": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": ["uploaded_pending_scan"]
+    }
+  },
+  "required": ["uploadId", "kind", "objectKey", "sha256", "sizeBytes", "contentType", "status"],
+  "additionalProperties": false
+}
+```
+
+### InputManifestUploadCreate
+
+| Property      | Type                                                             | Required | Description |
+| ------------- | ---------------------------------------------------------------- | -------- | ----------- |
+| `kind`        | enum: `"openapi"`, `"postman"`, `"graphql"`, `"har"`, `"config"` | yes      |             |
+| `filename`    | string                                                           | yes      |             |
+| `contentType` | string                                                           | yes      |             |
+| `sizeBytes`   | integer                                                          | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": ["openapi", "postman", "graphql", "har", "config"]
+    },
+    "filename": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "contentType": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "sizeBytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": ["kind", "filename", "contentType", "sizeBytes"],
+  "additionalProperties": false
+}
+```
+
+### InputManifestUploadGrant
+
+| Property    | Type                                                             | Required | Description |
+| ----------- | ---------------------------------------------------------------- | -------- | ----------- |
+| `uploadId`  | string (uuid)                                                    | yes      |             |
+| `kind`      | enum: `"openapi"`, `"postman"`, `"graphql"`, `"har"`, `"config"` | yes      |             |
+| `objectKey` | string                                                           | yes      |             |
+| `method`    | string                                                           | yes      |             |
+| `url`       | string (uri)                                                     | yes      |             |
+| `fields`    | object                                                           | yes      |             |
+| `expiresAt` | string (date-time)                                               | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "uploadId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["openapi", "postman", "graphql", "har", "config"]
+    },
+    "objectKey": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method": {
+      "type": "string",
+      "const": "POST"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "fields": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    }
+  },
+  "required": ["uploadId", "kind", "objectKey", "method", "url", "fields", "expiresAt"],
+  "additionalProperties": false
+}
+```
+
+### InputManifestUploadRemoved
+
+| Property   | Type          | Required | Description |
+| ---------- | ------------- | -------- | ----------- |
+| `uploadId` | string (uuid) | yes      |             |
+| `status`   | string        | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "uploadId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "status": {
+      "type": "string",
+      "const": "removed"
+    }
+  },
+  "required": ["uploadId", "status"],
   "additionalProperties": false
 }
 ```
@@ -48023,7 +52269,20 @@ Full schema:
           },
           "kind": {
             "type": "string",
-            "enum": ["asset", "host", "service", "technology", "endpoint", "parameter", "role"]
+            "enum": [
+              "asset",
+              "host",
+              "service",
+              "technology",
+              "endpoint",
+              "parameter",
+              "role",
+              "spec_document",
+              "schema_object",
+              "auth_scheme",
+              "source_route",
+              "config_item"
+            ]
           },
           "label": {
             "type": "string",
@@ -48081,7 +52340,17 @@ Full schema:
         "properties": {
           "kind": {
             "type": "string",
-            "enum": ["RESOLVES_TO", "EXPOSES", "RUNS", "SERVES", "HAS_PARAM", "CAN_ACCESS"]
+            "enum": [
+              "RESOLVES_TO",
+              "EXPOSES",
+              "RUNS",
+              "SERVES",
+              "HAS_PARAM",
+              "CAN_ACCESS",
+              "DEFINED_IN",
+              "SECURED_BY",
+              "MAPS_TO"
+            ]
           },
           "from": {
             "type": "string",

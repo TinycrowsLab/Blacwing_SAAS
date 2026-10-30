@@ -119,6 +119,8 @@ export const auditTargetTypeSchema = z.enum([
   'session',
   'platform',
   'assessment_request',
+  // input manifests (SCOPE-006): appended, the uploads' audit target
+  'input_manifest',
 ]);
 export type AuditTargetType = z.infer<typeof auditTargetTypeSchema>;
 

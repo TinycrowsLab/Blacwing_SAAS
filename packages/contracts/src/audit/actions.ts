@@ -804,6 +804,29 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'Gate 1 approval produced and signed the approved run envelope; metadata records the envelope hash, SA id and signing key id.',
   },
+  // input manifest uploads (SCOPE-006): appended, so the released order above is untouched. Metadata carries
+  // ids, the artefact kind, sizes and the server object key only, never the file contents.
+  {
+    action: 'scope.manifest.upload_requested',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description:
+      'A presigned upload was granted for an input manifest; metadata records the kind and the upload id.',
+  },
+  {
+    action: 'scope.manifest.upload_completed',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description:
+      'An uploaded input manifest object was registered as pending scan; metadata records the object key, sha256 and kind.',
+  },
+  {
+    action: 'scope.manifest.upload_deleted',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description:
+      'A pending input manifest upload was removed before it was scanned; metadata records the upload id.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

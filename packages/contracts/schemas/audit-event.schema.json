@@ -119,7 +119,10 @@
         "notification.unrouted",
         "finding.rejected",
         "finding.marked_duplicate",
-        "run.envelope_signed"
+        "run.envelope_signed",
+        "scope.manifest.upload_requested",
+        "scope.manifest.upload_completed",
+        "scope.manifest.upload_deleted"
       ]
     },
     "severity": {
@@ -248,7 +251,8 @@
             "connector",
             "session",
             "platform",
-            "assessment_request"
+            "assessment_request",
+            "input_manifest"
           ]
         },
         "id": {

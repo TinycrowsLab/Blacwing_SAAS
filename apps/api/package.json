@@ -34,6 +34,7 @@
     "@blackwing/domain": "workspace:*",
     "@blackwing/errors": "workspace:*",
     "@blackwing/events": "workspace:*",
+    "@blackwing/evidence": "workspace:*",
     "@blackwing/ids": "workspace:*",
     "@blackwing/logger": "workspace:*",
     "@blackwing/memory": "workspace:*",

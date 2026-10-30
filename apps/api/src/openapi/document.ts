@@ -13,6 +13,7 @@ import { notificationChannelsOpenApiModule } from '../notification-channels/open
 import { oncallOpenApiDocument } from '../oncall/openapi.js';
 import { personaOpenApiModule } from '../personas/openapi.js';
 import { runEventsOpenApiModule } from '../run-events/openapi.js';
+import { inputManifestOpenApiModule } from '../scoping/openapi.js';
 import { signupOpenApiModule } from '../signup/openapi.js';
 import { surfaceOpenApiModule } from '../surface/openapi.js';
 import { tenantProfileOpenApiModule } from '../tenant-profile/openapi.js';
@@ -87,6 +88,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     tenantProfileOpenApiModule(),
     assessmentRequestOpenApiModule(),
     assetOpenApiModule(),
+    inputManifestOpenApiModule(),
     standingAuthorisationsOpenApiModule(),
     testPlansOpenApiModule(),
     findingOpenApiModule(),
