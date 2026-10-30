@@ -148,6 +148,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'AUTHZ_STEPUP_REQUIRED',
   // MemoryEmbedDimMismatchError, @blackwing/db query errors (MEMORY-001): thrown from the Postgres mapping.
   'MEMORY_EMBED_DIM_MISMATCH',
+  // PolicyBuilderError, @blackwing/policy rule-builder compiler (POLICY-004): carries the issues with JSON pointers.
+  'POLICY_BUILDER_INVALID',
   // Agent session descriptor, @blackwing/agent-runtime (RUNTIME-001): thrown as a plain AppError.
   'AGENT_BRIEF_TOO_LARGE',
   'AGENT_UNKNOWN_PERSONA',

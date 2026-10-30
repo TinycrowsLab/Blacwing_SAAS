@@ -1,0 +1,66 @@
+{
+  "rules": [
+    {
+      "effect": "permit",
+      "action": "egress.httpRequest",
+      "principal": { "type": "AgentSession" },
+      "resource": { "type": "Target" },
+      "conditions": [
+        {
+          "op": "in",
+          "attr": "resource.host",
+          "value": ["api.example.test", "static.example.test"]
+        },
+        { "op": "==", "attr": "resource.inScope", "value": true },
+        { "op": "<=", "attr": "context.intrusiveness.rank", "value": 1 },
+        { "op": "==", "attr": "context.isPrivateRange", "value": false }
+      ],
+      "annotations": {
+        "id": "tenant.allow-read-in-scope",
+        "description": "Passive reads of in-scope hosts"
+      }
+    },
+    {
+      "effect": "forbid",
+      "action": "egress.httpRequest",
+      "principal": { "type": "AgentSession" },
+      "resource": { "type": "Target" },
+      "conditions": [
+        {
+          "op": "||",
+          "of": [
+            { "op": "==", "attr": "resource.path", "value": "/admin" },
+            { "op": "==", "attr": "resource.path", "value": "/internal" }
+          ]
+        }
+      ],
+      "annotations": {
+        "id": "tenant.block-admin-paths",
+        "description": "Never touch admin paths */ \"quoted\" and unicode: café, 東京"
+      }
+    },
+    {
+      "effect": "permit",
+      "action": "tool.invoke",
+      "principal": { "type": "AgentSession" },
+      "resource": { "type": "TestCase" },
+      "conditions": [
+        { "op": "==", "attr": "resource.class.level", "value": "passive" },
+        { "op": "<=", "attr": "resource.class.rank", "value": 1 },
+        { "op": "==", "attr": "context.toolName", "value": "http_probe" }
+      ],
+      "annotations": { "id": "tenant.allow-passive-probe" }
+    },
+    {
+      "effect": "permit",
+      "action": "gate.decide",
+      "principal": { "type": "User" },
+      "resource": { "type": "Run" },
+      "conditions": [
+        { "op": "contains", "attr": "principal.roles", "value": "approver" },
+        { "op": "in", "attr": "context.gate", "value": ["gate1", "gate2"] }
+      ],
+      "annotations": { "id": "tenant.approver-gates" }
+    }
+  ]
+}

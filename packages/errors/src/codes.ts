@@ -125,6 +125,13 @@ const DEFINITIONS = {
     title: 'Negative control does not suit the oracle',
     retryable: false,
   },
+  // Rule-builder compilation (POLICY-004, #588): a builder document the compiler cannot express
+  // against the POLICY-001 schema. Invalid input (422); the issues carry JSON pointers.
+  POLICY_BUILDER_INVALID: {
+    status: 422,
+    title: 'Invalid policy builder document',
+    retryable: false,
+  },
   SCOPE_BUDGET_EXCEEDS_SA: {
     status: 403,
     title: 'Budget exceeds the standing authorisation',

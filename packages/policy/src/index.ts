@@ -40,6 +40,21 @@ export {
   type RejectedPolicySet,
 } from './baseline.js';
 export {
+  compileRuleBuilder,
+  PolicyBuilderError,
+  type CompiledRuleBuilder,
+  type RuleBuilderIssue,
+  type RuleBuilderWarning,
+} from './rule-builder/compile.js';
+export {
+  builderRuleSchema,
+  type BuilderRule,
+  type Condition,
+  RULE_BUILDER_LIMITS,
+  type RuleBuilderPolicy,
+  ruleBuilderPolicySchema,
+} from './rule-builder/json.js';
+export {
   CURRENT_PRICE_TABLE_VERSION,
   PRICE_TABLE_2026_10_01,
   PRICE_TABLE_2026_10_21,
