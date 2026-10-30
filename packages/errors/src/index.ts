@@ -26,6 +26,8 @@ export {
   PlanVersionImmutableError,
   PreconditionFailedError,
   PreconditionRequiredError,
+  QueuePayloadTooLargeError,
+  QueueUnavailableError,
   TestCaseNotFoundError,
   TestPlanNotFoundError,
   RateLimitedError,

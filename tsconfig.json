@@ -89,6 +89,9 @@
       "path": "packages/policy"
     },
     {
+      "path": "packages/queue"
+    },
+    {
       "path": "packages/replay"
     },
     {

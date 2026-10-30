@@ -96,6 +96,7 @@ export const ELEMENT_TYPES = Object.freeze([
       'packages/memory',
       'packages/notify',
       'packages/oob',
+      'packages/queue',
       'packages/replay',
       'packages/reporting',
       'packages/secrets',

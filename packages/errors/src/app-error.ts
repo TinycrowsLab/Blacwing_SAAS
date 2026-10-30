@@ -333,3 +333,22 @@ export class PlanPayloadTooLargeError extends AppError {
     super('PLAN_PAYLOAD_TOO_LARGE', 'test plan payload too large', { detail, ...options });
   }
 }
+
+/** `QUEUE_UNAVAILABLE` (503, retryable): the job queue (Valkey) is unreachable or did not answer in time. */
+export class QueueUnavailableError extends AppError {
+  declare readonly code: 'QUEUE_UNAVAILABLE';
+  constructor(options: AppErrorOptions = {}) {
+    super('QUEUE_UNAVAILABLE', 'job queue unavailable', {
+      detail: 'The background job queue is temporarily unavailable. Try again later.',
+      ...options,
+    });
+  }
+}
+
+/** `QUEUE_PAYLOAD_TOO_LARGE` (413): a job payload exceeds the queue's size cap and was not enqueued. */
+export class QueuePayloadTooLargeError extends AppError {
+  declare readonly code: 'QUEUE_PAYLOAD_TOO_LARGE';
+  constructor(detail: string, options: AppErrorOptions = {}) {
+    super('QUEUE_PAYLOAD_TOO_LARGE', 'queue payload too large', { detail, ...options });
+  }
+}

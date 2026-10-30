@@ -6,6 +6,8 @@ import {
   AuthError,
   EtagMismatchError,
   PlanPayloadTooLargeError,
+  QueuePayloadTooLargeError,
+  QueueUnavailableError,
   ScheduleNoAssetsError,
   PlanVersionImmutableError,
   TestCaseNotFoundError,
@@ -72,6 +74,18 @@ const SUBCLASSES: readonly (readonly [
     PlanVersionImmutableError,
   ],
   ['EtagMismatchError', 'ETAG_MISMATCH', (o) => new EtagMismatchError(o), EtagMismatchError],
+  [
+    'QueueUnavailableError',
+    'QUEUE_UNAVAILABLE',
+    (o) => new QueueUnavailableError(o),
+    QueueUnavailableError,
+  ],
+  [
+    'QueuePayloadTooLargeError',
+    'QUEUE_PAYLOAD_TOO_LARGE',
+    (o) => new QueuePayloadTooLargeError('too big', o),
+    QueuePayloadTooLargeError,
+  ],
   [
     'PlanPayloadTooLargeError',
     'PLAN_PAYLOAD_TOO_LARGE',

@@ -279,7 +279,7 @@ apps/
   cli/                 `blackwing` CLI (CI usage)
 packages/
   contracts/  db/  domain/  policy/  agents/  api-client/  mcp-tools/  memory/  replay/  oob/  evidence/  crypto/
-  secrets/  audit/  events/  notify/  connectors/  reporting/  cost/  config/  logger/  ids/  time/  errors/  telemetry/  workflow-shared/  ui/  testing/
+  secrets/  audit/  events/  queue/  notify/  connectors/  reporting/  cost/  config/  logger/  ids/  time/  errors/  telemetry/  workflow-shared/  ui/  testing/
 infra/
   tofu/  helm/  k3s/  docker/ (Dockerfiles; sandbox image)  compose/ (docker-compose.dev.yml)  keycloak/ (realm as code)  perf/ (k6 load-test harness: lib/, k6/ scripts, chaos/, results/; PERF-001)
   bootstrap.sh  versions.env (idempotent dev-host bootstrap and its pinned toolchain versions)

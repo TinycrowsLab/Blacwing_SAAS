@@ -53,6 +53,7 @@ export const EXPECTED_PACKAGES = Object.freeze([
   'audit',
   'notify',
   'events',
+  'queue',
   'connectors',
   'reporting',
   'cost',

@@ -96,6 +96,11 @@ const DEFINITIONS = {
   // deadlocks is a transient overload (503, retryable).
   TENANT_CONTEXT_CONFLICT: { status: 500, title: 'Tenant context conflict', retryable: false },
   TX_RETRY_EXHAUSTED: { status: 503, title: 'Transaction retries exhausted', retryable: true },
+  // BullMQ queue factory (WORKFLOW queue, #30). Valkey is unreachable or did not answer in time: the enqueue
+  // failed closed and the caller decides (503, retryable). A payload over the size cap is refused before it is
+  // enqueued (413, never retried unchanged).
+  QUEUE_UNAVAILABLE: { status: 503, title: 'Job queue unavailable', retryable: true },
+  QUEUE_PAYLOAD_TOO_LARGE: { status: 413, title: 'Queue payload too large', retryable: false },
   // db:seed refuses to run outside development and test (DEVENV-011, #75). A dev-only CLI refusal.
   SEED_FORBIDDEN_IN_PROD: {
     status: 403,
