@@ -513,6 +513,12 @@ const DEFINITIONS = {
     title: 'Ticket connector validation failed',
     retryable: false,
   },
+  // Agent memory (MEMORY-001, #214): an embedding whose length is not the column's dimension (384). Never retried as is.
+  MEMORY_EMBED_DIM_MISMATCH: {
+    status: 422,
+    title: 'Embedding dimension mismatch',
+    retryable: false,
+  },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

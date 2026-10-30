@@ -84,6 +84,7 @@ export {
   mapDbError,
   QueryTimeoutError,
   SerializationConflictError,
+  MemoryEmbedDimMismatchError,
   UniqueViolationError,
   unwrapQueryError,
 } from './query-errors.js';

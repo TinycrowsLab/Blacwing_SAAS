@@ -78,6 +78,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   PROMPT_HASH_MISMATCH: 500,
   AAD_MISMATCH: 403,
   SECRET_TOO_LARGE: 413,
+  MEMORY_EMBED_DIM_MISMATCH: 422,
   KEK_DISABLED: 409,
   ENVELOPE_INVALID: 422,
   SECRET_DECRYPT_FAILED: 500,
@@ -187,7 +188,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(159);
+    expect(ERROR_CODE_LIST).toHaveLength(160);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -445,6 +446,7 @@ describe('error-code registry', () => {
       | 'CONNECTOR_NOT_FOUND'
       | 'CONNECTOR_UPSTREAM_ERROR'
       | 'CONNECTOR_VALIDATION'
+      | 'MEMORY_EMBED_DIM_MISMATCH'
       | 'INTERNAL'
     >();
     expectTypeOf<HttpStatusOf<'NOT_FOUND'>>().toEqualTypeOf<404>();

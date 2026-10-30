@@ -8,6 +8,7 @@ import {
   CheckViolationError,
   ForeignKeyError,
   mapDbError,
+  MemoryEmbedDimMismatchError,
   QueryTimeoutError,
   SerializationConflictError,
   UniqueViolationError,
@@ -104,6 +105,19 @@ describe('mapDbError', () => {
       expect(mapped.detail ?? '').not.toContain(SECRET_VALUE);
       expect(JSON.stringify(mapped)).not.toContain(SECRET_VALUE);
     }
+  });
+
+  it('maps the pgvector length error (22000) to MEMORY_EMBED_DIM_MISMATCH (422), keeping the pg error as cause', () => {
+    const cause = Object.assign(new Error('expected 384 dimensions, not 3'), { code: '22000' });
+    const mapped = mapDbError(cause);
+    expect(mapped).toBeInstanceOf(MemoryEmbedDimMismatchError);
+    expect(mapped).toMatchObject({ code: 'MEMORY_EMBED_DIM_MISMATCH', httpStatus: 422 });
+    expect((mapped as Error).cause).toBe(cause);
+  });
+
+  it('leaves other 22000 data exceptions unmapped', () => {
+    const other = Object.assign(new Error('invalid input syntax'), { code: '22000' });
+    expect(mapDbError(other)).toBe(other);
   });
 
   it('passes unmapped SQLSTATEs and non-database errors through unchanged', () => {

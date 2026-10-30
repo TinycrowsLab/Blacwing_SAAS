@@ -10,6 +10,7 @@ import { AppError, ConflictError, isAppError, ValidationError } from '@blackwing
 /** Bound on the cause chain walked to find a SQLSTATE (Drizzle wraps once; this allows a little more). */
 const CAUSE_DEPTH = 5;
 const SQLSTATE = /^[0-9A-Z]{5}$/;
+const EMBEDDING_DIM_MISMATCH = /expected \d+ dimensions, not \d+/;
 
 /**
  * The Postgres error under a query-error wrapper, or the input when there is none. Walks `cause`
@@ -92,15 +93,36 @@ export class CheckViolationError extends ValidationError {
   }
 }
 
+/** `MEMORY_EMBED_DIM_MISMATCH` (422): pgvector rejected an embedding whose length is not the column's (MEMORY-001). */
+export class MemoryEmbedDimMismatchError extends AppError {
+  declare readonly code: 'MEMORY_EMBED_DIM_MISMATCH';
+  constructor(options: { cause?: unknown } = {}) {
+    super('MEMORY_EMBED_DIM_MISMATCH', 'embedding dimension does not match the column', {
+      detail: 'An embedding must have 384 dimensions.',
+      ...options,
+    });
+  }
+}
+
 /**
  * Maps a failed query to its typed error, keeping the original as `cause`. Returns `error` unchanged
  * when it is already an `AppError` or its SQLSTATE is not one of the mapped codes.
  */
 export function mapDbError(error: unknown): unknown {
   if (isAppError(error)) return error;
-  const driver = unwrapQueryError(error) as { code?: unknown; constraint?: unknown } | null;
+  const driver = unwrapQueryError(error) as {
+    code?: unknown;
+    constraint?: unknown;
+    message?: unknown;
+  } | null;
   const constraint = typeof driver?.constraint === 'string' ? driver.constraint : undefined;
   switch (driver?.code) {
+    case '22000':
+      // pgvector reports a length mismatch as `expected 384 dimensions, not 3` (SQLSTATE 22000).
+      if (typeof driver.message === 'string' && EMBEDDING_DIM_MISMATCH.test(driver.message)) {
+        return new MemoryEmbedDimMismatchError({ cause: error });
+      }
+      return error;
     case '57014':
       return new QueryTimeoutError({ cause: error });
     case '40001':

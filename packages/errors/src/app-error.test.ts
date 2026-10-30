@@ -127,6 +127,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   // AuthzSodViolationError and StepUpRequiredError, apps/api standing-authorisation approval (AUTHZ-008, #380).
   'AUTHZ_SOD_VIOLATION',
   'AUTHZ_STEPUP_REQUIRED',
+  // MemoryEmbedDimMismatchError, @blackwing/db query errors (MEMORY-001): thrown from the Postgres mapping.
+  'MEMORY_EMBED_DIM_MISMATCH',
   // Agent session descriptor, @blackwing/agent-runtime (RUNTIME-001): thrown as a plain AppError.
   'AGENT_BRIEF_TOO_LARGE',
   'AGENT_UNKNOWN_PERSONA',

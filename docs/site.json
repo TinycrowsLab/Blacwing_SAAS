@@ -50,6 +50,7 @@
         "runbooks/ingress-tls.md",
         "runbooks/kill-slo.md",
         "runbooks/kill-switch.md",
+        "runbooks/memory.md",
         "runbooks/node-imds.md",
         "runbooks/release.md",
         "runbooks/renovate.md",

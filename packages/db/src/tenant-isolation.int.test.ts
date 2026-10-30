@@ -23,10 +23,14 @@ import {
 
 import { publicId } from './columns.js';
 import { migrateDatabase } from './index.js';
+import { EMBEDDING_DIMENSIONS, toVectorLiteral } from './vector.js';
 
 import type pg from 'pg';
 
 type Seeder = (tx: pg.PoolClient, tenantId: string) => Promise<void>;
+
+/** A valid 384-dim embedding for the `memories` seeder. */
+const isolationVector = (): number[] => Array.from({ length: EMBEDDING_DIMENSIONS }, () => 0.5);
 
 /** A roster that is not the tenant's active one, so seeding twice never trips the one-active index. */
 async function insertInactiveRoster(tx: pg.PoolClient, tenantId: string): Promise<string> {
@@ -205,6 +209,13 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
     await tx.query(
       `INSERT INTO secret_versions (tenant_id, secret_id, version, envelope) VALUES ($1, $2, 1, '{"ct":"x"}')`,
       [tenantId, secretId],
+    );
+  },
+  memories: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO memories (id, tenant_id, scope, kind, title, content, embedding, embed_model, embed_revision, source)
+       VALUES ($1, $2, 'tenant', 'recon_fact', 'iso memory', 'iso content', $3::vector, 'bge-small-en-v1.5', 'rev-1', 'agent')`,
+      [newId(), tenantId, toVectorLiteral(isolationVector())],
     );
   },
   memberships: async (tx, tenantId) => {
