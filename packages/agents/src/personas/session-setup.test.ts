@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { PREAMBLE_PLACEHOLDERS, fillPreamble, type PreamblePlaceholder } from '../base-preamble.js';
 import { PERSONA_NAMES, loadPersona, parsePersonaDefinition } from '../persona.js';
 import { loadPrompt } from '../prompt.js';
-import { SESSION_SETUP_ALLOWED_TOOLS, sessionSetupPersona } from './session-setup.js';
+import { sessionSetupPersona } from './session-setup.js';
 
 const values = Object.fromEntries(PREAMBLE_PLACEHOLDERS.map((k) => [k, `v-${k}`])) as Record<
   PreamblePlaceholder,
@@ -60,7 +62,7 @@ describe.each([['session-setup', sessionSetupPersona, 30]] as const)(
 
 describe('session-setup tools and credential handling', () => {
   it('uses session-manager tools and the browser only', () => {
-    expect(sessionSetupPersona.allowedTools).toEqual(SESSION_SETUP_ALLOWED_TOOLS);
+    expect(sessionSetupPersona.allowedTools).toEqual([...EXPOSURE_MATRIX['session-setup']]);
     expect(sessionSetupPersona.allowedTools).toEqual([
       'mcp__blackwing_session__*',
       'mcp__playwright__*',

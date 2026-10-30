@@ -1,3 +1,5 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 
 /**
@@ -12,7 +14,7 @@ export const osintPersona = registerPersona({
   effort: 'medium',
   maxTurns: 30,
   maxBudgetUsdDefault: 2,
-  allowedTools: ['mcp__blackwing_intel__*'],
+  allowedTools: [...EXPOSURE_MATRIX.osint],
   disallowedTools: ['Bash', 'WebFetch', 'WebSearch'],
   declaredOracleTypes: [],
   inputs: ['org_identifiers', 'domain_identifiers', 'scope_rules'],

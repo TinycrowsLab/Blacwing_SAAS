@@ -18,6 +18,7 @@ export {
   toolFailure,
 } from './errors.js';
 export { DEFAULT_TOOL_OUTPUT_MAX_BYTES, resolveOutputMaxBytes } from './limits.js';
+export { EXPOSURE_MATRIX, exposureViolations } from './exposure.js';
 export { createToolMetrics, type ToolMetrics } from './metrics.js';
 export {
   type CreateServerOptions,

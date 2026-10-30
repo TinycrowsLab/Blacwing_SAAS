@@ -1,3 +1,5 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 import { PLANNING_DISALLOWED_TOOLS } from './planner.js';
 
@@ -17,7 +19,7 @@ export const sourceSpecIngestionPersona = registerPersona({
   effort: 'high',
   maxTurns: 40,
   maxBudgetUsdDefault: 5,
-  allowedTools: ['Read', 'Grep', 'Glob', SURFACE_UPSERT_TOOL],
+  allowedTools: [...EXPOSURE_MATRIX['source-spec-ingestion']],
   disallowedTools: PLANNING_DISALLOWED_TOOLS,
   declaredOracleTypes: [],
   inputs: ['mounted_specs', 'mounted_source', 'deploy_manifests', 'run_envelope'],

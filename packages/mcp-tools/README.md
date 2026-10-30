@@ -52,3 +52,17 @@ JSON (`records` capped at 500, with `total` and `truncated`), raw stdout is stor
 `tool-audit` event with the flags used and the pinned `toolVersion`. Proxy forcing for proxy-unaware binaries
 comes from `egressSpawnOptions` (`proxychains-ng`). Metrics: `mcp_recon_runs_total{tool,result}`,
 `mcp_recon_duration_ms{tool}` (`createReconRunMetrics`); span `mcp.recon`.
+
+## Tool-exposure matrix (MCP-015, #680)
+
+`src/exposure.ts` is the single source of which tools each of the 19 personas may call. `EXPOSURE_MATRIX`
+maps a persona name to its exact tool row (`mcp__<server>__<tool>` names and built-ins). `@blackwing/agents`
+builds every persona's `allowedTools` from its row, so a definition cannot drift from the matrix; CI
+(`packages/agents/src/personas/exposure.test.ts`) fails when they differ, and `pnpm gen:persona-catalogue`
+plus the drift check fails when the rendered catalogue is stale. A `__*` entry is a prefix wildcard for an
+external MCP server (for example `mcp__playwright__*`).
+
+Every entry needs a class in `TOOL_EXPOSURE_CLASSES` (`readOnly`, `reachesTarget`). `exposureViolations(persona, tools)`
+is the rule both the tests and the matrix use: an unclassified tool, a networked built-in (`WebFetch`, `WebSearch`),
+a target-reaching tool outside the target mandate (`TARGET_MANDATE_PERSONAS`) and a non-read-only tool for a
+read-only persona (`READ_ONLY_PERSONAS`) are all violations. Helpers inherit only within their parent's row.

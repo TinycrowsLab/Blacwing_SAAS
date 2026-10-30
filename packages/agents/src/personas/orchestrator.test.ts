@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { PREAMBLE_PLACEHOLDERS, fillPreamble, type PreamblePlaceholder } from '../base-preamble.js';
 import { PERSONA_NAMES, loadPersona, parsePersonaDefinition } from '../persona.js';
 import { loadPrompt } from '../prompt.js';
-import { ORCHESTRATOR_ALLOWED_TOOLS, orchestratorPersona } from './orchestrator.js';
+import { orchestratorPersona } from './orchestrator.js';
 
 describe('orchestrator persona', () => {
   it('is registered and re-validates against the persona schema', () => {
@@ -13,7 +15,7 @@ describe('orchestrator persona', () => {
   });
 
   it('allows only engagement MCP tools by their exact names', () => {
-    expect(orchestratorPersona.allowedTools).toEqual(ORCHESTRATOR_ALLOWED_TOOLS);
+    expect(orchestratorPersona.allowedTools).toEqual([...EXPOSURE_MATRIX.orchestrator]);
     expect(orchestratorPersona.allowedTools).toHaveLength(7);
     for (const t of orchestratorPersona.allowedTools) {
       expect(t).toMatch(/^mcp__blackwing_engagement__[a-z_]+$/);

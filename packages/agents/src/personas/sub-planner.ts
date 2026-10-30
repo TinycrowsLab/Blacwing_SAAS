@@ -1,6 +1,8 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 import { ORACLE_CATALOGUE } from './oracles.js';
-import { PLANNING_DISALLOWED_TOOLS, SURFACE_QUERY_TOOL } from './planner.js';
+import { PLANNING_DISALLOWED_TOOLS } from './planner.js';
 
 /**
  * `sub-planner` (REGISTRY-011, REFERENCES §8.1). Breaks an approved test case into self-contained subtask
@@ -16,7 +18,7 @@ export const subPlannerPersona = registerPersona({
   effort: 'medium',
   maxTurns: 20,
   maxBudgetUsdDefault: 2,
-  allowedTools: [SURFACE_QUERY_TOOL],
+  allowedTools: [...EXPOSURE_MATRIX['sub-planner']],
   disallowedTools: PLANNING_DISALLOWED_TOOLS,
   declaredOracleTypes: [...ORACLE_CATALOGUE],
   inputs: ['approved_test_case', 'run_envelope'],

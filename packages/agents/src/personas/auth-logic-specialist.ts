@@ -1,3 +1,5 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 
 /**
@@ -9,28 +11,8 @@ import { registerPersona } from '../persona.js';
  * negative control. Tools, ceiling and oracle are data; enforcement is deterministic (§8.11).
  */
 
-/** Role-switching tools (session manager). Credentials are used by reference only (§8.7). */
-const AUTH_LOGIC_SESSION_TOOLS = [
-  'mcp__blackwing_session__use_role',
-  'mcp__blackwing_session__check_session',
-] as const;
-
-/** Target-interaction tools, routed through the egress gateway. */
-const AUTH_LOGIC_TARGET_TOOLS = [
-  'mcp__blackwing_target__http_request',
-  'mcp__blackwing_target__http_batch',
-  'mcp__playwright__*',
-] as const;
-
-/** Out-of-band callback tools (blind checks) and the reversal journal. */
-const AUTH_LOGIC_OOB_JOURNAL_TOOLS = [
-  'mcp__blackwing_oob__*',
-  'mcp__blackwing_journal__*',
-] as const;
-
 /** Finding submission. Candidates only; the Validator judges, never this persona (§8.11). */
 export const AUTH_LOGIC_SUBMIT_TOOL = 'mcp__blackwing_findings__submit_candidate';
-const AUTH_LOGIC_ATTACH_EVIDENCE_TOOL = 'mcp__blackwing_findings__attach_evidence';
 
 export const authLogicSpecialistPersona = registerPersona({
   name: 'auth-logic-specialist',
@@ -43,14 +25,7 @@ export const authLogicSpecialistPersona = registerPersona({
   effort: 'high',
   maxTurns: 80,
   maxBudgetUsdDefault: 5,
-  allowedTools: [
-    'Bash',
-    ...AUTH_LOGIC_TARGET_TOOLS,
-    ...AUTH_LOGIC_SESSION_TOOLS,
-    ...AUTH_LOGIC_OOB_JOURNAL_TOOLS,
-    AUTH_LOGIC_SUBMIT_TOOL,
-    AUTH_LOGIC_ATTACH_EVIDENCE_TOOL,
-  ],
+  allowedTools: [...EXPOSURE_MATRIX['auth-logic-specialist']],
   disallowedTools: ['WebFetch', 'WebSearch'],
   declaredOracleTypes: ['access_matrix', 'status_diff', 'reflected_marker'],
   inputs: ['role_matrix', 'role_sessions', 'test_case_brief', 'surface_model'],

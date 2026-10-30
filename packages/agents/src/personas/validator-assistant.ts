@@ -1,7 +1,9 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 import { SUBMIT_CANDIDATE_TOOL } from './active-recon.js';
 import { ORACLE_CATALOGUE } from './oracles.js';
-import { PLANNING_DISALLOWED_TOOLS, TEST_CASE_LIBRARY_READ_TOOL } from './planner.js';
+import { PLANNING_DISALLOWED_TOOLS } from './planner.js';
 
 /** Candidate-finding read tool, exactly as the findings MCP server names it (`mcp__<server>__<tool>`). */
 export const CANDIDATE_READ_TOOL = 'mcp__blackwing_findings__candidate_read';
@@ -24,7 +26,7 @@ export const validatorAssistantPersona = registerPersona({
   effort: 'high',
   maxTurns: 30,
   maxBudgetUsdDefault: 2,
-  allowedTools: [CANDIDATE_READ_TOOL, EVIDENCE_READ_TOOL, TEST_CASE_LIBRARY_READ_TOOL],
+  allowedTools: [...EXPOSURE_MATRIX['validator-assistant']],
   disallowedTools: [...PLANNING_DISALLOWED_TOOLS, SUBMIT_CANDIDATE_TOOL],
   declaredOracleTypes: [...ORACLE_CATALOGUE],
   inputs: ['candidate_finding', 'evidence', 'test_case_oracle', 'negative_control', 'run_envelope'],

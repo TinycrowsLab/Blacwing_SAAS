@@ -1,3 +1,5 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 
 /** `submit_candidate` is the finding-submission tool; recon raises no findings. */
@@ -18,16 +20,7 @@ export const activeReconPersona = registerPersona({
   effort: 'medium',
   maxTurns: 60,
   maxBudgetUsdDefault: 5,
-  allowedTools: [
-    'Bash',
-    'mcp__blackwing__http_request',
-    'mcp__blackwing__tcp_probe',
-    'mcp__blackwing__dns_lookup',
-    'mcp__playwright__*',
-    'mcp__blackwing__write_surface',
-    'mcp__blackwing__get_engagement_state',
-    'mcp__blackwing__mark_test_case_status',
-  ],
+  allowedTools: [...EXPOSURE_MATRIX['active-recon']],
   disallowedTools: ['WebFetch', 'WebSearch', SUBMIT_CANDIDATE_TOOL],
   declaredOracleTypes: [],
   inputs: ['run_envelope', 'mode', 'input_manifest', 'passive_results', 'test_case_budgets'],

@@ -1,3 +1,5 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 import { PLANNING_DISALLOWED_TOOLS } from './planner.js';
 
@@ -19,7 +21,7 @@ export const reporterPersona = registerPersona({
   effort: 'high',
   maxTurns: 30,
   maxBudgetUsdDefault: 3,
-  allowedTools: [FINDING_READ_TOOL, EVIDENCE_READ_TOOL],
+  allowedTools: [...EXPOSURE_MATRIX.reporter],
   disallowedTools: PLANNING_DISALLOWED_TOOLS,
   declaredOracleTypes: [],
   inputs: ['confirmed_finding', 'evidence', 'oracle_result'],

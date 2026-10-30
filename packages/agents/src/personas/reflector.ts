@@ -1,5 +1,7 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
-import { ADVISORY_DISALLOWED_TOOLS, TRANSCRIPT_SUMMARY_READ_TOOL } from './advisory.js';
+import { ADVISORY_DISALLOWED_TOOLS } from './advisory.js';
 
 /** Journal read of prior lessons (read-only; the runtime writes new lessons, not this persona). */
 export const JOURNAL_LESSONS_READ_TOOL = 'mcp__blackwing_journal__lessons_read';
@@ -17,7 +19,7 @@ export const reflectorPersona = registerPersona({
   effort: 'medium',
   maxTurns: 15,
   maxBudgetUsdDefault: 2,
-  allowedTools: [TRANSCRIPT_SUMMARY_READ_TOOL, JOURNAL_LESSONS_READ_TOOL],
+  allowedTools: [...EXPOSURE_MATRIX.reflector],
   disallowedTools: ADVISORY_DISALLOWED_TOOLS,
   declaredOracleTypes: [],
   inputs: ['failed_subtask_transcript_summary', 'journal_lessons'],

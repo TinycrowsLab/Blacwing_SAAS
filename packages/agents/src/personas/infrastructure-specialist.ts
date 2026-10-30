@@ -1,3 +1,5 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 
 /**
@@ -18,12 +20,7 @@ export const infrastructureSpecialistPersona = registerPersona({
   effort: 'medium',
   maxTurns: 60,
   maxBudgetUsdDefault: 5,
-  allowedTools: [
-    'Bash',
-    'mcp__blackwing_target__tcp_probe',
-    'mcp__blackwing_findings__submit_candidate',
-    'mcp__blackwing_findings__attach_evidence',
-  ],
+  allowedTools: [...EXPOSURE_MATRIX['infrastructure-specialist']],
   disallowedTools: ['WebFetch', 'WebSearch'],
   declaredOracleTypes: ['status_diff', 'error_signature', 'header_flag'],
   inputs: ['surface_hosts', 'detected_versions', 'test_case_brief'],

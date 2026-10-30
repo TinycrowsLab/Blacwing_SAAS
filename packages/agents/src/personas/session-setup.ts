@@ -1,3 +1,5 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 
 /**
@@ -7,7 +9,6 @@ import { registerPersona } from '../persona.js';
  * no state-changing request and handles credentials by reference only (§8.7). Tools and ceiling are
  * data; enforcement is deterministic (§8.11).
  */
-export const SESSION_SETUP_ALLOWED_TOOLS = ['mcp__blackwing_session__*', 'mcp__playwright__*'];
 
 export const sessionSetupPersona = registerPersona({
   name: 'session-setup',
@@ -17,7 +18,7 @@ export const sessionSetupPersona = registerPersona({
   effort: 'medium',
   maxTurns: 30,
   maxBudgetUsdDefault: 2,
-  allowedTools: SESSION_SETUP_ALLOWED_TOOLS,
+  allowedTools: [...EXPOSURE_MATRIX['session-setup']],
   disallowedTools: ['WebFetch', 'WebSearch'],
   declaredOracleTypes: [],
   inputs: ['role_matrix', 'credential_references', 'login_recipes'],

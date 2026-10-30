@@ -1,9 +1,8 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 
 import type { ORACLE_CATALOGUE } from './oracles.js';
-
-/** `submit_candidate` is the finding-submission tool; specialists submit, never self-confirm. */
-const SUBMIT_CANDIDATE_TOOL = 'mcp__blackwing_findings__submit_candidate';
 
 /** Oracle types this persona binds candidates to (a subset of the shared catalogue). */
 export const WEB_API_ORACLE_TYPES = [
@@ -53,17 +52,7 @@ export const webApiSpecialistPersona = registerPersona({
   effort: 'high',
   maxTurns: 80,
   maxBudgetUsdDefault: 10,
-  allowedTools: [
-    'Bash',
-    'mcp__blackwing_target__http_request',
-    'mcp__blackwing_target__http_batch',
-    'mcp__playwright__*',
-    'mcp__blackwing_oob__oob_allocate',
-    'mcp__blackwing_oob__oob_check',
-    'mcp__blackwing_journal__*',
-    SUBMIT_CANDIDATE_TOOL,
-    'mcp__blackwing_findings__attach_evidence',
-  ],
+  allowedTools: [...EXPOSURE_MATRIX['web-api-specialist']],
   disallowedTools: ['WebFetch', 'WebSearch'],
   declaredOracleTypes: [...WEB_API_ORACLE_TYPES],
   inputs: ['test_case_brief', 'surface_model', 'prior_subtask_results'],

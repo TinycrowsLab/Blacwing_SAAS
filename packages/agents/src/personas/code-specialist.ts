@@ -1,3 +1,5 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 
 /**
@@ -17,15 +19,7 @@ export const codeSpecialistPersona = registerPersona({
   effort: 'high',
   maxTurns: 80,
   maxBudgetUsdDefault: 10,
-  allowedTools: [
-    'Read',
-    'Grep',
-    'Glob',
-    'Bash',
-    'mcp__blackwing_target__http_request',
-    'mcp__blackwing_findings__submit_candidate',
-    'mcp__blackwing_findings__attach_evidence',
-  ],
+  allowedTools: [...EXPOSURE_MATRIX['code-specialist']],
   disallowedTools: ['WebFetch', 'WebSearch'],
   declaredOracleTypes: ['reflected_marker', 'file_read', 'status_diff'],
   inputs: ['mounted_source', 'source_endpoint_map', 'test_case_brief'],

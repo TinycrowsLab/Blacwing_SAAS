@@ -1,5 +1,7 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
-import { ADVISORY_DISALLOWED_TOOLS, TRANSCRIPT_SUMMARY_READ_TOOL } from './advisory.js';
+import { ADVISORY_DISALLOWED_TOOLS } from './advisory.js';
 
 /**
  * The `mentor` persona (CONTEXT_PACK §4.6, REFERENCES §2 / §8.1). Stall and loop detection that proposes a
@@ -14,7 +16,7 @@ export const mentorPersona = registerPersona({
   effort: 'medium',
   maxTurns: 15,
   maxBudgetUsdDefault: 2,
-  allowedTools: [TRANSCRIPT_SUMMARY_READ_TOOL],
+  allowedTools: [...EXPOSURE_MATRIX.mentor],
   disallowedTools: ADVISORY_DISALLOWED_TOOLS,
   declaredOracleTypes: [],
   inputs: ['transcript_summary', 'run_envelope'],

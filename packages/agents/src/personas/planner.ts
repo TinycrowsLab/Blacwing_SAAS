@@ -1,3 +1,5 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 import { ORACLE_CATALOGUE } from './oracles.js';
 
@@ -30,7 +32,7 @@ export const plannerPersona = registerPersona({
   effort: 'high',
   maxTurns: 40,
   maxBudgetUsdDefault: 5,
-  allowedTools: [SURFACE_QUERY_TOOL, TEST_CASE_LIBRARY_READ_TOOL],
+  allowedTools: [...EXPOSURE_MATRIX.planner],
   disallowedTools: PLANNING_DISALLOWED_TOOLS,
   declaredOracleTypes: [...ORACLE_CATALOGUE],
   inputs: ['surface_model', 'recon_summary', 'test_case_library', 'run_envelope'],

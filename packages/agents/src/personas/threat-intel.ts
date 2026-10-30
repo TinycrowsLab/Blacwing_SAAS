@@ -1,3 +1,5 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 import { PLANNING_DISALLOWED_TOOLS } from './planner.js';
 
@@ -14,7 +16,7 @@ export const threatIntelPersona = registerPersona({
   effort: 'medium',
   maxTurns: 30,
   maxBudgetUsdDefault: 2,
-  allowedTools: ['mcp__blackwing_intel__*'],
+  allowedTools: [...EXPOSURE_MATRIX['threat-intel']],
   disallowedTools: PLANNING_DISALLOWED_TOOLS,
   declaredOracleTypes: [],
   inputs: ['surface_components', 'detected_versions'],

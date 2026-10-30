@@ -1,3 +1,5 @@
+import { EXPOSURE_MATRIX } from '@blackwing/mcp-tools';
+
 import { registerPersona } from '../persona.js';
 
 /**
@@ -8,18 +10,6 @@ import { registerPersona } from '../persona.js';
  * specialist), never the native `Agent` tool, and it never touches a target. Tools, ceiling and
  * oracle are data; enforcement is deterministic (PDP hook, egress gateway, budgets; §8.11).
  */
-const SERVER = 'mcp__blackwing_engagement__';
-
-export const ORCHESTRATOR_ALLOWED_TOOLS = [
-  'get_engagement_state',
-  'list_open_subtasks',
-  'dispatch_subtask',
-  'get_subtask_result',
-  'request_mentor_review',
-  'mark_test_case_status',
-  'request_scope_exception',
-].map((t) => `${SERVER}${t}`);
-
 export const orchestratorPersona = registerPersona({
   name: 'orchestrator',
   mandate:
@@ -28,7 +18,7 @@ export const orchestratorPersona = registerPersona({
   effort: 'high',
   maxTurns: 200,
   maxBudgetUsdDefault: 25,
-  allowedTools: ORCHESTRATOR_ALLOWED_TOOLS,
+  allowedTools: [...EXPOSURE_MATRIX.orchestrator],
   disallowedTools: ['Bash', 'WebFetch', 'WebSearch', 'Agent', 'mcp__blackwing__http_request'],
   declaredOracleTypes: [],
   inputs: [
