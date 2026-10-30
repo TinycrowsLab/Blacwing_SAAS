@@ -155,7 +155,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <main class="content">
 <h1 id="api-reference">API reference</h1>
 <p>The public <code>/v1</code> REST API, version 0.0.0. This page is generated from <a href="./openapi.json"><code>openapi.json</code></a> by <code>pnpm openapi:generate</code>; do not edit it by hand. CI fails when it is stale.</p>
-<p>It documents 63 operations. Read <a href="./conventions.html">Conventions</a> for pagination, idempotency, concurrency and errors, and <a href="./auth.html">Authentication</a> for tokens and scopes.</p>
+<p>It documents 68 operations. Read <a href="./conventions.html">Conventions</a> for pagination, idempotency, concurrency and errors, and <a href="./auth.html">Authentication</a> for tokens and scopes.</p>
 <p>The internal Run Broker API (<code>/internal/broker</code>) is not part of this reference.</p>
 <h2 id="contents">Contents</h2>
 <ul>
@@ -271,6 +271,14 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="#get-notification-channelsid">GET /notification-channels/{id}</a></li>
 <li><a href="#delete-notification-channelsid">DELETE /notification-channels/{id}</a></li>
 <li><a href="#patch-notification-channelsid">PATCH /notification-channels/{id}</a></li>
+</ul>
+</li>
+<li>rbac<ul>
+<li><a href="#get-service-accounts">GET /service-accounts</a></li>
+<li><a href="#post-service-accounts">POST /service-accounts</a></li>
+<li><a href="#get-service-accountsid">GET /service-accounts/{id}</a></li>
+<li><a href="#delete-service-accountsid">DELETE /service-accounts/{id}</a></li>
+<li><a href="#patch-service-accountsid">PATCH /service-accounts/{id}</a></li>
 </ul>
 </li>
 </ul>
@@ -1682,7 +1690,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-2">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -1762,6 +1770,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -2080,7 +2097,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <td><code>action</code></td>
 <td>query</td>
 <td>no</td>
-<td>enum: <code>&quot;auth.login&quot;</code>, <code>&quot;auth.logout&quot;</code>, <code>&quot;auth.sso_link&quot;</code>, <code>&quot;auth.api_token_issued&quot;</code>, <code>&quot;auth.api_token_revoked&quot;</code>, <code>&quot;authz.denied&quot;</code>, <code>&quot;authz.role_changed&quot;</code>, <code>&quot;asset.created&quot;</code>, <code>&quot;asset.verified&quot;</code>, <code>&quot;sa.requested&quot;</code>, <code>&quot;sa.approved&quot;</code>, <code>&quot;sa.rejected&quot;</code>, <code>&quot;sa.revoked&quot;</code>, <code>&quot;gate1.decided&quot;</code>, <code>&quot;gate2.decided&quot;</code>, <code>&quot;gate3.released&quot;</code>, <code>&quot;run.created&quot;</code>, <code>&quot;run.state_changed&quot;</code>, <code>&quot;tool.invoked&quot;</code>, <code>&quot;egress.blocked&quot;</code>, <code>&quot;kill.fired&quot;</code>, <code>&quot;kill.completed&quot;</code>, <code>&quot;finding.released&quot;</code>, <code>&quot;finding.risk_accepted&quot;</code>, <code>&quot;export.generated&quot;</code>, <code>&quot;secret.resolved&quot;</code>, <code>&quot;config.changed&quot;</code>, <code>&quot;connector.configured&quot;</code>, <code>&quot;kill.triggered&quot;</code>, <code>&quot;kill.forbidden&quot;</code>, <code>&quot;kill.egress_blocked&quot;</code>, <code>&quot;kill.sandboxes_terminated&quot;</code>, <code>&quot;secret.kek_provisioned&quot;</code>, <code>&quot;secret.kek_rotated&quot;</code>, <code>&quot;secret.kek_disabled&quot;</code>, <code>&quot;kill.keys_revoked&quot;</code>, <code>&quot;kill.workflows_cancelled&quot;</code>, <code>&quot;activity.started&quot;</code>, <code>&quot;activity.succeeded&quot;</code>, <code>&quot;activity.failed&quot;</code>, <code>&quot;workflow.started&quot;</code>, <code>&quot;workflow.completed&quot;</code>, <code>&quot;workflow.failed&quot;</code>, <code>&quot;workflow.cancelled&quot;</code>, <code>&quot;workflow.continued_as_new&quot;</code>, <code>&quot;soc_kill.link_minted&quot;</code>, <code>&quot;soc_kill.triggered&quot;</code>, <code>&quot;soc_kill.rejected&quot;</code>, <code>&quot;outbox.delivery_failed&quot;</code>, <code>&quot;scope.request.created&quot;</code>, <code>&quot;scope.request.status_changed&quot;</code>, <code>&quot;operator.kill_previewed&quot;</code>, <code>&quot;operator.kill_fired&quot;</code>, <code>&quot;audit.queried&quot;</code>, <code>&quot;secret.rotated&quot;</code>, <code>&quot;secret.rewrapped&quot;</code>, <code>&quot;persona.override_changed&quot;</code>, <code>&quot;auth.sso_config_changed&quot;</code>, <code>&quot;tenant.created&quot;</code>, <code>&quot;signup.verified&quot;</code>, <code>&quot;tenant.settings_updated&quot;</code>, <code>&quot;auth.operator_login&quot;</code>, <code>&quot;auth.operator_logout&quot;</code>, <code>&quot;auth.operator_session_revoked&quot;</code>, <code>&quot;authz.sa.created&quot;</code>, <code>&quot;authz.sa.state_changed&quot;</code>, <code>&quot;authz.sa.signed&quot;</code>, <code>&quot;authz.signing_key.rotated&quot;</code>, <code>&quot;authz.gate.decision&quot;</code>, <code>&quot;authz.sa.updated&quot;</code>, <code>&quot;authz.sa.submitted&quot;</code>, <code>&quot;run.surface.viewed&quot;</code>, <code>&quot;scope.request.updated&quot;</code>, <code>&quot;scope.request.submitted&quot;</code>, <code>&quot;scope.request.withdrawn&quot;</code>, <code>&quot;test_plan.version_created&quot;</code>, <code>&quot;test_case.created&quot;</code>, <code>&quot;test_case.updated&quot;</code>, <code>&quot;test_case.removed&quot;</code>, <code>&quot;asset.updated&quot;</code>, <code>&quot;asset.deleted&quot;</code>, <code>&quot;asset.owner_assigned&quot;</code>, <code>&quot;test_plan.validated&quot;</code>, <code>&quot;oncall.roster.updated&quot;</code>, <code>&quot;oncall.sod_skipped&quot;</code>, <code>&quot;gate2.exception.created&quot;</code>, <code>&quot;gate2.decision.recorded&quot;</code>, <code>&quot;gate1.submitted&quot;</code>, <code>&quot;gate1.approved&quot;</code>, <code>&quot;gate1.changes_requested&quot;</code>, <code>&quot;gate1.rejected&quot;</code>, <code>&quot;asset.verification_started&quot;</code>, <code>&quot;asset.verification_passed&quot;</code>, <code>&quot;asset.verification_failed&quot;</code>, <code>&quot;asset.verification_cancelled&quot;</code>, <code>&quot;graph.surface.upserted&quot;</code>, <code>&quot;notification.channel_changed&quot;</code>, <code>&quot;notification.requested&quot;</code>, <code>&quot;notification.unrouted&quot;</code>, <code>&quot;finding.rejected&quot;</code>, <code>&quot;finding.marked_duplicate&quot;</code>, <code>&quot;run.envelope_signed&quot;</code>, <code>&quot;scope.manifest.upload_requested&quot;</code>, <code>&quot;scope.manifest.upload_completed&quot;</code>, <code>&quot;scope.manifest.upload_deleted&quot;</code></td>
+<td>enum: <code>&quot;auth.login&quot;</code>, <code>&quot;auth.logout&quot;</code>, <code>&quot;auth.sso_link&quot;</code>, <code>&quot;auth.api_token_issued&quot;</code>, <code>&quot;auth.api_token_revoked&quot;</code>, <code>&quot;authz.denied&quot;</code>, <code>&quot;authz.role_changed&quot;</code>, <code>&quot;asset.created&quot;</code>, <code>&quot;asset.verified&quot;</code>, <code>&quot;sa.requested&quot;</code>, <code>&quot;sa.approved&quot;</code>, <code>&quot;sa.rejected&quot;</code>, <code>&quot;sa.revoked&quot;</code>, <code>&quot;gate1.decided&quot;</code>, <code>&quot;gate2.decided&quot;</code>, <code>&quot;gate3.released&quot;</code>, <code>&quot;run.created&quot;</code>, <code>&quot;run.state_changed&quot;</code>, <code>&quot;tool.invoked&quot;</code>, <code>&quot;egress.blocked&quot;</code>, <code>&quot;kill.fired&quot;</code>, <code>&quot;kill.completed&quot;</code>, <code>&quot;finding.released&quot;</code>, <code>&quot;finding.risk_accepted&quot;</code>, <code>&quot;export.generated&quot;</code>, <code>&quot;secret.resolved&quot;</code>, <code>&quot;config.changed&quot;</code>, <code>&quot;connector.configured&quot;</code>, <code>&quot;kill.triggered&quot;</code>, <code>&quot;kill.forbidden&quot;</code>, <code>&quot;kill.egress_blocked&quot;</code>, <code>&quot;kill.sandboxes_terminated&quot;</code>, <code>&quot;secret.kek_provisioned&quot;</code>, <code>&quot;secret.kek_rotated&quot;</code>, <code>&quot;secret.kek_disabled&quot;</code>, <code>&quot;kill.keys_revoked&quot;</code>, <code>&quot;kill.workflows_cancelled&quot;</code>, <code>&quot;activity.started&quot;</code>, <code>&quot;activity.succeeded&quot;</code>, <code>&quot;activity.failed&quot;</code>, <code>&quot;workflow.started&quot;</code>, <code>&quot;workflow.completed&quot;</code>, <code>&quot;workflow.failed&quot;</code>, <code>&quot;workflow.cancelled&quot;</code>, <code>&quot;workflow.continued_as_new&quot;</code>, <code>&quot;soc_kill.link_minted&quot;</code>, <code>&quot;soc_kill.triggered&quot;</code>, <code>&quot;soc_kill.rejected&quot;</code>, <code>&quot;outbox.delivery_failed&quot;</code>, <code>&quot;scope.request.created&quot;</code>, <code>&quot;scope.request.status_changed&quot;</code>, <code>&quot;operator.kill_previewed&quot;</code>, <code>&quot;operator.kill_fired&quot;</code>, <code>&quot;audit.queried&quot;</code>, <code>&quot;secret.rotated&quot;</code>, <code>&quot;secret.rewrapped&quot;</code>, <code>&quot;persona.override_changed&quot;</code>, <code>&quot;auth.sso_config_changed&quot;</code>, <code>&quot;tenant.created&quot;</code>, <code>&quot;signup.verified&quot;</code>, <code>&quot;tenant.settings_updated&quot;</code>, <code>&quot;auth.operator_login&quot;</code>, <code>&quot;auth.operator_logout&quot;</code>, <code>&quot;auth.operator_session_revoked&quot;</code>, <code>&quot;authz.sa.created&quot;</code>, <code>&quot;authz.sa.state_changed&quot;</code>, <code>&quot;authz.sa.signed&quot;</code>, <code>&quot;authz.signing_key.rotated&quot;</code>, <code>&quot;authz.gate.decision&quot;</code>, <code>&quot;authz.sa.updated&quot;</code>, <code>&quot;authz.sa.submitted&quot;</code>, <code>&quot;run.surface.viewed&quot;</code>, <code>&quot;scope.request.updated&quot;</code>, <code>&quot;scope.request.submitted&quot;</code>, <code>&quot;scope.request.withdrawn&quot;</code>, <code>&quot;test_plan.version_created&quot;</code>, <code>&quot;test_case.created&quot;</code>, <code>&quot;test_case.updated&quot;</code>, <code>&quot;test_case.removed&quot;</code>, <code>&quot;asset.updated&quot;</code>, <code>&quot;asset.deleted&quot;</code>, <code>&quot;asset.owner_assigned&quot;</code>, <code>&quot;test_plan.validated&quot;</code>, <code>&quot;oncall.roster.updated&quot;</code>, <code>&quot;oncall.sod_skipped&quot;</code>, <code>&quot;gate2.exception.created&quot;</code>, <code>&quot;gate2.decision.recorded&quot;</code>, <code>&quot;gate1.submitted&quot;</code>, <code>&quot;gate1.approved&quot;</code>, <code>&quot;gate1.changes_requested&quot;</code>, <code>&quot;gate1.rejected&quot;</code>, <code>&quot;asset.verification_started&quot;</code>, <code>&quot;asset.verification_passed&quot;</code>, <code>&quot;asset.verification_failed&quot;</code>, <code>&quot;asset.verification_cancelled&quot;</code>, <code>&quot;graph.surface.upserted&quot;</code>, <code>&quot;notification.channel_changed&quot;</code>, <code>&quot;notification.requested&quot;</code>, <code>&quot;notification.unrouted&quot;</code>, <code>&quot;finding.rejected&quot;</code>, <code>&quot;finding.marked_duplicate&quot;</code>, <code>&quot;run.envelope_signed&quot;</code>, <code>&quot;scope.manifest.upload_requested&quot;</code>, <code>&quot;scope.manifest.upload_completed&quot;</code>, <code>&quot;scope.manifest.upload_deleted&quot;</code>, <code>&quot;authz.sa.expired&quot;</code>, <code>&quot;service_account.created&quot;</code>, <code>&quot;service_account.updated&quot;</code>, <code>&quot;service_account.disabled&quot;</code></td>
 <td></td>
 </tr>
 <tr>
@@ -4215,7 +4232,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-7">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -4295,6 +4312,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -5281,7 +5307,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-9">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -5361,6 +5387,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -9442,7 +9477,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-15">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -9522,6 +9557,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -10613,7 +10657,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-16">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -10693,6 +10737,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -11447,7 +11500,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-17">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -11527,6 +11580,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -13202,7 +13264,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-19">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -13282,6 +13344,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -15111,7 +15182,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-21">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -15191,6 +15262,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -16285,7 +16365,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <p>The ETag is stale.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <h4 id="response-422-22">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -16365,6 +16445,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -18044,7 +18133,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <p>The ETag is stale.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <h4 id="response-422-24">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -18124,6 +18213,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -22808,7 +22906,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <p>The upload has been scanned and is no longer pending (scope_upload_not_pending).</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <h4 id="response-422-36">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -22888,6 +22986,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -24558,7 +24665,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-39">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -24638,6 +24745,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -29117,7 +29233,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-52">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -29197,6 +29313,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -29895,7 +30020,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-53">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -29975,6 +30100,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -30662,7 +30796,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-54">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -30742,6 +30876,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -31786,7 +31929,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-56">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -31866,6 +32009,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -32959,7 +33111,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-58">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -33039,6 +33191,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -33503,7 +33664,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-59">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -33583,6 +33744,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -34343,7 +34513,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-60">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -34423,6 +34593,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -34936,7 +35115,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-61">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -35016,6 +35195,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -35493,7 +35681,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 }
 </code></pre>
 <h4 id="response-422-62">Response 422</h4>
-<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
+<p>Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.</p>
 <p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
 <p>Example: Validation failed.</p>
 <pre><code class="language-json">{
@@ -35573,6 +35761,15 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Negative control does not suit the oracle&quot;,
   &quot;status&quot;: 422,
   &quot;code&quot;: &quot;NEGATIVE_CONTROL_ORACLE_MISMATCH&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid policy builder document.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/POLICY_BUILDER_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid policy builder document&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;POLICY_BUILDER_INVALID&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -35858,6 +36055,2240 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
   &quot;title&quot;: &quot;Tenant key unavailable&quot;,
   &quot;status&quot;: 503,
   &quot;code&quot;: &quot;KEK_UNAVAILABLE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h2 id="rbac">rbac</h2>
+<p>Service accounts: non-human tenant principals that own API and CI tokens. Approval and administrative roles are refused.</p>
+<h3 id="get-service-accounts">GET /service-accounts</h3>
+<p><strong>List the service accounts of the tenant</strong></p>
+<ul>
+<li>Operation ID: <code>listServiceAccounts</code></li>
+<li>Authentication: <code>bearerAuth</code> or <code>sessionCookie</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>In</th>
+<th>Required</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>cursor</code></td>
+<td>query</td>
+<td>no</td>
+<td>string</td>
+<td>Opaque cursor from the previous page <code>nextCursor</code>.</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>query</td>
+<td>no</td>
+<td>integer</td>
+<td>Page size, 1 to 200 (default 50).</td>
+</tr>
+</tbody></table>
+<h4 id="response-200-53">Response 200</h4>
+<p>One page of service accounts.</p>
+<p>Content type <code>application/json</code>: object.</p>
+<p>Example: One active CI service account, no further pages.</p>
+<pre><code class="language-json">{
+  &quot;items&quot;: [
+    {
+      &quot;id&quot;: &quot;0198f0a0-0000-7000-8000-0000000000a1&quot;,
+      &quot;name&quot;: &quot;ci-scanner&quot;,
+      &quot;description&quot;: &quot;Runs the nightly regression scan.&quot;,
+      &quot;roles&quot;: [&quot;ci_pipeline&quot;],
+      &quot;ownerUserId&quot;: &quot;0198f0a0-0000-7000-8000-0000000000b1&quot;,
+      &quot;status&quot;: &quot;active&quot;,
+      &quot;stateVersion&quot;: 0,
+      &quot;createdAt&quot;: &quot;2026-10-30T10:00:00.000Z&quot;,
+      &quot;updatedAt&quot;: &quot;2026-10-30T10:00:00.000Z&quot;
+    }
+  ],
+  &quot;nextCursor&quot;: null
+}
+</code></pre>
+<h4 id="response-400-63">Response 400</h4>
+<p>Problem details; code is one of INVALID_CURSOR.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Invalid cursor.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_CURSOR&quot;,
+  &quot;title&quot;: &quot;Invalid cursor&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;INVALID_CURSOR&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-401-63">Response 401</h4>
+<p>Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: No credentials presented.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_NO_CREDENTIALS&quot;,
+  &quot;title&quot;: &quot;No credentials presented&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_NO_CREDENTIALS&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid credentials.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_INVALID_TOKEN&quot;,
+  &quot;title&quot;: &quot;Invalid credentials&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_INVALID_TOKEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Credentials expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Credentials expired&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Step up authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Step up authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTHZ_STEPUP_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run token required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SBX_UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Run token required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SBX_UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Session service token required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Session service token required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SM_UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Session expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_SESSION_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Session expired&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SM_SESSION_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Service authentication failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SERVICE_AUTH_FAILED&quot;,
+  &quot;title&quot;: &quot;Service authentication failed&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SERVICE_AUTH_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-403-63">Response 403</h4>
+<p>Problem details; code is one of FORBIDDEN.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Forbidden.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/FORBIDDEN&quot;,
+  &quot;title&quot;: &quot;Forbidden&quot;,
+  &quot;status&quot;: 403,
+  &quot;code&quot;: &quot;FORBIDDEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-404-63">Response 404</h4>
+<p>Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Resource not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Resource not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Persona not defined.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PERSONA_NOT_DEFINED&quot;,
+  &quot;title&quot;: &quot;Persona not defined&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;PERSONA_NOT_DEFINED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: No released prompt version.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION&quot;,
+  &quot;title&quot;: &quot;No released prompt version&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;PROMPT_NO_RELEASED_VERSION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RUN_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Run not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;RUN_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Secret not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SECRET_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Secret not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;SECRET_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Identity provider resource not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Identity provider resource not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;KEYCLOAK_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Test plan not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PLAN_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Test plan not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;PLAN_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Test case not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/TEST_CASE_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Test case not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;TEST_CASE_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Ticket not found in connector.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONNECTOR_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Ticket not found in connector&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;CONNECTOR_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-409-63">Response 409</h4>
+<p>Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONFLICT&quot;,
+  &quot;title&quot;: &quot;Conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal run state transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal run state transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Approval gate is no longer pending.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE1_NOT_PENDING&quot;,
+  &quot;title&quot;: &quot;Approval gate is no longer pending&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE1_NOT_PENDING&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Test plan changed since it was loaded.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE1_PLAN_STALE&quot;,
+  &quot;title&quot;: &quot;Test plan changed since it was loaded&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE1_PLAN_STALE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Approval window expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE1_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Approval window expired&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE1_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Standing authorisation expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Standing authorisation expired&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ENVELOPE_SA_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run window closed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED&quot;,
+  &quot;title&quot;: &quot;Run window closed&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ENVELOPE_WINDOW_CLOSED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal standing authorisation transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal standing authorisation transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;AUTHZ_ILLEGAL_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Standing authorisation is not a draft.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTHZ_NOT_DRAFT&quot;,
+  &quot;title&quot;: &quot;Standing authorisation is not a draft&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;AUTHZ_NOT_DRAFT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Key version disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEK_DISABLED&quot;,
+  &quot;title&quot;: &quot;Key version disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KEK_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Database serialization conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Database serialization conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Kill already in progress.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS&quot;,
+  &quot;title&quot;: &quot;Kill already in progress&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KILL_ALREADY_IN_PROGRESS&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: No eligible approver.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE2_NO_ELIGIBLE_APPROVER&quot;,
+  &quot;title&quot;: &quot;No eligible approver&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE2_NO_ELIGIBLE_APPROVER&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run is not active.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RUN_NOT_ACTIVE&quot;,
+  &quot;title&quot;: &quot;Run is not active&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;RUN_NOT_ACTIVE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid status transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Invalid status transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;INVALID_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Secret disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SECRET_DISABLED&quot;,
+  &quot;title&quot;: &quot;Secret disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;SECRET_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Stale asset write.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ASSET_STALE_WRITE&quot;,
+  &quot;title&quot;: &quot;Stale asset write&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ASSET_STALE_WRITE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Asset in use.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ASSET_IN_USE&quot;,
+  &quot;title&quot;: &quot;Asset in use&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ASSET_IN_USE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Asset verification transition refused.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ASSET_VERIFICATION_ILLEGAL_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Asset verification transition refused&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ASSET_VERIFICATION_ILLEGAL_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Notification channel name already in use.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CHANNEL_NAME_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Notification channel name already in use&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CHANNEL_NAME_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Notification channel secret is no longer available.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CHANNEL_SECRET_UNAVAILABLE&quot;,
+  &quot;title&quot;: &quot;Notification channel secret is no longer available&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CHANNEL_SECRET_UNAVAILABLE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Notification channel is referenced by active routing rules.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CHANNEL_REFERENCED&quot;,
+  &quot;title&quot;: &quot;Notification channel is referenced by active routing rules&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CHANNEL_REFERENCED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Identity provider conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEYCLOAK_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Identity provider conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KEYCLOAK_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal finding transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal finding transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;FINDING_ILLEGAL_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Finding does not meet the triage precondition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED&quot;,
+  &quot;title&quot;: &quot;Finding does not meet the triage precondition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;TRIAGE_PRECONDITION_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Approved test plan version is immutable.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE&quot;,
+  &quot;title&quot;: &quot;Approved test plan version is immutable&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;PLAN_VERSION_IMMUTABLE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal gate exception transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE2_ILLEGAL_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal gate exception transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE2_ILLEGAL_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Gate exception already decided.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE2_ALREADY_DECIDED&quot;,
+  &quot;title&quot;: &quot;Gate exception already decided&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE2_ALREADY_DECIDED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-422-63">Response 422</h4>
+<p>Problem details; code is one of VALIDATION_FAILED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Validation failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/VALIDATION_FAILED&quot;,
+  &quot;title&quot;: &quot;Validation failed&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;VALIDATION_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-429-63">Response 429</h4>
+<p>Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Too many requests.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Too many requests&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;RATE_LIMITED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Ticket connector rate limited.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Ticket connector rate limited&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;CONNECTOR_RATE_LIMITED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h3 id="post-service-accounts">POST /service-accounts</h3>
+<p><strong>Create a service account</strong></p>
+<p>The name is unique per tenant (409 when taken). The owner must be a member of the tenant (422 otherwise). Approval and administrative roles are refused (422).</p>
+<ul>
+<li>Operation ID: <code>createServiceAccount</code></li>
+<li>Authentication: <code>bearerAuth</code> or <code>sessionCookie</code></li>
+</ul>
+<p><strong>Request body</strong> (required)</p>
+<p>Content type <code>application/json</code>: <a href="#serviceaccountcreate">ServiceAccountCreate</a>.</p>
+<p>Example: A least-privilege CI account.</p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;ci-scanner&quot;,
+  &quot;roles&quot;: [&quot;ci_pipeline&quot;],
+  &quot;ownerUserId&quot;: &quot;0198f0a0-0000-7000-8000-0000000000b1&quot;
+}
+</code></pre>
+<h4 id="response-201-9">Response 201</h4>
+<p>The created service account at stateVersion 0.</p>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ETag</code></td>
+<td>Strong validator of this service account state. Send it in If-Match on PATCH or DELETE.</td>
+</tr>
+</tbody></table>
+<p>Content type <code>application/json</code>: <a href="#serviceaccount">ServiceAccount</a>.</p>
+<p>Example: An active CI service account.</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;0198f0a0-0000-7000-8000-0000000000a1&quot;,
+  &quot;name&quot;: &quot;ci-scanner&quot;,
+  &quot;description&quot;: &quot;Runs the nightly regression scan.&quot;,
+  &quot;roles&quot;: [&quot;ci_pipeline&quot;],
+  &quot;ownerUserId&quot;: &quot;0198f0a0-0000-7000-8000-0000000000b1&quot;,
+  &quot;status&quot;: &quot;active&quot;,
+  &quot;stateVersion&quot;: 0,
+  &quot;createdAt&quot;: &quot;2026-10-30T10:00:00.000Z&quot;,
+  &quot;updatedAt&quot;: &quot;2026-10-30T10:00:00.000Z&quot;
+}
+</code></pre>
+<h4 id="response-400-64">Response 400</h4>
+<p>Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID, NOTIFICATION_CHANNEL_INVALID.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Invalid cursor.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_CURSOR&quot;,
+  &quot;title&quot;: &quot;Invalid cursor&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;INVALID_CURSOR&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid query.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_QUERY&quot;,
+  &quot;title&quot;: &quot;Invalid query&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;INVALID_QUERY&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Malformed request.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SBX_BAD_REQUEST&quot;,
+  &quot;title&quot;: &quot;Malformed request&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SBX_BAD_REQUEST&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Malformed session request.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_BAD_REQUEST&quot;,
+  &quot;title&quot;: &quot;Malformed session request&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SM_BAD_REQUEST&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Idempotency key required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Idempotency key required&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Signup token invalid or expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID&quot;,
+  &quot;title&quot;: &quot;Signup token invalid or expired&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SIGNUP_TOKEN_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid notification channel.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/NOTIFICATION_CHANNEL_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid notification channel&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;NOTIFICATION_CHANNEL_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-401-64">Response 401</h4>
+<p>Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: No credentials presented.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_NO_CREDENTIALS&quot;,
+  &quot;title&quot;: &quot;No credentials presented&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_NO_CREDENTIALS&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid credentials.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_INVALID_TOKEN&quot;,
+  &quot;title&quot;: &quot;Invalid credentials&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_INVALID_TOKEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Credentials expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Credentials expired&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Step up authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Step up authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTHZ_STEPUP_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run token required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SBX_UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Run token required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SBX_UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Session service token required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Session service token required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SM_UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Session expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_SESSION_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Session expired&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SM_SESSION_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Service authentication failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SERVICE_AUTH_FAILED&quot;,
+  &quot;title&quot;: &quot;Service authentication failed&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SERVICE_AUTH_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-403-64">Response 403</h4>
+<p>Problem details; code is one of FORBIDDEN.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Forbidden.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/FORBIDDEN&quot;,
+  &quot;title&quot;: &quot;Forbidden&quot;,
+  &quot;status&quot;: 403,
+  &quot;code&quot;: &quot;FORBIDDEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-404-64">Response 404</h4>
+<p>Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Resource not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Resource not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Persona not defined.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PERSONA_NOT_DEFINED&quot;,
+  &quot;title&quot;: &quot;Persona not defined&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;PERSONA_NOT_DEFINED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: No released prompt version.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PROMPT_NO_RELEASED_VERSION&quot;,
+  &quot;title&quot;: &quot;No released prompt version&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;PROMPT_NO_RELEASED_VERSION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RUN_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Run not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;RUN_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Secret not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SECRET_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Secret not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;SECRET_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Identity provider resource not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEYCLOAK_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Identity provider resource not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;KEYCLOAK_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Test plan not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PLAN_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Test plan not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;PLAN_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Test case not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/TEST_CASE_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Test case not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;TEST_CASE_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Ticket not found in connector.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONNECTOR_NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Ticket not found in connector&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;CONNECTOR_NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-409-64">Response 409</h4>
+<p>Problem details; code is one of CONFLICT.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONFLICT&quot;,
+  &quot;title&quot;: &quot;Conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-422-64">Response 422</h4>
+<p>Problem details; code is one of VALIDATION_FAILED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Validation failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/VALIDATION_FAILED&quot;,
+  &quot;title&quot;: &quot;Validation failed&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;VALIDATION_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-429-64">Response 429</h4>
+<p>Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Too many requests.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Too many requests&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;RATE_LIMITED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Ticket connector rate limited.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Ticket connector rate limited&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;CONNECTOR_RATE_LIMITED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h3 id="get-service-accountsid">GET /service-accounts/{id}</h3>
+<p><strong>Read a service account</strong></p>
+<ul>
+<li>Operation ID: <code>getServiceAccount</code></li>
+<li>Authentication: <code>bearerAuth</code> or <code>sessionCookie</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>In</th>
+<th>Required</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>path</td>
+<td>yes</td>
+<td>string (uuid)</td>
+<td>The id of the service account (a UUID).</td>
+</tr>
+</tbody></table>
+<h4 id="response-200-54">Response 200</h4>
+<p>The service account and its ETag.</p>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ETag</code></td>
+<td>Strong validator of this service account state. Send it in If-Match on PATCH or DELETE.</td>
+</tr>
+</tbody></table>
+<p>Content type <code>application/json</code>: <a href="#serviceaccount">ServiceAccount</a>.</p>
+<p>Example: An active CI service account.</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;0198f0a0-0000-7000-8000-0000000000a1&quot;,
+  &quot;name&quot;: &quot;ci-scanner&quot;,
+  &quot;description&quot;: &quot;Runs the nightly regression scan.&quot;,
+  &quot;roles&quot;: [&quot;ci_pipeline&quot;],
+  &quot;ownerUserId&quot;: &quot;0198f0a0-0000-7000-8000-0000000000b1&quot;,
+  &quot;status&quot;: &quot;active&quot;,
+  &quot;stateVersion&quot;: 0,
+  &quot;createdAt&quot;: &quot;2026-10-30T10:00:00.000Z&quot;,
+  &quot;updatedAt&quot;: &quot;2026-10-30T10:00:00.000Z&quot;
+}
+</code></pre>
+<h4 id="response-400-65">Response 400</h4>
+<p>Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID, NOTIFICATION_CHANNEL_INVALID.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Invalid cursor.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_CURSOR&quot;,
+  &quot;title&quot;: &quot;Invalid cursor&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;INVALID_CURSOR&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid query.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_QUERY&quot;,
+  &quot;title&quot;: &quot;Invalid query&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;INVALID_QUERY&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Malformed request.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SBX_BAD_REQUEST&quot;,
+  &quot;title&quot;: &quot;Malformed request&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SBX_BAD_REQUEST&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Malformed session request.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_BAD_REQUEST&quot;,
+  &quot;title&quot;: &quot;Malformed session request&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SM_BAD_REQUEST&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Idempotency key required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Idempotency key required&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Signup token invalid or expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID&quot;,
+  &quot;title&quot;: &quot;Signup token invalid or expired&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SIGNUP_TOKEN_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid notification channel.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/NOTIFICATION_CHANNEL_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid notification channel&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;NOTIFICATION_CHANNEL_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-401-65">Response 401</h4>
+<p>Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: No credentials presented.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_NO_CREDENTIALS&quot;,
+  &quot;title&quot;: &quot;No credentials presented&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_NO_CREDENTIALS&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid credentials.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_INVALID_TOKEN&quot;,
+  &quot;title&quot;: &quot;Invalid credentials&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_INVALID_TOKEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Credentials expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Credentials expired&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Step up authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Step up authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTHZ_STEPUP_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run token required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SBX_UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Run token required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SBX_UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Session service token required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Session service token required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SM_UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Session expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_SESSION_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Session expired&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SM_SESSION_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Service authentication failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SERVICE_AUTH_FAILED&quot;,
+  &quot;title&quot;: &quot;Service authentication failed&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SERVICE_AUTH_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-403-65">Response 403</h4>
+<p>Problem details; code is one of FORBIDDEN.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Forbidden.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/FORBIDDEN&quot;,
+  &quot;title&quot;: &quot;Forbidden&quot;,
+  &quot;status&quot;: 403,
+  &quot;code&quot;: &quot;FORBIDDEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-404-65">Response 404</h4>
+<p>Problem details; code is one of NOT_FOUND.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Resource not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Resource not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-409-65">Response 409</h4>
+<p>Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONFLICT&quot;,
+  &quot;title&quot;: &quot;Conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal run state transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal run state transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Approval gate is no longer pending.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE1_NOT_PENDING&quot;,
+  &quot;title&quot;: &quot;Approval gate is no longer pending&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE1_NOT_PENDING&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Test plan changed since it was loaded.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE1_PLAN_STALE&quot;,
+  &quot;title&quot;: &quot;Test plan changed since it was loaded&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE1_PLAN_STALE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Approval window expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE1_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Approval window expired&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE1_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Standing authorisation expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Standing authorisation expired&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ENVELOPE_SA_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run window closed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED&quot;,
+  &quot;title&quot;: &quot;Run window closed&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ENVELOPE_WINDOW_CLOSED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal standing authorisation transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal standing authorisation transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;AUTHZ_ILLEGAL_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Standing authorisation is not a draft.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTHZ_NOT_DRAFT&quot;,
+  &quot;title&quot;: &quot;Standing authorisation is not a draft&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;AUTHZ_NOT_DRAFT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Key version disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEK_DISABLED&quot;,
+  &quot;title&quot;: &quot;Key version disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KEK_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Database serialization conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Database serialization conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Kill already in progress.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS&quot;,
+  &quot;title&quot;: &quot;Kill already in progress&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KILL_ALREADY_IN_PROGRESS&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: No eligible approver.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE2_NO_ELIGIBLE_APPROVER&quot;,
+  &quot;title&quot;: &quot;No eligible approver&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE2_NO_ELIGIBLE_APPROVER&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run is not active.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RUN_NOT_ACTIVE&quot;,
+  &quot;title&quot;: &quot;Run is not active&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;RUN_NOT_ACTIVE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid status transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Invalid status transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;INVALID_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Secret disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SECRET_DISABLED&quot;,
+  &quot;title&quot;: &quot;Secret disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;SECRET_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Stale asset write.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ASSET_STALE_WRITE&quot;,
+  &quot;title&quot;: &quot;Stale asset write&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ASSET_STALE_WRITE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Asset in use.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ASSET_IN_USE&quot;,
+  &quot;title&quot;: &quot;Asset in use&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ASSET_IN_USE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Asset verification transition refused.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ASSET_VERIFICATION_ILLEGAL_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Asset verification transition refused&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ASSET_VERIFICATION_ILLEGAL_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Notification channel name already in use.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CHANNEL_NAME_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Notification channel name already in use&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CHANNEL_NAME_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Notification channel secret is no longer available.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CHANNEL_SECRET_UNAVAILABLE&quot;,
+  &quot;title&quot;: &quot;Notification channel secret is no longer available&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CHANNEL_SECRET_UNAVAILABLE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Notification channel is referenced by active routing rules.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CHANNEL_REFERENCED&quot;,
+  &quot;title&quot;: &quot;Notification channel is referenced by active routing rules&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CHANNEL_REFERENCED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Identity provider conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEYCLOAK_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Identity provider conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KEYCLOAK_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal finding transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal finding transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;FINDING_ILLEGAL_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Finding does not meet the triage precondition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED&quot;,
+  &quot;title&quot;: &quot;Finding does not meet the triage precondition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;TRIAGE_PRECONDITION_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Approved test plan version is immutable.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE&quot;,
+  &quot;title&quot;: &quot;Approved test plan version is immutable&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;PLAN_VERSION_IMMUTABLE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal gate exception transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE2_ILLEGAL_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal gate exception transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE2_ILLEGAL_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Gate exception already decided.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE2_ALREADY_DECIDED&quot;,
+  &quot;title&quot;: &quot;Gate exception already decided&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE2_ALREADY_DECIDED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-422-65">Response 422</h4>
+<p>Problem details; code is one of VALIDATION_FAILED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Validation failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/VALIDATION_FAILED&quot;,
+  &quot;title&quot;: &quot;Validation failed&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;VALIDATION_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-429-65">Response 429</h4>
+<p>Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Too many requests.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Too many requests&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;RATE_LIMITED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Ticket connector rate limited.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Ticket connector rate limited&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;CONNECTOR_RATE_LIMITED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h3 id="delete-service-accountsid">DELETE /service-accounts/{id}</h3>
+<p><strong>Disable a service account (soft delete)</strong></p>
+<p>Sets status to disabled. Nothing is removed. A disabled account authenticates nothing. Requires If-Match.</p>
+<ul>
+<li>Operation ID: <code>disableServiceAccount</code></li>
+<li>Authentication: <code>bearerAuth</code> or <code>sessionCookie</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>In</th>
+<th>Required</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>path</td>
+<td>yes</td>
+<td>string (uuid)</td>
+<td>The id of the service account (a UUID).</td>
+</tr>
+<tr>
+<td><code>If-Match</code></td>
+<td>header</td>
+<td>yes</td>
+<td>string</td>
+<td>The ETag of the service account being changed (from GET). A stale value answers 412, a missing one 428.</td>
+</tr>
+</tbody></table>
+<h4 id="response-200-55">Response 200</h4>
+<p>The disabled service account and its new ETag.</p>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ETag</code></td>
+<td>Strong validator of this service account state. Send it in If-Match on PATCH or DELETE.</td>
+</tr>
+</tbody></table>
+<p>Content type <code>application/json</code>: <a href="#serviceaccount">ServiceAccount</a>.</p>
+<p>Example: An active CI service account.</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;0198f0a0-0000-7000-8000-0000000000a1&quot;,
+  &quot;name&quot;: &quot;ci-scanner&quot;,
+  &quot;description&quot;: &quot;Runs the nightly regression scan.&quot;,
+  &quot;roles&quot;: [&quot;ci_pipeline&quot;],
+  &quot;ownerUserId&quot;: &quot;0198f0a0-0000-7000-8000-0000000000b1&quot;,
+  &quot;status&quot;: &quot;active&quot;,
+  &quot;stateVersion&quot;: 0,
+  &quot;createdAt&quot;: &quot;2026-10-30T10:00:00.000Z&quot;,
+  &quot;updatedAt&quot;: &quot;2026-10-30T10:00:00.000Z&quot;
+}
+</code></pre>
+<h4 id="response-400-66">Response 400</h4>
+<p>Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID, NOTIFICATION_CHANNEL_INVALID.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Invalid cursor.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_CURSOR&quot;,
+  &quot;title&quot;: &quot;Invalid cursor&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;INVALID_CURSOR&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid query.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_QUERY&quot;,
+  &quot;title&quot;: &quot;Invalid query&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;INVALID_QUERY&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Malformed request.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SBX_BAD_REQUEST&quot;,
+  &quot;title&quot;: &quot;Malformed request&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SBX_BAD_REQUEST&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Malformed session request.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_BAD_REQUEST&quot;,
+  &quot;title&quot;: &quot;Malformed session request&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SM_BAD_REQUEST&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Idempotency key required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Idempotency key required&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Signup token invalid or expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID&quot;,
+  &quot;title&quot;: &quot;Signup token invalid or expired&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SIGNUP_TOKEN_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid notification channel.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/NOTIFICATION_CHANNEL_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid notification channel&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;NOTIFICATION_CHANNEL_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-401-66">Response 401</h4>
+<p>Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: No credentials presented.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_NO_CREDENTIALS&quot;,
+  &quot;title&quot;: &quot;No credentials presented&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_NO_CREDENTIALS&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid credentials.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_INVALID_TOKEN&quot;,
+  &quot;title&quot;: &quot;Invalid credentials&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_INVALID_TOKEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Credentials expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Credentials expired&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Step up authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Step up authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTHZ_STEPUP_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run token required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SBX_UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Run token required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SBX_UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Session service token required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Session service token required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SM_UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Session expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_SESSION_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Session expired&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SM_SESSION_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Service authentication failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SERVICE_AUTH_FAILED&quot;,
+  &quot;title&quot;: &quot;Service authentication failed&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SERVICE_AUTH_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-403-66">Response 403</h4>
+<p>Problem details; code is one of FORBIDDEN.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Forbidden.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/FORBIDDEN&quot;,
+  &quot;title&quot;: &quot;Forbidden&quot;,
+  &quot;status&quot;: 403,
+  &quot;code&quot;: &quot;FORBIDDEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-404-66">Response 404</h4>
+<p>Problem details; code is one of NOT_FOUND.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Resource not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Resource not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-409-66">Response 409</h4>
+<p>Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, FINDING_ILLEGAL_TRANSITION, TRIAGE_PRECONDITION_FAILED, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONFLICT&quot;,
+  &quot;title&quot;: &quot;Conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal run state transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal run state transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ILLEGAL_RUN_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Approval gate is no longer pending.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE1_NOT_PENDING&quot;,
+  &quot;title&quot;: &quot;Approval gate is no longer pending&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE1_NOT_PENDING&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Test plan changed since it was loaded.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE1_PLAN_STALE&quot;,
+  &quot;title&quot;: &quot;Test plan changed since it was loaded&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE1_PLAN_STALE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Approval window expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE1_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Approval window expired&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE1_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Standing authorisation expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Standing authorisation expired&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ENVELOPE_SA_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run window closed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED&quot;,
+  &quot;title&quot;: &quot;Run window closed&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ENVELOPE_WINDOW_CLOSED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal standing authorisation transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTHZ_ILLEGAL_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal standing authorisation transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;AUTHZ_ILLEGAL_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Standing authorisation is not a draft.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTHZ_NOT_DRAFT&quot;,
+  &quot;title&quot;: &quot;Standing authorisation is not a draft&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;AUTHZ_NOT_DRAFT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Key version disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEK_DISABLED&quot;,
+  &quot;title&quot;: &quot;Key version disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KEK_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Database serialization conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Database serialization conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;DB_SERIALIZATION_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Kill already in progress.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KILL_ALREADY_IN_PROGRESS&quot;,
+  &quot;title&quot;: &quot;Kill already in progress&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KILL_ALREADY_IN_PROGRESS&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: No eligible approver.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE2_NO_ELIGIBLE_APPROVER&quot;,
+  &quot;title&quot;: &quot;No eligible approver&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE2_NO_ELIGIBLE_APPROVER&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run is not active.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RUN_NOT_ACTIVE&quot;,
+  &quot;title&quot;: &quot;Run is not active&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;RUN_NOT_ACTIVE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid status transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Invalid status transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;INVALID_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Secret disabled.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SECRET_DISABLED&quot;,
+  &quot;title&quot;: &quot;Secret disabled&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;SECRET_DISABLED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Stale asset write.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ASSET_STALE_WRITE&quot;,
+  &quot;title&quot;: &quot;Stale asset write&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ASSET_STALE_WRITE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Asset in use.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ASSET_IN_USE&quot;,
+  &quot;title&quot;: &quot;Asset in use&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ASSET_IN_USE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Asset verification transition refused.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/ASSET_VERIFICATION_ILLEGAL_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Asset verification transition refused&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;ASSET_VERIFICATION_ILLEGAL_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Notification channel name already in use.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CHANNEL_NAME_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Notification channel name already in use&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CHANNEL_NAME_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Notification channel secret is no longer available.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CHANNEL_SECRET_UNAVAILABLE&quot;,
+  &quot;title&quot;: &quot;Notification channel secret is no longer available&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CHANNEL_SECRET_UNAVAILABLE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Notification channel is referenced by active routing rules.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CHANNEL_REFERENCED&quot;,
+  &quot;title&quot;: &quot;Notification channel is referenced by active routing rules&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CHANNEL_REFERENCED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Identity provider conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/KEYCLOAK_CONFLICT&quot;,
+  &quot;title&quot;: &quot;Identity provider conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;KEYCLOAK_CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal finding transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/FINDING_ILLEGAL_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal finding transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;FINDING_ILLEGAL_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Finding does not meet the triage precondition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/TRIAGE_PRECONDITION_FAILED&quot;,
+  &quot;title&quot;: &quot;Finding does not meet the triage precondition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;TRIAGE_PRECONDITION_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Approved test plan version is immutable.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE&quot;,
+  &quot;title&quot;: &quot;Approved test plan version is immutable&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;PLAN_VERSION_IMMUTABLE&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Illegal gate exception transition.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE2_ILLEGAL_TRANSITION&quot;,
+  &quot;title&quot;: &quot;Illegal gate exception transition&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE2_ILLEGAL_TRANSITION&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Gate exception already decided.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/GATE2_ALREADY_DECIDED&quot;,
+  &quot;title&quot;: &quot;Gate exception already decided&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;GATE2_ALREADY_DECIDED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-412-20">Response 412</h4>
+<p>Problem details; code is one of PRECONDITION_FAILED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Precondition failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PRECONDITION_FAILED&quot;,
+  &quot;title&quot;: &quot;Precondition failed&quot;,
+  &quot;status&quot;: 412,
+  &quot;code&quot;: &quot;PRECONDITION_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-422-66">Response 422</h4>
+<p>Problem details; code is one of VALIDATION_FAILED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Validation failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/VALIDATION_FAILED&quot;,
+  &quot;title&quot;: &quot;Validation failed&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;VALIDATION_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-428-21">Response 428</h4>
+<p>Problem details; code is one of PRECONDITION_REQUIRED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Precondition required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PRECONDITION_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Precondition required&quot;,
+  &quot;status&quot;: 428,
+  &quot;code&quot;: &quot;PRECONDITION_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-429-66">Response 429</h4>
+<p>Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Too many requests.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Too many requests&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;RATE_LIMITED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Ticket connector rate limited.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Ticket connector rate limited&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;CONNECTOR_RATE_LIMITED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h3 id="patch-service-accountsid">PATCH /service-accounts/{id}</h3>
+<p><strong>Change a service account</strong></p>
+<p>Requires If-Match. Changes the name, description, roles or status (set <code>disabled</code> to disable). The owner is not writable.</p>
+<ul>
+<li>Operation ID: <code>updateServiceAccount</code></li>
+<li>Authentication: <code>bearerAuth</code> or <code>sessionCookie</code></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>In</th>
+<th>Required</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>path</td>
+<td>yes</td>
+<td>string (uuid)</td>
+<td>The id of the service account (a UUID).</td>
+</tr>
+<tr>
+<td><code>If-Match</code></td>
+<td>header</td>
+<td>yes</td>
+<td>string</td>
+<td>The ETag of the service account being changed (from GET). A stale value answers 412, a missing one 428.</td>
+</tr>
+</tbody></table>
+<p><strong>Request body</strong> (required)</p>
+<p>Content type <code>application/json</code>: <a href="#serviceaccountupdate">ServiceAccountUpdate</a>.</p>
+<h4 id="response-200-56">Response 200</h4>
+<p>The service account after the change and its new ETag.</p>
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ETag</code></td>
+<td>Strong validator of this service account state. Send it in If-Match on PATCH or DELETE.</td>
+</tr>
+</tbody></table>
+<p>Content type <code>application/json</code>: <a href="#serviceaccount">ServiceAccount</a>.</p>
+<p>Example: An active CI service account.</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;0198f0a0-0000-7000-8000-0000000000a1&quot;,
+  &quot;name&quot;: &quot;ci-scanner&quot;,
+  &quot;description&quot;: &quot;Runs the nightly regression scan.&quot;,
+  &quot;roles&quot;: [&quot;ci_pipeline&quot;],
+  &quot;ownerUserId&quot;: &quot;0198f0a0-0000-7000-8000-0000000000b1&quot;,
+  &quot;status&quot;: &quot;active&quot;,
+  &quot;stateVersion&quot;: 0,
+  &quot;createdAt&quot;: &quot;2026-10-30T10:00:00.000Z&quot;,
+  &quot;updatedAt&quot;: &quot;2026-10-30T10:00:00.000Z&quot;
+}
+</code></pre>
+<h4 id="response-400-67">Response 400</h4>
+<p>Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID, NOTIFICATION_CHANNEL_INVALID.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Invalid cursor.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_CURSOR&quot;,
+  &quot;title&quot;: &quot;Invalid cursor&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;INVALID_CURSOR&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid query.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/INVALID_QUERY&quot;,
+  &quot;title&quot;: &quot;Invalid query&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;INVALID_QUERY&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Malformed request.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SBX_BAD_REQUEST&quot;,
+  &quot;title&quot;: &quot;Malformed request&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SBX_BAD_REQUEST&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Malformed session request.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_BAD_REQUEST&quot;,
+  &quot;title&quot;: &quot;Malformed session request&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SM_BAD_REQUEST&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Idempotency key required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Idempotency key required&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;IDEMPOTENCY_KEY_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Signup token invalid or expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID&quot;,
+  &quot;title&quot;: &quot;Signup token invalid or expired&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;SIGNUP_TOKEN_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid notification channel.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/NOTIFICATION_CHANNEL_INVALID&quot;,
+  &quot;title&quot;: &quot;Invalid notification channel&quot;,
+  &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;NOTIFICATION_CHANNEL_INVALID&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-401-67">Response 401</h4>
+<p>Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: No credentials presented.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_NO_CREDENTIALS&quot;,
+  &quot;title&quot;: &quot;No credentials presented&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_NO_CREDENTIALS&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Invalid credentials.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_INVALID_TOKEN&quot;,
+  &quot;title&quot;: &quot;Invalid credentials&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_INVALID_TOKEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Credentials expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTH_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Credentials expired&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTH_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Step up authentication required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Step up authentication required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;AUTHZ_STEPUP_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Run token required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SBX_UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Run token required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SBX_UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Session service token required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_UNAUTHENTICATED&quot;,
+  &quot;title&quot;: &quot;Session service token required&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SM_UNAUTHENTICATED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Session expired.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SM_SESSION_EXPIRED&quot;,
+  &quot;title&quot;: &quot;Session expired&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SM_SESSION_EXPIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Service authentication failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/SERVICE_AUTH_FAILED&quot;,
+  &quot;title&quot;: &quot;Service authentication failed&quot;,
+  &quot;status&quot;: 401,
+  &quot;code&quot;: &quot;SERVICE_AUTH_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-403-67">Response 403</h4>
+<p>Problem details; code is one of FORBIDDEN.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Forbidden.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/FORBIDDEN&quot;,
+  &quot;title&quot;: &quot;Forbidden&quot;,
+  &quot;status&quot;: 403,
+  &quot;code&quot;: &quot;FORBIDDEN&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-404-67">Response 404</h4>
+<p>Problem details; code is one of NOT_FOUND.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Resource not found.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/NOT_FOUND&quot;,
+  &quot;title&quot;: &quot;Resource not found&quot;,
+  &quot;status&quot;: 404,
+  &quot;code&quot;: &quot;NOT_FOUND&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-409-67">Response 409</h4>
+<p>Problem details; code is one of CONFLICT.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Conflict.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONFLICT&quot;,
+  &quot;title&quot;: &quot;Conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;CONFLICT&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-412-21">Response 412</h4>
+<p>Problem details; code is one of PRECONDITION_FAILED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Precondition failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PRECONDITION_FAILED&quot;,
+  &quot;title&quot;: &quot;Precondition failed&quot;,
+  &quot;status&quot;: 412,
+  &quot;code&quot;: &quot;PRECONDITION_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-422-67">Response 422</h4>
+<p>Problem details; code is one of VALIDATION_FAILED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Validation failed.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/VALIDATION_FAILED&quot;,
+  &quot;title&quot;: &quot;Validation failed&quot;,
+  &quot;status&quot;: 422,
+  &quot;code&quot;: &quot;VALIDATION_FAILED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-428-22">Response 428</h4>
+<p>Problem details; code is one of PRECONDITION_REQUIRED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Precondition required.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/PRECONDITION_REQUIRED&quot;,
+  &quot;title&quot;: &quot;Precondition required&quot;,
+  &quot;status&quot;: 428,
+  &quot;code&quot;: &quot;PRECONDITION_REQUIRED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<h4 id="response-429-67">Response 429</h4>
+<p>Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.</p>
+<p>Content type <code>application/problem+json</code>: <a href="#problem">Problem</a>.</p>
+<p>Example: Too many requests.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Too many requests&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;RATE_LIMITED&quot;,
+  &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
+}
+</code></pre>
+<p>Example: Ticket connector rate limited.</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED&quot;,
+  &quot;title&quot;: &quot;Ticket connector rate limited&quot;,
+  &quot;status&quot;: 429,
+  &quot;code&quot;: &quot;CONNECTOR_RATE_LIMITED&quot;,
   &quot;traceId&quot;: &quot;4bf92f3577b34da6a3ce929d0e0e4736&quot;
 }
 </code></pre>
@@ -37175,7 +39606,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 </tr>
 <tr>
 <td><code>action</code></td>
-<td>enum: <code>&quot;auth.login&quot;</code>, <code>&quot;auth.logout&quot;</code>, <code>&quot;auth.sso_link&quot;</code>, <code>&quot;auth.api_token_issued&quot;</code>, <code>&quot;auth.api_token_revoked&quot;</code>, <code>&quot;authz.denied&quot;</code>, <code>&quot;authz.role_changed&quot;</code>, <code>&quot;asset.created&quot;</code>, <code>&quot;asset.verified&quot;</code>, <code>&quot;sa.requested&quot;</code>, <code>&quot;sa.approved&quot;</code>, <code>&quot;sa.rejected&quot;</code>, <code>&quot;sa.revoked&quot;</code>, <code>&quot;gate1.decided&quot;</code>, <code>&quot;gate2.decided&quot;</code>, <code>&quot;gate3.released&quot;</code>, <code>&quot;run.created&quot;</code>, <code>&quot;run.state_changed&quot;</code>, <code>&quot;tool.invoked&quot;</code>, <code>&quot;egress.blocked&quot;</code>, <code>&quot;kill.fired&quot;</code>, <code>&quot;kill.completed&quot;</code>, <code>&quot;finding.released&quot;</code>, <code>&quot;finding.risk_accepted&quot;</code>, <code>&quot;export.generated&quot;</code>, <code>&quot;secret.resolved&quot;</code>, <code>&quot;config.changed&quot;</code>, <code>&quot;connector.configured&quot;</code>, <code>&quot;kill.triggered&quot;</code>, <code>&quot;kill.forbidden&quot;</code>, <code>&quot;kill.egress_blocked&quot;</code>, <code>&quot;kill.sandboxes_terminated&quot;</code>, <code>&quot;secret.kek_provisioned&quot;</code>, <code>&quot;secret.kek_rotated&quot;</code>, <code>&quot;secret.kek_disabled&quot;</code>, <code>&quot;kill.keys_revoked&quot;</code>, <code>&quot;kill.workflows_cancelled&quot;</code>, <code>&quot;activity.started&quot;</code>, <code>&quot;activity.succeeded&quot;</code>, <code>&quot;activity.failed&quot;</code>, <code>&quot;workflow.started&quot;</code>, <code>&quot;workflow.completed&quot;</code>, <code>&quot;workflow.failed&quot;</code>, <code>&quot;workflow.cancelled&quot;</code>, <code>&quot;workflow.continued_as_new&quot;</code>, <code>&quot;soc_kill.link_minted&quot;</code>, <code>&quot;soc_kill.triggered&quot;</code>, <code>&quot;soc_kill.rejected&quot;</code>, <code>&quot;outbox.delivery_failed&quot;</code>, <code>&quot;scope.request.created&quot;</code>, <code>&quot;scope.request.status_changed&quot;</code>, <code>&quot;operator.kill_previewed&quot;</code>, <code>&quot;operator.kill_fired&quot;</code>, <code>&quot;audit.queried&quot;</code>, <code>&quot;secret.rotated&quot;</code>, <code>&quot;secret.rewrapped&quot;</code>, <code>&quot;persona.override_changed&quot;</code>, <code>&quot;auth.sso_config_changed&quot;</code>, <code>&quot;tenant.created&quot;</code>, <code>&quot;signup.verified&quot;</code>, <code>&quot;tenant.settings_updated&quot;</code>, <code>&quot;auth.operator_login&quot;</code>, <code>&quot;auth.operator_logout&quot;</code>, <code>&quot;auth.operator_session_revoked&quot;</code>, <code>&quot;authz.sa.created&quot;</code>, <code>&quot;authz.sa.state_changed&quot;</code>, <code>&quot;authz.sa.signed&quot;</code>, <code>&quot;authz.signing_key.rotated&quot;</code>, <code>&quot;authz.gate.decision&quot;</code>, <code>&quot;authz.sa.updated&quot;</code>, <code>&quot;authz.sa.submitted&quot;</code>, <code>&quot;run.surface.viewed&quot;</code>, <code>&quot;scope.request.updated&quot;</code>, <code>&quot;scope.request.submitted&quot;</code>, <code>&quot;scope.request.withdrawn&quot;</code>, <code>&quot;test_plan.version_created&quot;</code>, <code>&quot;test_case.created&quot;</code>, <code>&quot;test_case.updated&quot;</code>, <code>&quot;test_case.removed&quot;</code>, <code>&quot;asset.updated&quot;</code>, <code>&quot;asset.deleted&quot;</code>, <code>&quot;asset.owner_assigned&quot;</code>, <code>&quot;test_plan.validated&quot;</code>, <code>&quot;oncall.roster.updated&quot;</code>, <code>&quot;oncall.sod_skipped&quot;</code>, <code>&quot;gate2.exception.created&quot;</code>, <code>&quot;gate2.decision.recorded&quot;</code>, <code>&quot;gate1.submitted&quot;</code>, <code>&quot;gate1.approved&quot;</code>, <code>&quot;gate1.changes_requested&quot;</code>, <code>&quot;gate1.rejected&quot;</code>, <code>&quot;asset.verification_started&quot;</code>, <code>&quot;asset.verification_passed&quot;</code>, <code>&quot;asset.verification_failed&quot;</code>, <code>&quot;asset.verification_cancelled&quot;</code>, <code>&quot;graph.surface.upserted&quot;</code>, <code>&quot;notification.channel_changed&quot;</code>, <code>&quot;notification.requested&quot;</code>, <code>&quot;notification.unrouted&quot;</code>, <code>&quot;finding.rejected&quot;</code>, <code>&quot;finding.marked_duplicate&quot;</code>, <code>&quot;run.envelope_signed&quot;</code>, <code>&quot;scope.manifest.upload_requested&quot;</code>, <code>&quot;scope.manifest.upload_completed&quot;</code>, <code>&quot;scope.manifest.upload_deleted&quot;</code></td>
+<td>enum: <code>&quot;auth.login&quot;</code>, <code>&quot;auth.logout&quot;</code>, <code>&quot;auth.sso_link&quot;</code>, <code>&quot;auth.api_token_issued&quot;</code>, <code>&quot;auth.api_token_revoked&quot;</code>, <code>&quot;authz.denied&quot;</code>, <code>&quot;authz.role_changed&quot;</code>, <code>&quot;asset.created&quot;</code>, <code>&quot;asset.verified&quot;</code>, <code>&quot;sa.requested&quot;</code>, <code>&quot;sa.approved&quot;</code>, <code>&quot;sa.rejected&quot;</code>, <code>&quot;sa.revoked&quot;</code>, <code>&quot;gate1.decided&quot;</code>, <code>&quot;gate2.decided&quot;</code>, <code>&quot;gate3.released&quot;</code>, <code>&quot;run.created&quot;</code>, <code>&quot;run.state_changed&quot;</code>, <code>&quot;tool.invoked&quot;</code>, <code>&quot;egress.blocked&quot;</code>, <code>&quot;kill.fired&quot;</code>, <code>&quot;kill.completed&quot;</code>, <code>&quot;finding.released&quot;</code>, <code>&quot;finding.risk_accepted&quot;</code>, <code>&quot;export.generated&quot;</code>, <code>&quot;secret.resolved&quot;</code>, <code>&quot;config.changed&quot;</code>, <code>&quot;connector.configured&quot;</code>, <code>&quot;kill.triggered&quot;</code>, <code>&quot;kill.forbidden&quot;</code>, <code>&quot;kill.egress_blocked&quot;</code>, <code>&quot;kill.sandboxes_terminated&quot;</code>, <code>&quot;secret.kek_provisioned&quot;</code>, <code>&quot;secret.kek_rotated&quot;</code>, <code>&quot;secret.kek_disabled&quot;</code>, <code>&quot;kill.keys_revoked&quot;</code>, <code>&quot;kill.workflows_cancelled&quot;</code>, <code>&quot;activity.started&quot;</code>, <code>&quot;activity.succeeded&quot;</code>, <code>&quot;activity.failed&quot;</code>, <code>&quot;workflow.started&quot;</code>, <code>&quot;workflow.completed&quot;</code>, <code>&quot;workflow.failed&quot;</code>, <code>&quot;workflow.cancelled&quot;</code>, <code>&quot;workflow.continued_as_new&quot;</code>, <code>&quot;soc_kill.link_minted&quot;</code>, <code>&quot;soc_kill.triggered&quot;</code>, <code>&quot;soc_kill.rejected&quot;</code>, <code>&quot;outbox.delivery_failed&quot;</code>, <code>&quot;scope.request.created&quot;</code>, <code>&quot;scope.request.status_changed&quot;</code>, <code>&quot;operator.kill_previewed&quot;</code>, <code>&quot;operator.kill_fired&quot;</code>, <code>&quot;audit.queried&quot;</code>, <code>&quot;secret.rotated&quot;</code>, <code>&quot;secret.rewrapped&quot;</code>, <code>&quot;persona.override_changed&quot;</code>, <code>&quot;auth.sso_config_changed&quot;</code>, <code>&quot;tenant.created&quot;</code>, <code>&quot;signup.verified&quot;</code>, <code>&quot;tenant.settings_updated&quot;</code>, <code>&quot;auth.operator_login&quot;</code>, <code>&quot;auth.operator_logout&quot;</code>, <code>&quot;auth.operator_session_revoked&quot;</code>, <code>&quot;authz.sa.created&quot;</code>, <code>&quot;authz.sa.state_changed&quot;</code>, <code>&quot;authz.sa.signed&quot;</code>, <code>&quot;authz.signing_key.rotated&quot;</code>, <code>&quot;authz.gate.decision&quot;</code>, <code>&quot;authz.sa.updated&quot;</code>, <code>&quot;authz.sa.submitted&quot;</code>, <code>&quot;run.surface.viewed&quot;</code>, <code>&quot;scope.request.updated&quot;</code>, <code>&quot;scope.request.submitted&quot;</code>, <code>&quot;scope.request.withdrawn&quot;</code>, <code>&quot;test_plan.version_created&quot;</code>, <code>&quot;test_case.created&quot;</code>, <code>&quot;test_case.updated&quot;</code>, <code>&quot;test_case.removed&quot;</code>, <code>&quot;asset.updated&quot;</code>, <code>&quot;asset.deleted&quot;</code>, <code>&quot;asset.owner_assigned&quot;</code>, <code>&quot;test_plan.validated&quot;</code>, <code>&quot;oncall.roster.updated&quot;</code>, <code>&quot;oncall.sod_skipped&quot;</code>, <code>&quot;gate2.exception.created&quot;</code>, <code>&quot;gate2.decision.recorded&quot;</code>, <code>&quot;gate1.submitted&quot;</code>, <code>&quot;gate1.approved&quot;</code>, <code>&quot;gate1.changes_requested&quot;</code>, <code>&quot;gate1.rejected&quot;</code>, <code>&quot;asset.verification_started&quot;</code>, <code>&quot;asset.verification_passed&quot;</code>, <code>&quot;asset.verification_failed&quot;</code>, <code>&quot;asset.verification_cancelled&quot;</code>, <code>&quot;graph.surface.upserted&quot;</code>, <code>&quot;notification.channel_changed&quot;</code>, <code>&quot;notification.requested&quot;</code>, <code>&quot;notification.unrouted&quot;</code>, <code>&quot;finding.rejected&quot;</code>, <code>&quot;finding.marked_duplicate&quot;</code>, <code>&quot;run.envelope_signed&quot;</code>, <code>&quot;scope.manifest.upload_requested&quot;</code>, <code>&quot;scope.manifest.upload_completed&quot;</code>, <code>&quot;scope.manifest.upload_deleted&quot;</code>, <code>&quot;authz.sa.expired&quot;</code>, <code>&quot;service_account.created&quot;</code>, <code>&quot;service_account.updated&quot;</code>, <code>&quot;service_account.disabled&quot;</code></td>
 <td>yes</td>
 <td></td>
 </tr>
@@ -37384,7 +39815,11 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
         &quot;run.envelope_signed&quot;,
         &quot;scope.manifest.upload_requested&quot;,
         &quot;scope.manifest.upload_completed&quot;,
-        &quot;scope.manifest.upload_deleted&quot;
+        &quot;scope.manifest.upload_deleted&quot;,
+        &quot;authz.sa.expired&quot;,
+        &quot;service_account.created&quot;,
+        &quot;service_account.updated&quot;,
+        &quot;service_account.disabled&quot;
       ]
     },
     &quot;severity&quot;: {
@@ -42756,6 +45191,291 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
     }
   },
   &quot;required&quot;: [&quot;reason&quot;],
+  &quot;additionalProperties&quot;: false
+}
+</code></pre>
+<h3 id="serviceaccount">ServiceAccount</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>string (uuid)</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>any</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>roles</code></td>
+<td>array of enum: <code>&quot;org_admin&quot;</code>, <code>&quot;appsec_engineer&quot;</code>, <code>&quot;asset_owner&quot;</code>, <code>&quot;developer&quot;</code>, <code>&quot;auditor&quot;</code>, <code>&quot;ci_pipeline&quot;</code></td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>ownerUserId</code></td>
+<td>string (uuid)</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>enum: <code>&quot;active&quot;</code>, <code>&quot;disabled&quot;</code></td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>stateVersion</code></td>
+<td>integer</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>createdAt</code></td>
+<td>string (date-time)</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>updatedAt</code></td>
+<td>string (date-time)</td>
+<td>yes</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Full schema:</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;id&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;format&quot;: &quot;uuid&quot;,
+      &quot;pattern&quot;: &quot;^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$&quot;
+    },
+    &quot;name&quot;: {
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;description&quot;: {
+      &quot;type&quot;: [&quot;string&quot;, &quot;null&quot;]
+    },
+    &quot;roles&quot;: {
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;string&quot;,
+        &quot;enum&quot;: [
+          &quot;org_admin&quot;,
+          &quot;appsec_engineer&quot;,
+          &quot;asset_owner&quot;,
+          &quot;developer&quot;,
+          &quot;auditor&quot;,
+          &quot;ci_pipeline&quot;
+        ]
+      }
+    },
+    &quot;ownerUserId&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;format&quot;: &quot;uuid&quot;,
+      &quot;pattern&quot;: &quot;^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$&quot;
+    },
+    &quot;status&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [&quot;active&quot;, &quot;disabled&quot;]
+    },
+    &quot;stateVersion&quot;: {
+      &quot;type&quot;: &quot;integer&quot;,
+      &quot;minimum&quot;: 0,
+      &quot;maximum&quot;: 9007199254740991
+    },
+    &quot;createdAt&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;format&quot;: &quot;date-time&quot;,
+      &quot;pattern&quot;: &quot;^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$&quot;
+    },
+    &quot;updatedAt&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;format&quot;: &quot;date-time&quot;,
+      &quot;pattern&quot;: &quot;^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$&quot;
+    }
+  },
+  &quot;required&quot;: [
+    &quot;id&quot;,
+    &quot;name&quot;,
+    &quot;description&quot;,
+    &quot;roles&quot;,
+    &quot;ownerUserId&quot;,
+    &quot;status&quot;,
+    &quot;stateVersion&quot;,
+    &quot;createdAt&quot;,
+    &quot;updatedAt&quot;
+  ],
+  &quot;additionalProperties&quot;: false
+}
+</code></pre>
+<h3 id="serviceaccountcreate">ServiceAccountCreate</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string</td>
+<td>no</td>
+<td></td>
+</tr>
+<tr>
+<td><code>roles</code></td>
+<td>array of enum: <code>&quot;org_admin&quot;</code>, <code>&quot;appsec_engineer&quot;</code>, <code>&quot;asset_owner&quot;</code>, <code>&quot;developer&quot;</code>, <code>&quot;auditor&quot;</code>, <code>&quot;ci_pipeline&quot;</code></td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>ownerUserId</code></td>
+<td>string (uuid)</td>
+<td>yes</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Full schema:</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;name&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;minLength&quot;: 1,
+      &quot;maxLength&quot;: 100
+    },
+    &quot;description&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;maxLength&quot;: 500
+    },
+    &quot;roles&quot;: {
+      &quot;default&quot;: [],
+      &quot;maxItems&quot;: 6,
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;string&quot;,
+        &quot;enum&quot;: [
+          &quot;org_admin&quot;,
+          &quot;appsec_engineer&quot;,
+          &quot;asset_owner&quot;,
+          &quot;developer&quot;,
+          &quot;auditor&quot;,
+          &quot;ci_pipeline&quot;
+        ]
+      }
+    },
+    &quot;ownerUserId&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;format&quot;: &quot;uuid&quot;,
+      &quot;pattern&quot;: &quot;^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$&quot;
+    }
+  },
+  &quot;required&quot;: [&quot;name&quot;, &quot;roles&quot;, &quot;ownerUserId&quot;],
+  &quot;additionalProperties&quot;: false
+}
+</code></pre>
+<h3 id="serviceaccountupdate">ServiceAccountUpdate</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>no</td>
+<td></td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string or null</td>
+<td>no</td>
+<td></td>
+</tr>
+<tr>
+<td><code>roles</code></td>
+<td>array of enum: <code>&quot;org_admin&quot;</code>, <code>&quot;appsec_engineer&quot;</code>, <code>&quot;asset_owner&quot;</code>, <code>&quot;developer&quot;</code>, <code>&quot;auditor&quot;</code>, <code>&quot;ci_pipeline&quot;</code></td>
+<td>no</td>
+<td></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>enum: <code>&quot;active&quot;</code>, <code>&quot;disabled&quot;</code></td>
+<td>no</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>Full schema:</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;name&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;minLength&quot;: 1,
+      &quot;maxLength&quot;: 100
+    },
+    &quot;description&quot;: {
+      &quot;anyOf&quot;: [
+        {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;maxLength&quot;: 500
+        },
+        {
+          &quot;type&quot;: &quot;null&quot;
+        }
+      ]
+    },
+    &quot;roles&quot;: {
+      &quot;maxItems&quot;: 6,
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;string&quot;,
+        &quot;enum&quot;: [
+          &quot;org_admin&quot;,
+          &quot;appsec_engineer&quot;,
+          &quot;asset_owner&quot;,
+          &quot;developer&quot;,
+          &quot;auditor&quot;,
+          &quot;ci_pipeline&quot;
+        ]
+      }
+    },
+    &quot;status&quot;: {
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [&quot;active&quot;, &quot;disabled&quot;]
+    }
+  },
   &quot;additionalProperties&quot;: false
 }
 </code></pre>
