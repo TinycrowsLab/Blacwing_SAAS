@@ -3,11 +3,22 @@
 // Fail closed: a missing or wrong token is 401, an unknown user is 401, and nothing else is reachable.
 import { timingSafeEqual } from 'node:crypto';
 
-import { Controller, Get, Headers, HttpCode, HttpStatus, Inject, Param, Post, UseFilters } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Param,
+  Post,
+  UseFilters,
+} from '@nestjs/common';
 import { z } from 'zod';
 
 import { DEMO_INTRUSIVENESS, DEMO_TEST_CASE } from './catalogue.js';
 import { DemoRefusalFilter } from './filter.js';
+import { isGoogleDemoSignIn } from './google-signin.js';
 import { REPORT_FORMATS, renderReport, type ReportFormat } from './report.js';
 import { DemoRefusal, type DemoActor, type DemoService } from './service.js';
 import { DEMO_CONFIG, DEMO_SERVICE, DEMO_STORE } from './tokens.js';
@@ -77,32 +88,64 @@ export class DemoController {
   private async actor(headers: Record<string, string | string[] | undefined>): Promise<DemoActor> {
     const token = headers['x-bw-demo-token'];
     if (!tokenMatches(typeof token === 'string' ? token : undefined, this.config.internalToken)) {
-      throw new DemoRefusal(HttpStatus.UNAUTHORIZED, 'demo_token_invalid', 'The demo internal token is missing or wrong.');
+      throw new DemoRefusal(
+        HttpStatus.UNAUTHORIZED,
+        'demo_token_invalid',
+        'The demo internal token is missing or wrong.',
+      );
     }
     const email = headers['x-bw-demo-user'];
     if (typeof email !== 'string' || email === '') {
-      throw new DemoRefusal(HttpStatus.UNAUTHORIZED, 'demo_user_missing', 'No demo user was presented.');
+      throw new DemoRefusal(
+        HttpStatus.UNAUTHORIZED,
+        'demo_user_missing',
+        'No demo user was presented.',
+      );
     }
-    const user = await this.store.findActiveUserByEmail(email);
-    if (user === null) throw new DemoRefusal(HttpStatus.UNAUTHORIZED, 'demo_user_unknown', 'The user is not active in the demo tenant.');
     const rolesHeader = headers['x-bw-demo-roles'];
-    const roles = typeof rolesHeader === 'string' && rolesHeader !== '' ? rolesHeader.split(',') : [];
+    const roles =
+      typeof rolesHeader === 'string' && rolesHeader !== '' ? rolesHeader.split(',') : [];
+    let user = await this.store.findActiveUserByEmail(email);
+    // DEMO MODE ONLY: a first-time Google sign-in (marker role from the Google IdP mappers) gets its user and a
+    // membership in the demo tenant. Every other unknown user is still refused.
+    const sub = headers['x-bw-demo-sub'];
+    const subject = typeof sub === 'string' ? sub : undefined;
+    if (user === null && isGoogleDemoSignIn({ roles, sub: subject, email })) {
+      user = await this.store.provisionGoogleUser(this.config.tenantId, {
+        sub: subject ?? '',
+        email,
+        name: typeof headers['x-bw-demo-name'] === 'string' ? headers['x-bw-demo-name'] : null,
+        roles,
+      });
+    }
+    if (user === null)
+      throw new DemoRefusal(
+        HttpStatus.UNAUTHORIZED,
+        'demo_user_unknown',
+        'The user is not active in the demo tenant.',
+      );
     return { id: user.id, email: user.email, name: user.name, roles };
   }
 
   @Get('dashboard')
-  async dashboard(@Headers() headers: Record<string, string | string[] | undefined>): Promise<unknown> {
+  async dashboard(
+    @Headers() headers: Record<string, string | string[] | undefined>,
+  ): Promise<unknown> {
     return this.service.dashboard(await this.actor(headers));
   }
 
   @Get('assets')
-  async assets(@Headers() headers: Record<string, string | string[] | undefined>): Promise<unknown> {
+  async assets(
+    @Headers() headers: Record<string, string | string[] | undefined>,
+  ): Promise<unknown> {
     await this.actor(headers);
     return { items: await this.service.assets() };
   }
 
   @Get('catalogue')
-  async catalogue(@Headers() headers: Record<string, string | string[] | undefined>): Promise<unknown> {
+  async catalogue(
+    @Headers() headers: Record<string, string | string[] | undefined>,
+  ): Promise<unknown> {
     await this.actor(headers);
     return {
       testCase: DEMO_TEST_CASE,
@@ -133,7 +176,8 @@ export class DemoController {
     @Param('id') id: string,
   ): Promise<unknown> {
     const actor = await this.actor(headers);
-    if (!UUID.test(id)) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such request.');
+    if (!UUID.test(id))
+      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such request.');
     return this.service.request(id, actor.id);
   }
 
@@ -145,7 +189,8 @@ export class DemoController {
     @ZodBody(DecisionDto) body: DecisionDto,
   ): Promise<unknown> {
     const actor = await this.actor(headers);
-    if (!UUID.test(id)) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such request.');
+    if (!UUID.test(id))
+      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such request.');
     return this.service.decideGate1(actor, id, body.decision, body.reason);
   }
 
@@ -155,7 +200,8 @@ export class DemoController {
     @Param('id') id: string,
   ): Promise<unknown> {
     const actor = await this.actor(headers);
-    if (!UUID.test(id)) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such request.');
+    if (!UUID.test(id))
+      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such request.');
     return this.service.startRun(actor, id);
   }
 
@@ -171,7 +217,9 @@ export class DemoController {
   }
 
   @Get('findings')
-  async findings(@Headers() headers: Record<string, string | string[] | undefined>): Promise<unknown> {
+  async findings(
+    @Headers() headers: Record<string, string | string[] | undefined>,
+  ): Promise<unknown> {
     await this.actor(headers);
     return { items: await this.service.listFindings() };
   }
@@ -182,7 +230,8 @@ export class DemoController {
     @Param('id') id: string,
   ): Promise<unknown> {
     await this.actor(headers);
-    if (!UUID.test(id)) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such finding.');
+    if (!UUID.test(id))
+      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such finding.');
     return this.service.finding(id).then((row) => ({
       id: row.id,
       runId: row.run_id,
@@ -207,7 +256,8 @@ export class DemoController {
     @ZodQuery(ReportQueryDto) query: ReportQueryDto,
   ): Promise<unknown> {
     await this.actor(headers);
-    if (!UUID.test(id)) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such finding.');
+    if (!UUID.test(id))
+      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such finding.');
     const ctx = await this.service.reportContext(id);
     const format: ReportFormat = query.format;
     return renderReport(ctx, format);

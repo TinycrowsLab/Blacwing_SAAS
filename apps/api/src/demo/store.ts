@@ -105,6 +105,52 @@ export class DemoStore {
     return r.rows[0] ?? null;
   }
 
+  /**
+   * DEMO-STORY first login of a Google user: creates the user (keyed by the Keycloak subject) and its membership in
+   * the demo tenant, in one transaction under the tenant's RLS context. Returns null when the e-mail is already
+   * taken by another subject or the existing user is not active.
+   */
+  async provisionGoogleUser(
+    tenantId: string,
+    input: {
+      readonly sub: string;
+      readonly email: string;
+      readonly name: string | null;
+      readonly roles: readonly string[];
+    },
+  ): Promise<UserRow | null> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenantId]);
+      await client.query(
+        'INSERT INTO users (keycloak_sub, email, name) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+        [input.sub, input.email, input.name],
+      );
+      const user = await client.query<UserRow & { status: string }>(
+        'SELECT id, email, name, status FROM users WHERE keycloak_sub = $1',
+        [input.sub],
+      );
+      const row = user.rows[0];
+      if (row?.status !== 'active') {
+        await client.query('ROLLBACK');
+        return null;
+      }
+      await client.query(
+        `INSERT INTO memberships (tenant_id, user_id, roles) VALUES ($1, $2, $3)
+         ON CONFLICT (tenant_id, user_id) DO UPDATE SET roles = EXCLUDED.roles, updated_at = now()`,
+        [tenantId, row.id, [...input.roles]],
+      );
+      await client.query('COMMIT');
+      return { id: row.id, email: row.email, name: row.name };
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async listAssets(tenantId: string): Promise<AssetRow[]> {
     const r = await this.pool.query<AssetRow>(
       'SELECT * FROM demo.assets WHERE tenant_id = $1 ORDER BY created_at, slug',

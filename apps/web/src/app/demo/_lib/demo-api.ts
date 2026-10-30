@@ -43,7 +43,12 @@ export async function demoApi<T = unknown>(
   init: { readonly method?: 'GET' | 'POST'; readonly body?: unknown } = {},
 ): Promise<T> {
   const token = process.env.BW_DEMO_INTERNAL_TOKEN ?? '';
-  if (token === '') throw new DemoApiError(HTTP_SERVICE_UNAVAILABLE, 'demo_not_configured', 'BW_DEMO_INTERNAL_TOKEN is not set.');
+  if (token === '')
+    throw new DemoApiError(
+      HTTP_SERVICE_UNAVAILABLE,
+      'demo_not_configured',
+      'BW_DEMO_INTERNAL_TOKEN is not set.',
+    );
   const origin = process.env.BW_DEMO_API_ORIGIN ?? DEFAULT_DEMO_API_ORIGIN;
   const response = await fetch(new URL(`/v1/demo${path}`, origin), {
     method: init.method ?? 'GET',
@@ -52,6 +57,9 @@ export async function demoApi<T = unknown>(
       'x-bw-demo-token': token,
       'x-bw-demo-user': session.user.email,
       'x-bw-demo-roles': session.roles.join(','),
+      // The Keycloak subject and name, used only to provision a first-time Google sign-in (demo mode).
+      'x-bw-demo-sub': session.user.id,
+      'x-bw-demo-name': session.user.name,
       ...(init.body === undefined ? {} : { 'content-type': 'application/json' }),
     },
     ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
