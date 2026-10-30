@@ -133,6 +133,7 @@ const RELEASED_ACTIONS = [
   'scope.manifest.upload_requested',
   'scope.manifest.upload_completed',
   'scope.manifest.upload_deleted',
+  'authz.sa.expired',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

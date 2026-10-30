@@ -827,6 +827,15 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'A pending input manifest upload was removed before it was scanned; metadata records the upload id.',
   },
+  // SA expiry (AUTHZ-010, §8.1, §8.8): the scheduler moved an active SA to expired at its expires_at.
+  {
+    action: 'authz.sa.expired',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'A standing authorisation reached its expires_at and moved from active to expired.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

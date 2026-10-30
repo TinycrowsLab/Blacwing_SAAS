@@ -68,6 +68,12 @@ export {
 export { createOtelSaBoundsMetrics } from './sa-bounds/metrics.js';
 export { computeSaTimeline } from './sa-bounds/timeline.js';
 export type * from './sa-bounds/ports.js';
+export { createSaExpiryActivities, type SaExpiryActivityDeps } from './sa-expiry/activities.js';
+export { createOtelSaExpiryMetrics } from './sa-expiry/metrics.js';
+export { createPgSaExpiryStore } from './sa-expiry/store-pg.js';
+export { runSaExpiry, type SaExpiryControl } from './sa-expiry/sequence.js';
+export type * from './sa-expiry/ports.js';
+export * from './sa-expiry/types.js';
 export * from './sa-bounds/types.js';
 export {
   createVerificationDnsActivities,

@@ -122,7 +122,8 @@
         "run.envelope_signed",
         "scope.manifest.upload_requested",
         "scope.manifest.upload_completed",
-        "scope.manifest.upload_deleted"
+        "scope.manifest.upload_deleted",
+        "authz.sa.expired"
       ]
     },
     "severity": {

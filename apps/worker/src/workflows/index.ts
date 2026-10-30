@@ -9,6 +9,7 @@ export { PlanningWorkflow } from './planning.js';
 export { PostExecutionWorkflow } from './post-execution.js';
 export { PreflightWorkflow } from './preflight.js';
 export { ReconWorkflow } from './recon.js';
+export { SaExpiryWorkflow } from './sa-expiry.js';
 export { SaTimeBoundsWorkflow } from './sa-time-bounds.js';
 
 /** Trivial workflow proving the worker end to end. It is not a product workflow. */
