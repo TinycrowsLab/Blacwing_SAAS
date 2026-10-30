@@ -67,7 +67,12 @@ describe('diffPlans', () => {
         status: 'approved',
         budget: { maxBytes: 1024, maxConcurrency: 1, maxRequests: 10, maxRps: 2 },
         oracle: { type: 'status_code', params: { expected: 403 } },
-        negativeControl: { type: 'status_code', params: { expected: 200 } },
+        negativeControl: {
+          kind: 'known_safe_endpoint',
+          description: 'Same request to the public page',
+          oracleMustNotFire: true,
+          params: {},
+        },
         targets: ['https://app.example.test/other'],
         roles: ['anonymous', 'user'],
         refs: { owasp: ['A01'], wstg: ['WSTG-ATHN-03'], asvs: ['2.2.1'] },
@@ -98,7 +103,12 @@ describe('diffPlans', () => {
       {
         field: 'negative_control',
         before: null,
-        after: { type: 'status_code', params: { expected: 200 } },
+        after: {
+          kind: 'known_safe_endpoint',
+          description: 'Same request to the public page',
+          oracleMustNotFire: true,
+          params: {},
+        },
       },
       {
         field: 'targets',

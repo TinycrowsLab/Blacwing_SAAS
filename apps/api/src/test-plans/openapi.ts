@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   modifiedCaseSchema,
+  NEGATIVE_CONTROL_KINDS,
   planDiffSchema,
   planFieldChangeSchema,
   planValidationResultSchema,
@@ -61,7 +62,12 @@ const EXAMPLE_CASE = {
   roles: ['anonymous'],
   budget: { maxRequests: 50, maxRps: 2, maxConcurrency: 1, maxBytes: 1048576 },
   oracle: { type: 'status_code', params: { expected: 429 } },
-  negativeControl: null,
+  negativeControl: {
+    kind: 'known_safe_endpoint',
+    description: 'Same login request with a valid, rate-compliant pause',
+    oracleMustNotFire: true,
+    params: {},
+  },
   createdAt: '2026-10-01T10:00:00.000Z',
   updatedAt: '2026-10-01T10:00:00.000Z',
 };
@@ -87,14 +93,22 @@ const oracleDocument = z.looseObject({
   params: z.record(z.string(), z.unknown()),
 });
 
+/** A negative control as documented: the structure {@link negativeControlSpecSchema} enforces, with `params` as a free object. */
+const negativeControlDocument = z.strictObject({
+  kind: z.enum(NEGATIVE_CONTROL_KINDS),
+  description: z.string().min(1),
+  oracleMustNotFire: z.literal(true),
+  params: z.record(z.string(), z.unknown()),
+});
+
 /** The case shapes as documented: the contract schemas with the check fields described by {@link oracleDocument}. */
 const caseDocument = testCaseViewSchema.extend({
   oracle: oracleDocument.nullable(),
-  negativeControl: oracleDocument.nullable(),
+  negativeControl: negativeControlDocument.nullable(),
 });
 const caseCreateDocument = testCaseCreateBodySchema.extend({
   oracle: oracleDocument,
-  negativeControl: oracleDocument.nullable(),
+  negativeControl: negativeControlDocument.nullable(),
 });
 const casePatchDocument = caseCreateDocument
   .partial()

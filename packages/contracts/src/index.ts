@@ -7,6 +7,22 @@ export const version = '0.0.0';
 export { canonicalQueryText, PERSISTED_HASH_PATTERN } from './graphql-persisted.js';
 export { SA_STATUSES, type SaStatus, saStatusSchema } from './authorisation.js';
 export {
+  assertNegativeControl,
+  compatibleNegativeControlKinds,
+  defaultNegativeControlFor,
+  isNegativeControlError,
+  NEGATIVE_CONTROL_ERROR_CODES,
+  NEGATIVE_CONTROL_KINDS,
+  type NegativeControlErrorCode,
+  NegativeControlError,
+  type NegativeControlKind,
+  type NegativeControlSpec,
+  type NegativeControlSubject,
+  negativeControlProblem,
+  negativeControlSpecSchema,
+  requiresNegativeControl,
+} from './negative-control.js';
+export {
   assertWithinCeiling,
   compareIntrusiveness,
   INTRUSIVENESS_CLASSES,

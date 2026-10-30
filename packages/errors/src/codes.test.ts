@@ -54,6 +54,8 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   ETAG_MISMATCH: 412,
   PLAN_PAYLOAD_TOO_LARGE: 413,
   SCOPE_INVALID_RULE: 422,
+  NEGATIVE_CONTROL_MISSING: 422,
+  NEGATIVE_CONTROL_ORACLE_MISMATCH: 422,
   INVALID_SECRET_REF: 422,
   SCOPE_BUDGET_EXCEEDS_SA: 403,
   AUTHZ_ILLEGAL_TRANSITION: 409,
@@ -195,7 +197,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(167);
+    expect(ERROR_CODE_LIST).toHaveLength(169);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -329,6 +331,8 @@ describe('error-code registry', () => {
       | 'SCOPE_INVALID_CLASS'
       | 'SCOPE_INVALID_BUDGET'
       | 'SCOPE_INVALID_RULE'
+      | 'NEGATIVE_CONTROL_MISSING'
+      | 'NEGATIVE_CONTROL_ORACLE_MISMATCH'
       | 'INVALID_SECRET_REF'
       | 'PLAN_NOT_FOUND'
       | 'TEST_CASE_NOT_FOUND'

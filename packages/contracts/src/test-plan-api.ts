@@ -9,6 +9,7 @@ import {
   TEST_PLAN_STATUSES,
   testCaseBudgetSchema,
 } from './entities/test-case.js';
+import { negativeControlSpecSchema } from './negative-control.js';
 import { uuidV7Schema } from './primitives.js';
 
 /**
@@ -57,7 +58,7 @@ export const testCaseViewSchema = z.strictObject({
   roles: z.array(z.string()),
   budget: testCaseBudgetSchema,
   oracle: oracleSchema.nullable(),
-  negativeControl: oracleSchema.nullable(),
+  negativeControl: negativeControlSpecSchema.nullable(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });

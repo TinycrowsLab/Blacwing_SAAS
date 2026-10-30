@@ -105,6 +105,14 @@ const DEFINITIONS = {
   SCOPE_INVALID_BUDGET: { status: 422, title: 'Invalid request budget', retryable: false },
   // Malformed scope rule (SCOPE-002, #566): invalid input, rejected at parse time.
   SCOPE_INVALID_RULE: { status: 422, title: 'Invalid scope rule', retryable: false },
+  // NegativeControlError, @blackwing/contracts (F16): a non-passive test case without a negative control,
+  // or one that does not suit its oracle, is a malformed test case (422).
+  NEGATIVE_CONTROL_MISSING: { status: 422, title: 'Negative control missing', retryable: false },
+  NEGATIVE_CONTROL_ORACLE_MISMATCH: {
+    status: 422,
+    title: 'Negative control does not suit the oracle',
+    retryable: false,
+  },
   SCOPE_BUDGET_EXCEEDS_SA: {
     status: 403,
     title: 'Budget exceeds the standing authorisation',

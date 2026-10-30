@@ -222,7 +222,12 @@ export function createFactories(options: FactoryOptions = {}): Factories {
         roles: ['anonymous'],
         budget: { maxRequests: 100, maxRps: 2, maxConcurrency: 1, maxBytes: 5_000_000 },
         oracle: { type: 'response.status', params: { expected: 403 } },
-        negativeControl: null,
+        negativeControl: {
+          kind: 'known_safe_endpoint',
+          description: 'Same request to the public page',
+          oracleMustNotFire: true,
+          params: {},
+        },
         status: 'proposed',
         statusReason: null,
         createdAt: iso(),

@@ -112,7 +112,12 @@ const testCase = {
   roles: ['anonymous'],
   budget: { maxRequests: 10, maxRps: 1, maxConcurrency: 1, maxBytes: 1_000_000 },
   oracle,
-  negativeControl: null,
+  negativeControl: {
+    kind: 'known_safe_endpoint',
+    description: 'Same request to the public page',
+    oracleMustNotFire: true,
+    params: {},
+  },
   status: 'approved',
   statusReason: null,
   ...stamps,
@@ -376,8 +381,14 @@ describe('test plan (planner output, ORCH-005)', () => {
   };
 
   it('accepts the proposed fields of a test case, including the oracle and negative control', () => {
-    const parsed = testPlanSchema.parse({ testCases: [{ ...proposed, negativeControl: oracle }] });
-    expect(parsed.testCases[0]?.negativeControl).toEqual(oracle);
+    const control = {
+      kind: 'known_safe_endpoint',
+      description: 'Same request to the public page',
+      oracleMustNotFire: true,
+      params: {},
+    };
+    const parsed = testPlanSchema.parse({ testCases: [{ ...proposed, negativeControl: control }] });
+    expect(parsed.testCases[0]?.negativeControl).toEqual(control);
   });
 
   it('parses an empty plan so the orchestrator can fail it with PLAN_EMPTY', () => {

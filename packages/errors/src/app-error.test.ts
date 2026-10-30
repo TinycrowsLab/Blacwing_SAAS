@@ -216,6 +216,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'SCOPE_BUDGET_EXCEEDS_SA',
   // ScopeRuleError, @blackwing/contracts (SCOPE-002), for the same reason.
   'SCOPE_INVALID_RULE',
+  'NEGATIVE_CONTROL_MISSING',
+  'NEGATIVE_CONTROL_ORACLE_MISMATCH',
   // SecretRefError, @blackwing/contracts (SECRETS-003), for the same reason.
   'INVALID_SECRET_REF',
   // Raised by apps/api's signup service as a plain AppError (TENANT-004).

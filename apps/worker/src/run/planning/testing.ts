@@ -54,7 +54,12 @@ export function testCase(over: Partial<PlannedTestCase> = {}): PlannedTestCase {
     roles: ['anonymous'],
     budget: { maxRequests: 100, maxRps: 5, maxConcurrency: 2, maxBytes: 1_000_000 },
     oracle: { type: 'response.status', params: { expected: 403 } },
-    negativeControl: { type: 'response.status', params: { expected: 200 } },
+    negativeControl: {
+      kind: 'known_safe_endpoint',
+      description: 'Same request to the public page',
+      oracleMustNotFire: true,
+      params: {},
+    },
     ...over,
   };
 }

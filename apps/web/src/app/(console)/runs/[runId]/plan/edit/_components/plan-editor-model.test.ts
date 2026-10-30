@@ -38,7 +38,12 @@ const testCase = (over: Partial<TestCaseView> = {}): TestCaseView => ({
   roles: ['anonymous', 'user'],
   budget: { maxRequests: 50, maxRps: 2, maxConcurrency: 1, maxBytes: 1048576 },
   oracle: { type: 'status_code', params: { expected: 429 } },
-  negativeControl: { type: 'status_code', params: { expected: 200 } },
+  negativeControl: {
+    kind: 'known_safe_endpoint',
+    description: 'Same request to the public page',
+    oracleMustNotFire: true,
+    params: {},
+  },
   createdAt: '2026-10-01T10:00:00.000Z',
   updatedAt: '2026-10-01T10:00:00.000Z',
   ...over,

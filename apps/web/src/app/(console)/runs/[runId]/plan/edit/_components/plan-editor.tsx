@@ -381,7 +381,7 @@ export function PlanEditor({ runId, roles, api = defaultApi }: PlanEditorProps):
                         {testCase.budget.maxRequests} req · {testCase.budget.maxRps} rps
                       </TableCell>
                       <TableCell>{testCase.oracle?.type ?? '—'}</TableCell>
-                      <TableCell>{testCase.negativeControl?.type ?? '—'}</TableCell>
+                      <TableCell>{testCase.negativeControl?.kind ?? '—'}</TableCell>
                       <TableCell>{testCase.status}</TableCell>
                       <TableCell>
                         {editable && !isRemoved(testCase) ? (

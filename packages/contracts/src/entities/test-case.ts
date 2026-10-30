@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { type RequestBudget, requestBudgetSchema } from '../budget.js';
 import { LIMITS } from '../limits.js';
+import { negativeControlProblem, negativeControlSpecSchema } from '../negative-control.js';
 import {
   checkTimestamps,
   cweIdSchema,
@@ -82,7 +83,7 @@ const plannedTestCaseShape = {
   roles: z.array(z.string().min(1).max(LIMITS.shortTextMax)),
   budget: testCaseBudgetSchema,
   oracle: oracleSchema,
-  negativeControl: oracleSchema.nullable(),
+  negativeControl: negativeControlSpecSchema.nullable(),
 };
 
 /** One test case as proposed by the planner (before it is persisted and given an id). */
@@ -134,6 +135,15 @@ export const testCaseSchema = z
         code: 'custom',
         path: ['statusReason'],
         message: `status ${testCase.status} needs a reason`,
+      });
+    }
+    // Every non-passive case declares a negative control (F16). Whether a control suits its oracle is
+    // checked by `assertNegativeControl`, where the oracle catalogue is known.
+    if (negativeControlProblem(testCase) === 'NEGATIVE_CONTROL_MISSING') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['negativeControl'],
+        message: 'NEGATIVE_CONTROL_MISSING: a non-passive test case needs a negative control',
       });
     }
     const running =
