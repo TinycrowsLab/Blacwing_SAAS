@@ -155,6 +155,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   CHANNEL_NAME_CONFLICT: 409,
   CHANNEL_SECRET_UNAVAILABLE: 409,
   CHANNEL_REFERENCED: 409,
+  UNKNOWN_SECRET_BACKEND: 500,
   AUTHZ_SIGNER_UNAVAILABLE: 503,
   GRAPH_CONFIG_MISSING: 500,
   GRAPH_POOL_TIMEOUT: 503,
@@ -197,7 +198,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(169);
+    expect(ERROR_CODE_LIST).toHaveLength(170);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -436,6 +437,7 @@ describe('error-code registry', () => {
       | 'CHANNEL_NAME_CONFLICT'
       | 'CHANNEL_SECRET_UNAVAILABLE'
       | 'CHANNEL_REFERENCED'
+      | 'UNKNOWN_SECRET_BACKEND'
       | 'GRAPH_CONFIG_MISSING'
       | 'GRAPH_POOL_TIMEOUT'
       | 'GRAPH_MIGRATION_DRIFT'

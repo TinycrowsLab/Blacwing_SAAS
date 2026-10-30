@@ -72,6 +72,34 @@ export {
   type RedactionHandlerDeps,
 } from './redaction-endpoint.js';
 
+// Pluggable secret backends: `kek_wrap` (BYOK) and `external_store` (BYO-vault) behind one registry (issue #112, §8.6, §8.7).
+export {
+  createBackendRegistry,
+  DEFAULT_SECRET_BACKEND,
+  type SecretBackendRegistry,
+  type SecretBackendRegistryDeps,
+} from './backends/registry.js';
+export { createOpenBaoBackend, type OpenBaoBackendDeps } from './backends/openbao.js';
+export { createRegistryFetcher } from './backends/fetcher.js';
+export {
+  assertStorageShape,
+  type ExternalSecretRow,
+  storeExternalSecret,
+  type SecretStorageShape,
+} from './backends/storage.js';
+export {
+  type BackendHealth,
+  type BackendOp,
+  type BackendSpan,
+  type BackendTelemetry,
+  type ExternalLocator,
+  type ExternalStoreBackend,
+  type KekWrapBackend,
+  type SecretBackendImpl,
+  type SecretBackendMetrics,
+  type SecretBackendMode,
+} from './backends/types.js';
+
 // Internal resolve API: the single audited read path for secret values (SECRETS-006, §8.7).
 export {
   createSecretResolver,

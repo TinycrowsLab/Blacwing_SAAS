@@ -35,6 +35,7 @@ Content-Type: application/json
 | `RATE_LIMITED` | 429 | Per-service limit; `Retry-After` is set. The refusal is still audited. |
 | `KEK_UNAVAILABLE` | 503 | OpenBao sealed or unreachable. Fail closed; nothing is served, and the cache is never served past its TTL. |
 | `EXTERNAL_BACKEND_UNAVAILABLE` | 503 | A customer-owned (BYOK) store timed out, failed, or has no adapter yet. |
+| `UNKNOWN_SECRET_BACKEND` | 500 | A record names a backend the registry holds no adapter for. A wiring defect (issue #112): never retried, never answered by another backend. |
 | `INVALID_SECRET_REF` / `VALIDATION_FAILED` | 422 | Malformed reference or body. |
 
 ## Who may resolve what

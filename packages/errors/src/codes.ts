@@ -421,6 +421,13 @@ const DEFINITIONS = {
     title: 'Notification channel is referenced by active routing rules',
     retryable: false,
   },
+  // Secret backend registry (issue #112, §8.6/§8.7). The contract enum admits a kind the registry does not hold: a
+  // wiring defect (500, never retried, never answered by another backend).
+  UNKNOWN_SECRET_BACKEND: {
+    status: 500,
+    title: 'Unknown secret backend',
+    retryable: false,
+  },
   // Neo4j driver (GRAPH-001, §5/§8.6). Missing or invalid graph config is a deployment defect, caught at boot
   // (fail fast, 500). A saturated connection pool past its acquire timeout is a transient overload (503, retryable).
   GRAPH_CONFIG_MISSING: { status: 500, title: 'Graph configuration missing', retryable: false },
