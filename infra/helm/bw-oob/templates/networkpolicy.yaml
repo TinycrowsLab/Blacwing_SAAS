@@ -1,0 +1,49 @@
+{{- include "bw-oob.validate" . -}}
+# Isolation for the OOB listener (INFRA-010 req 4, CONTEXT_PACK §8.2/§8.6).
+# - Public listeners: any Internet source, but never a cluster source. Pod and service CIDRs are excepted,
+#   so a sandbox pod (or any other pod) cannot reach the listener or the poll API.
+# - Control plane: pods in controlPlaneNamespaces reach the HTTP port (poll API, health) through the Service.
+# - Egress: none. The server needs no outbound connection (custom certificate, no ACME, no update check).
+# Enforcement needs kube-router (k3s default, infra/k3s/host/config.yaml). hostPort traffic is matched on the
+# container port listed here.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "bw-oob.name" . }}
+  labels:
+    {{- include "bw-oob.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "bw-oob.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              {{- toYaml .Values.clusterCIDRs | nindent 14 }}
+      ports:
+        {{- if .Values.listeners.dns }}
+        - { protocol: UDP, port: 5353 }
+        - { protocol: TCP, port: 5353 }
+        {{- end }}
+        - { protocol: TCP, port: 8080 }
+        {{- if .Values.listeners.https }}
+        - { protocol: TCP, port: 8443 }
+        {{- end }}
+        {{- if .Values.listeners.smtp }}
+        - { protocol: TCP, port: 2525 }
+        {{- end }}
+    - from:
+        - namespaceSelector:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: In
+                values:
+                  {{- toYaml .Values.controlPlaneNamespaces | nindent 18 }}
+      ports:
+        - { protocol: TCP, port: 8080 }
+  egress: []

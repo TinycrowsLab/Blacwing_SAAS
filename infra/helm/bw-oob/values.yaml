@@ -1,0 +1,75 @@
+# bw-oob values (INFRA-010). One release per public OOB address. Install into the dedicated
+# namespace `bw-oob` (see docs/runbooks/oob-server.md). The chart renders offline; nothing here
+# talks to AWS, Route53 or Let's Encrypt.
+
+# Public IPv4 address of this server (one entry of tofu `oob_server_ips`). Required. It is the
+# address interactsh answers DNS A queries with, so it must be the address that the NS glue
+# `ns1.<domain>` / `ns2.<domain>` points at.
+publicIP: ''
+
+# Delegated OOB zone (the dns module's oob_subdomain_label, default "oob") under the app domain.
+# Required. interactsh serves `*.oob.<domain>`.
+domain: ''
+oobLabel: oob
+
+image:
+  # Pinned to the same digest as infra/compose/docker-compose.dev.yml (checked by scripts/oob-server.test.mjs).
+  # Bump the digest and appVersion together (Renovate, docs/runbooks/oob-server.md).
+  repository: projectdiscovery/interactsh-server
+  tag: v1.2.4
+  digest: sha256:ffde50de2cdc9113b9bb024d9dbe63a7a4826de213be1cc63a7ffd5fd3b14481
+  pullPolicy: IfNotPresent
+
+# Name of a Secret in this namespace with key `token`: the control/poll API token (interactsh -token).
+# Created out of band from OpenBao (never in values or git). Required.
+existingSecret: bw-oob-token
+
+# Name of the cert-manager Certificate secret for `*.<oobLabel>.<domain>` and `<oobLabel>.<domain>`,
+# issued by the ClusterIssuer below (DNS-01 via Route53, bw-ingress). Served for HTTPS and SMTPS.
+tls:
+  secretName: bw-oob-tls
+  issuer: letsencrypt-staging
+  duration: 2160h
+  renewBefore: 720h
+
+# Listeners. Each enabled listener is exposed on the node's public address with hostPort, and the
+# container binds an unprivileged port (the pinned image runs as root by default; this chart runs it
+# as uid 65532 with no capabilities). Container ports are fixed by the chart.
+listeners:
+  dns: true
+  http: true
+  https: true
+  smtp: true
+
+# Days of interaction data kept in memory (interactsh -eviction). Persistence is the OOB storage
+# issue (OOB-004), not this server.
+eviction: 1
+
+# hostPort listeners need a node no other ingress uses: Traefik (bw-ingress) binds 80/443 on every node
+# in k3s. Label and taint a dedicated node and select it here. Required on a real cluster.
+placement:
+  nodeSelector:
+    blackwing.io/oob: 'true'
+  tolerations:
+    - key: blackwing.io/oob
+      operator: Equal
+      value: 'true'
+      effect: NoSchedule
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# Control-plane access to the poll API. Public listeners accept Internet sources only: the cluster
+# CIDRs below (k3s defaults: pod and service ranges) are excluded from every listener rule, so a sandbox
+# or any other pod cannot reach this server. Pods in controlPlaneNamespaces may reach the HTTP port
+# through the ClusterIP Service. The default ranges must match the k3s config (infra/k3s/host/config.yaml).
+clusterCIDRs:
+  - 10.42.0.0/16
+  - 10.43.0.0/16
+controlPlaneNamespaces:
+  - bw-system

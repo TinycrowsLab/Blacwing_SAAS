@@ -1,0 +1,12 @@
+{{- include "bw-oob.validate" . -}}
+# interactsh-server reads its flags from the command line; the file only has to exist so that the pinned
+# server starts with a read-only root filesystem. Keep it free of settings: every setting is an argument.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bw-oob.name" . }}-config
+  labels:
+    {{- include "bw-oob.labels" . | nindent 4 }}
+data:
+  interactsh.yaml: |
+    # Intentionally empty. Settings are arguments of the Deployment (see deployment.yaml).

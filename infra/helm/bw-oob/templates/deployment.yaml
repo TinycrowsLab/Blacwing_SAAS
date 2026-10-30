@@ -1,0 +1,152 @@
+{{- include "bw-oob.validate" . -}}
+# OFFLINE-STUB(online-porting #910): rendered and linted offline only; applied to a real dedicated node in the porting issue.
+# One interactsh-server, pinned by digest. Recreate, not RollingUpdate: hostPort listeners and the in-memory
+# interaction store both forbid two copies on one address. Runs as uid 65532 with a read-only root filesystem,
+# no capabilities and no privilege escalation; the pinned image's root default is overridden here.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "bw-oob.name" . }}
+  labels:
+    {{- include "bw-oob.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "bw-oob.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "bw-oob.labels" . | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      {{- with .Values.placement.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.placement.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: interactsh-server
+          image: {{ include "bw-oob.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - -domain
+            - {{ include "bw-oob.fqdn" . | quote }}
+            - -ip
+            - {{ .Values.publicIP | quote }}
+            - -token
+            - $(INTERACTSH_TOKEN)
+            - -config
+            - /config/interactsh.yaml
+            - -cert
+            - /tls/tls.crt
+            - -privkey
+            - /tls/tls.key
+            - -eviction
+            - {{ .Values.eviction | quote }}
+            - -disable-update-check
+            - -http-port
+            - "8080"
+            - -https-port
+            - "8443"
+            - -dns-port
+            - "5353"
+            - -smtp-port
+            - "2525"
+            - -smtps-port
+            - "1587"
+            - -smtp-autotls-port
+            - "1465"
+            - -ldap-port
+            - "1389"
+          env:
+            - name: HOME
+              value: /tmp
+            - name: INTERACTSH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret | quote }}
+                  key: token
+          ports:
+            {{- if .Values.listeners.dns }}
+            - name: dns-udp
+              containerPort: 5353
+              hostPort: 53
+              protocol: UDP
+            - name: dns-tcp
+              containerPort: 5353
+              hostPort: 53
+              protocol: TCP
+            {{- end }}
+            - name: http
+              containerPort: 8080
+              {{- if .Values.listeners.http }}
+              hostPort: 80
+              {{- end }}
+              protocol: TCP
+            {{- if .Values.listeners.https }}
+            - name: https
+              containerPort: 8443
+              hostPort: 443
+              protocol: TCP
+            {{- end }}
+            {{- if .Values.listeners.smtp }}
+            - name: smtp
+              containerPort: 2525
+              hostPort: 25
+              protocol: TCP
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
+        - name: config
+          configMap:
+            name: {{ include "bw-oob.name" . }}-config
+        - name: tls
+          secret:
+            secretName: {{ .Values.tls.secretName | quote }}
+            defaultMode: 0440

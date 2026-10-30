@@ -1,0 +1,6 @@
+apiVersion: v2
+name: bw-oob
+description: Blackwing out-of-band listener (INFRA-010) - one self-hosted, pinned interactsh-server on a dedicated public address, serving the delegated oob.<domain> zone over DNS, HTTP, HTTPS and SMTP.
+type: application
+version: 0.1.0
+appVersion: '1.2.4'
