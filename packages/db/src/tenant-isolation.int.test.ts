@@ -116,6 +116,15 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [tenantId],
     );
   },
+  gate2_exceptions: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO gate2_exceptions (id, tenant_id, run_id, session_id, tool_name, proposed_action,
+         envelope_reason, intrusiveness, timeout_at, idempotency_key)
+       VALUES ($1, $2, $3, 'sess-1', 'http.request', '{}', 'outside the envelope', 'state_changing',
+         now() + interval '15 minutes', $4)`,
+      [newId(), tenantId, newId(), newId()],
+    );
+  },
   kill_events: async (tx, tenantId) => {
     await tx.query(
       `INSERT INTO kill_events (id, tenant_id, scope, scope_ref_id, source, actor_type, actor_ref, reason)

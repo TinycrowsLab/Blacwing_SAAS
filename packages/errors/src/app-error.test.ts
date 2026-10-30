@@ -283,6 +283,11 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   // Raised by the run surface view (GRAPH-006, apps/api/src/surface) as plain AppErrors.
   'INVALID_QUERY',
   'RUN_NOT_FOUND',
+  // Subclassed by @blackwing/domain's Gate 2 state machine (GATE2-001).
+  'GATE2_ILLEGAL_TRANSITION',
+  'GATE2_ALREADY_DECIDED',
+  'GATE2_SOD_VIOLATION',
+  'GATE2_DESTRUCTIVE_FORBIDDEN',
 ];
 
 describe('AppError subclasses', () => {

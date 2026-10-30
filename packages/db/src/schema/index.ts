@@ -15,3 +15,4 @@ export * from './test-plans.js';
 export * from './findings.js';
 export * from './evidence.js';
 export * from './oncall.js';
+export * from './gate2.js';

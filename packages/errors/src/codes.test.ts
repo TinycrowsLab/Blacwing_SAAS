@@ -150,6 +150,10 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   KEYCLOAK_CONFLICT: 409,
   SOD_VIOLATION: 403,
   CVSS_VECTOR_SCORE_MISMATCH: 422,
+  GATE2_ILLEGAL_TRANSITION: 409,
+  GATE2_ALREADY_DECIDED: 409,
+  GATE2_SOD_VIOLATION: 403,
+  GATE2_DESTRUCTIVE_FORBIDDEN: 403,
   INTERNAL: 500,
 };
 
@@ -163,7 +167,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(135);
+    expect(ERROR_CODE_LIST).toHaveLength(139);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -394,6 +398,10 @@ describe('error-code registry', () => {
       | 'SOD_VIOLATION'
       | 'CVSS_VECTOR_SCORE_MISMATCH'
       | 'AUTHZ_SIGNER_UNAVAILABLE'
+      | 'GATE2_ILLEGAL_TRANSITION'
+      | 'GATE2_ALREADY_DECIDED'
+      | 'GATE2_SOD_VIOLATION'
+      | 'GATE2_DESTRUCTIVE_FORBIDDEN'
       | 'INTERNAL'
     >();
     expectTypeOf<HttpStatusOf<'NOT_FOUND'>>().toEqualTypeOf<404>();

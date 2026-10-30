@@ -40,6 +40,7 @@ export {
   auditLogin,
   configChangeInput,
   exportInput,
+  gate2AuditInput,
   type GateDecision,
   gateDecisionInput,
   type GateNumber,

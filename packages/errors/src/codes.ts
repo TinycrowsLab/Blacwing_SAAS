@@ -411,6 +411,28 @@ const DEFINITIONS = {
   },
   ETAG_MISMATCH: { status: 412, title: 'ETag mismatch', retryable: false },
   PLAN_PAYLOAD_TOO_LARGE: { status: 413, title: 'Test plan payload too large', retryable: false },
+  // Gate 2 runtime exceptions (GATE2-001, F13/F31, §8.3/§8.4). A double decision or a refused
+  // transition is a conflict (409); separation of duties and the destructive block are refusals (403).
+  GATE2_ILLEGAL_TRANSITION: {
+    status: 409,
+    title: 'Illegal gate exception transition',
+    retryable: false,
+  },
+  GATE2_ALREADY_DECIDED: {
+    status: 409,
+    title: 'Gate exception already decided',
+    retryable: false,
+  },
+  GATE2_SOD_VIOLATION: {
+    status: 403,
+    title: 'Gate exception separation of duties violated',
+    retryable: false,
+  },
+  GATE2_DESTRUCTIVE_FORBIDDEN: {
+    status: 403,
+    title: 'Destructive gate exception cannot be approved',
+    retryable: false,
+  },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

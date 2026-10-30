@@ -2,6 +2,7 @@ import type { AuditEventInput } from './draft.js';
 import type { AuditEmitter } from './emit.js';
 import type { AuditSqlTx } from './ports.js';
 import type { AuditActor, AuditMetadata, AuditTarget } from '@blackwing/contracts';
+import type { Gate2AuditEvent } from '@blackwing/db';
 
 /** How an event reaches the ledger: inside the caller's transaction, or through the outbox. */
 export interface AuditDelivery {
@@ -130,4 +131,57 @@ export function configChangeInput(args: ConfigChangeArgs): AuditEventInput {
 /** Records a configuration change. */
 export function auditConfigChange(delivery: AuditDelivery, args: ConfigChangeArgs): Promise<void> {
   return deliver(delivery, configChangeInput(args));
+}
+
+/**
+ * The ledger event for a Gate 2 persistence event (GATE2-001, F13, §8.8): `gate2.exception.created`
+ * when a call falls outside the envelope, `gate2.decision.recorded` when the exception reaches a
+ * terminal state (approved once, denied, timed out or superseded; the last three are `denied`). It
+ * targets the run and carries the exception id as metadata; the redacted `proposed_action` stays in
+ * its table. The `dedupeKey` makes a retried producer idempotent.
+ */
+export function gate2AuditInput(event: Gate2AuditEvent): AuditEventInput {
+  const { exception } = event;
+  const base = {
+    tenantId: event.tenantId,
+    target: { type: 'run', id: exception.runId } satisfies AuditTarget,
+    runId: exception.runId,
+  } as const;
+  const metadata = {
+    exceptionId: exception.id,
+    toolName: exception.toolName,
+    intrusiveness: exception.intrusiveness,
+    batch: exception.batch,
+    state: exception.state,
+  };
+  if (event.action === 'gate2.exception.created') {
+    return {
+      ...base,
+      action: event.action,
+      actor: { type: 'system' },
+      outcome: 'success',
+      reason: exception.envelopeReason,
+      metadata,
+      dedupeKey: `gate2:${exception.id}:created`,
+    };
+  }
+  const { intent, decision } = event;
+  return {
+    ...base,
+    action: event.action,
+    actor:
+      intent.actor.kind === 'user'
+        ? { type: 'user', id: intent.actor.id }
+        : { type: 'system', id: intent.actor.id },
+    outcome: decision.decision === 'approved' ? 'success' : 'denied',
+    reason: intent.reason,
+    metadata: {
+      ...metadata,
+      event: intent.eventType,
+      from: intent.from,
+      to: intent.to,
+      auto: decision.auto,
+    },
+    dedupeKey: `gate2:${exception.id}:decided`,
+  };
 }

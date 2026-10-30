@@ -871,3 +871,28 @@ export {
 } from './gate/decision.js';
 export * from './test-plan-api.js';
 export * from './test-plan-validation.js';
+export {
+  GATE2_DECISION_OUTCOMES,
+  GATE2_ENVELOPE_REASON_MAX,
+  GATE2_ERROR_CODES,
+  GATE2_HUMAN_DECISIONS,
+  GATE2_IDEMPOTENCY_KEY_MAX,
+  GATE2_STATES,
+  GATE2_TERMINAL_STATES,
+  GATE2_TOOL_NAME_MAX,
+  type Gate2Decide,
+  gate2DecideSchema,
+  type Gate2DecisionOutcome,
+  type Gate2ErrorCode,
+  type Gate2Exception,
+  type Gate2ExceptionCreate,
+  gate2ExceptionCreateSchema,
+  gate2ExceptionSchema,
+  type Gate2HumanDecision,
+  gate2HumanDecisionSchema,
+  gate2IdempotencyKeySchema,
+  type Gate2ProposedAction,
+  gate2ProposedActionSchema,
+  type Gate2State,
+  gate2StateSchema,
+} from './gate2.js';

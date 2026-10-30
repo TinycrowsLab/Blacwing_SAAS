@@ -113,6 +113,8 @@ const RELEASED_ACTIONS = [
   'test_plan.validated',
   'oncall.roster.updated',
   'oncall.sod_skipped',
+  'gate2.exception.created',
+  'gate2.decision.recorded',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

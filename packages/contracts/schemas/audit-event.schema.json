@@ -102,7 +102,9 @@
         "asset.owner_assigned",
         "test_plan.validated",
         "oncall.roster.updated",
-        "oncall.sod_skipped"
+        "oncall.sod_skipped",
+        "gate2.exception.created",
+        "gate2.decision.recorded"
       ]
     },
     "severity": {

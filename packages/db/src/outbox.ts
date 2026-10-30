@@ -75,7 +75,7 @@ function packageLogger(): Logger {
 }
 
 /** The transaction's tenant, or a fail-closed error. Outside a transaction `SET LOCAL` has no effect. */
-async function activeTenantId(tx: TenantTx): Promise<string> {
+export async function activeTenantId(tx: TenantTx): Promise<string> {
   const result = await tx.execute<{ tenant_id: string | null }>(
     sql`SELECT current_setting('app.tenant_id', true) AS tenant_id`,
   );
@@ -104,7 +104,7 @@ function describeIssues(issues: readonly { path: PropertyKey[]; message: string 
  * values, `bwk_`/`bw_pat_`/`bw_ci_` tokens, bearer values, URL userinfo, PEM keys). Producers pass
  * references and redact first; the ledger and the queue are durable, so a leak here is permanent.
  */
-function redact(value: unknown, counter: { count: number }): unknown {
+export function redact(value: unknown, counter: { count: number }): unknown {
   if (typeof value === 'string') {
     const redacted = redactText(value);
     if (redacted !== value) counter.count += 1;
