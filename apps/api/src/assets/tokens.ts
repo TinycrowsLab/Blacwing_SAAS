@@ -2,3 +2,4 @@
 export const ASSET_SERVICE = Symbol.for('blackwing.api.assets.service');
 export const ASSET_METRICS = Symbol.for('blackwing.api.assets.metrics');
 export const ASSET_VERIFICATION_SERVICE = Symbol.for('blackwing.api.assets.verification.service');
+export const ASSET_CREDENTIAL_SERVICE = Symbol.for('blackwing.api.assets.credential.service');

@@ -69,3 +69,40 @@ export class AssetVerificationMethodNotApplicableError extends AppError {
     });
   }
 }
+
+/**
+ * `ASSET_CRED_SECRET_WRITE_FAILED` (503): the Secrets Service refused or could not be reached for a credential's
+ * secret. Nothing is persisted (the secret is sealed before the row is written), and the caller may retry.
+ */
+export class AssetCredentialSecretWriteError extends AppError {
+  declare readonly code: 'ASSET_CRED_SECRET_WRITE_FAILED';
+  constructor(options: AppErrorOptions = {}) {
+    super('ASSET_CRED_SECRET_WRITE_FAILED', 'credential secret could not be stored', {
+      detail:
+        'The credential secret could not be stored in the Secrets Service. Nothing was saved; retry later.',
+      ...options,
+    });
+  }
+}
+
+/** `ASSET_CRED_DUPLICATE_ROLE` (409): the asset already has a credential for this role name. */
+export class AssetCredentialDuplicateRoleError extends AppError {
+  declare readonly code: 'ASSET_CRED_DUPLICATE_ROLE';
+  constructor(options: AppErrorOptions = {}) {
+    super('ASSET_CRED_DUPLICATE_ROLE', 'a credential for this role already exists', {
+      detail: 'This asset already has a credential for this role. Rotate it instead.',
+      ...options,
+    });
+  }
+}
+
+/** `ASSET_CRED_RECIPE_TOO_LARGE` (413): the serialised login recipe exceeds the column cap (§7). */
+export class AssetCredentialRecipeTooLargeError extends AppError {
+  declare readonly code: 'ASSET_CRED_RECIPE_TOO_LARGE';
+  constructor(options: AppErrorOptions = {}) {
+    super('ASSET_CRED_RECIPE_TOO_LARGE', 'login recipe too large', {
+      detail: 'The login recipe is larger than the 64 KiB limit.',
+      ...options,
+    });
+  }
+}

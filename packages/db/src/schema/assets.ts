@@ -63,8 +63,11 @@ function inList(values: readonly string[]) {
 /** The 64 KiB cap of the jsonb columns, as a SQL literal (ASSET_JSON_MAX_BYTES is a compile-time constant). */
 const JSON_MAX_BYTES = sql.raw(String(ASSET_JSON_MAX_BYTES));
 
-/** Prefix of every credential secret reference (§8.7). Mirrors the seed's `openbao://` references. */
-export const SECRET_REF_PREFIX = 'openbao://';
+/**
+ * Prefixes of a credential's secret reference (§8.7). `bw-secret://` is the reference the Secrets Service resolves
+ * (`formatSecretRef`, #363); `openbao://` is the KV path form the seed uses for lab credentials.
+ */
+export const SECRET_REF_PREFIXES = ['openbao://', 'bw-secret://'] as const;
 
 export const assets = pgTable(
   'assets',
@@ -198,7 +201,10 @@ export const assetCredentials = pgTable(
     ),
     check(
       'asset_credentials_secret_ref_check',
-      sql`starts_with(${t.secretRef}, '${sql.raw(SECRET_REF_PREFIX)}') AND length(${t.secretRef}) <= ${sql.raw(String(LIMITS.urlMax))}`,
+      sql`(${sql.join(
+        SECRET_REF_PREFIXES.map((prefix) => sql`starts_with(${t.secretRef}, '${sql.raw(prefix)}')`),
+        sql` OR `,
+      )}) AND length(${t.secretRef}) <= ${sql.raw(String(LIMITS.urlMax))}`,
     ),
     check(
       'asset_credentials_login_recipe_check',

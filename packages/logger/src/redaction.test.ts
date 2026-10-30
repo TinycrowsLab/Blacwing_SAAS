@@ -378,6 +378,8 @@ describe('path and key-name redaction', () => {
       'jwtSigningKey',
       'auth',
       'JWT',
+      'totpSeed',
+      'secrets',
     ]) {
       expect(isSensitiveKey(key), key).toBe(true);
     }
@@ -392,6 +394,7 @@ describe('path and key-name redaction', () => {
       'accessKeyId',
       'publicKey',
       'jwtIssuer',
+      'secretVersion',
     ]) {
       expect(isSensitiveKey(key), key).toBe(false);
     }

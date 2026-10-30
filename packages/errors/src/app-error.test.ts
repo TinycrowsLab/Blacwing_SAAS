@@ -221,6 +221,10 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'ASSET_VERIFICATION_ILLEGAL_TRANSITION',
   'ASSET_VERIFICATION_PROBE_UNAVAILABLE',
   'ASSET_VERIFICATION_METHOD_NOT_APPLICABLE',
+  // AssetCredentialSecretWriteError, AssetCredentialDuplicateRoleError, AssetCredentialRecipeTooLargeError (apps/api assets, #363).
+  'ASSET_CRED_SECRET_WRITE_FAILED',
+  'ASSET_CRED_DUPLICATE_ROLE',
+  'ASSET_CRED_RECIPE_TOO_LARGE',
   // IllegalFindingTransitionError and FindingTriageError, @blackwing/domain finding triage (TRIAGE-001).
   'FINDING_ILLEGAL_TRANSITION',
   'TRIAGE_REASON_REQUIRED',

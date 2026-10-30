@@ -755,6 +755,23 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'config_change',
     description: 'A pending verification was cancelled by a user; the asset is unverified.',
   },
+  // asset credentials (#363): appended. The event names the role and the secret version, never a secret value.
+  {
+    action: 'asset.credential_added',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'A login for one role of an asset was stored by reference (secret in the Secrets Service).',
+  },
+  {
+    action: 'asset.credential_rotated',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'The secret of one role of an asset was replaced; the new secret version is recorded.',
+  },
   // surface graph upsert (GRAPH-007, #441): appended; the event names the run and the counts, never the graph content.
   {
     action: 'graph.surface.upserted',

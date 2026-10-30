@@ -191,10 +191,11 @@ const SENSITIVE_KEY_SUFFIXES = Object.freeze([
   'secretaccesskey',
   'encryptionkey',
   'signingkey',
+  'totpseed',
 ]);
 
 /** Key names redacted only as the whole (normalised) name: as suffixes they would hit `authority`. */
-const SENSITIVE_KEY_NAMES = Object.freeze(['pwd', 'auth', 'jwt']);
+const SENSITIVE_KEY_NAMES = Object.freeze(['pwd', 'auth', 'jwt', 'secrets']);
 
 /** True when values under `key` must never be logged. */
 export function isSensitiveKey(key: string): boolean {
@@ -224,6 +225,10 @@ export const REDACT_PATHS: readonly string[] = Object.freeze([
   '*.apiKey',
   '*.signature',
   '*.cookie',
+  'totpSeed',
+  '*.totpSeed',
+  'secrets',
+  '*.secrets',
   'headers.authorization',
   'headers.cookie',
   'headers["set-cookie"]',

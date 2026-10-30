@@ -330,6 +330,13 @@
       "when": 1793413873600,
       "tag": "20261031023113_repro_artifacts_run_and_verification",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793416607897,
+      "tag": "20261031031647_asset_credential_secret_refs",
+      "breakpoints": true
     }
   ]
 }

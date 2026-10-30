@@ -26,6 +26,7 @@ import { AssetsModule } from './module.js';
 import { createQuotaMetrics } from '../quota/metrics.js';
 import { QuotaService } from '../quota/service.js';
 
+import type { CredentialVault } from './credential-vault.js';
 import type { TenantPrincipal } from '@blackwing/db/tenant-context';
 import type {
   VerificationProbe,
@@ -54,6 +55,12 @@ const dnsStubProbe: VerificationProbe = {
         : { outcome: 'not_found', reason: 'token_absent' },
     );
   },
+};
+
+/** The asset suite does not exercise credentials (see credentials.http.int.test.ts): any use is a bug. */
+const unusedCredentialVault: CredentialVault = {
+  seal: () => Promise.reject(new Error('credential vault is not used by the asset suite')),
+  rotate: () => Promise.reject(new Error('credential vault is not used by the asset suite')),
 };
 
 const tenantA = newId();
@@ -204,6 +211,7 @@ beforeAll(async () => {
           metrics: createQuotaMetrics(metrics.registry),
           logger,
         }),
+        credentialVault: unusedCredentialVault,
       }),
     ],
   });

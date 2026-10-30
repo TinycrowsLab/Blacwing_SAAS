@@ -292,6 +292,25 @@ export {
   updateAssetBodySchema,
 } from './asset-api.js';
 export {
+  ASSET_CREDENTIAL_RECIPE_MAX_BYTES,
+  type AssetCredentialListResponse,
+  assetCredentialListResponseSchema,
+  type AssetCredentialRotationView,
+  assetCredentialRotationViewSchema,
+  type AssetCredentialSecrets,
+  assetCredentialSecretsSchema,
+  type AssetCredentialView,
+  assetCredentialViewSchema,
+  type CreateAssetCredentialBody,
+  createAssetCredentialBodySchema,
+  credentialSecretRef,
+  type AssetLoginRecipe,
+  assetLoginRecipeSchema,
+  missingCredentialSecrets,
+  type RotateAssetCredentialBody,
+  rotateAssetCredentialBodySchema,
+} from './asset-credential-api.js';
+export {
   type AuthorisableIntrusiveness,
   authorisableIntrusivenessSchema,
   type Intrusiveness,

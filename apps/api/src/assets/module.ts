@@ -1,6 +1,7 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 
 import {
+  AssetCredentialRepository,
   AssetRepository as AssetListReader,
   type Database,
   TenantHaltRepository,
@@ -12,17 +13,25 @@ import {
 } from '@blackwing/domain';
 
 import { AssetsController } from './controller.js';
+import { AssetCredentialService } from './credential-service.js';
+import { AssetCredentialsController } from './credential.controller.js';
 import { HttpFileProbe } from './http-file-probe.js';
 import { createAssetMetrics, type AssetMetrics } from './metrics.js';
 import { createCedarAssetPolicy } from './policy.js';
 import { AssetRepository } from './repository.js';
 import { AssetService } from './service.js';
-import { ASSET_METRICS, ASSET_SERVICE, ASSET_VERIFICATION_SERVICE } from './tokens.js';
+import {
+  ASSET_CREDENTIAL_SERVICE,
+  ASSET_METRICS,
+  ASSET_SERVICE,
+  ASSET_VERIFICATION_SERVICE,
+} from './tokens.js';
 import { AssetVerificationRepository } from './verification-repository.js';
 import { AssetVerificationService } from './verification-service.js';
 import { AssetVerificationController } from './verification.controller.js';
 import { API_LOGGER } from '../bootstrap/tokens.js';
 
+import type { CredentialVault } from './credential-vault.js';
 import type { QuotaEnforcer } from '../quota/service.js';
 import type { VerificationMethod } from '@blackwing/contracts';
 import type { Logger } from '@blackwing/logger';
@@ -43,6 +52,11 @@ export interface AssetsModuleOptions {
   readonly verificationPolicy?: Partial<VerificationPolicy>;
   /** The plan quota enforcer (TENANT-009). Required: an asset create is never unchecked against the plan. */
   readonly quota: QuotaEnforcer;
+  /**
+   * The Secrets Service behind asset login credentials (#363): seals a new secret and writes a rotation. Required:
+   * without it the credential routes would have no safe place to put a secret.
+   */
+  readonly credentialVault: CredentialVault;
 }
 
 /** The probes keyed by method. Two probes for one method would make the choice silent, so that is refused. */
@@ -62,7 +76,9 @@ function probesByMethod(
  * `createApiApp({ imports: [AssetsModule.forRoot(...)] })`; it needs the tenant guard (`tenantPrincipalSource`)
  * to be installed, otherwise every route answers 401 (fail closed).
  */
-@Module({ controllers: [AssetsController, AssetVerificationController] })
+@Module({
+  controllers: [AssetsController, AssetVerificationController, AssetCredentialsController],
+})
 export class AssetsModule {
   static forRoot(options: AssetsModuleOptions): DynamicModule {
     return {
@@ -81,6 +97,19 @@ export class AssetsModule {
               projections: new AssetListReader({ db: options.database }),
               policy: createCedarAssetPolicy(),
               quota: options.quota,
+              metrics,
+              logger,
+            }),
+        },
+        {
+          provide: ASSET_CREDENTIAL_SERVICE,
+          inject: [ASSET_METRICS, API_LOGGER],
+          useFactory: (metrics: AssetMetrics, logger: Logger) =>
+            new AssetCredentialService({
+              assets: new AssetRepository({ db: options.database }),
+              credentials: new AssetCredentialRepository(),
+              vault: options.credentialVault,
+              policy: createCedarAssetPolicy(),
               metrics,
               logger,
             }),

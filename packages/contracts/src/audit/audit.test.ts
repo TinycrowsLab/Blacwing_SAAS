@@ -124,6 +124,8 @@ const RELEASED_ACTIONS = [
   'asset.verification_passed',
   'asset.verification_failed',
   'asset.verification_cancelled',
+  'asset.credential_added',
+  'asset.credential_rotated',
   'graph.surface.upserted',
   'notification.channel_changed',
   'notification.requested',

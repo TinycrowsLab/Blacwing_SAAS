@@ -197,7 +197,17 @@ beforeAll(async () => {
     metrics,
     tenantPrincipalSource: (request) => principalOf(request.headers),
     imports: [
-      AssetsModule.forRoot({ database: db(), registry: metrics.registry, quota }),
+      AssetsModule.forRoot({
+        database: db(),
+        registry: metrics.registry,
+        quota,
+        // The quota suite never creates a credential: any use of the vault is a bug.
+        credentialVault: {
+          seal: () => Promise.reject(new Error('credential vault is not used by the quota suite')),
+          rotate: () =>
+            Promise.reject(new Error('credential vault is not used by the quota suite')),
+        },
+      }),
       QuotaModule.forRoot({ database: db(), registry: metrics.registry, logger }),
     ],
   });

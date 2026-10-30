@@ -19,6 +19,10 @@ export interface AssetMetrics {
   verificationPendingClosed(): void;
   /** One HTTP-file probe run: `result` as above, `reason` a bounded machine reason (never the observed body). */
   verificationHttpFile(result: string, reason: string): void;
+  /** A credential was stored (#363): `mfa_type` is the bounded MFA enum. */
+  credentialAdded(mfaType: string): void;
+  /** A credential secret could not be written to the Secrets Service (the write is refused, nothing persisted). */
+  credentialSecretWriteFailed(): void;
 }
 
 const HTTP_INTERNAL = 500;
@@ -48,6 +52,17 @@ export function createAssetMetrics(registry: Registry): AssetMetrics {
     labelNames: ['result', 'reason'] as const,
     registers: [registry],
   });
+  const credentials = new Counter({
+    name: 'asset_credentials_total',
+    help: 'Asset login credentials stored, by MFA type (#363).',
+    labelNames: ['mfa_type'] as const,
+    registers: [registry],
+  });
+  const credentialWriteFailures = new Counter({
+    name: 'credential_secret_write_failures_total',
+    help: 'Asset credential secret writes refused or unreachable at the Secrets Service (#363).',
+    registers: [registry],
+  });
   const pending = new Gauge({
     name: 'asset_verification_active_pending',
     help: 'Ownership verifications pending in this process (opened minus closed since start).',
@@ -71,6 +86,12 @@ export function createAssetMetrics(registry: Registry): AssetMetrics {
     },
     verificationHttpFile: (result, reason) => {
       httpFile.inc({ result, reason });
+    },
+    credentialAdded: (mfaType) => {
+      credentials.inc({ mfa_type: mfaType });
+    },
+    credentialSecretWriteFailed: () => {
+      credentialWriteFailures.inc();
     },
   };
 }

@@ -476,6 +476,22 @@ const DEFINITIONS = {
     title: 'Verification method not applicable',
     retryable: false,
   },
+  // Asset credentials (#363). The Secrets Service refused or was unreachable on a write: nothing is persisted.
+  ASSET_CRED_SECRET_WRITE_FAILED: {
+    status: 503,
+    title: 'Credential secret could not be stored',
+    retryable: true,
+  },
+  ASSET_CRED_DUPLICATE_ROLE: {
+    status: 409,
+    title: 'Credential already exists for this role',
+    retryable: false,
+  },
+  ASSET_CRED_RECIPE_TOO_LARGE: {
+    status: 413,
+    title: 'Login recipe too large',
+    retryable: false,
+  },
   EXTERNAL_BACKEND_UNAVAILABLE: {
     status: 503,
     title: 'External secret backend unavailable',

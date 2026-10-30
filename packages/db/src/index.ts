@@ -180,6 +180,11 @@ export {
   type TenantContextSource,
 } from './repository.js';
 export {
+  AssetCredentialRepository,
+  type NewAssetCredentialWrite,
+  type NewCredentialSecret,
+} from './asset-credential.repository.js';
+export {
   AssetRepository,
   type AssetListPage,
   type AssetListRow,

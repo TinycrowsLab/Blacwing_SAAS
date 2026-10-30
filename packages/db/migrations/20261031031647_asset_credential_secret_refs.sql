@@ -1,0 +1,2 @@
+ALTER TABLE "asset_credentials" DROP CONSTRAINT "asset_credentials_secret_ref_check";--> statement-breakpoint
+ALTER TABLE "asset_credentials" ADD CONSTRAINT "asset_credentials_secret_ref_check" CHECK ((starts_with("asset_credentials"."secret_ref", 'openbao://') OR starts_with("asset_credentials"."secret_ref", 'bw-secret://')) AND length("asset_credentials"."secret_ref") <= 2048);
