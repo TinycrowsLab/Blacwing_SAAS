@@ -182,4 +182,10 @@ describe('replaySpecSchema', () => {
     };
     expect(replaySpecSchema.safeParse(spec).success).toBe(false);
   });
+
+  it('rejects a replay spec with no pinned environment (§8.9: a missing pin fails)', () => {
+    const spec = validSpec();
+    delete spec.pins;
+    expect(replaySpecSchema.safeParse(spec).success).toBe(false);
+  });
 });

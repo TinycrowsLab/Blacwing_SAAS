@@ -74,6 +74,31 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # Security-invariant matrix (issue #805): every CONTEXT_PACK §8 invariant must map to at least one owning test
+  # that still exists under its title. A gap, a broken reference or a regression self-test failure turns this red.
+  # The coverage report (invariant -> tests) is uploaded as an artifact for sign-off (SECREVIEW-008).
+  security-invariants:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TZ: UTC
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Verify the §8 invariant matrix
+        run: pnpm --filter @blackwing/testing test:invariants
+      - name: Upload invariant coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: invariant-matrix
+          path: packages/testing/coverage/invariant-matrix.json
+          if-no-files-found: error
+          retention-days: 90
+
   # Storybook build (issue #271): every kit story compiles into a static site. The stories' interaction and
   # a11y checks run in the unit job (packages/ui/src/storybook.test.tsx), so this job proves the build only.
   storybook:
