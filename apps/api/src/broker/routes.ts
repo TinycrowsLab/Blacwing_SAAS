@@ -14,6 +14,7 @@ import {
   brokerPdpDecisionSchema,
   brokerPdpEvaluateRequestSchema,
   brokerToolAuditRequestSchema,
+  brokerGate2ExceptionRequestSchema,
   engagementDispatchInputSchema,
   engagementMarkTestCaseInputSchema,
   engagementMentorReviewInputSchema,
@@ -35,6 +36,7 @@ import {
 } from '@blackwing/errors';
 import { type Logger, withContext } from '@blackwing/logger';
 
+import { idempotencyKeyFromHeader, type Gate2ExceptionPort } from './gate2.js';
 import { type BrokerMetrics, createBrokerMetrics } from './metrics.js';
 import { BrokerAuthError, type BrokerTokenVerifier, type RunTokenRevocations } from './token.js';
 import { createTenantContextMetrics } from '../tenant/metrics.js';
@@ -65,6 +67,9 @@ export const BROKER_ENGAGEMENT_TEST_CASE_STATUS_ROUTE = `${BROKER_BASE_PATH}/run
 export const BROKER_ENGAGEMENT_MENTOR_REVIEW_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/engagement/mentor-reviews`;
 export const BROKER_ENGAGEMENT_SCOPE_EXCEPTION_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/engagement/scope-exceptions`;
 
+/** Gate 2 endpoint (GATE2-002). Run-bound by the token alone: the path names no run. */
+export const BROKER_GATE2_EXCEPTIONS_ROUTE = `${BROKER_BASE_PATH}/gate2/exceptions`;
+
 /** Window of the per-run-session limiter. */
 export interface BrokerRateLimit {
   readonly limit: number;
@@ -84,6 +89,8 @@ export interface BrokerRoutesOptions {
   readonly engagement?: EngagementPort;
   /** The PreToolUse decision service. Unwired, the PDP endpoint answers `NOT_IMPLEMENTED` and the hook denies. */
   readonly pdp?: PdpService;
+  /** The Gate 2 exception endpoint's adapter. Unwired, it answers `NOT_IMPLEMENTED`. */
+  readonly gate2?: Gate2ExceptionPort;
   readonly now?: () => number;
   readonly environment?: ErrorEnvironment;
   readonly problems?: ProblemDetailsMapper;
@@ -111,7 +118,10 @@ const GENERIC_FORBIDDEN = 'This request is not permitted for the presented run t
 /** What an answered endpoint receives: the run from the token, the bound path params, the parsed body. */
 interface EndpointCall {
   readonly ref: EngagementRef;
+  /** The session the token names: the only session a request may act for. */
+  readonly sessionId: string;
   readonly params: Readonly<Record<string, string | undefined>>;
+  readonly headers: Readonly<Record<string, string | readonly string[] | undefined>>;
   readonly body: unknown;
 }
 
@@ -184,6 +194,29 @@ function pdpEndpoint(service: PdpService | undefined): Endpoint {
 const terminalStates: ReadonlySet<string> = new Set(TERMINAL_RUN_STATES);
 
 type EngagementHandle = (call: EndpointCall, port: EngagementPort) => Promise<unknown>;
+
+/** The Gate 2 endpoint (GATE2-002). Writes need `gate2:write`; without a port it answers `NOT_IMPLEMENTED`. */
+function gate2Endpoints(port: Gate2ExceptionPort | undefined): readonly Endpoint[] {
+  const base: Omit<Endpoint, 'handle'> = {
+    route: BROKER_GATE2_EXCEPTIONS_ROUTE,
+    action: 'broker.gate2.exception_create',
+    scope: 'gate2:write',
+    owner: 'GATE2',
+    body: brokerGate2ExceptionRequestSchema,
+  };
+  if (port === undefined) return [base];
+  return [
+    {
+      ...base,
+      handle: ({ ref, sessionId, headers, body }) =>
+        port.raise({
+          ref: { tenantId: ref.tenantId, runId: ref.runId, sessionId },
+          body: brokerGate2ExceptionRequestSchema.parse(body),
+          idempotencyKey: idempotencyKeyFromHeader(headers['idempotency-key']),
+        }),
+    },
+  ];
+}
 
 /**
  * The engagement endpoints (MCP-012). Reads need `engagement:read`, writes `engagement:write`. A write is
@@ -472,8 +505,12 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
           if (!principal.scopes.includes(endpoint.scope)) {
             throw new ForbiddenError('scope not granted', { detail: GENERIC_FORBIDDEN });
           }
-          const params = z.object({ runId: z.string() }).safeParse(request.params);
-          if (!params.success || params.data.runId !== principal.runId) {
+          // A path that names a run must name the token's run; a route without `:runId` is bound by the token alone.
+          const params = z.object({ runId: z.string().optional() }).safeParse(request.params);
+          if (
+            !params.success ||
+            (params.data.runId !== undefined && params.data.runId !== principal.runId)
+          ) {
             throw new ForbiddenError('run mismatch', { detail: GENERIC_FORBIDDEN });
           }
           if (endpoint.body !== null) {
@@ -520,7 +557,9 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
             const pathParams = z.record(z.string(), z.string()).safeParse(request.params);
             const result = await endpoint.handle({
               ref: { tenantId: found.tenantId, runId: principal.runId },
+              sessionId: principal.sessionId,
               params: pathParams.success ? pathParams.data : {},
+              headers: request.headers,
               body: request.body,
             });
             const decided =
@@ -561,6 +600,7 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
         ...ENDPOINTS,
         pdpEndpoint(options.pdp),
         ...engagementEndpoints(options.engagement),
+        ...gate2Endpoints(options.gate2),
       ];
       for (const endpoint of endpoints) {
         const handler = async (request: FastifyRequest): Promise<unknown> => {

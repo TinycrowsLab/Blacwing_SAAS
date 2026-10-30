@@ -4,10 +4,13 @@ import {
   BROKER_BASE_PATH,
   brokerCandidateRequestSchema,
   brokerEvidenceRequestSchema,
+  brokerGate2ExceptionRequestSchema,
+  brokerGate2ExceptionResponseSchema,
   brokerJournalRequestSchema,
   brokerPdpDecisionSchema,
   brokerPdpEvaluateRequestSchema,
   brokerStateResponseSchema,
+  gate2IdempotencyKeySchema,
   brokerToolAuditRequestSchema,
   engagementDispatchInputSchema,
   engagementDispatchResultSchema,
@@ -25,6 +28,7 @@ import { ERROR_CODES, PROBLEM_JSON_CONTENT_TYPE } from '@blackwing/errors';
 
 import {
   BROKER_CANDIDATES_ROUTE,
+  BROKER_GATE2_EXCEPTIONS_ROUTE,
   BROKER_ENGAGEMENT_DISPATCH_ROUTE,
   BROKER_ENGAGEMENT_MENTOR_REVIEW_ROUTE,
   BROKER_ENGAGEMENT_OPEN_SUBTASKS_ROUTE,
@@ -271,6 +275,43 @@ export function brokerOpenApiDocument(): JsonObject {
         engagementScopeExceptionResultSchema,
         engagementScopeExceptionInputSchema,
       ),
+      [toOpenApiPath(BROKER_GATE2_EXCEPTIONS_ROUTE)]: {
+        post: {
+          operationId: 'raiseGate2Exception',
+          summary: 'Open a Gate 2 exception for a deferred tool call',
+          description:
+            'Owned by GATE2. Creates one pending exception (idempotent on Idempotency-Key), pauses the run as gate2_pending and signals the run workflow. A failed signal answers 503 after the exception is stored, so the caller retries with the same key.',
+          security: [{ runToken: [] }],
+          parameters: [
+            {
+              name: 'Idempotency-Key',
+              in: 'header',
+              required: true,
+              schema: jsonSchema(gate2IdempotencyKeySchema),
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': { schema: jsonSchema(brokerGate2ExceptionRequestSchema) },
+            },
+          },
+          responses: {
+            ...responses([
+              'VALIDATION_FAILED',
+              'RUN_NOT_ACTIVE',
+              'IDEMPOTENCY_KEY_REQUIRED',
+              'TEMPORAL_UNAVAILABLE',
+            ]),
+            '200': {
+              description: 'The exception and its state.',
+              content: {
+                'application/json': { schema: jsonSchema(brokerGate2ExceptionResponseSchema) },
+              },
+            },
+          },
+        },
+      },
       [toOpenApiPath(BROKER_STATE_ROUTE)]: {
         get: {
           operationId: 'getRunState',

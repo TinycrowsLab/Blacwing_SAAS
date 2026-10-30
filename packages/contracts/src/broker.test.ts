@@ -15,9 +15,9 @@ import {
 const ID = '01890a5d-ac96-774b-bcce-b302099a8057';
 
 describe('broker contracts', () => {
-  it('uses the bwrun_ prefix and eight scopes, including the engagement pair and pdp:evaluate', () => {
+  it('uses the bwrun_ prefix and nine scopes, including the engagement pair, pdp:evaluate and gate2:write', () => {
     expect(BROKER_TOKEN_PREFIX).toBe('bwrun_');
-    expect(BROKER_SCOPES).toHaveLength(8);
+    expect(BROKER_SCOPES).toHaveLength(9);
     expect(BROKER_SCOPES).toEqual(expect.arrayContaining(['engagement:read', 'engagement:write']));
   });
 

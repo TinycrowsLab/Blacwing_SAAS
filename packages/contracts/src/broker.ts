@@ -42,6 +42,7 @@ export const BROKER_SCOPES = [
   'engagement:read',
   'engagement:write',
   'evidence:write',
+  'gate2:write',
   'journal:write',
   'pdp:evaluate',
   'state:read',

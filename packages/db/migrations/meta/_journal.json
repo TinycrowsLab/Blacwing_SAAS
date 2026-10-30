@@ -197,6 +197,13 @@
       "when": 1793330626784,
       "tag": "20261030032346_asset_verification_challenges",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1793332791042,
+      "tag": "20261030035951_gate2_run_pause_fields",
+      "breakpoints": true
     }
   ]
 }

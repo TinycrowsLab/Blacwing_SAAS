@@ -13,6 +13,19 @@ export {
   type TestCaseStatusStore,
 } from './engagement.js';
 export {
+  createGate2ExceptionPort,
+  createPostgresGate2Store,
+  createTemporalGate2Signaler,
+  type Gate2ExceptionPort,
+  type Gate2RaiseStore,
+  type Gate2RunSignaler,
+  type Gate2SignalClient,
+  idempotencyKeyFromHeader,
+  pauseRunForGate2,
+  runStatusOf,
+  truncateSummary,
+} from './gate2.js';
+export {
   InMemoryBrokerAuditSink,
   InMemoryBrokerRunReader,
   InMemoryPdpFactsReader,
@@ -38,6 +51,7 @@ export type * from './ports.js';
 export {
   BROKER_CANDIDATES_ROUTE,
   BROKER_EVIDENCE_ROUTE,
+  BROKER_GATE2_EXCEPTIONS_ROUTE,
   BROKER_JOURNAL_ROUTE,
   BROKER_STATE_ROUTE,
   type BrokerRateLimit,

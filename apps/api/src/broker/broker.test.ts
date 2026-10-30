@@ -947,6 +947,7 @@ describe('public OpenAPI exclusion', () => {
       info: { title: string };
     };
     expect(Object.keys(doc.paths).sort()).toEqual([
+      `${BASE}/gate2/exceptions`,
       `${BASE}/runs/{runId}/candidates`,
       `${BASE}/runs/{runId}/engagement/dispatch`,
       `${BASE}/runs/{runId}/engagement/mentor-reviews`,

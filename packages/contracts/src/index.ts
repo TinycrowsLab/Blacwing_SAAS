@@ -895,7 +895,10 @@ export {
 export * from './test-plan-api.js';
 export * from './test-plan-validation.js';
 export {
+  GATE2_ACTION_SUMMARY_INPUT_MAX,
+  GATE2_ACTION_SUMMARY_MAX,
   GATE2_DECISION_OUTCOMES,
+  GATE2_EXCEPTION_RAISED_SIGNAL,
   GATE2_ENVELOPE_REASON_MAX,
   GATE2_ERROR_CODES,
   GATE2_HUMAN_DECISIONS,
@@ -903,6 +906,10 @@ export {
   GATE2_STATES,
   GATE2_TERMINAL_STATES,
   GATE2_TOOL_NAME_MAX,
+  type BrokerGate2ExceptionRequest,
+  type BrokerGate2ExceptionResponse,
+  brokerGate2ExceptionRequestSchema,
+  brokerGate2ExceptionResponseSchema,
   type Gate2Decide,
   gate2DecideSchema,
   type Gate2DecisionOutcome,

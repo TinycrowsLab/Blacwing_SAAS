@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { check, pgPolicy, pgTable, text, unique } from 'drizzle-orm/pg-core';
 
-import { RUN_STATES } from '@blackwing/contracts';
+import { RUN_STATES, runPauseReasonSchema } from '@blackwing/contracts';
 
 import { idColumn, stateVersion, tenantIdColumn, tenantIdIndex, timestamps } from '../columns.js';
 import { TENANT_PREDICATE } from './columns.js';
@@ -26,6 +26,10 @@ export const runs = pgTable(
     tenantId: tenantIdColumn(),
     /** §3.3 run state; the transition rules live in `packages/domain/run`. */
     state: text('state', { enum: RUN_STATES }).notNull().default('draft'),
+    /** Why the run is `paused` (§3.3, `PausedReason`); null in every other state. */
+    pauseReason: text('pause_reason'),
+    /** The state a `paused` run resumes to (`resumeTo`); null in every other state. */
+    resumeTo: text('resume_to', { enum: RUN_STATES }),
     ...stateVersion(),
     ...timestamps(),
   },
@@ -34,6 +38,14 @@ export const runs = pgTable(
     // Target of the composite foreign keys from child tables: a child can never name another tenant's run.
     unique('runs_tenant_id_id_unique').on(t.tenantId, t.id),
     check('runs_state_check', sql`${t.state} IN (${inList(RUN_STATES)})`),
+    check(
+      'runs_pause_reason_check',
+      sql`${t.pauseReason} IS NULL OR ${t.pauseReason} IN (${inList(runPauseReasonSchema.options)})`,
+    ),
+    check(
+      'runs_pause_fields_check',
+      sql`(${t.state} = 'paused') = (${t.pauseReason} IS NOT NULL AND ${t.resumeTo} IS NOT NULL)`,
+    ),
     pgPolicy('runs_tenant_isolation', {
       as: 'permissive',
       for: 'all',

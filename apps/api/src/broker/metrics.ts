@@ -1,4 +1,8 @@
-import { Counter, Registry } from 'prom-client';
+import { Counter, exponentialBuckets, Histogram, Registry } from 'prom-client';
+
+/** Gate 2 latency buckets: 5 ms doubling, 9 buckets (5 ms to 1.28 s). */
+const GATE2_LATENCY_FIRST_BUCKET_MS = 5;
+const GATE2_LATENCY_BUCKET_COUNT = 9;
 
 /** Run Broker metrics (API-014 observability). One private registry per instance. */
 export interface BrokerMetrics {
@@ -9,6 +13,10 @@ export interface BrokerMetrics {
   readonly authFailures: Counter<'reason'>;
   /** Audit records that could not be written; pages. */
   readonly auditFailures: Counter<'endpoint'>;
+  /** `gate2_exceptions_created_total{batch}`: exceptions opened by a deferred call (not replays). */
+  readonly gate2Created: Counter<'batch'>;
+  /** `gate2_create_latency_ms`: time to persist and signal one Gate 2 exception. */
+  readonly gate2CreateLatency: Histogram;
 }
 
 export function createBrokerMetrics(registry: Registry = new Registry()): BrokerMetrics {
@@ -30,6 +38,18 @@ export function createBrokerMetrics(registry: Registry = new Registry()): Broker
       name: 'broker_audit_failures_total',
       help: 'Run Broker audit events that could not be recorded.',
       labelNames: ['endpoint'],
+      registers: [registry],
+    }),
+    gate2Created: new Counter({
+      name: 'gate2_exceptions_created_total',
+      help: 'Gate 2 exceptions created from deferred tool calls.',
+      labelNames: ['batch'],
+      registers: [registry],
+    }),
+    gate2CreateLatency: new Histogram({
+      name: 'gate2_create_latency_ms',
+      help: 'Time to persist and signal one Gate 2 exception, in milliseconds.',
+      buckets: exponentialBuckets(GATE2_LATENCY_FIRST_BUCKET_MS, 2, GATE2_LATENCY_BUCKET_COUNT),
       registers: [registry],
     }),
   };

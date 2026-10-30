@@ -129,3 +129,41 @@ export const GATE2_ERROR_CODES = [
   'GATE2_DESTRUCTIVE_FORBIDDEN',
 ] as const;
 export type Gate2ErrorCode = (typeof GATE2_ERROR_CODES)[number];
+
+/**
+ * Longest redacted action summary the broker stores (`proposedAction`, §8.7). A longer summary is cut to this
+ * many UTF-8 bytes and marked `truncated`; the call's body stays with its evidence, never in the exception row.
+ */
+export const GATE2_ACTION_SUMMARY_MAX = 4096;
+/** Largest summary the broker accepts before truncating (the body is refused above it). */
+export const GATE2_ACTION_SUMMARY_INPUT_MAX = 65_536;
+
+/**
+ * Signal the broker sends to the run's workflow after it persists an exception (GATE2-002). The payload names the
+ * exception only; the workflow reads the state back through the API, never trusts the signal for a decision.
+ */
+export const GATE2_EXCEPTION_RAISED_SIGNAL = 'gate2ExceptionRaised';
+
+/**
+ * `POST /internal/broker/gate2/exceptions` body, sent by the PDP `PreToolUse` hook when it defers a call (§3.3).
+ * The run and tenant come from the run-scoped token, never from the body. The `Idempotency-Key` header is required
+ * (§9); a retry with the same key returns the existing exception and never duplicates it.
+ */
+export const brokerGate2ExceptionRequestSchema = z.strictObject({
+  sessionId: z.string().min(1).max(LIMITS.shortTextMax),
+  subtaskId: uuidV7Schema.nullish(),
+  testCaseId: uuidV7Schema.nullish(),
+  toolName: z.string().min(1).max(GATE2_TOOL_NAME_MAX),
+  proposedActionSummary: z.string().max(GATE2_ACTION_SUMMARY_INPUT_MAX),
+  envelopeReason: z.string().min(1).max(GATE2_ENVELOPE_REASON_MAX),
+  intrusiveness: intrusivenessClassSchema,
+  batch: z.boolean().default(false),
+});
+export type BrokerGate2ExceptionRequest = z.output<typeof brokerGate2ExceptionRequestSchema>;
+
+/** `POST /internal/broker/gate2/exceptions` answer: the exception and its state (`pending` on creation). */
+export const brokerGate2ExceptionResponseSchema = z.strictObject({
+  exceptionId: uuidV7Schema,
+  state: gate2StateSchema,
+});
+export type BrokerGate2ExceptionResponse = z.infer<typeof brokerGate2ExceptionResponseSchema>;
