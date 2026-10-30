@@ -132,7 +132,9 @@
         "secret.deleted",
         "policy.version.created",
         "policy.activated",
-        "policy.rolled_back"
+        "policy.rolled_back",
+        "tenant.quota_exceeded",
+        "tenant.plan_changed"
       ]
     },
     "severity": {

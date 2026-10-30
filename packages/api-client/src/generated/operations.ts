@@ -254,6 +254,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  getTenantQuotas: {
+    method: 'GET',
+    path: '/v1/tenant/quotas',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   getTenantSettings: {
     method: 'GET',
     path: '/v1/tenant/settings',

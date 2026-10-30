@@ -152,6 +152,9 @@ const SUBCLASSES: readonly (readonly [
 
 /** Codes whose subclass lives in the package that owns the failure, not here. */
 const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
+  // Plan quota refusals, apps/api quota (TENANT-009): QuotaExceededError and CostCapExceededError.
+  'QUOTA_EXCEEDED',
+  'COST_CAP_EXCEEDED',
   // Notification channel API, apps/api notification-channels (NOTIFY-001): thrown as plain AppErrors.
   'NOTIFICATION_CHANNEL_INVALID',
   'CHANNEL_NAME_CONFLICT',

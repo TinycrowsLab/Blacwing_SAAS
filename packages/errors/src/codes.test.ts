@@ -74,6 +74,8 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   AUTHZ_STEPUP_REQUIRED: 401,
   ASSET_STALE_WRITE: 409,
   ASSET_IN_USE: 409,
+  QUOTA_EXCEEDED: 409,
+  COST_CAP_EXCEEDED: 402,
   ASSET_INVALID_IDENTIFIER: 422,
   ASSET_VERIFICATION_ILLEGAL_TRANSITION: 409,
   ASSET_VERIFICATION_PROBE_UNAVAILABLE: 503,
@@ -227,7 +229,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(199);
+    expect(ERROR_CODE_LIST).toHaveLength(201);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -391,6 +393,8 @@ describe('error-code registry', () => {
       | 'AUTHZ_STEPUP_REQUIRED'
       | 'ASSET_STALE_WRITE'
       | 'ASSET_IN_USE'
+      | 'QUOTA_EXCEEDED'
+      | 'COST_CAP_EXCEEDED'
       | 'ASSET_INVALID_IDENTIFIER'
       | 'ASSET_VERIFICATION_ILLEGAL_TRANSITION'
       | 'ASSET_VERIFICATION_PROBE_UNAVAILABLE'

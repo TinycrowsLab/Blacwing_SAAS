@@ -310,6 +310,11 @@ export {
   type PlanValidationSnapshot,
 } from './plan-validation.repository.js';
 export {
+  type QuotaCountResource,
+  QuotaUsageRepository,
+  type QuotaUsageCounts,
+} from './quota.repository.js';
+export {
   TenantHaltRepository,
   type TenantHaltRepositoryOptions,
 } from './tenant-halt.repository.js';

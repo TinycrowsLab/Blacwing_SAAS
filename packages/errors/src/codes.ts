@@ -428,6 +428,12 @@ const DEFINITIONS = {
   // standing authorisation still covers.
   ASSET_STALE_WRITE: { status: 409, title: 'Stale asset write', retryable: false },
   ASSET_IN_USE: { status: 409, title: 'Asset in use', retryable: false },
+  // A creation refused because the tenant reached a count limit of its plan (TENANT-009). Not retried unchanged:
+  // it succeeds only after usage falls or the plan changes. Metadata names the resource, limit and used.
+  QUOTA_EXCEEDED: { status: 409, title: 'Plan quota exceeded', retryable: false },
+  // The tenant's monthly cost cap is reached (TENANT-009, COST). Payment-required status by design: the cap blocks new
+  // spend until the next UTC month or a plan change. Not retried unchanged.
+  COST_CAP_EXCEEDED: { status: 402, title: 'Monthly cost cap exceeded', retryable: false },
   ASSET_INVALID_IDENTIFIER: { status: 422, title: 'Invalid asset identifier', retryable: false },
   // Ownership verification (ASSET-003). A transition the state machine refuses (e.g. verifying a rejected asset),
   // and a check whose probe is not deployed for the method (fail closed; the asset stays unverified).

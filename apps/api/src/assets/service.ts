@@ -34,6 +34,7 @@ import { auditSqlTx } from './audit-tx.js';
 import { AssetInUseError, AssetStaleWriteError } from './errors.js';
 import { normaliseIdentifiers } from './identifiers.js';
 import { canonicalize, parseIfMatch, versionEtag, type IfMatch } from '../concurrency/index.js';
+import { quotaErrorOf, type QuotaDenial, type QuotaEnforcer } from '../quota/service.js';
 
 import type { AssetMetrics } from './metrics.js';
 import type { AssetPolicyEngine, AssetPolicyResource } from './policy.js';
@@ -92,6 +93,8 @@ export interface AssetServiceDeps {
   readonly policy: AssetPolicyEngine;
   readonly audit?: AuditEmitter;
   readonly references?: AssetReferenceReader;
+  /** Plan quota check at creation (TENANT-009): runs inside the create transaction, so the count and the insert agree. */
+  readonly quota?: QuotaEnforcer;
   readonly metrics: AssetMetrics;
   readonly logger: Pick<Logger, 'info'>;
 }
@@ -167,51 +170,59 @@ export class AssetService {
       environment: body.environment,
       ownerUserId: body.ownerUserId,
     });
-    return this.withSpan('create', () =>
-      this.deps.repository.transact('create', async (tx) => {
-        const roles = await this.memberRoles(tx, principal.userId);
-        this.authorise(principal, roles, 'create', {
-          kind: 'tenant',
-          tenantId: principal.tenantId,
-        });
-        if (key !== null) {
-          const replay = await this.replayOf(tx, key, fingerprint);
-          if (replay !== undefined) return replay;
-        }
-        await this.assertMember(tx, body.ownerUserId);
-        const id = newId();
-        const row = await this.deps.repository.insert(tx, principal.tenantId, {
-          id,
-          publicId: publicId('asset', id),
-          type: body.type,
-          name: body.name,
-          identifiers,
-          environment: body.environment,
-          ownerUserId: body.ownerUserId,
-          idempotencyKey: key,
-          idempotencyFingerprint: key === null ? null : fingerprint,
-        });
-        if (row === undefined) {
-          // A concurrent request with the same key won the unique index: answer with its asset.
-          const replay = key === null ? undefined : await this.replayOf(tx, key, fingerprint);
-          if (replay !== undefined) return replay;
-          throw new AppError('INTERNAL', 'asset insert produced no row');
-        }
-        await this.audit.emitAuditInTx(
-          auditSqlTx(tx),
-          this.auditInput(principal, 'asset.created', row, {
-            assetType: row.type,
-            environment: row.environment,
-            identifierCount: row.identifiers.length,
-          }),
-        );
-        this.deps.logger.info(
-          { assetId: row.publicId, tenantId: principal.tenantId, actorId: principal.userId },
-          'asset.created',
-        );
-        return { status: HTTP_CREATED, view: toAssetView(row, warnings) };
-      }),
+    const result = await this.withSpan('create', () =>
+      this.deps.repository.transact<AssetCreateResult | { readonly denied: QuotaDenial }>(
+        'create',
+        async (tx) => {
+          const roles = await this.memberRoles(tx, principal.userId);
+          this.authorise(principal, roles, 'create', {
+            kind: 'tenant',
+            tenantId: principal.tenantId,
+          });
+          if (key !== null) {
+            const replay = await this.replayOf(tx, key, fingerprint);
+            if (replay !== undefined) return replay;
+          }
+          await this.assertMember(tx, body.ownerUserId);
+          // A refused quota commits its audit row and returns the denial; the throw happens after the commit.
+          const denied = await this.deps.quota?.enforceInTx(tx, principal, 'assets');
+          if (denied !== undefined) return { denied };
+          const id = newId();
+          const row = await this.deps.repository.insert(tx, principal.tenantId, {
+            id,
+            publicId: publicId('asset', id),
+            type: body.type,
+            name: body.name,
+            identifiers,
+            environment: body.environment,
+            ownerUserId: body.ownerUserId,
+            idempotencyKey: key,
+            idempotencyFingerprint: key === null ? null : fingerprint,
+          });
+          if (row === undefined) {
+            // A concurrent request with the same key won the unique index: answer with its asset.
+            const replay = key === null ? undefined : await this.replayOf(tx, key, fingerprint);
+            if (replay !== undefined) return replay;
+            throw new AppError('INTERNAL', 'asset insert produced no row');
+          }
+          await this.audit.emitAuditInTx(
+            auditSqlTx(tx),
+            this.auditInput(principal, 'asset.created', row, {
+              assetType: row.type,
+              environment: row.environment,
+              identifierCount: row.identifiers.length,
+            }),
+          );
+          this.deps.logger.info(
+            { assetId: row.publicId, tenantId: principal.tenantId, actorId: principal.userId },
+            'asset.created',
+          );
+          return { status: HTTP_CREATED, view: toAssetView(row, warnings) };
+        },
+      ),
     );
+    if ('denied' in result) throw quotaErrorOf(result.denied);
+    return result;
   }
 
   async get(principal: AssetPrincipal, assetId: string): Promise<AssetView> {

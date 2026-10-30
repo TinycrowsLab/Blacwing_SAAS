@@ -143,6 +143,8 @@ const RELEASED_ACTIONS = [
   'policy.version.created',
   'policy.activated',
   'policy.rolled_back',
+  'tenant.quota_exceeded',
+  'tenant.plan_changed',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

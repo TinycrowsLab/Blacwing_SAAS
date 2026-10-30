@@ -23,6 +23,7 @@ import { AssetVerificationService } from './verification-service.js';
 import { AssetVerificationController } from './verification.controller.js';
 import { API_LOGGER } from '../bootstrap/tokens.js';
 
+import type { QuotaEnforcer } from '../quota/service.js';
 import type { VerificationMethod } from '@blackwing/contracts';
 import type { Logger } from '@blackwing/logger';
 import type { Registry } from 'prom-client';
@@ -40,6 +41,8 @@ export interface AssetsModuleOptions {
   readonly verificationProbes?: readonly VerificationProbe[];
   /** Overrides of the verification tunables (`bw.asset.*`); unset keys keep the issue's defaults. */
   readonly verificationPolicy?: Partial<VerificationPolicy>;
+  /** The plan quota enforcer (TENANT-009). Required: an asset create is never unchecked against the plan. */
+  readonly quota: QuotaEnforcer;
 }
 
 /** The probes keyed by method. Two probes for one method would make the choice silent, so that is refused. */
@@ -77,6 +80,7 @@ export class AssetsModule {
               repository: new AssetRepository({ db: options.database }),
               projections: new AssetListReader({ db: options.database }),
               policy: createCedarAssetPolicy(),
+              quota: options.quota,
               metrics,
               logger,
             }),

@@ -904,6 +904,22 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'The tenant active policy pointer was moved back to an earlier version (history is kept).',
   },
+  // plans and quotas (TENANT-009): appended. Metadata carries the resource, the limit and usage counts only.
+  {
+    action: 'tenant.quota_exceeded',
+    defaultSeverity: 'warning',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'A creation was refused because the tenant reached its plan quota or monthly cost cap; metadata carries the resource, limit and used.',
+  },
+  {
+    action: 'tenant.plan_changed',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A tenant was moved to another subscription plan; metadata carries the old and new plan names.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

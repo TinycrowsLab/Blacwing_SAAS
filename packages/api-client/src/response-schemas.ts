@@ -138,6 +138,11 @@ const oncallRosterPageSchema = z.strictObject({
  * Zod schema per successful status of every operation (non-prod response validation). The record is
  * keyed by every `OperationId`, so an operation added to the spec fails to compile until it is mapped.
  */
+const quotaCountSchema = z.strictObject({
+  used: z.number().int().nonnegative(),
+  limit: z.number().int().nonnegative().nullable(),
+});
+
 export const RESPONSE_SCHEMAS: Readonly<
   Record<OperationId, Readonly<Partial<Record<number, z.ZodType>>>>
 > = {
@@ -162,6 +167,21 @@ export const RESPONSE_SCHEMAS: Readonly<
   updateNotificationChannel: { 200: notificationChannelViewSchema },
   deleteNotificationChannel: { 200: notificationChannelViewSchema },
   getCurrentTenant: { 200: orgProfileSchema },
+  // Plan quotas (TENANT-009): used against limit per resource; `limit: null` is unlimited.
+  getTenantQuotas: {
+    200: z.object({
+      plan: z.enum(['free', 'pro', 'enterprise']),
+      assets: quotaCountSchema,
+      concurrentRuns: quotaCountSchema,
+      members: quotaCountSchema,
+      monthlyCostUsd: z.object({
+        used: z.number().nonnegative(),
+        limit: z.number().nonnegative().nullable(),
+        periodStart: z.string(),
+        periodEnd: z.string(),
+      }),
+    }),
+  },
   updateCurrentTenant: { 200: orgProfileSchema },
   listServiceAccounts: {
     200: z

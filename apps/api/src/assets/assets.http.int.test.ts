@@ -23,6 +23,8 @@ import { createApiApp, type ApiApp } from '../bootstrap/create-app.js';
 import { createHttpMetrics } from '../bootstrap/metrics.js';
 import { loadApiConfig } from '../config.js';
 import { AssetsModule } from './module.js';
+import { createQuotaMetrics } from '../quota/metrics.js';
+import { QuotaService } from '../quota/service.js';
 
 import type { TenantPrincipal } from '@blackwing/db/tenant-context';
 import type {
@@ -156,9 +158,14 @@ async function createAs(caller: Caller, overrides: Record<string, unknown> = {})
 beforeAll(async () => {
   handle = await withPostgres({ migrations: (owner) => migrateDatabase(owner) });
   await withTenant(db(), tenantA, (tx) =>
-    tx
-      .insert(tenants)
-      .values({ id: tenantA, slug: 'acme-assets', name: 'Acme', region: 'eu-west-1' }),
+    tx.insert(tenants).values({
+      id: tenantA,
+      slug: 'acme-assets',
+      name: 'Acme',
+      region: 'eu-west-1',
+      // Enterprise is unlimited: this suite creates many assets; plan quotas have their own suite (quota.int.test.ts).
+      plan: 'enterprise',
+    }),
   );
   await withTenant(db(), tenantB, (tx) =>
     tx
@@ -192,6 +199,11 @@ beforeAll(async () => {
         database: db(),
         registry: metrics.registry,
         verificationProbes: [dnsStubProbe],
+        quota: new QuotaService({
+          database: db(),
+          metrics: createQuotaMetrics(metrics.registry),
+          logger,
+        }),
       }),
     ],
   });
