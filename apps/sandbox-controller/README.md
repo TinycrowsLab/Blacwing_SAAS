@@ -100,3 +100,35 @@ for a kind this build does not ship. The factory no longer uses it, since both s
 
 The integration test (`drivers/kubernetes.int.test.ts`) runs against a real k3s cluster with the gVisor RuntimeClass
 when `SBX_IT=1`, and is skipped otherwise.
+
+## Run CA (SANDBOX-008)
+
+`src/ca/` issues one MITM CA per run, shared by every sandbox of that run (`createRunCaProvisioner`, the
+`CaProvisioner` port in `drivers/types.ts`).
+
+- **Certificate:** ECDSA P-256, self-signed, `CN=Blackwing Run <runId>`, `basicConstraints CA:TRUE, pathlen:0`,
+  keyCertSign and cRLSign. `notBefore` is backdated 60 s for clock skew. `notAfter` is the run window end plus
+  5 min grace, capped at the standing-authorisation expiry (§8.1).
+- **Key:** written once (`cas: 0`) to OpenBao KV v2 at `secret/data/tenants/<tenant>/runs/<run>/run-ca/key`,
+  under the AppRole `bw-run-ca` (`infra/compose/openbao/policies/bw-run-ca.hcl`, one segment per tenant and run).
+  Only an `openbao://` reference leaves the provisioner (`keyRef`). The key is never returned, logged or put in a spec.
+- **Certificate:** stored beside the key at `.../run-ca/cert`. `caBundleRef` points there, and that is the only
+  CA material a sandbox sees.
+- **Issue:** idempotent per run (a second call returns the same CA). Concurrent calls in one process share one
+  issuance. The key is created first, and any later failure rolls the run back (deletes both records and withdraws
+  the run), so an unaudited or unpublished CA never stays live. An unreachable store fails closed.
+- **Publish:** the certificate and its `sha256:` fingerprint go to the egress gateway through `EgressCaRegistry`.
+  The shipped implementation is `createInMemoryEgressCaRegistry` (process-local). The control-plane wire format
+  is EGRESS-006's; the gateway never receives a key.
+- **Revoke:** `revokeRunCa` deletes both KV metadata entries (later reads 404) and withdraws the run. It is
+  idempotent and audits `run_ca.revoked` only when a CA existed. Run end and kill call it. SANDBOX-010 wires those calls.
+- **Sandbox trust:** `caTrustFragment(caBundleRef)` returns the `SandboxSpec` fragment: a read-only `ca` mount at
+  `/etc/bw/ca.pem` and `NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`, `REQUESTS_CA_BUNDLE`, `CURL_CA_BUNDLE`. The contract
+  rejects PEM in `caBundleRef` and in env.
+- **Audit and metrics:** `run_ca.issued` (`tenantId`, `runId`, `fingerprintSha256`, `notAfter`) and `run_ca.revoked`
+  are emitted as structured `audit` log lines until the `@blackwing/audit` outbox (#82) replaces them. Counters:
+  `sbx_ca_issued_total`, `sbx_ca_revoked_total`.
+
+Tests: `src/ca/*.test.ts` (unit, with an in-memory KV fake) and `src/ca/run-ca.int.test.ts` (real OpenBao via
+Testcontainers, plus a stub HTTPS gateway whose certificate the run CA signed. A child Node process trusts it only
+through the injected `NODE_EXTRA_CA_CERTS`). Run them with `pnpm --filter sandbox-controller test:int`.

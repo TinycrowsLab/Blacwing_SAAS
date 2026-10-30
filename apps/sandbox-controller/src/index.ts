@@ -57,11 +57,33 @@ export {
   type DriverFactory,
   FakeDriver,
   type FakeDriverOptions,
+  type IssueRunCaInput,
   type RunCaRef,
   type RunScope,
   type SandboxDriver,
   UnavailableDriver,
 } from './drivers/index.js';
+export {
+  createInMemoryEgressCaRegistry,
+  type EgressCaPolicyEntry,
+  type EgressCaRegistry,
+  type InMemoryEgressCaRegistry,
+} from './ca/egress-registry.js';
+export {
+  createRunCaLogAuditEmitter,
+  createRunCaProvisioner,
+  RUN_CA_BACKDATE_MS,
+  RUN_CA_GRACE_MS,
+  type RunCaAuditEmitter,
+  type RunCaAuditEvent,
+  type RunCaProvisionerDeps,
+} from './ca/run-ca.js';
+export {
+  type CaTrustFragment,
+  caTrustFragment,
+  SANDBOX_CA_ENV,
+  SANDBOX_CA_TARGET,
+} from './ca/trust.js';
 export {
   type AuthFailureReason,
   SBX_ERROR_CODES,

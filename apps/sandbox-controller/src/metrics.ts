@@ -9,6 +9,10 @@ export interface ControllerMetrics {
   readonly buildInfo: Gauge<'version' | 'commit'>;
   /** Rejected run tokens, by bounded reason code (never the token). */
   readonly authFailures: Counter<'reason'>;
+  /** Run CAs issued (SANDBOX-008). Counted once per new CA; idempotent re-reads do not count. */
+  readonly caIssued: Counter;
+  /** Run CAs revoked (SANDBOX-008). Counted only when a CA was actually stored and then deleted. */
+  readonly caRevoked: Counter;
 }
 
 /** A private registry per instance, so tests and multiple instances never share series. */
@@ -36,6 +40,16 @@ export function createControllerMetrics(version: string, commit: string): Contro
       name: 'sbx_auth_failures_total',
       help: 'Internal API requests refused for a missing or invalid run-scoped token.',
       labelNames: ['reason'],
+      registers: [registry],
+    }),
+    caIssued: new Counter({
+      name: 'sbx_ca_issued_total',
+      help: 'Per-run MITM CAs issued.',
+      registers: [registry],
+    }),
+    caRevoked: new Counter({
+      name: 'sbx_ca_revoked_total',
+      help: 'Per-run MITM CAs revoked (key deleted).',
       registers: [registry],
     }),
   };

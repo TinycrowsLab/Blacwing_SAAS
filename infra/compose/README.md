@@ -375,7 +375,8 @@ pnpm dev:openbao:bootstrap       # configure it; safe to re-run at any time
 - an app token from the orphan, periodic token role `bw-app` is in `.bw-dev/openbao/app-token` (mode `0600`,
   in the ignore list). A still-valid token with the same policies is kept; otherwise a new one is issued.
 - AppRole auth is enabled with the SECRETS-001 roles `bw-kek-app` (encrypt/decrypt/rewrap/rotate on `tenant-*`)
-  and `bw-kek-provisioner` (create/configure tenant keys and their lifecycle marker); their policies are
+  and `bw-kek-provisioner` (create/configure tenant keys and their lifecycle marker), plus `bw-run-ca` for the
+  sandbox controller's per-run CA keys (SANDBOX-008, `secret/data/tenants/+/runs/+/run-ca/*` only); their policies are
   `openbao/policies/*.hcl`, and `<role>.role-id` / `<role>.secret-id` (mode `0600`) land in
   `.bw-dev/openbao/`. Apps pass them as `OPENBAO_ROLE_ID` / `OPENBAO_SECRET_ID` to `@blackwing/secrets`.
   Tenant keys are created with `deletion_allowed:true` so they can be crypto-shredded; always disable a

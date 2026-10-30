@@ -10,8 +10,8 @@
 #      deletion allowed for shred, SECRETS-001) for BW_DEV_OPENBAO_TENANTS (default: acme);
 #   4. writes dev placeholder platform secrets under secret/platform/* only when absent (cas=0);
 #   5. writes least-privilege policies bw-app-platform + bw-app-tenant-<slug>;
-#   5b. enables AppRole auth, loads policies/*.hcl (bw-kek-app, bw-kek-provisioner) and creates the two
-#       roles (SECRETS-001); role-id / secret-id go to $STATE_DIR/<role>.{role-id,secret-id} (0600);
+#   5b. enables AppRole auth, loads policies/*.hcl (bw-kek-app, bw-kek-provisioner, bw-sa-signing,
+#       bw-run-ca) and creates the roles (SECRETS-001, SANDBOX-008); role-id / secret-id go to $STATE_DIR/<role>.{role-id,secret-id} (0600);
 #   6. keeps the app token in $STATE_DIR/app-token (0600) when it is still valid with exactly those
 #      policies, otherwise issues a new one from the bw-app token role.
 # Nothing that already exists is re-created: no duplicate mounts, keys or secret versions.
@@ -283,7 +283,7 @@ if [[ -z "$(jq -r '.data["approle/"].type // empty' <<<"$auths")" ]]; then
   expect 'enable approle' 200 204
   log "enabled auth/approle/"
 fi
-for role in bw-kek-app bw-kek-provisioner bw-sa-signing; do
+for role in bw-kek-app bw-kek-provisioner bw-sa-signing bw-run-ca; do
   put_policy "$role" "$(cat "$SCRIPT_DIR/policies/$role.hcl")"
   api POST "auth/approle/role/$role" "$(jq -cn --arg p "$role" '{
     token_policies: [$p], token_ttl: "1h", token_max_ttl: "4h", secret_id_num_uses: 0, secret_id_ttl: 0

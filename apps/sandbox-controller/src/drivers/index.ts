@@ -14,7 +14,7 @@ import type { SandboxDriverKind } from '@blackwing/contracts';
 
 export type { SandboxDriver } from './driver.js';
 export { FakeDriver, type FakeDriverOptions } from './fake.js';
-export type { CaProvisioner, RunCaRef, RunScope } from './types.js';
+export type { CaProvisioner, IssueRunCaInput, RunCaRef, RunScope } from './types.js';
 
 /**
  * Stand-in for a driver kind this build does not ship. Every operation rejects, so `/readyz` stays 503 and
