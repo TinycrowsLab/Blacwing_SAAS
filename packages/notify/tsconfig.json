@@ -6,5 +6,27 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
   "include": ["src"],
-  "references": []
+  "references": [
+    {
+      "path": "../audit"
+    },
+    {
+      "path": "../contracts"
+    },
+    {
+      "path": "../db"
+    },
+    {
+      "path": "../errors"
+    },
+    {
+      "path": "../ids"
+    },
+    {
+      "path": "../logger"
+    },
+    {
+      "path": "../testing"
+    }
+  ]
 }

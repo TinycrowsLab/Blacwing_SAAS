@@ -1372,10 +1372,40 @@ importers:
 
   packages/notify:
     dependencies:
+      '@blackwing/audit':
+        specifier: workspace:*
+        version: link:../audit
+      '@blackwing/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@blackwing/db':
+        specifier: workspace:*
+        version: link:../db
+      '@blackwing/errors':
+        specifier: workspace:*
+        version: link:../errors
+      '@blackwing/ids':
+        specifier: workspace:*
+        version: link:../ids
+      '@blackwing/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@opentelemetry/api':
+        specifier: 'catalog:'
+        version: 1.9.1
+      drizzle-orm:
+        specifier: 0.45.3
+        version: 0.45.3(@opentelemetry/api@1.9.1)(@types/pg@8.23.1)(pg@8.23.1)
       nodemailer:
         specifier: 8.0.11
         version: 8.0.11
+      prom-client:
+        specifier: 'catalog:'
+        version: 15.1.3
     devDependencies:
+      '@blackwing/testing':
+        specifier: workspace:*
+        version: link:../testing
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5

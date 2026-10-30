@@ -10,13 +10,24 @@
   },
   "scripts": {
     "lint": "eslint . --max-warnings=0",
-    "test": "vitest run",
+    "test": "vitest run --config src/vitest.config.ts",
+    "test:int": "vitest run --config src/vitest.int.config.ts",
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "nodemailer": "8.0.11"
+    "@blackwing/audit": "workspace:*",
+    "@blackwing/contracts": "workspace:*",
+    "@blackwing/db": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/ids": "workspace:*",
+    "@blackwing/logger": "workspace:*",
+    "@opentelemetry/api": "catalog:",
+    "drizzle-orm": "0.45.3",
+    "nodemailer": "8.0.11",
+    "prom-client": "catalog:"
   },
   "devDependencies": {
+    "@blackwing/testing": "workspace:*",
     "@types/node": "catalog:",
     "@types/nodemailer": "8.0.2",
     "typescript": "catalog:",

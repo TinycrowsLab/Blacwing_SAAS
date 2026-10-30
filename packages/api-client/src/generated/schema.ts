@@ -1138,7 +1138,9 @@ export interface components {
         | 'asset.verification_failed'
         | 'asset.verification_cancelled'
         | 'graph.surface.upserted'
-        | 'notification.channel_changed';
+        | 'notification.channel_changed'
+        | 'notification.requested'
+        | 'notification.unrouted';
       /** @enum {string} */
       severity: 'info' | 'notice' | 'warning' | 'critical';
       /** @description Who acted. `email` is only returned to auditors. */
@@ -2844,7 +2846,9 @@ export interface operations {
           | 'asset.verification_failed'
           | 'asset.verification_cancelled'
           | 'graph.surface.upserted'
-          | 'notification.channel_changed';
+          | 'notification.channel_changed'
+          | 'notification.requested'
+          | 'notification.unrouted';
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */
         targetId?: string;
         /** @example 01890a5d-ac96-774b-bcce-b302099a8058 */

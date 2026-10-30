@@ -764,6 +764,22 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'A notification channel was created, changed, disabled or had its secret reference rotated.',
   },
+  // notify core (NOTIFY-002): a gate or kill notice was requested; metadata records the counts, never the recipients or body.
+  {
+    action: 'notification.requested',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description:
+      'A gate or kill notification was requested for a tenant; metadata records the event and how many deliveries were enqueued.',
+  },
+  // notify core (NOTIFY-002): a request matched no channel and no fallback; recorded, never silently dropped.
+  {
+    action: 'notification.unrouted',
+    defaultSeverity: 'warning',
+    isAlwaysAudited: true,
+    description:
+      'A notification matched no delivery channel and no fallback recipient, so nothing was enqueued.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */
