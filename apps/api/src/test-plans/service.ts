@@ -17,11 +17,9 @@ import {
 } from '@blackwing/contracts';
 import { ConcurrencyError, type TestCaseRow, type TestPlanRow } from '@blackwing/db';
 import { hashTenantId } from '@blackwing/db/tenant-context';
-import { hasPermission } from '@blackwing/domain';
 import {
   AppError,
   EtagMismatchError,
-  ForbiddenError,
   InternalError,
   PlanPayloadTooLargeError,
   PlanVersionImmutableError,
@@ -30,6 +28,7 @@ import {
   ValidationError,
 } from '@blackwing/errors';
 
+import { rolesWithPermission, type TestPlanPrincipal } from './authorise.js';
 import { computeEtag, requireIfMatch } from '../concurrency/index.js';
 import { invalidCursor } from '../pagination/index.js';
 
@@ -37,16 +36,12 @@ import type { TestPlanMetrics, TestPlanMutation } from './metrics.js';
 import type { TestPlanMemberships, TestPlanStore } from './ports.js';
 import type { Logger } from '@blackwing/logger';
 
+export type { TestPlanPrincipal } from './authorise.js';
+
 const TRACER_NAME = '@blackwing/api/test-plans';
 /** Attempts at creating the next version when a concurrent writer takes the same number first. */
 const MAX_VERSION_ATTEMPTS = 3;
 const JSON_PAYLOAD_FIELDS = ['targets', 'budget', 'oracle', 'negativeControl'] as const;
-
-/** The caller: the tenant the guard resolved and the user acting in it. */
-export interface TestPlanPrincipal {
-  readonly tenantId: string;
-  readonly actorId: string;
-}
 
 /** A plan or case answer with the ETag that validates it. */
 export interface Versioned<T> {
@@ -64,7 +59,6 @@ export interface TestPlanServiceDeps {
 
 const MAX_VERSION = 2_147_483_647;
 const versionSchema = z.coerce.number().int().min(1).max(MAX_VERSION);
-const uuidSchema = z.uuid();
 
 /** Parses a request value at the boundary; a failure names the offending fields, never their values. */
 function parseRequest<V>(schema: z.ZodType<V>, value: unknown, what: string): V {
@@ -377,15 +371,7 @@ export class TestPlanService {
 
   /** Reads need `testplan:read`, writes `testplan:edit`. No membership (or no roles) means no permission. */
   private async authorise(principal: TestPlanPrincipal, permission: Permission): Promise<void> {
-    const userId = uuidSchema.safeParse(principal.actorId);
-    const roles = userId.success
-      ? await this.deps.memberships.rolesOf(principal.tenantId, userId.data)
-      : [];
-    if (!hasPermission(roles, permission)) {
-      throw new ForbiddenError('the caller may not use test plans here', {
-        detail: `Missing permission ${permission} in this tenant.`,
-      });
-    }
+    await rolesWithPermission(this.deps.memberships, principal, permission);
   }
 
   private planView(plan: TestPlanRow, cases: readonly TestCaseRow[]): Versioned<TestPlanView> {

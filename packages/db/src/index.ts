@@ -276,6 +276,15 @@ export {
   type StandingAuthorisationReaderOptions,
 } from './standing-authorisation-reader.repository.js';
 export {
+  PlanValidationRepository,
+  type PlanAuthorisation,
+  type PlanRunBudgets,
+  type PlanValidatedAuditEvent,
+  type PlanValidationAuditHook,
+  type PlanValidationRepositoryOptions,
+  type PlanValidationSnapshot,
+} from './plan-validation.repository.js';
+export {
   TenantHaltRepository,
   type TenantHaltRepositoryOptions,
 } from './tenant-halt.repository.js';

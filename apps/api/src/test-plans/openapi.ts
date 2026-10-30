@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+  planValidationResultSchema,
   testCaseCreateBodySchema,
   testCaseViewSchema,
   testPlanPageSchema,
@@ -94,6 +95,22 @@ const casePatchDocument = caseCreateDocument
   .refine((patch) => Object.keys(patch).length > 0, {
     message: 'at least one field must be provided',
   });
+const EXAMPLE_VALIDATION = {
+  planId: '0196f5c2-7a1e-7c3a-9b1d-2f4e6a8b0c11',
+  runId: '0196f5c2-7a1e-7c3a-9b1d-2f4e6a8b0c10',
+  version: 1,
+  saId: '0196f5c2-7a1e-7c3a-9b1d-2f4e6a8b0c20',
+  ok: true,
+  gate1Required: true,
+  violations: [],
+  budgetTotals: {
+    totalRequests: 50,
+    totalBytes: 1000000,
+    perClassCounts: { passive: 0, active_safe: 1, state_changing: 0, destructive: 0 },
+  },
+  validatedAt: '2026-10-30T00:00:00.000Z',
+};
+
 const planDocument = testPlanSummarySchema.extend({ cases: z.array(caseDocument) });
 const pageDocument = testPlanPageSchema.extend({ items: z.array(testPlanSummarySchema) });
 
@@ -262,6 +279,36 @@ export function testPlansOpenApiModule(): OpenApiModule {
           responses: { ...caseResponse('The new case and its ETag.', '201'), ...problem },
         },
       },
+      '/v1/test-plans/{planId}/validation': {
+        get: {
+          operationId: 'validateTestPlan',
+          tags: ['test-plans'],
+          summary: 'Validate a plan version against its standing authorisation',
+          description:
+            'Checks every case against the run standing authorisation (class ceiling, pre-approved classes, scope, roles, oracle, negative control and budgets), the Cedar plan policy and the run budget. ok is true only when violations is empty. Writes one test_plan.validated audit event.',
+          security: SECURITY,
+          parameters: [
+            {
+              name: 'planId',
+              in: 'path',
+              required: true,
+              schema: { type: 'string', format: 'uuid' },
+            },
+          ],
+          responses: {
+            '200': {
+              description: 'The validation result, with every violation.',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/PlanValidationResult' },
+                  examples: { valid: { summary: 'A valid plan', value: EXAMPLE_VALIDATION } },
+                },
+              },
+            },
+            ...problem,
+          },
+        },
+      },
       '/v1/test-cases/{caseId}': {
         patch: {
           operationId: 'updateTestCase',
@@ -317,6 +364,7 @@ export function testPlansOpenApiModule(): OpenApiModule {
       TestCaseView: jsonSchema(caseDocument),
       TestPlanView: jsonSchema(planDocument),
       TestPlanPage: jsonSchema(pageDocument),
+      PlanValidationResult: jsonSchema(planValidationResultSchema),
     },
   };
 }

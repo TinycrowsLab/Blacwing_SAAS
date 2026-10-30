@@ -14,11 +14,17 @@ import {
 
 import { getTenantContextOrThrow } from '@blackwing/db/tenant-context';
 
-import { TEST_PLAN_SERVICE } from './tokens.js';
+import { PLAN_VALIDATION_SERVICE, TEST_PLAN_SERVICE } from './tokens.js';
 import { Idempotent } from '../idempotency/index.js';
 
 import type { Versioned, TestPlanService } from './service.js';
-import type { TestCaseView, TestPlanPage, TestPlanView } from '@blackwing/contracts';
+import type { PlanValidationService } from './validation/service.js';
+import type {
+  PlanValidationResult,
+  TestCaseView,
+  TestPlanPage,
+  TestPlanView,
+} from '@blackwing/contracts';
 import type { FastifyReply } from 'fastify';
 
 const HTTP_CREATED = 201;
@@ -35,7 +41,10 @@ function answer<T>(reply: FastifyReply, view: Versioned<T>, status = 200): T {
  */
 @Controller()
 export class TestPlanController {
-  constructor(@Inject(TEST_PLAN_SERVICE) private readonly service: TestPlanService) {}
+  constructor(
+    @Inject(TEST_PLAN_SERVICE) private readonly service: TestPlanService,
+    @Inject(PLAN_VALIDATION_SERVICE) private readonly validation: PlanValidationService,
+  ) {}
 
   @Post('runs/:runId/test-plans')
   @Idempotent()
@@ -69,6 +78,13 @@ export class TestPlanController {
       reply,
       await this.service.getVersion({ tenantId, actorId: actor.id }, runId, version),
     );
+  }
+
+  /** Validates a plan version (PLAN-006). A verdict with violations is a 200; only a missing plan is an error. */
+  @Get('test-plans/:planId/validation')
+  async validatePlan(@Param('planId') planId: string): Promise<PlanValidationResult> {
+    const { tenantId, actor } = getTenantContextOrThrow();
+    return this.validation.validatePlan({ tenantId, actorId: actor.id }, planId);
   }
 
   @Post('test-plans/:planId/cases')

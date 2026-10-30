@@ -648,6 +648,14 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'config_change',
     description: 'An asset owner was assigned or changed.',
   },
+  // plan validation (PLAN-006, #396): appended; metadata carries ids, the violation count and the SA id only
+  {
+    action: 'test_plan.validated',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description:
+      'A test plan version was validated against its standing authorisation, policy and budgets (PLAN-006).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

@@ -18,6 +18,12 @@ import {
   type MemoryTestPlanStore,
 } from './fixtures.test-helpers.js';
 import { TestPlanModule } from './module.js';
+import {
+  memoryPlanValidationStore,
+  planRow,
+  type MemoryPlanValidationStore,
+  validSnapshot,
+} from './validation/fixtures.test-helpers.js';
 import { InMemoryIdempotencyStore } from '../idempotency/memory.js';
 
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -50,12 +56,14 @@ function json(res: { json(): unknown }): Record<string, unknown> {
 let app: NestFastifyApplication;
 let metrics: HttpMetrics;
 let store: MemoryTestPlanStore;
+let validation: MemoryPlanValidationStore;
 let keySeq = 0;
 
 beforeEach(async () => {
   metrics = createHttpMetrics();
   store = memoryTestPlanStore();
   store.seedRun(RUN_A, TENANT_A);
+  validation = memoryPlanValidationStore();
   const created = await createApiApp({
     config: loadApiConfig({ NODE_ENV: 'test', WEB_ORIGIN: 'http://localhost:3000' }),
     logger: createLogger('api', { level: 'silent', nodeEnv: 'test' }),
@@ -71,6 +79,7 @@ beforeEach(async () => {
         }),
         logger: createLogger('api', { level: 'silent', nodeEnv: 'test' }),
         registry: metrics.registry,
+        planValidation: validation,
       }),
     ],
   });
@@ -281,5 +290,50 @@ describe('cases', () => {
       ifMatch: plan.etag,
     });
     expect(foreignPlan.statusCode).toBe(404);
+  });
+});
+
+describe('GET /v1/test-plans/{planId}/validation', () => {
+  it('answers 200 with the verdict for a plan of the caller tenant', async () => {
+    const created = await call('POST', `/v1/runs/${RUN_A}/test-plans`, 'appsec-a', 'a');
+    const planId = String(json(created).planId);
+    validation.seed(
+      validSnapshot({ plan: planRow({ id: planId, runId: RUN_A, tenantId: TENANT_A }) }),
+    );
+    const res = await call('GET', `/v1/test-plans/${planId}/validation`, 'appsec-a', 'a');
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({
+      planId,
+      runId: RUN_A,
+      version: 1,
+      ok: true,
+      violations: [],
+    });
+    expect(validation.events).toHaveLength(1);
+  });
+
+  it('answers 404 plan_not_found for an unknown plan and for another tenant’s plan', async () => {
+    const created = await call('POST', `/v1/runs/${RUN_A}/test-plans`, 'appsec-a', 'a');
+    const planId = String(json(created).planId);
+    const unknown = await call(
+      'GET',
+      '/v1/test-plans/0198f0a0-0000-7000-8000-0000000000ff/validation',
+      'appsec-a',
+      'a',
+    );
+    expect(unknown.statusCode).toBe(404);
+    expect(json(unknown)).toMatchObject({ code: 'plan_not_found' });
+    const other = await call('GET', `/v1/test-plans/${planId}/validation`, 'appsec-b', 'b');
+    expect(other.statusCode).toBe(404);
+  });
+
+  it('answers 403 to a caller of the tenant with no test-plan permission', async () => {
+    const res = await call(
+      'GET',
+      `/v1/test-plans/0198f0a0-0000-7000-8000-0000000000ff/validation`,
+      'appsec-b',
+      'a',
+    );
+    expect(res.statusCode).toBe(403);
   });
 });

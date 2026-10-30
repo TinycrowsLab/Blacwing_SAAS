@@ -1,0 +1,123 @@
+{
+  "$comment": "PLAN-006 (#396) shared Cedar vectors for the plan validation policy (policy.ts). Each vector is one decision: `expect.decision` is the outcome and `expect.policyIds` lists policies that must appear among the determining ones (empty for a plain deny with no permit). Any Go or other engine that reads the same policy text must give the same decisions.",
+  "version": 1,
+  "vectors": [
+    {
+      "name": "appsec engineer in the same tenant, active SA, no restricted cases",
+      "principal": { "userId": "u-1", "tenantId": "t-a", "roles": ["appsec_engineer"] },
+      "resource": {
+        "tenantId": "t-a",
+        "planId": "p-1",
+        "saActive": true,
+        "destructiveCases": 0,
+        "stateChangingCases": 0,
+        "stateChangingAuthorised": false
+      },
+      "expect": { "decision": "allow", "policyIds": [] }
+    },
+    {
+      "name": "org admin in the same tenant is allowed",
+      "principal": { "userId": "u-2", "tenantId": "t-a", "roles": ["org_admin"] },
+      "resource": {
+        "tenantId": "t-a",
+        "planId": "p-1",
+        "saActive": true,
+        "destructiveCases": 0,
+        "stateChangingCases": 0,
+        "stateChangingAuthorised": false
+      },
+      "expect": { "decision": "allow", "policyIds": [] }
+    },
+    {
+      "name": "an auditor has no permit, so the plan is denied with no policy id",
+      "principal": { "userId": "u-3", "tenantId": "t-a", "roles": ["auditor"] },
+      "resource": {
+        "tenantId": "t-a",
+        "planId": "p-1",
+        "saActive": true,
+        "destructiveCases": 0,
+        "stateChangingCases": 0,
+        "stateChangingAuthorised": false
+      },
+      "expect": { "decision": "deny", "policyIds": [] }
+    },
+    {
+      "name": "no roles at all is denied",
+      "principal": { "userId": "u-4", "tenantId": "t-a", "roles": [] },
+      "resource": {
+        "tenantId": "t-a",
+        "planId": "p-1",
+        "saActive": true,
+        "destructiveCases": 0,
+        "stateChangingCases": 0,
+        "stateChangingAuthorised": false
+      },
+      "expect": { "decision": "deny", "policyIds": [] }
+    },
+    {
+      "name": "a principal of another tenant is forbidden by tenant isolation",
+      "principal": { "userId": "u-5", "tenantId": "t-b", "roles": ["appsec_engineer"] },
+      "resource": {
+        "tenantId": "t-a",
+        "planId": "p-1",
+        "saActive": true,
+        "destructiveCases": 0,
+        "stateChangingCases": 0,
+        "stateChangingAuthorised": false
+      },
+      "expect": { "decision": "deny", "policyIds": ["plan.tenant_isolation"] }
+    },
+    {
+      "name": "an inactive SA is forbidden even for an appsec engineer",
+      "principal": { "userId": "u-1", "tenantId": "t-a", "roles": ["appsec_engineer"] },
+      "resource": {
+        "tenantId": "t-a",
+        "planId": "p-1",
+        "saActive": false,
+        "destructiveCases": 0,
+        "stateChangingCases": 0,
+        "stateChangingAuthorised": false
+      },
+      "expect": { "decision": "deny", "policyIds": ["plan.sa_active"] }
+    },
+    {
+      "name": "any destructive case is forbidden",
+      "principal": { "userId": "u-1", "tenantId": "t-a", "roles": ["appsec_engineer"] },
+      "resource": {
+        "tenantId": "t-a",
+        "planId": "p-1",
+        "saActive": true,
+        "destructiveCases": 1,
+        "stateChangingCases": 0,
+        "stateChangingAuthorised": false
+      },
+      "expect": { "decision": "deny", "policyIds": ["plan.destructive"] }
+    },
+    {
+      "name": "a state-changing case without SA pre-approval is forbidden",
+      "principal": { "userId": "u-1", "tenantId": "t-a", "roles": ["appsec_engineer"] },
+      "resource": {
+        "tenantId": "t-a",
+        "planId": "p-1",
+        "saActive": true,
+        "destructiveCases": 0,
+        "stateChangingCases": 2,
+        "stateChangingAuthorised": false
+      },
+      "expect": { "decision": "deny", "policyIds": ["plan.state_changing.authorised"] }
+    },
+    {
+      "name": "a state-changing case with SA pre-approval is allowed",
+      "principal": { "userId": "u-1", "tenantId": "t-a", "roles": ["appsec_engineer"] },
+      "resource": {
+        "tenantId": "t-a",
+        "planId": "p-1",
+        "saActive": true,
+        "destructiveCases": 0,
+        "stateChangingCases": 2,
+        "stateChangingAuthorised": true
+      },
+      "expect": { "decision": "allow", "policyIds": [] }
+    }
+  ]
+}

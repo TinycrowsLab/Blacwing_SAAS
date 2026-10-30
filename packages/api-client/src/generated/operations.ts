@@ -23,6 +23,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  createAsset: {
+    method: 'POST',
+    path: '/v1/assets',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   createStandingAuthorisation: {
     method: 'POST',
     path: '/v1/standing-authorisations',
@@ -44,9 +51,23 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: ['Idempotency-Key'],
   },
+  deleteAsset: {
+    method: 'DELETE',
+    path: '/v1/assets/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   getAssessmentRequest: {
     method: 'GET',
     path: '/v1/assessment-requests/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
+  getAsset: {
+    method: 'GET',
+    path: '/v1/assets/{id}',
     pathParams: ['id'],
     queryParams: [],
     requiredHeaders: [],
@@ -125,7 +146,7 @@ export const OPERATIONS = {
     method: 'GET',
     path: '/v1/assets',
     pathParams: [],
-    queryParams: ['verificationStatus'],
+    queryParams: ['cursor', 'limit', 'type', 'environment', 'verificationStatus'],
     requiredHeaders: [],
   },
   listAuditEvents: {
@@ -253,6 +274,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: ['If-Match'],
   },
+  updateAsset: {
+    method: 'PATCH',
+    path: '/v1/assets/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
+  },
   updateStandingAuthorisation: {
     method: 'PATCH',
     path: '/v1/standing-authorisations/{id}',
@@ -273,6 +301,13 @@ export const OPERATIONS = {
     pathParams: ['caseId'],
     queryParams: [],
     requiredHeaders: ['If-Match'],
+  },
+  validateTestPlan: {
+    method: 'GET',
+    path: '/v1/test-plans/{planId}/validation',
+    pathParams: ['planId'],
+    queryParams: [],
+    requiredHeaders: [],
   },
   verifySignup: {
     method: 'POST',

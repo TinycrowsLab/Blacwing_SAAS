@@ -99,7 +99,8 @@
         "test_case.removed",
         "asset.updated",
         "asset.deleted",
-        "asset.owner_assigned"
+        "asset.owner_assigned",
+        "test_plan.validated"
       ]
     },
     "severity": {

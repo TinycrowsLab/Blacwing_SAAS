@@ -812,3 +812,4 @@ export {
   gateSubjectTypeSchema,
 } from './gate/decision.js';
 export * from './test-plan-api.js';
+export * from './test-plan-validation.js';
