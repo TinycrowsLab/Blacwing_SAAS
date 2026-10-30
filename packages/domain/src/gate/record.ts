@@ -35,6 +35,8 @@ export interface GateDecisionRow {
   readonly subjectType: GateSubjectType;
   readonly subjectId: string;
   readonly decision: GateDecision;
+  /** The requester the separation-of-duties check ran against (§8.4). Stored so the database can re-check it. */
+  readonly requesterId: string | null;
   readonly actorId: string | null;
   readonly reason: string | null;
   readonly decidedAt: Date | null;
@@ -111,6 +113,7 @@ export async function recordGateDecision(
     subjectType: input.subjectType,
     subjectId: input.subjectId,
     decision: input.decision,
+    requesterId: input.requesterId,
     actorId: input.actorId,
     reason: input.reason,
     decidedAt: input.decidedAt,

@@ -832,6 +832,7 @@ export {
   gate1PlanChangesSchema,
   gate1PlanViewSchema,
   gate1RunIdSchema,
+  gate1SubmitResponseSchema,
   gate1TestCaseSchema,
   GATE1_DECISIONS,
   GATE1_DECISIONS_REQUIRING_REASON,
@@ -841,6 +842,7 @@ export {
   type Gate1DecisionResponse,
   type Gate1PlanChanges,
   type Gate1PlanView,
+  type Gate1SubmitResponse,
   type Gate1TestCase,
 } from './entities/gate1.js';
 export {

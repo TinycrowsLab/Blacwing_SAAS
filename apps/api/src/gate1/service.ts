@@ -12,9 +12,17 @@ import {
   type Gate1DecisionResponse,
   type Gate1PlanView,
   type Gate1PlanChanges,
+  type Gate1SubmitResponse,
 } from '@blackwing/contracts';
-import { applyTransition, hasPermission, type RunEvent, type RunStatus } from '@blackwing/domain';
 import {
+  applyTransition,
+  hasPermission,
+  IllegalRunEventError,
+  type RunEvent,
+  type RunStatus,
+} from '@blackwing/domain';
+import {
+  AppError,
   ForbiddenError,
   NotFoundError,
   TenantContextMissingError,
@@ -26,11 +34,16 @@ import { Gate1Error } from './errors.js';
 import { TRACER_NAME } from '../bootstrap/request-context.js';
 
 import type {
+  Gate1AuditRecord,
   Gate1AuditSink,
   Gate1Plan,
+  Gate1PlanValidator,
+  Gate1PolicyEngine,
   Gate1Principal,
   Gate1RunRecord,
+  Gate1Signaler,
   Gate1Store,
+  Gate1WorkflowSignal,
 } from './ports.js';
 
 /** Span of one Gate 1 decision (traces, CONTEXT_PACK §10). */
@@ -43,10 +56,30 @@ const EVENT_FOR_DECISION: Readonly<Record<Gate1Decision, RunEvent>> = {
   reject: { type: 'gate1_rejected' },
 };
 
+/** The audit action a recorded decision writes: one event per Gate 1 outcome (#398, §8.8). */
+const AUDIT_ACTION_FOR_DECISION: Readonly<Record<Gate1Decision, Gate1AuditRecord['action']>> = {
+  approve: 'gate1.approved',
+  request_changes: 'gate1.changes_requested',
+  reject: 'gate1.rejected',
+};
+
 export interface Gate1ServiceDeps {
   readonly store: Gate1Store;
   readonly audit: Gate1AuditSink;
+  /** PLAN-006 validation of the plan version a submit names. */
+  readonly validator: Gate1PlanValidator;
+  /** Signals the run's workflow; a decision is recorded only once Temporal acknowledges the signal. */
+  readonly signaler: Gate1Signaler;
+  /** The Cedar copy of the separation-of-duties rule, checked after RBAC and the service check (§8.4). */
+  readonly policy: Gate1PolicyEngine;
   readonly clock?: Clock;
+}
+
+export interface Gate1SubmitInput {
+  readonly principal: Gate1Principal;
+  /** Public run id from the path. */
+  readonly runId: string;
+  readonly traceId: string | null;
 }
 
 export interface Gate1DecideInput {
@@ -68,13 +101,111 @@ export interface Gate1DecideInput {
 export class Gate1Service {
   private readonly store: Gate1Store;
   private readonly audit: Gate1AuditSink;
+  private readonly validator: Gate1PlanValidator;
+  private readonly signaler: Gate1Signaler;
+  private readonly policy: Gate1PolicyEngine;
   private readonly clock: Clock;
   private readonly tracer = trace.getTracer(TRACER_NAME);
 
   constructor(deps: Gate1ServiceDeps) {
     this.store = deps.store;
     this.audit = deps.audit;
+    this.validator = deps.validator;
+    this.signaler = deps.signaler;
+    this.policy = deps.policy;
     this.clock = deps.clock ?? systemClock;
+  }
+
+  /**
+   * Submit-for-Gate-1: validates the run's current plan (PLAN-006), then moves the run `planning` to
+   * `awaiting_gate1`, records the submitter as the requester and signals the workflow. The signal goes first: if the
+   * workflow does not acknowledge it, nothing is recorded and the submitter retries (`TEMPORAL_UNAVAILABLE`).
+   * Requires `testplan:edit`. An invalid plan is `GATE1_PLAN_INVALID` (422) and never reaches the approver.
+   */
+  async submit(input: Gate1SubmitInput): Promise<Gate1SubmitResponse> {
+    const { principal, traceId } = input;
+    const tenantId = requireTenant(principal);
+    const runId = parseRunId(input.runId);
+    const audit = (
+      outcome: 'denied' | 'success' | 'failure',
+      metadata: Record<string, string | number | boolean | null>,
+    ) =>
+      this.recordAudit({
+        tenantId,
+        principal,
+        runId,
+        action: 'gate1.submitted',
+        outcome,
+        metadata,
+        traceId,
+      });
+
+    if (!hasPermission(principal.roles, 'testplan:edit')) {
+      await audit('denied', { code: 'FORBIDDEN' });
+      throw new ForbiddenError('the caller may not submit test plans', {
+        detail: 'Submitting a test plan for Gate 1 needs testplan:edit.',
+      });
+    }
+    const run = await this.store.getRun(tenantId, runId);
+    if (run === null) throw notFound();
+    // Only a `planning` run can be submitted; any other state is an illegal transition (§3.3, 409).
+    if (run.state !== 'planning') throw new IllegalRunEventError(run.state, 'plan_proposed');
+    const now = this.clock.now();
+    const next = applyTransition(
+      { state: 'planning', version: run.stateVersion },
+      { type: 'plan_proposed' },
+      { actor: { kind: 'user', id: principal.id } },
+    ).next;
+    const verdict = await this.validator.validate(tenantId, run.id, run.plan.planVersion);
+    if (!verdict.valid) {
+      await audit('denied', { code: 'GATE1_PLAN_INVALID', planVersion: run.plan.planVersion });
+      throw new Gate1Error(
+        'GATE1_PLAN_INVALID',
+        verdict.violations.length === 0
+          ? 'The test plan did not pass validation.'
+          : verdict.violations.join('; '),
+      );
+    }
+
+    await this.signalWorkflow(tenantId, run.id, {
+      kind: 'plan_submitted',
+      actorId: principal.id,
+      planVersion: run.plan.planVersion,
+    });
+    const outcome = await this.store.submit({
+      tenantId,
+      runId: run.id,
+      expectedStateVersion: run.stateVersion,
+      expectedPlanVersion: run.plan.planVersion,
+      submittedBy: principal.id,
+      nextStateVersion: next.version,
+    });
+    switch (outcome.kind) {
+      case 'submitted':
+        await audit('success', {
+          planVersion: run.plan.planVersion,
+          fromState: 'planning',
+          toState: 'awaiting_gate1',
+        });
+        return {
+          runId: run.id,
+          planVersion: run.plan.planVersion,
+          runState: 'awaiting_gate1',
+          submittedAt: now.toISOString(),
+        };
+      case 'not_found':
+        throw notFound();
+      case 'not_planning':
+        throw new IllegalRunEventError(outcome.state, 'plan_proposed');
+      case 'version_conflict':
+        throw new Gate1Error('GATE1_NOT_PENDING', 'The run changed while it was being submitted.');
+      case 'plan_stale':
+        await audit('denied', { code: 'GATE1_PLAN_STALE', planVersion: outcome.planVersion });
+        throw new Gate1Error(
+          'GATE1_PLAN_STALE',
+          `The plan is now version ${String(outcome.planVersion)}; reload it before submitting.`,
+        );
+    }
   }
 
   /** The review screen: the plan, its changes, budget totals and what this caller may do. */
@@ -142,7 +273,16 @@ export class Gate1Service {
     const audit = (
       outcome: 'denied' | 'success' | 'failure',
       metadata: Record<string, string | number | boolean | null>,
-    ) => this.recordAudit({ tenantId, principal, runId, outcome, metadata, traceId });
+    ) =>
+      this.recordAudit({
+        tenantId,
+        principal,
+        runId,
+        action: 'gate1.decided',
+        outcome,
+        metadata,
+        traceId,
+      });
 
     if (!hasPermission(principal.roles, 'testplan:approve')) {
       await audit('denied', { code: 'FORBIDDEN', decision: request.decision });
@@ -153,6 +293,19 @@ export class Gate1Service {
     if (isRequesterOf(principal.id, run.requesterId)) {
       await audit('denied', { code: 'SOD_VIOLATION', decision: request.decision });
       throw new Gate1Error('SOD_VIOLATION', 'The requester cannot approve their own test plan.');
+    }
+
+    // The Cedar copy of separation of duties and tenant isolation (§8.4): it must agree with the check above.
+    if (
+      this.policy.authorize({
+        principal: { id: principal.id, tenantId, canApprove: true },
+        resource: { runId: run.id, tenantId, requesterId: run.requesterId },
+      }) !== 'allow'
+    ) {
+      await audit('denied', { code: 'FORBIDDEN', decision: request.decision });
+      throw new ForbiddenError('the caller may not decide this test plan', {
+        detail: 'The Gate 1 policy refused the decision.',
+      });
     }
 
     const fingerprint = fingerprintOf(run.id, request);
@@ -175,6 +328,13 @@ export class Gate1Service {
     }
 
     const next = transitionFor(run, request.decision, principal.id);
+    // Signal first: a decision is recorded only after the workflow acknowledges it, so a lost signal is retried with
+    // the same Idempotency-Key and is never left recorded but unapplied.
+    await this.signalWorkflow(
+      tenantId,
+      run.id,
+      signalFor(request, principal.id, run.plan.planVersion),
+    );
     const response: Gate1DecisionResponse = {
       runId: run.id,
       decision: request.decision,
@@ -199,12 +359,20 @@ export class Gate1Service {
 
     switch (outcome.kind) {
       case 'decided':
-        await audit('success', {
-          decision: request.decision,
-          planVersion: run.plan.planVersion,
-          fromState: 'awaiting_gate1',
-          toState: next.state,
-          reasonProvided: request.reason !== undefined,
+        await this.recordAudit({
+          tenantId,
+          principal,
+          runId: run.id,
+          action: AUDIT_ACTION_FOR_DECISION[request.decision],
+          outcome: 'success',
+          metadata: {
+            decision: request.decision,
+            planVersion: run.plan.planVersion,
+            fromState: 'awaiting_gate1',
+            toState: next.state,
+            reasonProvided: request.reason !== undefined,
+          },
+          traceId,
         });
         return outcome.response;
       case 'replayed':
@@ -228,16 +396,33 @@ export class Gate1Service {
     }
   }
 
+  private async signalWorkflow(
+    tenantId: string,
+    runId: string,
+    signal: Gate1WorkflowSignal,
+  ): Promise<void> {
+    try {
+      await this.signaler.send(tenantId, runId, signal);
+    } catch (error) {
+      throw new AppError(
+        'TEMPORAL_UNAVAILABLE',
+        'The run workflow did not acknowledge the signal; nothing was recorded. Retry.',
+        { cause: error },
+      );
+    }
+  }
+
   private async recordAudit(input: {
     readonly tenantId: string;
     readonly principal: Gate1Principal;
     readonly runId: string;
+    readonly action: Gate1AuditRecord['action'];
     readonly outcome: 'denied' | 'success' | 'failure';
     readonly metadata: Record<string, string | number | boolean | null>;
     readonly traceId: string | null;
   }): Promise<void> {
     await this.audit.append({
-      action: 'gate1.decided',
+      action: input.action,
       severity: input.outcome === 'success' ? 'notice' : 'warning',
       outcome: input.outcome,
       tenantId: input.tenantId,
@@ -340,4 +525,37 @@ function fingerprintOf(runId: string, request: Gate1DecisionRequest): string {
       'utf8',
     )
     .digest('hex');
+}
+
+/**
+ * The workflow message for a decision. Approval is `approved`; request changes and rejection are `rejected` with the
+ * next step (`replan` or `cancel`). Both rejections carry the reason, which the workflow schema requires.
+ */
+function signalFor(
+  request: Gate1DecisionRequest,
+  actorId: string,
+  planVersion: number,
+): Gate1WorkflowSignal {
+  if (request.decision === 'approve') {
+    return {
+      kind: 'decided',
+      decision: 'approved',
+      actorId,
+      planVersion,
+      ...(request.reason === undefined ? {} : { reason: request.reason }),
+    };
+  }
+  if (request.reason === undefined) {
+    throw new ValidationError('a rejection needs a reason', {
+      detail: 'Request changes and reject need a reason.',
+    });
+  }
+  return {
+    kind: 'decided',
+    decision: 'rejected',
+    next: request.decision === 'reject' ? 'cancel' : 'replan',
+    actorId,
+    planVersion,
+    reason: request.reason,
+  };
 }

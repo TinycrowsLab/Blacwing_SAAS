@@ -2,6 +2,7 @@ import {
   gate1DecisionRequestSchema,
   gate1DecisionResponseSchema,
   gate1PlanViewSchema,
+  gate1SubmitResponseSchema,
 } from '@blackwing/contracts';
 
 import { errorResponses, jsonSchema, type JsonObject } from '../openapi/schema.js';
@@ -11,6 +12,18 @@ const GATE1_PLAN_ERRORS = [
   'UNAUTHENTICATED',
   'FORBIDDEN',
   'NOT_FOUND',
+  'TENANT_CONTEXT_MISSING',
+  'RATE_LIMITED',
+] as const;
+const GATE1_SUBMIT_ERRORS = [
+  'UNAUTHENTICATED',
+  'FORBIDDEN',
+  'NOT_FOUND',
+  'ILLEGAL_RUN_TRANSITION',
+  'GATE1_PLAN_INVALID',
+  'GATE1_PLAN_STALE',
+  'GATE1_NOT_PENDING',
+  'TEMPORAL_UNAVAILABLE',
   'TENANT_CONTEXT_MISSING',
   'RATE_LIMITED',
 ] as const;
@@ -25,6 +38,7 @@ const GATE1_DECISION_ERRORS = [
   'GATE1_NOT_PENDING',
   'GATE1_PLAN_STALE',
   'GATE1_EXPIRED',
+  'TEMPORAL_UNAVAILABLE',
   'TENANT_CONTEXT_MISSING',
   'RATE_LIMITED',
 ] as const;
@@ -75,8 +89,36 @@ export function gate1OpenApiModule(): {
       Gate1PlanView: jsonSchema(gate1PlanViewSchema),
       Gate1DecisionRequest: jsonSchema(gate1DecisionRequestSchema),
       Gate1DecisionResponse: jsonSchema(gate1DecisionResponseSchema),
+      Gate1SubmitResponse: jsonSchema(gate1SubmitResponseSchema),
     },
     paths: {
+      '/v1/runs/{runId}/gate1/submit': {
+        post: {
+          operationId: 'submitGate1',
+          summary: 'Submit the run test plan for Gate 1 review',
+          description:
+            'Requires testplan:edit. Validates the current plan version (PLAN-006); an invalid plan is 422 GATE1_PLAN_INVALID and nothing is signalled. A valid plan moves the run from `planning` to `awaiting_gate1`, records the caller as the requester (who may not decide the plan, 403 SOD_VIOLATION) and signals the run workflow before it answers. A run that is not `planning` is 409 ILLEGAL_RUN_TRANSITION.',
+          security: [{ bearerAuth: [] }, { sessionCookie: [] }],
+          parameters: [runIdParameter],
+          responses: {
+            '200': {
+              description: 'The plan version now awaiting Gate 1.',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/Gate1SubmitResponse' },
+                  example: {
+                    runId: 'run_01jbz3k6w8f5r4t2n9q7x0m1ab',
+                    planVersion: 3,
+                    runState: 'awaiting_gate1',
+                    submittedAt: '2026-10-29T09:30:00.000Z',
+                  },
+                },
+              },
+            },
+            ...errorResponses(GATE1_SUBMIT_ERRORS),
+          },
+        },
+      },
       '/v1/runs/{runId}/gate1': {
         get: {
           operationId: 'getGate1Plan',

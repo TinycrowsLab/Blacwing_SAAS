@@ -5,7 +5,11 @@ import type {
   Gate1RunRecord,
   Gate1Store,
   Gate1StoredDecision,
+  Gate1SubmitOutcome,
+  Gate1SubmitWrite,
   Gate1WriteOutcome,
+  Gate1Signaler,
+  Gate1WorkflowSignal,
 } from './ports.js';
 
 /**
@@ -34,6 +38,27 @@ export class InMemoryGate1Store implements Gate1Store {
 
   findDecision(tenantId: string, key: string): Promise<Gate1StoredDecision | null> {
     return Promise.resolve(this.decisions.get(decisionKey(tenantId, key)) ?? null);
+  }
+
+  submit(write: Gate1SubmitWrite): Promise<Gate1SubmitOutcome> {
+    const key = runKey(write.tenantId, write.runId);
+    const run = this.runs.get(key);
+    if (run === undefined) return Promise.resolve({ kind: 'not_found' });
+    if (run.state !== 'planning')
+      return Promise.resolve({ kind: 'not_planning', state: run.state });
+    if (run.stateVersion !== write.expectedStateVersion) {
+      return Promise.resolve({ kind: 'version_conflict' });
+    }
+    if (run.plan.planVersion !== write.expectedPlanVersion) {
+      return Promise.resolve({ kind: 'plan_stale', planVersion: run.plan.planVersion });
+    }
+    this.runs.set(key, {
+      ...run,
+      state: 'awaiting_gate1',
+      stateVersion: write.nextStateVersion,
+      requesterId: write.submittedBy,
+    });
+    return Promise.resolve({ kind: 'submitted' });
   }
 
   recordDecision(write: Gate1DecisionWrite): Promise<Gate1WriteOutcome> {
@@ -79,3 +104,21 @@ export class InMemoryGate1AuditSink implements Gate1AuditSink {
 
 const runKey = (tenantId: string, runId: string): string => `${tenantId}|${runId}`;
 const decisionKey = (tenantId: string, key: string): string => `${tenantId}|${key}`;
+
+/**
+ * In-process `Gate1Signaler`: records each signal in order and acknowledges it. Local development and tests only.
+ * OFFLINE-STUB(online-porting #398): the Temporal adapter (`signalWithStart` on the run's workflow id) replaces it
+ * once the API carries a Temporal client, so a signal is acknowledged by the cluster and not by this list.
+ */
+export class InMemoryGate1Signaler implements Gate1Signaler {
+  readonly signals: {
+    readonly tenantId: string;
+    readonly runId: string;
+    readonly signal: Gate1WorkflowSignal;
+  }[] = [];
+
+  send(tenantId: string, runId: string, signal: Gate1WorkflowSignal): Promise<void> {
+    this.signals.push({ tenantId, runId, signal });
+    return Promise.resolve();
+  }
+}

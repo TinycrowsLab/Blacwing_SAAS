@@ -43,6 +43,8 @@ export const authzGateDecisions = pgTable(
     subjectType: text('subject_type', { enum: GATE_SUBJECT_TYPES }).notNull(),
     subjectId: uuid('subject_id').notNull(),
     decision: text('decision', { enum: GATE_DECISIONS }).notNull(),
+    /** The user who asked for the subject to be decided (§8.4). Null when no requester is known. */
+    requesterId: uuid('requester_id'),
     /** The deciding user. Null only for an automatic decision (`auto`). */
     actorId: uuid('actor_id'),
     reason: text('reason'),
@@ -64,6 +66,13 @@ export const authzGateDecisions = pgTable(
       sql`${t.subjectType} IN (${inList(GATE_SUBJECT_TYPES)})`,
     ),
     check('authz_gate_decisions_decision_check', sql`${t.decision} IN (${inList(GATE_DECISIONS)})`),
+    // Separation of duties at the database (§8.4, #398): a Gate 1 or Gate 2 approval needs a known requester and a
+    // known actor, and they must differ. Gate 3 is not SoD-gated. Only an `approved` row is checked: rejections,
+    // deferrals and automatic decisions carry no approval to protect. NULL never passes an `approved` Gate 1/2 row.
+    check(
+      'authz_gate_decisions_sod_check',
+      sql`${t.gate} = 3 OR ${t.decision} <> 'approved' OR (${t.requesterId} IS NOT NULL AND ${t.actorId} IS NOT NULL AND ${t.requesterId} <> ${t.actorId})`,
+    ),
     // The canonical tenant policy (`rlsPolicySql` shape): fail-closed predicate, no `missing_ok`.
     pgPolicy('authz_gate_decisions_tenant_isolation', {
       as: 'permissive',

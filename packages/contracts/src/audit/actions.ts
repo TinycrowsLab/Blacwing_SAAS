@@ -688,6 +688,34 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'A Gate 2 exception reached a terminal state: approved once, denied, timed out (denied) or superseded (denied).',
   },
+  {
+    action: 'gate1.submitted',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'gate_decision',
+    description: 'A test plan was submitted for Gate 1 review (validated, awaiting the approver).',
+  },
+  {
+    action: 'gate1.approved',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'gate_decision',
+    description: 'Gate 1 approved the test plan; the run is approved.',
+  },
+  {
+    action: 'gate1.changes_requested',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'gate_decision',
+    description: 'Gate 1 requested changes; the run is back in planning.',
+  },
+  {
+    action: 'gate1.rejected',
+    defaultSeverity: 'warning',
+    isAlwaysAudited: true,
+    actionClass: 'gate_decision',
+    description: 'Gate 1 rejected the test plan; the run is cancelled.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

@@ -57,6 +57,15 @@ export const gate1DecisionResponseSchema = z.strictObject({
 });
 export type Gate1DecisionResponse = z.infer<typeof gate1DecisionResponseSchema>;
 
+/** Answer to a submit-for-Gate-1: the plan version now awaiting the approver (#398). */
+export const gate1SubmitResponseSchema = z.strictObject({
+  runId: gate1RunIdSchema,
+  planVersion: z.number().int().positive(),
+  runState: runStateSchema,
+  submittedAt: isoDateTimeSchema,
+});
+export type Gate1SubmitResponse = z.infer<typeof gate1SubmitResponseSchema>;
+
 /** One test case as the approver sees it. */
 export const gate1TestCaseSchema = z.strictObject({
   id: z.string().min(1).max(LIMITS.shortTextMax),

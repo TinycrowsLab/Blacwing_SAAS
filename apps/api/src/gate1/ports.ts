@@ -88,9 +88,35 @@ export type Gate1WriteOutcome =
   | { readonly kind: 'not_pending'; readonly state: RunState }
   | { readonly kind: 'plan_stale'; readonly planVersion: number };
 
+/** One submit-for-Gate-1 write: `planning` to `awaiting_gate1`, recording the submitter as the requester (#398). */
+export interface Gate1SubmitWrite {
+  readonly tenantId: string;
+  readonly runId: string;
+  readonly expectedStateVersion: number;
+  readonly expectedPlanVersion: number;
+  readonly submittedBy: string;
+  readonly nextStateVersion: number;
+}
+
+/**
+ * What a submit write did. `not_planning` and `version_conflict` change nothing: the run moved or another writer
+ * won the race (the loser answers 409).
+ */
+export type Gate1SubmitOutcome =
+  | { readonly kind: 'submitted' }
+  | { readonly kind: 'not_found' }
+  | { readonly kind: 'not_planning'; readonly state: RunState }
+  | { readonly kind: 'version_conflict' }
+  | { readonly kind: 'plan_stale'; readonly planVersion: number };
+
 /** Gate 1 persistence. Every method is tenant-scoped. */
 export interface Gate1Store {
   getRun(tenantId: string, runId: string): Promise<Gate1RunRecord | null>;
+  /**
+   * Compare-and-set from `planning`: moves the run to `awaiting_gate1`, records the submitter as the requester
+   * (the one person Gate 1 may not be decided by, §8.4) and bumps `state_version`.
+   */
+  submit(write: Gate1SubmitWrite): Promise<Gate1SubmitOutcome>;
   /** The stored decision that answered `key` in this tenant, if any. */
   findDecision(tenantId: string, key: string): Promise<Gate1StoredDecision | null>;
   /**
@@ -101,9 +127,72 @@ export interface Gate1Store {
   recordDecision(write: Gate1DecisionWrite): Promise<Gate1WriteOutcome>;
 }
 
+/**
+ * The verdict of PLAN-006 validation of one plan version. Submit is refused with the violations when it is not
+ * valid (`GATE1_PLAN_INVALID`); the verdict never lets an invalid plan reach the approver.
+ */
+export type Gate1PlanVerdict =
+  { readonly valid: true } | { readonly valid: false; readonly violations: readonly string[] };
+
+/** Validates one plan version of a run before it may be submitted for Gate 1. */
+export interface Gate1PlanValidator {
+  validate(tenantId: string, runId: string, planVersion: number): Promise<Gate1PlanVerdict>;
+}
+
+/**
+ * The messages the run workflow receives. `decided` mirrors the planning workflow's Gate 1 decision signal, so a
+ * decision is applied by the workflow exactly once (idempotent on the run state).
+ */
+export type Gate1WorkflowSignal =
+  | {
+      readonly kind: 'plan_submitted';
+      readonly actorId: string;
+      readonly planVersion: number;
+    }
+  | {
+      readonly kind: 'decided';
+      readonly decision: 'approved' | 'rejected';
+      readonly next?: 'replan' | 'cancel';
+      readonly actorId: string;
+      readonly planVersion: number;
+      readonly reason?: string;
+    };
+
+/**
+ * Signals the run's workflow and resolves only once Temporal has accepted the signal (the acknowledgement). A
+ * rejection means nothing was applied, so the caller records nothing and the client may retry.
+ */
+export interface Gate1Signaler {
+  send(tenantId: string, runId: string, signal: Gate1WorkflowSignal): Promise<void>;
+}
+
+/** Input to the Gate 1 authorisation policy: the RBAC permission fact, the tenant and the plan's requester. */
+export interface Gate1PolicyInput {
+  readonly principal: {
+    readonly id: string;
+    readonly tenantId: string;
+    readonly canApprove: boolean;
+  };
+  readonly resource: {
+    readonly runId: string;
+    readonly tenantId: string;
+    readonly requesterId: string | null;
+  };
+}
+
+/** The Cedar decision. Anything but `allow` is a refusal. */
+export interface Gate1PolicyEngine {
+  authorize(input: Gate1PolicyInput): 'allow' | 'deny';
+}
+
 /** What the append-only audit trail records for a Gate 1 decision or a refusal of one (§8.8). */
 export interface Gate1AuditRecord {
-  readonly action: 'gate1.decided';
+  readonly action:
+    | 'gate1.submitted'
+    | 'gate1.approved'
+    | 'gate1.changes_requested'
+    | 'gate1.rejected'
+    | 'gate1.decided';
   readonly severity: AuditSeverity;
   readonly outcome: AuditOutcome;
   readonly tenantId: string;

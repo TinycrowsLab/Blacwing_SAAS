@@ -278,3 +278,92 @@ describe('column CHECK constraints', () => {
     expect(code).toBe('23514');
   });
 });
+
+describe('database separation of duties (#398, §8.4)', () => {
+  // Writes straight to the table through the tenant transaction, skipping the service check: the CHECK must refuse.
+  const direct = (values: {
+    gate: number;
+    decision: string;
+    requester: string | null;
+    actor: string | null;
+    auto?: boolean;
+  }) =>
+    pgCode(
+      db.withTenant(tenantA, (tx) =>
+        tx.query(
+          `INSERT INTO authz_gate_decisions
+             (id, tenant_id, gate, subject_type, subject_id, decision, requester_id, actor_id, auto)
+           VALUES ($1, $2, $3, 'test_plan', $4, $5, $6, $7, $8)`,
+          [
+            newId(),
+            tenantA,
+            values.gate,
+            newId(),
+            values.decision,
+            values.requester,
+            values.actor,
+            values.auto ?? false,
+          ],
+        ),
+      ),
+    );
+
+  it('refuses a Gate 1 approval where the actor is the requester, on a direct write', async () => {
+    const person = newId();
+    expect(await direct({ gate: 1, decision: 'approved', requester: person, actor: person })).toBe(
+      '23514',
+    );
+  });
+
+  it('refuses a Gate 2 approval where the actor is the requester, on a direct write', async () => {
+    const person = newId();
+    expect(await direct({ gate: 2, decision: 'approved', requester: person, actor: person })).toBe(
+      '23514',
+    );
+  });
+
+  it('refuses an approval with no known requester (fail closed) on a direct write', async () => {
+    expect(await direct({ gate: 1, decision: 'approved', requester: null, actor: newId() })).toBe(
+      '23514',
+    );
+  });
+
+  it('accepts a Gate 1 approval by a distinct actor', async () => {
+    expect(
+      await direct({ gate: 1, decision: 'approved', requester: newId(), actor: newId() }),
+    ).toBeUndefined();
+  });
+
+  it('does not apply the requester rule to Gate 3, to rejections or to automatic decisions', async () => {
+    const person = newId();
+    expect(
+      await direct({ gate: 3, decision: 'approved', requester: person, actor: person }),
+    ).toBeUndefined();
+    expect(
+      await direct({ gate: 1, decision: 'rejected', requester: person, actor: person }),
+    ).toBeUndefined();
+    expect(
+      await direct({
+        gate: 1,
+        decision: 'auto_approved',
+        requester: null,
+        actor: null,
+        auto: true,
+      }),
+    ).toBeUndefined();
+  });
+
+  it('stores the requester the service checked, so the database can re-check it later', async () => {
+    const requester = newId();
+    const approver = newId();
+    const subjectId = newId();
+    await makeRepo(tenantA).record(input({ subjectId, requesterId: requester, actorId: approver }));
+    const rows = await db.withTenant(tenantA, (tx) =>
+      tx.query<{ requester_id: string; actor_id: string }>(
+        'SELECT requester_id, actor_id FROM authz_gate_decisions WHERE subject_id = $1',
+        [subjectId],
+      ),
+    );
+    expect(rows.rows).toEqual([{ requester_id: requester, actor_id: approver }]);
+  });
+});

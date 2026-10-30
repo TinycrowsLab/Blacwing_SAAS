@@ -142,6 +142,7 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'GATE1_NOT_PENDING',
   'GATE1_PLAN_STALE',
   'GATE1_EXPIRED',
+  'GATE1_PLAN_INVALID',
   // AssetStaleWriteError, AssetInUseError and AssetInvalidIdentifierError, apps/api asset API (ASSET-002, #355).
   'ASSET_STALE_WRITE',
   'ASSET_IN_USE',

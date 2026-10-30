@@ -4,11 +4,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { AuthError } from '@blackwing/errors';
 import { FixedClock } from '@blackwing/time';
 
-import { InMemoryGate1AuditSink, InMemoryGate1Store } from './memory.js';
+import { InMemoryGate1AuditSink, InMemoryGate1Signaler, InMemoryGate1Store } from './memory.js';
+import { createCedarGate1Policy } from './policy.js';
 import { registerGate1Routes } from './routes.js';
 import { Gate1Service } from './service.js';
 
-import type { Gate1Plan, Gate1Principal, Gate1RunRecord } from './ports.js';
+import type { Gate1Plan, Gate1PlanValidator, Gate1Principal, Gate1RunRecord } from './ports.js';
 import type { Gate1TestCase } from '@blackwing/contracts';
 
 const TENANT = '0190a5d0-1111-7111-8111-111111111111';
@@ -44,6 +45,7 @@ const run: Gate1RunRecord = {
 const TOKENS: Readonly<Record<string, Gate1Principal | 'revoked'>> = {
   approver: { type: 'user', id: 'user-approver', tenantId: TENANT, roles: ['asset_owner'] },
   requester: { type: 'user', id: REQUESTER, tenantId: TENANT, roles: ['asset_owner'] },
+  submitter: { type: 'user', id: REQUESTER, tenantId: TENANT, roles: ['appsec_engineer'] },
   developer: { type: 'user', id: 'user-dev', tenantId: TENANT, roles: ['developer'] },
   revoked: 'revoked',
 };
@@ -53,13 +55,27 @@ afterEach(async () => {
   await Promise.all(apps.splice(0).map((app) => app.close()));
 });
 
-async function server(): Promise<{ app: FastifyInstance; audit: InMemoryGate1AuditSink }> {
+const planningRun: Gate1RunRecord = { ...run, state: 'planning', stateVersion: 0 };
+const validPlan: Gate1PlanValidator = { validate: () => Promise.resolve({ valid: true }) };
+
+async function server(
+  seed: Gate1RunRecord = run,
+  validator: Gate1PlanValidator = validPlan,
+): Promise<{
+  app: FastifyInstance;
+  audit: InMemoryGate1AuditSink;
+  signaler: InMemoryGate1Signaler;
+}> {
   const app = Fastify();
   apps.push(app);
   const audit = new InMemoryGate1AuditSink();
+  const signaler = new InMemoryGate1Signaler();
   const service = new Gate1Service({
-    store: new InMemoryGate1Store([run]),
+    store: new InMemoryGate1Store([seed]),
     audit,
+    validator,
+    signaler,
+    policy: createCedarGate1Policy(),
     clock: new FixedClock('2026-10-29T10:00:00.000Z'),
   });
   registerGate1Routes(app, {
@@ -75,13 +91,20 @@ async function server(): Promise<{ app: FastifyInstance; audit: InMemoryGate1Aud
     },
   });
   await app.ready();
-  return { app, audit };
+  return { app, audit, signaler };
 }
 
 const get = (app: FastifyInstance, token: string) =>
   app.inject({
     method: 'GET',
     url: `/v1/runs/${RUN}/gate1`,
+    headers: { authorization: `Bearer ${token}` },
+  });
+
+const submit = (app: FastifyInstance, token: string) =>
+  app.inject({
+    method: 'POST',
+    url: `/v1/runs/${RUN}/gate1/submit`,
     headers: { authorization: `Bearer ${token}` },
   });
 
@@ -182,5 +205,45 @@ describe('Gate 1 routes', () => {
     });
     expect(res.statusCode).toBe(404);
     expect(res.json()).toMatchObject({ status: 404, code: 'NOT_FOUND' });
+  });
+
+  it('submits a valid plan for Gate 1 (200), moving the run to awaiting_gate1', async () => {
+    const { app, audit, signaler } = await server(planningRun);
+    const res = await submit(app, 'submitter');
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ runId: RUN, planVersion: 3, runState: 'awaiting_gate1' });
+    expect(signaler.signals).toHaveLength(1);
+    expect(audit.records[0]).toMatchObject({ action: 'gate1.submitted', outcome: 'success' });
+  });
+
+  it('answers 422 GATE1_PLAN_INVALID for an invalid plan and signals nothing', async () => {
+    const invalid: Gate1PlanValidator = {
+      validate: () => Promise.resolve({ valid: false, violations: ['case tc-1 has no oracle'] }),
+    };
+    const { app, signaler } = await server(planningRun, invalid);
+    const res = await submit(app, 'submitter');
+    expect(res.statusCode).toBe(422);
+    expect(res.json()).toMatchObject({ status: 422, code: 'GATE1_PLAN_INVALID' });
+    expect(signaler.signals).toHaveLength(0);
+  });
+
+  it('answers 409 ILLEGAL_RUN_TRANSITION when the run is not planning', async () => {
+    const { app } = await server();
+    const res = await submit(app, 'submitter');
+    expect(res.statusCode).toBe(409);
+    expect(res.json()).toMatchObject({ status: 409, code: 'ILLEGAL_RUN_TRANSITION' });
+  });
+
+  it('answers 403 FORBIDDEN to a caller without testplan:edit on submit', async () => {
+    const { app } = await server(planningRun);
+    const res = await submit(app, 'approver');
+    expect(res.statusCode).toBe(403);
+    expect(res.json()).toMatchObject({ status: 403, code: 'FORBIDDEN' });
+  });
+
+  it('answers 401 for a revoked credential on submit before the handler runs', async () => {
+    const { app } = await server(planningRun);
+    const res = await submit(app, 'revoked');
+    expect(res.statusCode).toBe(401);
   });
 });

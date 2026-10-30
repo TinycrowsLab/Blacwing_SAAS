@@ -104,7 +104,11 @@
         "oncall.roster.updated",
         "oncall.sod_skipped",
         "gate2.exception.created",
-        "gate2.decision.recorded"
+        "gate2.decision.recorded",
+        "gate1.submitted",
+        "gate1.approved",
+        "gate1.changes_requested",
+        "gate1.rejected"
       ]
     },
     "severity": {

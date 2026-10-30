@@ -115,6 +115,10 @@ const RELEASED_ACTIONS = [
   'oncall.sod_skipped',
   'gate2.exception.created',
   'gate2.decision.recorded',
+  'gate1.submitted',
+  'gate1.approved',
+  'gate1.changes_requested',
+  'gate1.rejected',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

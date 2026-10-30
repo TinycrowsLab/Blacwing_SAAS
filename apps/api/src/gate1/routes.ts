@@ -14,6 +14,8 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 /** `GET /v1/runs/{runId}/gate1`: the plan under review at Gate 1 (#877). */
 const GATE1_PLAN_ROUTE = '/v1/runs/:runId/gate1';
+/** `POST /v1/runs/{runId}/gate1/submit`: validate the plan and move the run to Gate 1 (#398). */
+const GATE1_SUBMIT_ROUTE = '/v1/runs/:runId/gate1/submit';
 /** `POST /v1/runs/{runId}/gate1/decisions`: approve, request changes or reject (#877). */
 const GATE1_DECISION_ROUTE = '/v1/runs/:runId/gate1/decisions';
 
@@ -52,6 +54,17 @@ export function registerGate1Routes(app: FastifyInstance, options: Gate1RoutesOp
       const { runId } = request.params as { runId: string };
       const plan = await options.service.getPlan(principal, runId);
       return reply.status(HTTP_OK).header('cache-control', 'no-store').send(plan);
+    });
+
+    scope.post(GATE1_SUBMIT_ROUTE, async (request, reply) => {
+      const principal = await options.authenticate(request);
+      const { runId } = request.params as { runId: string };
+      const submitted = await options.service.submit({
+        principal,
+        runId,
+        traceId: trace.getActiveSpan()?.spanContext().traceId ?? null,
+      });
+      return reply.status(HTTP_OK).header('cache-control', 'no-store').send(submitted);
     });
 
     scope.post(GATE1_DECISION_ROUTE, async (request, reply) => {

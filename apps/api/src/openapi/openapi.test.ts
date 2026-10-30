@@ -94,6 +94,7 @@ const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   listAuditEvents: 'audit',
   streamRunEvents: 'runs',
   getGate1Plan: 'gate1',
+  submitGate1: 'gate1',
   decideGate1: 'gate1',
   listPersonas: 'personas',
   getPersona: 'personas',
@@ -202,6 +203,7 @@ describe('public OpenAPI document', () => {
       'requestSignup',
       'streamRunEvents',
       'submitAssessmentRequest',
+      'submitGate1',
       'submitStandingAuthorisation',
       'triggerKill',
       'updateAssessmentRequest',
@@ -214,7 +216,7 @@ describe('public OpenAPI document', () => {
       'verifySignup',
       'withdrawAssessmentRequest',
     ]);
-    expect(countOperations(doc)).toBe(48);
+    expect(countOperations(doc)).toBe(49);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -342,7 +344,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(48);
+    expect(result.operations).toBe(49);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

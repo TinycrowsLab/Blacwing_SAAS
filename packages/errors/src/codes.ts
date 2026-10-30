@@ -55,6 +55,12 @@ const DEFINITIONS = {
   },
   // The Gate 1 approval window closed before the decision; a late approval is never recorded.
   GATE1_EXPIRED: { status: 409, title: 'Approval window expired', retryable: false },
+  // Submit-for-Gate-1 refused: the plan failed PLAN-006 validation (SA, policy or budget). Nothing is signalled.
+  GATE1_PLAN_INVALID: {
+    status: 422,
+    title: 'Test plan failed validation',
+    retryable: false,
+  },
   // A request that reaches a tenant-scoped path without a resolvable tenant context is refused outright
   // (§7/§8.6 fail closed, TENANT-003): 403, never retried, never served without isolation. A caller with no
   // principal at all is `UNAUTHENTICATED` (401) before this can happen.

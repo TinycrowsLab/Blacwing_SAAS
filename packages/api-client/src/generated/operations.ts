@@ -281,6 +281,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: ['Idempotency-Key'],
   },
+  submitGate1: {
+    method: 'POST',
+    path: '/v1/runs/{runId}/gate1/submit',
+    pathParams: ['runId'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   submitStandingAuthorisation: {
     method: 'POST',
     path: '/v1/standing-authorisations/{id}/submit',

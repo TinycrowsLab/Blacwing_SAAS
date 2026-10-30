@@ -1,0 +1,2 @@
+ALTER TABLE "authz_gate_decisions" ADD COLUMN "requester_id" uuid;--> statement-breakpoint
+ALTER TABLE "authz_gate_decisions" ADD CONSTRAINT "authz_gate_decisions_sod_check" CHECK ("authz_gate_decisions"."gate" = 3 OR "authz_gate_decisions"."decision" <> 'approved' OR ("authz_gate_decisions"."requester_id" IS NOT NULL AND "authz_gate_decisions"."actor_id" IS NOT NULL AND "authz_gate_decisions"."requester_id" <> "authz_gate_decisions"."actor_id"));

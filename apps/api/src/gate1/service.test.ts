@@ -4,10 +4,17 @@ import { AppError } from '@blackwing/errors';
 import { FixedClock } from '@blackwing/time';
 
 import { Gate1Error } from './errors.js';
-import { InMemoryGate1AuditSink, InMemoryGate1Store } from './memory.js';
+import { InMemoryGate1AuditSink, InMemoryGate1Signaler, InMemoryGate1Store } from './memory.js';
+import { createCedarGate1Policy } from './policy.js';
 import { Gate1Service } from './service.js';
 
-import type { Gate1Plan, Gate1Principal, Gate1RunRecord } from './ports.js';
+import type {
+  Gate1Plan,
+  Gate1PlanValidator,
+  Gate1PlanVerdict,
+  Gate1Principal,
+  Gate1RunRecord,
+} from './ports.js';
 import type { Gate1TestCase, RunState } from '@blackwing/contracts';
 
 const TENANT = '0190a5d0-1111-7111-8111-111111111111';
@@ -67,11 +74,28 @@ const principal = (over: Partial<Gate1Principal> = {}): Gate1Principal => ({
 
 const REQUEST = { decision: 'approve', planVersion: 2 } as const;
 
+/** A validator whose verdict the test sets; passes by default. */
+class FakeValidator implements Gate1PlanValidator {
+  verdict: Gate1PlanVerdict = { valid: true };
+  validate(): Promise<Gate1PlanVerdict> {
+    return Promise.resolve(this.verdict);
+  }
+}
+
 function harness(run: Gate1RunRecord | null = runOf(), now = NOW) {
   const store = new InMemoryGate1Store(run === null ? [] : [run]);
   const audit = new InMemoryGate1AuditSink();
-  const service = new Gate1Service({ store, audit, clock: new FixedClock(now) });
-  return { store, audit, service };
+  const signaler = new InMemoryGate1Signaler();
+  const validator = new FakeValidator();
+  const service = new Gate1Service({
+    store,
+    audit,
+    validator,
+    signaler,
+    policy: createCedarGate1Policy(),
+    clock: new FixedClock(now),
+  });
+  return { store, audit, signaler, validator, service };
 }
 
 async function captured(promise: Promise<unknown>): Promise<AppError> {
@@ -188,7 +212,7 @@ describe('Gate1Service.decide', () => {
     expect((await store.getRun(TENANT, RUN))?.state).toBe('approved');
     expect(audit.records).toHaveLength(1);
     expect(audit.records[0]).toMatchObject({
-      action: 'gate1.decided',
+      action: 'gate1.approved',
       outcome: 'success',
       tenantId: TENANT,
       actor: { type: 'user', id: APPROVER },
@@ -356,5 +380,251 @@ describe('Gate1Service.decide', () => {
       decide(service, { body: { decision: 'approve', planVersion: 2, runState: 'released' } }),
     );
     expect(error.code).toBe('VALIDATION_FAILED');
+  });
+});
+
+const SUBMITTER = 'user-submitter';
+
+/** A run still in `planning`, with no requester yet (the plan has not been submitted). */
+const planningRun = (over: Partial<Gate1RunRecord> = {}): Gate1RunRecord =>
+  runOf({ state: 'planning', stateVersion: 3, requesterId: null, ...over });
+
+/** A signaler that the workflow never acknowledges. */
+class UnreachableSignaler {
+  send(): Promise<void> {
+    return Promise.reject(new Error('temporal unreachable'));
+  }
+}
+
+describe('Gate1Service.submit (#398)', () => {
+  const submitter = (over: Partial<Gate1Principal> = {}) =>
+    principal({ id: SUBMITTER, roles: ['appsec_engineer'], ...over });
+
+  it('moves a valid plan to awaiting_gate1, records the submitter and signals the workflow', async () => {
+    const { store, audit, signaler, service } = harness(planningRun());
+    const response = await service.submit({ principal: submitter(), runId: RUN, traceId: null });
+    expect(response).toMatchObject({ runId: RUN, planVersion: 2, runState: 'awaiting_gate1' });
+    expect(await store.getRun(TENANT, RUN)).toMatchObject({
+      state: 'awaiting_gate1',
+      stateVersion: 4,
+      requesterId: SUBMITTER,
+    });
+    expect(signaler.signals).toEqual([
+      {
+        tenantId: TENANT,
+        runId: RUN,
+        signal: { kind: 'plan_submitted', actorId: SUBMITTER, planVersion: 2 },
+      },
+    ]);
+    expect(audit.records).toHaveLength(1);
+    expect(audit.records[0]).toMatchObject({
+      action: 'gate1.submitted',
+      outcome: 'success',
+      actor: { type: 'user', id: SUBMITTER },
+      target: { type: 'run', id: RUN },
+      metadata: { planVersion: 2, fromState: 'planning', toState: 'awaiting_gate1' },
+    });
+  });
+
+  it('refuses an invalid plan with GATE1_PLAN_INVALID: nothing moves, nothing is signalled, the refusal is audited', async () => {
+    const { store, audit, signaler, validator, service } = harness(planningRun());
+    validator.verdict = { valid: false, violations: ['case tc-1 has no oracle'] };
+    const error = await captured(
+      service.submit({ principal: submitter(), runId: RUN, traceId: null }),
+    );
+    expect(error.code).toBe('GATE1_PLAN_INVALID');
+    expect(error.message).toContain('case tc-1 has no oracle');
+    expect(await store.getRun(TENANT, RUN)).toMatchObject({ state: 'planning', stateVersion: 3 });
+    expect(signaler.signals).toHaveLength(0);
+    expect(audit.records[0]).toMatchObject({ action: 'gate1.submitted', outcome: 'denied' });
+  });
+
+  it('refuses a run that is not planning with ILLEGAL_RUN_TRANSITION (409) and changes nothing', async () => {
+    const { store, signaler, service } = harness(runOf());
+    const error = await captured(
+      service.submit({ principal: submitter(), runId: RUN, traceId: null }),
+    );
+    expect(error.code).toBe('ILLEGAL_RUN_TRANSITION');
+    expect(error.httpStatus).toBe(409);
+    expect(await store.getRun(TENANT, RUN)).toMatchObject({
+      state: 'awaiting_gate1',
+      stateVersion: 7,
+    });
+    expect(signaler.signals).toHaveLength(0);
+  });
+
+  it('refuses a caller without testplan:edit with FORBIDDEN and audits the refusal', async () => {
+    const { store, audit, service } = harness(planningRun());
+    const error = await captured(
+      service.submit({ principal: submitter({ roles: [] }), runId: RUN, traceId: null }),
+    );
+    expect(error.code).toBe('FORBIDDEN');
+    expect(audit.records[0]).toMatchObject({ outcome: 'denied', metadata: { code: 'FORBIDDEN' } });
+    expect(await store.getRun(TENANT, RUN)).toMatchObject({ state: 'planning' });
+  });
+
+  it('fails closed when the workflow does not acknowledge: nothing is recorded, a retry can succeed', async () => {
+    const store = new InMemoryGate1Store([planningRun()]);
+    const audit = new InMemoryGate1AuditSink();
+    const failing = new Gate1Service({
+      store,
+      audit,
+      validator: new FakeValidator(),
+      signaler: new UnreachableSignaler(),
+      policy: createCedarGate1Policy(),
+      clock: new FixedClock(NOW),
+    });
+    const error = await captured(
+      failing.submit({ principal: submitter(), runId: RUN, traceId: null }),
+    );
+    expect(error.code).toBe('TEMPORAL_UNAVAILABLE');
+    expect(error.httpStatus).toBe(503);
+    expect(await store.getRun(TENANT, RUN)).toMatchObject({ state: 'planning', stateVersion: 3 });
+    expect(audit.records).toHaveLength(0);
+
+    const { service } = harness(planningRun());
+    await expect(
+      service.submit({ principal: submitter(), runId: RUN, traceId: null }),
+    ).resolves.toMatchObject({ runState: 'awaiting_gate1' });
+  });
+
+  it('never submits another tenant run: 404 and no change', async () => {
+    const { store, service } = harness(planningRun());
+    const error = await captured(
+      service.submit({
+        principal: submitter({ tenantId: OTHER_TENANT }),
+        runId: RUN,
+        traceId: null,
+      }),
+    );
+    expect(error.code).toBe('NOT_FOUND');
+    expect(await store.getRun(TENANT, RUN)).toMatchObject({ state: 'planning' });
+  });
+
+  it('fails closed without a tenant context', async () => {
+    const { service } = harness(planningRun());
+    const error = await captured(
+      service.submit({ principal: submitter({ tenantId: null }), runId: RUN, traceId: null }),
+    );
+    expect(error.code).toBe('TENANT_CONTEXT_MISSING');
+  });
+
+  it('makes the submitter the requester: the submitter can never approve the plan they submitted (SoD)', async () => {
+    const { service } = harness(planningRun());
+    await service.submit({ principal: submitter(), runId: RUN, traceId: null });
+    const error = await captured(
+      service.decide({
+        principal: principal({ id: SUBMITTER, roles: ['asset_owner'] }),
+        runId: RUN,
+        body: REQUEST,
+        idempotencyKey: KEY,
+        traceId: null,
+      }),
+    );
+    expect(error.code).toBe('SOD_VIOLATION');
+  });
+});
+
+describe('Gate1Service.decide: workflow signal and per-outcome audit (#398)', () => {
+  async function decideWith(decision: 'approve' | 'request_changes' | 'reject') {
+    const { store, audit, signaler, service } = harness();
+    const body =
+      decision === 'approve'
+        ? { decision, planVersion: 2 }
+        : { decision, planVersion: 2, reason: 'Drop the admin panel from scope.' };
+    const response = await service.decide({
+      principal: principal(),
+      runId: RUN,
+      body,
+      idempotencyKey: KEY,
+      traceId: null,
+    });
+    return { store, audit, signaler, response };
+  }
+
+  it('signals the workflow with the approved decision and audits gate1.approved', async () => {
+    const { signaler, audit } = await decideWith('approve');
+    expect(signaler.signals).toEqual([
+      {
+        tenantId: TENANT,
+        runId: RUN,
+        signal: { kind: 'decided', decision: 'approved', actorId: APPROVER, planVersion: 2 },
+      },
+    ]);
+    expect(audit.records[0]?.action).toBe('gate1.approved');
+  });
+
+  it('request changes signals a replan with the reason and audits gate1.changes_requested', async () => {
+    const { signaler, audit, response, store } = await decideWith('request_changes');
+    expect(response.runState).toBe('planning');
+    expect(signaler.signals[0]?.signal).toEqual({
+      kind: 'decided',
+      decision: 'rejected',
+      next: 'replan',
+      actorId: APPROVER,
+      planVersion: 2,
+      reason: 'Drop the admin panel from scope.',
+    });
+    expect(audit.records[0]?.action).toBe('gate1.changes_requested');
+    expect(await store.getRun(TENANT, RUN)).toMatchObject({ state: 'planning' });
+  });
+
+  it('reject signals a cancel with the reason, audits gate1.rejected and cancels the run', async () => {
+    const { signaler, audit, response } = await decideWith('reject');
+    expect(response.runState).toBe('cancelled');
+    expect(signaler.signals[0]?.signal).toMatchObject({ decision: 'rejected', next: 'cancel' });
+    expect(audit.records[0]?.action).toBe('gate1.rejected');
+  });
+
+  it('records nothing when the workflow does not acknowledge, so the same key can retry', async () => {
+    const store = new InMemoryGate1Store([runOf()]);
+    const audit = new InMemoryGate1AuditSink();
+    const failing = new Gate1Service({
+      store,
+      audit,
+      validator: new FakeValidator(),
+      signaler: new UnreachableSignaler(),
+      policy: createCedarGate1Policy(),
+      clock: new FixedClock(NOW),
+    });
+    const error = await captured(
+      failing.decide({
+        principal: principal(),
+        runId: RUN,
+        body: REQUEST,
+        idempotencyKey: KEY,
+        traceId: null,
+      }),
+    );
+    expect(error.code).toBe('TEMPORAL_UNAVAILABLE');
+    expect(await store.getRun(TENANT, RUN)).toMatchObject({
+      state: 'awaiting_gate1',
+      stateVersion: 7,
+    });
+    expect(await store.findDecision(TENANT, KEY)).toBeNull();
+    expect(audit.records).toHaveLength(0);
+  });
+
+  it('refuses a decision the Cedar policy denies, even when the service check passed', async () => {
+    const { store, audit } = harness();
+    const deny = new Gate1Service({
+      store,
+      audit,
+      validator: new FakeValidator(),
+      signaler: new InMemoryGate1Signaler(),
+      policy: { authorize: () => 'deny' },
+      clock: new FixedClock(NOW),
+    });
+    const error = await captured(
+      deny.decide({
+        principal: principal(),
+        runId: RUN,
+        body: REQUEST,
+        idempotencyKey: KEY,
+        traceId: null,
+      }),
+    );
+    expect(error.code).toBe('FORBIDDEN');
+    expect(await store.getRun(TENANT, RUN)).toMatchObject({ state: 'awaiting_gate1' });
   });
 });
