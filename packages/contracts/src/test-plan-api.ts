@@ -45,6 +45,8 @@ export type TestCasePatchBody = z.infer<typeof testCasePatchBodySchema>;
 export const testCaseViewSchema = z.strictObject({
   caseId: uuidV7Schema,
   planId: uuidV7Schema,
+  /** The case's ETag: the `If-Match` a PATCH or DELETE of this case must send (PLAN-005, §9). */
+  etag: z.string().min(1),
   class: intrusivenessSchema,
   title: z.string(),
   status: z.enum(TEST_CASE_STATUSES),
@@ -74,6 +76,8 @@ export type TestPlanSummary = z.infer<typeof testPlanSummarySchema>;
 
 /** A plan version with its cases. */
 export const testPlanViewSchema = testPlanSummarySchema.extend({
+  /** The version's ETag: the `If-Match` a case added to this draft must send (PLAN-005, §9). */
+  etag: z.string().min(1),
   cases: z.array(testCaseViewSchema),
 });
 export type TestPlanView = z.infer<typeof testPlanViewSchema>;

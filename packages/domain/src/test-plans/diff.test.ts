@@ -15,6 +15,7 @@ function caseOf(caseId: string, overrides: Partial<TestCaseView> = {}): TestCase
   return {
     caseId,
     planId: '0198f0a0-0000-7000-8000-0000000000f1',
+    etag: '"5b1d0c9a3e2f"',
     class: 'passive',
     title: `case ${caseId}`,
     status: 'proposed',

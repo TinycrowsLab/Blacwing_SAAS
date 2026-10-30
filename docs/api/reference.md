@@ -23175,12 +23175,14 @@ Example: A draft version with one case.
   "runId": "0198f0a0-0000-7000-8000-0000000000e1",
   "version": 2,
   "status": "draft",
+  "etag": "\"8c2e7f4a10b9\"",
   "createdAt": "2026-10-01T10:00:00.000Z",
   "updatedAt": "2026-10-01T10:00:00.000Z",
   "cases": [
     {
       "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
       "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+      "etag": "\"5b1d0c9a3e2f\"",
       "class": "passive",
       "title": "Login rate limit is enforced",
       "status": "proposed",
@@ -23507,12 +23509,14 @@ Example: A draft version with one case.
   "runId": "0198f0a0-0000-7000-8000-0000000000e1",
   "version": 2,
   "status": "draft",
+  "etag": "\"8c2e7f4a10b9\"",
   "createdAt": "2026-10-01T10:00:00.000Z",
   "updatedAt": "2026-10-01T10:00:00.000Z",
   "cases": [
     {
       "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
       "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+      "etag": "\"5b1d0c9a3e2f\"",
       "class": "passive",
       "title": "Login rate limit is enforced",
       "status": "proposed",
@@ -24148,6 +24152,7 @@ Example: A passive check.
 {
   "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
   "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+  "etag": "\"5b1d0c9a3e2f\"",
   "class": "passive",
   "title": "Login rate limit is enforced",
   "status": "proposed",
@@ -24194,6 +24199,7 @@ Example: A proposed case.
 {
   "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
   "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+  "etag": "\"5b1d0c9a3e2f\"",
   "class": "passive",
   "title": "Login rate limit is enforced",
   "status": "proposed",
@@ -24826,6 +24832,7 @@ Example: A proposed case.
 {
   "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
   "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+  "etag": "\"5b1d0c9a3e2f\"",
   "class": "passive",
   "title": "Login rate limit is enforced",
   "status": "proposed",
@@ -25162,6 +25169,7 @@ Example: A proposed case.
 {
   "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
   "planId": "0198f0a0-0000-7000-8000-0000000000d1",
+  "etag": "\"5b1d0c9a3e2f\"",
   "class": "passive",
   "title": "Login rate limit is enforced",
   "status": "proposed",
@@ -34723,6 +34731,7 @@ Full schema:
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------- |
 | `caseId`          | string                                                                                                                                                   | yes      |             |
 | `planId`          | string                                                                                                                                                   | yes      |             |
+| `etag`            | string                                                                                                                                                   | yes      |             |
 | `class`           | enum: `"passive"`, `"active_safe"`, `"state_changing"`, `"destructive"`                                                                                  | yes      |             |
 | `title`           | string                                                                                                                                                   | yes      |             |
 | `status`          | enum: `"proposed"`, `"approved"`, `"removed"`, `"executing"`, `"executed"`, `"skipped"`, `"blocked"`, `"failed"`, `"model_declined"`, `"not_applicable"` | yes      |             |
@@ -34750,6 +34759,10 @@ Full schema:
     "planId": {
       "type": "string",
       "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "etag": {
+      "type": "string",
+      "minLength": 1
     },
     "class": {
       "type": "string",
@@ -34913,6 +34926,7 @@ Full schema:
   "required": [
     "caseId",
     "planId",
+    "etag",
     "class",
     "title",
     "status",
@@ -35000,6 +35014,7 @@ Full schema:
 | `status`    | enum: `"draft"`, `"proposed"`, `"approved"`, `"superseded"` | yes      |             |
 | `createdAt` | string (date-time)                                          | yes      |             |
 | `updatedAt` | string (date-time)                                          | yes      |             |
+| `etag`      | string                                                      | yes      |             |
 | `cases`     | array of object                                             | yes      |             |
 
 Full schema:
@@ -35035,6 +35050,10 @@ Full schema:
       "format": "date-time",
       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
     },
+    "etag": {
+      "type": "string",
+      "minLength": 1
+    },
     "cases": {
       "type": "array",
       "items": {
@@ -35047,6 +35066,10 @@ Full schema:
           "planId": {
             "type": "string",
             "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "etag": {
+            "type": "string",
+            "minLength": 1
           },
           "class": {
             "type": "string",
@@ -35210,6 +35233,7 @@ Full schema:
         "required": [
           "caseId",
           "planId",
+          "etag",
           "class",
           "title",
           "status",
@@ -35228,7 +35252,7 @@ Full schema:
       }
     }
   },
-  "required": ["planId", "runId", "version", "status", "createdAt", "updatedAt", "cases"],
+  "required": ["planId", "runId", "version", "status", "createdAt", "updatedAt", "etag", "cases"],
   "additionalProperties": false
 }
 ```

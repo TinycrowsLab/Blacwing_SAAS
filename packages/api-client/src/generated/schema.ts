@@ -2046,6 +2046,7 @@ export interface components {
     TestCaseView: {
       caseId: string;
       planId: string;
+      etag: string;
       /** @enum {string} */
       class: 'passive' | 'active_safe' | 'state_changing' | 'destructive';
       title: string;
@@ -2125,9 +2126,11 @@ export interface components {
       createdAt: string;
       /** Format: date-time */
       updatedAt: string;
+      etag: string;
       cases: {
         caseId: string;
         planId: string;
+        etag: string;
         /** @enum {string} */
         class: 'passive' | 'active_safe' | 'state_changing' | 'destructive';
         title: string;

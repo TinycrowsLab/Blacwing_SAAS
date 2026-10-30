@@ -9,6 +9,7 @@ import {
   testCaseViewSchema,
   testPlanPageSchema,
   testPlanSummarySchema,
+  testPlanViewSchema,
 } from '@blackwing/contracts';
 
 import {
@@ -49,6 +50,7 @@ const IDEMPOTENCY_KEY: JsonObject = {
 const EXAMPLE_CASE = {
   caseId: '0198f0a0-0000-7000-8000-0000000000c1',
   planId: '0198f0a0-0000-7000-8000-0000000000d1',
+  etag: '"5b1d0c9a3e2f"',
   class: 'passive',
   title: 'Login rate limit is enforced',
   status: 'proposed',
@@ -69,6 +71,7 @@ const EXAMPLE_PLAN = {
   runId: '0198f0a0-0000-7000-8000-0000000000e1',
   version: 2,
   status: 'draft',
+  etag: '"8c2e7f4a10b9"',
   createdAt: '2026-10-01T10:00:00.000Z',
   updatedAt: '2026-10-01T10:00:00.000Z',
   cases: [EXAMPLE_CASE],
@@ -114,7 +117,7 @@ const EXAMPLE_VALIDATION = {
   validatedAt: '2026-10-30T00:00:00.000Z',
 };
 
-const planDocument = testPlanSummarySchema.extend({ cases: z.array(caseDocument) });
+const planDocument = testPlanViewSchema.extend({ cases: z.array(caseDocument) });
 const pageDocument = testPlanPageSchema.extend({ items: z.array(testPlanSummarySchema) });
 /** A field change's before and after are any JSON value; the document leaves them untyped. */
 const diffDocument = planDiffSchema.extend({

@@ -110,6 +110,7 @@ function caseView(testCase: TestCaseRow): TestCaseView {
   return {
     caseId: testCase.id,
     planId: testCase.testPlanId,
+    etag: caseEtag(testCase),
     class: testCase.class,
     title: testCase.title,
     status: testCase.status,
@@ -419,7 +420,11 @@ export class TestPlanService {
 
   private planView(plan: TestPlanRow, cases: readonly TestCaseRow[]): Versioned<TestPlanView> {
     return {
-      body: { ...planSummary(plan), cases: cases.map((testCase) => caseView(testCase)) },
+      body: {
+        ...planSummary(plan),
+        etag: planEtag(plan),
+        cases: cases.map((testCase) => caseView(testCase)),
+      },
       etag: planEtag(plan),
     };
   }
