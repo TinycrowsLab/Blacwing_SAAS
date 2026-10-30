@@ -101,44 +101,6 @@ function Chip({ children }: { readonly children: ReactNode }) {
   );
 }
 
-/** Authorisation strip: SA id, signer and key are always visible on a run (design/README.md). */
-export function AuthStrip({
-  saId,
-  signer,
-  keyId,
-  items,
-}: {
-  readonly saId: string;
-  readonly signer: string;
-  readonly keyId: string;
-  readonly items: readonly { k: string; v: string }[];
-}) {
-  return (
-    <div className="grid grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))] overflow-hidden rounded-xl border border-border bg-card max-md:grid-cols-1">
-      <div className="flex items-center gap-2.5 border-r border-border px-4 py-3">
-        <span className="text-ok">
-          <Icon name="shield" size={20} />
-        </span>
-        <div className="flex flex-col">
-          <span className="text-[13px] font-semibold">Authorised under {saId}</span>
-          <span className="text-xs text-muted-foreground">
-            Signed by {signer}, key <span className="font-mono">{keyId}</span>
-          </span>
-        </div>
-      </div>
-      {items.map((it) => (
-        <div
-          key={it.k}
-          className="flex flex-col justify-center border-r border-border px-4 py-2.5 last:border-r-0"
-        >
-          <span className="text-[11.5px] text-muted-foreground">{it.k}</span>
-          <span className="truncate text-[12.5px] font-medium">{it.v}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /** Right-hand context panel (design 1b): what the screen is for, who sees it, what is audited. */
 export function ContextPanel({
   sections,

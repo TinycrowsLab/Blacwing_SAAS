@@ -227,14 +227,6 @@ export function IdChip({ children }: { readonly children: ReactNode }) {
   );
 }
 
-export function Kbd({ children }: { readonly children: ReactNode }) {
-  return (
-    <kbd className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-md border border-border-strong bg-card px-1.5 font-sans text-[11px] font-medium text-foreground">
-      {children}
-    </kbd>
-  );
-}
-
 const BUTTON_BASE =
   'inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-[13px] font-medium transition-[filter,background-color,border-color] duration-150 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-muted-foreground disabled:opacity-100 disabled:shadow-none motion-reduce:transition-none';
 
