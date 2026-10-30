@@ -847,7 +847,10 @@ export {
   ORACLE_SPEC_ERROR_CODES,
   ORACLE_SPEC_MAX_BYTES,
   ORACLE_SPEC_TYPES,
+  deriveOobCorrelationKey,
+  type MatrixCellResult,
   parseOracleSpec,
+  resolveMatrixCell,
 } from './oracles.js';
 export {
   bindEvidenceInputSchema,

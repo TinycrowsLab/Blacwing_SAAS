@@ -11,9 +11,14 @@ import {
   type OracleSpec,
   OracleSpecSchema,
   type OracleSpecType,
+  deriveOobCorrelationKey,
   isOracleSpec,
   parseOracleSpec,
+  resolveMatrixCell,
 } from './oracles.js';
+
+const TEST_CASE_ID = '0190f2a4-7c3e-7d2b-8f1a-3b4c5d6e7f80';
+const ROLE_MATRIX_ID = '0190f2a4-7c3e-7d2b-8f1a-3b4c5d6e7f81';
 
 const MARKER: OracleSpec = {
   type: 'marker',
@@ -51,11 +56,58 @@ const HEADER_COOKIE_FLAG: OracleSpec = {
   params: { subject: 'cookie', name: 'session', attribute: 'Secure', expectation: 'present' },
 };
 
+const TIMING_BASELINE: OracleSpec = {
+  type: 'timing_baseline',
+  description: 'Candidate response time separates from the baseline',
+  readOnly: true,
+  intrusiveness: 'active_safe',
+  params: {
+    baselineSamples: 5,
+    candidateSamples: 5,
+    method: 'median',
+    thresholdMs: 4000,
+    mustExceed: true,
+  },
+};
+
+const OUT_OF_BAND: OracleSpec = {
+  type: 'out_of_band',
+  description: 'A correlated DNS interaction arrives on the per-test token',
+  readOnly: true,
+  intrusiveness: 'active_safe',
+  params: { channel: 'dns', tokenBinding: 'per_test_case', expectInteraction: true },
+};
+
+const ACCESS_MATRIX: OracleSpec = {
+  type: 'access_matrix',
+  description: 'Observed access contradicts the role-matrix cell',
+  readOnly: true,
+  intrusiveness: 'active_safe',
+  params: {
+    roleMatrixId: ROLE_MATRIX_ID,
+    functionId: 'orders.read',
+    expected: 'deny',
+    observedVia: 'status',
+  },
+};
+
+const FILE_READ_MARKER: OracleSpec = {
+  type: 'file_read_marker',
+  description: 'Benign sentinel appears in the response body',
+  readOnly: true,
+  intrusiveness: 'active_safe',
+  params: { sentinelId: 'bw-sentinel-7', location: 'body', mustAppear: true },
+};
+
 const VALID: Record<OracleSpecType, OracleSpec> = {
   marker: MARKER,
   status_diff: STATUS_DIFF,
   error_signature: ERROR_SIGNATURE,
   header_cookie_flag: HEADER_COOKIE_FLAG,
+  timing_baseline: TIMING_BASELINE,
+  out_of_band: OUT_OF_BAND,
+  access_matrix: ACCESS_MATRIX,
+  file_read_marker: FILE_READ_MARKER,
 };
 
 /** Clones a valid spec as a plain JSON value, so tests can mutate one field at a time. */
@@ -366,7 +418,7 @@ describe('OracleSpecSchema', () => {
 });
 
 describe('ORACLE_REGISTRY', () => {
-  it('holds exactly the four catalogue types, each with a label and standards hints', () => {
+  it('holds exactly the eight catalogue types, each with a label and standards hints', () => {
     expect(Object.keys(ORACLE_REGISTRY).sort()).toEqual([...ORACLE_SPEC_TYPES].sort());
     for (const type of ORACLE_SPEC_TYPES) {
       const entry = ORACLE_REGISTRY[type];
@@ -405,6 +457,16 @@ describe('catalogue invariants', () => {
       status_diff: ['compareTo', 'expectation', 'fields'],
       error_signature: ['caseSensitive', 'matchIn', 'signatureId'],
       header_cookie_flag: ['attribute', 'expectation', 'name', 'subject', 'value'],
+      timing_baseline: [
+        'baselineSamples',
+        'candidateSamples',
+        'method',
+        'mustExceed',
+        'thresholdMs',
+      ],
+      out_of_band: ['channel', 'expectInteraction', 'tokenBinding'],
+      access_matrix: ['expected', 'functionId', 'observedVia', 'roleMatrixId'],
+      file_read_marker: ['location', 'mustAppear', 'sentinelId'],
     };
     const payloadKeys = /body|payload|command|script|request|query|header_?value|raw|html|code/i;
     for (const type of ORACLE_SPEC_TYPES) {
@@ -496,10 +558,70 @@ describe('oracle spec property', () => {
       }),
     );
 
+  const timingArb = fc.record({
+    type: fc.constant('timing_baseline' as const),
+    description,
+    readOnly: fc.constant(true as const),
+    intrusiveness,
+    params: fc.record({
+      baselineSamples: fc.integer({ min: 3, max: 50 }),
+      candidateSamples: fc.integer({ min: 3, max: 50 }),
+      method: fc.constantFrom('median' as const, 'mean' as const),
+      thresholdMs: fc.integer({ min: 1, max: 60_000 }),
+      mustExceed: fc.boolean(),
+    }),
+  });
+
+  const outOfBandArb = fc.record({
+    type: fc.constant('out_of_band' as const),
+    description,
+    readOnly: fc.constant(true as const),
+    intrusiveness,
+    params: fc.record({
+      channel: fc.constantFrom('dns' as const, 'http' as const, 'smtp' as const),
+      tokenBinding: fc.constant('per_test_case' as const),
+      expectInteraction: fc.boolean(),
+    }),
+  });
+
+  const accessMatrixArb = fc.record({
+    type: fc.constant('access_matrix' as const),
+    description,
+    readOnly: fc.constant(true as const),
+    intrusiveness,
+    params: fc.record({
+      roleMatrixId: fc.constant(ROLE_MATRIX_ID),
+      functionId: nfcText,
+      expected: fc.constantFrom('allow' as const, 'deny' as const),
+      observedVia: fc.constantFrom('status' as const, 'body_shape' as const),
+    }),
+  });
+
+  const fileReadArb = fc.record({
+    type: fc.constant('file_read_marker' as const),
+    description,
+    readOnly: fc.constant(true as const),
+    intrusiveness,
+    params: fc.record({
+      sentinelId: nfcText,
+      location: fc.constantFrom('body' as const, 'download' as const),
+      mustAppear: fc.boolean(),
+    }),
+  });
+
   it('round-trips any valid random spec through JSON unchanged', () => {
     fc.assert(
       fc.property(
-        fc.oneof(markerArb, statusDiffArb, errorSignatureArb, headerCookieArb),
+        fc.oneof(
+          markerArb,
+          statusDiffArb,
+          errorSignatureArb,
+          headerCookieArb,
+          timingArb,
+          outOfBandArb,
+          accessMatrixArb,
+          fileReadArb,
+        ),
         (spec) => {
           const json = structuredClone(spec) as unknown;
           const parsed = parseOracleSpec(json);
@@ -508,5 +630,298 @@ describe('oracle spec property', () => {
         },
       ),
     );
+  });
+});
+
+/** The error `parseOracleSpec` throws for an input, or `undefined` when it parses. */
+function parseError(input: unknown): OracleSpecError | undefined {
+  try {
+    parseOracleSpec(input);
+    return undefined;
+  } catch (error) {
+    return error instanceof OracleSpecError ? error : undefined;
+  }
+}
+
+describe('timing_baseline spec', () => {
+  it('applies the documented sample default of 5 when samples are omitted', () => {
+    const params = omit(omit(VALID.timing_baseline.params, 'baselineSamples'), 'candidateSamples');
+    const parsed = parseOracleSpec({ ...VALID.timing_baseline, params });
+    expect(parsed.params).toMatchObject({ baselineSamples: 5, candidateSamples: 5 });
+  });
+
+  it('refuses fewer than three samples with ORACLE_TIMING_SAMPLES_LOW', () => {
+    for (const samples of [0, 1, 2]) {
+      const error = parseError(
+        withParams('timing_baseline', {
+          ...VALID.timing_baseline.params,
+          baselineSamples: samples,
+        }),
+      );
+      expect(error?.code, String(samples)).toBe('ORACLE_SPEC_INVALID');
+      expect(error?.message, String(samples)).toContain('ORACLE_TIMING_SAMPLES_LOW');
+    }
+    expect(
+      isOracleSpec(
+        withParams('timing_baseline', { ...VALID.timing_baseline.params, candidateSamples: 2 }),
+      ),
+    ).toBe(false);
+  });
+
+  it('accepts exactly three samples and rejects samples above the ceiling', () => {
+    expect(
+      isOracleSpec(
+        withParams('timing_baseline', {
+          ...VALID.timing_baseline.params,
+          baselineSamples: 3,
+          candidateSamples: 3,
+        }),
+      ),
+    ).toBe(true);
+    expect(
+      isOracleSpec(
+        withParams('timing_baseline', { ...VALID.timing_baseline.params, candidateSamples: 51 }),
+      ),
+    ).toBe(false);
+  });
+
+  it('rejects a non-integer sample count', () => {
+    expect(
+      isOracleSpec(
+        withParams('timing_baseline', { ...VALID.timing_baseline.params, baselineSamples: 4.5 }),
+      ),
+    ).toBe(false);
+  });
+
+  it('bounds thresholdMs between 1 and one minute', () => {
+    for (const thresholdMs of [0, -5, 60_001, 1.5]) {
+      expect(
+        isOracleSpec(
+          withParams('timing_baseline', { ...VALID.timing_baseline.params, thresholdMs }),
+        ),
+        String(thresholdMs),
+      ).toBe(false);
+    }
+    expect(
+      isOracleSpec(
+        withParams('timing_baseline', { ...VALID.timing_baseline.params, thresholdMs: 60_000 }),
+      ),
+    ).toBe(true);
+  });
+
+  it('accepts only the median or mean method', () => {
+    expect(
+      isOracleSpec(
+        withParams('timing_baseline', { ...VALID.timing_baseline.params, method: 'max' }),
+      ),
+    ).toBe(false);
+  });
+
+  it('rejects a payload key such as a request body', () => {
+    expect(
+      isOracleSpec(
+        withParams('timing_baseline', {
+          ...VALID.timing_baseline.params,
+          body: "1' OR SLEEP(5)--",
+        }),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('out_of_band spec', () => {
+  it('accepts only the three declared channels', () => {
+    for (const channel of ['dns', 'http', 'smtp']) {
+      expect(isOracleSpec(withParams('out_of_band', { ...OUT_OF_BAND.params, channel }))).toBe(
+        true,
+      );
+    }
+    expect(isOracleSpec(withParams('out_of_band', { ...OUT_OF_BAND.params, channel: 'ftp' }))).toBe(
+      false,
+    );
+  });
+
+  it('requires the per-test-case token binding', () => {
+    expect(
+      isOracleSpec(withParams('out_of_band', { ...OUT_OF_BAND.params, tokenBinding: 'shared' })),
+    ).toBe(false);
+  });
+
+  it('never accepts a token or secret inside the spec', () => {
+    const withToken = withParams('out_of_band', {
+      ...OUT_OF_BAND.params,
+      token: 'abcdefgh12345678',
+    });
+    expect(isOracleSpec(withToken)).toBe(false);
+    expect(isOracleSpec(withParams('out_of_band', { ...OUT_OF_BAND.params, secret: 'x' }))).toBe(
+      false,
+    );
+  });
+
+  it('rejects a non-boolean expectInteraction', () => {
+    expect(
+      isOracleSpec(withParams('out_of_band', { ...OUT_OF_BAND.params, expectInteraction: 'yes' })),
+    ).toBe(false);
+  });
+
+  it('derives a deterministic correlation key from the test case and token', () => {
+    const token = 'c9x3k2m7p1q8r4s6';
+    const key = deriveOobCorrelationKey(TEST_CASE_ID, token);
+    expect(key).toBe(`${TEST_CASE_ID}:${token}`);
+    expect(deriveOobCorrelationKey(TEST_CASE_ID, token)).toBe(key);
+  });
+
+  it('gives distinct keys for distinct tokens, so concurrent test cases stay unambiguous', () => {
+    const a = deriveOobCorrelationKey(TEST_CASE_ID, 'aaaaaaaa11111111');
+    const b = deriveOobCorrelationKey(TEST_CASE_ID, 'bbbbbbbb22222222');
+    const c = deriveOobCorrelationKey(ROLE_MATRIX_ID, 'aaaaaaaa11111111');
+    expect(new Set([a, b, c]).size).toBe(3);
+  });
+
+  it('refuses a correlation key for a malformed test case id or token', () => {
+    expect(() => deriveOobCorrelationKey('not-a-uuid', 'aaaaaaaa11111111')).toThrow(
+      OracleSpecError,
+    );
+    for (const token of ['short', 'has/slash', '../../etc', 'x'.repeat(65), '']) {
+      expect(() => deriveOobCorrelationKey(TEST_CASE_ID, token), token).toThrow(OracleSpecError);
+    }
+  });
+});
+
+describe('access_matrix spec', () => {
+  it('requires a valid roleMatrixId', () => {
+    expect(
+      isOracleSpec(
+        withParams('access_matrix', { ...ACCESS_MATRIX.params, roleMatrixId: 'matrix-1' }),
+      ),
+    ).toBe(false);
+    expect(
+      isOracleSpec(
+        withParams('access_matrix', {
+          ...ACCESS_MATRIX.params,
+          roleMatrixId: '0190f2a4-7c3e-4d2b-8f1a-3b4c5d6e7f81',
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it('requires a valid expected cell value', () => {
+    expect(isOracleSpec(withParams('access_matrix', omit(ACCESS_MATRIX.params, 'expected')))).toBe(
+      false,
+    );
+    expect(
+      isOracleSpec(withParams('access_matrix', { ...ACCESS_MATRIX.params, expected: 'maybe' })),
+    ).toBe(false);
+  });
+
+  it('accepts only status or body_shape as observedVia', () => {
+    expect(
+      isOracleSpec(withParams('access_matrix', { ...ACCESS_MATRIX.params, observedVia: 'body' })),
+    ).toBe(false);
+  });
+
+  it('normalises a Unicode functionId to NFC', () => {
+    const decomposed = 'café.read';
+    const parsed = parseOracleSpec(
+      withParams('access_matrix', { ...ACCESS_MATRIX.params, functionId: decomposed }),
+    );
+    expect(parsed.params).toMatchObject({ functionId: 'café.read' });
+  });
+
+  it('resolves an existing matrix cell to its expected access', () => {
+    const cells = new Map<string, 'allow' | 'deny'>([
+      ['member:orders.read', 'allow'],
+      ['viewer:orders.delete', 'deny'],
+    ]);
+    expect(resolveMatrixCell(cells, 'member', 'orders.read')).toEqual({
+      ok: true,
+      expected: 'allow',
+    });
+    expect(resolveMatrixCell(cells, 'viewer', 'orders.delete')).toEqual({
+      ok: true,
+      expected: 'deny',
+    });
+  });
+
+  it('fails closed with ORACLE_MATRIX_CELL_MISSING and never reads a missing cell as deny', () => {
+    const cells = new Map<string, 'allow' | 'deny'>([['member:orders.read', 'allow']]);
+    expect(resolveMatrixCell(cells, 'viewer', 'orders.read')).toEqual({
+      ok: false,
+      code: 'ORACLE_MATRIX_CELL_MISSING',
+    });
+  });
+});
+
+describe('file_read_marker spec', () => {
+  it('accepts body and download locations and rejects others', () => {
+    for (const location of ['body', 'download']) {
+      expect(
+        isOracleSpec(withParams('file_read_marker', { ...FILE_READ_MARKER.params, location })),
+        location,
+      ).toBe(true);
+    }
+    expect(
+      isOracleSpec(
+        withParams('file_read_marker', { ...FILE_READ_MARKER.params, location: 'path' }),
+      ),
+    ).toBe(false);
+  });
+
+  it('requires a boolean mustAppear', () => {
+    expect(
+      isOracleSpec(withParams('file_read_marker', omit(FILE_READ_MARKER.params, 'mustAppear'))),
+    ).toBe(false);
+  });
+
+  it('rejects an empty sentinel id and one with a control character', () => {
+    expect(
+      isOracleSpec(withParams('file_read_marker', { ...FILE_READ_MARKER.params, sentinelId: '' })),
+    ).toBe(false);
+    expect(
+      isOracleSpec(
+        withParams('file_read_marker', { ...FILE_READ_MARKER.params, sentinelId: 'bad\u0007id' }),
+      ),
+    ).toBe(false);
+  });
+
+  it('allows a Unicode sentinel id and compares it NFC-normalised', () => {
+    const parsed = parseOracleSpec(
+      withParams('file_read_marker', { ...FILE_READ_MARKER.params, sentinelId: 'café-7' }),
+    );
+    expect(parsed.params).toMatchObject({ sentinelId: 'café-7' });
+  });
+
+  it('rejects a path-style payload key', () => {
+    expect(
+      isOracleSpec(
+        withParams('file_read_marker', { ...FILE_READ_MARKER.params, path: '../../etc/passwd' }),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('catalogue standards for the new types', () => {
+  it('cites identifiers only, never payloads', () => {
+    for (const type of [
+      'timing_baseline',
+      'out_of_band',
+      'access_matrix',
+      'file_read_marker',
+    ] as const) {
+      expect(ORACLE_REGISTRY[type].standards.length, type).toBeGreaterThan(0);
+      for (const standard of ORACLE_REGISTRY[type].standards) {
+        expect(standard).toMatch(/^[A-Z]+-[A-Z0-9-]+$/);
+      }
+    }
+  });
+
+  it('registers the out-of-band type against SSRF and the file-read type against traversal', () => {
+    expect(ORACLE_REGISTRY.out_of_band.standards).toContain('CWE-918');
+    expect(ORACLE_REGISTRY.file_read_marker.standards).toContain('CWE-22');
+    expect(ORACLE_REGISTRY.access_matrix.standards).toContain('CWE-639');
+  });
+
+  it('bumps the catalogue version for the four additional types', () => {
+    expect(ORACLE_CATALOGUE_VERSION).toBe('1.1.0');
   });
 });

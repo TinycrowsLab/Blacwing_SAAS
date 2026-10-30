@@ -170,9 +170,16 @@ repository, upsert, planner and INGEST code import it. The module is pure, with 
 `src/oracles.ts` holds the declared oracle **specs** that a test case binds to before it runs (`ORACLE_CATALOGUE_VERSION`).
 Execution is out of scope and belongs to the VALIDATE epic.
 
-- `OracleSpecSchema` is a discriminated union on `type`: `marker`, `status_diff`, `error_signature` and `header_cookie_flag`.
+- `OracleSpecSchema` is a discriminated union on `type`: `marker`, `status_diff`, `error_signature`, `header_cookie_flag`,
+  `timing_baseline`, `out_of_band`, `access_matrix` and `file_read_marker` (`ORACLE_CATALOGUE_VERSION` 1.1.0).
   Every spec carries `description`, `readOnly: true` and an `intrusiveness` hint (`passive` or `active_safe`, never `destructive`).
 - `params` objects are strict. No field accepts a body, command or other payload string. Header values are restricted to a printable charset.
+  `out_of_band` carries no token: it declares `tokenBinding: 'per_test_case'`, and the token is issued at run time.
+  `file_read_marker` names a benign sentinel, never sensitive data.
+- `timing_baseline` takes 3 to 50 samples per side (default 5). Fewer than three fails with the refinement code `ORACLE_TIMING_SAMPLES_LOW`.
+- `deriveOobCorrelationKey(testCaseId, token)` returns the deterministic `<testCaseId>:<token>` key that binds an
+  inbound interaction to one test case. Consumers log a hash of it, never the raw token.
+- `resolveMatrixCell(cells, roleKey, functionId)` returns the matrix cell, or `ORACLE_MATRIX_CELL_MISSING`. A missing cell is never read as `deny`.
 - `parseOracleSpec(json)` throws `OracleSpecError` with a stable code: `ORACLE_TYPE_UNKNOWN`, `ORACLE_SPEC_INVALID` or
   `ORACLE_SPEC_TOO_LARGE` (over `ORACLE_SPEC_MAX_BYTES`, 8 KiB). `isOracleSpec(value)` is the type guard.
-- `ORACLE_REGISTRY` maps each type to a label and standards IDs.
+- `ORACLE_REGISTRY` maps each of the eight types to a label and standards IDs.
