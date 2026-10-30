@@ -15,24 +15,24 @@ pnpm --filter sandbox-controller test:int   # Testcontainers Valkey + real proce
 
 ## Configuration
 
-| Key | Default | Notes |
-|---|---|---|
-| `SBX_MGMT_ADDR` | `:7070` | `host:port`; empty host = every interface of the controller pod. Dev: `127.0.0.1:13700`. |
-| `SBX_DRIVER` | `kubernetes` | `kubernetes` or `docker`. |
-| `SBX_NAMESPACE` | `bw-runs` | RFC 1123 label. |
-| `SBX_RUNTIME_CLASS` | `gvisor` | RFC 1123 label. |
-| `SBX_IMAGE_DIGEST` | required | Must be pinned `@sha256:` (§8.9); tags are refused. |
-| `SBX_TTL_SECONDS` | `3600` | 1 to 86400. |
-| `SBX_CPU` | `1` | Default CPU cores per sandbox (fractional, up to 16). Requests above the plan ceiling are clamped. |
-| `SBX_MEM_MIB` | `2048` | Default memory per sandbox. Deep-tier personas get 4096 unless the request says otherwise. |
-| `SBX_PIDS` | `512` | Default process limit per sandbox. |
-| `SBX_WORKSPACE_MIB` | `1024` | `/workspace` tmpfs size. Zero is refused. |
-| `SBX_DRAIN_TIMEOUT` | `10s` | Drain budget on SIGTERM/SIGINT. |
-| `SBX_MAX_BODY_BYTES` | `1048576` | Larger bodies get 400 `SBX_BAD_REQUEST`. |
-| `SBX_RUN_TOKEN_SECRET` | required | HMAC key for `bw_run_` tokens, at least 32 characters. Secret. |
-| `VALKEY_URL` | required | `redis://` or `rediss://`. Secret. |
-| `SBX_BUILD_COMMIT` | `unknown` | Reported by `sbx_build_info`. |
-| `NODE_ENV`, `LOG_LEVEL`, `OTEL_EXPORTER_OTLP_ENDPOINT` | | From the shared base schema. |
+| Key                                                    | Default      | Notes                                                                                              |
+| ------------------------------------------------------ | ------------ | -------------------------------------------------------------------------------------------------- |
+| `SBX_MGMT_ADDR`                                        | `:7070`      | `host:port`; empty host = every interface of the controller pod. Dev: `127.0.0.1:13700`.           |
+| `SBX_DRIVER`                                           | `kubernetes` | `kubernetes` or `docker`.                                                                          |
+| `SBX_NAMESPACE`                                        | `bw-runs`    | RFC 1123 label.                                                                                    |
+| `SBX_RUNTIME_CLASS`                                    | `gvisor`     | RFC 1123 label.                                                                                    |
+| `SBX_IMAGE_DIGEST`                                     | required     | Must be pinned `@sha256:` (§8.9); tags are refused.                                                |
+| `SBX_TTL_SECONDS`                                      | `3600`       | 1 to 86400.                                                                                        |
+| `SBX_CPU`                                              | `1`          | Default CPU cores per sandbox (fractional, up to 16). Requests above the plan ceiling are clamped. |
+| `SBX_MEM_MIB`                                          | `2048`       | Default memory per sandbox. Deep-tier personas get 4096 unless the request says otherwise.         |
+| `SBX_PIDS`                                             | `512`        | Default process limit per sandbox.                                                                 |
+| `SBX_WORKSPACE_MIB`                                    | `1024`       | `/workspace` tmpfs size. Zero is refused.                                                          |
+| `SBX_DRAIN_TIMEOUT`                                    | `10s`        | Drain budget on SIGTERM/SIGINT.                                                                    |
+| `SBX_MAX_BODY_BYTES`                                   | `1048576`    | Larger bodies get 400 `SBX_BAD_REQUEST`.                                                           |
+| `SBX_RUN_TOKEN_SECRET`                                 | required     | HMAC key for `bw_run_` tokens, at least 32 characters. Secret.                                     |
+| `VALKEY_URL`                                           | required     | `redis://` or `rediss://`. Secret.                                                                 |
+| `SBX_BUILD_COMMIT`                                     | `unknown`    | Reported by `sbx_build_info`.                                                                      |
+| `NODE_ENV`, `LOG_LEVEL`, `OTEL_EXPORTER_OTLP_ENDPOINT` |              | From the shared base schema.                                                                       |
 
 Invalid configuration prints `SBX_CONFIG_INVALID: <keys and reasons>` (never values) to stderr and exits
 78 before any socket is bound.
@@ -85,5 +85,18 @@ DockerDriver (SANDBOX-004) implement; `SBX_DRIVER` picks one without touching ca
 - a run network with no allowed destination is rejected (fail closed);
 - `caBundleRef` is a `<scheme>://` reference and PEM material is refused anywhere in the spec (§8.7).
 
-`FakeDriver` is an in-memory implementation for controller unit tests; `UnavailableDriver` is the default
-until the real drivers land and rejects every call.
+`KubernetesDriver` (`drivers/kubernetes.ts`, SANDBOX-003) renders each sandbox as a Pod in `SBX_NAMESPACE` under
+the RuntimeClass named by the spec (`gvisor`), with `@kubernetes/client-node` (in-cluster service account, or the
+kubeconfig in dev). The manifest (`drivers/kubernetes-config.ts`) is a pure function: digest-pinned image,
+`automountServiceAccountToken: false`, `restartPolicy: Never`, secret or configmap inputs only,
+`activeDeadlineSeconds` = TTL. Its security context, resource limits and `/workspace` and `/tmp` tmpfs volumes come
+from the SANDBOX-007 builder (`spec/hardening.ts`), and any spec tmpfs is capped to the resolved workspace size. The RuntimeClass must resolve
+to the `runsc` handler, or create fails with SBX_RUNTIME_MISSING. Pods are created behind a scheduling gate that
+`start` removes. A container that cannot be created (for example a missing seccomp profile) is reported as `failed`. Creating the same sandbox twice returns one Pod. Transient API failures retry with jittered backoff,
+and anything else surfaces as SBX_DRIVER_UNAVAILABLE. Run-network provisioning is SANDBOX-005.
+
+`FakeDriver` is an in-memory implementation for controller unit tests. `UnavailableDriver` is a fail-closed stand-in
+for a kind this build does not ship. The factory no longer uses it, since both shipped kinds are real drivers.
+
+The integration test (`drivers/kubernetes.int.test.ts`) runs against a real k3s cluster with the gVisor RuntimeClass
+when `SBX_IT=1`, and is skipped otherwise.
