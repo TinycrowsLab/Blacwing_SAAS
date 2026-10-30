@@ -271,6 +271,12 @@ const DEFINITIONS = {
   // Self-service signup (TENANT-004): an unknown, expired, already used or cancelled verification token.
   // One code and one status for all four, so the response cannot tell a guesser which one it was.
   SIGNUP_TOKEN_INVALID: { status: 400, title: 'Signup token invalid or expired', retryable: false },
+  // On-call roster (GATE2-003, F13/F31, §8.4). No roster, or nobody on call at the instant, is a run
+  // configuration error (422) surfaced at preflight; a roster whose every reachable member is
+  // separation-of-duties ineligible is a conflict (409) that GATE2-004 turns into an operator pause and,
+  // on timeout, a deny. Neither is ever read as "allow".
+  GATE2_NO_ONCALL_CONFIGURED: { status: 422, title: 'No on call configured', retryable: false },
+  GATE2_NO_ELIGIBLE_APPROVER: { status: 409, title: 'No eligible approver', retryable: false },
   // Run Broker API (API-014, #66). A stub endpoint owned by a later epic answers 501; a broker write for
   // a run that is no longer active is refused with 409 (the run is terminal, §3.3).
   NOT_IMPLEMENTED: { status: 501, title: 'Not implemented', retryable: false },

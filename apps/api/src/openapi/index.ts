@@ -3,6 +3,7 @@ export {
   countOperations,
   countSchemas,
   killOpenApiModule,
+  oncallOpenApiModule,
   type OpenApiModule,
   PAGE_LIMIT_DEFAULT,
   PAGE_LIMIT_MAX,

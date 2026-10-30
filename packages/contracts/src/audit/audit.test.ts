@@ -111,6 +111,8 @@ const RELEASED_ACTIONS = [
   'asset.deleted',
   'asset.owner_assigned',
   'test_plan.validated',
+  'oncall.roster.updated',
+  'oncall.sod_skipped',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

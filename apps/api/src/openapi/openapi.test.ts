@@ -85,6 +85,10 @@ describe('schema to OpenAPI 3.1 fragment', () => {
 /** The tag each published operation is filed under (the module that owns its route). */
 const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   triggerKill: 'kill',
+  listOncallRosters: 'oncall',
+  createOncallRoster: 'oncall',
+  getOncallRoster: 'oncall',
+  updateOncallRoster: 'oncall',
   getKillEvent: 'kill',
   listKillEvents: 'kill',
   listAuditEvents: 'audit',
@@ -164,6 +168,7 @@ describe('public OpenAPI document', () => {
       'approveStandingAuthorisation',
       'createAssessmentRequest',
       'createAsset',
+      'createOncallRoster',
       'createStandingAuthorisation',
       'createTestPlanVersion',
       'decideGate1',
@@ -173,6 +178,7 @@ describe('public OpenAPI document', () => {
       'getFinding',
       'getGate1Plan',
       'getKillEvent',
+      'getOncallRoster',
       'getPersona',
       'getPersonaOverride',
       'getRunSurface',
@@ -184,6 +190,7 @@ describe('public OpenAPI document', () => {
       'listAuditEvents',
       'listFindings',
       'listKillEvents',
+      'listOncallRosters',
       'listPersonas',
       'listStandingAuthorisations',
       'listTestPlanVersions',
@@ -197,6 +204,7 @@ describe('public OpenAPI document', () => {
       'triggerKill',
       'updateAssessmentRequest',
       'updateAsset',
+      'updateOncallRoster',
       'updateStandingAuthorisation',
       'updateTenantSettings',
       'updateTestCase',
@@ -204,7 +212,7 @@ describe('public OpenAPI document', () => {
       'verifySignup',
       'withdrawAssessmentRequest',
     ]);
-    expect(countOperations(doc)).toBe(43);
+    expect(countOperations(doc)).toBe(47);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -272,6 +280,7 @@ describe('public OpenAPI document', () => {
       'standing-authorisations',
       'test-plans',
       'findings',
+      'oncall',
     ]);
   });
 });
@@ -331,7 +340,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(43);
+    expect(result.operations).toBe(47);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

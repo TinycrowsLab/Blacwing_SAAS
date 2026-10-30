@@ -30,6 +30,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  createOncallRoster: {
+    method: 'POST',
+    path: '/v1/oncall/rosters',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   createStandingAuthorisation: {
     method: 'POST',
     path: '/v1/standing-authorisations',
@@ -89,6 +96,13 @@ export const OPERATIONS = {
   getKillEvent: {
     method: 'GET',
     path: '/v1/kill/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
+  getOncallRoster: {
+    method: 'GET',
+    path: '/v1/oncall/rosters/{id}',
     pathParams: ['id'],
     queryParams: [],
     requiredHeaders: [],
@@ -190,6 +204,13 @@ export const OPERATIONS = {
     queryParams: ['limit'],
     requiredHeaders: [],
   },
+  listOncallRosters: {
+    method: 'GET',
+    path: '/v1/oncall/rosters',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   listPersonas: {
     method: 'GET',
     path: '/v1/personas',
@@ -277,6 +298,13 @@ export const OPERATIONS = {
   updateAsset: {
     method: 'PATCH',
     path: '/v1/assets/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['If-Match'],
+  },
+  updateOncallRoster: {
+    method: 'PATCH',
+    path: '/v1/oncall/rosters/{id}',
     pathParams: ['id'],
     queryParams: [],
     requiredHeaders: ['If-Match'],

@@ -100,7 +100,9 @@
         "asset.updated",
         "asset.deleted",
         "asset.owner_assigned",
-        "test_plan.validated"
+        "test_plan.validated",
+        "oncall.roster.updated",
+        "oncall.sod_skipped"
       ]
     },
     "severity": {

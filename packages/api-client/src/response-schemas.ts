@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   assetListResponseSchema,
+  assetViewSchema,
   testCaseViewSchema,
   testPlanPageSchema,
   testPlanViewSchema,
@@ -16,6 +17,8 @@ import {
   gate1PlanViewSchema,
   killEventSchema,
   killTriggerResponseSchema,
+  oncallRosterSchema,
+  planValidationResultSchema,
   signupAcceptedSchema,
   signupVerifiedSchema,
   standingAuthorisationDtoSchema,
@@ -113,6 +116,12 @@ const standingAuthorisationPageSchema = z.strictObject({
   hasMore: z.boolean(),
 });
 
+/** The on-call rosters page (`GET /v1/oncall/rosters`): every roster of the tenant, no cursor yet. */
+const oncallRosterPageSchema = z.strictObject({
+  items: z.array(oncallRosterSchema),
+  nextCursor: z.null(),
+});
+
 /**
  * Zod schema per successful status of every operation (non-prod response validation). The record is
  * keyed by every `OperationId`, so an operation added to the spec fails to compile until it is mapped.
@@ -157,6 +166,15 @@ export const RESPONSE_SCHEMAS: Readonly<
   updateTestCase: { 200: testCaseViewSchema },
   removeTestCase: { 200: testCaseViewSchema },
   listAssets: { 200: assetListResponseSchema },
+  createAsset: { 200: assetViewSchema, 201: assetViewSchema },
+  getAsset: { 200: assetViewSchema },
+  updateAsset: { 200: assetViewSchema },
+  deleteAsset: { 200: assetViewSchema },
+  validateTestPlan: { 200: planValidationResultSchema },
+  listOncallRosters: { 200: oncallRosterPageSchema },
+  createOncallRoster: { 201: oncallRosterSchema },
+  getOncallRoster: { 200: oncallRosterSchema },
+  updateOncallRoster: { 200: oncallRosterSchema },
   listFindings: { 200: findingListResponseSchema },
   getFinding: { 200: findingDetailSchema },
 };

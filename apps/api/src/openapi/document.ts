@@ -9,6 +9,7 @@ import { standingAuthorisationsOpenApiModule } from '../authorisations/openapi.j
 import { findingOpenApiModule } from '../findings/openapi.js';
 import { gate1OpenApiModule } from '../gate1/openapi.js';
 import { killOpenApiDocument } from '../kill/openapi.js';
+import { oncallOpenApiDocument } from '../oncall/openapi.js';
 import { personaOpenApiModule } from '../personas/openapi.js';
 import { runEventsOpenApiModule } from '../run-events/openapi.js';
 import { signupOpenApiModule } from '../signup/openapi.js';
@@ -54,6 +55,22 @@ function auditOpenApiModule(): OpenApiModule {
   };
 }
 
+/** The on-call roster API (GATE2-003) as a module of the combined document. */
+export function oncallOpenApiModule(): OpenApiModule {
+  const source = oncallOpenApiDocument();
+  const schemas = Object.fromEntries(
+    Object.entries((source.components as { schemas: JsonObject }).schemas).filter(
+      ([name]) => name !== 'Problem',
+    ),
+  );
+  return {
+    tag: 'oncall',
+    description: 'Gate 2 on-call rosters: who is paged for a runtime exception, and in what order.',
+    paths: source.paths as JsonObject,
+    schemas,
+  };
+}
+
 /** Every module published in the public spec. Internal routers (`/internal/broker`) are deliberately absent. */
 export function publicOpenApiModules(): readonly OpenApiModule[] {
   return [
@@ -70,6 +87,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     standingAuthorisationsOpenApiModule(),
     testPlansOpenApiModule(),
     findingOpenApiModule(),
+    oncallOpenApiModule(),
   ];
 }
 
