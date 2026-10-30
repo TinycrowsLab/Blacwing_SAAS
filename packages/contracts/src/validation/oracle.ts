@@ -65,6 +65,36 @@ const httpTokenSchema = z
   .string()
   .regex(/^[A-Za-z0-9-]{1,128}$/, 'must be an HTTP header or cookie name');
 
+/** Most roles one access-matrix check may compare the acting role against (the negative-control roles). */
+export const ACCESS_MATRIX_COMPARISON_MAX = 8;
+
+/** An authorisation id (a matrix function or object): a lowercase, path-safe slug. Never a payload. */
+export const authzIdSchema = z
+  .string()
+  .regex(/^[a-z][a-z0-9_.-]{0,63}$/, 'must be an authorisation id');
+
+/**
+ * The `access-matrix` oracle (F9, F16; AUTHLOGIC-002). It declares one matrix cell before the test runs: the
+ * acting role's access to a function (and optionally one object) is expected to be `expected`, and the
+ * comparison roles are the negative controls the outcome is differenced against. Ids only, never credentials.
+ */
+export const accessMatrixParamsSchema = z
+  .strictObject({
+    functionId: authzIdSchema,
+    objectId: authzIdSchema.optional(),
+    actingRole: roleKeySchema,
+    comparisonRoles: z
+      .array(roleKeySchema)
+      .min(1)
+      .max(ACCESS_MATRIX_COMPARISON_MAX)
+      .refine((roles) => new Set(roles).size === roles.length, 'must not repeat a role'),
+    expected: z.enum(['allow', 'deny']),
+  })
+  .refine(
+    (params) => !params.comparisonRoles.includes(params.actingRole),
+    'the acting role cannot be its own comparison role',
+  );
+
 /** Typed `params` per oracle type. Each shape is strict and holds check parameters only, never a payload. */
 const oracleParamsSchemas = {
   marker: z.strictObject({ token: nfcTextSchema(LIMITS.shortTextMax) }),
@@ -80,11 +110,7 @@ const oracleParamsSchemas = {
     channel: z.enum(['dns', 'http']),
     windowMs: z.int().min(1).max(OOB_WINDOW_MAX_MS),
   }),
-  access_matrix: z.strictObject({
-    subjectRole: roleKeySchema,
-    objectRole: roleKeySchema,
-    expectation: z.enum(['allow', 'deny']),
-  }),
+  access_matrix: accessMatrixParamsSchema,
   error_signature: z.strictObject({ signature: nfcTextSchema(LIMITS.shortTextMax) }),
   file_read: z.strictObject({ marker: nfcTextSchema(LIMITS.shortTextMax) }),
   header_cookie: z.strictObject({

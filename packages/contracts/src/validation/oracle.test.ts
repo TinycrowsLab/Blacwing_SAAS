@@ -35,7 +35,12 @@ const VALID_BINDINGS: Record<OracleBindingType, unknown> = {
   access_matrix: {
     type: 'access_matrix',
     declaredAt: DECLARED_AT,
-    params: { subjectRole: 'viewer', objectRole: 'admin', expectation: 'deny' },
+    params: {
+      functionId: 'view_admin_panel',
+      actingRole: 'customer',
+      comparisonRoles: ['admin'],
+      expected: 'deny',
+    },
   },
   error_signature: {
     type: 'error_signature',
@@ -191,5 +196,47 @@ describe('OracleObservationSchema', () => {
       OracleObservationSchema.safeParse({ type: 'shell_exec', fired: true, evidenceRefs: [] })
         .success,
     ).toBe(false);
+  });
+});
+
+describe('access_matrix oracle params (AUTHLOGIC-002)', () => {
+  const accessBinding = (params: Record<string, unknown>) =>
+    OracleBindingSchema.safeParse({ type: 'access_matrix', declaredAt: DECLARED_AT, params });
+
+  const base = {
+    functionId: 'view_order',
+    actingRole: 'customer',
+    comparisonRoles: ['admin'],
+    expected: 'deny',
+  };
+
+  it('accepts a function-level and an object-level cell', () => {
+    expect(accessBinding(base).success).toBe(true);
+    expect(accessBinding({ ...base, objectId: 'order_1001' }).success).toBe(true);
+  });
+
+  it('rejects an acting role that is its own comparison role', () => {
+    expect(accessBinding({ ...base, comparisonRoles: ['customer', 'admin'] }).success).toBe(false);
+  });
+
+  it('rejects an empty, repeated or oversized comparison-role list', () => {
+    expect(accessBinding({ ...base, comparisonRoles: [] }).success).toBe(false);
+    expect(accessBinding({ ...base, comparisonRoles: ['admin', 'admin'] }).success).toBe(false);
+    const tooMany = Array.from({ length: 9 }, (_, i) => `role_${i}`);
+    expect(accessBinding({ ...base, comparisonRoles: tooMany }).success).toBe(false);
+  });
+
+  it('rejects an expectation other than allow or deny', () => {
+    expect(accessBinding({ ...base, expected: 'ambiguous' }).success).toBe(false);
+  });
+
+  it('rejects a path-like or upper-case function id', () => {
+    expect(accessBinding({ ...base, functionId: '../admin' }).success).toBe(false);
+    expect(accessBinding({ ...base, functionId: 'ViewOrder' }).success).toBe(false);
+  });
+
+  it('rejects a credential or payload field, so no secret can ride in the oracle', () => {
+    expect(accessBinding({ ...base, password: 'hunter2' }).success).toBe(false);
+    expect(accessBinding({ ...base, cookie: 'sid=1' }).success).toBe(false);
   });
 });
