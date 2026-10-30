@@ -817,6 +817,20 @@ export {
   OracleObservationSchema,
 } from './validation/oracle.js';
 export {
+  isOracleSpec,
+  type OracleSpec,
+  OracleSpecError,
+  type OracleSpecErrorCode,
+  OracleSpecSchema,
+  type OracleSpecType,
+  ORACLE_CATALOGUE_VERSION,
+  ORACLE_REGISTRY,
+  ORACLE_SPEC_ERROR_CODES,
+  ORACLE_SPEC_MAX_BYTES,
+  ORACLE_SPEC_TYPES,
+  parseOracleSpec,
+} from './oracles.js';
+export {
   bindEvidenceInputSchema,
   type BindEvidenceInput,
   EVIDENCE_KINDS,

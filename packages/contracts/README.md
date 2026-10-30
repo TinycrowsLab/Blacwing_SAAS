@@ -164,3 +164,15 @@ repository, upsert, planner and INGEST code import it. The module is pure, with 
 - `SURFACE_CONTRACT_VERSION` is a semver. Bump the major on any breaking change to a schema or to `naturalKey`.
   The contract snapshot test in `surface.test.ts` lists the fields, so a change shows up in review.
 - Objects are strict. Unknown keys are rejected, and `null` is rejected for an optional field: absent means unknown.
+
+## Oracle catalogue (F14)
+
+`src/oracles.ts` holds the declared oracle **specs** that a test case binds to before it runs (`ORACLE_CATALOGUE_VERSION`).
+Execution is out of scope and belongs to the VALIDATE epic.
+
+- `OracleSpecSchema` is a discriminated union on `type`: `marker`, `status_diff`, `error_signature` and `header_cookie_flag`.
+  Every spec carries `description`, `readOnly: true` and an `intrusiveness` hint (`passive` or `active_safe`, never `destructive`).
+- `params` objects are strict. No field accepts a body, command or other payload string. Header values are restricted to a printable charset.
+- `parseOracleSpec(json)` throws `OracleSpecError` with a stable code: `ORACLE_TYPE_UNKNOWN`, `ORACLE_SPEC_INVALID` or
+  `ORACLE_SPEC_TOO_LARGE` (over `ORACLE_SPEC_MAX_BYTES`, 8 KiB). `isOracleSpec(value)` is the type guard.
+- `ORACLE_REGISTRY` maps each type to a label and standards IDs.
