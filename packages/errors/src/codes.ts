@@ -288,6 +288,18 @@ const DEFINITIONS = {
   // DockerDriver (SANDBOX-004): no registered runsc runtime (never fall back to runc); pinned image absent.
   SBX_RUNTIME_MISSING: { status: 500, title: 'Sandbox runtime missing', retryable: false },
   SBX_IMAGE_MISSING: { status: 422, title: 'Sandbox image missing', retryable: false },
+  // Run networks (SANDBOX-005): the NetworkPolicy set of a run could not be applied (503, retry; sandbox
+  // creation is blocked until it is); the CNI cannot enforce NetworkPolicy, so the controller refuses (500).
+  SBX_NETWORK_UNAVAILABLE: {
+    status: 503,
+    title: 'Sandbox run network unavailable',
+    retryable: true,
+  },
+  SBX_NETPOL_UNSUPPORTED: {
+    status: 500,
+    title: 'NetworkPolicy enforcement not available',
+    retryable: false,
+  },
   // Session manager (SESSION-001, #612). Its internal API refuses callers without a valid run-scoped or
   // control-plane token (401, fail closed) and any caller whose tenant or run does not match the token (403).
   // A bad body is refused before processing (400); a bad environment stops the process (500).

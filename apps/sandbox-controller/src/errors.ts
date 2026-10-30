@@ -8,6 +8,8 @@ export const SBX_ERROR_CODES = [
   'SBX_DRIVER_UNAVAILABLE',
   'SBX_RUNTIME_MISSING',
   'SBX_IMAGE_MISSING',
+  'SBX_NETWORK_UNAVAILABLE',
+  'SBX_NETPOL_UNSUPPORTED',
 ] as const;
 export type SbxErrorCode = (typeof SBX_ERROR_CODES)[number];
 
@@ -76,5 +78,19 @@ export class SbxRuntimeMissingError extends AppError {
 export class SbxImageMissingError extends AppError {
   constructor(message: string, options: AppErrorOptions = {}) {
     super('SBX_IMAGE_MISSING', message, options);
+  }
+}
+
+/** 503: the run network of a sandbox could not be provisioned or verified; creation is blocked (fail closed). */
+export class SbxNetworkUnavailableError extends AppError {
+  constructor(message: string, options: AppErrorOptions = {}) {
+    super('SBX_NETWORK_UNAVAILABLE', message, options);
+  }
+}
+
+/** 500: the CNI does not enforce NetworkPolicy (or none is declared); a run network would not isolate. Fail closed. */
+export class SbxNetpolUnsupportedError extends AppError {
+  constructor(message: string, options: AppErrorOptions = {}) {
+    super('SBX_NETPOL_UNSUPPORTED', message, options);
   }
 }

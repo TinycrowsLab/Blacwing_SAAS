@@ -4,8 +4,10 @@ import {
   CoreV1Api,
   KubeConfig,
   Log,
+  NetworkingV1Api,
   NodeV1Api,
   VersionApi,
+  type V1NetworkPolicy,
   type V1Pod,
   type V1RuntimeClass,
 } from '@kubernetes/client-node';
@@ -42,6 +44,14 @@ export interface KubeApi {
     container: string,
     request: KubeLogRequest,
   ): Promise<AsyncIterable<Uint8Array>>;
+  /** Creates a NetworkPolicy; an existing one of the same name is an HTTP 409. */
+  createNetworkPolicy(namespace: string, policy: V1NetworkPolicy): Promise<V1NetworkPolicy>;
+  /** The NetworkPolicy by name, or `undefined` when it does not exist. */
+  readNetworkPolicy(namespace: string, name: string): Promise<V1NetworkPolicy | undefined>;
+  /** Full-object replace; `metadata.resourceVersion` is the optimistic-concurrency check. */
+  replaceNetworkPolicy(namespace: string, policy: V1NetworkPolicy): Promise<V1NetworkPolicy>;
+  /** Deletes a NetworkPolicy; an absent one resolves. */
+  deleteNetworkPolicy(namespace: string, name: string): Promise<void>;
 }
 
 /**
@@ -56,6 +66,7 @@ export function createKubeApi(): KubeApi {
   const nodes = kubeConfig.makeApiClient(NodeV1Api);
   const versions = kubeConfig.makeApiClient(VersionApi);
   const logs = new Log(kubeConfig);
+  const networking = kubeConfig.makeApiClient(NetworkingV1Api);
 
   return {
     async version() {
@@ -103,6 +114,31 @@ export function createKubeApi(): KubeApi {
         ...(request.sinceTime === undefined ? {} : { sinceTime: request.sinceTime }),
       });
       return stream;
+    },
+    createNetworkPolicy(namespace, policy) {
+      return networking.createNamespacedNetworkPolicy({ namespace, body: policy });
+    },
+    async readNetworkPolicy(namespace, name) {
+      try {
+        return await networking.readNamespacedNetworkPolicy({ name, namespace });
+      } catch (error) {
+        if (statusCodeOf(error) === HTTP_NOT_FOUND) return undefined;
+        throw error;
+      }
+    },
+    replaceNetworkPolicy(namespace, policy) {
+      return networking.replaceNamespacedNetworkPolicy({
+        name: policy.metadata?.name ?? '',
+        namespace,
+        body: policy,
+      });
+    },
+    async deleteNetworkPolicy(namespace, name) {
+      try {
+        await networking.deleteNamespacedNetworkPolicy({ name, namespace });
+      } catch (error) {
+        if (statusCodeOf(error) !== HTTP_NOT_FOUND) throw error;
+      }
     },
   };
 }

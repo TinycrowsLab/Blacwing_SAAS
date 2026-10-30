@@ -20,6 +20,7 @@ pnpm --filter sandbox-controller test:int   # Testcontainers Valkey + real proce
 | `SBX_MGMT_ADDR`                                        | `:7070`      | `host:port`; empty host = every interface of the controller pod. Dev: `127.0.0.1:13700`.           |
 | `SBX_DRIVER`                                           | `kubernetes` | `kubernetes` or `docker`.                                                                          |
 | `SBX_NAMESPACE`                                        | `bw-runs`    | RFC 1123 label.                                                                                    |
+| `SBX_NETPOL_ENFORCER`                                  | unset        | `calico`, `cilium` or `kube-router`: the CNI that enforces NetworkPolicy. Unset refuses run networks (`SBX_NETPOL_UNSUPPORTED`). |
 | `SBX_RUNTIME_CLASS`                                    | `gvisor`     | RFC 1123 label.                                                                                    |
 | `SBX_IMAGE_DIGEST`                                     | required     | Must be pinned `@sha256:` (§8.9); tags are refused.                                                |
 | `SBX_TTL_SECONDS`                                      | `3600`       | 1 to 86400.                                                                                        |
@@ -93,7 +94,15 @@ kubeconfig in dev). The manifest (`drivers/kubernetes-config.ts`) is a pure func
 from the SANDBOX-007 builder (`spec/hardening.ts`), and any spec tmpfs is capped to the resolved workspace size. The RuntimeClass must resolve
 to the `runsc` handler, or create fails with SBX_RUNTIME_MISSING. Pods are created behind a scheduling gate that
 `start` removes. A container that cannot be created (for example a missing seccomp profile) is reported as `failed`. Creating the same sandbox twice returns one Pod. Transient API failures retry with jittered backoff,
-and anything else surfaces as SBX_DRIVER_UNAVAILABLE. Run-network provisioning is SANDBOX-005.
+and anything else surfaces as SBX_DRIVER_UNAVAILABLE. Run networks (`net/`, SANDBOX-005) give each run two NetworkPolicies in `SBX_NAMESPACE`, selecting its pods by
+`bw/run-id`: a default-deny for ingress and egress, and an egress allow to exactly the declared destinations
+(egress gateway, model gateway and Run Broker, each as a pod selector in `bw-system` on its port) plus kube-dns on 53.
+The policies are positive-only (no `ipBlock`), so the metadata endpoint and private ranges stay denied. Creating a
+sandbox first checks that both policies exist and belong to its tenant (`SBX_NETWORK_UNAVAILABLE` otherwise), so a
+partly applied network blocks creation. `removeNetwork` refuses while the run still has pods and is idempotent.
+Audit lines `run_network.created` and `run_network.destroyed` and the `sbx_netpol_apply_total{result}` counter record
+each transition. The controller cannot probe the CNI, so `SBX_NETPOL_ENFORCER` declares the enforcer; the live
+connectivity matrix is proven by `infra/k3s/network-policies/verify.sh` on a cluster.
 
 `FakeDriver` is an in-memory implementation for controller unit tests. `UnavailableDriver` is a fail-closed stand-in
 for a kind this build does not ship. The factory no longer uses it, since both shipped kinds are real drivers.

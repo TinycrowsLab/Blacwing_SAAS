@@ -2,23 +2,19 @@ import { Readable } from 'node:stream';
 
 import { describe, expect, it } from 'vitest';
 
+import { ConflictError, ValidationError } from '@blackwing/errors';
+
 import { DEFAULT_SANDBOX_WORKSPACE_MIB } from '../config.js';
 import { SbxDriverUnavailableError, SbxRuntimeMissingError } from '../errors.js';
 import { createDriver } from './index.js';
-import {
-  KUBE_LABEL,
-  podName,
-  renderPod,
-  RUNTIME_HANDLER,
-  START_GATE,
-} from './kubernetes-config.js';
+import { httpError, FakeKube, netError } from './kube-fake.js';
+import { KUBE_LABEL, podName, renderPod, START_GATE } from './kubernetes-config.js';
 import { KubernetesDriver, splitLogs } from './kubernetes.js';
+import { renderRunNetworkPolicies, runPolicyNames } from '../net/kubernetes-policy.js';
 import { BUILT_IN_HARDENING_CONFIG, buildKubernetesHardening } from '../spec/hardening.js';
 
 import type { SandboxDriver } from './driver.js';
-import type { KubeApi, KubeLogRequest } from './kubernetes-api.js';
 import type { SandboxLifecycleEvent, SandboxSpec } from '@blackwing/contracts';
-import type { V1Pod, V1RuntimeClass } from '@kubernetes/client-node';
 
 const TENANT = '01920000-0000-7000-8000-000000000001';
 const OTHER_TENANT = '01920000-0000-7000-8000-00000000000f';
@@ -50,118 +46,6 @@ function spec(overrides: Partial<SandboxSpec> = {}): SandboxSpec {
   };
 }
 
-/** An error shaped like client-node's ApiException (numeric `code`). */
-const httpError = (code: number): Error =>
-  Object.assign(new Error(`HTTP ${String(code)}`), { code });
-const netError = (code: string): Error => Object.assign(new Error(code), { code });
-
-class FakeKube implements KubeApi {
-  readonly pods = new Map<string, V1Pod>();
-  readonly runtimeClasses = new Map<string, V1RuntimeClass>([
-    ['gvisor', { metadata: { name: 'gvisor' }, handler: RUNTIME_HANDLER }],
-  ]);
-  readonly calls: string[] = [];
-  readonly graceSeconds: number[] = [];
-  readonly logRequests: KubeLogRequest[] = [];
-  logChunks: Uint8Array[] = [];
-  /** Errors thrown by the next calls of an operation, in order. */
-  readonly failures: { op: string; error: Error }[] = [];
-  /** Operations that never settle (to exercise the context timeout). */
-  readonly hang = new Set<string>();
-  private uid = 0;
-
-  private enter(op: string): Promise<void> | undefined {
-    this.calls.push(op);
-    const failure = this.failures.find((f) => f.op === op);
-    if (failure !== undefined) {
-      this.failures.splice(this.failures.indexOf(failure), 1);
-      return Promise.reject(failure.error);
-    }
-    if (this.hang.has(op)) return new Promise<void>(() => undefined);
-    return undefined;
-  }
-
-  async version(): Promise<void> {
-    const failed = this.enter('version');
-    if (failed) await failed;
-  }
-
-  async readRuntimeClass(name: string): Promise<V1RuntimeClass | undefined> {
-    const failed = this.enter('readRuntimeClass');
-    if (failed) await failed;
-    return this.runtimeClasses.get(name);
-  }
-
-  async createPod(namespace: string, pod: V1Pod): Promise<V1Pod> {
-    const failed = this.enter('createPod');
-    if (failed) await failed;
-    const name = pod.metadata?.name ?? '';
-    if (this.pods.has(name)) throw httpError(409);
-    this.uid += 1;
-    const stored = structuredClone(pod);
-    stored.metadata ??= {};
-    stored.metadata.namespace = namespace;
-    stored.metadata.uid = `uid-${String(this.uid)}`;
-    stored.metadata.creationTimestamp = NOW;
-    stored.status = { phase: 'Pending' };
-    this.pods.set(name, stored);
-    return stored;
-  }
-
-  async readPod(_namespace: string, name: string): Promise<V1Pod | undefined> {
-    const failed = this.enter('readPod');
-    if (failed) await failed;
-    return this.pods.get(name);
-  }
-
-  async replacePod(_namespace: string, pod: V1Pod): Promise<V1Pod> {
-    const failed = this.enter('replacePod');
-    if (failed) await failed;
-    const name = pod.metadata?.name ?? '';
-    this.pods.set(name, pod);
-    return pod;
-  }
-
-  async listPods(_namespace: string, labelSelector: string): Promise<V1Pod[]> {
-    const failed = this.enter('listPods');
-    if (failed) await failed;
-    const wanted = labelSelector.split(',').map((term) => term.split('='));
-    return [...this.pods.values()].filter((pod) =>
-      wanted.every(([key, value]) => pod.metadata?.labels?.[key ?? ''] === value),
-    );
-  }
-
-  async deletePod(_namespace: string, name: string, graceSeconds: number): Promise<void> {
-    const failed = this.enter('deletePod');
-    if (failed) await failed;
-    this.graceSeconds.push(graceSeconds);
-    this.pods.delete(name);
-  }
-
-  async streamLogs(
-    _namespace: string,
-    _name: string,
-    _container: string,
-    request: KubeLogRequest,
-  ): Promise<AsyncIterable<Uint8Array>> {
-    const failed = this.enter('streamLogs');
-    if (failed) await failed;
-    this.logRequests.push(request);
-    return Readable.from(this.logChunks);
-  }
-
-  /** Moves a stored Pod to a status the cluster would report. */
-  setStatus(sandboxId: string, status: NonNullable<V1Pod['status']>, deleting = false): void {
-    const pod = this.pods.get(podName(sandboxId));
-    if (pod === undefined) throw new Error('no such pod');
-    pod.status = status;
-    if (deleting) {
-      pod.metadata ??= {};
-      pod.metadata.deletionTimestamp = NOW;
-    }
-  }
-}
-
 function renderFor(input: SandboxSpec) {
   return renderPod(input, {
     namespace: NS,
@@ -174,8 +58,31 @@ function renderFor(input: SandboxSpec) {
   });
 }
 
-function harness(overrides: { kube?: FakeKube; events?: SandboxLifecycleEvent[] } = {}) {
+/** The run network of RUN as the provisioner applies it (SANDBOX-005), already in place. */
+function seedRunNetwork(kube: FakeKube): void {
+  const { defaultDeny, egress } = renderRunNetworkPolicies(
+    {
+      runId: RUN,
+      tenantId: TENANT,
+      driver: 'kubernetes',
+      allowedDestinations: [{ kind: 'egress-gateway', host: 'egress-gateway', port: 13128 }],
+    },
+    NS,
+  );
+  for (const policy of [defaultDeny, egress]) {
+    const name = policy.metadata?.name ?? '';
+    const seeded = structuredClone(policy);
+    seeded.metadata ??= {};
+    Object.assign(seeded.metadata, { uid: `seed-${name}`, resourceVersion: '1' });
+    kube.netpols.set(name, seeded);
+  }
+}
+
+function harness(
+  overrides: { kube?: FakeKube; events?: SandboxLifecycleEvent[]; netpolEnforcer?: 'calico' } = {},
+) {
   const kube = overrides.kube ?? new FakeKube();
+  seedRunNetwork(kube);
   const events = overrides.events ?? [];
   const creates: string[] = [];
   const driver = new KubernetesDriver({
@@ -185,6 +92,7 @@ function harness(overrides: { kube?: FakeKube; events?: SandboxLifecycleEvent[] 
     sleep: () => Promise.resolve(),
     random: () => 0,
     callTimeoutMs: 50,
+    netpolEnforcer: overrides.netpolEnforcer ?? 'calico',
     onEvent: (event) => events.push(event),
     onCreate: (result) => creates.push(result),
   });
@@ -351,6 +259,55 @@ describe('KubernetesDriver.create', () => {
   });
 });
 
+describe('KubernetesDriver.create run-network gate (SANDBOX-005)', () => {
+  it('is blocked, creating no Pod, when the run network is only partly applied', async () => {
+    const kube = new FakeKube();
+    const { driver } = harness({ kube });
+    // Default-deny present, egress allow missing: the run has no egress, and create must not start.
+    kube.netpols.delete(runPolicyNames(RUN).egress);
+    await expect(driver.create(spec())).rejects.toMatchObject({
+      code: 'SBX_NETWORK_UNAVAILABLE',
+    });
+    expect(kube.pods.size).toBe(0);
+  });
+
+  it('is blocked when the run network is missing entirely', async () => {
+    const kube = new FakeKube();
+    const { driver } = harness({ kube });
+    kube.netpols.clear();
+    await expect(driver.create(spec())).rejects.toMatchObject({
+      code: 'SBX_NETWORK_UNAVAILABLE',
+    });
+    expect(kube.pods.size).toBe(0);
+  });
+
+  it('refuses a run network that belongs to another tenant, creating nothing', async () => {
+    const { driver, kube } = harness();
+    await expect(driver.create(spec({ tenantId: OTHER_TENANT }))).rejects.toBeInstanceOf(
+      ConflictError,
+    );
+    expect(kube.pods.size).toBe(0);
+  });
+
+  it('refuses a sandbox that is bound to a network other than its run network', async () => {
+    const { driver, kube } = harness();
+    await expect(
+      driver.create(spec({ network: { runId: RUN, networkId: 'bw-run-someone-else' } })),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(kube.pods.size).toBe(0);
+  });
+
+  it('refuses to create when no NetworkPolicy enforcer is declared (SBX_NETPOL_UNSUPPORTED)', async () => {
+    const kube = new FakeKube();
+    seedRunNetwork(kube);
+    const driver = new KubernetesDriver({ api: kube, namespace: NS, callTimeoutMs: 50 });
+    await expect(driver.create(spec())).rejects.toMatchObject({
+      code: 'SBX_NETPOL_UNSUPPORTED',
+    });
+    expect(kube.pods.size).toBe(0);
+  });
+});
+
 describe('KubernetesDriver hardening (SANDBOX-007)', () => {
   it('clamps requested resources to the plan ceiling, warns, and renders the clamped limits', async () => {
     const kube = new FakeKube();
@@ -360,8 +317,10 @@ describe('KubernetesDriver hardening (SANDBOX-007)', () => {
       namespace: NS,
       now: () => NOW,
       sleep: () => Promise.resolve(),
+      netpolEnforcer: 'calico',
       logger: { warn: (fields) => warnings.push(fields) },
     });
+    seedRunNetwork(kube);
     await driver.create(spec({ resources: { cpu: 0.5, memoryMiB: 16_384, pids: 128 } }));
     const pod = kube.pods.get(podName(SANDBOX));
     expect(pod?.spec?.containers[0]?.resources?.limits).toEqual({ cpu: '0.5', memory: '8192Mi' });
@@ -583,8 +542,21 @@ describe('KubernetesDriver.stop and destroy', () => {
 describe('KubernetesDriver.list', () => {
   it('filters by tenant and run labels and by status', async () => {
     const { driver, kube } = harness();
+    await driver.ensureNetwork({
+      runId: OTHER_RUN,
+      tenantId: OTHER_TENANT,
+      allowedDestinations: [{ kind: 'egress-gateway', host: 'egress-gateway', port: 13128 }],
+      driver: 'kubernetes',
+    });
     await driver.create(spec());
-    await driver.create(spec({ sandboxId: OTHER_SANDBOX, tenantId: OTHER_TENANT }));
+    await driver.create(
+      spec({
+        sandboxId: OTHER_SANDBOX,
+        tenantId: OTHER_TENANT,
+        runId: OTHER_RUN,
+        network: { runId: OTHER_RUN, networkId: `bw-run-${OTHER_RUN}` },
+      }),
+    );
     const mine = await driver.list({ tenantId: TENANT });
     expect(mine.map((h) => h.sandboxId)).toEqual([SANDBOX]);
     expect((await driver.list({ tenantId: TENANT, runId: RUN })).map((h) => h.sandboxId)).toEqual([
@@ -682,18 +654,20 @@ describe('KubernetesDriver availability', () => {
     await expect(driver.ping()).resolves.toBeUndefined();
   });
 
-  it('ensureNetwork and removeNetwork fail closed until SANDBOX-005 provisions run networks', async () => {
-    const { driver } = harness();
+  it('ensureNetwork and removeNetwork delegate to the run-network provisioner (SANDBOX-005)', async () => {
+    const { driver, kube } = harness();
     const port: SandboxDriver = driver;
-    await expect(
-      port.ensureNetwork({
-        runId: RUN,
-        tenantId: TENANT,
-        allowedDestinations: [{ kind: 'egress-gateway', host: 'egress.local', port: 8443 }],
-        driver: 'kubernetes',
-      }),
-    ).rejects.toBeInstanceOf(SbxDriverUnavailableError);
-    await expect(port.removeNetwork(RUN)).rejects.toBeInstanceOf(SbxDriverUnavailableError);
+    const runId = '01920000-0000-7000-8000-0000000000e1';
+    const handle = await port.ensureNetwork({
+      runId,
+      tenantId: TENANT,
+      allowedDestinations: [{ kind: 'egress-gateway', host: 'egress-gateway', port: 13128 }],
+      driver: 'kubernetes',
+    });
+    expect(handle).toMatchObject({ runId, tenantId: TENANT, networkId: `bw-run-${runId}` });
+    expect(kube.netpols.has(runPolicyNames(runId).defaultDeny)).toBe(true);
+    await port.removeNetwork(runId);
+    expect(kube.netpols.has(runPolicyNames(runId).egress)).toBe(false);
   });
 
   it('constructs lazily: no cluster is contacted until the first call, and close releases the client', async () => {
@@ -707,5 +681,23 @@ describe('createDriver', () => {
     const driver = createDriver('kubernetes', { NODE_ENV: 'production', SBX_NAMESPACE: NS });
     expect(driver).toBeInstanceOf(KubernetesDriver);
     expect(driver.kind).toBe('kubernetes');
+  });
+
+  it('passes the declared enforcer and the audit and metric hooks through to the run network', async () => {
+    const applies: string[] = [];
+    const undeclared = createDriver(
+      'kubernetes',
+      { NODE_ENV: 'production', SBX_NAMESPACE: NS },
+      { onNetpolApply: (result) => applies.push(result) },
+    );
+    await expect(
+      undeclared.ensureNetwork({
+        runId: RUN,
+        tenantId: TENANT,
+        allowedDestinations: [{ kind: 'egress-gateway', host: 'egress-gateway', port: 13128 }],
+        driver: 'kubernetes',
+      }),
+    ).rejects.toMatchObject({ code: 'SBX_NETPOL_UNSUPPORTED' });
+    expect(applies).toEqual(['unsupported']);
   });
 });

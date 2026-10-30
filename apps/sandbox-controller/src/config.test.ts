@@ -117,6 +117,26 @@ describe('loadSandboxControllerConfig', () => {
   });
 });
 
+describe('SBX_NETPOL_ENFORCER (SANDBOX-005)', () => {
+  it('is unset by default, so no NetworkPolicy enforcement is declared', () => {
+    expect(loadSandboxControllerConfig(env()).SBX_NETPOL_ENFORCER).toBeUndefined();
+  });
+
+  it('accepts each declared enforcer', () => {
+    for (const enforcer of ['calico', 'cilium', 'kube-router']) {
+      expect(
+        loadSandboxControllerConfig(env({ SBX_NETPOL_ENFORCER: enforcer })).SBX_NETPOL_ENFORCER,
+      ).toBe(enforcer);
+    }
+  });
+
+  it('edge case: an unknown enforcer (flannel does not enforce) is refused with the key name only', () => {
+    const error = invalid({ SBX_NETPOL_ENFORCER: 'flannel' });
+    expect(error.keys).toContain('SBX_NETPOL_ENFORCER');
+    expect(error.message).not.toContain('flannel');
+  });
+});
+
 describe('configHash', () => {
   it('is stable for the same config and changes with a non-secret value', () => {
     const a = configHash(loadSandboxControllerConfig(env()));

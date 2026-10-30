@@ -13,6 +13,8 @@ export interface ControllerMetrics {
   readonly caIssued: Counter;
   /** Run CAs revoked (SANDBOX-008). Counted only when a CA was actually stored and then deleted. */
   readonly caRevoked: Counter;
+  /** Run NetworkPolicy applies by outcome (`applied`, `failed`, `unsupported`), SANDBOX-005. */
+  readonly netpolApply: Counter<'result'>;
 }
 
 /** A private registry per instance, so tests and multiple instances never share series. */
@@ -50,6 +52,12 @@ export function createControllerMetrics(version: string, commit: string): Contro
     caRevoked: new Counter({
       name: 'sbx_ca_revoked_total',
       help: 'Per-run MITM CAs revoked (key deleted).',
+      registers: [registry],
+    }),
+    netpolApply: new Counter({
+      name: 'sbx_netpol_apply_total',
+      help: 'Run NetworkPolicy applies, by result.',
+      labelNames: ['result'],
       registers: [registry],
     }),
   };

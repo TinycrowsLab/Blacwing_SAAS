@@ -1,6 +1,7 @@
 import { SbxDriverUnavailableError } from '../errors.js';
 import { DockerDriver } from './docker.js';
 import {
+  type NetpolEnforcer,
   DEFAULT_SANDBOX_CPU,
   DEFAULT_SANDBOX_MEMORY_MIB,
   DEFAULT_SANDBOX_PIDS,
@@ -10,7 +11,10 @@ import { KubernetesDriver } from './kubernetes.js';
 import { hardeningConfigFrom } from '../spec/hardening.js';
 
 import type { SandboxDriver } from './driver.js';
+import type { NetpolApplyResult } from '../net/kubernetes.js';
+import type { RunNetworkEvent } from '../net/provisioner.js';
 import type { SandboxDriverKind } from '@blackwing/contracts';
+import type { Logger } from '@blackwing/logger';
 
 export type { SandboxDriver } from './driver.js';
 export { FakeDriver, type FakeDriverOptions } from './fake.js';
@@ -90,16 +94,28 @@ interface DriverConfig {
   readonly SBX_MEM_MIB?: number;
   readonly SBX_PIDS?: number;
   readonly SBX_WORKSPACE_MIB?: number;
+  readonly SBX_NETPOL_ENFORCER?: NetpolEnforcer | undefined;
 }
 
-export type DriverFactory = (kind: SandboxDriverKind, config?: DriverConfig) => SandboxDriver;
+/** Process-level sinks a driver reports into (logs, audit lines, metrics). Optional for pure callers. */
+interface DriverHooks {
+  readonly logger?: Logger;
+  readonly onNetworkEvent?: (event: RunNetworkEvent) => void;
+  readonly onNetpolApply?: (result: NetpolApplyResult) => void;
+}
+
+export type DriverFactory = (
+  kind: SandboxDriverKind,
+  config?: DriverConfig,
+  hooks?: DriverHooks,
+) => SandboxDriver;
 
 /**
  * Default factory. Both drivers are lazy (no cluster or daemon contact until first use). DockerDriver
  * accepts `runc` only outside production (dev/test hosts without gVisor) and never as a fallback for a
  * missing `runsc`. KubernetesDriver always runs under the `runsc` RuntimeClass.
  */
-export const createDriver: DriverFactory = (kind, config) => {
+export const createDriver: DriverFactory = (kind, config, hooks) => {
   if (kind === 'docker') {
     const runtime = config?.SBX_DOCKER_RUNTIME ?? 'runsc';
     return new DockerDriver({
@@ -117,5 +133,9 @@ export const createDriver: DriverFactory = (kind, config) => {
       SBX_PIDS: config?.SBX_PIDS ?? DEFAULT_SANDBOX_PIDS,
       SBX_WORKSPACE_MIB: config?.SBX_WORKSPACE_MIB ?? DEFAULT_SANDBOX_WORKSPACE_MIB,
     }),
+    netpolEnforcer: config?.SBX_NETPOL_ENFORCER,
+    ...(hooks?.logger === undefined ? {} : { logger: hooks.logger }),
+    onNetworkEvent: hooks?.onNetworkEvent,
+    onNetpolApply: hooks?.onNetpolApply,
   });
 };

@@ -33,6 +33,13 @@ export const DEFAULT_MAX_BODY_BYTES = 1_048_576;
 /** HMAC key floor: 32 characters (the dev bootstrap generates 48 hex characters). */
 export const MIN_RUN_TOKEN_SECRET_LENGTH = 32;
 
+/**
+ * CNIs that enforce NetworkPolicy on the cluster (SANDBOX-005). Calico on EC2 nodes; kube-router is the
+ * controller embedded in k3s on the dev host (flannel + `disable-network-policy` unset).
+ */
+export const NETPOL_ENFORCERS = ['calico', 'cilium', 'kube-router'] as const;
+export type NetpolEnforcer = (typeof NETPOL_ENFORCERS)[number];
+
 const MAX_PORT = 65_535;
 const MAX_TTL_SECONDS = 86_400;
 const MAX_BODY_BYTES_CEILING = 67_108_864;
@@ -91,6 +98,12 @@ export const sandboxControllerEnvShape = {
   SBX_DRIVER: z.enum(SANDBOX_DRIVERS).default('kubernetes'),
   SBX_NAMESPACE: dnsLabel.default('bw-runs'),
   SBX_RUNTIME_CLASS: dnsLabel.default('gvisor'),
+  /**
+   * The CNI that enforces NetworkPolicy on the kubernetes driver's cluster (SANDBOX-005). Unset means no
+   * enforcement is declared, so the driver refuses to provision run networks (SBX_NETPOL_UNSUPPORTED).
+   * OFFLINE-STUB(online-porting #909): the declared enforcer is trusted, not probed on the live cluster yet.
+   */
+  SBX_NETPOL_ENFORCER: z.enum(NETPOL_ENFORCERS).optional(),
   SBX_IMAGE_DIGEST: imageDigest,
   /** DockerDriver OCI runtime. `runsc` (gVisor) always; `runc` is refused when NODE_ENV=production. */
   SBX_DOCKER_RUNTIME: z.enum(['runsc', 'runc']).default('runsc'),

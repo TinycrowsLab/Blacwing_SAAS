@@ -6,6 +6,7 @@ import {
   type LogOptions,
   logOptionsSchema,
   type RunNetworkHandle,
+  type RunNetworkSpec,
   type SandboxHandle,
   type SandboxLifecycleEvent,
   type SandboxListFilter,
@@ -19,6 +20,8 @@ import {
 import { AppError, ConflictError, NotFoundError, ValidationError } from '@blackwing/errors';
 
 import { SbxDriverUnavailableError, SbxRuntimeMissingError } from '../errors.js';
+import { runNetworkId } from '../net/kubernetes-policy.js';
+import { parseInput as parse } from '../validate.js';
 import { MANAGED_BY } from './docker-config.js';
 import { createKubeApi, type KubeApi, statusCodeOf } from './kubernetes-api.js';
 import {
@@ -28,6 +31,7 @@ import {
   renderPod,
   RUNTIME_HANDLER,
 } from './kubernetes-config.js';
+import { KubernetesNetworkProvisioner, type NetpolApplyResult } from '../net/kubernetes.js';
 import {
   BUILT_IN_HARDENING_CONFIG,
   buildKubernetesHardening,
@@ -36,9 +40,10 @@ import {
   resolveHardening,
 } from '../spec/hardening.js';
 
+import type { NetpolEnforcer } from '../config.js';
 import type { SandboxDriver } from './driver.js';
+import type { RunNetworkEvent } from '../net/provisioner.js';
 import type { V1Pod } from '@kubernetes/client-node';
-import type { z } from 'zod';
 
 const DEFAULT_NAMESPACE = 'bw-runs';
 const DEFAULT_GRACE_SECONDS = 10;
@@ -93,6 +98,12 @@ export interface KubernetesDriverOptions {
   readonly hardening?: HardeningConfig;
   /** Receives a warning whenever a requested value is clamped to the plan ceiling. */
   readonly logger?: HardeningOptions['logger'];
+  /** The CNI that enforces NetworkPolicy (`SBX_NETPOL_ENFORCER`). Undefined refuses run networks (fail closed). */
+  readonly netpolEnforcer?: NetpolEnforcer | undefined;
+  /** Receives `run_network.created` and `run_network.destroyed` for audit. */
+  readonly onNetworkEvent?: ((event: RunNetworkEvent) => void) | undefined;
+  /** `sbx_netpol_apply_total{result}` hook. */
+  readonly onNetpolApply?: ((result: NetpolApplyResult) => void) | undefined;
 }
 
 /** A Kubernetes call that exceeded its context timeout. Transient, so it is retried. */
@@ -124,6 +135,7 @@ export class KubernetesDriver implements SandboxDriver {
   private readonly hardening: HardeningConfig;
   private readonly verifiedRuntimeClasses = new Set<string>();
   private readonly reportedFailures = new Set<string>();
+  private readonly network: KubernetesNetworkProvisioner;
   private api: KubeApi | undefined;
 
   constructor(options: KubernetesDriverOptions = {}) {
@@ -134,6 +146,14 @@ export class KubernetesDriver implements SandboxDriver {
     this.random = options.random ?? Math.random;
     this.callTimeoutMs = options.callTimeoutMs ?? DEFAULT_CALL_TIMEOUT_MS;
     this.hardening = options.hardening ?? BUILT_IN_HARDENING_CONFIG;
+    this.network = new KubernetesNetworkProvisioner((fn) => this.call(fn), {
+      namespace: this.namespace,
+      now: this.now,
+      enforcer: options.netpolEnforcer,
+      onEvent: options.onNetworkEvent,
+      onApply: options.onNetpolApply,
+      logger: options.logger,
+    });
   }
 
   private client(): KubeApi {
@@ -203,16 +223,12 @@ export class KubernetesDriver implements SandboxDriver {
     this.verifiedRuntimeClasses.add(name);
   }
 
-  ensureNetwork(): Promise<RunNetworkHandle> {
-    return Promise.reject(
-      new SbxDriverUnavailableError('run network provisioning is owned by SANDBOX-005'),
-    );
+  ensureNetwork(spec: RunNetworkSpec): Promise<RunNetworkHandle> {
+    return this.network.ensureNetwork(spec);
   }
 
-  removeNetwork(): Promise<void> {
-    return Promise.reject(
-      new SbxDriverUnavailableError('run network provisioning is owned by SANDBOX-005'),
-    );
+  removeNetwork(runId: string): Promise<void> {
+    return this.network.removeNetwork(runId);
   }
 
   async create(input: SandboxSpec): Promise<SandboxHandle> {
@@ -225,6 +241,11 @@ export class KubernetesDriver implements SandboxDriver {
         return this.toHandle(existing);
       }
       await this.verifyRuntimeClass(spec.runtimeClass);
+      // Fail closed: a sandbox starts only on a run network that was applied in full (SANDBOX-005).
+      if (spec.network.networkId !== runNetworkId(spec.runId)) {
+        throw new ValidationError('sandbox network does not belong to its run');
+      }
+      await this.network.assertNetwork(spec.runId, spec.tenantId);
       const request = { persona: spec.persona, resources: spec.resources };
       const resolved = resolveHardening(request, {
         config: this.hardening,
@@ -406,14 +427,6 @@ function reasonOf(error: unknown): string {
 
 function runIdOf(pod: V1Pod): string {
   return pod.metadata?.labels?.[KUBE_LABEL.runId] ?? '';
-}
-
-function parse<S extends z.ZodType>(schema: S, value: unknown, what: string): z.infer<S> {
-  const result = schema.safeParse(value);
-  if (!result.success) {
-    throw new ValidationError(`invalid ${what}: ${result.error.issues[0]?.message ?? 'rejected'}`);
-  }
-  return result.data;
 }
 
 /** The start-failure reason that makes a Pod `failed`, if any. */
