@@ -7,10 +7,10 @@ import {
 
 import { ALWAYS_DISALLOWED, buildToolGate, denialReason } from './tool-gate.js';
 import { PDP_TIMEOUT_MS_DEFAULT } from '../env.js';
-import { createPreToolUseHook } from '../hooks/pre-tool-use.js';
+import { createPreToolUseHook, type ResumeGrant } from '../hooks/pre-tool-use.js';
 
 import type { RuntimeMetrics } from '../metrics.js';
-import type { Options } from '@anthropic-ai/claude-agent-sdk';
+import type { Options, SessionStore } from '@anthropic-ai/claude-agent-sdk';
 import type { BrokerClient } from '@blackwing/mcp-tools';
 
 /**
@@ -44,7 +44,7 @@ export class SessionExit extends Error {
 }
 
 /** The subset of an SDK result message the runner reads. The adapter in `sdk.ts` produces it. */
-interface SessionResultMessage {
+export interface SessionResultMessage {
   readonly type: 'result';
   readonly subtype: string;
   readonly num_turns: number;
@@ -84,6 +84,8 @@ export interface SessionPorts {
   readonly metrics: RuntimeMetrics;
   /** Bound on each PreToolUse policy decision (`BW_PDP_TIMEOUT_MS`). Defaults to 1500 ms. */
   readonly pdpTimeoutMs?: number;
+  /** Mirrors the transcript so a session can resume after its process is lost (RUNTIME-006, GATE2-007). */
+  readonly sessionStore?: SessionStore;
 }
 
 export interface SessionSummary {
@@ -103,9 +105,12 @@ export function buildRunOptions(
   descriptor: AgentSessionDescriptor,
   abortController: AbortController,
   hooks?: Options['hooks'],
+  sessionStore?: SessionStore,
 ): Options {
   const gate = buildToolGate(descriptor);
   return {
+    // The SDK session id is the descriptor's, so a resume after a lost process names the same transcript (GATE2-007).
+    sessionId: descriptor.sessionId,
     model: descriptor.model,
     effort: descriptor.effort,
     maxTurns: descriptor.maxTurns,
@@ -118,6 +123,7 @@ export function buildRunOptions(
     canUseTool: gate.canUseTool,
     abortController,
     ...(hooks === undefined ? {} : { hooks }),
+    ...(sessionStore === undefined ? {} : { sessionStore }),
   };
 }
 
@@ -125,9 +131,10 @@ export function buildRunOptions(
  * The session's `PreToolUse` hook registration (RUNTIME-005). Every tool call is decided by the PDP through the
  * broker before it runs, and each decision is counted and timed.
  */
-function preToolUseHooks(
+export function preToolUseHooks(
   descriptor: AgentSessionDescriptor,
   ports: SessionPorts,
+  grant?: ResumeGrant,
 ): NonNullable<Options['hooks']> {
   const hook = createPreToolUseHook(
     {
@@ -155,6 +162,7 @@ function preToolUseHooks(
       testCaseId: descriptor.testCaseId ?? null,
       roleId: descriptor.roleId ?? null,
     },
+    grant,
   );
   return { PreToolUse: [{ hooks: [(input) => hook(input)] }] };
 }
@@ -167,7 +175,7 @@ const DENIED_TOOL_LOG_MAX = 128;
  * and logged by name. The tool label is the exact name only when the descriptor declares it, so a model-chosen
  * name cannot create new metric series. Call inputs are never logged.
  */
-function recordDenials(
+export function recordDenials(
   descriptor: AgentSessionDescriptor,
   denials: SessionResultMessage['permission_denials'],
   ports: SessionPorts,
@@ -207,19 +215,18 @@ async function assertBrokerReady(broker: BrokerClient): Promise<void> {
   }
 }
 
-/** Drives the SDK session to its result. The last result message wins (it carries the running totals). */
-async function drive(
-  descriptor: AgentSessionDescriptor,
+/**
+ * Drives one SDK query to its result. The last result message wins (it carries the running totals). The options are
+ * built inside the guard, so a descriptor the gate refuses ends the session as an unhandled error, not a crash.
+ */
+export async function drive(
+  prompt: string,
   runQuery: RunQuery,
-  abortController: AbortController,
-  hooks: Options['hooks'],
+  buildOptions: () => Options,
 ): Promise<SessionResultMessage> {
   let result: SessionResultMessage | undefined;
   try {
-    const stream = runQuery({
-      prompt: descriptor.brief,
-      options: buildRunOptions(descriptor, abortController, hooks),
-    });
+    const stream = runQuery({ prompt, options: buildOptions() });
     for await (const message of stream) {
       if (message.type === 'result' && isResult(message)) result = message;
     }
@@ -255,13 +262,35 @@ export async function runSession(
   await assertBrokerReady(ports.broker);
 
   ports.metrics.sessionsStarted.inc({ persona: descriptor.persona });
-  const result = await drive(
-    descriptor,
-    ports.runQuery,
-    new AbortController(),
-    preToolUseHooks(descriptor, ports),
+  const result = await drive(descriptor.brief, ports.runQuery, () =>
+    buildRunOptions(
+      descriptor,
+      new AbortController(),
+      preToolUseHooks(descriptor, ports),
+      ports.sessionStore,
+    ),
   );
   recordDenials(descriptor, result.permission_denials, ports);
+  const status = await recordSession(descriptor, result, ports);
+
+  ports.log.info({ ...started, status, numTurns: result.num_turns }, 'session.recorded');
+  return {
+    sessionId: descriptor.sessionId,
+    status,
+    numTurns: result.num_turns,
+    totalCostUsd: result.total_cost_usd,
+  };
+}
+
+/**
+ * Writes the finished session record with one broker call and returns its status (`tool_deferred` when the session
+ * stopped on a call waiting for Gate 2). A failed write fails the session closed (exit 3).
+ */
+export async function recordSession(
+  descriptor: AgentSessionDescriptor,
+  result: SessionResultMessage,
+  ports: Pick<SessionPorts, 'broker' | 'sdkVersion'>,
+): Promise<string> {
   const deferred = result.terminal_reason === TOOL_DEFERRED;
   const status = deferred ? TOOL_DEFERRED : result.subtype;
   const record = agentSessionRecordSchema.parse({
@@ -291,12 +320,5 @@ export async function runSession(
   } catch {
     throw new SessionExit(EXIT_CODES.brokerUnavailable, 'could not record the agent session');
   }
-
-  ports.log.info({ ...started, status, numTurns: result.num_turns }, 'session.recorded');
-  return {
-    sessionId: descriptor.sessionId,
-    status,
-    numTurns: result.num_turns,
-    totalCostUsd: result.total_cost_usd,
-  };
+  return status;
 }

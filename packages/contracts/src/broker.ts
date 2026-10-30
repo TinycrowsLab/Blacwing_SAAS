@@ -198,6 +198,7 @@ const PDP_REASONS = [
   'gate2_exception_unavailable',
   'gate2_denied',
   'gate2_resume_required',
+  'gate2_approved_once',
 ] as const;
 export type PdpReason = (typeof PDP_REASONS)[number];
 

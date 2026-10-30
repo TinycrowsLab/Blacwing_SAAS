@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { createPreToolUseHook, type PdpBroker, type PreToolUsePorts } from './pre-tool-use.js';
+import {
+  createPreToolUseHook,
+  type PdpBroker,
+  type PreToolUsePorts,
+  type ResumeGrant,
+} from './pre-tool-use.js';
 
 /** The options a Gate 2 `POST` carries: the idempotency key. */
 type PostOptions = { readonly idempotencyKey?: string } | undefined;
@@ -384,5 +389,118 @@ describe('PreToolUse Gate 2 exceptions (RUNTIME-006)', () => {
     const out = await createPreToolUseHook(h.ports, CONTEXT)(scopeCall);
     expect(out.hookSpecificOutput.permissionDecision).toBe('deny');
     expect(out.hookSpecificOutput.permissionDecisionReason).toBe('gate2_exception_unavailable');
+  });
+});
+
+describe('PreToolUse resume grant (GATE2-007)', () => {
+  const CURL = { command: 'curl https://lab.example.test/' };
+  const grant = (over: Partial<ResumeGrant> = {}): ResumeGrant => ({
+    toolUseId: 'toolu_1',
+    toolName: 'Bash',
+    targets: ['https://lab.example.test/'],
+    approved: true,
+    journalMissing: false,
+    ...over,
+  });
+  const decisionOf = (out: {
+    hookSpecificOutput: { permissionDecision: string; permissionDecisionReason: string };
+  }) => [
+    out.hookSpecificOutput.permissionDecision,
+    out.hookSpecificOutput.permissionDecisionReason,
+  ];
+
+  it('allows the approved deferred call without asking the PDP, once', async () => {
+    const h = harness(denyOutOfScope);
+    const hook = createPreToolUseHook(h.ports, CONTEXT, grant());
+    expect(decisionOf(await hook(hookInput('Bash', CURL)))).toEqual([
+      'allow',
+      'gate2_approved_once',
+    ]);
+    expect(h.calls).toHaveLength(0);
+  });
+
+  it('spends the grant: the same call again goes back through the PDP and is not allowed', async () => {
+    const h = harness((suffix) =>
+      suffix === 'pdp/evaluate' ? exception() : gate2Row('approved_once')(suffix),
+    );
+    const hook = createPreToolUseHook(h.ports, CONTEXT, grant());
+    expect(decisionOf(await hook(hookInput('Bash', CURL)))).toEqual([
+      'allow',
+      'gate2_approved_once',
+    ]);
+    const again = await hook(hookInput('Bash', CURL));
+    expect(h.calls.map((c) => c.suffix)).toEqual(['pdp/evaluate', 'gate2/exceptions']);
+    expect(decisionOf(again)).toEqual(['deny', 'gate2_resume_required']);
+  });
+
+  it('denies the deferred call with gate2_denied when the human denied it, and spends the grant', async () => {
+    const h = harness(denyOutOfScope);
+    const hook = createPreToolUseHook(h.ports, CONTEXT, grant({ approved: false }));
+    expect(decisionOf(await hook(hookInput('Bash', CURL)))).toEqual(['deny', 'gate2_denied']);
+    expect(h.calls).toHaveLength(0);
+    expect(decisionOf(await hook(hookInput('Bash', CURL)))).toEqual(['deny', 'out_of_scope']);
+  });
+
+  it('denies an approved state-changing call whose reversal-journal entry is absent (§8.3)', async () => {
+    const h = harness(allow);
+    const hook = createPreToolUseHook(h.ports, CONTEXT, grant({ journalMissing: true }));
+    expect(decisionOf(await hook(hookInput('Bash', CURL)))).toEqual([
+      'deny',
+      'state_change_without_journal',
+    ]);
+    expect(h.calls).toHaveLength(0);
+  });
+
+  it('does not match a different tool, different targets or a different tool-use id; the grant stays unspent', async () => {
+    const h = harness(allow);
+    const hook = createPreToolUseHook(h.ports, CONTEXT, grant());
+    expect(
+      decisionOf(await hook(hookInput('Bash', { command: 'curl https://other.example.test/' }))),
+    ).toEqual(['allow', 'in_envelope']);
+    expect(decisionOf(await hook(hookInput('Read', CURL)))).toEqual(['allow', 'in_envelope']);
+    expect(h.calls).toHaveLength(2);
+    const otherId = { ...hookInput('Bash', CURL), tool_use_id: 'toolu_2' };
+    expect(decisionOf(await hook(otherId))).toEqual(['allow', 'in_envelope']);
+    expect(h.calls).toHaveLength(3);
+    // The deferred call itself is still granted.
+    expect(decisionOf(await hook(hookInput('Bash', CURL)))).toEqual([
+      'allow',
+      'gate2_approved_once',
+    ]);
+    expect(h.calls).toHaveLength(3);
+  });
+
+  it('matches the targets as a set, so their order does not matter', async () => {
+    const h = harness(denyOutOfScope);
+    const hook = createPreToolUseHook(
+      h.ports,
+      CONTEXT,
+      grant({ targets: ['https://lab.example.test/', 'https://lab.example.test/'] }),
+    );
+    expect(decisionOf(await hook(hookInput('Bash', CURL)))).toEqual([
+      'allow',
+      'gate2_approved_once',
+    ]);
+  });
+
+  it('never widens the envelope: a different out-of-envelope call still opens a fresh Gate 2 exception', async () => {
+    const h = harness((suffix) =>
+      suffix === 'pdp/evaluate' ? exception() : gate2Row('pending')(suffix),
+    );
+    const hook = createPreToolUseHook(h.ports, CONTEXT, grant());
+    await hook(hookInput('Bash', CURL));
+    const next = await hook(hookInput('Bash', { command: 'curl https://other.example.test/' }));
+    expect(decisionOf(next)).toEqual(['defer', 'out_of_scope']);
+    expect(h.calls.map((c) => c.suffix)).toEqual(['pdp/evaluate', 'gate2/exceptions']);
+  });
+
+  it('ignores malformed hook input without spending the grant', async () => {
+    const h = harness(allow);
+    const hook = createPreToolUseHook(h.ports, CONTEXT, grant());
+    expect(decisionOf(await hook(null))).toEqual(['deny', 'invalid_input']);
+    expect(decisionOf(await hook(hookInput('Bash', CURL)))).toEqual([
+      'allow',
+      'gate2_approved_once',
+    ]);
   });
 });

@@ -92,6 +92,22 @@ export interface PreToolUseContext {
   readonly roleId: string | null;
 }
 
+/**
+ * The one deferred call a resumed session may run (GATE2-007). It is matched on the exact tool-use id, tool name and
+ * targets of the call Gate 2 decided, and it is spent by the first match, so an approval runs that call once and never
+ * widens the envelope: any other call, or a second match, goes through the normal PDP path again.
+ */
+export interface ResumeGrant {
+  readonly toolUseId: string;
+  readonly toolName: string;
+  /** The targets the deferred call named, as the hook extracted them. Compared as a sorted set. */
+  readonly targets: readonly string[];
+  /** True when a human approved this call once. A denial still spends the grant and denies the call. */
+  readonly approved: boolean;
+  /** True when the call is state-changing and its reversal-journal entry is absent: such a call is denied (§8.3). */
+  readonly journalMissing: boolean;
+}
+
 /** Longest tool name or tool-use id the hook accepts; a model-chosen value is bounded. */
 const NAME_MAX = 256;
 /** Longest tool name written to the log. */
@@ -125,6 +141,35 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 }
 
 const deny = (reason: PdpReason): PreToolUseDecision => ({ decision: 'deny', reason });
+
+/** The grant's targets and the call's targets name the same set. Order and duplicates do not matter. */
+function sameTargets(a: readonly string[], b: readonly string[]): boolean {
+  const key = (targets: readonly string[]): string => [...new Set(targets)].sort().join('\n');
+  return key(a) === key(b);
+}
+
+/**
+ * Answers the call the resume grant covers, once. Returns `undefined` for every other call, which then re-enters the
+ * normal PDP path, so a new or changed call is gated again. The grant is spent by its first match, whatever the answer.
+ */
+function claimGrant(
+  grants: { current: ResumeGrant | undefined },
+  call: { readonly tool_name: string; readonly tool_use_id: string },
+  targets: readonly string[],
+): PreToolUseDecision | undefined {
+  const grant = grants.current;
+  if (
+    grant?.toolUseId !== call.tool_use_id ||
+    grant.toolName !== call.tool_name ||
+    !sameTargets(grant.targets, targets)
+  ) {
+    return undefined;
+  }
+  grants.current = undefined;
+  if (!grant.approved) return deny('gate2_denied');
+  if (grant.journalMissing) return deny('state_change_without_journal');
+  return { decision: 'allow', reason: 'gate2_approved_once' };
+}
 
 /**
  * A short proposal for the approver: the reason, the tool and its targets. The call's input is never sent, so no
@@ -220,6 +265,7 @@ async function evaluate(
   context: PreToolUseContext,
   ports: PreToolUsePorts,
   batched: () => boolean,
+  grants: { current: ResumeGrant | undefined },
 ): Promise<PreToolUseDecision> {
   const parsed = hookInputSchema.safeParse(raw);
   if (!parsed.success) return deny('invalid_input');
@@ -228,6 +274,8 @@ async function evaluate(
   if (extracted.kind === 'unresolved') return deny('target_unresolved');
 
   const targets = [...extracted.targets];
+  const granted = claimGrant(grants, call, targets);
+  if (granted !== undefined) return granted;
   const body = {
     toolName: call.tool_name,
     toolUseId: call.tool_use_id,
@@ -273,18 +321,20 @@ function toHookOutput(decision: PreToolUseDecision): PreToolUseOutput {
 export function createPreToolUseHook(
   ports: PreToolUsePorts,
   context: PreToolUseContext,
+  grant?: ResumeGrant,
 ): (input: unknown) => Promise<PreToolUseOutput> {
   const tracer = trace.getTracer('@blackwing/agent-runtime');
   let inFlight = 0;
   let overlapped = false;
   const batched = (): boolean => overlapped;
+  const grants: { current: ResumeGrant | undefined } = { current: grant };
   return (input) =>
     tracer.startActiveSpan('agent.pretooluse', async (span) => {
       const started = Date.now();
       inFlight += 1;
       if (inFlight > 1) overlapped = true;
       try {
-        const decision = await evaluate(input, context, ports, batched);
+        const decision = await evaluate(input, context, ports, batched, grants);
         ports.metrics.latency(Date.now() - started);
         ports.metrics.decided({ decision: decision.decision, reason: decision.reason });
         const toolName =

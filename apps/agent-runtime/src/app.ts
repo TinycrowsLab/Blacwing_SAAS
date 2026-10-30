@@ -11,6 +11,7 @@ import { loadRuntimeEnv } from './env.js';
 import { createRuntimeMetrics, type RuntimeMetrics } from './metrics.js';
 import { SDK_VERSION, runSdkQuery } from './sdk.js';
 import { EXIT_CODES, type RunQuery, runSession, SessionExit } from './session/run-session.js';
+import { createSessionStore } from './session/session-store.js';
 
 import type { AgentSessionDescriptor } from '@blackwing/contracts';
 
@@ -97,6 +98,7 @@ async function runAgentSession(
       log: deps.log,
       metrics,
       pdpTimeoutMs,
+      sessionStore: createSessionStore(),
     });
     deps.log.info({ sessionId: summary.sessionId, status: summary.status }, 'session.finished');
     return EXIT_CODES.success;

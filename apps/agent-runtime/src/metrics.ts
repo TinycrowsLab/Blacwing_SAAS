@@ -25,6 +25,10 @@ export interface RuntimeMetrics {
   readonly gate2Defers: Counter;
   /** `agent_gate2_batch_denies_total`: out-of-envelope calls denied because they ran in a parallel batch (RUNTIME-006). */
   readonly gate2BatchDenies: Counter;
+  /** `gate2_resumes_total{decision,outcome}`: one per Gate 2 resume the runtime handled (GATE2-007). */
+  readonly gate2Resumes: Counter<'decision' | 'outcome'>;
+  /** `gate2_resume_failures_total`: resumes whose session could not be resumed (GATE2-007). */
+  readonly gate2ResumeFailures: Counter;
 }
 
 export function createRuntimeMetrics(registry: Registry = new Registry()): RuntimeMetrics {
@@ -68,6 +72,17 @@ export function createRuntimeMetrics(registry: Registry = new Registry()): Runti
     gate2BatchDenies: new Counter({
       name: 'agent_gate2_batch_denies_total',
       help: 'Out-of-envelope tool calls denied because they ran in a parallel batch.',
+      registers: [registry],
+    }),
+    gate2Resumes: new Counter({
+      name: 'gate2_resumes_total',
+      help: 'Gate 2 resumes of deferred sessions, by decision and outcome.',
+      labelNames: ['decision', 'outcome'],
+      registers: [registry],
+    }),
+    gate2ResumeFailures: new Counter({
+      name: 'gate2_resume_failures_total',
+      help: 'Gate 2 resumes whose session could not be resumed.',
       registers: [registry],
     }),
   };
