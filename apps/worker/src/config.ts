@@ -12,6 +12,7 @@ const DEFAULT_MAX_WORKFLOW_CONCURRENCY = 40;
 const DEFAULT_HEALTH_PORT = 13800;
 const DEFAULT_SHUTDOWN_GRACE_MS = 30_000;
 const DEFAULT_KILL_CHAOS_RUNS = 25;
+const DEFAULT_AUDIT_EXPORT_BATCH = 500;
 const MAX_KILL_CHAOS_RUNS = 500;
 
 /** Positive integer from a string env value. Zero, signs, fractions and blanks are rejected. */
@@ -106,6 +107,8 @@ const workerEnvSchema = baseEnvSchema.extend({
   WORKER_SHUTDOWN_GRACE: zDurationMs().default(DEFAULT_SHUTDOWN_GRACE_MS),
   AUDIT_ACTIVITY_SAMPLE: sampleRates,
   /** `bw.asset.dns.*`: the pinned resolver set and the probe bounds of the DNS TXT ownership probe. */
+  /** `AUDIT_EXPORT_BATCH`: ledger events read per SIEM export call (AUDIT-004). Chunked to each connector's limit. */
+  AUDIT_EXPORT_BATCH: positiveInt.default(DEFAULT_AUDIT_EXPORT_BATCH),
   ASSET_DNS_RESOLVERS: dnsResolvers,
   ASSET_DNS_TIMEOUT_MS: positiveInt.default(DNS_TXT_DEFAULTS.timeoutMs),
   ASSET_DNS_RETRIES: nonNegativeInt.default(DNS_TXT_DEFAULTS.retries),
@@ -119,6 +122,18 @@ export interface DnsVerificationConfig {
   readonly timeoutMs: number;
   readonly retries: number;
   readonly maxRecords: number;
+}
+
+/** Settings for the SIEM export dispatcher (AUDIT-004). */
+export interface AuditExportConfig {
+  /** Events read per export call (`AUDIT_EXPORT_BATCH`, default 500). */
+  readonly batchSize: number;
+}
+
+/** Parses the SIEM export settings. Throws on a non-positive or non-integer batch size. */
+export function parseAuditExportConfig(source: EnvSource = process.env): AuditExportConfig {
+  const env = loadConfig(workerEnvSchema, source);
+  return { batchSize: env.AUDIT_EXPORT_BATCH };
 }
 
 /** Parses the DNS probe settings. Throws on an invalid resolver address or bound. */

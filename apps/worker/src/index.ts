@@ -78,6 +78,16 @@ export {
 } from './verification/dns-txt/activities.js';
 export { createPgVerificationDnsStore } from './verification/dns-txt/store-pg.js';
 export { createOtelVerificationDnsMetrics } from './verification/dns-txt/metrics.js';
+export {
+  createAuditExportActivities,
+  type AuditExportActivities,
+  type AuditExportActivityDeps,
+  type AuditExportActivityResult,
+  type AuditExportInput,
+} from './audit-export/activities.js';
+export { createPgAuditExportStore } from './audit-export/store-pg.js';
+export { auditExportSpan, createOtelAuditExportMetrics } from './audit-export/metrics.js';
+
 export { createPinnedDnsResolver, type DnsResolver } from './verification/dns-txt/resolver.js';
 export {
   DnsResolverUnavailableError,

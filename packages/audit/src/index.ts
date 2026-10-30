@@ -46,3 +46,4 @@ export {
   type GateNumber,
   loginInput,
 } from './wrappers.js';
+export * from './siem/index.js';

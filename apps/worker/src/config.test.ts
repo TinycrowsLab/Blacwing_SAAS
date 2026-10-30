@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseDnsVerificationConfig, parseKillChaosConfig, parseWorkerConfig } from './config.js';
+import {
+  parseAuditExportConfig,
+  parseDnsVerificationConfig,
+  parseKillChaosConfig,
+  parseWorkerConfig,
+} from './config.js';
 import { ALL_TASK_QUEUES } from './task-queues.js';
 
 const base = { NODE_ENV: 'test' } as const;
@@ -171,5 +176,20 @@ describe('parseDnsVerificationConfig (ASSET-005)', () => {
     ['ASSET_DNS_MAX_RECORDS', 'many'],
   ])('rejects an invalid %s=%s', (key, value) => {
     expect(() => parseDnsVerificationConfig({ ...base, [key]: value })).toThrow();
+  });
+});
+
+describe('parseAuditExportConfig', () => {
+  it('defaults the export batch to 500 events', () => {
+    expect(parseAuditExportConfig(base)).toEqual({ batchSize: 500 });
+  });
+
+  it('reads AUDIT_EXPORT_BATCH and rejects zero, signs, fractions and words', () => {
+    expect(parseAuditExportConfig({ ...base, AUDIT_EXPORT_BATCH: '1000' })).toEqual({
+      batchSize: 1000,
+    });
+    for (const value of ['0', '-5', '2.5', 'many']) {
+      expect(() => parseAuditExportConfig({ ...base, AUDIT_EXPORT_BATCH: value })).toThrow();
+    }
   });
 });

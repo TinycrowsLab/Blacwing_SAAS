@@ -218,6 +218,13 @@
       "when": 1793341820947,
       "tag": "20261030063020_intel_mirror_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793343351738,
+      "tag": "20261030065551_audit_export_subscriptions",
+      "breakpoints": true
     }
   ]
 }

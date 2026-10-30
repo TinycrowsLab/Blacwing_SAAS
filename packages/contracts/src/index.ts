@@ -454,6 +454,11 @@ export {
 } from './audit/event.js';
 export { AUDIT_EVENT_JSON_SCHEMA_ID, auditEventJsonSchema } from './audit/json-schema.js';
 export {
+  AUDIT_EXPORT_FILTERS_MAX,
+  auditExportFiltersSchema,
+  type AuditExportFilters,
+} from './audit/export-filters.js';
+export {
   canonicalJson,
   CanonicalJsonError,
   isWellFormedString,

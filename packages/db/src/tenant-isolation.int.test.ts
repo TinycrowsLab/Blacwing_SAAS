@@ -47,6 +47,13 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, createHash('sha256').update(randomBytes(8)).digest()],
     );
   },
+  audit_export_subscriptions: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO audit_export_subscriptions (id, tenant_id, kind, secret_ref)
+       VALUES ($1, $2, 'splunk_hec', $3)`,
+      [newId(), tenantId, `bw-secret://${tenantId}/${newId()}`],
+    );
+  },
   assessment_requests: async (tx, tenantId) => {
     const id = newId();
     await tx.query(
