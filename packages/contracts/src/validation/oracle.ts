@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { CodePlusRuntimeOracleSchema } from '../findings/whitebox.js';
 import { LIMITS } from '../limits.js';
 import { isoDateTimeSchema } from '../primitives.js';
 
@@ -63,14 +64,6 @@ export const roleKeySchema = z
 const httpTokenSchema = z
   .string()
   .regex(/^[A-Za-z0-9-]{1,128}$/, 'must be an HTTP header or cookie name');
-const relativeFilePathSchema = z
-  .string()
-  .min(1)
-  .max(LIMITS.filePathMax)
-  .refine(
-    (value) => !value.startsWith('/') && !value.split('/').includes('..'),
-    'must be a relative path',
-  );
 
 /** Typed `params` per oracle type. Each shape is strict and holds check parameters only, never a payload. */
 const oracleParamsSchemas = {
@@ -99,11 +92,7 @@ const oracleParamsSchemas = {
     name: httpTokenSchema,
     expectation: z.enum(['present', 'absent']),
   }),
-  code_plus_runtime: z.strictObject({
-    file: relativeFilePathSchema,
-    line: z.int().positive(),
-    runtimeOracle: z.enum(['marker', 'status_diff', 'error_signature', 'file_read']),
-  }),
+  code_plus_runtime: CodePlusRuntimeOracleSchema.shape.params,
 } as const;
 
 /** One oracle binding variant: the type, the declaration time and the typed params. */

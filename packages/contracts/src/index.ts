@@ -995,3 +995,17 @@ export {
   type Gate2State,
   gate2StateSchema,
 } from './gate2.js';
+export {
+  type CodeEvidence,
+  CodeEvidenceSchema,
+  type CodeLocation,
+  CodeLocationSchema,
+  type CodePlusRuntimeOracle,
+  CodePlusRuntimeOracleSchema,
+  PATH_SUMMARY_MAX_BYTES,
+  RUNTIME_OBSERVATION_KINDS,
+  type RuntimeObservationKind,
+  runtimeObservationKindSchema,
+  type SourceSinkLead,
+  SourceSinkLeadSchema,
+} from './findings/whitebox.js';

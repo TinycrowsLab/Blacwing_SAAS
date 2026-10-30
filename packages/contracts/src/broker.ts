@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { findingLocationSchema } from './entities/finding.js';
 import { runStateSchema } from './entities/run.js';
 import { oracleSchema } from './entities/test-case.js';
+import { CodeEvidenceSchema } from './findings/whitebox.js';
 import { intrusivenessClassSchema } from './intrusiveness.js';
 import { LIMITS } from './limits.js';
 import { cweIdSchema, isoDateTimeSchema, sha256HexSchema, uuidV7Schema } from './primitives.js';
@@ -106,6 +107,8 @@ export const brokerCandidateRequestSchema = z.strictObject({
   oracleBinding: oracleSchema.optional(),
   negativeControlRef: z.string().min(1).max(LIMITS.keyMax).optional(),
   confidence: z.number().min(0).max(1).optional(),
+  /** White-box candidates: the source→sink lead and the confirmed `file:line` (CODESPEC). References only. */
+  codeEvidence: CodeEvidenceSchema.optional(),
   /** sha256 over `(testCaseId, location, oracleBinding)`; a repeat submission returns the same finding. */
   idempotencyKey: sha256HexSchema.optional(),
 });

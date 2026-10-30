@@ -11,6 +11,12 @@ import {
 } from './oracle.js';
 
 const DECLARED_AT = '2026-01-01T00:00:00.000Z';
+const CODE_LOCATION = {
+  repoRef: 'orders-service',
+  path: 'src/routes/orders.ts',
+  startLine: 42,
+  commitSha: 'a'.repeat(40),
+};
 
 /** One valid binding per declared type, so the union is exercised variant by variant. */
 const VALID_BINDINGS: Record<OracleBindingType, unknown> = {
@@ -45,7 +51,10 @@ const VALID_BINDINGS: Record<OracleBindingType, unknown> = {
   code_plus_runtime: {
     type: 'code_plus_runtime',
     declaredAt: DECLARED_AT,
-    params: { file: 'src/routes/orders.ts', line: 42, runtimeOracle: 'status_diff' },
+    params: {
+      sink: CODE_LOCATION,
+      runtimeObservation: { kind: 'status_diff', ref: 'evidence/status-diff-1' },
+    },
   },
 };
 
@@ -110,14 +119,17 @@ describe('OracleBindingSchema', () => {
     expectTypeOf<OracleBindingType>().toEqualTypeOf<(typeof ORACLE_BINDING_TYPES)[number]>();
   });
 
-  it('rejects a code_plus_runtime path that is absolute or walks up', () => {
-    for (const file of ['/etc/passwd', '../secrets.ts', 'src/../../x.ts']) {
+  it('rejects a code_plus_runtime sink path that is absolute or walks up', () => {
+    for (const path of ['/etc/passwd', '../secrets.ts', 'src/../../x.ts']) {
       const result = OracleBindingSchema.safeParse({
         type: 'code_plus_runtime',
         declaredAt: DECLARED_AT,
-        params: { file, line: 1, runtimeOracle: 'marker' },
+        params: {
+          sink: { ...CODE_LOCATION, path },
+          runtimeObservation: { kind: 'marker', ref: 'evidence/marker-1' },
+        },
       });
-      expect(result.success, file).toBe(false);
+      expect(result.success, path).toBe(false);
     }
   });
 
