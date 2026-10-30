@@ -153,11 +153,11 @@ lowering) change the effective values of one tenant only; see `GET /v1/personas`
 
 - **Mandate:** Probe in-scope network services, TLS and configuration (OWASP A05 and A02, WSTG-CONF and WSTG-CRYP), exposed admin interfaces (WSTG-CONF-05) and known-vulnerable versions (A06, CWE-1104). Prove every lead at runtime with a status, version or error signature and a negative control, then submit the candidate. Never judge a finding.
 - **Model tier:** `standard` → `claude-opus-5-5` (Anthropic provider; Bedrock adds the `anthropic.` prefix)
-- **Effort:** `medium`; **max turns:** 60; **default budget:** $5
+- **Effort:** `medium`; **max turns:** 50; **default budget:** $5
 - **Intrusiveness ceiling:** `active_safe`; **submission required:** yes
 - **Prompt version:** `1.0.0`
 - **Allowed tools:** `Bash`, `mcp__blackwing_target__tcp_probe`, `mcp__blackwing_findings__submit_candidate`, `mcp__blackwing_findings__attach_evidence`
-- **Disallowed tools:** `WebFetch`, `WebSearch`
+- **Disallowed tools:** `WebFetch`, `WebSearch`, `Bash(*nmap*)`
 - **Declared oracle types:** `status_diff`, `error_signature`, `header_flag`
 - **Inputs:** `surface_hosts`, `detected_versions`, `test_case_brief`
 - **Helpers:** _none_

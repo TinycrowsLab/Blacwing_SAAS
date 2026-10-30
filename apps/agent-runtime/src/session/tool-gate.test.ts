@@ -1,6 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
+import { loadPersona } from '@blackwing/agents';
 import { AppError } from '@blackwing/errors';
 
 import {
@@ -237,5 +238,44 @@ describe('denialReason', () => {
 
   it('classifies a scoped deny by its tool name', () => {
     expect(denialReason('Bash', ['Bash(rm *)'])).toBe('disallowed');
+  });
+});
+
+describe('infrastructure-specialist gate', () => {
+  const persona = loadPersona('infrastructure-specialist');
+  const gate = buildToolGate(persona).canUseTool;
+
+  it('allows the pinned scanners through Bash and the declared probe tool', async () => {
+    await expect(gate('Bash', { command: 'naabu -host 10.0.0.5 -p 443' })).resolves.toMatchObject({
+      behavior: 'allow',
+    });
+    await expect(gate('Bash', { command: 'testssl.sh 10.0.0.5:443' })).resolves.toMatchObject({
+      behavior: 'allow',
+    });
+    await expect(
+      gate('mcp__blackwing_target__tcp_probe', { host: '10.0.0.5' }),
+    ).resolves.toMatchObject({
+      behavior: 'allow',
+    });
+  });
+
+  it('denies nmap in every Bash command position', async () => {
+    for (const command of [
+      'nmap -sV 10.0.0.5',
+      '   nmap -sV 10.0.0.5',
+      '/usr/bin/nmap -sV 10.0.0.5',
+      'cd /tmp && nmap -sV 10.0.0.5',
+      'naabu -host 10.0.0.5 && nmap 10.0.0.5',
+    ]) {
+      await expect(gate('Bash', { command })).resolves.toMatchObject({ behavior: 'deny' });
+    }
+  });
+
+  it('denies networked built-ins and undeclared tools', async () => {
+    for (const tool of ['WebFetch', 'WebSearch', 'Write', 'mcp__blackwing_findings__update']) {
+      await expect(gate(tool, { url: 'https://10.0.0.5' })).resolves.toMatchObject({
+        behavior: 'deny',
+      });
+    }
   });
 });

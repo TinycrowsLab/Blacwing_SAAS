@@ -27,7 +27,7 @@ describe('infrastructure-specialist persona definition', () => {
   it('matches the template fields and resolves standard to claude-opus-5-5 at medium effort', () => {
     expect(def.tierAlias).toBe('standard');
     expect(def.effort).toBe('medium');
-    expect(def.maxTurns).toBe(60);
+    expect(def.maxTurns).toBe(50);
     expect(def.maxBudgetUsdDefault).toBeGreaterThan(0);
     expect(resolveTier(def.tierAlias, 'anthropic')).toBe('claude-opus-5-5');
   });
@@ -65,6 +65,11 @@ describe('infrastructure-specialist persona definition', () => {
     expect(personaDefinitionSchema.safeParse(bad).success).toBe(false);
     const unguarded = { ...structuredClone(def), disallowedTools: ['WebFetch'] };
     expect(personaDefinitionSchema.safeParse(unguarded).success).toBe(false);
+  });
+
+  it('denies nmap through a scoped Bash rule, since naabu and fingerprintx replace it', () => {
+    expect(def.disallowedTools).toContain('Bash(*nmap*)');
+    expect(def.allowedTools).toContain('Bash');
   });
 
   it('has a released prompt that composes with the base preamble and stays in its altitude', () => {

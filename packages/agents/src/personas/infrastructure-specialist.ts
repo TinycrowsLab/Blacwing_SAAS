@@ -18,10 +18,11 @@ export const infrastructureSpecialistPersona = registerPersona({
     'candidate. Never judge a finding.',
   tierAlias: 'standard',
   effort: 'medium',
-  maxTurns: 60,
+  maxTurns: 50,
   maxBudgetUsdDefault: 5,
   allowedTools: [...EXPOSURE_MATRIX['infrastructure-specialist']],
-  disallowedTools: ['WebFetch', 'WebSearch'],
+  // nmap is NPSL-licensed and not bundled: the scoped deny blocks it in any Bash command position.
+  disallowedTools: ['WebFetch', 'WebSearch', 'Bash(*nmap*)'],
   declaredOracleTypes: ['status_diff', 'error_signature', 'header_flag'],
   inputs: ['surface_hosts', 'detected_versions', 'test_case_brief'],
   intrusivenessCeiling: 'active_safe',
