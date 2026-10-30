@@ -137,6 +137,9 @@ const RELEASED_ACTIONS = [
   'service_account.created',
   'service_account.updated',
   'service_account.disabled',
+  'secret.created',
+  'secret.updated',
+  'secret.deleted',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

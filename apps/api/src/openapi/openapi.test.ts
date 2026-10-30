@@ -94,6 +94,11 @@ const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   getNotificationChannel: 'notifications',
   updateNotificationChannel: 'notifications',
   deleteNotificationChannel: 'notifications',
+  createSecret: 'secrets',
+  getSecret: 'secrets',
+  listSecrets: 'secrets',
+  updateSecret: 'secrets',
+  deleteSecret: 'secrets',
   getKillEvent: 'kill',
   listKillEvents: 'kill',
   listAuditEvents: 'audit',
@@ -195,6 +200,7 @@ describe('public OpenAPI document', () => {
       'createInputManifestUpload',
       'createNotificationChannel',
       'createOncallRoster',
+      'createSecret',
       'createServiceAccount',
       'createStandingAuthorisation',
       'createTestPlanVersion',
@@ -202,6 +208,7 @@ describe('public OpenAPI document', () => {
       'deleteAsset',
       'deleteInputManifestUpload',
       'deleteNotificationChannel',
+      'deleteSecret',
       'diffTestPlanVersions',
       'disableServiceAccount',
       'getAssessmentRequest',
@@ -216,6 +223,7 @@ describe('public OpenAPI document', () => {
       'getPersona',
       'getPersonaOverride',
       'getRunSurface',
+      'getSecret',
       'getServiceAccount',
       'getStandingAuthorisation',
       'getTenantSettings',
@@ -228,6 +236,7 @@ describe('public OpenAPI document', () => {
       'listNotificationChannels',
       'listOncallRosters',
       'listPersonas',
+      'listSecrets',
       'listServiceAccounts',
       'listStandingAuthorisations',
       'listTestPlanVersions',
@@ -246,6 +255,7 @@ describe('public OpenAPI document', () => {
       'updateCurrentTenant',
       'updateNotificationChannel',
       'updateOncallRoster',
+      'updateSecret',
       'updateServiceAccount',
       'updateStandingAuthorisation',
       'updateTenantSettings',
@@ -254,7 +264,7 @@ describe('public OpenAPI document', () => {
       'verifySignup',
       'withdrawAssessmentRequest',
     ]);
-    expect(countOperations(doc)).toBe(68);
+    expect(countOperations(doc)).toBe(73);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -327,6 +337,7 @@ describe('public OpenAPI document', () => {
       'oncall',
       'notifications',
       'rbac',
+      'secrets',
     ]);
   });
 });
@@ -386,7 +397,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(68);
+    expect(result.operations).toBe(73);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

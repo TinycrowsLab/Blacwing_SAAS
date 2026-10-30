@@ -15,6 +15,7 @@ import { personaOpenApiModule } from '../personas/openapi.js';
 import { serviceAccountOpenApiModule } from '../rbac/openapi.js';
 import { runEventsOpenApiModule } from '../run-events/openapi.js';
 import { inputManifestOpenApiModule } from '../scoping/openapi.js';
+import { secretsOpenApiModule } from '../secrets/openapi.js';
 import { signupOpenApiModule } from '../signup/openapi.js';
 import { surfaceOpenApiModule } from '../surface/openapi.js';
 import { tenantProfileOpenApiModule } from '../tenant-profile/openapi.js';
@@ -96,6 +97,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     oncallOpenApiModule(),
     notificationChannelsOpenApiModule(),
     serviceAccountOpenApiModule(),
+    secretsOpenApiModule(),
   ];
 }
 

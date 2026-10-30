@@ -858,6 +858,28 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'config_change',
     description: 'A service account was disabled; its tokens stop authenticating.',
   },
+  // write-only secrets API (SECRETS-004): the event names the secret and its version, never the value
+  {
+    action: 'secret.created',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A secret was created; its value was stored encrypted and is never recorded.',
+  },
+  {
+    action: 'secret.updated',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A secret received a new value as a new version; the value is never recorded.',
+  },
+  {
+    action: 'secret.deleted',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A secret was disabled (soft delete); the value is never recorded.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

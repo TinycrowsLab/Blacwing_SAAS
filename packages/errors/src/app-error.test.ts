@@ -291,6 +291,9 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'KILL_PARTIAL',
   'IDEMPOTENCY_KEY_REQUIRED',
   'IDEMPOTENCY_KEY_MISMATCH',
+  // Raised by apps/api's secrets write API (SECRETS-004).
+  'SECRET_NAME_CONFLICT',
+  'SECRET_IN_USE',
   // Raised by apps/api's oncall module (GATE2-003) as OncallError.
   'GATE2_NO_ONCALL_CONFIGURED',
   'GATE2_NO_ELIGIBLE_APPROVER',

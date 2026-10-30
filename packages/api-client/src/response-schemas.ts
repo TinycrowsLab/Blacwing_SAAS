@@ -33,6 +33,9 @@ import {
   inputManifestUploadGrantSchema,
   inputManifestUploadRemovedSchema,
   serviceAccountSchema,
+  pageSchema,
+  secretMetadataSchema,
+  secretWriteResponseSchema,
 } from '@blackwing/contracts';
 
 import type { OperationId } from './generated/operations.js';
@@ -213,4 +216,9 @@ export const RESPONSE_SCHEMAS: Readonly<
   updateOncallRoster: { 200: oncallRosterSchema },
   listFindings: { 200: findingListResponseSchema },
   getFinding: { 200: findingDetailSchema },
+  listSecrets: { 200: pageSchema(secretMetadataSchema) },
+  createSecret: { 201: secretWriteResponseSchema },
+  getSecret: { 200: secretMetadataSchema },
+  updateSecret: { 200: secretWriteResponseSchema },
+  deleteSecret: { 200: secretMetadataSchema },
 };

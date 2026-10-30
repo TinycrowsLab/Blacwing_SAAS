@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { isoDateTimeSchema, uuidV7Schema } from './primitives.js';
+
 /**
  * Secret records and the opaque `secret_ref` URI (SECRETS-003, F35, CONTEXT_PACK §7, §8.6, §8.7).
  *
@@ -159,3 +161,69 @@ export const secretRefSchema = z.string().transform((value, ctx): SecretRef => {
 export function resolveSecretVersion(ref: SecretRef, currentVersion: number): number {
   return ref.version ?? currentVersion;
 }
+
+/** Largest secret value the write API accepts, in UTF-8 bytes (certificates and SSH keys fit well below). */
+export const SECRET_VALUE_MAX_BYTES = 65_536;
+
+/** Longest `purpose` label, in characters. */
+export const SECRET_PURPOSE_MAX = 500;
+
+/**
+ * A secret value as submitted: non-empty, well-formed Unicode and no NUL. Nothing is trimmed or
+ * normalised (a credential is stored exactly as given). The byte limit is checked by the API so an
+ * oversized value answers `413 SECRET_TOO_LARGE` rather than a validation error.
+ */
+export const secretValueSchema = z
+  .string()
+  .min(1)
+  // With the `u` flag a paired surrogate is one code point, so `\p{Surrogate}` matches a lone one only.
+  .refine((value) => !/\p{Surrogate}/u.test(value) && !value.includes('\u0000'), {
+    message: 'must be well-formed text without NUL characters',
+  });
+
+/** `POST /v1/secrets` body (SECRETS-004). Unknown members are rejected: no `envelope`, no `status`. */
+export const createSecretRequestSchema = z.strictObject({
+  name: secretNameSchema,
+  type: secretTypeSchema.optional(),
+  purpose: z
+    .string()
+    .min(1)
+    .max(SECRET_PURPOSE_MAX)
+    .refine((value) => !/[\p{Cc}\p{Zl}\p{Zp}]/u.test(value), {
+      message: 'must not contain control characters',
+    })
+    .optional(),
+  value: secretValueSchema,
+  backend: secretBackendSchema.optional(),
+});
+export type CreateSecretRequest = z.infer<typeof createSecretRequestSchema>;
+
+/** `PUT /v1/secrets/{id}` body: the new value replaces the current one as a new version. */
+export const updateSecretRequestSchema = z.strictObject({ value: secretValueSchema });
+export type UpdateSecretRequest = z.infer<typeof updateSecretRequestSchema>;
+
+/** What a create or update answers with: the reference and the version, never the value. */
+export const secretWriteResponseSchema = z.strictObject({
+  secretId: uuidV7Schema,
+  secretRef: z.string(),
+  version: z.number().int().min(1),
+});
+export type SecretWriteResponse = z.infer<typeof secretWriteResponseSchema>;
+
+/**
+ * The only shape a secret is ever read back in. It deliberately has no `value` and no `envelope`
+ * (strict, so a stray field cannot be serialised): reading a secret is the internal resolve path's job.
+ */
+export const secretMetadataSchema = z.strictObject({
+  secretId: uuidV7Schema,
+  secretRef: z.string(),
+  name: z.string(),
+  type: secretTypeSchema.nullable(),
+  purpose: z.string().nullable(),
+  backend: secretBackendSchema,
+  status: secretStatusSchema,
+  currentVersion: z.number().int().min(1),
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema,
+});
+export type SecretMetadata = z.infer<typeof secretMetadataSchema>;

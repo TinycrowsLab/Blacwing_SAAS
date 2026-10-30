@@ -126,7 +126,10 @@
         "authz.sa.expired",
         "service_account.created",
         "service_account.updated",
-        "service_account.disabled"
+        "service_account.disabled",
+        "secret.created",
+        "secret.updated",
+        "secret.deleted"
       ]
     },
     "severity": {

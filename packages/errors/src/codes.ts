@@ -389,6 +389,10 @@ const DEFINITIONS = {
   // Per-tenant KEK (SECRETS-001): OpenBao sealed, unreachable or the AppRole login failed. Fail closed:
   // no shared-key fallback; the caller retries later.
   KEK_UNAVAILABLE: { status: 503, title: 'Tenant key unavailable', retryable: true },
+  // Write-only secrets API (SECRETS-004): a second create with the same (NFC) name, and a delete of a secret
+  // that other resources still reference (retry with `force` once they are moved).
+  SECRET_NAME_CONFLICT: { status: 409, title: 'Secret name already in use', retryable: false },
+  SECRET_IN_USE: { status: 409, title: 'Secret is still referenced', retryable: false },
   // Internal secret resolve API (SECRETS-006, §8.6/§8.7/§8.8). Every refusal fails closed and names only the
   // coarse reason: an unknown or revoked service identity (401), a tenant that does not match the run or
   // the reference (403), a service asking for a purpose outside its matrix (403), a secret that is gone or

@@ -72,6 +72,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  createSecret: {
+    method: 'POST',
+    path: '/v1/secrets',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: ['Idempotency-Key'],
+  },
   createServiceAccount: {
     method: 'POST',
     path: '/v1/service-accounts',
@@ -117,6 +124,13 @@ export const OPERATIONS = {
   deleteNotificationChannel: {
     method: 'DELETE',
     path: '/v1/notification-channels/{id}',
+    pathParams: ['id'],
+    queryParams: ['force'],
+    requiredHeaders: [],
+  },
+  deleteSecret: {
+    method: 'DELETE',
+    path: '/v1/secrets/{id}',
     pathParams: ['id'],
     queryParams: ['force'],
     requiredHeaders: [],
@@ -217,6 +231,13 @@ export const OPERATIONS = {
     path: '/v1/runs/{runId}/surface',
     pathParams: ['runId'],
     queryParams: ['kinds', 'minConfidence', 'inScopeOnly', 'cursor', 'limit'],
+    requiredHeaders: [],
+  },
+  getSecret: {
+    method: 'GET',
+    path: '/v1/secrets/{id}',
+    pathParams: ['id'],
+    queryParams: [],
     requiredHeaders: [],
   },
   getServiceAccount: {
@@ -321,6 +342,13 @@ export const OPERATIONS = {
     path: '/v1/personas',
     pathParams: [],
     queryParams: [],
+    requiredHeaders: [],
+  },
+  listSecrets: {
+    method: 'GET',
+    path: '/v1/secrets',
+    pathParams: [],
+    queryParams: ['cursor', 'limit'],
     requiredHeaders: [],
   },
   listServiceAccounts: {
@@ -448,6 +476,13 @@ export const OPERATIONS = {
     pathParams: ['id'],
     queryParams: [],
     requiredHeaders: ['If-Match'],
+  },
+  updateSecret: {
+    method: 'PUT',
+    path: '/v1/secrets/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
   },
   updateServiceAccount: {
     method: 'PATCH',

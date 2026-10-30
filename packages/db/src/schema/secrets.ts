@@ -54,6 +54,9 @@ const PLAINTEXT_KEYS = "array['plaintext', 'secret', 'password']";
 /** Name of the unique index behind `(tenant_id, name)`. */
 export const SECRETS_NAME_INDEX = 'secrets_tenant_name_idx';
 
+/** Name of the unique index behind `(tenant_id, idempotency_key_hash)`. */
+export const SECRETS_IDEMPOTENCY_INDEX = 'secrets_tenant_idempotency_idx';
+
 export const secrets = pgTable(
   'secrets',
   {
@@ -71,6 +74,10 @@ export const secrets = pgTable(
     externalLocator: jsonb('external_locator').$type<Record<string, unknown>>(),
     currentVersion: integer('current_version').notNull().default(1),
     status: text('status', { enum: SECRET_STATUSES }).notNull().default('active'),
+    /** SHA-256 of the `Idempotency-Key` the create was made with (SECRETS-004); null for other writers. */
+    idempotencyKeyHash: text('idempotency_key_hash'),
+    /** HMAC of the create request keyed by the raw key: a reused key with another body is refused, not replayed. */
+    idempotencyFingerprint: text('idempotency_fingerprint'),
     ...timestamps(),
   },
   (t) => [
@@ -78,6 +85,12 @@ export const secrets = pgTable(
     // A constraint (not a bare unique index) so Drizzle emits it inside CREATE TABLE, before the FK that needs it.
     unique('secrets_tenant_id_id_unique').on(t.tenantId, t.id),
     uniqueIndex(SECRETS_NAME_INDEX).on(t.tenantId, t.name),
+    // One secret per tenant idempotency key (NULLs are distinct in Postgres, so other writers are unaffected).
+    uniqueIndex(SECRETS_IDEMPOTENCY_INDEX).on(t.tenantId, t.idempotencyKeyHash),
+    check(
+      'secrets_idempotency_pair_check',
+      sql`(${t.idempotencyKeyHash} IS NULL) = (${t.idempotencyFingerprint} IS NULL)`,
+    ),
     check(
       'secrets_name_check',
       sql`length(${t.name}) BETWEEN 1 AND ${sql.raw(String(SECRET_NAME_MAX))} AND ${t.name} IS NFC NORMALIZED AND ${t.name} !~ '[[:cntrl:]]'`,
