@@ -316,6 +316,16 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
   runs: async (tx, tenantId) => {
     await tx.query(`INSERT INTO runs (id, tenant_id) VALUES ($1, $2)`, [newId(), tenantId]);
   },
+  // A manifest is keyed to a run of the same tenant (composite FK), so the seeder writes the run first.
+  coverage_manifests: async (tx, tenantId) => {
+    const runId = newId();
+    await tx.query(`INSERT INTO runs (id, tenant_id) VALUES ($1, $2)`, [runId, tenantId]);
+    await tx.query(`INSERT INTO coverage_manifests (id, tenant_id, run_id) VALUES ($1, $2, $3)`, [
+      newId(),
+      tenantId,
+      runId,
+    ]);
+  },
   // A plan and its case need a run in the same tenant (composite FKs), so one seeder writes the chain.
   test_plans: async (tx, tenantId) => {
     const runId = newId();
