@@ -23,3 +23,4 @@ export * from './cost.js';
 export * from './memories.js';
 export * from './notifications.js';
 export * from './schedules.js';
+export * from './reversal-journal.js';

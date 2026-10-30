@@ -360,3 +360,8 @@ export {
   toGate2Exception,
 } from './gate2.js';
 export { drizzleGate2Store, type Gate2Store, type Gate2Transition } from './gate2-store.js';
+export {
+  reversalJournalRepository,
+  type ReversalJournalListOptions,
+  type UndoStatusMeta,
+} from './reversal-journal.repository.js';

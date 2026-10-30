@@ -359,3 +359,10 @@ export {
   type RecordedResponse,
   recordedResponseSchema,
 } from './authz-matrix/classify.js';
+export {
+  assertUndoStatusTransition,
+  canTransitionUndoStatus,
+  type ReversalJournalEntry,
+  UNDO_TRANSITIONS,
+  undoAttemptsAfter,
+} from './reversal/journal.js';

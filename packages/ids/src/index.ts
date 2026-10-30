@@ -23,6 +23,7 @@ export {
   KillEventId,
   OobId,
   ReproArtifactId,
+  ReversalJournalEntryId,
   RunId,
   ScheduleId,
   SessionId,

@@ -97,6 +97,9 @@ export const AssessmentRequestId = defineIdType('areq', 'AssessmentRequestId');
 /** `sched_…` */
 export type ScheduleId = PublicId<'sched'>;
 export const ScheduleId = defineIdType('sched', 'ScheduleId');
+/** `rvj_…` */
+export type ReversalJournalEntryId = PublicId<'rvj'>;
+export const ReversalJournalEntryId = defineIdType('rvj', 'ReversalJournalEntryId');
 
 /** Every entity constructor keyed by prefix, for code that picks the entity at runtime (e.g. the DB layer). */
 export const ID_TYPES: { readonly [P in IdPrefix]: IdType<P> } = Object.freeze({
@@ -117,4 +120,5 @@ export const ID_TYPES: { readonly [P in IdPrefix]: IdType<P> } = Object.freeze({
   kill: KillEventId,
   areq: AssessmentRequestId,
   sched: ScheduleId,
+  rvj: ReversalJournalEntryId,
 });

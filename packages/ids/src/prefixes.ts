@@ -41,6 +41,8 @@ export const ID_PREFIXES = Object.freeze({
   areq: 'AssessmentRequestId',
   /** Recurring-run schedules (`schedules`, SCHED-001). */
   sched: 'ScheduleId',
+  /** Reversal journal entries (`reversal_journal_entries`, F20, CONTEXT_PACK §7). */
+  rvj: 'ReversalJournalEntryId',
 } as const);
 
 /** A registered public-id prefix. */

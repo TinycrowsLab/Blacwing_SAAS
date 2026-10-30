@@ -4,6 +4,7 @@ import {
   ApiTokenId,
   AssessmentRequestId,
   ScheduleId,
+  ReversalJournalEntryId,
   AssetId,
   EvidenceId,
   FindingId,
@@ -114,6 +115,7 @@ describe('entity constructors (runtime)', () => {
     [KillEventId, 'kill'],
     [AssessmentRequestId, 'areq'],
     [ScheduleId, 'sched'],
+    [ReversalJournalEntryId, 'rvj'],
   ];
 
   it('covers every registered prefix exactly once', () => {

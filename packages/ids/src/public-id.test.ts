@@ -60,6 +60,7 @@ describe('prefix registry', () => {
         'oob',
         'rpa',
         'run',
+        'rvj',
         'sa',
         'sched',
         'sess',

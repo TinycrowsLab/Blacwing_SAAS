@@ -416,6 +416,28 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, planId],
     );
   },
+  // A journal entry names a run and a test case of its own tenant (composite FKs): one seeder writes the chain.
+  reversal_journal_entries: async (tx, tenantId) => {
+    const runId = newId();
+    const planId = newId();
+    const caseId = newId();
+    const id = newId();
+    await tx.query(`INSERT INTO runs (id, tenant_id) VALUES ($1, $2)`, [runId, tenantId]);
+    await tx.query(
+      `INSERT INTO test_plans (id, tenant_id, run_id, version) VALUES ($1, $2, $3, 1)`,
+      [planId, tenantId, runId],
+    );
+    await tx.query(
+      `INSERT INTO test_cases (id, tenant_id, test_plan_id, class, title, targets, budget)
+       VALUES ($1, $2, $3, 'state_changing', 'iso case', '[{"host":"iso.example.test"}]', '{"maxRequests":10}')`,
+      [caseId, tenantId, planId],
+    );
+    await tx.query(
+      `INSERT INTO reversal_journal_entries (id, public_id, tenant_id, run_id, test_case_id, action, target, undo_instructions)
+       VALUES ($1, $2, $3, $4, $5, 'iso action', '{"kind":"record","ref":"iso"}', '{"type":"restore_field","params":{}}')`,
+      [id, `rvj_${id.replaceAll('-', '')}`, tenantId, runId, caseId],
+    );
+  },
 };
 
 /** An asset row (and the user that owns it, the users table being global). Returns the asset id. */
