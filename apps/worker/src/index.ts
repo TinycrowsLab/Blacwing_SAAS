@@ -161,3 +161,8 @@ export { createOtelPlanningMetrics } from './run/planning/metrics.js';
 export { checkPlan } from './run/planning/plan-check.js';
 export type * from './run/planning/ports.js';
 export * from './run/planning/types.js';
+export { ingestUsageEvent, type CostIngestDeps, type IngestOutcome } from './cost/ingest.js';
+export { createPgCostIngestStore } from './cost/store-pg.js';
+export { createOtelCostIngestMetrics } from './cost/metrics.js';
+export { COST_USAGE_QUEUE, startCostUsageWorker } from './cost/queue.js';
+export type * from './cost/ports.js';

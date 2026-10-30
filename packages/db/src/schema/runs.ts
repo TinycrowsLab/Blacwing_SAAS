@@ -1,5 +1,14 @@
 import { sql } from 'drizzle-orm';
-import { check, jsonb, pgPolicy, pgTable, text, unique, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+  bigint,
+  check,
+  jsonb,
+  pgPolicy,
+  pgTable,
+  text,
+  unique,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 
 import { RUN_STATES, runPauseReasonSchema } from '@blackwing/contracts';
 
@@ -32,6 +41,11 @@ export const runs = pgTable(
     resumeTo: text('resume_to', { enum: RUN_STATES }),
     /** The `run_…` public id (`publicId('run', id)`). Null until the run is given one (REPORT-001 needs it). */
     publicId: text('public_id'),
+    /**
+     * The `price_tables.version` this run is pinned to (§8.9): usage is priced against it, never against
+     * "current". Null until the run is pinned; usage of an unpinned run is recorded as unpriced.
+     */
+    priceTableVersion: bigint('price_table_version', { mode: 'number' }),
     /** The run manifest the report reads (`runManifestSchema`): mode, objective, window, assets, provenance. */
     manifest: jsonb('manifest').$type<Record<string, unknown>>(),
     ...stateVersion(),
@@ -48,6 +62,10 @@ export const runs = pgTable(
       sql`${t.manifest} IS NULL OR jsonb_typeof(${t.manifest}) = 'object'`,
     ),
     check('runs_state_check', sql`${t.state} IN (${inList(RUN_STATES)})`),
+    check(
+      'runs_price_table_version_check',
+      sql`${t.priceTableVersion} IS NULL OR ${t.priceTableVersion} >= 1`,
+    ),
     check(
       'runs_pause_reason_check',
       sql`${t.pauseReason} IS NULL OR ${t.pauseReason} IN (${inList(runPauseReasonSchema.options)})`,

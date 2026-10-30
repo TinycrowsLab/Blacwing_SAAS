@@ -682,6 +682,8 @@ export {
   COST_USD_SCALE,
   type CostLedgerEntry,
   costLedgerEntrySchema,
+  type CostUsageEvent,
+  costUsageEventSchema,
   type CostProvider,
   costProviderSchema,
   type CostStage,

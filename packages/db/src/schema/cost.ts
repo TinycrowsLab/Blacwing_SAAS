@@ -113,7 +113,8 @@ export const costLedger = pgTable(
   {
     id: idColumn(),
     tenantId: tenantIdColumn(),
-    runId: uuid('run_id').notNull(),
+    /** Null when the usage event named no run (or a run this tenant cannot see): attributed to the tenant. */
+    runId: uuid('run_id'),
     subtaskId: uuid('subtask_id'),
     agentSessionId: uuid('agent_session_id'),
     stage: text('stage').notNull(),
@@ -121,10 +122,13 @@ export const costLedger = pgTable(
     persona: text('persona'),
     provider: text('provider').notNull(),
     model: text('model').notNull(),
-    /** The pinned price table this row was priced with (§8.9). Never resolved against "current". */
-    priceTableId: uuid('price_table_id')
-      .notNull()
-      .references(() => priceTables.id),
+    /**
+     * The pinned price table this row was priced with (§8.9). Never resolved against "current". Null only on
+     * an unpriceable row (`needs_pricing`), which carries no cost (see `cost_ledger_pricing_check`).
+     */
+    priceTableId: uuid('price_table_id').references(() => priceTables.id),
+    /** Usage the pinned table could not price (unknown model, no pin): recorded at zero cost and flagged for an operator. */
+    needsPricing: boolean('needs_pricing').notNull().default(false),
     inputTokens: bigint('input_tokens', { mode: 'number' }).notNull(),
     outputTokens: bigint('output_tokens', { mode: 'number' }).notNull(),
     cacheWriteTokens: bigint('cache_write_tokens', { mode: 'number' }).notNull(),
@@ -156,6 +160,10 @@ export const costLedger = pgTable(
         AND ${t.cacheReadTokens} BETWEEN 0 AND ${sql.raw(String(COST_TOKENS_MAX))}`,
     ),
     check('cost_ledger_cost_check', sql`${t.costUsd} >= 0`),
+    check(
+      'cost_ledger_pricing_check',
+      sql`${t.needsPricing} = (${t.priceTableId} IS NULL) AND (NOT ${t.needsPricing} OR ${t.costUsd} = 0)`,
+    ),
     check('cost_ledger_usage_event_check', sql`length(btrim(${t.usageEventId})) > 0`),
     check(
       'cost_ledger_persona_check',

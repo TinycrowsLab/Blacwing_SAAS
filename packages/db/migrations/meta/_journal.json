@@ -288,6 +288,13 @@
       "when": 1793395794399,
       "tag": "20261030212954_secrets_idempotency_key",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793398074895,
+      "tag": "20261030220754_cost_ledger_unpriced_rows_and_run_price_pin",
+      "breakpoints": true
     }
   ]
 }

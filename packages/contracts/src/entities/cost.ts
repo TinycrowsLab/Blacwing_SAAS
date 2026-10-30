@@ -89,23 +89,58 @@ export const priceTableSchema = z.object({
 });
 export type PriceTable = z.infer<typeof priceTableSchema>;
 
-/** One priced usage event, as ingestion (COST-002) writes it. Tenant and ids come from the context. */
-export const costLedgerEntrySchema = z.object({
-  runId: uuidV7Schema,
-  subtaskId: uuidV7Schema.nullable(),
-  agentSessionId: uuidV7Schema.nullable(),
-  stage: costStageSchema,
+/**
+ * One priced usage row, as ingestion (COST-002) writes it. Tenant comes from the context. A row with no
+ * run (`runId` null) is attributed to the tenant alone. An unpriceable row (`needsPricing`) carries no
+ * price table and a zero cost, and is flagged for an operator; it is never dropped (CONTEXT_PACK §8.11).
+ */
+export const costLedgerEntrySchema = z
+  .object({
+    runId: uuidV7Schema.nullable(),
+    subtaskId: uuidV7Schema.nullable(),
+    agentSessionId: uuidV7Schema.nullable(),
+    stage: costStageSchema,
+    persona: z.string().min(1).max(COST_PERSONA_MAX).nullable(),
+    provider: costProviderSchema,
+    model: costModelIdSchema,
+    priceTableId: uuidV7Schema.nullable(),
+    needsPricing: z.boolean(),
+    inputTokens: costTokensSchema,
+    outputTokens: costTokensSchema,
+    cacheWriteTokens: costTokensSchema,
+    cacheReadTokens: costTokensSchema,
+    costUsd: costUsdSchema,
+    /** The gateway's idempotency key for the usage event: a retry never double-counts. */
+    usageEventId: z.string().min(1).max(COST_USAGE_EVENT_ID_MAX),
+    occurredAt: isoDateTimeSchema,
+  })
+  .refine((row) => row.needsPricing === (row.priceTableId === null), {
+    message: 'a row is pinned to a price table if and only if it is priced',
+    path: ['priceTableId'],
+  })
+  .refine((row) => !row.needsPricing || row.costUsd === '0', {
+    message: 'an unpriced row carries no cost',
+    path: ['costUsd'],
+  });
+export type CostLedgerEntry = z.infer<typeof costLedgerEntrySchema>;
+
+/**
+ * A usage event as the model gateway emits it (GATEWAY meters; COST-002 ingests). The consumer keeps
+ * counts and metadata only: any content field the gateway might emit is stripped, never persisted
+ * (CONTEXT_PACK §8.7). `persona` comes from the virtual key's metadata; `sessionId` from its session.
+ */
+export const costUsageEventSchema = z.object({
+  usageEventId: z.string().min(1).max(COST_USAGE_EVENT_ID_MAX),
+  tenantId: uuidV7Schema,
+  runId: uuidV7Schema.nullable(),
+  sessionId: uuidV7Schema.nullable(),
   persona: z.string().min(1).max(COST_PERSONA_MAX).nullable(),
   provider: costProviderSchema,
   model: costModelIdSchema,
-  priceTableId: uuidV7Schema,
   inputTokens: costTokensSchema,
   outputTokens: costTokensSchema,
   cacheWriteTokens: costTokensSchema,
   cacheReadTokens: costTokensSchema,
-  costUsd: costUsdSchema,
-  /** The gateway's idempotency key for the usage event: a retry never double-counts. */
-  usageEventId: z.string().min(1).max(COST_USAGE_EVENT_ID_MAX),
   occurredAt: isoDateTimeSchema,
 });
-export type CostLedgerEntry = z.infer<typeof costLedgerEntrySchema>;
+export type CostUsageEvent = z.infer<typeof costUsageEventSchema>;

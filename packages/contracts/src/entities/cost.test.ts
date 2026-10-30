@@ -5,6 +5,7 @@ import {
   costLedgerEntrySchema,
   costModelIdSchema,
   costPriceSchema,
+  costUsageEventSchema,
   costUsdSchema,
   priceTableSchema,
 } from '../index.js';
@@ -22,6 +23,7 @@ const entry = (overrides: Record<string, unknown> = {}) => ({
   provider: 'anthropic',
   model: 'claude-sonnet-5-5',
   priceTableId: UUID,
+  needsPricing: false,
   inputTokens: 1200,
   outputTokens: 300,
   cacheWriteTokens: 0,
@@ -101,6 +103,64 @@ describe('costLedgerEntrySchema', () => {
     expect(costLedgerEntrySchema.safeParse({ ...entry(), priceTableId: undefined }).success).toBe(
       false,
     );
+  });
+
+  it('accepts an unpriced row: no table, flagged, zero cost', () => {
+    const unpriced = entry({ priceTableId: null, needsPricing: true, costUsd: '0' });
+    expect(costLedgerEntrySchema.safeParse(unpriced).success).toBe(true);
+  });
+
+  it('refuses a priced row with no table, an unpriced row with a table, or an unpriced row with a cost', () => {
+    expect(costLedgerEntrySchema.safeParse(entry({ priceTableId: null })).success).toBe(false);
+    expect(
+      costLedgerEntrySchema.safeParse(entry({ needsPricing: true, costUsd: '0' })).success,
+    ).toBe(false);
+    expect(
+      costLedgerEntrySchema.safeParse(
+        entry({ priceTableId: null, needsPricing: true, costUsd: '0.5' }),
+      ).success,
+    ).toBe(false);
+  });
+
+  it('accepts a row with no run (attributed to the tenant only)', () => {
+    expect(costLedgerEntrySchema.safeParse(entry({ runId: null, stage: 'other' })).success).toBe(
+      true,
+    );
+  });
+});
+
+describe('costUsageEventSchema', () => {
+  const usage = {
+    usageEventId: 'gw_evt_01',
+    tenantId: UUID,
+    runId: UUID,
+    sessionId: null,
+    persona: 'recon-scout',
+    provider: 'anthropic',
+    model: 'claude-sonnet-5-5',
+    inputTokens: 10,
+    outputTokens: 2,
+    cacheWriteTokens: 0,
+    cacheReadTokens: 0,
+    occurredAt: AT,
+  };
+
+  it('accepts a counts-and-metadata usage event', () => {
+    expect(costUsageEventSchema.safeParse(usage).success).toBe(true);
+  });
+
+  it('strips content fields instead of persisting them (§8.7)', () => {
+    const parsed = costUsageEventSchema.parse({ ...usage, prompt: 'secret', output: 'text' });
+    expect(parsed).not.toHaveProperty('prompt');
+    expect(parsed).not.toHaveProperty('output');
+  });
+
+  it('refuses a missing usage event id, a negative count and a dated model', () => {
+    expect(costUsageEventSchema.safeParse({ ...usage, usageEventId: '' }).success).toBe(false);
+    expect(costUsageEventSchema.safeParse({ ...usage, inputTokens: -1 }).success).toBe(false);
+    expect(
+      costUsageEventSchema.safeParse({ ...usage, model: 'claude-sonnet-5-5-20261001' }).success,
+    ).toBe(false);
   });
 });
 
