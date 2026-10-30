@@ -185,6 +185,24 @@ const DEFINITIONS = {
   PROMPT_TOO_LARGE: { status: 413, title: 'Composed prompt too large', retryable: false },
   // Agent session descriptor (RUNTIME-001, #463): a brief over 256 KiB is refused before any model call.
   AGENT_BRIEF_TOO_LARGE: { status: 413, title: 'Agent brief too large', retryable: false },
+  // Agent session options (RUNTIME-002, #464): every refusal fails closed before a session starts.
+  AGENT_UNKNOWN_PERSONA: { status: 422, title: 'Unknown agent persona', retryable: false },
+  AGENT_FORBIDDEN_PERMISSION_MODE: {
+    status: 500,
+    title: 'Forbidden agent permission mode',
+    retryable: false,
+  },
+  AGENT_NO_VIRTUAL_KEY: { status: 503, title: 'Agent virtual key unavailable', retryable: false },
+  AGENT_MCP_SERVER_MISSING: {
+    status: 500,
+    title: 'Agent MCP server not provided',
+    retryable: false,
+  },
+  AGENT_BUDGET_EXHAUSTED: {
+    status: 402,
+    title: 'Agent session budget exhausted',
+    retryable: false,
+  },
   // `secret_ref` URI grammar (SECRETS-003, §8.7): a malformed reference is invalid input, rejected at parse time.
   INVALID_SECRET_REF: { status: 422, title: 'Invalid secret reference', retryable: false },
   CONFIG_INVALID: { status: 500, title: 'Invalid configuration', retryable: false },

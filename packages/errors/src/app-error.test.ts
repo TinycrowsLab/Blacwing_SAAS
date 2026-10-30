@@ -129,6 +129,11 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'AUTHZ_STEPUP_REQUIRED',
   // Agent session descriptor, @blackwing/agent-runtime (RUNTIME-001): thrown as a plain AppError.
   'AGENT_BRIEF_TOO_LARGE',
+  'AGENT_UNKNOWN_PERSONA',
+  'AGENT_FORBIDDEN_PERMISSION_MODE',
+  'AGENT_NO_VIRTUAL_KEY',
+  'AGENT_MCP_SERVER_MISSING',
+  'AGENT_BUDGET_EXHAUSTED',
   'CONFIG_INVALID', // ConfigValidationError, @blackwing/config
   // EvidenceIntegrityError, @blackwing/evidence (EVIDENCE binding, #724): carries its own code.
   'EVIDENCE_INTEGRITY_FAILED',

@@ -82,6 +82,11 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   PROMPT_PLACEHOLDER_MISSING: 422,
   PROMPT_TOO_LARGE: 413,
   AGENT_BRIEF_TOO_LARGE: 413,
+  AGENT_UNKNOWN_PERSONA: 422,
+  AGENT_FORBIDDEN_PERMISSION_MODE: 500,
+  AGENT_NO_VIRTUAL_KEY: 503,
+  AGENT_MCP_SERVER_MISSING: 500,
+  AGENT_BUDGET_EXHAUSTED: 402,
   CONFIG_INVALID: 500,
   TEMPORAL_CONFIG_INVALID: 500,
   TEMPORAL_TLS_MISCONFIGURED: 500,
@@ -156,7 +161,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(128);
+    expect(ERROR_CODE_LIST).toHaveLength(133);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -320,6 +325,11 @@ describe('error-code registry', () => {
       | 'PROMPT_PLACEHOLDER_MISSING'
       | 'PROMPT_TOO_LARGE'
       | 'AGENT_BRIEF_TOO_LARGE'
+      | 'AGENT_UNKNOWN_PERSONA'
+      | 'AGENT_FORBIDDEN_PERMISSION_MODE'
+      | 'AGENT_NO_VIRTUAL_KEY'
+      | 'AGENT_MCP_SERVER_MISSING'
+      | 'AGENT_BUDGET_EXHAUSTED'
       | 'CONFIG_INVALID'
       | 'TEMPORAL_CONFIG_INVALID'
       | 'TEMPORAL_TLS_MISCONFIGURED'
