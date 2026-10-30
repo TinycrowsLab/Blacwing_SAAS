@@ -102,6 +102,8 @@ export { createDiscoverServicesTool, type DiscoverServicesSession } from './reco
 export { type CandidateMetrics, createCandidateMetrics } from './findings/metrics.js';
 export { createEngagementMetrics, type EngagementMetrics } from './engagement/metrics.js';
 export { createEngagementTools } from './engagement/tools.js';
+export { createSessionMetrics, type SessionMetrics } from './session/metrics.js';
+export { createSessionTools } from './session/tools.js';
 export {
   type CaptureSource,
   type GatewayCapture,

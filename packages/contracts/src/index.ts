@@ -64,6 +64,17 @@ export {
   validateRunBudget,
 } from './budget.js';
 export {
+  checkSessionInputSchema,
+  ROLE_ID_PATTERN,
+  ROLE_SESSION_STATUSES,
+  type RoleSessionResult,
+  type RoleSessionStatus,
+  roleIdSchema,
+  roleSessionResultSchema,
+  roleSessionStatusSchema,
+  useRoleInputSchema,
+} from './session-roles.js';
+export {
   canTransitionTestCase,
   DISPATCH_BRIEF_MAX_BYTES,
   DISPATCH_SUBTASK_UPDATE,
