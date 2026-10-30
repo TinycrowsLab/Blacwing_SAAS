@@ -48,7 +48,8 @@
     },
     "apps/api": {
       // Spawned as a child process by shutdown.process.test.ts (never imported).
-      "entry": ["src/testdata/slow-server.ts"],
+      // The dashboard metrics factory (DASH-001) is wired by the API composition root, which no issue has built yet.
+      "entry": ["src/testdata/slow-server.ts", "src/dashboard/metrics.ts"],
       // Served from node_modules by path at run time (docs UI static assets), never imported.
       "ignoreDependencies": ["swagger-ui-dist", "@types/swagger-ui-dist"],
     },

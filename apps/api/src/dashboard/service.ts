@@ -69,13 +69,13 @@ export interface DashboardServiceDeps {
 }
 
 /** One count of a group: its key and how many findings carry it. */
-export interface DashboardCount {
+interface DashboardCount {
   readonly key: string;
   readonly count: number;
 }
 
 /** A count of findings per asset; `assetName` is resolved by the GraphQL DataLoader, not here. */
-export interface DashboardAssetCount {
+interface DashboardAssetCount {
   readonly assetId: string;
   readonly count: number;
 }
@@ -92,7 +92,7 @@ export interface DashboardSummary {
 }
 
 /** One bucket of a trend: its start (ISO UTC) and the distinct findings in each baseline state. */
-export interface DashboardTrendPoint {
+interface DashboardTrendPoint {
   readonly bucketStart: string;
   readonly total: number;
   readonly counts: readonly DashboardCount[];
@@ -120,7 +120,7 @@ export interface DashboardCoverage {
 }
 
 /** One finding as the dashboard shows it: metadata and counts only, never target content (§8.7). */
-export interface DashboardFindingView {
+interface DashboardFindingView {
   readonly id: string;
   readonly title: string;
   readonly status: string;
