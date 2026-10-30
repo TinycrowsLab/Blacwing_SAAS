@@ -3,9 +3,12 @@
 !package.json
 !pnpm-lock.yaml
 !pnpm-workspace.yaml
+!tsconfig.base.json
 !apps/agent-runtime
 !packages
 !infra/docker/sandbox/entrypoint.sh
+!infra/docker/sandbox/install-tools.sh
+!infra/docker/sandbox/tools.pin.json
 **/node_modules
 **/.turbo
 **/dist

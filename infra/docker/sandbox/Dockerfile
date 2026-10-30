@@ -6,7 +6,8 @@
 #   docker build -f infra/docker/sandbox/Dockerfile -t bw-sandbox:dev .
 # Offline build: the stage uses the committed pnpm-lock.yaml (--frozen-lockfile); pre-populate a
 # pnpm store and pass `--build-arg PNPM_INSTALL_FLAGS=--offline` to build without network.
-# Dev builds on arm64 work (the digest below is a multi-arch index); production images are amd64.
+# The base digest is a multi-arch index, but the pinned ProjectDiscovery tools (tools.pin.json) are linux/amd64
+# release assets only, so the tools stage fails on any other architecture. Production images are amd64.
 #
 # Runtime contract (SANDBOX-003/004/007): run with a read-only rootfs, /workspace and /tmp as
 # writable tmpfs owned by uid 10001, all capabilities dropped. The entrypoint fails clearly (exit 78)
@@ -23,7 +24,7 @@ ARG PNPM_INSTALL_FLAGS
 ENV CI=true \
     npm_config_ignore_scripts=true
 WORKDIR /repo
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps ./apps
 COPY packages ./packages
 # pnpm comes from the root package.json "packageManager" field via Corepack, never "latest".
@@ -32,6 +33,15 @@ RUN corepack enable \
  && pnpm install --frozen-lockfile ${PNPM_INSTALL_FLAGS} --filter "@blackwing/agent-runtime..." \
  && pnpm --filter "@blackwing/agent-runtime" run --if-present build \
  && pnpm --filter "@blackwing/agent-runtime" deploy --prod /out
+
+# ProjectDiscovery tools (IMAGE-002 #600): pinned release binaries, each verified against its sha256 in
+# tools.pin.json before extraction. Only the verified binaries are copied into the runtime stage.
+FROM ${NODE_IMAGE} AS tools
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl unzip \
+ && rm -rf /var/lib/apt/lists/*
+COPY infra/docker/sandbox/tools.pin.json infra/docker/sandbox/install-tools.sh /pin/
+RUN sh /pin/install-tools.sh /pin/tools.pin.json /opt/bw/tools/bin
 
 FROM ${NODE_IMAGE} AS runtime
 ARG VERSION=dev
@@ -45,15 +55,17 @@ LABEL org.opencontainers.image.title="bw-sandbox" \
       org.opencontainers.image.created="${CREATED}" \
       org.opencontainers.image.base.name="${NODE_IMAGE}"
 
-# Fixed uid/gid 10001, no login shell, no home directory on the (read-only) rootfs.
+# Fixed uid/gid 10001, no login shell, no home directory on the (read-only) rootfs. The tools directory
+# stays root-owned and read-only so `bw` cannot replace a pinned binary.
 RUN groupadd --system --gid 10001 bw \
  && useradd --system --uid 10001 --gid 10001 --no-create-home --home-dir /workspace --shell /usr/sbin/nologin bw \
  && mkdir -p /opt/bw/tools/bin /opt/bw/templates /opt/bw/wordlists /etc/bw /workspace /app \
- && chown -R bw:bw /opt/bw /etc/bw /workspace \
- && chmod 0555 /opt/bw /etc/bw \
+ && chown -R bw:bw /opt/bw/templates /opt/bw/wordlists /etc/bw /workspace \
+ && chmod 0555 /opt/bw /opt/bw/tools /opt/bw/tools/bin /etc/bw \
  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=root:root /out /app
+COPY --from=tools --chown=root:root --chmod=0555 /opt/bw/tools/bin/ /opt/bw/tools/bin/
 COPY --chown=root:root --chmod=0555 infra/docker/sandbox/entrypoint.sh /opt/bw/entrypoint.sh
 
 # No secrets and no provider keys in the image: credentials arrive via the model gateway at run time.

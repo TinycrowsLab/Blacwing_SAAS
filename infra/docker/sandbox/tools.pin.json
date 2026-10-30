@@ -1,0 +1,47 @@
+{
+  "$comment": "Pinned ProjectDiscovery tools baked into bw-sandbox (IMAGE-002, #600). Single source of truth for versions, release asset URLs and sha256 digests; read by install-tools.sh and by scripts/check-sandbox-image.mjs. Bump via a reviewed change (Renovate, IMAGE-011). Assets are linux/amd64.",
+  "tools": [
+    {
+      "name": "subfinder",
+      "version": "2.17.0",
+      "url": "https://github.com/projectdiscovery/subfinder/releases/download/v2.17.0/subfinder_2.17.0_linux_amd64.zip",
+      "sha256": "a39c3e5c7a26ef3c430915c4d6cbf7716a00f26769a75e9405aba796142eba37",
+      "licence": "MIT"
+    },
+    {
+      "name": "dnsx",
+      "version": "1.3.1",
+      "url": "https://github.com/projectdiscovery/dnsx/releases/download/v1.3.1/dnsx_1.3.1_linux_amd64.zip",
+      "sha256": "438b964653056dd51dcfe614b1a16f8bced3cc48a1d27bc07cc6fdf2ef2a9533",
+      "licence": "MIT"
+    },
+    {
+      "name": "httpx",
+      "version": "1.12.0",
+      "url": "https://github.com/projectdiscovery/httpx/releases/download/v1.12.0/httpx_1.12.0_linux_amd64.zip",
+      "sha256": "9d8439e8b6c9aa7d1e2314817a392e00d5178da3af5652f7475f88868f418f76",
+      "licence": "MIT"
+    },
+    {
+      "name": "naabu",
+      "version": "2.7.0",
+      "url": "https://github.com/projectdiscovery/naabu/releases/download/v2.7.0/naabu_2.7.0_linux_amd64.zip",
+      "sha256": "0cc77c0ca32d2f519ffbaa7665bb0e7c88c40753ab22f03551d453a1a823e9f0",
+      "licence": "MIT"
+    },
+    {
+      "name": "katana",
+      "version": "1.8.0",
+      "url": "https://github.com/projectdiscovery/katana/releases/download/v1.8.0/katana_1.8.0_linux_amd64.zip",
+      "sha256": "cb027ae99d0757061b70c07a15c7a80f62c5a535ab52c4a329f80c4b0a7309d2",
+      "licence": "MIT"
+    },
+    {
+      "name": "nuclei",
+      "version": "3.11.1",
+      "url": "https://github.com/projectdiscovery/nuclei/releases/download/v3.11.1/nuclei_3.11.1_linux_amd64.zip",
+      "sha256": "ea63d4ae232808cd7c6bc00d0142428e231fab59dae01042246097d195835ab6",
+      "licence": "MIT"
+    }
+  ]
+}

@@ -1,7 +1,9 @@
-// Static guard for the bw-sandbox base Dockerfile (IMAGE-001, #599). Pure text checks, no Docker.
-// Asserts: digest-pinned base, builder/runtime stages, fixed uid 10001 `bw` user, the final USER is
-// `bw`, the standard /opt/bw + /etc/bw directories, safe env defaults, a HEALTHCHECK, no secrets and
-// OCI labels. Runtime behaviour is covered by check-sandbox-image.int.mjs.
+// Static guard for the bw-sandbox base Dockerfile (IMAGE-001, #599) and its pinned ProjectDiscovery
+// tools (IMAGE-002, #600). Pure text checks, no Docker. Asserts: digest-pinned base, builder/tools/runtime
+// stages, fixed uid 10001 `bw` user, the final USER is `bw`, the standard /opt/bw + /etc/bw directories,
+// root-owned tools, safe env defaults, a HEALTHCHECK, no secrets, OCI labels, and a complete
+// tools.pin.json (exact versions, release URLs, sha256, MIT licence). Runtime behaviour is covered by
+// check-sandbox-image.int.mjs.
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -9,7 +11,12 @@ import { fileURLToPath } from 'node:url';
 
 export const SANDBOX_DOCKERFILE = 'infra/docker/sandbox/Dockerfile';
 export const SANDBOX_DOCKERIGNORE = 'infra/docker/sandbox/Dockerfile.dockerignore';
+export const SANDBOX_TOOLS_PIN = 'infra/docker/sandbox/tools.pin.json';
+export const REQUIRED_TOOLS = ['subfinder', 'dnsx', 'httpx', 'naabu', 'katana', 'nuclei'];
+const SEMVER = /^\d+\.\d+\.\d+$/;
+const SHA256 = /^[0-9a-f]{64}$/;
 const DIGEST = /@sha256:[0-9a-f]{64}/;
+const EXPECTED_STAGES = 3; // builder, tools, runtime
 const ARG_PREFIX_LENGTH = 4; // "ARG "
 const USER_PREFIX_LENGTH = 5; // "USER "
 
@@ -40,7 +47,8 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
   if (!DIGEST.test(nodeImage)) errors.push('NODE_IMAGE must be pinned by @sha256: digest');
 
   const froms = lines.filter((l) => l.startsWith('FROM '));
-  if (froms.length !== 2) errors.push('expected exactly two stages (builder, runtime)');
+  if (froms.length !== EXPECTED_STAGES)
+    errors.push('expected exactly three stages (builder, tools, runtime)');
   for (const f of froms) {
     const ref = f.split(/\s+/)[1] ?? '';
     const resolved = ref.replace(/\$\{(\w+)\}/g, (_, /** @type {string} */ k) => args.get(k) ?? '');
@@ -49,6 +57,13 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
   }
   if (!/^FROM \S+ AS builder$/m.test(dockerfile)) errors.push('missing builder stage');
   if (!/^FROM \S+ AS runtime$/m.test(dockerfile)) errors.push('missing runtime stage');
+  if (!/^FROM \S+ AS tools$/m.test(dockerfile)) errors.push('missing tools stage');
+  if (!lines.some((l) => l.startsWith('RUN sh /pin/install-tools.sh /pin/tools.pin.json')))
+    errors.push('tools stage must run install-tools.sh against tools.pin.json');
+  if (!lines.some((l) => /^COPY --from=tools\b.*\/opt\/bw\/tools\/bin\/ /.test(l)))
+    errors.push('runtime stage must copy the pinned binaries from the tools stage');
+  if (lines.some((l) => /chown -R [^&]*\/opt\/bw\/tools/.test(l)))
+    errors.push('/opt/bw/tools must stay root-owned (bw must not replace pinned binaries)');
 
   const users = lines.filter((l) => l.startsWith('USER '));
   const finalUser = users.at(-1)?.slice(USER_PREFIX_LENGTH).trim() ?? '';
@@ -81,6 +96,59 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
   if (!/^\*$/m.test(dockerignore) || !/^!apps\/agent-runtime$/m.test(dockerignore)) {
     errors.push('Dockerfile.dockerignore must exclude everything then allow-list the build inputs');
   }
+  for (const input of ['install-tools.sh', 'tools.pin.json']) {
+    if (
+      !new RegExp(`^!infra/docker/sandbox/${input.replaceAll('.', '\\.')}$`, 'm').test(dockerignore)
+    )
+      errors.push(`Dockerfile.dockerignore must allow-list ${input}`);
+  }
+  return errors;
+}
+
+/**
+ * Shape of tools.pin.json once parsed. checkToolsPin re-checks every field before trusting it.
+ * @typedef {{ name: string, version: string, url: string, sha256: string, licence: string }} PinnedTool
+ * @typedef {{ tools: PinnedTool[] }} ToolsPin
+ */
+
+/**
+ * Guards tools.pin.json: every required tool pinned to an exact version, its immutable linux/amd64
+ * release asset URL, a sha256 digest and the MIT licence.
+ * @param {string} text
+ * @returns {string[]} error messages (empty when compliant)
+ */
+export function checkToolsPin(text) {
+  /** @type {unknown} */
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return ['tools.pin.json is not valid JSON'];
+  }
+  const pin = /** @type {ToolsPin | null} */ (raw);
+  const tools = Array.isArray(pin?.tools) ? pin.tools : [];
+  if (tools.length === 0) return ['tools.pin.json must list a "tools" array'];
+  const errors = [];
+  const names = tools.map((t) => t.name);
+  for (const need of REQUIRED_TOOLS) {
+    if (!names.includes(need)) errors.push(`tools.pin.json is missing ${need}`);
+  }
+  if (new Set(names).size !== names.length) errors.push('tools.pin.json lists a tool twice');
+  for (const t of tools) {
+    const { name, version, url, sha256, licence } = t;
+    if (typeof name !== 'string' || !REQUIRED_TOOLS.includes(name)) {
+      errors.push(`tools.pin.json has an unknown tool "${JSON.stringify(name)}"`);
+      continue;
+    }
+    if (typeof version !== 'string' || !SEMVER.test(version))
+      errors.push(`${name}: version must be an exact semver, got ${JSON.stringify(version)}`);
+    const expected = `https://github.com/projectdiscovery/${name}/releases/download/v${version}/${name}_${version}_linux_amd64.zip`;
+    if (url !== expected)
+      errors.push(`${name}: url must be the pinned linux/amd64 release asset ${expected}`);
+    if (typeof sha256 !== 'string' || !SHA256.test(sha256))
+      errors.push(`${name}: sha256 must be 64 lowercase hex characters`);
+    if (licence !== 'MIT') errors.push(`${name}: licence must be MIT`);
+  }
   return errors;
 }
 
@@ -88,7 +156,10 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
 export function checkRepo(root) {
   /** @param {string} p */
   const read = (p) => readFileSync(path.join(root, p), 'utf8');
-  return checkSandboxDockerfile(read(SANDBOX_DOCKERFILE), read(SANDBOX_DOCKERIGNORE));
+  return [
+    ...checkSandboxDockerfile(read(SANDBOX_DOCKERFILE), read(SANDBOX_DOCKERIGNORE)),
+    ...checkToolsPin(read(SANDBOX_TOOLS_PIN)),
+  ];
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
