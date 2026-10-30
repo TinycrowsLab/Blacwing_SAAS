@@ -116,6 +116,27 @@ describe('createBrokerClient', () => {
     expect((await codeOf(client().post('journal', {}))).code).toBe('TOOL_KILLED');
   });
 
+  it('maps INVALID_TRANSITION to TOOL_INVALID_INPUT (the tool shows the model why, not a backend fault)', async () => {
+    respond = (res) => {
+      res
+        .writeHead(409, { 'content-type': 'application/problem+json' })
+        .end('{"code":"INVALID_TRANSITION"}');
+    };
+    expect((await codeOf(client().post('engagement/test-cases/status', {}))).code).toBe(
+      'TOOL_INVALID_INPUT',
+    );
+  });
+
+  it('sends engagement paths, including a subtask id segment', async () => {
+    const subtaskId = '01890a5d-ac96-774b-bcce-b302099a8058';
+    await client().get(`engagement/subtasks/${subtaskId}/result`, z.unknown());
+    await client().get('engagement/subtasks/open', z.unknown());
+    expect(seen.map((s) => s.url)).toEqual([
+      `/internal/broker/runs/${RUN}/engagement/subtasks/${subtaskId}/result`,
+      `/internal/broker/runs/${RUN}/engagement/subtasks/open`,
+    ]);
+  });
+
   it.each([500, 501, 429, 422])(
     'maps %i to TOOL_BACKEND_UNAVAILABLE (fail closed)',
     async (status) => {
@@ -168,5 +189,11 @@ describe('createBrokerClient', () => {
     expect(() => client({ runId: '../x' })).toThrow(TypeError);
     expect(() => client({ token: '' })).toThrow(TypeError);
     await expect(client().get('../state', z.unknown())).rejects.toBeInstanceOf(TypeError);
+    await expect(client().get('engagement/../state', z.unknown())).rejects.toBeInstanceOf(
+      TypeError,
+    );
+    await expect(client().get('engagement/subtasks/../result', z.unknown())).rejects.toBeInstanceOf(
+      TypeError,
+    );
   });
 });

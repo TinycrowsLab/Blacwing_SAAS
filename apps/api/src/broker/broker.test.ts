@@ -1,7 +1,13 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { BROKER_SCOPES, type BrokerScope } from '@blackwing/contracts';
+import {
+  BROKER_SCOPES,
+  type BrokerScope,
+  SUBTASK_LIFECYCLE_STATUSES,
+  TEST_CASE_STATUSES,
+} from '@blackwing/contracts';
+import { AppError } from '@blackwing/errors';
 import { createUuidV7Generator } from '@blackwing/ids';
 import { createLogger } from '@blackwing/logger';
 
@@ -17,6 +23,8 @@ import {
   signBrokerToken,
 } from './token.js';
 import { killOpenApiDocument } from '../kill/openapi.js';
+
+import type { EngagementPort } from './engagement.js';
 
 const gen = createUuidV7Generator();
 const SECRET = 'test-secret-test-secret-test-secret-0123';
@@ -49,6 +57,26 @@ const TOOL_AUDIT = {
   inputSummary: '{}',
 };
 const CANDIDATE = { title: 'Reflected XSS', vulnClass: 'xss' };
+const SUBTASK = gen();
+const TEST_CASE = gen();
+const DISPATCH = {
+  persona: 'auth-logic-specialist',
+  subtaskId: SUBTASK,
+  testCaseId: TEST_CASE,
+  brief: {
+    targets: ['https://lab.example.test/login'],
+    class: 'passive',
+    oracle: { type: 'http_status', params: { status: 200 } },
+    negativeControl: { type: 'status_diff', params: {} },
+    budget: { maxRequests: 100, maxRps: 5, maxConcurrency: 2, maxBytes: 1_000_000 },
+    standardRefs: { wstg: ['WSTG-ATHN-01'], cwe: [], owasp: [] },
+  },
+};
+const zeroCounts = <K extends string>(keys: readonly K[]): Record<K, number> =>
+  Object.fromEntries(keys.map((key) => [key, 0])) as Record<K, number>;
+const MARK = { testCaseId: TEST_CASE, status: 'executing', reason: 'starting' };
+const MENTOR = { subtaskId: SUBTASK, reason: 'stalled for three polls' };
+const SCOPE = { target: 'https://other.example.test', reason: 'redirect host' };
 const JOURNAL = {
   phase: 'planned',
   intrusiveness: 'passive',
@@ -79,7 +107,10 @@ function token(overrides: Partial<Parameters<typeof signBrokerToken>[1]> = {}): 
   });
 }
 
-async function build(rateLimit = { limit: 1000, windowMs: 60_000 }): Promise<Ctx> {
+async function build(
+  rateLimit = { limit: 1000, windowMs: 60_000 },
+  engagement?: EngagementPort,
+): Promise<Ctx> {
   const app = Fastify({ logger: false });
   const runs = new InMemoryBrokerRunReader();
   runs.set({ id: RUN, tenantId: TENANT, state: 'executing' });
@@ -101,6 +132,7 @@ async function build(rateLimit = { limit: 1000, windowMs: 60_000 }): Promise<Ctx
     logger: createLogger('api', { level: 'silent' }),
     metrics,
     rateLimit,
+    ...(engagement === undefined ? {} : { engagement }),
     now: () => clock.now,
     environment: 'test',
   });
@@ -364,6 +396,31 @@ describe('Run Broker API', () => {
       ['journal', 'POST', 'journal', JOURNAL, 'journal:write'],
       ['tool-audit', 'POST', 'tool-audit', TOOL_AUDIT, 'audit:write'],
       ['state', 'GET', 'state', undefined, 'state:read'],
+      ['engagement state', 'GET', 'engagement/state', undefined, 'engagement:read'],
+      ['engagement open subtasks', 'GET', 'engagement/subtasks/open', undefined, 'engagement:read'],
+      ['engagement dispatch', 'POST', 'engagement/dispatch', DISPATCH, 'engagement:write'],
+      [
+        'engagement subtask result',
+        'GET',
+        `engagement/subtasks/${SUBTASK}/result`,
+        undefined,
+        'engagement:read',
+      ],
+      [
+        'engagement test case status',
+        'POST',
+        'engagement/test-cases/status',
+        MARK,
+        'engagement:write',
+      ],
+      ['engagement mentor review', 'POST', 'engagement/mentor-reviews', MENTOR, 'engagement:write'],
+      [
+        'engagement scope exception',
+        'POST',
+        'engagement/scope-exceptions',
+        SCOPE,
+        'engagement:write',
+      ],
     ];
 
     it.each(cases)(
@@ -420,6 +477,203 @@ describe('Run Broker API', () => {
     it('answers unknown paths with 404 only to an authenticated caller', async () => {
       const res = await call(ctx, { method: 'GET', url: `${BASE}/runs/${RUN}/nothing` });
       expect(res.statusCode).toBe(404);
+    });
+  });
+
+  describe('engagement endpoints (MCP-012)', () => {
+    interface Calls {
+      readonly calls: { name: string; args: unknown[] }[];
+    }
+    function wiredPort(overrides: Partial<EngagementPort> = {}): EngagementPort & Calls {
+      const calls: Calls['calls'] = [];
+      const record =
+        <A extends unknown[], R>(name: string, value: (...args: A) => R) =>
+        (...args: A): R => {
+          calls.push({ name, args });
+          return value(...args);
+        };
+      return {
+        calls,
+        state: record('state', () =>
+          Promise.resolve({
+            runId: RUN,
+            phase: 'executing',
+            testCases: zeroCounts(TEST_CASE_STATUSES),
+            subtasks: zeroCounts(SUBTASK_LIFECYCLE_STATUSES),
+            confirmedFindings: 0,
+          }),
+        ),
+        openSubtasks: record('openSubtasks', () => Promise.resolve({ items: [] })),
+        dispatch: record('dispatch', () =>
+          Promise.resolve({
+            accepted: true,
+            subtaskId: SUBTASK,
+            status: 'dispatched',
+            created: true,
+          }),
+        ),
+        subtaskResult: record('subtaskResult', () =>
+          Promise.resolve({ subtaskId: SUBTASK, status: 'running', pending: true, result: null }),
+        ),
+        markTestCase: record('markTestCase', () =>
+          Promise.resolve({
+            testCaseId: TEST_CASE,
+            status: 'executing',
+            previousStatus: 'approved',
+          }),
+        ),
+        requestMentorReview: record('requestMentorReview', () =>
+          Promise.resolve({ reviewId: gen(), status: 'requested' as const }),
+        ),
+        requestScopeException: record('requestScopeException', () =>
+          Promise.resolve({ decisionId: gen(), gate: 2 as const, status: 'pending' as const }),
+        ),
+        ...overrides,
+      };
+    }
+
+    it('answers a wired read from the port with the token run and records a success', async () => {
+      const port = wiredPort();
+      const wired = await build(undefined, port);
+      try {
+        const res = await call(wired, {
+          method: 'GET',
+          url: `${BASE}/runs/${RUN}/engagement/state`,
+        });
+        expect(res.statusCode).toBe(200);
+        expect(res.json<{ phase: string }>().phase).toBe('executing');
+        expect(port.calls[0]?.args[0]).toEqual({ tenantId: TENANT, runId: RUN });
+        expect(wired.audit.events.at(-1)).toMatchObject({
+          action: 'broker.engagement.state_read',
+          outcome: 'success',
+        });
+      } finally {
+        await wired.app.close();
+      }
+    });
+
+    it('dispatches through the port with the run from the token and returns the Run Controller outcome', async () => {
+      const port = wiredPort();
+      const wired = await build(undefined, port);
+      try {
+        const res = await call(wired, {
+          url: `${BASE}/runs/${RUN}/engagement/dispatch`,
+          payload: DISPATCH,
+        });
+        expect(res.statusCode).toBe(200);
+        expect(res.json<{ accepted: boolean }>().accepted).toBe(true);
+        const [ref, body] = port.calls[0]?.args ?? [];
+        expect(ref).toEqual({ tenantId: TENANT, runId: RUN });
+        expect(body).toEqual(DISPATCH);
+      } finally {
+        await wired.app.close();
+      }
+    });
+
+    it('refuses a dispatch whose brief is oversized before the port is reached', async () => {
+      const port = wiredPort();
+      const wired = await build(undefined, port);
+      try {
+        const huge = {
+          ...DISPATCH,
+          brief: {
+            ...DISPATCH.brief,
+            targets: Array.from({ length: 100 }, () => `https://x.example.test/${'a'.repeat(200)}`),
+          },
+        };
+        const res = await call(wired, {
+          url: `${BASE}/runs/${RUN}/engagement/dispatch`,
+          payload: huge,
+        });
+        expect(res.statusCode).toBe(422);
+        expect(port.calls).toHaveLength(0);
+      } finally {
+        await wired.app.close();
+      }
+    });
+
+    it('maps an invalid test-case transition from the port to 409 INVALID_TRANSITION', async () => {
+      const wired = await build(
+        undefined,
+        wiredPort({
+          markTestCase: () => Promise.reject(new AppError('INVALID_TRANSITION', 'nope')),
+        }),
+      );
+      try {
+        const res = await call(wired, {
+          url: `${BASE}/runs/${RUN}/engagement/test-cases/status`,
+          payload: MARK,
+        });
+        expect(res.statusCode).toBe(409);
+        expect(res.json<{ code: string }>().code).toBe('INVALID_TRANSITION');
+      } finally {
+        await wired.app.close();
+      }
+    });
+
+    it('rejects a malformed subtask id in the result path before the port is reached', async () => {
+      const port = wiredPort();
+      const wired = await build(undefined, port);
+      try {
+        const res = await call(wired, {
+          method: 'GET',
+          url: `${BASE}/runs/${RUN}/engagement/subtasks/not-a-uuid/result`,
+        });
+        expect(res.statusCode).toBe(422);
+        expect(port.calls).toHaveLength(0);
+      } finally {
+        await wired.app.close();
+      }
+    });
+
+    it('answers an unknown subtask result with 404 and never reveals another run', async () => {
+      const wired = await build(
+        undefined,
+        wiredPort({ subtaskResult: () => Promise.resolve(null) }),
+      );
+      try {
+        const res = await call(wired, {
+          method: 'GET',
+          url: `${BASE}/runs/${RUN}/engagement/subtasks/${gen()}/result`,
+        });
+        expect(res.statusCode).toBe(404);
+      } finally {
+        await wired.app.close();
+      }
+    });
+
+    it('refuses a write once the run is terminal, before the port is reached', async () => {
+      const port = wiredPort();
+      const wired = await build(undefined, port);
+      try {
+        wired.runs.set({ id: RUN, tenantId: TENANT, state: 'completed' });
+        const res = await call(wired, {
+          url: `${BASE}/runs/${RUN}/engagement/scope-exceptions`,
+          payload: SCOPE,
+        });
+        expect(res.statusCode).toBe(409);
+        expect(res.json<{ code: string }>().code).toBe('RUN_NOT_ACTIVE');
+        expect(port.calls).toHaveLength(0);
+      } finally {
+        await wired.app.close();
+      }
+    });
+
+    it('refuses an engagement write whose scope the token does not carry', async () => {
+      const port = wiredPort();
+      const wired = await build(undefined, port);
+      try {
+        const readOnly = token({ scopes: ['engagement:read'] });
+        const res = await call(wired, {
+          url: `${BASE}/runs/${RUN}/engagement/dispatch`,
+          payload: DISPATCH,
+          auth: `Bearer ${readOnly}`,
+        });
+        expect(res.statusCode).toBe(403);
+        expect(port.calls).toHaveLength(0);
+      } finally {
+        await wired.app.close();
+      }
     });
   });
 
@@ -547,6 +801,13 @@ describe('public OpenAPI exclusion', () => {
     };
     expect(Object.keys(doc.paths).sort()).toEqual([
       `${BASE}/runs/{runId}/candidates`,
+      `${BASE}/runs/{runId}/engagement/dispatch`,
+      `${BASE}/runs/{runId}/engagement/mentor-reviews`,
+      `${BASE}/runs/{runId}/engagement/scope-exceptions`,
+      `${BASE}/runs/{runId}/engagement/state`,
+      `${BASE}/runs/{runId}/engagement/subtasks/open`,
+      `${BASE}/runs/{runId}/engagement/subtasks/{subtaskId}/result`,
+      `${BASE}/runs/{runId}/engagement/test-cases/status`,
       `${BASE}/runs/{runId}/evidence`,
       `${BASE}/runs/{runId}/journal`,
       `${BASE}/runs/{runId}/state`,

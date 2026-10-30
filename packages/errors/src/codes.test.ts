@@ -116,6 +116,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   GATE2_NO_ELIGIBLE_APPROVER: 409,
   NOT_IMPLEMENTED: 501,
   RUN_NOT_ACTIVE: 409,
+  INVALID_TRANSITION: 409,
   RUN_NOT_FOUND: 404,
   IDEMPOTENCY_KEY_REQUIRED: 400,
   IDEMPOTENCY_KEY_MISMATCH: 422,
@@ -161,7 +162,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(133);
+    expect(ERROR_CODE_LIST).toHaveLength(134);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -362,6 +363,7 @@ describe('error-code registry', () => {
       | 'GATE2_NO_ELIGIBLE_APPROVER'
       | 'NOT_IMPLEMENTED'
       | 'RUN_NOT_ACTIVE'
+      | 'INVALID_TRANSITION'
       | 'RUN_NOT_FOUND'
       | 'AUDIT_EVENT_INVALID'
       | 'KEK_UNAVAILABLE'

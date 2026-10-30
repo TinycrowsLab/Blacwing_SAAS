@@ -7,11 +7,29 @@ import {
   brokerJournalRequestSchema,
   brokerStateResponseSchema,
   brokerToolAuditRequestSchema,
+  engagementDispatchInputSchema,
+  engagementDispatchResultSchema,
+  engagementMarkTestCaseInputSchema,
+  engagementMarkTestCaseResultSchema,
+  engagementMentorReviewInputSchema,
+  engagementMentorReviewResultSchema,
+  engagementOpenSubtasksSchema,
+  engagementScopeExceptionInputSchema,
+  engagementScopeExceptionResultSchema,
+  engagementStateSchema,
+  engagementSubtaskResultSchema,
 } from '@blackwing/contracts';
 import { ERROR_CODES, PROBLEM_JSON_CONTENT_TYPE } from '@blackwing/errors';
 
 import {
   BROKER_CANDIDATES_ROUTE,
+  BROKER_ENGAGEMENT_DISPATCH_ROUTE,
+  BROKER_ENGAGEMENT_MENTOR_REVIEW_ROUTE,
+  BROKER_ENGAGEMENT_OPEN_SUBTASKS_ROUTE,
+  BROKER_ENGAGEMENT_SCOPE_EXCEPTION_ROUTE,
+  BROKER_ENGAGEMENT_STATE_ROUTE,
+  BROKER_ENGAGEMENT_SUBTASK_RESULT_ROUTE,
+  BROKER_ENGAGEMENT_TEST_CASE_STATUS_ROUTE,
   BROKER_EVIDENCE_ROUTE,
   BROKER_JOURNAL_ROUTE,
   BROKER_STATE_ROUTE,
@@ -63,6 +81,46 @@ const runIdParameter = {
   description: 'Must equal the run id inside the bwrun_ token, otherwise 403.',
   schema: { type: 'string', format: 'uuid' },
 };
+
+/** An engagement endpoint: answers 200 when its adapter is wired, otherwise 501 (MCP-012). */
+function engagementOperation(
+  method: 'get' | 'post',
+  operationId: string,
+  summary: string,
+  owner: string,
+  responseSchema: z.ZodType,
+  requestSchema?: z.ZodType,
+  extraParams: readonly JsonObject[] = [],
+): JsonObject {
+  return {
+    [method]: {
+      operationId,
+      summary,
+      description: `Owned by ${owner}; answers 501 until its adapter is wired.`,
+      security: [{ runToken: [] }],
+      parameters: [runIdParameter, ...extraParams],
+      ...(requestSchema === undefined
+        ? {}
+        : {
+            requestBody: {
+              required: true,
+              content: { 'application/json': { schema: jsonSchema(requestSchema) } },
+            },
+          }),
+      responses: {
+        ...responses(
+          requestSchema === undefined
+            ? ['NOT_FOUND']
+            : ['VALIDATION_FAILED', 'RUN_NOT_ACTIVE', 'INVALID_TRANSITION'],
+        ),
+        '200': {
+          description: 'Result of the engagement call.',
+          content: { 'application/json': { schema: jsonSchema(responseSchema) } },
+        },
+      },
+    },
+  };
+}
 
 function writeOperation(
   operationId: string,
@@ -124,6 +182,68 @@ export function brokerOpenApiDocument(): JsonObject {
         'Record a tool.invoked audit event',
         'AUDIT',
         brokerToolAuditRequestSchema,
+      ),
+      [toOpenApiPath(BROKER_ENGAGEMENT_STATE_ROUTE)]: engagementOperation(
+        'get',
+        'getEngagementState',
+        'Read the engagement state',
+        'ORCH/WORKFLOW',
+        engagementStateSchema,
+      ),
+      [toOpenApiPath(BROKER_ENGAGEMENT_OPEN_SUBTASKS_ROUTE)]: engagementOperation(
+        'get',
+        'listOpenSubtasks',
+        'List approved test cases without a subtask',
+        'ORCH',
+        engagementOpenSubtasksSchema,
+      ),
+      [toOpenApiPath(BROKER_ENGAGEMENT_DISPATCH_ROUTE)]: engagementOperation(
+        'post',
+        'dispatchSubtask',
+        'Dispatch a specialist through the Run Controller',
+        'ORCH/WORKFLOW',
+        engagementDispatchResultSchema,
+        engagementDispatchInputSchema,
+      ),
+      [toOpenApiPath(BROKER_ENGAGEMENT_SUBTASK_RESULT_ROUTE)]: engagementOperation(
+        'get',
+        'getSubtaskResult',
+        'Read a subtask result (pending while in flight)',
+        'ORCH',
+        engagementSubtaskResultSchema,
+        undefined,
+        [
+          {
+            name: 'subtaskId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string', format: 'uuid' },
+          },
+        ],
+      ),
+      [toOpenApiPath(BROKER_ENGAGEMENT_TEST_CASE_STATUS_ROUTE)]: engagementOperation(
+        'post',
+        'markTestCaseStatus',
+        'Move a test case to an allowed execution status',
+        'ORCH',
+        engagementMarkTestCaseResultSchema,
+        engagementMarkTestCaseInputSchema,
+      ),
+      [toOpenApiPath(BROKER_ENGAGEMENT_MENTOR_REVIEW_ROUTE)]: engagementOperation(
+        'post',
+        'requestMentorReview',
+        'Raise a mentor review for a stalled subtask',
+        'MENTOR',
+        engagementMentorReviewResultSchema,
+        engagementMentorReviewInputSchema,
+      ),
+      [toOpenApiPath(BROKER_ENGAGEMENT_SCOPE_EXCEPTION_ROUTE)]: engagementOperation(
+        'post',
+        'requestScopeException',
+        'Open a Gate 2 scope exception',
+        'GATE2',
+        engagementScopeExceptionResultSchema,
+        engagementScopeExceptionInputSchema,
       ),
       [toOpenApiPath(BROKER_STATE_ROUTE)]: {
         get: {

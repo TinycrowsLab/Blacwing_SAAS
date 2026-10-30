@@ -100,6 +100,8 @@ export {
 } from './recon/run-tools.js';
 export { createDiscoverServicesTool, type DiscoverServicesSession } from './recon/tool.js';
 export { type CandidateMetrics, createCandidateMetrics } from './findings/metrics.js';
+export { createEngagementMetrics, type EngagementMetrics } from './engagement/metrics.js';
+export { createEngagementTools } from './engagement/tools.js';
 export {
   type CaptureSource,
   type GatewayCapture,

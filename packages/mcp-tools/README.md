@@ -66,3 +66,25 @@ Every entry needs a class in `TOOL_EXPOSURE_CLASSES` (`readOnly`, `reachesTarget
 is the rule both the tests and the matrix use: an unclassified tool, a networked built-in (`WebFetch`, `WebSearch`),
 a target-reaching tool outside the target mandate (`TARGET_MANDATE_PERSONAS`) and a non-read-only tool for a
 read-only persona (`READ_ONLY_PERSONAS`) are all violations. Helpers inherit only within their parent's row.
+
+## `mcp__engagement__*`: the orchestrator's engagement tools (MCP-012, #677)
+
+`createEngagementTools(metrics)` returns seven tools of the `engagement` server: `get_engagement_state`,
+`list_open_subtasks`, `dispatch_subtask`, `get_subtask_result`, `request_mentor_review`, `mark_test_case_status`
+and `request_scope_exception`. Every tool is a call to the Run Broker under `/internal/broker/runs/{runId}/engagement/*`
+with the run-scoped token. The broker decides: a dispatch is sent to the Run Controller (`ExecutionWorkflow`,
+update `dispatchSubtask`), which starts the specialist as a child workflow in a new sandbox. No tool runs a
+specialist in-process, and the native `Agent`/`Task` tool is never used for cross-sandbox dispatch (§4.2).
+
+- Reads (`get_engagement_state`, `list_open_subtasks`, `get_subtask_result`) are `readOnly`. A subtask still in
+  flight answers `pending: true`, not an error.
+- `dispatch_subtask` takes `persona`, `subtaskId`, `testCaseId` and a self-contained `brief`. Extra fields are
+  refused, and the brief is capped at `DISPATCH_BRIEF_MAX_BYTES` (16 KiB). A refusal (`PERSONA_INELIGIBLE`,
+  `CONCURRENCY_LIMIT`, ...) is returned as a value so the orchestrator can back off or re-plan.
+- `mark_test_case_status` accepts only `executing|executed|skipped|blocked|failed|model_declined|not_applicable`
+  with a reason. The broker enforces `TEST_CASE_STATUS_TRANSITIONS` against the stored status; a refused move
+  reaches the model as `TOOL_INVALID_INPUT`.
+- `request_scope_exception` opens a Gate 2 `scope_exception` decision. Nothing is allowed until a different
+  authorised person approves it.
+
+Metrics: `mcp_dispatch_total{outcome}`, `mcp_engagement_reads_total{tool}` (`createEngagementMetrics`).

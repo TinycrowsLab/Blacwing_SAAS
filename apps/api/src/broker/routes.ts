@@ -11,7 +11,12 @@ import {
   brokerEvidenceRequestSchema,
   brokerJournalRequestSchema,
   brokerToolAuditRequestSchema,
+  engagementDispatchInputSchema,
+  engagementMarkTestCaseInputSchema,
+  engagementMentorReviewInputSchema,
+  engagementScopeExceptionInputSchema,
   TERMINAL_RUN_STATES,
+  uuidV7Schema,
 } from '@blackwing/contracts';
 import { createCrossTenantGuard, runWithTenantContext } from '@blackwing/db/tenant-context';
 import {
@@ -31,6 +36,7 @@ import { type BrokerMetrics, createBrokerMetrics } from './metrics.js';
 import { BrokerAuthError, type BrokerTokenVerifier, type RunTokenRevocations } from './token.js';
 import { createTenantContextMetrics } from '../tenant/metrics.js';
 
+import type { EngagementPort, EngagementRef } from './engagement.js';
 import type { SourceGuard } from './network.js';
 import type { BrokerAuditSink, BrokerRunReader } from './ports.js';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
@@ -43,6 +49,15 @@ export const BROKER_EVIDENCE_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/evidence`;
 export const BROKER_JOURNAL_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/journal`;
 export const BROKER_TOOL_AUDIT_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/tool-audit`;
 export const BROKER_STATE_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/state`;
+
+/** Engagement endpoints the orchestrator's MCP tools call (MCP-012, #677). */
+export const BROKER_ENGAGEMENT_STATE_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/engagement/state`;
+export const BROKER_ENGAGEMENT_OPEN_SUBTASKS_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/engagement/subtasks/open`;
+export const BROKER_ENGAGEMENT_DISPATCH_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/engagement/dispatch`;
+export const BROKER_ENGAGEMENT_SUBTASK_RESULT_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/engagement/subtasks/:subtaskId/result`;
+export const BROKER_ENGAGEMENT_TEST_CASE_STATUS_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/engagement/test-cases/status`;
+export const BROKER_ENGAGEMENT_MENTOR_REVIEW_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/engagement/mentor-reviews`;
+export const BROKER_ENGAGEMENT_SCOPE_EXCEPTION_ROUTE = `${BROKER_BASE_PATH}/runs/:runId/engagement/scope-exceptions`;
 
 /** Window of the per-run-session limiter. */
 export interface BrokerRateLimit {
@@ -59,6 +74,8 @@ export interface BrokerRoutesOptions {
   readonly logger: Logger;
   readonly metrics?: BrokerMetrics;
   readonly rateLimit?: BrokerRateLimit;
+  /** The engagement endpoints' adapters. Unwired, they answer `NOT_IMPLEMENTED`. */
+  readonly engagement?: EngagementPort;
   readonly now?: () => number;
   readonly environment?: ErrorEnvironment;
   readonly problems?: ProblemDetailsMapper;
@@ -83,6 +100,13 @@ const DEFAULT_RATE_LIMIT: BrokerRateLimit = { limit: 600, windowMs: 60_000 };
 
 const GENERIC_FORBIDDEN = 'This request is not permitted for the presented run token.';
 
+/** What an answered endpoint receives: the run from the token, the bound path params, the parsed body. */
+interface EndpointCall {
+  readonly ref: EngagementRef;
+  readonly params: Readonly<Record<string, string | undefined>>;
+  readonly body: unknown;
+}
+
 interface Endpoint {
   readonly route: string;
   readonly action: string;
@@ -90,6 +114,8 @@ interface Endpoint {
   readonly owner: string;
   /** `null` for a read. */
   readonly body: z.ZodType | null;
+  /** Answers the call when the endpoint is wired; without it the endpoint answers `NOT_IMPLEMENTED`. */
+  readonly handle?: (call: EndpointCall) => Promise<unknown>;
 }
 
 const ENDPOINTS: readonly Endpoint[] = [
@@ -131,6 +157,103 @@ const ENDPOINTS: readonly Endpoint[] = [
 ];
 
 const terminalStates: ReadonlySet<string> = new Set(TERMINAL_RUN_STATES);
+
+type EngagementHandle = (call: EndpointCall, port: EngagementPort) => Promise<unknown>;
+
+/**
+ * The engagement endpoints (MCP-012). Reads need `engagement:read`, writes `engagement:write`. A write is
+ * refused once the run is terminal (`RUN_NOT_ACTIVE`) by the same rule as every other write. Without a port
+ * each one keeps answering `NOT_IMPLEMENTED`.
+ */
+function engagementEndpoints(port: EngagementPort | undefined): readonly Endpoint[] {
+  const wired = (base: Omit<Endpoint, 'handle'>, handle: EngagementHandle): Endpoint =>
+    port === undefined ? base : { ...base, handle: (call) => handle(call, port) };
+  const subtaskIdOf = (params: EndpointCall['params']): string => {
+    const parsed = uuidV7Schema.safeParse(params.subtaskId);
+    if (!parsed.success) {
+      throw new ValidationError('request is malformed', { detail: 'The subtask id is not valid.' });
+    }
+    return parsed.data;
+  };
+  return [
+    wired(
+      {
+        route: BROKER_ENGAGEMENT_STATE_ROUTE,
+        action: 'broker.engagement.state_read',
+        scope: 'engagement:read',
+        owner: 'ORCH/WORKFLOW',
+        body: null,
+      },
+      ({ ref }, p) => p.state(ref),
+    ),
+    wired(
+      {
+        route: BROKER_ENGAGEMENT_OPEN_SUBTASKS_ROUTE,
+        action: 'broker.engagement.open_subtasks_read',
+        scope: 'engagement:read',
+        owner: 'ORCH',
+        body: null,
+      },
+      ({ ref }, p) => p.openSubtasks(ref),
+    ),
+    wired(
+      {
+        route: BROKER_ENGAGEMENT_DISPATCH_ROUTE,
+        action: 'broker.engagement.dispatch',
+        scope: 'engagement:write',
+        owner: 'ORCH/WORKFLOW',
+        body: engagementDispatchInputSchema,
+      },
+      ({ ref, body }, p) => p.dispatch(ref, engagementDispatchInputSchema.parse(body)),
+    ),
+    wired(
+      {
+        route: BROKER_ENGAGEMENT_SUBTASK_RESULT_ROUTE,
+        action: 'broker.engagement.subtask_result_read',
+        scope: 'engagement:read',
+        owner: 'ORCH',
+        body: null,
+      },
+      async ({ ref, params }, p) => {
+        const found = await p.subtaskResult(ref, subtaskIdOf(params));
+        if (found === null) throw new NotFoundError('subtask not found');
+        return found;
+      },
+    ),
+    wired(
+      {
+        route: BROKER_ENGAGEMENT_TEST_CASE_STATUS_ROUTE,
+        action: 'broker.engagement.test_case_status',
+        scope: 'engagement:write',
+        owner: 'ORCH',
+        body: engagementMarkTestCaseInputSchema,
+      },
+      ({ ref, body }, p) => p.markTestCase(ref, engagementMarkTestCaseInputSchema.parse(body)),
+    ),
+    wired(
+      {
+        route: BROKER_ENGAGEMENT_MENTOR_REVIEW_ROUTE,
+        action: 'broker.engagement.mentor_review',
+        scope: 'engagement:write',
+        owner: 'MENTOR',
+        body: engagementMentorReviewInputSchema,
+      },
+      ({ ref, body }, p) =>
+        p.requestMentorReview(ref, engagementMentorReviewInputSchema.parse(body)),
+    ),
+    wired(
+      {
+        route: BROKER_ENGAGEMENT_SCOPE_EXCEPTION_ROUTE,
+        action: 'broker.engagement.scope_exception',
+        scope: 'engagement:write',
+        owner: 'GATE2',
+        body: engagementScopeExceptionInputSchema,
+      },
+      ({ ref, body }, p) =>
+        p.requestScopeException(ref, engagementScopeExceptionInputSchema.parse(body)),
+    ),
+  ];
+}
 
 function traceIdOf(): string {
   return (
@@ -311,7 +434,7 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
         request: FastifyRequest,
         principal: BrokerPrincipal,
         endpoint: Endpoint,
-      ): Promise<never> => {
+      ): Promise<unknown> => {
         const log = withContext(options.logger, {
           traceId: request.id,
           tenantId: principal.tenantId,
@@ -366,6 +489,20 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
               detail: 'The run has ended; the broker accepts no more writes for it.',
             });
           }
+          if (endpoint.handle !== undefined) {
+            const pathParams = z.record(z.string(), z.string()).safeParse(request.params);
+            const result = await endpoint.handle({
+              ref: { tenantId: found.tenantId, runId: principal.runId },
+              params: pathParams.success ? pathParams.data : {},
+              body: request.body,
+            });
+            await record(principal, endpoint, 'success', null);
+            log.info(
+              { event: 'broker.request', action: endpoint.action, outcome: 'success' },
+              'broker request',
+            );
+            return result;
+          }
           const stub = new AppError('NOT_IMPLEMENTED', 'not implemented', {
             detail: `This broker endpoint is owned by ${endpoint.owner} and is not implemented yet.`,
           });
@@ -389,8 +526,8 @@ export function registerBrokerRoutes(app: FastifyInstance, options: BrokerRoutes
         }
       };
 
-      for (const endpoint of ENDPOINTS) {
-        const handler = async (request: FastifyRequest): Promise<never> => {
+      for (const endpoint of [...ENDPOINTS, ...engagementEndpoints(options.engagement)]) {
+        const handler = async (request: FastifyRequest): Promise<unknown> => {
           const principal = request.brokerPrincipal;
           // Unreachable (the hook always sets it): fail closed rather than serve without a principal.
           if (principal === null) throw new BrokerAuthError('missing');

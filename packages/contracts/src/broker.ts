@@ -39,6 +39,8 @@ export const TOOL_AUDIT_SUMMARY_MAX = 1024;
 export const BROKER_SCOPES = [
   'audit:write',
   'candidates:write',
+  'engagement:read',
+  'engagement:write',
   'evidence:write',
   'journal:write',
   'state:read',

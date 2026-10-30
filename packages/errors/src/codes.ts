@@ -299,6 +299,8 @@ const DEFINITIONS = {
   // a run that is no longer active is refused with 409 (the run is terminal, §3.3).
   NOT_IMPLEMENTED: { status: 501, title: 'Not implemented', retryable: false },
   RUN_NOT_ACTIVE: { status: 409, title: 'Run is not active', retryable: false },
+  // An engagement status change the test-case state machine does not allow (MCP-012, #677). Never retried.
+  INVALID_TRANSITION: { status: 409, title: 'Invalid status transition', retryable: false },
   // A run that does not exist in the caller's tenant. Uniform for missing and foreign runs (no existence oracle, §8.6).
   RUN_NOT_FOUND: { status: 404, title: 'Run not found', retryable: false },
   // Audit emission (AUDIT-003, #82): an event that fails AuditEventSchema is refused at the helper's

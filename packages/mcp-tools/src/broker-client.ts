@@ -31,7 +31,8 @@ export interface BrokerClientOptions {
 const DEFAULT_TIMEOUT_MS = 10_000;
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
-const SUFFIX = /^[a-z][a-z-]{0,31}$/;
+/** One path segment, or a UUID segment (`engagement/subtasks/<id>/result`). */
+const SUFFIX = /^[a-z][a-z-]{0,31}(?:\/(?:[a-z][a-z-]{0,31}|[0-9a-f-]{36}))*$/;
 const RUN_ID = /^[0-9a-f-]{36}$/;
 
 /** The problem+json `code` of a failed broker response, if it has one. */
@@ -95,8 +96,12 @@ export function createBrokerClient(options: BrokerClientOptions): BrokerClient {
       if (response.status === HTTP_UNAUTHORIZED || response.status === HTTP_FORBIDDEN) {
         throw new ToolError('TOOL_SCOPE_DENIED', 'the run token does not permit this call');
       }
-      if ((await problemCode(response)) === 'RUN_NOT_ACTIVE') {
+      const code = await problemCode(response);
+      if (code === 'RUN_NOT_ACTIVE') {
         throw new ToolError('TOOL_KILLED', 'the run is no longer active');
+      }
+      if (code === 'INVALID_TRANSITION') {
+        throw new ToolError('TOOL_INVALID_INPUT', 'the status change is not allowed');
       }
       throw new ToolError(
         'TOOL_BACKEND_UNAVAILABLE',

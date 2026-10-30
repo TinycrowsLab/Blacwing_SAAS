@@ -12,9 +12,10 @@ import {
 const ID = '01890a5d-ac96-774b-bcce-b302099a8057';
 
 describe('broker contracts', () => {
-  it('uses the bwrun_ prefix and five scopes', () => {
+  it('uses the bwrun_ prefix and seven scopes, including the engagement pair', () => {
     expect(BROKER_TOKEN_PREFIX).toBe('bwrun_');
-    expect(BROKER_SCOPES).toHaveLength(5);
+    expect(BROKER_SCOPES).toHaveLength(7);
+    expect(BROKER_SCOPES).toEqual(expect.arrayContaining(['engagement:read', 'engagement:write']));
   });
 
   it('rejects unknown fields and applies defaults', () => {
