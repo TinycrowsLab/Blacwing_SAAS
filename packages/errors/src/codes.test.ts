@@ -525,6 +525,11 @@ describe('error-code registry', () => {
       | 'OOB_POLL_FAILED'
       | 'OOB_DEREGISTER_FAILED'
       | 'OOB_DECRYPT_FAILED'
+      | 'POLICY_VERSION_NOT_FOUND'
+      | 'POLICY_SOURCE_TOO_LARGE'
+      | 'POLICY_VALIDATION_FAILED'
+      | 'POLICY_ROLLBACK_TARGET_NOT_EARLIER'
+      | 'POLICY_NO_ACTIVE_VERSION'
       | 'OOB_PROTOCOL_INCOMPATIBLE'
       | 'INTERNAL'
     >();
