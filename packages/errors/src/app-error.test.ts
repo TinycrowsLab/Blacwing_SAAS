@@ -277,6 +277,7 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'GRAPH_UNSCOPED_QUERY',
   'GRAPH_QUERY_FAILED',
   'GRAPH_QUERY_UNAVAILABLE',
+  'GRAPH_AUDIT_UNBOUND',
   // Raised by apps/api's Keycloak organisations service (IAM-002) as plain AppErrors.
   'KEYCLOAK_UNAVAILABLE',
   'KEYCLOAK_REJECTED',

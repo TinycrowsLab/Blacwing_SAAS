@@ -7,9 +7,10 @@ import { naturalKey, type SurfaceEdge, type SurfaceNode } from '@blackwing/contr
 import { AppError } from '@blackwing/errors';
 
 import { createGraphRuntime, type GraphRuntime } from './driver.js';
-import { SurfaceGraphRepository, withTenantGraph } from './repository.js';
+import { SurfaceGraphRepository, type SurfaceUpsertAudit, withTenantGraph } from './repository.js';
 
 import type { Neo4jConfig } from './config.js';
+import type { AuditEventInput } from '@blackwing/audit';
 
 const TENANT_A = '018f2a6e-1c00-7000-8000-00000000000a';
 const TENANT_B = '018f2a6e-1c00-7000-8000-00000000000b';
@@ -44,6 +45,7 @@ const CONFIG: Neo4jConfig = {
   maxPoolSize: 5,
   connectionTimeoutMs: 1000,
   maxTxRetryMs: 1000,
+  upsertBatchSize: 500,
 };
 
 interface FakeQuery {
@@ -107,6 +109,14 @@ const HOST_A_STORED = {
   provenance_lastSeenAt: PROVENANCE.lastSeenAt,
 };
 
+const OTHER_RUN_ID = '018f2a6e-1c01-7000-8000-000000000002';
+/** An edge wholly in tenant B: its keys match its own tenant, so only the ambient-tenant guard refuses it. */
+const OTHER_TENANT_EXPOSES: SurfaceEdge = {
+  ...EXPOSES_A,
+  tenantId: TENANT_B,
+  fromKey: naturalKey({ ...HOST_A, tenantId: TENANT_B }),
+  toKey: `service:${TENANT_B}:api.example.test:443:tcp`,
+};
 const RUN_QUERY = { minConfidence: 0, limit: 10, nodeCap: 2000, edgeCap: 4000 } as const;
 
 /** A fake whose answer depends on the Cypher text, so one read can run several queries against it. */
@@ -787,5 +797,206 @@ describe('surface-graph repository: run reads', () => {
       'VALIDATION_FAILED',
     );
     expect(graph.queries).toHaveLength(0);
+  });
+});
+
+/** Upsert answers: a node row is created when its natural key is in `createdKeys`; a stub query counts its rows. */
+interface UpsertFakeOptions {
+  readonly batch?: number;
+  /** Fails the n-th query (1-based) with a plain driver error. */
+  readonly failOnQuery?: number;
+  readonly createdKeys?: readonly string[];
+}
+
+function upsertGraph(options: UpsertFakeOptions = {}) {
+  const queries: FakeQuery[] = [];
+  const created = new Set(options.createdKeys ?? []);
+  let calls = 0;
+  const answer = (cypher: string, params: Record<string, unknown>): unknown[] => {
+    const rows = (params.rows ?? []) as { naturalKey?: string }[];
+    if (cypher.includes('RETURN sum(CASE')) {
+      return [{ get: (key: string) => (key === 'stubs' ? rows.length : undefined) }];
+    }
+    return rows.map((row) => ({
+      // Edge rows have no natural key; they count as created.
+      get: (key: string) =>
+        key === 'created' ? row.naturalKey === undefined || created.has(row.naturalKey) : undefined,
+    }));
+  };
+  const run = (mode: 'READ' | 'WRITE') => ({
+    run: (cypher: string, params: Record<string, unknown>) => {
+      calls += 1;
+      queries.push({ mode, cypher, params });
+      if (options.failOnQuery === calls) return Promise.reject(new Error('connection reset'));
+      return Promise.resolve({ records: answer(cypher, params) });
+    },
+  });
+  const driver = {
+    session: () => ({
+      executeRead: (work: (tx: ReturnType<typeof run>) => Promise<unknown>) => work(run('READ')),
+      executeWrite: (work: (tx: ReturnType<typeof run>) => Promise<unknown>) => work(run('WRITE')),
+      close: () => Promise.resolve(),
+    }),
+    close: () => Promise.resolve(),
+  };
+  const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+  const runtime = createGraphRuntime(
+    { ...CONFIG, upsertBatchSize: options.batch ?? CONFIG.upsertBatchSize },
+    { logger, createDriver: () => driver as unknown as Driver },
+  );
+  const emitAudit = vi.fn<(input: AuditEventInput) => Promise<void>>(() => Promise.resolve());
+  const audit: SurfaceUpsertAudit = { emitAudit };
+  return { runtime, queries, audit, emitAudit };
+}
+
+function hostAt(hostname: string, runId = RUN_ID): SurfaceNode {
+  return {
+    kind: 'host',
+    tenantId: TENANT_A,
+    provenance: { ...PROVENANCE, runId },
+    hostname,
+    inScope: true,
+  };
+}
+
+describe('surface-graph repository: upsert (GRAPH-007)', () => {
+  it('refuses a batch with a node of another tenant before any query, and writes nothing', async () => {
+    const graph = upsertGraph();
+    await expectCode(
+      withTenantGraph(
+        TENANT_A,
+        (repo) => repo.upsertNodes([HOST_A, { ...HOST_A, tenantId: TENANT_B }]),
+        { runtime: graph.runtime, audit: graph.audit },
+      ),
+      'GRAPH_TENANT_MISMATCH',
+    );
+    expect(graph.queries).toEqual([]);
+    expect(graph.emitAudit).not.toHaveBeenCalled();
+  });
+
+  it('refuses an edge of another tenant before any query, and writes nothing', async () => {
+    const graph = upsertGraph();
+    await expectCode(
+      withTenantGraph(TENANT_A, (repo) => repo.upsertEdges([OTHER_TENANT_EXPOSES]), {
+        runtime: graph.runtime,
+        audit: graph.audit,
+      }),
+      'GRAPH_TENANT_MISMATCH',
+    );
+    expect(graph.queries).toEqual([]);
+  });
+
+  it('refuses to write without a bound audit sink, before any query', async () => {
+    const graph = upsertGraph();
+    await expectCode(
+      withTenantGraph(TENANT_A, (repo) => repo.upsertNodes([HOST_A]), { runtime: graph.runtime }),
+      'GRAPH_AUDIT_UNBOUND',
+    );
+    expect(graph.queries).toEqual([]);
+  });
+
+  it('returns zeroed counts for an empty batch with no query and no audit event', async () => {
+    const graph = upsertGraph();
+    const nodes = await withTenantGraph(TENANT_A, (repo) => repo.upsertNodes([]), {
+      runtime: graph.runtime,
+      audit: graph.audit,
+    });
+    expect(nodes.created).toBe(0);
+    expect(nodes.updated).toBe(0);
+    expect(nodes.byKind.host).toEqual({ created: 0, updated: 0 });
+    const edges = await withTenantGraph(TENANT_A, (repo) => repo.upsertEdges([]), {
+      runtime: graph.runtime,
+      audit: graph.audit,
+    });
+    expect(edges.stubs).toBe(0);
+    expect(graph.queries).toEqual([]);
+    expect(graph.emitAudit).not.toHaveBeenCalled();
+  });
+
+  it('refuses a batch that mixes runs, since its audit event names one run', async () => {
+    const graph = upsertGraph();
+    await expectCode(
+      withTenantGraph(
+        TENANT_A,
+        (repo) =>
+          repo.upsertNodes([hostAt('a.example.test'), hostAt('b.example.test', OTHER_RUN_ID)]),
+        { runtime: graph.runtime, audit: graph.audit },
+      ),
+      'VALIDATION_FAILED',
+    );
+    expect(graph.queries).toEqual([]);
+  });
+
+  it('writes in chunks of the configured size, one transaction each, and counts created and updated', async () => {
+    const hosts = ['h1', 'h2', 'h3', 'h4', 'h5'].map((name) => hostAt(`${name}.example.test`));
+    const graph = upsertGraph({
+      batch: 2,
+      createdKeys: hosts
+        .filter((_, index) => index === 0 || index === 3)
+        .map((node) => naturalKey(node)),
+    });
+    const result = await withTenantGraph(TENANT_A, (repo) => repo.upsertNodes(hosts), {
+      runtime: graph.runtime,
+      audit: graph.audit,
+    });
+    expect(graph.queries.map((q) => (q.params.rows as unknown[]).length)).toEqual([2, 2, 1]);
+    expect(graph.queries.every((q) => q.mode === 'WRITE')).toBe(true);
+    expect(result.created).toBe(2);
+    expect(result.updated).toBe(3);
+    expect(result.byKind.host).toEqual({ created: 2, updated: 3 });
+    expect(result.byKind.service).toEqual({ created: 0, updated: 0 });
+  });
+
+  it('names the failed chunk, keeps the cause code, and emits no audit event', async () => {
+    const hosts = ['h1', 'h2', 'h3'].map((name) => hostAt(`${name}.example.test`));
+    const graph = upsertGraph({ batch: 1, failOnQuery: 2 });
+    const error: unknown = await withTenantGraph(TENANT_A, (repo) => repo.upsertNodes(hosts), {
+      runtime: graph.runtime,
+      audit: graph.audit,
+    }).then(
+      () => undefined,
+      (caught: unknown) => caught,
+    );
+    expect(error).toBeInstanceOf(AppError);
+    expect((error as AppError).code).toBe('GRAPH_QUERY_FAILED');
+    expect((error as AppError).message).toContain('chunk 2 of 3');
+    expect(graph.queries).toHaveLength(2);
+    expect(graph.emitAudit).not.toHaveBeenCalled();
+  });
+
+  it('creates an absent endpoint as a stub in the edge transaction, and reports the stubs', async () => {
+    const graph = upsertGraph();
+    const result = await withTenantGraph(TENANT_A, (repo) => repo.upsertEdges([EXPOSES_A]), {
+      runtime: graph.runtime,
+      audit: graph.audit,
+    });
+    expect(result.stubs).toBe(2);
+    expect(result.created).toBe(1);
+    const [hostStub, serviceStub, edge] = graph.queries;
+    expect(hostStub?.cypher).toContain('MERGE (n:Host');
+    expect(hostStub?.params.rows).toEqual([
+      expect.objectContaining({ naturalKey: naturalKey(HOST_A), kind: 'host' }),
+    ]);
+    expect(serviceStub?.cypher).toContain('MERGE (n:Service');
+    expect(edge?.cypher).toContain('MERGE (a)-[r:EXPOSES');
+    expect(graph.queries).toHaveLength(3);
+  });
+
+  it('audits the upsert with the run, the tenant and the counts, and never the graph content', async () => {
+    const graph = upsertGraph({ createdKeys: [naturalKey(HOST_A)] });
+    await withTenantGraph(TENANT_A, (repo) => repo.upsertNodes([HOST_A]), {
+      runtime: graph.runtime,
+      audit: graph.audit,
+    });
+    expect(graph.emitAudit).toHaveBeenCalledTimes(1);
+    expect(graph.emitAudit).toHaveBeenCalledWith({
+      tenantId: TENANT_A,
+      action: 'graph.surface.upserted',
+      actor: { type: 'service', id: 'surface-graph' },
+      target: { type: 'run', id: RUN_ID },
+      outcome: 'success',
+      runId: RUN_ID,
+      metadata: { entity: 'node', nodes: 1, created: 1, updated: 0 },
+    });
   });
 });

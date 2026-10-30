@@ -102,6 +102,7 @@ beforeAll(async () => {
     maxPoolSize: 10,
     connectionTimeoutMs: 5000,
     maxTxRetryMs: 15000,
+    upsertBatchSize: 500,
   };
   runtime = createGraphRuntime(config, { logger: quietLogger });
   await withTenantGraph(

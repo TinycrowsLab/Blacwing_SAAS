@@ -60,6 +60,8 @@ export interface CreateNeo4jDriverOptions {
 export interface GraphRuntime {
   readonly driver: Driver;
   readonly database: string;
+  /** Rows per upsert transaction (GRAPH_UPSERT_BATCH). */
+  readonly upsertBatchSize: number;
   readonly logger: GraphLogger;
   readonly metrics: GraphMetrics;
   /** Open sessions held through {@link withSessionOn}. Mutated only there. */
@@ -106,6 +108,7 @@ export function createGraphRuntime(
   return {
     driver: createNeo4jDriver(config, options),
     database: config.database,
+    upsertBatchSize: config.upsertBatchSize,
     logger: options.logger,
     metrics: options.metrics ?? NOOP_METRICS,
     sessions: { open: 0 },

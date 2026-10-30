@@ -30,6 +30,7 @@ describe('loadNeo4jConfig', () => {
       maxPoolSize: 50,
       connectionTimeoutMs: 5000,
       maxTxRetryMs: 15000,
+      upsertBatchSize: 500,
     });
     expect(Object.isFrozen(config)).toBe(true);
   });
@@ -63,6 +64,16 @@ describe('loadNeo4jConfig', () => {
       expect((error as ConfigValidationError).invalidKeys).toEqual(['NEO4J_URI']);
     },
   );
+
+  it('reads GRAPH_UPSERT_BATCH, defaulting to 500 and bounded to 1..5000 rows per transaction', () => {
+    expect(loadNeo4jConfig(VALID).upsertBatchSize).toBe(500);
+    expect(loadNeo4jConfig({ ...VALID, GRAPH_UPSERT_BATCH: '2000' }).upsertBatchSize).toBe(2000);
+    for (const bad of ['0', '5001', '-3', 'many']) {
+      expect(() => loadNeo4jConfig({ ...VALID, GRAPH_UPSERT_BATCH: bad })).toThrow(
+        /GRAPH_UPSERT_BATCH/,
+      );
+    }
+  });
 
   it('rejects a URI that carries credentials, without echoing them', () => {
     const uri = 'bolt://neo4j:leaked-password@h:7687';

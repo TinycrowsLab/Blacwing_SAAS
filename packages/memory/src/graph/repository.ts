@@ -11,8 +11,11 @@ import neo4j, { type Record as GraphRecord, type Session } from 'neo4j-driver';
 import { z } from 'zod';
 
 import {
+  type AuditActor,
   type EndpointNode,
   endpointNodeSchema,
+  SURFACE_EDGE_KINDS,
+  SURFACE_NODE_KINDS,
   type SurfaceEdge,
   surfaceEdgeKindSchema,
   type SurfaceEdgeKind,
@@ -35,6 +38,9 @@ import { AppError } from '@blackwing/errors';
 import {
   countNodesCypher,
   getNodeCypher,
+  upsertEdgesCypher,
+  upsertNodesCypher,
+  upsertStubsCypher,
   listNodesCypher,
   mergeEdgeCypher,
   mergeNodeCypher,
@@ -51,6 +57,8 @@ import {
 } from './cypher.js';
 import { getGraph, type GraphRuntime, withSessionOn } from './driver.js';
 
+import type { AuditEmitter, AuditEventInput } from '@blackwing/audit';
+
 /** Hard cap on the nodes one `getNeighbours` call returns; a larger result is reported as truncated. */
 export const NEIGHBOUR_LIMIT = 100;
 /** Largest page `listNodes` returns. */
@@ -63,6 +71,7 @@ const KEY_MAX = 4096;
 const FILTER_KEY = /^[a-z][A-Za-z0-9]*$/;
 const SERVICE_ACTOR: TenantActor = Object.freeze({ type: 'service', id: 'surface-graph' });
 const PROVENANCE_PREFIX = 'provenance_';
+const UPSERT_ACTION = 'graph.surface.upserted';
 
 const tracer = trace.getTracer('@blackwing/memory');
 
@@ -76,7 +85,9 @@ export type SurfaceGraphOp =
   | 'countByTenant'
   | 'summariseRuns'
   | 'listRunEndpoints'
-  | 'readRunSurface';
+  | 'readRunSurface'
+  | 'upsertNodes'
+  | 'upsertEdges';
 
 /** Counters (OBS wires these to Prometheus; the default is a no-op). */
 export interface SurfaceGraphMetrics {
@@ -84,6 +95,15 @@ export interface SurfaceGraphMetrics {
   queryTotal(op: SurfaceGraphOp, mode: 'READ' | 'WRITE'): void;
   /** `graph_query_errors_total{code}`. */
   queryError(code: string): void;
+  /** `graph_upsert_nodes_total{kind,op}` and `graph_upsert_edges_total{kind,op}`: rows written per kind and outcome. */
+  upsertCounted?(
+    entity: 'node' | 'edge',
+    kind: string,
+    op: 'created' | 'updated',
+    count: number,
+  ): void;
+  /** `graph_upsert_batch_ms`: duration of one upsert call. */
+  upsertBatchMs?(entity: 'node' | 'edge', ms: number): void;
 }
 
 const NOOP_METRICS: SurfaceGraphMetrics = {
@@ -91,9 +111,33 @@ const NOOP_METRICS: SurfaceGraphMetrics = {
   queryError: () => undefined,
 };
 
+/**
+ * The audit port of surface growth (GRAPH-007, §8.8). The composition root binds it to `AuditEmitter`; an upsert
+ * refuses to write without it.
+ */
+export type SurfaceUpsertAudit = Pick<AuditEmitter, 'emitAudit'>;
+
 /** Options for {@link SurfaceGraphRepository}. */
 export interface SurfaceGraphOptions {
   readonly metrics?: SurfaceGraphMetrics;
+  readonly audit?: SurfaceUpsertAudit;
+}
+
+/** Rows an upsert created, and rows that already existed and were refreshed. */
+export interface UpsertCounts {
+  readonly created: number;
+  readonly updated: number;
+}
+
+/** The result of {@link SurfaceGraphRepository.upsertNodes}: totals and the counts per kind (all kinds, zero when absent). */
+export interface UpsertResult<K extends string = SurfaceNodeKind> extends UpsertCounts {
+  readonly byKind: Record<K, UpsertCounts>;
+}
+
+/** The result of {@link SurfaceGraphRepository.upsertEdges}: the relationship counts, and the placeholder nodes created. */
+export interface EdgeUpsertResult extends UpsertResult<SurfaceEdgeKind> {
+  /** Placeholder endpoint nodes (`stub: true`) created because they were absent. */
+  readonly stubs: number;
 }
 
 /** A page of nodes. `nextCursor` is set when more nodes follow; pass it back as `after`. */
@@ -212,15 +256,30 @@ const edgeKindsSchema = z.array(surfaceEdgeKindSchema).min(1);
  * a single index-friendly match addresses it.
  */
 function storedProps(value: SurfaceNode | SurfaceEdge): Record<string, unknown> {
-  const { provenance, ...rest } = value;
+  return { ...storedFacts(value), ...storedProvenance(value) };
+}
+
+/** The fact fields of a node or edge, flattened (no provenance). */
+function storedFacts(value: SurfaceNode | SurfaceEdge): Record<string, unknown> {
   const props: Record<string, unknown> = {};
-  for (const [key, field] of Object.entries(rest)) {
-    if (field !== undefined) props[key] = field;
+  for (const [key, field] of Object.entries(value)) {
+    if (key !== 'provenance' && field !== undefined) props[key] = field;
   }
-  for (const [key, field] of Object.entries(provenance)) {
+  return props;
+}
+
+/** The provenance of a node or edge, flattened as `provenance_<field>`. */
+function storedProvenance(value: SurfaceNode | SurfaceEdge): Record<string, unknown> {
+  const props: Record<string, unknown> = {};
+  for (const [key, field] of Object.entries(value.provenance)) {
     if (field !== undefined) props[`${PROVENANCE_PREFIX}${key}`] = field;
   }
   return props;
+}
+
+/** Drops `undefined` values: Neo4j parameters and properties take no undefined. */
+function definedOnly(values: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(values).filter(([, field]) => field !== undefined));
 }
 
 /** Reads a stored string (a run id or a technology name); anything else is a stored-data fault. */
@@ -289,10 +348,12 @@ function nodeProps(record: GraphRecord, field = 'n'): Record<string, unknown> {
 export class SurfaceGraphRepository {
   readonly #runtime: GraphRuntime;
   readonly #metrics: SurfaceGraphMetrics;
+  readonly #audit: SurfaceUpsertAudit | undefined;
 
   constructor(runtime: GraphRuntime, options: SurfaceGraphOptions = {}) {
     this.#runtime = runtime;
     this.#metrics = options.metrics ?? NOOP_METRICS;
+    this.#audit = options.audit;
   }
 
   /** Upserts a node in the ambient tenant. `node.tenantId` must equal the context tenant. */
@@ -517,6 +578,124 @@ export class SurfaceGraphRepository {
     });
   }
 
+  /**
+   * Batched, idempotent upsert of the surface nodes of one run (GRAPH-007). Nodes are grouped by kind and written in
+   * chunks of `upsertBatchSize`, one transaction per chunk. Everything is validated first (contract, tenant, one run),
+   * so a refused batch writes nothing. The write is audited as `graph.surface.upserted` after it commits; a failed
+   * audit surfaces as an error, and the upsert can be retried safely because it is idempotent.
+   */
+  async upsertNodes(nodes: readonly SurfaceNode[]): Promise<UpsertResult> {
+    const parsed = input(z.array(surfaceNodeSchema), nodes);
+    for (const node of parsed) this.#scope('upsertNodes', node.tenantId);
+    if (parsed.length === 0) return emptyUpsert(SURFACE_NODE_KINDS);
+    const runId = singleRunId(parsed, 'upsertNodes');
+    const context = this.#scope('upsertNodes');
+    const audit = this.#requireAudit('upsertNodes');
+    return this.#inUpsertSpan(runId, parsed.length, 0, async () => {
+      const started = performance.now();
+      const counts = new Map<SurfaceNodeKind, UpsertCounts>();
+      for (const kind of SURFACE_NODE_KINDS) {
+        const rows = parsed.filter((node) => node.kind === kind).map((node) => nodeRow(node));
+        if (rows.length === 0) continue;
+        const tally = { created: 0, updated: 0 };
+        const chunks = chunked(rows, this.#runtime.upsertBatchSize);
+        for (const [index, chunk] of chunks.entries()) {
+          const records = await this.#upsertChunk(
+            'upsertNodes',
+            `${kind} node`,
+            index,
+            chunks.length,
+            async (tx) =>
+              (await tx.run(upsertNodesCypher(kind), { tenantId: context.tenantId, rows: chunk }))
+                .records,
+          );
+          const created = createdCount(records, chunk.length);
+          tally.created += created;
+          tally.updated += chunk.length - created;
+        }
+        counts.set(kind, tally);
+        this.#reportCounts('node', kind, tally);
+      }
+      const result = toUpsertResult(SURFACE_NODE_KINDS, counts);
+      this.#metrics.upsertBatchMs?.('node', performance.now() - started);
+      await audit.emitAudit(
+        upsertAuditInput(context, runId, {
+          entity: 'node',
+          nodes: parsed.length,
+          created: result.created,
+          updated: result.updated,
+        }),
+      );
+      return result;
+    });
+  }
+
+  /**
+   * Batched, idempotent upsert of the relationships of one run (GRAPH-007). Each endpoint is matched by natural key;
+   * an endpoint that does not exist yet is created as a placeholder (`stub: true`, confidence 0) in the same chunk
+   * transaction, so an edge never fails for want of its ends. Chunking, validation and audit work as for
+   * {@link upsertNodes}.
+   */
+  async upsertEdges(edges: readonly SurfaceEdge[]): Promise<EdgeUpsertResult> {
+    const parsed = input(z.array(surfaceEdgeSchema), edges);
+    for (const edge of parsed) this.#scope('upsertEdges', edge.tenantId);
+    if (parsed.length === 0) return { ...emptyUpsert(SURFACE_EDGE_KINDS), stubs: 0 };
+    const runId = singleRunId(parsed, 'upsertEdges');
+    const context = this.#scope('upsertEdges');
+    const audit = this.#requireAudit('upsertEdges');
+    return this.#inUpsertSpan(runId, 0, parsed.length, async () => {
+      const started = performance.now();
+      const counts = new Map<SurfaceEdgeKind, UpsertCounts>();
+      let stubs = 0;
+      for (const kind of SURFACE_EDGE_KINDS) {
+        const rows = parsed.filter((edge) => edge.kind === kind).map((edge) => edgeRow(edge));
+        if (rows.length === 0) continue;
+        const tally = { created: 0, updated: 0 };
+        const chunks = chunked(rows, this.#runtime.upsertBatchSize);
+        for (const [index, chunk] of chunks.entries()) {
+          // The chunk's placeholder endpoints and its relationships share one transaction.
+          const records = await this.#upsertChunk(
+            'upsertEdges',
+            `${kind} edge`,
+            index,
+            chunks.length,
+            async (tx) => {
+              for (const [stubKind, stubRows] of stubRowsOf(chunk)) {
+                const [row] = (
+                  await tx.run(upsertStubsCypher(stubKind), {
+                    tenantId: context.tenantId,
+                    rows: stubRows,
+                  })
+                ).records;
+                stubs += plainCount(row?.get('stubs'));
+              }
+              return (
+                await tx.run(upsertEdgesCypher(kind), { tenantId: context.tenantId, rows: chunk })
+              ).records;
+            },
+          );
+          const created = createdCount(records, chunk.length);
+          tally.created += created;
+          tally.updated += chunk.length - created;
+        }
+        counts.set(kind, tally);
+        this.#reportCounts('edge', kind, tally);
+      }
+      const result = toUpsertResult(SURFACE_EDGE_KINDS, counts);
+      this.#metrics.upsertBatchMs?.('edge', performance.now() - started);
+      await audit.emitAudit(
+        upsertAuditInput(context, runId, {
+          entity: 'edge',
+          edges: parsed.length,
+          created: result.created,
+          updated: result.updated,
+          stubs,
+        }),
+      );
+      return { ...result, stubs };
+    });
+  }
+
   /** Number of nodes of `kind` in the ambient tenant (admin and metrics). */
   async countByTenant(kind: SurfaceNodeKind): Promise<number> {
     const parsedKind = input(surfaceNodeKindSchema, kind);
@@ -556,6 +735,64 @@ export class SurfaceGraphRepository {
       'surface graph access refused',
     );
     throw new AppError(code, `surface graph access refused: ${reason}`);
+  }
+
+  /** The audit port, or a refusal before any query: a surface change that cannot be audited is never written. */
+  #requireAudit(op: SurfaceGraphOp): SurfaceUpsertAudit {
+    if (this.#audit === undefined) {
+      this.#metrics.queryError('GRAPH_AUDIT_UNBOUND');
+      this.#runtime.logger.error(
+        { event: 'graph.audit.unbound', op },
+        'surface upsert refused: no audit sink is bound',
+      );
+      throw new AppError('GRAPH_AUDIT_UNBOUND', 'surface upsert refused: no audit sink is bound');
+    }
+    return this.#audit;
+  }
+
+  /** Runs one upsert chunk as its own write transaction. A failure names the chunk and keeps the cause's code. */
+  async #upsertChunk<T>(
+    op: SurfaceGraphOp,
+    label: string,
+    index: number,
+    total: number,
+    work: (tx: GraphTransaction) => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await this.#transact(op, 'WRITE', work);
+    } catch (error) {
+      const code = error instanceof AppError ? error.code : 'GRAPH_QUERY_FAILED';
+      throw new AppError(
+        code,
+        `surface upsert failed at ${label} chunk ${index + 1} of ${total}; that chunk was rolled back`,
+        { cause: error },
+      );
+    }
+  }
+
+  #reportCounts(entity: 'node' | 'edge', kind: string, tally: UpsertCounts): void {
+    this.#metrics.upsertCounted?.(entity, kind, 'created', tally.created);
+    this.#metrics.upsertCounted?.(entity, kind, 'updated', tally.updated);
+  }
+
+  /** Runs one upsert under a `graph.upsert` span carrying the run and the row counts. */
+  #inUpsertSpan<T>(
+    runId: string,
+    nodeCount: number,
+    edgeCount: number,
+    work: () => Promise<T>,
+  ): Promise<T> {
+    return tracer.startActiveSpan('graph.upsert', async (span) => {
+      span.setAttributes({ runId, nodeCount, edgeCount });
+      try {
+        return await work();
+      } catch (error) {
+        span.setStatus({ code: SpanStatusCode.ERROR });
+        throw error;
+      } finally {
+        span.end();
+      }
+    });
   }
 
   /**
@@ -663,6 +900,177 @@ function finishSummary(runId: string, summary: MutableSummary): RunSurfaceSummar
   };
 }
 
+/** Splits `items` into consecutive chunks of at most `size`. */
+function chunked<T>(items: readonly T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let start = 0; start < items.length; start += size) {
+    chunks.push(items.slice(start, start + size));
+  }
+  return chunks;
+}
+
+/** A value of a node or edge, as the upsert merge sees it. */
+interface ProvenanceCarrier {
+  readonly provenance: { readonly runId: string };
+}
+
+/** Every item of an upsert must carry one run id; a mixed batch is refused, since its audit event names one run. */
+function singleRunId(items: readonly ProvenanceCarrier[], op: SurfaceGraphOp): string {
+  const [first] = items;
+  if (first === undefined) {
+    throw new AppError('VALIDATION_FAILED', 'an upsert needs at least one item');
+  }
+  const runId = first.provenance.runId;
+  if (items.some((item) => item.provenance.runId !== runId)) {
+    throw new AppError('VALIDATION_FAILED', `${op} takes one run per call; split the batch by run`);
+  }
+  return runId;
+}
+
+/** Rows of an upsert with the natural key, the stored facts and the provenance the merge needs. */
+interface UpsertRow {
+  readonly naturalKey: string;
+  readonly props: Record<string, unknown>;
+  readonly facts: Record<string, unknown>;
+  readonly confidence: number;
+  readonly lastSeenAt: string;
+  readonly runId: string;
+  readonly observationKey: string;
+  readonly observation: Record<string, unknown>;
+}
+
+/** The upsert row of a node: its facts, its provenance and its (run, natural key, tool) observation. */
+function nodeRow(node: SurfaceNode): UpsertRow {
+  const key = naturalKey(node);
+  const facts = { ...storedFacts(node), naturalKey: key };
+  const observationKey = JSON.stringify([node.provenance.runId, key, node.provenance.tool ?? '']);
+  return {
+    naturalKey: key,
+    props: { ...facts, ...storedProvenance(node) },
+    facts,
+    confidence: node.provenance.confidence,
+    lastSeenAt: node.provenance.lastSeenAt,
+    runId: node.provenance.runId,
+    observationKey,
+    observation: definedOnly({
+      observationKey,
+      runId: node.provenance.runId,
+      persona: node.provenance.persona,
+      tool: node.provenance.tool,
+      confidence: node.provenance.confidence,
+      at: node.provenance.lastSeenAt,
+    }),
+  };
+}
+
+/** The upsert row of a relationship, addressed by its endpoints. */
+interface EdgeRow {
+  readonly fromKey: string;
+  readonly toKey: string;
+  readonly props: Record<string, unknown>;
+  readonly facts: Record<string, unknown>;
+  readonly confidence: number;
+  readonly lastSeenAt: string;
+  readonly runId: string;
+}
+
+function edgeRow(edge: SurfaceEdge): EdgeRow {
+  return {
+    fromKey: edge.fromKey,
+    toKey: edge.toKey,
+    props: storedProps(edge),
+    facts: storedFacts(edge),
+    confidence: edge.provenance.confidence,
+    lastSeenAt: edge.provenance.lastSeenAt,
+    runId: edge.provenance.runId,
+  };
+}
+
+/** The kind of a node key: its prefix (`host:`, `service:`...). The edge contract already fixed the prefix. */
+function keyKind(key: string): SurfaceNodeKind {
+  return input(surfaceNodeKindSchema, key.slice(0, key.indexOf(':')));
+}
+
+/** The placeholder nodes a chunk of edges needs, grouped by kind and de-duplicated by natural key. */
+function stubRowsOf(chunk: readonly EdgeRow[]): Map<SurfaceNodeKind, Record<string, unknown>[]> {
+  const byKey = new Map<string, Record<string, unknown>>();
+  for (const row of chunk) {
+    for (const key of [row.fromKey, row.toKey]) {
+      if (byKey.has(key)) continue;
+      byKey.set(key, {
+        naturalKey: key,
+        kind: keyKind(key),
+        runId: row.runId,
+        firstSeenAt: row.props.provenance_firstSeenAt,
+        lastSeenAt: row.lastSeenAt,
+      });
+    }
+  }
+  const grouped = new Map<SurfaceNodeKind, Record<string, unknown>[]>();
+  for (const [key, stub] of byKey) {
+    const kind = keyKind(key);
+    grouped.set(kind, [...(grouped.get(kind) ?? []), stub]);
+  }
+  return grouped;
+}
+
+/** How many of a chunk's rows were created. A row count that differs from the chunk is a fault, never a silent pass. */
+function createdCount(records: readonly GraphRecord[], expected: number): number {
+  if (records.length !== expected) {
+    throw new AppError('GRAPH_QUERY_FAILED', 'surface upsert wrote an unexpected number of rows');
+  }
+  return records.filter((record) => record.get('created') === true).length;
+}
+
+/** Reads a count returned by Cypher (an integer, possibly a driver Integer). */
+function plainCount(value: unknown): number {
+  const count = plain(value);
+  return typeof count === 'number' ? count : 0;
+}
+
+/** A zeroed upsert result over the given kinds. */
+function emptyUpsert<K extends string>(kinds: readonly K[]): UpsertResult<K> {
+  return toUpsertResult(kinds, new Map(kinds.map((kind) => [kind, { created: 0, updated: 0 }])));
+}
+
+/** Totals and per-kind counts of an upsert, every kind present. */
+function toUpsertResult<K extends string>(
+  kinds: readonly K[],
+  counts: ReadonlyMap<K, UpsertCounts>,
+): UpsertResult<K> {
+  const byKind = Object.fromEntries(
+    kinds.map((kind) => [kind, counts.get(kind) ?? { created: 0, updated: 0 }]),
+  ) as Record<K, UpsertCounts>;
+  const values = Object.values<UpsertCounts>(byKind);
+  return {
+    created: values.reduce((sum, count) => sum + count.created, 0),
+    updated: values.reduce((sum, count) => sum + count.updated, 0),
+    byKind,
+  };
+}
+
+/** Maps the tenant actor to the audit actor (a run acts as a service). */
+function auditActorOf(actor: TenantActor): AuditActor {
+  return actor.type === 'user' ? { type: 'user', id: actor.id } : { type: 'service', id: actor.id };
+}
+
+/** The `graph.surface.upserted` event of one upsert call: the run, the counts, never the graph content. */
+function upsertAuditInput(
+  context: TenantContext,
+  runId: string,
+  metadata: Record<string, number | string>,
+): AuditEventInput {
+  return {
+    tenantId: context.tenantId,
+    action: UPSERT_ACTION,
+    actor: auditActorOf(context.actor),
+    target: { type: 'run', id: runId },
+    outcome: 'success',
+    runId,
+    metadata,
+  };
+}
+
 /** Options for {@link withTenantGraph}. */
 export interface WithTenantGraphOptions {
   /** The graph runtime. Default: the process runtime (`getGraph()`). */
@@ -670,6 +1078,8 @@ export interface WithTenantGraphOptions {
   readonly metrics?: SurfaceGraphMetrics;
   /** Who acts. Default: the surface-graph service identity. */
   readonly actor?: TenantActor;
+  /** The audit port of surface upserts; a write without it is refused. */
+  readonly audit?: SurfaceUpsertAudit;
 }
 
 /**
@@ -688,6 +1098,7 @@ export async function withTenantGraph<T>(
     fn(
       new SurfaceGraphRepository(runtime, {
         ...(options.metrics ? { metrics: options.metrics } : {}),
+        ...(options.audit ? { audit: options.audit } : {}),
       }),
     ),
   );

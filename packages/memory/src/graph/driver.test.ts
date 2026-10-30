@@ -29,6 +29,7 @@ const CONFIG: Neo4jConfig = Object.freeze({
   maxPoolSize: 42,
   connectionTimeoutMs: 5000,
   maxTxRetryMs: 15000,
+  upsertBatchSize: 500,
 });
 
 type DriverFactory = NonNullable<CreateNeo4jDriverOptions['createDriver']>;
@@ -103,7 +104,14 @@ function fakeDriver(overrides: Partial<Pick<Driver, 'session' | 'executeQuery' |
 }
 
 function runtimeWith(driver: Driver, logger = fakeLogger(), metrics = fakeMetrics()): GraphRuntime {
-  return { driver, database: CONFIG.database, logger, metrics, sessions: { open: 0 } };
+  return {
+    driver,
+    database: CONFIG.database,
+    upsertBatchSize: CONFIG.upsertBatchSize,
+    logger,
+    metrics,
+    sessions: { open: 0 },
+  };
 }
 
 afterEach(() => {

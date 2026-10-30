@@ -1253,6 +1253,9 @@ importers:
 
   packages/memory:
     dependencies:
+      '@blackwing/audit':
+        specifier: workspace:*
+        version: link:../audit
       '@blackwing/config':
         specifier: workspace:*
         version: link:../config

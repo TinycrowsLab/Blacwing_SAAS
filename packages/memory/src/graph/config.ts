@@ -29,10 +29,14 @@ export interface Neo4jConfig {
   readonly maxPoolSize: number;
   readonly connectionTimeoutMs: number;
   readonly maxTxRetryMs: number;
+  /** Rows per upsert transaction (GRAPH_UPSERT_BATCH, GRAPH-007): a larger batch is split into chunks of this size. */
+  readonly upsertBatchSize: number;
 }
 
 /** Upper bound for `NEO4J_MAX_POOL_SIZE`: a typo cannot open thousands of sockets. */
 const MAX_POOL_SIZE = 1000;
+/** Upper bound for `GRAPH_UPSERT_BATCH`: one transaction stays bounded in size. */
+const MAX_UPSERT_BATCH = 5000;
 
 /** A positive integer environment value, given as a decimal string. */
 function zPositiveInt(max: number): z.ZodType<number, string> {
@@ -59,6 +63,7 @@ export const graphEnvSchema = z.object({
   NEO4J_PASSWORD: zSecret(),
   NEO4J_DATABASE: z.string().min(1).default('neo4j'),
   NEO4J_MAX_POOL_SIZE: z.string().default('50').pipe(zPositiveInt(MAX_POOL_SIZE)),
+  GRAPH_UPSERT_BATCH: z.string().default('500').pipe(zPositiveInt(MAX_UPSERT_BATCH)),
 });
 
 /** Parses and freezes the graph config from `source` (default: the process environment, via `@blackwing/config`). */
@@ -84,5 +89,6 @@ export function loadNeo4jConfig(source?: EnvSource): Neo4jConfig {
     maxPoolSize: env.NEO4J_MAX_POOL_SIZE,
     connectionTimeoutMs: 5000,
     maxTxRetryMs: 15000,
+    upsertBatchSize: env.GRAPH_UPSERT_BATCH,
   });
 }

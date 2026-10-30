@@ -39,6 +39,7 @@ function configFor(target: Neo4jHandle): Neo4jConfig {
     maxPoolSize: 10,
     connectionTimeoutMs: 5000,
     maxTxRetryMs: 15000,
+    upsertBatchSize: 500,
   };
 }
 
@@ -70,14 +71,17 @@ surfaceContainerLogsOnFailure(() => [neo]);
 describe('surface graph migrations against Neo4j 5', () => {
   it('reports every migration pending before the first run, without creating anything', async () => {
     const report = await checkGraphMigrations(graph());
-    expect(report.pending).toEqual(['0001_surface_constraints']);
+    expect(report.pending).toEqual([
+      '0001_surface_constraints',
+      '0002_run_observation_constraints',
+    ]);
     expect(isGraphMigrationReportClean(report)).toBe(false);
     expect(await namesOf('SHOW CONSTRAINTS YIELD name RETURN name')).not.toContain('asset_key');
   });
 
   it('creates every surface constraint and index on a fresh database', async () => {
     const applied = await runGraphMigrations(graph());
-    expect(applied).toEqual(['0001_surface_constraints']);
+    expect(applied).toEqual(['0001_surface_constraints', '0002_run_observation_constraints']);
 
     const constraints = await namesOf('SHOW CONSTRAINTS YIELD name RETURN name');
     for (const name of [
@@ -104,14 +108,20 @@ describe('surface graph migrations against Neo4j 5', () => {
   });
 
   it('records the applied migration in the ledger with its checksum and statement count', async () => {
-    const [migration] = loadGraphMigrations();
+    const [first, second] = loadGraphMigrations();
     const ledger = await neo4jMigrationStore(graph()).readLedger();
     expect(ledger).toEqual([
       {
         id: '0001_surface_constraints',
-        checksum: migration?.checksum,
+        checksum: first?.checksum,
         status: 'applied',
-        statementsApplied: migration?.statements.length,
+        statementsApplied: first?.statements.length,
+      },
+      {
+        id: '0002_run_observation_constraints',
+        checksum: second?.checksum,
+        status: 'applied',
+        statementsApplied: second?.statements.length,
       },
     ]);
   });
@@ -120,7 +130,10 @@ describe('surface graph migrations against Neo4j 5', () => {
     expect(await runGraphMigrations(graph())).toEqual([]);
     const report = await checkGraphMigrations(graph());
     expect(isGraphMigrationReportClean(report)).toBe(true);
-    expect(report.applied).toEqual(['0001_surface_constraints']);
+    expect(report.applied).toEqual([
+      '0001_surface_constraints',
+      '0002_run_observation_constraints',
+    ]);
   });
 
   it('throws GRAPH_MIGRATION_DRIFT when an applied migration no longer matches its checksum', async () => {

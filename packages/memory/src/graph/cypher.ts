@@ -5,6 +5,15 @@
 
 import type { SurfaceEdgeKind, SurfaceNodeKind } from '@blackwing/contracts';
 
+/**
+ * A stub is a placeholder node that an edge needed before its endpoint was observed (GRAPH-007). Stubs are real
+ * nodes, but they carry no contract fields, so every node read and count excludes them until an observation
+ * upgrades them (the upsert clears the flag).
+ */
+function LIVE(variable: string): string {
+  return `coalesce(${variable}.stub, false) = false`;
+}
+
 /** The Neo4j label of each node kind. */
 const NODE_LABELS: Readonly<Record<SurfaceNodeKind, string>> = Object.freeze({
   asset: 'Asset',
@@ -23,7 +32,11 @@ export function mergeNodeCypher(kind: SurfaceNodeKind): string {
 
 /** Fetch one node of a kind by natural key. */
 export function getNodeCypher(kind: SurfaceNodeKind): string {
-  return `MATCH (n:${NODE_LABELS[kind]} {tenantId: $tenantId, naturalKey: $naturalKey}) RETURN n LIMIT 1`;
+  return [
+    `MATCH (n:${NODE_LABELS[kind]} {tenantId: $tenantId, naturalKey: $naturalKey})`,
+    `WHERE ${LIVE('n')}`,
+    'RETURN n LIMIT 1',
+  ].join('\n');
 }
 
 /** One page of nodes of a kind, filtered on top-level properties, keyset-paginated on the natural key. */
@@ -32,6 +45,7 @@ export function listNodesCypher(kind: SurfaceNodeKind): string {
     `MATCH (n:${NODE_LABELS[kind]})`,
     'WHERE n.tenantId = $tenantId',
     '  AND ($after IS NULL OR n.naturalKey > $after)',
+    `  AND ${LIVE('n')}`,
     '  AND all(key IN $filterKeys WHERE n[key] = $filter[key])',
     'RETURN n ORDER BY n.naturalKey LIMIT $limit',
   ].join('\n');
@@ -39,7 +53,7 @@ export function listNodesCypher(kind: SurfaceNodeKind): string {
 
 /** Count of nodes of a kind in the ambient tenant. */
 export function countNodesCypher(kind: SurfaceNodeKind): string {
-  return `MATCH (n:${NODE_LABELS[kind]} {tenantId: $tenantId}) RETURN count(n) AS count`;
+  return `MATCH (n:${NODE_LABELS[kind]} {tenantId: $tenantId}) WHERE ${LIVE('n')} RETURN count(n) AS count`;
 }
 
 /** MERGE a relationship between two nodes of the same tenant. Returns 0 rows when an endpoint is absent. */
@@ -65,6 +79,7 @@ export function neighboursCypher(depth: 1 | 2): string {
     `  -[rels*1..${depth}]-`,
     '  (n {tenantId: $tenantId})',
     'WHERE n <> start',
+    `  AND ${LIVE('n')}`,
     '  AND all(r IN rels WHERE type(r) IN $edgeKinds AND r.tenantId = $tenantId)',
     'RETURN DISTINCT n ORDER BY n.naturalKey LIMIT $limit',
   ].join('\n');
@@ -78,6 +93,7 @@ export function runNodeCountsCypher(): string {
   return [
     'MATCH (n {tenantId: $tenantId})',
     'WHERE n.provenance_runId IN $runIds',
+    `  AND ${LIVE('n')}`,
     'RETURN n.provenance_runId AS runId, n.kind AS kind, count(n) AS count',
   ].join('\n');
 }
@@ -99,6 +115,7 @@ export function runTechnologiesCypher(): string {
   return [
     'MATCH (t:Technology {tenantId: $tenantId})',
     'WHERE t.provenance_runId IN $runIds',
+    `  AND ${LIVE('t')}`,
     'OPTIONAL MATCH (t)<-[r:RUNS]-()',
     'WHERE r.tenantId = $tenantId',
     'RETURN t.provenance_runId AS runId, t.name AS name, count(r) AS count',
@@ -113,6 +130,7 @@ export function runEndpointTotalsCypher(): string {
   return [
     'MATCH (e:Endpoint {tenantId: $tenantId})',
     'WHERE e.provenance_runId IN $runIds',
+    `  AND ${LIVE('e')}`,
     'OPTIONAL MATCH (a:Asset {tenantId: $tenantId, assetId: e.assetId})-[r:RESOLVES_TO]->(h:Host {tenantId: $tenantId})',
     'WHERE r.tenantId = $tenantId AND h.inScope = true',
     'RETURN e.provenance_runId AS runId,',
@@ -127,6 +145,7 @@ export function runEndpointsCypher(): string {
     'MATCH (n:Endpoint)',
     'WHERE n.tenantId = $tenantId',
     '  AND n.provenance_runId = $runId',
+    `  AND ${LIVE('n')}`,
     '  AND ($after IS NULL OR n.naturalKey > $after)',
     'RETURN n ORDER BY n.naturalKey LIMIT $limit',
   ].join('\n');
@@ -144,6 +163,7 @@ function candidate(variable: string): string {
     `${variable}.provenance_runId = $runId`,
     `($kinds IS NULL OR ${variable}.kind IN $kinds)`,
     `${variable}.provenance_confidence >= $minConfidence`,
+    LIVE(variable),
     `(NOT $inScopeOnly OR ${variable}.inScope IS NULL OR ${variable}.inScope = true)`,
   ].join(' AND ');
 }
@@ -188,5 +208,87 @@ export function runSurfaceEdgesCypher(): string {
     '  AND a.naturalKey IN $keys AND b.naturalKey IN $keys',
     'RETURN type(r) AS kind, a.naturalKey AS fromKey, b.naturalKey AS toKey',
     'ORDER BY fromKey, kind, toKey LIMIT $limit',
+  ].join('\n');
+}
+
+/**
+ * The provenance merge of an existing node or relationship `v` (GRAPH-007, §8.11). It is commutative, so concurrent
+ * writers converge: confidence keeps the larger value; lastSeenAt keeps the lexically larger ISO-UTC value; the run
+ * that last saw it is the one with the larger lastSeenAt, ties broken by the larger run id. `firstSeenAt` is never
+ * touched. The values before the merge are captured in a WITH first, so the result does not depend on the order of
+ * the SET items. Ends with `created` in scope, read from the ON CREATE marker, and clears that marker.
+ */
+function mergeProvenance(v: string): string[] {
+  return [
+    `WITH ${v}, row, coalesce(${v}.upsertCreated, false) AS created,`,
+    `  ${v}.provenance_confidence AS oldConfidence,`,
+    `  ${v}.provenance_lastSeenAt AS oldLastSeenAt,`,
+    `  ${v}.provenance_runId AS oldRunId`,
+    `SET ${v}.upsertCreated = null,`,
+    `  ${v}.provenance_confidence = CASE WHEN row.confidence > oldConfidence THEN row.confidence ELSE oldConfidence END,`,
+    `  ${v}.provenance_lastSeenAt = CASE WHEN row.lastSeenAt > oldLastSeenAt THEN row.lastSeenAt ELSE oldLastSeenAt END,`,
+    `  ${v}.provenance_runId = CASE`,
+    '    WHEN row.lastSeenAt > oldLastSeenAt OR (row.lastSeenAt = oldLastSeenAt AND row.runId > oldRunId)',
+    `    THEN row.runId ELSE oldRunId END`,
+    `WITH ${v}, row, created`,
+  ];
+}
+
+/**
+ * Idempotent batch upsert of one kind of node (GRAPH-007). `$rows` carries `naturalKey`, `props` (new node),
+ * `facts` (refreshed on match), `confidence`, `lastSeenAt`, `runId`, `observationKey` and `observation`. A node that
+ * already exists keeps its firstSeenAt, merges provenance (see {@link mergeProvenance}), links to its run with
+ * `OBSERVED_IN`, and gets one `Observation` per `(run, natural key, tool)`. Returns one `created` flag per row.
+ */
+export function upsertNodesCypher(kind: SurfaceNodeKind): string {
+  return [
+    'UNWIND $rows AS row',
+    `MERGE (n:${NODE_LABELS[kind]} {tenantId: $tenantId, naturalKey: row.naturalKey})`,
+    '  ON CREATE SET n += row.props, n.upsertCreated = true',
+    '  ON MATCH SET n += row.facts, n.stub = null',
+    ...mergeProvenance('n'),
+    'MERGE (run:Run {tenantId: $tenantId, runId: row.runId})',
+    'MERGE (n)-[:OBSERVED_IN]->(run)',
+    'MERGE (o:Observation {tenantId: $tenantId, observationKey: row.observationKey})',
+    '  ON CREATE SET o += row.observation',
+    'MERGE (n)-[:HAS_OBSERVATION]->(o)',
+    'MERGE (o)-[:IN_RUN]->(run)',
+    'RETURN created',
+  ].join('\n');
+}
+
+/**
+ * Creates the placeholder nodes an edge needs when they are absent (GRAPH-007). An existing node is left alone; a new
+ * one gets `stub: true`, the endpoint's kind and a confidence of 0. Returns how many were created.
+ */
+export function upsertStubsCypher(kind: SurfaceNodeKind): string {
+  return [
+    'UNWIND $rows AS row',
+    `MERGE (n:${NODE_LABELS[kind]} {tenantId: $tenantId, naturalKey: row.naturalKey})`,
+    '  ON CREATE SET n.stub = true, n.kind = row.kind, n.upsertCreated = true,',
+    '    n.provenance_runId = row.runId, n.provenance_confidence = 0.0,',
+    '    n.provenance_firstSeenAt = row.firstSeenAt, n.provenance_lastSeenAt = row.lastSeenAt',
+    'WITH n, coalesce(n.upsertCreated, false) AS created',
+    'SET n.upsertCreated = null',
+    'RETURN sum(CASE WHEN created THEN 1 ELSE 0 END) AS stubs',
+  ].join('\n');
+}
+
+/**
+ * Idempotent batch upsert of one kind of relationship (GRAPH-007). Both endpoints are matched by natural key in the
+ * tenant (the stubs are created first, see {@link upsertStubsCypher}). The relationship keeps its provenance under the
+ * same merge rules as nodes. Returns one row per relationship with its `created` flag; a row is missing only when an
+ * endpoint is absent.
+ */
+export function upsertEdgesCypher(kind: SurfaceEdgeKind): string {
+  return [
+    'UNWIND $rows AS row',
+    'MATCH (a {tenantId: $tenantId, naturalKey: row.fromKey})',
+    'MATCH (b {tenantId: $tenantId, naturalKey: row.toKey})',
+    `MERGE (a)-[r:${kind} {tenantId: $tenantId, fromKey: row.fromKey, toKey: row.toKey}]->(b)`,
+    '  ON CREATE SET r += row.props, r.upsertCreated = true',
+    '  ON MATCH SET r += row.facts',
+    ...mergeProvenance('r'),
+    'RETURN created',
   ].join('\n');
 }

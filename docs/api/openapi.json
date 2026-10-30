@@ -1995,7 +1995,8 @@
                 "asset.verification_started",
                 "asset.verification_passed",
                 "asset.verification_failed",
-                "asset.verification_cancelled"
+                "asset.verification_cancelled",
+                "graph.surface.upserted"
               ]
             },
             "example": "kill.fired"
@@ -31999,7 +32000,8 @@
               "asset.verification_started",
               "asset.verification_passed",
               "asset.verification_failed",
-              "asset.verification_cancelled"
+              "asset.verification_cancelled",
+              "graph.surface.upserted"
             ]
           },
           "severity": {

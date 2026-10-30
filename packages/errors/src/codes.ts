@@ -390,6 +390,9 @@ const DEFINITIONS = {
   },
   GRAPH_QUERY_FAILED: { status: 500, title: 'Graph query failed', retryable: false },
   GRAPH_QUERY_UNAVAILABLE: { status: 503, title: 'Graph query unavailable', retryable: true },
+  // A surface upsert needs its audit sink bound (GRAPH-007). Without it the write is refused before any query: an
+  // unaudited change to the surface is a wiring defect (500), never a silent write.
+  GRAPH_AUDIT_UNBOUND: { status: 500, title: 'Graph audit sink not bound', retryable: false },
   // Keycloak Admin API (IAM-002). An unreachable or overloaded Keycloak is an outage (503, retryable). A refused
   // credential or permission, a request Keycloak rejects and an unexpected response are server faults (500, never
   // retried unchanged). A missing resource (404) and a duplicate (409) keep their meaning.

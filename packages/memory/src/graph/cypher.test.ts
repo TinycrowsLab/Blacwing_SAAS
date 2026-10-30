@@ -22,6 +22,9 @@ import {
   runSurfaceNodeCountCypher,
   runSurfaceRankedCypher,
   runTechnologiesCypher,
+  upsertEdgesCypher,
+  upsertNodesCypher,
+  upsertStubsCypher,
 } from './cypher.js';
 
 describe('Cypher templates bind $tenantId', () => {
@@ -89,5 +92,58 @@ describe('Cypher templates bind $tenantId', () => {
   it('keeps all Cypher in cypher.ts: the repository source contains no query text', () => {
     const source = readFileSync(new URL('./repository.ts', import.meta.url), 'utf8');
     expect(source).not.toMatch(/\b(MATCH|MERGE|RETURN|CREATE|DETACH)\b\s/);
+  });
+});
+
+describe('upsert templates (GRAPH-007)', () => {
+  it.each(SURFACE_NODE_KINDS)(
+    'the node upsert and stub templates for %s bind $tenantId',
+    (kind) => {
+      expect(upsertNodesCypher(kind)).toContain('$tenantId');
+      expect(upsertStubsCypher(kind)).toContain('$tenantId');
+    },
+  );
+
+  it.each(SURFACE_EDGE_KINDS)('the edge upsert template for %s binds $tenantId', (kind) => {
+    expect(upsertEdgesCypher(kind)).toContain('$tenantId');
+  });
+
+  it('merges by natural key in a batch, never by interpolated values', () => {
+    const cypher = upsertNodesCypher('host');
+    expect(cypher.startsWith('UNWIND $rows AS row')).toBe(true);
+    expect(cypher).toContain('MERGE (n:Host {tenantId: $tenantId, naturalKey: row.naturalKey})');
+  });
+
+  it('keeps the larger confidence and the lexically larger lastSeenAt, and never touches firstSeenAt', () => {
+    const cypher = upsertNodesCypher('endpoint');
+    expect(cypher).toContain('WHEN row.confidence > oldConfidence THEN row.confidence');
+    expect(cypher).toContain('WHEN row.lastSeenAt > oldLastSeenAt THEN row.lastSeenAt');
+    expect(cypher).not.toContain('provenance_firstSeenAt = ');
+  });
+
+  it('records the run and one observation per (run, natural key, tool)', () => {
+    const cypher = upsertNodesCypher('endpoint');
+    expect(cypher).toContain('MERGE (n)-[:OBSERVED_IN]->(run)');
+    expect(cypher).toContain(
+      'MERGE (o:Observation {tenantId: $tenantId, observationKey: row.observationKey})',
+    );
+  });
+
+  it('creates a stub with the stub flag and zero confidence only when the node is absent', () => {
+    const cypher = upsertStubsCypher('host');
+    expect(cypher).toContain('ON CREATE SET n.stub = true');
+    expect(cypher).toContain('n.provenance_confidence = 0.0');
+  });
+
+  it('hides placeholder stubs from every node read and node count', () => {
+    const live = 'coalesce(n.stub, false) = false';
+    expect(getNodeCypher('host')).toContain(live);
+    expect(listNodesCypher('host')).toContain(live);
+    expect(countNodesCypher('host')).toContain(live);
+    expect(neighboursCypher(1)).toContain(live);
+    expect(runEndpointsCypher()).toContain(live);
+    expect(runSurfaceRankedCypher()).toContain(live);
+    expect(runNodeCountsCypher()).toContain(live);
+    expect(runEndpointTotalsCypher()).toContain('coalesce(e.stub, false) = false');
   });
 });

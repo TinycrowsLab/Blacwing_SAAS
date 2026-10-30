@@ -45,3 +45,29 @@ security, so the repository is the enforcement point for tenant isolation.
   `NEO4J_MAX_TX_RETRY_MS`.
 - All Cypher lives in `src/graph/cypher.ts`. `cypher.test.ts` fails if a template does not bind `$tenantId`.
 - The cross-tenant suite is `src/graph/repository.int.test.ts` (Testcontainers Neo4j).
+
+## Surface upsert (GRAPH-007)
+
+`SurfaceGraphRepository.upsertNodes` and `upsertEdges` are how recon and ingest write the surface model. They are
+batched, idempotent and keep provenance across runs.
+
+- A batch carries one run (`provenance.runId`). A mixed batch is refused with `VALIDATION_FAILED`, since its audit
+  event names one run. Everything is validated first (contract, tenant, run), so a refused batch writes nothing.
+- Nodes are grouped by kind and written with `UNWIND $rows MERGE` on the tenant and natural key. Chunks of
+  `GRAPH_UPSERT_BATCH` rows (default 500, 1 to 5000) run one transaction each. A failing chunk is named in the error
+  (`chunk 2 of 3`) and keeps its code. Earlier chunks stay committed; a retry is safe because the upsert is idempotent.
+- An existing node keeps its `firstSeenAt`. Its confidence is the larger of the two values, and its `lastSeenAt` is the
+  lexically larger ISO-UTC value. Commutative rules mean concurrent sandboxes converge on one state.
+- Each run that sees a node adds an `OBSERVED_IN` edge to its `(:Run)` node. Each `(run, natural key, tool)` adds one
+  `(:Observation)`, merged by key, so replaying a batch adds none.
+- An edge whose endpoint is absent creates a placeholder (`stub: true`, confidence 0) in the same transaction. Stubs are
+  hidden from node reads and counts until an observation upgrades them.
+- Provenance is advisory. No scope, policy or budget decision reads confidence (§8.11). Only names and metadata are
+  written (§8.7).
+- Each call emits `graph.surface.upserted` with the run and the counts (§8.8), after its writes commit. A repository
+  without an audit sink refuses the upsert (`GRAPH_AUDIT_UNBOUND`) before any query.
+- The `graph.upsert` span carries `runId`, `nodeCount` and `edgeCount`. The metrics hooks are `upsertCounted` and
+  `upsertBatchMs`.
+
+The Run and Observation constraints are in migration `0002_run_observation_constraints.cypher`. The cross-run and
+concurrency suite is `src/graph/repository.upsert.int.test.ts` (Testcontainers Neo4j).

@@ -36,6 +36,7 @@ function configFor(handle: Neo4jHandle): Neo4jConfig {
     maxPoolSize: 10,
     connectionTimeoutMs: 5000,
     maxTxRetryMs: 15000,
+    upsertBatchSize: 500,
   };
 }
 

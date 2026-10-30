@@ -123,6 +123,7 @@ const RELEASED_ACTIONS = [
   'asset.verification_passed',
   'asset.verification_failed',
   'asset.verification_cancelled',
+  'graph.surface.upserted',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

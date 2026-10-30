@@ -24,6 +24,7 @@ function configFor(handle: Neo4jHandle, overrides: Partial<Neo4jConfig> = {}): N
     maxPoolSize: 50,
     connectionTimeoutMs: 5000,
     maxTxRetryMs: 15000,
+    upsertBatchSize: 500,
     ...overrides,
   };
 }

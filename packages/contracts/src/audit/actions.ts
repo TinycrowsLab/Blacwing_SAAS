@@ -747,6 +747,14 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'config_change',
     description: 'A pending verification was cancelled by a user; the asset is unverified.',
   },
+  // surface graph upsert (GRAPH-007, #441): appended; the event names the run and the counts, never the graph content.
+  {
+    action: 'graph.surface.upserted',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description:
+      'Surface nodes or relationships of one run were upserted into the graph; metadata records the counts.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */
