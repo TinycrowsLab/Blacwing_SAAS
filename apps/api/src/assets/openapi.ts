@@ -57,6 +57,7 @@ const ASSET_VERIFICATION_ERROR_CODES = [
   'VALIDATION_FAILED',
   'ASSET_VERIFICATION_ILLEGAL_TRANSITION',
   'ASSET_VERIFICATION_PROBE_UNAVAILABLE',
+  'ASSET_VERIFICATION_METHOD_NOT_APPLICABLE',
   'INTERNAL',
 ] as const satisfies readonly ErrorCode[];
 
@@ -331,7 +332,7 @@ export function assetOpenApiModule(): {
         security: SECURITY,
         summary: 'Start ownership verification (issues a challenge token)',
         description:
-          'Moves an `unverified` asset to `pending` and issues a 32-byte CSPRNG token. Publish the token at `expectedLocation` (a DNS TXT record or a well-known file), then call `…/verification/check`. Starting again while pending restarts the challenge (a new token when `bw.asset.rotateOnRestart`). A verified or rejected asset answers `409`.',
+          'Moves an `unverified` asset to `pending` and issues a 32-byte CSPRNG token. Publish the token at `expectedLocation` (a DNS TXT record or a well-known file), then call `…/verification/check`. Starting again while pending restarts the challenge (a new token when `bw.asset.rotateOnRestart`). A verified or rejected asset answers `409`. The `http_file` method needs a `web_app` or `api` asset; any other type answers `422`.',
         parameters: [idParameter],
         requestBody: {
           required: true,

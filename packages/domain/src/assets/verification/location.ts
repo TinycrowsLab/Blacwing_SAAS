@@ -1,6 +1,6 @@
 import { ValidationError } from '@blackwing/errors';
 
-import type { VerificationMethod } from '@blackwing/contracts';
+import type { AssetType, VerificationMethod } from '@blackwing/contracts';
 
 /**
  * Where a method's token must appear (ASSET-003). The probe for each method (ASSET-005 DNS, ASSET-006 HTTP) reads
@@ -44,4 +44,19 @@ export function expectedLocationOf(
   }
   if (method === 'dns_txt') return `${DNS_CHALLENGE_LABEL}.${host}`;
   return `https://${host}${HTTP_CHALLENGE_PATH}`;
+}
+
+/** The asset types the HTTP-file method can prove: it reads `https://<host>/.well-known/…`, so an HTTP origin is needed. */
+const HTTP_ORIGIN_ASSET_TYPES: readonly AssetType[] = ['web_app', 'api'];
+
+/**
+ * Whether `method` can prove control of an asset of `assetType` (ASSET-006). The HTTP-file method applies to web and
+ * API assets only; the other methods apply to every type. A refusal is `422` and the challenge is never started.
+ */
+export function methodAppliesToAssetType(
+  method: VerificationMethod,
+  assetType: AssetType,
+): boolean {
+  if (method === 'http_file') return HTTP_ORIGIN_ASSET_TYPES.includes(assetType);
+  return true;
 }

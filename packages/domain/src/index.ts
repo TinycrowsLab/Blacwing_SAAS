@@ -40,6 +40,7 @@ export {
   expectedLocationOf,
   HTTP_CHALLENGE_PATH,
   hostOf,
+  methodAppliesToAssetType,
   type LocationIdentifier,
 } from './assets/verification/location.js';
 export {

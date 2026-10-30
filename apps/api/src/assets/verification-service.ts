@@ -6,6 +6,7 @@ import {
   expectedLocationOf,
   IllegalVerificationTransitionError,
   isChallengeExpired,
+  methodAppliesToAssetType,
   newVerificationToken,
   transitionVerification,
   type VerificationEventType,
@@ -25,7 +26,10 @@ import {
   rowIdOf,
 } from './access.js';
 import { auditSqlTx } from './audit-tx.js';
-import { AssetVerificationProbeUnavailableError } from './errors.js';
+import {
+  AssetVerificationMethodNotApplicableError,
+  AssetVerificationProbeUnavailableError,
+} from './errors.js';
 
 import type { AssetMetrics } from './metrics.js';
 import type { AssetPolicyEngine } from './policy.js';
@@ -157,6 +161,9 @@ export class AssetVerificationService {
           const settled = await this.expire(tx, caller, row, open);
           row = settled.asset;
           open = undefined;
+        }
+        if (!methodAppliesToAssetType(body.method, row.type)) {
+          throw new AssetVerificationMethodNotApplicableError(body.method, row.type);
         }
         const event: VerificationEventType = open === undefined ? 'start' : 'restart';
         const next = transitionVerification(row.verificationStatus, event);

@@ -352,6 +352,12 @@ const DEFINITIONS = {
     title: 'Verification probe unavailable',
     retryable: false,
   },
+  // A verification method that does not fit the asset type (ASSET-006): the HTTP-file method needs a web or API asset.
+  ASSET_VERIFICATION_METHOD_NOT_APPLICABLE: {
+    status: 422,
+    title: 'Verification method not applicable',
+    retryable: false,
+  },
   EXTERNAL_BACKEND_UNAVAILABLE: {
     status: 503,
     title: 'External secret backend unavailable',

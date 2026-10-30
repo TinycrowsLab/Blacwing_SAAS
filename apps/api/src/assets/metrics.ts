@@ -5,7 +5,8 @@ import { isAppError } from '@blackwing/errors';
 /**
  * Metrics of the asset API: `asset_api_requests_total{route,status}`, `asset_write_conflicts_total` (ASSET-002), and
  * the ownership-verification counters (ASSET-003): `asset_verification_attempts_total{method,result}` and the
- * in-process gauge `asset_verification_active_pending`.
+ * in-process gauge `asset_verification_active_pending`, and the HTTP-file probe counter (ASSET-006):
+ * `asset_verification_http_total{result,reason}`.
  */
 export interface AssetMetrics {
   request(route: string, status: number): void;
@@ -16,6 +17,8 @@ export interface AssetMetrics {
   verificationPendingOpened(): void;
   /** A pending challenge ended (passed, failed, expired or cancelled). */
   verificationPendingClosed(): void;
+  /** One HTTP-file probe run: `result` as above, `reason` a bounded machine reason (never the observed body). */
+  verificationHttpFile(result: string, reason: string): void;
 }
 
 const HTTP_INTERNAL = 500;
@@ -39,6 +42,12 @@ export function createAssetMetrics(registry: Registry): AssetMetrics {
     labelNames: ['method', 'result'] as const,
     registers: [registry],
   });
+  const httpFile = new Counter({
+    name: 'asset_verification_http_total',
+    help: 'HTTP-file ownership probe runs by result and bounded reason.',
+    labelNames: ['result', 'reason'] as const,
+    registers: [registry],
+  });
   const pending = new Gauge({
     name: 'asset_verification_active_pending',
     help: 'Ownership verifications pending in this process (opened minus closed since start).',
@@ -59,6 +68,9 @@ export function createAssetMetrics(registry: Registry): AssetMetrics {
     },
     verificationPendingClosed: () => {
       pending.dec();
+    },
+    verificationHttpFile: (result, reason) => {
+      httpFile.inc({ result, reason });
     },
   };
 }

@@ -55,3 +55,17 @@ export class AssetVerificationProbeUnavailableError extends AppError {
     });
   }
 }
+
+/**
+ * `ASSET_VERIFICATION_METHOD_NOT_APPLICABLE` (422): the method cannot prove control of this asset type. The HTTP-file
+ * method reads `https://<host>/.well-known/…`, so only `web_app` and `api` assets may use it (ASSET-006).
+ */
+export class AssetVerificationMethodNotApplicableError extends AppError {
+  declare readonly code: 'ASSET_VERIFICATION_METHOD_NOT_APPLICABLE';
+  constructor(method: string, assetType: string, options: AppErrorOptions = {}) {
+    super('ASSET_VERIFICATION_METHOD_NOT_APPLICABLE', 'verification method not applicable', {
+      detail: `${method} verification does not apply to a ${assetType} asset.`,
+      ...options,
+    });
+  }
+}

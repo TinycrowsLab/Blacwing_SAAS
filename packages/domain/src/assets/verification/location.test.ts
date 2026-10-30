@@ -7,6 +7,7 @@ import {
   expectedLocationOf,
   HTTP_CHALLENGE_PATH,
   hostOf,
+  methodAppliesToAssetType,
 } from './location.js';
 
 describe('expectedLocationOf', () => {
@@ -33,6 +34,23 @@ describe('expectedLocationOf', () => {
     expect(() => expectedLocationOf('http_file', [{ kind: 'repo', value: 'acme/app' }])).toThrow(
       /needs a host or url identifier/,
     );
+  });
+});
+
+describe('methodAppliesToAssetType', () => {
+  it('lets the HTTP-file method prove web and API assets only', () => {
+    expect(methodAppliesToAssetType('http_file', 'web_app')).toBe(true);
+    expect(methodAppliesToAssetType('http_file', 'api')).toBe(true);
+    for (const type of ['host', 'network_range', 'source_repo'] as const) {
+      expect(methodAppliesToAssetType('http_file', type)).toBe(false);
+    }
+  });
+
+  it('lets the DNS and manual methods apply to every asset type', () => {
+    for (const type of ['web_app', 'api', 'host', 'network_range', 'source_repo'] as const) {
+      expect(methodAppliesToAssetType('dns_txt', type)).toBe(true);
+      expect(methodAppliesToAssetType('manual_letter', type)).toBe(true);
+    }
   });
 });
 

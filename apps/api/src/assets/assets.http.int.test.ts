@@ -709,6 +709,30 @@ describe('ownership verification (ASSET-003)', () => {
     expect(letter.json<Verification>().challenge?.expectedLocation).toBeNull();
   });
 
+  it('lets an http_file challenge start on an API asset, and refuses it on a host asset with 422 and no challenge', async () => {
+    const api = await createAs(ALICE, { name: 'Verify api', type: 'api' });
+    const started = await startVerification(ALICE, api.id, 'http_file');
+    expect(started.statusCode).toBe(201);
+    expect(started.json<Verification>().challenge?.method).toBe('http_file');
+
+    const host = await createAs(ALICE, {
+      name: 'Verify host',
+      type: 'host',
+      identifiers: [{ kind: 'host', value: 'host.example.com' }],
+    });
+    const refused = await startVerification(ALICE, host.id, 'http_file');
+    expect(refused.statusCode).toBe(422);
+    expect(refused.json<{ code: string }>().code).toBe('asset_verification_method_not_applicable');
+    const got = await call(ALICE, 'GET', `/v1/assets/${host.id}`);
+    expect(got.json<{ verificationStatus: string }>().verificationStatus).toBe('unverified');
+    const challenges = await queryAs<{ id: string }>(
+      tenantA,
+      'SELECT id FROM verification_challenges WHERE asset_id = $1',
+      [host.id],
+    );
+    expect(challenges).toHaveLength(0);
+  });
+
   it('refuses a DNS or HTTP method for an asset with no host identifier, 422, without echoing the value', async () => {
     const asset = await createAs(ALICE, {
       name: 'Verify no host',

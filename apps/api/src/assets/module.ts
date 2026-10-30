@@ -12,6 +12,7 @@ import {
 } from '@blackwing/domain';
 
 import { AssetsController } from './controller.js';
+import { HttpFileProbe } from './http-file-probe.js';
 import { createAssetMetrics, type AssetMetrics } from './metrics.js';
 import { createCedarAssetPolicy } from './policy.js';
 import { AssetRepository } from './repository.js';
@@ -33,7 +34,8 @@ export interface AssetsModuleOptions {
   readonly registry: Registry;
   /**
    * The deployed verification probes (ASSET-005 DNS, ASSET-006 HTTP). One per method; a method without a probe
-   * answers `503` on check, so an unprobed asset can never become verified.
+   * answers `503` on check, so an unprobed asset can never become verified. Unset, the HTTP-file probe is deployed
+   * (ASSET-006) and is the only probe; pass a list to replace it.
    */
   readonly verificationProbes?: readonly VerificationProbe[];
   /** Overrides of the verification tunables (`bw.asset.*`); unset keys keep the issue's defaults. */
@@ -88,7 +90,16 @@ export class AssetsModule {
               halts: new TenantHaltRepository({ db: options.database }),
               verifications: new AssetVerificationRepository(),
               policy: createCedarAssetPolicy(),
-              probes: probesByMethod(options.verificationProbes ?? []),
+              probes: probesByMethod(
+                options.verificationProbes ?? [
+                  new HttpFileProbe({
+                    record: (result, reason) => {
+                      metrics.verificationHttpFile(result, reason);
+                    },
+                    logger,
+                  }),
+                ],
+              ),
               settings: { ...DEFAULT_VERIFICATION_POLICY, ...options.verificationPolicy },
               metrics,
               logger,
