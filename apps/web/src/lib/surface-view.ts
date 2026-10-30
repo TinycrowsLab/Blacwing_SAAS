@@ -149,6 +149,11 @@ export const SURFACE_KIND_TOKENS: Readonly<Record<SurfaceNodeKind, string>> = {
   endpoint: '--sev-low',
   parameter: '--warning',
   role: '--muted-foreground',
+  spec_document: '--sev-info',
+  schema_object: '--muted-foreground',
+  auth_scheme: '--warning',
+  source_route: '--sev-low',
+  config_item: '--success',
 };
 
 /** Human label of a node kind, for chips and the inspector. */
@@ -160,6 +165,11 @@ export const SURFACE_KIND_LABELS: Readonly<Record<SurfaceNodeKind, string>> = {
   endpoint: 'Endpoint',
   parameter: 'Parameter',
   role: 'Role',
+  spec_document: 'Spec document',
+  schema_object: 'Schema object',
+  auth_scheme: 'Auth scheme',
+  source_route: 'Source route',
+  config_item: 'Config item',
 };
 
 /** Node radius weight: size follows degree (edges to other nodes of the view), so hubs read as hubs. */

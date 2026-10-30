@@ -102,10 +102,10 @@ function withProvenance(overrides: Record<string, unknown>): Record<string, unkn
 describe('contract constants', () => {
   it('exports a semver contract version', () => {
     expect(SURFACE_CONTRACT_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
-    expect(SURFACE_CONTRACT_VERSION).toBe('1.0.0');
+    expect(SURFACE_CONTRACT_VERSION).toBe('1.1.0');
   });
 
-  it('lists the seven node kinds and six edge kinds of the epic scope', () => {
+  it('lists the seven recon node kinds, five spec-ingestion kinds, and the edge kinds', () => {
     expect(SURFACE_NODE_KINDS).toEqual([
       'asset',
       'host',
@@ -114,6 +114,11 @@ describe('contract constants', () => {
       'endpoint',
       'parameter',
       'role',
+      'spec_document',
+      'schema_object',
+      'auth_scheme',
+      'source_route',
+      'config_item',
     ]);
     expect(SURFACE_EDGE_KINDS).toEqual([
       'RESOLVES_TO',
@@ -122,6 +127,9 @@ describe('contract constants', () => {
       'SERVES',
       'HAS_PARAM',
       'CAN_ACCESS',
+      'DEFINED_IN',
+      'SECURED_BY',
+      'MAPS_TO',
     ]);
   });
 
@@ -159,6 +167,11 @@ describe('contract constants', () => {
       ],
       parameter: ['dataType', 'endpointKey', 'kind', 'location', 'name', 'provenance', 'tenantId'],
       role: ['assetId', 'kind', 'provenance', 'roleName', 'tenantId'],
+      spec_document: ['kind', 'provenance', 'specKind', 'tenantId', 'title', 'version'],
+      schema_object: ['kind', 'name', 'provenance', 'tenantId', 'type'],
+      auth_scheme: ['kind', 'name', 'provenance', 'schemeType', 'tenantId'],
+      source_route: ['file', 'handler', 'kind', 'provenance', 'tenantId'],
+      config_item: ['key', 'kind', 'provenance', 'scope', 'tenantId'],
     });
   });
 });

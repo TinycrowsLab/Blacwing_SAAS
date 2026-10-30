@@ -23,6 +23,11 @@ const NODE_LABELS: Readonly<Record<SurfaceNodeKind, string>> = Object.freeze({
   endpoint: 'Endpoint',
   parameter: 'Parameter',
   role: 'Role',
+  spec_document: 'SpecDocument',
+  schema_object: 'SchemaObject',
+  auth_scheme: 'AuthScheme',
+  source_route: 'SourceRoute',
+  config_item: 'ConfigItem',
 });
 
 /** MERGE a node on its tenant and natural key, then refresh its properties. */

@@ -215,10 +215,12 @@ describe('loadGraphMigrations', () => {
   });
 
   it('loads the committed 0001 migration with every surface key and index', () => {
-    const [first, second, ...rest] = loadGraphMigrations(GRAPH_MIGRATIONS_DIR);
+    const [first, second, third, ...rest] = loadGraphMigrations(GRAPH_MIGRATIONS_DIR);
     expect(first?.id).toBe('0001_surface_constraints');
     // 0002 is the Run and Observation sub-model (GRAPH-007); its own statements are checked in its own test.
     expect(second?.id).toBe('0002_run_observation_constraints');
+    // 0003 is the spec-ingestion labels (INGEST-001), checked in the integration test that writes them.
+    expect(third?.id).toBe('0003_spec_ingestion_constraints');
     expect(rest).toEqual([]);
     const text = first?.statements.join('\n') ?? '';
     const keys: Record<string, string> = {

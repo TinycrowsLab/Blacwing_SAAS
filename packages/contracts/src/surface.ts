@@ -21,7 +21,7 @@ import { httpMethodSchema, normaliseHost, normaliseIp, normalisePath } from './s
  * Semver of the surface contract. Bump the major on any breaking change to a node, edge or key shape.
  * GRAPH-006 snapshots record it.
  */
-export const SURFACE_CONTRACT_VERSION = '1.0.0';
+export const SURFACE_CONTRACT_VERSION = '1.1.0';
 
 export const SURFACE_NODE_KINDS = [
   'asset',
@@ -31,6 +31,11 @@ export const SURFACE_NODE_KINDS = [
   'endpoint',
   'parameter',
   'role',
+  'spec_document',
+  'schema_object',
+  'auth_scheme',
+  'source_route',
+  'config_item',
 ] as const;
 export const surfaceNodeKindSchema = z.enum(SURFACE_NODE_KINDS);
 export type SurfaceNodeKind = z.infer<typeof surfaceNodeKindSchema>;
@@ -42,6 +47,9 @@ export const SURFACE_EDGE_KINDS = [
   'SERVES',
   'HAS_PARAM',
   'CAN_ACCESS',
+  'DEFINED_IN',
+  'SECURED_BY',
+  'MAPS_TO',
 ] as const;
 export const surfaceEdgeKindSchema = z.enum(SURFACE_EDGE_KINDS);
 export type SurfaceEdgeKind = z.infer<typeof surfaceEdgeKindSchema>;
@@ -56,9 +64,13 @@ const SURFACE_CONTENT_TYPES_MAX = 32;
 const SURFACE_CONTENT_TYPE_MAX = 255;
 const CPE_PREFIX = 'cpe:2.3:';
 const MEDIA_TYPE = /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/;
-const PARAMETER_LOCATIONS = ['query', 'path', 'header', 'cookie', 'body'] as const;
+export const PARAMETER_LOCATIONS = ['query', 'path', 'header', 'cookie', 'body'] as const;
 const PROTOCOLS = ['tcp', 'udp'] as const;
 const ACCESS_EXPECTATIONS = ['allow', 'deny'] as const;
+/** The API description formats the spec-ingestion importers read (INGEST-003..009). */
+export const SPEC_KINDS = ['openapi', 'postman', 'graphql', 'har'] as const;
+export const specKindSchema = z.enum(SPEC_KINDS);
+export type SpecKind = z.infer<typeof specKindSchema>;
 /** Path segments that are concrete identifiers, replaced by `{id}` in `templatise`. */
 const ID_SEGMENT =
   /^(?:\d+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{16,})$/i;
@@ -111,6 +123,10 @@ export const provenanceSchema = z
     firstSeenAt: isoDateTimeSchema,
     lastSeenAt: isoDateTimeSchema,
     sourceEvidenceId: token(LIMITS.keyMax).optional(),
+    /** The ingestion manifest (`input_manifests`) an artefact-derived fact came from (§8.9). */
+    sourceManifestId: uuidV7Schema.optional(),
+    /** The artefact within that manifest, as the manifest names it (§8.9 pinning). */
+    sourceArtefactKey: token(LIMITS.keyMax).optional(),
   })
   .superRefine((value, ctx) => {
     if (isBefore(value.lastSeenAt, value.firstSeenAt)) {
@@ -184,6 +200,23 @@ const nodeBase = {
   tenantId: uuidV7Schema,
   provenance: provenanceSchema,
 } as const;
+
+/**
+ * Spec-ingestion nodes are attributable to the artefact they were read from: their natural key is scoped by
+ * `provenance.sourceArtefactKey`, so that key must be present.
+ */
+function requireSourceArtefact(
+  node: { readonly provenance: { readonly sourceArtefactKey?: string | undefined } },
+  ctx: z.RefinementCtx,
+): void {
+  if (node.provenance.sourceArtefactKey === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['provenance', 'sourceArtefactKey'],
+      message: 'spec-ingestion nodes must name their source artefact',
+    });
+  }
+}
 
 // ---------------------------------------------------------------------------------------------
 // Node schemas
@@ -275,6 +308,62 @@ export const roleNodeSchema = z.strictObject({
 });
 export type RoleNode = z.infer<typeof roleNodeSchema>;
 
+/** A parsed API description (OpenAPI, Postman, GraphQL or HAR) as one node. Its title and version are not keys. */
+export const specDocumentNodeSchema = z
+  .strictObject({
+    kind: z.literal('spec_document'),
+    ...nodeBase,
+    specKind: specKindSchema,
+    title: token(LIMITS.shortTextMax).optional(),
+    version: token(LIMITS.shortTextMax).optional(),
+  })
+  .superRefine(requireSourceArtefact);
+export type SpecDocumentNode = z.infer<typeof specDocumentNodeSchema>;
+
+/** A schema or type declared by a spec. Names and types only: never a sample or default value (§8.7). */
+export const schemaObjectNodeSchema = z
+  .strictObject({
+    kind: z.literal('schema_object'),
+    ...nodeBase,
+    name: token(LIMITS.parameterMax),
+    type: token(LIMITS.keyMax).optional(),
+  })
+  .superRefine(requireSourceArtefact);
+export type SchemaObjectNode = z.infer<typeof schemaObjectNodeSchema>;
+
+/** An authentication scheme a spec declares (for example an API key header or a bearer token). No secret value. */
+export const authSchemeNodeSchema = z
+  .strictObject({
+    kind: z.literal('auth_scheme'),
+    ...nodeBase,
+    schemeType: token(LIMITS.keyMax),
+    name: token(LIMITS.shortTextMax),
+  })
+  .superRefine(requireSourceArtefact);
+export type AuthSchemeNode = z.infer<typeof authSchemeNodeSchema>;
+
+/** A route that source code handles: the file and the handler function. */
+export const sourceRouteNodeSchema = z
+  .strictObject({
+    kind: z.literal('source_route'),
+    ...nodeBase,
+    file: token(LIMITS.urlMax),
+    handler: token(LIMITS.keyMax),
+  })
+  .superRefine(requireSourceArtefact);
+export type SourceRouteNode = z.infer<typeof sourceRouteNodeSchema>;
+
+/** A configuration item by key and scope. The value is never modelled (§8.7). */
+export const configItemNodeSchema = z
+  .strictObject({
+    kind: z.literal('config_item'),
+    ...nodeBase,
+    key: token(LIMITS.parameterMax),
+    scope: token(LIMITS.shortTextMax),
+  })
+  .superRefine(requireSourceArtefact);
+export type ConfigItemNode = z.infer<typeof configItemNodeSchema>;
+
 export const surfaceNodeSchema = z.discriminatedUnion('kind', [
   assetNodeSchema,
   hostNodeSchema,
@@ -283,12 +372,25 @@ export const surfaceNodeSchema = z.discriminatedUnion('kind', [
   endpointNodeSchema,
   parameterNodeSchema,
   roleNodeSchema,
+  specDocumentNodeSchema,
+  schemaObjectNodeSchema,
+  authSchemeNodeSchema,
+  sourceRouteNodeSchema,
+  configItemNodeSchema,
 ]);
 export type SurfaceNode = z.infer<typeof surfaceNodeSchema>;
 
 // ---------------------------------------------------------------------------------------------
 // Natural keys (GRAPH-002 uniqueness constraints)
 // ---------------------------------------------------------------------------------------------
+
+/**
+ * The artefact component of a spec-ingestion key. The schema guarantees the source artefact key is present on
+ * these kinds; it is percent-encoded because it is never the last component of its key.
+ */
+function artefactComponent(node: SurfaceNode): string {
+  return encodeURIComponent(node.provenance.sourceArtefactKey ?? '');
+}
 
 /**
  * The composite key of a node: the MERGE key in the graph and the `endpointKey` parameters refer to.
@@ -298,6 +400,16 @@ export type SurfaceNode = z.infer<typeof surfaceNodeSchema>;
 export function naturalKey(node: SurfaceNode): string {
   const prefix = `${node.kind}:${node.tenantId}`;
   switch (node.kind) {
+    case 'spec_document':
+      return `${prefix}:${artefactComponent(node)}`;
+    case 'schema_object':
+      return `${prefix}:${artefactComponent(node)}:${node.name}`;
+    case 'auth_scheme':
+      return `${prefix}:${artefactComponent(node)}:${node.name}`;
+    case 'source_route':
+      return `${prefix}:${artefactComponent(node)}:${encodeURIComponent(node.file)}:${node.handler}`;
+    case 'config_item':
+      return `${prefix}:${artefactComponent(node)}:${encodeURIComponent(node.scope)}:${node.key}`;
     case 'asset':
       return `${prefix}:${node.assetId}`;
     case 'host':
@@ -332,6 +444,14 @@ const SURFACE_EDGE_ENDPOINTS: Readonly<
   ],
   HAS_PARAM: [['endpoint', 'parameter']],
   CAN_ACCESS: [['role', 'endpoint']],
+  DEFINED_IN: [
+    ['endpoint', 'spec_document'],
+    ['parameter', 'spec_document'],
+    ['schema_object', 'spec_document'],
+    ['auth_scheme', 'spec_document'],
+  ],
+  SECURED_BY: [['endpoint', 'auth_scheme']],
+  MAPS_TO: [['source_route', 'endpoint']],
 };
 
 const edgeKeySchema = z.string().min(1).max(SURFACE_KEY_MAX);
@@ -390,6 +510,24 @@ export const hasParamEdgeSchema = z
   .superRefine((edge, ctx) => {
     checkLinkedKeys('HAS_PARAM', edge, ctx);
   });
+/** A node is defined in the spec document of its artefact. */
+export const definedInEdgeSchema = z
+  .strictObject({ ...edgeBase('DEFINED_IN') })
+  .superRefine((edge, ctx) => {
+    checkLinkedKeys('DEFINED_IN', edge, ctx);
+  });
+/** An endpoint is secured by one of the authentication schemes its spec declares. */
+export const securedByEdgeSchema = z
+  .strictObject({ ...edgeBase('SECURED_BY') })
+  .superRefine((edge, ctx) => {
+    checkLinkedKeys('SECURED_BY', edge, ctx);
+  });
+/** A source route handles an endpoint. */
+export const mapsToEdgeSchema = z
+  .strictObject({ ...edgeBase('MAPS_TO') })
+  .superRefine((edge, ctx) => {
+    checkLinkedKeys('MAPS_TO', edge, ctx);
+  });
 export const canAccessEdgeSchema = z
   .strictObject({
     ...edgeBase('CAN_ACCESS'),
@@ -405,6 +543,9 @@ export type RunsEdge = z.infer<typeof runsEdgeSchema>;
 export type ServesEdge = z.infer<typeof servesEdgeSchema>;
 export type HasParamEdge = z.infer<typeof hasParamEdgeSchema>;
 export type CanAccessEdge = z.infer<typeof canAccessEdgeSchema>;
+export type DefinedInEdge = z.infer<typeof definedInEdgeSchema>;
+export type SecuredByEdge = z.infer<typeof securedByEdgeSchema>;
+export type MapsToEdge = z.infer<typeof mapsToEdgeSchema>;
 
 export const surfaceEdgeSchema = z.discriminatedUnion('kind', [
   resolvesToEdgeSchema,
@@ -413,6 +554,9 @@ export const surfaceEdgeSchema = z.discriminatedUnion('kind', [
   servesEdgeSchema,
   hasParamEdgeSchema,
   canAccessEdgeSchema,
+  definedInEdgeSchema,
+  securedByEdgeSchema,
+  mapsToEdgeSchema,
 ]);
 export type SurfaceEdge = z.infer<typeof surfaceEdgeSchema>;
 

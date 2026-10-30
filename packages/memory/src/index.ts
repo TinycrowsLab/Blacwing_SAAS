@@ -57,3 +57,26 @@ export {
   withTenantGraph,
   type WithTenantGraphOptions,
 } from './graph/repository.js';
+// Spec ingestion (INGEST-001): the pure mapper, and its one write path through the GRAPH-005 upsert.
+export {
+  INGEST_ITEMS_MAX,
+  type ParsedArtefact,
+  type ParsedArtefactInput,
+  parsedArtefactSchema,
+  SPEC_INGESTION_PERSONA,
+  type SurfaceGraph,
+  type SurfaceMapContext,
+  type SurfaceMapContextInput,
+  surfaceMapContextSchema,
+  toSurfaceGraph,
+} from './ingest/surface-mapper.js';
+export {
+  INGEST_SURFACE_WRITTEN,
+  type IngestCountsByKind,
+  type IngestSurfaceEvents,
+  type IngestSurfaceMetrics,
+  type IngestSurfaceOptions,
+  type IngestSurfaceResult,
+  type IngestSurfaceWritten,
+  ingestSurfaceArtefact,
+} from './ingest/surface-ingest.js';

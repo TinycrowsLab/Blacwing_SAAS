@@ -74,6 +74,7 @@ describe('surface graph migrations against Neo4j 5', () => {
     expect(report.pending).toEqual([
       '0001_surface_constraints',
       '0002_run_observation_constraints',
+      '0003_spec_ingestion_constraints',
     ]);
     expect(isGraphMigrationReportClean(report)).toBe(false);
     expect(await namesOf('SHOW CONSTRAINTS YIELD name RETURN name')).not.toContain('asset_key');
@@ -81,7 +82,11 @@ describe('surface graph migrations against Neo4j 5', () => {
 
   it('creates every surface constraint and index on a fresh database', async () => {
     const applied = await runGraphMigrations(graph());
-    expect(applied).toEqual(['0001_surface_constraints', '0002_run_observation_constraints']);
+    expect(applied).toEqual([
+      '0001_surface_constraints',
+      '0002_run_observation_constraints',
+      '0003_spec_ingestion_constraints',
+    ]);
 
     const constraints = await namesOf('SHOW CONSTRAINTS YIELD name RETURN name');
     for (const name of [
@@ -92,6 +97,11 @@ describe('surface graph migrations against Neo4j 5', () => {
       'endpoint_key',
       'parameter_key',
       'role_key',
+      'spec_document_key',
+      'schema_object_key',
+      'auth_scheme_key',
+      'source_route_key',
+      'config_item_key',
     ]) {
       expect(constraints).toContain(name);
     }
@@ -108,7 +118,7 @@ describe('surface graph migrations against Neo4j 5', () => {
   });
 
   it('records the applied migration in the ledger with its checksum and statement count', async () => {
-    const [first, second] = loadGraphMigrations();
+    const [first, second, third] = loadGraphMigrations();
     const ledger = await neo4jMigrationStore(graph()).readLedger();
     expect(ledger).toEqual([
       {
@@ -123,6 +133,12 @@ describe('surface graph migrations against Neo4j 5', () => {
         status: 'applied',
         statementsApplied: second?.statements.length,
       },
+      {
+        id: '0003_spec_ingestion_constraints',
+        checksum: third?.checksum,
+        status: 'applied',
+        statementsApplied: third?.statements.length,
+      },
     ]);
   });
 
@@ -133,6 +149,7 @@ describe('surface graph migrations against Neo4j 5', () => {
     expect(report.applied).toEqual([
       '0001_surface_constraints',
       '0002_run_observation_constraints',
+      '0003_spec_ingestion_constraints',
     ]);
   });
 
