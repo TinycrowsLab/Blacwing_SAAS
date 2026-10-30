@@ -23,7 +23,7 @@ import { isNonPublicIp } from './addresses.js';
 import { parseDnsx, parseNaabu } from './parse.js';
 import { ToolError, type ToolErrorCode } from '../errors.js';
 
-import type { ReconExecutor, ReconTool, ScanTool } from './exec.js';
+import type { ExecTool, ReconExecutor, ScanTool } from './exec.js';
 import type { ReconMetrics } from './metrics.js';
 
 const PORT_MAX = 65_535;
@@ -107,7 +107,7 @@ export interface ReconBudget {
 
 /** One executed batch of probes, for the audit trail (§8.8). */
 export interface ProbeAuditEvent {
-  readonly tool: ReconTool;
+  readonly tool: ExecTool;
   readonly inputSummary: string;
   readonly durationMs: number;
   readonly outputBytes: number;

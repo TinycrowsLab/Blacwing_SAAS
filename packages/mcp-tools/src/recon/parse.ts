@@ -24,6 +24,18 @@ export interface HttpxRecord {
   readonly tech: readonly string[];
 }
 
+/**
+ * One fingerprinted service from `fingerprintx --json`: the canonical IP and port, the protocol fingerprintx
+ * identified, and the product and version it could read from the banner (both `null` when not disclosed).
+ */
+export interface FingerprintxResult {
+  readonly ip: string;
+  readonly port: number;
+  readonly protocol: string;
+  readonly product: string | null;
+  readonly version: string | null;
+}
+
 export interface Parsed<T> {
   readonly records: readonly T[];
   /** Lines that were not valid JSON or did not match the expected shape; never echoed (tool output is untrusted). */
@@ -31,6 +43,9 @@ export interface Parsed<T> {
 }
 
 const PORT_MAX = 65_535;
+const PROTOCOL = /^[a-z][a-z0-9_-]{0,63}$/;
+const PRODUCT = /^[A-Za-z0-9][A-Za-z0-9 ._+()/-]{0,127}$/;
+const PRODUCT_VERSION = /^[0-9A-Za-z][0-9A-Za-z.+:_~-]{0,63}$/;
 const URL_MAX = 2048;
 const TEXT_MAX = 256;
 const TECH_MAX = 128;
@@ -60,6 +75,17 @@ const naabuLineSchema = z
     protocol: z.enum(['tcp', 'udp']).default('tcp'),
   })
   .refine((line) => line.ip !== undefined || line.host !== undefined);
+
+const fingerprintxLineSchema = z.looseObject({
+  ip: z.string().optional(),
+  host: z.string().optional(),
+  port: z.int().min(1).max(PORT_MAX),
+  protocol: z.string(),
+  version: z.string().optional(),
+  metadata: z
+    .looseObject({ product: z.string().optional(), version: z.string().optional() })
+    .optional(),
+});
 
 function parseLines<T>(stdout: string, read: (json: unknown) => T | null): Parsed<T> {
   const records: T[] = [];
@@ -125,6 +151,30 @@ export function parseHttpx(stdout: string): Parsed<HttpxRecord> {
       title: line.data.title === undefined ? null : line.data.title.slice(0, TEXT_MAX),
       webserver: line.data.webserver === undefined ? null : line.data.webserver.slice(0, TECH_MAX),
       tech,
+    };
+  });
+}
+
+/**
+ * Parses `fingerprintx --json` output (one JSON object per line). A row needs an IP literal, a port and a
+ * protocol name; a product or version that does not match a strict character set is dropped (the service is kept
+ * as the protocol alone) because banner text is attacker-controlled. Versions are observations, never verdicts.
+ */
+export function parseFingerprintx(stdout: string): Parsed<FingerprintxResult> {
+  return parseLines(stdout, (json) => {
+    const line = fingerprintxLineSchema.safeParse(json);
+    if (!line.success) return null;
+    const ip = normaliseIp(line.data.ip ?? line.data.host ?? '');
+    const protocol = line.data.protocol.toLowerCase();
+    if (ip === null || !PROTOCOL.test(protocol)) return null;
+    const product = line.data.metadata?.product ?? null;
+    const version = line.data.metadata?.version ?? line.data.version ?? null;
+    return {
+      ip,
+      port: line.data.port,
+      protocol,
+      product: product !== null && PRODUCT.test(product) ? product : null,
+      version: version !== null && PRODUCT_VERSION.test(version) ? version : null,
     };
   });
 }

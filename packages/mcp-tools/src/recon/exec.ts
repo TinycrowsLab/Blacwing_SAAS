@@ -7,6 +7,10 @@ import { ToolError } from '../errors.js';
 export type ReconTool = 'dnsx' | 'httpx' | 'naabu';
 /** The tools that scan or resolve through the scope envelope (`httpx` probes are recorded by `probeHttp`). */
 export type ScanTool = Exclude<ReconTool, 'httpx'>;
+/** The protocol/product fingerprinter the infrastructure enumeration drives (INFRASPEC-003, MIT). */
+export type FingerprintTool = 'fingerprintx';
+/** Every binary the executor may run. */
+export type ExecTool = ReconTool | FingerprintTool;
 
 export interface ReconRunOptions {
   readonly stdin?: string;
@@ -21,12 +25,12 @@ export interface ReconRunOptions {
  * `TOOL_BACKEND_UNAVAILABLE` for anything else. Raw child output never leaves the adapter.
  */
 export interface ReconExecutor {
-  run(tool: ReconTool, args: readonly string[], options: ReconRunOptions): Promise<string>;
+  run(tool: ExecTool, args: readonly string[], options: ReconRunOptions): Promise<string>;
 }
 
 export interface SpawnExecutorOptions {
   /** Command (and leading arguments) per tool; defaults to the bare binary name. */
-  readonly commands?: Partial<Record<ReconTool, readonly [string, ...string[]]>>;
+  readonly commands?: Partial<Record<ExecTool, readonly [string, ...string[]]>>;
   /** Stdout cap in bytes; a tool that prints more is killed and fails. Default 16 MiB. */
   readonly maxOutputBytes?: number;
   /** Extra environment for every child (proxy variables for egress forcing). Nothing else is inherited. */
@@ -42,7 +46,7 @@ const CHILD_PATH = '/usr/local/bin:/usr/bin:/bin';
 export function createSpawnExecutor(options: SpawnExecutorOptions = {}): ReconExecutor {
   const maxBytes = options.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES;
   return {
-    run: (tool, args, { stdin, signal, timeoutMs }) =>
+    run: (tool: ExecTool, args, { stdin, signal, timeoutMs }) =>
       new Promise<string>((resolve, reject) => {
         const [command, ...lead] = options.commands?.[tool] ?? [tool];
         const failure = (message: string): ToolError =>
@@ -87,7 +91,8 @@ export const PROXYCHAINS_CONFIG = '/etc/proxychains/blackwing.conf';
 /**
  * Egress forcing for the recon binaries (§8.2): every child gets the gateway as its HTTP(S)/ALL proxy, and the
  * tools that ignore proxy variables (`naabu`, `dnsx`) run under `proxychains-ng`, which uses the gateway's
- * SOCKS5 listener. A child that still reaches out directly is stopped by the host firewall and NetworkPolicy.
+ * SOCKS5 listener (fingerprintx connects raw TCP, so it is forced the same way). A child that still reaches out
+ * directly is stopped by the host firewall and NetworkPolicy.
  */
 export function egressSpawnOptions(proxyUrl: string): SpawnExecutorOptions {
   const forced = ['proxychains4', '-q', '-f', PROXYCHAINS_CONFIG] as const;
@@ -100,6 +105,7 @@ export function egressSpawnOptions(proxyUrl: string): SpawnExecutorOptions {
     commands: {
       dnsx: [...forced, 'dnsx'] as const,
       naabu: [...forced, 'naabu'] as const,
+      fingerprintx: [...forced, 'fingerprintx'] as const,
     },
   };
 }

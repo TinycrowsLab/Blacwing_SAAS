@@ -53,6 +53,21 @@ JSON (`records` capped at 500, with `total` and `truncated`), raw stdout is stor
 comes from `egressSpawnOptions` (`proxychains-ng`). Metrics: `mcp_recon_runs_total{tool,result}`,
 `mcp_recon_duration_ms{tool}` (`createReconRunMetrics`); span `mcp.recon`.
 
+## Infrastructure service enumeration (INFRASPEC-003, #709)
+
+`enumerateServices(deps, { hosts, ports? })` (`src/recon/enumerate.ts`) confirms the listening services of in-scope
+hosts with `naabu` (through `discoverServices`, CONNECT mode) and fingerprints each confirmed service with
+`fingerprintx --json`. Only the pinned IP of a host is probed, only on ports the scope matcher allows (checked again
+before fingerprinting), and both binaries share the per-test-case request budget. Fingerprint targets go out in
+chunks of `FINGERPRINT_BATCH_MAX` (50). A product, and a version when the banner discloses one, is written as a
+`technology` node with a `runs` edge from its service, with `fingerprintx` provenance and confidence 0.85 (protocol
+only: 0.7). Rows that name no service asked for are counted in `coverage.recordsUnmatched` and dropped. Banner text
+that fails the product or version character sets is kept as the protocol alone (`parseFingerprintx`). A budget
+stop (request cap or gateway 4xx) ends the stage with `coverage.halted`; a kill or tool or audit failure propagates.
+Fingerprints are observations, never verdicts: version to CVE matching is INFRASPEC-006.
+Metrics: `infra_services_confirmed_total`, `infra_fingerprints_total` (`createInfraMetrics`); spans `tool.naabu`
+and `tool.fingerprintx`. `fingerprintx` runs under the same proxychains egress forcing as the other binaries.
+
 ## Tool-exposure matrix (MCP-015, #680)
 
 `src/exposure.ts` is the single source of which tools each of the 19 personas may call. `EXPOSURE_MATRIX`

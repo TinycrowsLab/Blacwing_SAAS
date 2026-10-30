@@ -61,6 +61,8 @@ export {
 } from './recon/discover.js';
 export {
   createSpawnExecutor,
+  type ExecTool,
+  type FingerprintTool,
   egressSpawnOptions,
   PROXYCHAINS_CONFIG,
   type ReconExecutor,
@@ -70,6 +72,15 @@ export {
   type SpawnExecutorOptions,
 } from './recon/exec.js';
 export {
+  createInfraMetrics,
+  type EnumerateDeps,
+  type EnumerateResult,
+  enumerateServices,
+  FINGERPRINT_BATCH_MAX,
+  type FingerprintedTechnology,
+  type InfraMetrics,
+} from './recon/enumerate.js';
+export {
   createReconMetrics,
   createReconRunMetrics,
   type ReconMetrics,
@@ -77,6 +88,8 @@ export {
 } from './recon/metrics.js';
 export {
   type DnsxRecord,
+  type FingerprintxResult,
+  parseFingerprintx,
   type HttpxRecord,
   type NaabuResult,
   type Parsed,

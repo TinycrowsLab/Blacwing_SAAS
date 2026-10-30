@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { isNonPublicIp } from './addresses.js';
-import { parseDnsx, parseHttpx, parseNaabu } from './parse.js';
+import { parseDnsx, parseFingerprintx, parseHttpx, parseNaabu } from './parse.js';
 
 describe('parseDnsx', () => {
   it('reads A and AAAA answers in order, canonicalised and de-duplicated', () => {
@@ -144,5 +144,46 @@ describe('parseHttpx', () => {
     expect(record?.title?.length).toBe(256);
     expect(record?.webserver?.length).toBe(128);
     expect(record?.tech).toHaveLength(32);
+  });
+});
+
+describe('parseFingerprintx', () => {
+  it('reads protocol, product and version, canonicalises the IP and counts malformed rows', () => {
+    const out = [
+      JSON.stringify({
+        ip: '203.0.113.7',
+        port: 22,
+        protocol: 'SSH',
+        metadata: { product: 'OpenSSH', version: '8.9p1' },
+      }),
+      JSON.stringify({ host: '2001:DB8:0:0:0:0:0:1', port: 443, protocol: 'https' }),
+      'not json',
+      JSON.stringify({ ip: '203.0.113.7', port: 80 }),
+      JSON.stringify({ ip: 'lab.example', port: 80, protocol: 'http' }),
+      JSON.stringify({ ip: '203.0.113.7', port: 70000, protocol: 'http' }),
+    ].join('\n');
+    const parsed = parseFingerprintx(out);
+    expect(parsed.records).toEqual([
+      { ip: '203.0.113.7', port: 22, protocol: 'ssh', product: 'OpenSSH', version: '8.9p1' },
+      { ip: '2001:db8::1', port: 443, protocol: 'https', product: null, version: null },
+    ]);
+    expect(parsed.malformed).toBe(4);
+  });
+
+  it('drops banner text that does not match the product and version character sets', () => {
+    const out = JSON.stringify({
+      ip: '203.0.113.7',
+      port: 80,
+      protocol: 'http',
+      metadata: { product: '<script>alert(1)</script>', version: '1.0; rm -rf /' },
+    });
+    expect(parseFingerprintx(out).records).toEqual([
+      { ip: '203.0.113.7', port: 80, protocol: 'http', product: null, version: null },
+    ]);
+  });
+
+  it('rejects a protocol name that is not a plain identifier', () => {
+    const out = JSON.stringify({ ip: '203.0.113.7', port: 80, protocol: 'ht tp\nX' });
+    expect(parseFingerprintx(out)).toEqual({ records: [], malformed: 1 });
   });
 });
