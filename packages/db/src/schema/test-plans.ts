@@ -134,7 +134,8 @@ export const testCases = pgTable(
     index('test_cases_test_plan_id_idx').on(t.testPlanId),
     index('test_cases_status_idx').on(t.status),
     index('test_cases_class_idx').on(t.class),
-    // Target of the composite foreign key from reversal_journal_entries (a journal entry names its own tenant's case).
+    // Target of the composite foreign keys from reversal_journal_entries and coverage_entries: a row can never name
+    // another tenant's case.
     unique('test_cases_tenant_id_id_unique').on(t.tenantId, t.id),
     // Composite foreign key: a case must reference a plan of its own tenant (RLS does not apply to FK checks).
     foreignKey({

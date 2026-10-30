@@ -54,6 +54,7 @@ describe('prefix registry', () => {
       [
         'areq',
         'asset',
+        'cov',
         'evd',
         'fnd',
         'kill',

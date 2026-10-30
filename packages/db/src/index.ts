@@ -209,6 +209,7 @@ export {
   type TestPlanRow,
   type TestPlanWithCases,
 } from './test-plans.repository.js';
+export { CoverageRepository, type CoverageManifestWithEntries } from './coverage.repository.js';
 export {
   type ChannelUpdateWrite,
   type NewChannelWrite,

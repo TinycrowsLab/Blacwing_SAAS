@@ -358,9 +358,15 @@ describe('coverage', () => {
   const manifest: CoverageManifestRow = {
     id: uuidOf(0x7001),
     tenantId: TENANT_A,
+    publicId: null,
     runId: RUN,
+    status: 'open',
     entries,
+    pins: null,
+    sha256: null,
+    summary: null,
     finalisedAt: null,
+    finalisedBy: null,
     createdAt: new Date('2026-10-29T10:00:00.000Z'),
     updatedAt: new Date('2026-10-29T10:00:00.000Z'),
   };

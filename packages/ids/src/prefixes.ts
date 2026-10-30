@@ -43,6 +43,8 @@ export const ID_PREFIXES = Object.freeze({
   sched: 'ScheduleId',
   /** Reversal journal entries (`reversal_journal_entries`, F20, CONTEXT_PACK §7). */
   rvj: 'ReversalJournalEntryId',
+  /** Coverage manifests (`coverage_manifests`, COVERAGE-001). */
+  cov: 'CoverageManifestId',
 } as const);
 
 /** A registered public-id prefix. */

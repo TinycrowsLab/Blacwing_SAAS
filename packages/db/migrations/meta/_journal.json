@@ -295,6 +295,13 @@
       "when": 1793398074895,
       "tag": "20261030220754_cost_ledger_unpriced_rows_and_run_price_pin",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1793400664410,
+      "tag": "20261030225104_coverage_entries_and_manifest_lifecycle",
+      "breakpoints": true
     }
   ]
 }

@@ -311,14 +311,20 @@ describe('GraphQL dashboard: findingTrend and coverageSummary', () => {
     const manifest: CoverageManifestRow = {
       id: uuidOf(0x7001),
       tenantId: TENANT_A,
+      publicId: null,
       runId: RUN,
+      status: 'finalised',
       entries: [
         { testCaseRef: 'tc-1', status: 'tested', reason: null },
         { testCaseRef: 'tc-2', status: 'tested', reason: null },
         { testCaseRef: 'tc-3', status: 'tested', reason: null },
         { testCaseRef: 'tc-4', status: 'not_tested', reason: 'out of scope' },
       ],
+      pins: {},
+      sha256: 'a'.repeat(64),
+      summary: {},
       finalisedAt: new Date('2026-10-29T11:00:00.000Z'),
+      finalisedBy: null,
       createdAt: new Date('2026-10-29T10:00:00.000Z'),
       updatedAt: new Date('2026-10-29T10:00:00.000Z'),
     };

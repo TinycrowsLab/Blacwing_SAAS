@@ -475,6 +475,17 @@ export {
   runManifestSchema,
 } from './entities/report.js';
 export {
+  COVERAGE_JSON_MAX_BYTES,
+  COVERAGE_MANIFEST_STATUSES,
+  COVERAGE_OUTCOMES,
+  type CoverageManifestEntry,
+  coverageManifestEntrySchema,
+  type CoverageManifestStatus,
+  coverageManifestStatusSchema,
+  type CoverageOutcome,
+  coverageOutcomeSchema,
+} from './entities/coverage.js';
+export {
   AUDIT_ACTION_CATALOGUE,
   AUDIT_ACTION_CLASSES,
   AUDIT_ACTIONS,

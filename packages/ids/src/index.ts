@@ -15,6 +15,7 @@ export {
   ApiTokenId,
   AssessmentRequestId,
   AssetId,
+  CoverageManifestId,
   defineIdType,
   EvidenceId,
   FindingId,
