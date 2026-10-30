@@ -23,6 +23,7 @@ export {
   KillEventId,
   OobId,
   RunId,
+  ScheduleId,
   SessionId,
   StandingAuthorisationId,
   SubtaskId,

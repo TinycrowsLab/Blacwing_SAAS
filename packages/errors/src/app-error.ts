@@ -90,6 +90,17 @@ export class ValidationError extends AppError {
   }
 }
 
+/** `SCHEDULE_NO_ASSETS` (422): a recurring-run schedule must bind at least one asset (SCHED-001). */
+export class ScheduleNoAssetsError extends AppError {
+  declare readonly code: 'SCHEDULE_NO_ASSETS';
+  constructor(options: AppErrorOptions = {}) {
+    super('SCHEDULE_NO_ASSETS', 'schedule has no assets', {
+      detail: 'A schedule must cover at least one asset.',
+      ...options,
+    });
+  }
+}
+
 /** `UNAUTHENTICATED` (401): no valid credentials (session cookie, PAT or CI token). */
 export class AuthError extends AppError {
   declare readonly code: 'UNAUTHENTICATED';

@@ -162,3 +162,24 @@ Schema in `src/schema/cost.ts`; the migration is the `*_cost_ledger_price_tables
 - Money is `numeric` (never float). The enums and the model-id rule (exact ids, no date suffix) come from
   `@blackwing/contracts` (`COST_PROVIDERS`, `COST_STAGES`, `costModelIdSchema`) and are also CHECK constraints.
 - Ingestion (COST-002), pricing (COST-003) and aggregation (COST-004) are separate issues.
+
+## Recurring-run schedules and blackout windows (SCHED-001)
+
+`src/schema/schedules.ts` holds `schedules` (a cron definition bound to a standing authorisation and a non-empty set of
+assets, public id `sched_…`) and `blackout_windows` (a half-open suppression window for the tenant or named assets).
+Both are tenant tables with FORCE RLS and DML-only grants for `bw_app`; the enums and caps come from
+`@blackwing/contracts` (`entities/schedules.ts`).
+
+- **The SA reference is tenant-scoped.** `(tenant_id, sa_id)` references `standing_authorisations(tenant_id, id)` (the
+  unique key `standing_authorisations_tenant_id_id_key` exists for it). A plain `id` foreign key would not stop a
+  cross-tenant SA, because referential checks do not apply RLS. The key is `NOT VALID`, as in the earlier migrations.
+- **Cron and timezone are opaque text here.** Only non-emptiness and length are checked; SCHED-002 validates them.
+- **Service checks.** `ScheduleRepository` (`src/schedules.repository.ts`) parses the input with the contract, refuses an
+  empty asset list as `SCHEDULE_NO_ASSETS` before any write, and checks the SA inside the tenant transaction (another
+  tenant's SA is `NOT_FOUND`).
+- **Metric.** `schedules_total{enabled}` is a sampled gauge (`src/schedules.metrics.ts`); the scheduler reports counts with `record`.
+- **Down migration.** `migrations/down/20261030171213_schedules.sql` is the dev-only reverse, refused in production.
+
+Tests: `src/schema/schedules.test.ts` (shape and migration), `src/schedules.rls.int.test.ts` (tenant isolation, CHECK
+negatives, FK, privileges, repository checks), `src/schedules.metrics.test.ts`, and the cross-tenant seeders in
+`src/tenant-isolation.int.test.ts`.

@@ -188,6 +188,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   CONNECTOR_NOT_FOUND: 404,
   CONNECTOR_UPSTREAM_ERROR: 502,
   CONNECTOR_VALIDATION: 422,
+  SCHEDULE_NO_ASSETS: 422,
   INTERNAL: 500,
 };
 
@@ -475,6 +476,7 @@ describe('error-code registry', () => {
       | 'CONNECTOR_UPSTREAM_ERROR'
       | 'CONNECTOR_VALIDATION'
       | 'MEMORY_EMBED_DIM_MISMATCH'
+      | 'SCHEDULE_NO_ASSETS'
       | 'INTERNAL'
     >();
     expectTypeOf<HttpStatusOf<'NOT_FOUND'>>().toEqualTypeOf<404>();

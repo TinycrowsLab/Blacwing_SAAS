@@ -246,6 +246,13 @@
       "when": 1793352193042,
       "tag": "20261030092313_notification_channels",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793380333303,
+      "tag": "20261030171213_schedules",
+      "breakpoints": true
     }
   ]
 }

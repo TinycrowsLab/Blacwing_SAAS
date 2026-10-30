@@ -310,6 +310,26 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, createHash('sha256').update(randomBytes(32)).digest()],
     );
   },
+  schedules: async (tx, tenantId) => {
+    const saId = newId();
+    await tx.query(
+      `INSERT INTO standing_authorisations (id, tenant_id, public_id, asset_ids, scope_rules, max_intrusiveness, default_budgets, test_windows, valid_from, expires_at, requester_id)
+       VALUES ($1, $2, $3, $4::uuid[], '{}', 'passive', '{}', '[]', now(), now() + interval '30 days', $5)`,
+      [saId, tenantId, `sa_${randomBytes(8).toString('hex')}`, [newId()], newId()],
+    );
+    await tx.query(
+      `INSERT INTO schedules (id, tenant_id, public_id, name, asset_ids, sa_id, mode, cron_expr, timezone, created_by)
+       VALUES ($1, $2, $3, 'isolation', $4::uuid[], $5, 'grey', '0 2 * * *', 'UTC', $6)`,
+      [newId(), tenantId, `sched_${randomBytes(13).toString('hex')}`, [newId()], saId, newId()],
+    );
+  },
+  blackout_windows: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO blackout_windows (id, tenant_id, scope, starts_at, ends_at, created_by)
+       VALUES ($1, $2, 'tenant', now(), now() + interval '1 hour', $3)`,
+      [newId(), tenantId, newId()],
+    );
+  },
   standing_authorisations: async (tx, tenantId) => {
     await tx.query(
       `INSERT INTO standing_authorisations (id, tenant_id, public_id, asset_ids, scope_rules, max_intrusiveness, default_budgets, test_windows, valid_from, expires_at, requester_id)

@@ -22,6 +22,7 @@ export {
   type KillSwitchActiveErrorOptions,
   NotFoundError,
   PlanPayloadTooLargeError,
+  ScheduleNoAssetsError,
   PlanVersionImmutableError,
   PreconditionFailedError,
   PreconditionRequiredError,

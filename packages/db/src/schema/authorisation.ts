@@ -45,6 +45,9 @@ function inList(values: readonly string[]) {
 /** Name of the unique index behind `(tenant_id, public_id)`-style lookups of an SA by its public id. */
 export const SA_PUBLIC_ID_KEY = 'standing_authorisations_public_id_key';
 
+/** Name of the unique `(tenant_id, id)` key that tenant-scoped foreign keys reference (SCHED-001). */
+export const SA_TENANT_ID_ID_KEY = 'standing_authorisations_tenant_id_id_key';
+
 export const standingAuthorisations = pgTable(
   'standing_authorisations',
   {
@@ -85,6 +88,8 @@ export const standingAuthorisations = pgTable(
   },
   (t) => [
     unique(SA_PUBLIC_ID_KEY).on(t.publicId),
+    // Target of the tenant-scoped foreign key from `schedules` (SCHED-001): a schedule can only bind its own tenant's SA.
+    unique(SA_TENANT_ID_ID_KEY).on(t.tenantId, t.id),
     index('standing_authorisations_tenant_id_idx').on(t.tenantId),
     index('standing_authorisations_status_idx').on(t.status),
     index('standing_authorisations_expires_at_idx').on(t.expiresAt),

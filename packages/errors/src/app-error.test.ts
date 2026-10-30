@@ -6,6 +6,7 @@ import {
   AuthError,
   EtagMismatchError,
   PlanPayloadTooLargeError,
+  ScheduleNoAssetsError,
   PlanVersionImmutableError,
   TestCaseNotFoundError,
   TestPlanNotFoundError,
@@ -76,6 +77,12 @@ const SUBCLASSES: readonly (readonly [
     'PLAN_PAYLOAD_TOO_LARGE',
     (o) => new PlanPayloadTooLargeError('too big', o),
     PlanPayloadTooLargeError,
+  ],
+  [
+    'ScheduleNoAssetsError',
+    'SCHEDULE_NO_ASSETS',
+    (o) => new ScheduleNoAssetsError(o),
+    ScheduleNoAssetsError,
   ],
   ['ConflictError', 'CONFLICT', (o) => new ConflictError('duplicate', o), ConflictError],
   [
