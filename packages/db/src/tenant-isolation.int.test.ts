@@ -90,6 +90,24 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, findingId, runId],
     );
   },
+  finding_intel: async (tx, tenantId) => {
+    const findingId = newId();
+    await tx.query(
+      `INSERT INTO findings (id, tenant_id, public_id, fingerprint, title, class, asset_id, location, status, run_id, first_seen_run_id, last_seen_run_id, cwe_id, owasp_category)
+       VALUES ($1, $2, $3, $4, 'iso finding', 'iso_class', $5, '{"urlTemplate":"/iso"}', 'candidate', $5, $5, $5, 'CWE-89', 'A03')`,
+      [
+        findingId,
+        tenantId,
+        `fnd_${findingId.replaceAll('-', '')}`,
+        createHash('sha256').update(randomBytes(8)).digest('hex'),
+        newId(),
+      ],
+    );
+    await tx.query(
+      `INSERT INTO finding_intel (tenant_id, finding_id, cve_id, kev, epss) VALUES ($1, $2, 'CVE-2024-12345', false, 0.1)`,
+      [tenantId, findingId],
+    );
+  },
   evidence_items: async (tx, tenantId) => {
     const runId = newId();
     await tx.query(

@@ -933,6 +933,7 @@ export {
 } from './gate/decision.js';
 export * from './test-plan-api.js';
 export * from './test-plan-validation.js';
+export * from './intel.js';
 export {
   GATE2_ACTION_SUMMARY_INPUT_MAX,
   GATE2_ACTION_SUMMARY_MAX,

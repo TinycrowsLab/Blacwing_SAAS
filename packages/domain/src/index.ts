@@ -267,3 +267,5 @@ export {
   isGate2Terminal,
   nextGate2Version,
 } from './gate2/state.js';
+
+export { type CveRecord, cveRecordSchema } from './intel/model.js';

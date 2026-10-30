@@ -211,6 +211,13 @@
       "when": 1793336169706,
       "tag": "20261030045609_report_model_sources",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1793341820947,
+      "tag": "20261030063020_intel_mirror_schema",
+      "breakpoints": true
     }
   ]
 }

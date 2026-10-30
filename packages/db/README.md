@@ -120,3 +120,32 @@ writes the next version with its cases in one transaction and reads plans back, 
   The migration's CHECK is a 64 KiB backstop, so an oversized value fails closed.
 - Titles and refs are UTF-8 text with no truncation; the API enforces their length.
 - Concurrent writers of one run race on `(run_id, version)`: the loser gets `ConcurrencyError` (412) and retries.
+
+## Vulnerability-intelligence mirror (INTEL-001)
+
+`src/schema/intel.ts` holds the local mirror that the ingestion jobs (INTEL-002..006) populate and the matcher and
+enrichment read (INTEL-007, 009, 010). The shared values (OWASP schemes, sources, sync statuses, size caps) live in
+`INTEL_LIMITS` in `@blackwing/contracts`, and the read-model schemas in `@blackwing/domain` (`intel/model.ts`).
+
+| Table | Scope | Notes |
+| --- | --- | --- |
+| `cve_records` | reference | Keyed by `cve_id`. A CVSS block is `NULL` when the source publishes no vector. `cpe_matches` is capped at 64 KiB per record. |
+| `kev_entries`, `epss_scores` | reference | CISA KEV and FIRST EPSS. Probabilities are CHECKed to `[0, 1]`. |
+| `osv_advisories`, `cwe_catalogue` | reference | Package ranges and the CWE graph, as published, with byte caps. |
+| `owasp_mappings` | reference | Keyed by `(scheme, code)`; `scheme` is `top10_2021` or `api_top10_2023`. |
+| `source_sync_state` | reference | One row per source: incremental cursor, freshness and last error. |
+| `finding_intel` | tenant | Forced RLS and a composite foreign key to `findings(tenant_id, id)`. The only tenant-scoped table here. |
+
+- **Reference tables are read-only for `bw_app`.** The owner's default privileges grant DML on every new table, so the
+  migration revokes it again. Writes come from the ingestion role, granted by its own migration. The mirror's own
+  writer, `upsertCveRecords`, runs on the owner pool and parses every record with the domain schema first.
+- **One row per CVE.** `upsertCveRecords` merges a batch to the newest record per `cve_id`, then upserts. A stored row is
+  replaced only by an equal or newer `source_updated`, so re-running a sync is idempotent and never regresses.
+- **Metric.** `createIntelMirrorRowsMetric(meter)` exports `intel_mirror_rows{table}`. `countIntelMirrorRows(db)` gives the
+  counts that ingestion reports after each sync.
+- The `finding_intel_finding_fk` foreign key is `NOT VALID`, for the same reason as `verification_challenges`: `findings` is
+  FORCE RLS, so validating it as the owner is refused. Inserts are still checked by the referential-integrity trigger.
+
+Tests: `src/intel-mirror.rls.int.test.ts` (Testcontainers: read-only reference tables, CHECK negatives, upsert rules,
+tenant isolation of `finding_intel`) and `src/intel-mirror.metrics.test.ts`. The domain schemas are in
+`packages/domain/src/intel/model.test.ts`.

@@ -17,3 +17,4 @@ export * from './evidence.js';
 export * from './oncall.js';
 export * from './gate2.js';
 export * from './coverage-manifests.js';
+export * from './intel.js';
