@@ -62,3 +62,7 @@ next-env.d.ts
 
 # Demo runtime state (scripts/demo.mjs): logs and pids
 .demo/
+
+# k6 load-test JSON summaries (infra/perf, PERF-001); the directory itself is kept by .gitkeep.
+infra/perf/results/*
+!infra/perf/results/.gitkeep

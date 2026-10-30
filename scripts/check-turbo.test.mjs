@@ -203,7 +203,10 @@ describe('check-turbo against this repository', () => {
     });
     for (const [name, command] of Object.entries(ROOT_TURBO_SCRIPTS))
       assert.equal(scripts[name], command);
-    assert.equal(scripts['test:scripts'], 'node --test "scripts/**/*.test.mjs"');
+    assert.equal(
+      scripts['test:scripts'],
+      'node --test "scripts/**/*.test.mjs" "infra/perf/**/*.test.mjs"',
+    );
   });
 
   it('pins the turbo devDependency to the installed version', () => {

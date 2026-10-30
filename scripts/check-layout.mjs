@@ -69,7 +69,7 @@ export const EXPECTED_PACKAGES = Object.freeze([
 
 /** Fixed directories whose immediate children must match exactly. */
 export const EXPECTED_DIRS = Object.freeze({
-  infra: Object.freeze(['tofu', 'helm', 'k3s', 'docker', 'compose', 'keycloak']),
+  infra: Object.freeze(['tofu', 'helm', 'k3s', 'docker', 'compose', 'keycloak', 'perf']),
   eval: Object.freeze(['targets', 'ground-truth', 'harness']),
   docs: Object.freeze(['adr', 'architecture', 'runbooks', 'api', 'user']),
 });

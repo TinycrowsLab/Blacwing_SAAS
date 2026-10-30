@@ -749,6 +749,8 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=3d'
+      # k6 load runs push k6_* metrics here (infra/perf, PERF-001).
+      - '--web.enable-remote-write-receiver'
     ports:
       - '127.0.0.1:${BW_DEV_PROMETHEUS_PORT:-19090}:9090'
     volumes:

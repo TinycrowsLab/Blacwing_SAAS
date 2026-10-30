@@ -46,6 +46,16 @@ export const NEXT_ROUTE_FILES = [
 ];
 
 /**
+ * k6 scripts and their ambient type declaration (infra/perf, PERF-001). k6 runs the VU function from the script's
+ * default export and reads `options`, `handleSummary` and friends by name, so the default export is required.
+ */
+export const K6_SCRIPT_FILES = [
+  'infra/perf/k6/*.js',
+  'infra/perf/fixtures/*.js',
+  'infra/perf/k6-env.d.ts',
+];
+
+/**
  * Storybook files, which Storybook loads through a default export: the `.storybook/` config and the
  * Component Story Format `default` meta in each `*.stories.tsx` (packages/ui, issue #271).
  */
@@ -292,7 +302,7 @@ export default defineConfig(
 
   {
     name: 'blackwing/config-files',
-    files: [...CONFIG_FILES, ...NEXT_ROUTE_FILES, ...STORYBOOK_FILES],
+    files: [...CONFIG_FILES, ...NEXT_ROUTE_FILES, ...STORYBOOK_FILES, ...K6_SCRIPT_FILES],
     rules: {
       'import/no-default-export': 'off',
     },
