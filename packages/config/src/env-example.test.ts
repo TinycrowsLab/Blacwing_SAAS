@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 import { zPort } from './coerce.js';
 import { loadConfig } from './env.js';
-import { baseEnvSchema, databaseEnvSchema, valkeyEnvSchema } from './schema.js';
+import { baseEnvSchema, databaseEnvSchema, oobEnvShape, valkeyEnvSchema } from './schema.js';
 
 const examplePath = join(dirname(fileURLToPath(import.meta.url)), '../../../.env.example');
 
@@ -31,6 +31,11 @@ describe('.env.example vs @blackwing/config schemas', () => {
     const schema = baseEnvSchema.extend(databaseEnvSchema.shape).extend(valkeyEnvSchema.shape);
     expect(() => loadConfig(schema, env)).not.toThrow();
     expect(env.TEMPORAL_ADDRESS).toMatch(/^[\d.]+:\d+$/);
+  });
+
+  it('declares every out-of-band listener key the oob slice reads (OOB-002)', () => {
+    for (const key of Object.keys(oobEnvShape)) expect(env).toHaveProperty(key);
+    expect(env.OOB_SERVER_URL).toMatch(/^https?:\/\//);
   });
 
   it('uses the fixed dev ports for compose-backed services', () => {

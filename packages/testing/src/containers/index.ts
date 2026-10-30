@@ -3,6 +3,7 @@
 
 export { readTestEnv, resolveReuse, type TestEnv } from './env.js';
 export { isDigestPinned, TEST_IMAGES, type TestImageName } from './images.js';
+export { type InteractshHandle, withInteractsh, type WithInteractshOptions } from './interactsh.js';
 export { type MinioHandle, withMinio, type WithMinioOptions } from './minio.js';
 export { type Neo4jHandle, runForTenant, withNeo4j, type WithNeo4jOptions } from './neo4j.js';
 export {

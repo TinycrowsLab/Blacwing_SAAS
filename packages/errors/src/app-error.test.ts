@@ -146,6 +146,12 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   // AuthzSodViolationError and StepUpRequiredError, apps/api standing-authorisation approval (AUTHZ-008, #380).
   'AUTHZ_SOD_VIOLATION',
   'AUTHZ_STEPUP_REQUIRED',
+  // Out-of-band client, @blackwing/oob (OOB-002): thrown as plain AppErrors with a detail; no per-code subclass.
+  'OOB_REGISTER_FAILED',
+  'OOB_POLL_FAILED',
+  'OOB_DEREGISTER_FAILED',
+  'OOB_DECRYPT_FAILED',
+  'OOB_PROTOCOL_INCOMPATIBLE',
   // MemoryEmbedDimMismatchError, @blackwing/db query errors (MEMORY-001): thrown from the Postgres mapping.
   'MEMORY_EMBED_DIM_MISMATCH',
   // PolicyBuilderError, @blackwing/policy rule-builder compiler (POLICY-004): carries the issues with JSON pointers.

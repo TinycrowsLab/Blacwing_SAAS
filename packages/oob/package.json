@@ -10,12 +10,20 @@
   },
   "scripts": {
     "lint": "eslint . --max-warnings=0",
-    "test": "vitest run",
+    "test": "vitest run --configLoader runner --config src/vitest.config.ts",
+    "test:int": "vitest run --configLoader runner --config src/vitest.int.config.ts",
     "typecheck": "tsc -b --pretty false"
   },
   "devDependencies": {
+    "@blackwing/testing": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/logger": "workspace:*",
+    "@blackwing/telemetry": "workspace:*",
+    "zod": "catalog:"
   }
 }

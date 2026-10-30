@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { zBool, zSecretUrl, zUrl } from './coerce.js';
+import { zBool, zSecret, zSecretUrl, zString, zUrl } from './coerce.js';
 
 /** Deployment environments (CONTEXT_PACK §10). */
 export const NODE_ENVS = ['development', 'test', 'staging', 'production'] as const;
@@ -58,3 +58,16 @@ export const valkeyEnvShape = {
 } as const;
 export const valkeyEnvSchema = z.object(valkeyEnvShape);
 export type ValkeyEnv = z.output<typeof valkeyEnvSchema>;
+
+/**
+ * Out-of-band listener (interactsh, OOB-002 #636). Only the polling worker and the OOB MCP tools read
+ * these, so the slice is opt-in. `OOB_SERVER_TOKEN` is a secret (the server's `-token`) and is never
+ * logged. `OOB_DOMAIN` is the zone the listener answers for (`<correlationId><nonce>.<domain>`).
+ */
+export const oobEnvShape = {
+  OOB_SERVER_URL: zUrl({ protocols: ['http:', 'https:'] }),
+  OOB_SERVER_TOKEN: zSecret(),
+  OOB_DOMAIN: zString({ trim: true }),
+} as const;
+export const oobEnvSchema = z.object(oobEnvShape);
+export type OobEnv = z.output<typeof oobEnvSchema>;

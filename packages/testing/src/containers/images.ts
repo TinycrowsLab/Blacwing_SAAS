@@ -16,6 +16,9 @@ export const TEST_IMAGES = Object.freeze({
   /** Valkey 8 (Redis-compatible, BSD). §5 queue/cache. */
   valkey:
     'valkey/valkey:8.1.4-alpine@sha256:e706d1213aaba6896c162bb6a3a9e1894e1a435f28f8f856d14fab2e10aa098b',
+  /** interactsh-server (projectdiscovery, MIT), the out-of-band listener (INFRA-010). Same pin as the dev compose stack. */
+  interactsh:
+    'projectdiscovery/interactsh-server:v1.2.4@sha256:ffde50de2cdc9113b9bb024d9dbe63a7a4826de213be1cc63a7ffd5fd3b14481',
   /** MinIO with object locking (dev/test stand-in for S3 Object Lock). §5 object storage. */
   minio:
     'cgr.dev/chainguard/minio:latest@sha256:cff197fef764642223ef9f4444c903d51aee9b544a7be8bc007fef6b7b00d136',
