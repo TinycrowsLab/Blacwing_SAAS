@@ -1,6 +1,9 @@
+import { isIP } from 'node:net';
+
 import { z } from 'zod';
 
 import { baseEnvSchema, loadConfig, zDurationMs, zPort, type EnvSource } from '@blackwing/config';
+import { DNS_TXT_DEFAULTS } from '@blackwing/domain';
 
 import { parseTaskQueues, type TaskQueueName } from './task-queues.js';
 
@@ -42,15 +45,6 @@ const sampleRates = z
     return rates;
   });
 
-const workerEnvSchema = baseEnvSchema.extend({
-  TEMPORAL_MAX_ACTIVITY_CONCURRENCY: positiveInt.default(DEFAULT_MAX_ACTIVITY_CONCURRENCY),
-  TEMPORAL_MAX_WORKFLOW_CONCURRENCY: positiveInt.default(DEFAULT_MAX_WORKFLOW_CONCURRENCY),
-  WORKER_TASK_QUEUES: z.string().optional(),
-  WORKER_HEALTH_PORT: zPort().default(DEFAULT_HEALTH_PORT),
-  WORKER_SHUTDOWN_GRACE: zDurationMs().default(DEFAULT_SHUTDOWN_GRACE_MS),
-  AUDIT_ACTIVITY_SAMPLE: sampleRates,
-});
-
 /** Validated worker process settings. */
 export interface WorkerConfig {
   readonly maxConcurrentActivityTaskExecutions: number;
@@ -73,6 +67,68 @@ export function parseWorkerConfig(source: EnvSource = process.env): WorkerConfig
     healthPort: env.WORKER_HEALTH_PORT,
     shutdownGraceMs: env.WORKER_SHUTDOWN_GRACE,
     auditActivitySample: env.AUDIT_ACTIVITY_SAMPLE,
+  };
+}
+
+/** Trusted DNS upstreams of the TXT ownership probe (`ip` or `ip:port`, IPv4 with a port). */
+const dnsResolvers = z
+  .string()
+  .default('1.1.1.1,9.9.9.9')
+  .transform((value, ctx) => {
+    const servers = value
+      .split(',')
+      .map((part) => part.trim())
+      .filter((part) => part !== '');
+    const valid = servers.every(
+      (server) => isIP(server) !== 0 || /^\d{1,3}(\.\d{1,3}){3}:\d{1,5}$/.test(server),
+    );
+    if (servers.length === 0 || !valid) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'must be a comma list of IP addresses, optionally with a port (ip:port)',
+      });
+      return z.NEVER;
+    }
+    return servers;
+  });
+
+/** Non-negative integer from a string env value (zero is a valid retry count). */
+const nonNegativeInt = z
+  .string()
+  .regex(/^(0|[1-9][0-9]{0,2})$/, 'must be a non-negative integer')
+  .transform(Number);
+
+const workerEnvSchema = baseEnvSchema.extend({
+  TEMPORAL_MAX_ACTIVITY_CONCURRENCY: positiveInt.default(DEFAULT_MAX_ACTIVITY_CONCURRENCY),
+  TEMPORAL_MAX_WORKFLOW_CONCURRENCY: positiveInt.default(DEFAULT_MAX_WORKFLOW_CONCURRENCY),
+  WORKER_TASK_QUEUES: z.string().optional(),
+  WORKER_HEALTH_PORT: zPort().default(DEFAULT_HEALTH_PORT),
+  WORKER_SHUTDOWN_GRACE: zDurationMs().default(DEFAULT_SHUTDOWN_GRACE_MS),
+  AUDIT_ACTIVITY_SAMPLE: sampleRates,
+  /** `bw.asset.dns.*`: the pinned resolver set and the probe bounds of the DNS TXT ownership probe. */
+  ASSET_DNS_RESOLVERS: dnsResolvers,
+  ASSET_DNS_TIMEOUT_MS: positiveInt.default(DNS_TXT_DEFAULTS.timeoutMs),
+  ASSET_DNS_RETRIES: nonNegativeInt.default(DNS_TXT_DEFAULTS.retries),
+  ASSET_DNS_MAX_RECORDS: positiveInt.default(DNS_TXT_DEFAULTS.maxRecords),
+});
+
+/** Settings for the DNS TXT ownership probe (ASSET-005). */
+export interface DnsVerificationConfig {
+  /** Trusted upstreams the probe queries (`ASSET_DNS_RESOLVERS`). Nothing else is ever queried. */
+  readonly resolvers: readonly string[];
+  readonly timeoutMs: number;
+  readonly retries: number;
+  readonly maxRecords: number;
+}
+
+/** Parses the DNS probe settings. Throws on an invalid resolver address or bound. */
+export function parseDnsVerificationConfig(source: EnvSource = process.env): DnsVerificationConfig {
+  const env = loadConfig(workerEnvSchema, source);
+  return {
+    resolvers: env.ASSET_DNS_RESOLVERS,
+    timeoutMs: env.ASSET_DNS_TIMEOUT_MS,
+    retries: env.ASSET_DNS_RETRIES,
+    maxRecords: env.ASSET_DNS_MAX_RECORDS,
   };
 }
 

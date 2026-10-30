@@ -36,6 +36,12 @@ export {
 } from './assets/verification/machine.js';
 export { base32Encode, newVerificationToken } from './assets/verification/token.js';
 export {
+  capDnsTxtValues,
+  DNS_TXT_DEFAULTS,
+  matchesDnsTxt,
+  normaliseTxtValue,
+} from './assets/verification/dns-txt.js';
+export {
   DNS_CHALLENGE_LABEL,
   expectedLocationOf,
   HTTP_CHALLENGE_PATH,

@@ -70,6 +70,21 @@ export { computeSaTimeline } from './sa-bounds/timeline.js';
 export type * from './sa-bounds/ports.js';
 export * from './sa-bounds/types.js';
 export {
+  createVerificationDnsActivities,
+  type VerificationDnsActivities,
+  type VerificationDnsActivityDeps,
+  type VerifyDnsTxtInput,
+  type VerifyDnsTxtResult,
+} from './verification/dns-txt/activities.js';
+export { createPgVerificationDnsStore } from './verification/dns-txt/store-pg.js';
+export { createOtelVerificationDnsMetrics } from './verification/dns-txt/metrics.js';
+export { createPinnedDnsResolver, type DnsResolver } from './verification/dns-txt/resolver.js';
+export {
+  DnsResolverUnavailableError,
+  observeDnsTxt,
+  type DnsTxtObservation,
+} from './verification/dns-txt/observe.js';
+export {
   createPostExecutionActivities,
   type PostExecutionActivityDeps,
 } from './run/postexec/activities.js';

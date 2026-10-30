@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseKillChaosConfig, parseWorkerConfig } from './config.js';
+import { parseDnsVerificationConfig, parseKillChaosConfig, parseWorkerConfig } from './config.js';
 import { ALL_TASK_QUEUES } from './task-queues.js';
 
 const base = { NODE_ENV: 'test' } as const;
@@ -121,4 +121,55 @@ describe('parseKillChaosConfig (KILL-008)', () => {
       );
     },
   );
+});
+
+describe('parseDnsVerificationConfig (ASSET-005)', () => {
+  it('defaults to the public upstream pair and the issue bounds (5 s, 2 retries, 50 records)', () => {
+    expect(parseDnsVerificationConfig(base)).toEqual({
+      resolvers: ['1.1.1.1', '9.9.9.9'],
+      timeoutMs: 5_000,
+      retries: 2,
+      maxRecords: 50,
+    });
+  });
+
+  it('reads a pinned resolver set with ports, and the bounds, from the environment', () => {
+    expect(
+      parseDnsVerificationConfig({
+        ...base,
+        ASSET_DNS_RESOLVERS: '10.0.0.53, 10.0.0.54:5353',
+        ASSET_DNS_TIMEOUT_MS: '2000',
+        ASSET_DNS_RETRIES: '0',
+        ASSET_DNS_MAX_RECORDS: '10',
+      }),
+    ).toEqual({
+      resolvers: ['10.0.0.53', '10.0.0.54:5353'],
+      timeoutMs: 2_000,
+      retries: 0,
+      maxRecords: 10,
+    });
+  });
+
+  it('treats a blank resolver list as unset, so the default pair applies', () => {
+    expect(parseDnsVerificationConfig({ ...base, ASSET_DNS_RESOLVERS: '' }).resolvers).toEqual([
+      '1.1.1.1',
+      '9.9.9.9',
+    ]);
+  });
+
+  it.each([' , ', 'resolver.example.com', '10.0.0.53,not-an-ip', '10.0.0.53:99999:1'])(
+    'rejects a resolver list that is not IP addresses: %j',
+    (value) => {
+      expect(() => parseDnsVerificationConfig({ ...base, ASSET_DNS_RESOLVERS: value })).toThrow();
+    },
+  );
+
+  it.each([
+    ['ASSET_DNS_TIMEOUT_MS', '0'],
+    ['ASSET_DNS_RETRIES', '-1'],
+    ['ASSET_DNS_RETRIES', '1000'],
+    ['ASSET_DNS_MAX_RECORDS', 'many'],
+  ])('rejects an invalid %s=%s', (key, value) => {
+    expect(() => parseDnsVerificationConfig({ ...base, [key]: value })).toThrow();
+  });
 });
