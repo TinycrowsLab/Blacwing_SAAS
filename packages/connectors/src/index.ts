@@ -15,6 +15,17 @@ export {
 } from './errors.js';
 export { FAKE_PROVIDER, FakeConnector } from './fake.js';
 export {
+  buildTicketPayload,
+  type ConnectorMappingMetrics,
+  noopConnectorMappingMetrics,
+  type TicketFindingInput,
+  ticketFindingSchema,
+  type TicketMappingConfigInput,
+  ticketMappingConfigSchema,
+  type TicketMappingProvider,
+  TICKET_MAPPING_PROVIDERS,
+} from './mapping.js';
+export {
   CONNECTOR_OPERATIONS,
   type ConnectorOperation,
   connectorMetricLabels,

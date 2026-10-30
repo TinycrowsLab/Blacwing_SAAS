@@ -16,6 +16,7 @@
   "dependencies": {
     "@blackwing/contracts": "workspace:*",
     "@blackwing/errors": "workspace:*",
+    "@blackwing/logger": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

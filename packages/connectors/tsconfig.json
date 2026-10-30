@@ -12,6 +12,9 @@
     },
     {
       "path": "../errors"
+    },
+    {
+      "path": "../logger"
     }
   ]
 }
