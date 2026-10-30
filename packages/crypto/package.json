@@ -14,7 +14,10 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
-    "@blackwing/contracts": "workspace:*"
+    "@blackwing/contracts": "workspace:*",
+    "@blackwing/errors": "workspace:*",
+    "@blackwing/time": "workspace:*",
+    "croner": "9.1.0"
   },
   "devDependencies": {
     "@types/node": "catalog:",

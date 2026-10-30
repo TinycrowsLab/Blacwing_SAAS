@@ -346,6 +346,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'CVSS_VECTOR_SCORE_MISMATCH',
   // Raised by @blackwing/secrets' standing-authorisation signer (AUTHZ-004) as a plain AppError.
   'AUTHZ_SIGNER_UNAVAILABLE',
+  // Raised by @blackwing/crypto's standing-authorisation verifier (AUTHZ-005) as SaNotValidError.
+  'AUTHZ_SA_NOT_VALID',
   // Raised by the run surface view (GRAPH-006, apps/api/src/surface) as plain AppErrors.
   'INVALID_QUERY',
   'RUN_NOT_FOUND',

@@ -167,6 +167,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   CHANNEL_REFERENCED: 409,
   UNKNOWN_SECRET_BACKEND: 500,
   AUTHZ_SIGNER_UNAVAILABLE: 503,
+  AUTHZ_SA_NOT_VALID: 403,
   GRAPH_CONFIG_MISSING: 500,
   GRAPH_POOL_TIMEOUT: 503,
   GRAPH_MIGRATION_DRIFT: 500,
@@ -214,7 +215,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(186);
+    expect(ERROR_CODE_LIST).toHaveLength(187);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -488,6 +489,7 @@ describe('error-code registry', () => {
       | 'TRIAGE_CANONICAL_INVALID'
       | 'TRIAGE_PRECONDITION_FAILED'
       | 'AUTHZ_SIGNER_UNAVAILABLE'
+      | 'AUTHZ_SA_NOT_VALID'
       | 'GATE2_ILLEGAL_TRANSITION'
       | 'GATE2_ALREADY_DECIDED'
       | 'GATE2_SOD_VIOLATION'

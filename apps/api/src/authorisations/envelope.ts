@@ -1,4 +1,4 @@
-import { canonicalize } from '../concurrency/index.js';
+import { saSignedBytes } from '@blackwing/crypto';
 
 /**
  * The canonical envelope an approval signs (AUTHZ-004, §8.1, §8.9). It is the approved standing authorisation as the
@@ -27,22 +27,10 @@ export interface ApprovedState {
   readonly version: number;
 }
 
-/** The UTF-8 bytes of the canonical envelope, ready for the signer. */
+/**
+ * The UTF-8 bytes of the canonical envelope, ready for the signer. The body layout is defined once in
+ * `@blackwing/crypto` (`saSignedBytes`), the same definition the verifier re-derives (AUTHZ-005).
+ */
 export function canonicalEnvelope(source: EnvelopeSource, approved: ApprovedState): Uint8Array {
-  const body = {
-    saId: source.publicId,
-    assetIds: [...source.assetIds],
-    scopeRules: source.scopeRules,
-    maxIntrusiveness: source.maxIntrusiveness,
-    preApprovedTestClasses: [...source.preApprovedTestClasses],
-    defaultBudgets: source.defaultBudgets,
-    testWindows: [...source.testWindows],
-    validFrom: source.validFrom.toISOString(),
-    expiresAt: source.expiresAt.toISOString(),
-    requesterId: source.requesterId,
-    approverId: approved.approverId,
-    status: 'active',
-    version: approved.version,
-  };
-  return new TextEncoder().encode(canonicalize(body));
+  return saSignedBytes(source, { approverId: approved.approverId, version: approved.version });
 }

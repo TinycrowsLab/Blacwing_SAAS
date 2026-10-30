@@ -99,6 +99,12 @@ export {
 } from './findings/cvss.js';
 
 export { matchScope, ruleSpecificity } from './scope/matcher.js';
+export {
+  type IntrusivenessBoundedAuthorisation,
+  intrusivenessAllowed,
+  type ScopedAuthorisation,
+  scopeAllows,
+} from './authorisation/scope-check.js';
 
 export {
   applyTransition,

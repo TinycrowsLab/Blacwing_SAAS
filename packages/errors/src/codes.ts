@@ -547,6 +547,13 @@ const DEFINITIONS = {
     title: 'Authorisation signer unavailable',
     retryable: true,
   },
+  // Standing-authorisation verification (AUTHZ-005, §8.1): the envelope is unsigned, tampered, expired, not yet
+  // valid or revoked, so no target traffic may be sent under it. Fail closed; the caller does not retry.
+  AUTHZ_SA_NOT_VALID: {
+    status: 403,
+    title: 'Standing authorisation is not valid for traffic',
+    retryable: false,
+  },
   // Test plans (PLAN-005, #395, §9). An id outside the caller's tenant is indistinguishable from a missing
   // one (404). Editing an approved version is refused (409) and the client forks a new version. An If-Match
   // that no longer names the current state is 412 with its own code; a payload over the 8 KiB ceiling is 413.

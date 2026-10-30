@@ -35,3 +35,22 @@ export {
   CRYPTO_NONFINITE_NUMBER,
   jcs,
 } from './jcs.js';
+export {
+  assertValidForTraffic,
+  checkTestWindows,
+  inWindow,
+  isActive,
+  SA_VERIFY_FAILURES,
+  SaNotValidError,
+  type SaApprovedState,
+  type SaSigningSource,
+  saSignedBytes,
+  type VerifiableSa,
+  type VerifyFailure,
+  type VerifyOptions,
+  type VerifyResult,
+  verifyEnvelope,
+  type WindowCheck,
+  type WindowFailure,
+  WINDOW_FAILURES,
+} from './sa-verify.js';
