@@ -162,11 +162,11 @@ describe('repository writes', () => {
     const created = await makeRepo().createVersion({
       runId,
       createdBy: creator,
-      cases: [planned({ title, refs: { owasp: ['A01 ✓'], wstg: [], asvs: [] } })],
+      cases: [planned({ title, refs: { owasp: ['A01'], wstg: [], asvs: [] } })],
     });
     const found = await makeRepo().findById(created.plan.id);
     expect(found?.cases[0]?.title).toBe(title);
-    expect(found?.cases[0]?.owaspRefs).toEqual(['A01 ✓']);
+    expect(found?.cases[0]?.owaspRefs).toEqual(['A01']);
   });
 
   it('refuses a run of another tenant, and a run that does not exist (NotFound, nothing written)', async () => {

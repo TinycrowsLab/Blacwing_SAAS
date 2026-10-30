@@ -60,11 +60,26 @@ export const oracleSchema = z.strictObject({
 });
 export type Oracle = z.infer<typeof oracleSchema>;
 
+/**
+ * Standards ids a test case may cite. Each list is checked against its id format, so a malformed ref is rejected
+ * with the field it sits in. OWASP accepts the Top 10 (`A01`..`A10`, optionally `:2021`) and the API Top 10 (`API1`..`API10`).
+ * ASVS accepts `v5.0.0-x.y.z` and the bare `x.y.z` form used by existing plans.
+ */
+const owaspRefSchema = z
+  .string()
+  .regex(/^(A(0[1-9]|10)(:2021)?|API(10|[1-9]))$/, 'must be an OWASP Top 10 or API Top 10 id');
+const wstgRefSchema = z
+  .string()
+  .regex(/^WSTG-[A-Z]{4}-[0-9]{2}$/, 'must be a WSTG id like WSTG-ATHZ-02');
+const asvsRefSchema = z
+  .string()
+  .regex(/^(v5\.0\.0-)?\d+\.\d+\.\d+$/, 'must be an ASVS id like v5.0.0-4.2.1');
+
 /** Standards references (`owasp/wstg/asvs refs`, §7). */
 export const standardsRefsSchema = z.strictObject({
-  owasp: z.array(z.string().min(1)),
-  wstg: z.array(z.string().min(1)),
-  asvs: z.array(z.string().min(1)),
+  owasp: z.array(owaspRefSchema),
+  wstg: z.array(wstgRefSchema),
+  asvs: z.array(asvsRefSchema),
 });
 export type StandardsRefs = z.infer<typeof standardsRefsSchema>;
 
