@@ -64,6 +64,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
 <li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
 <li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/oob-server.html">Runbook: out-of-band listener, interactsh-server (INFRA-010)</a></li>
 <li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
 <li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
 <li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
@@ -90,9 +91,12 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
 <li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
 <li><a href="../runbooks/deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="../runbooks/demo.html">Demo runbook (`pnpm demo`)</a></li>
+<li><a href="../runbooks/demo-status.html">Demo status</a></li>
 <li><a href="../runbooks/disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
 <li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
 <li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/oob-server.html">Runbook: out-of-band listener, interactsh-server (INFRA-010)</a></li>
 <li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
 <li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
 <li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
@@ -101,6 +105,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
 <li><a href="../runbooks/kill-slo.html">Kill SLO chaos suite runbook (KILL-008, §8.5)</a></li>
 <li><a href="../runbooks/kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
+<li><a href="../runbooks/memory.html">Agent memory: storage runbook</a></li>
 <li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
 <li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
 <li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
@@ -126,6 +131,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="./storage-buckets.html">Storage buckets (INFRA-006)</a></li>
 <li><a href="./tenant-data-access.html">Tenant data access</a></li>
 <li><a href="./tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="./threat-model.html">Blackwing platform threat model</a></li>
 <li><a href="./third-party-notices.html">Third-party notices</a></li>
 <li><a href="./typescript.html">TypeScript configuration and project references</a></li>
 <li><a href="../adr/README.html">Architecture decision records</a></li>
@@ -299,11 +305,11 @@ lowering) change the effective values of one tenant only; see <code>GET /v1/pers
 <ul>
 <li><strong>Mandate:</strong> Probe in-scope network services, TLS and configuration (OWASP A05 and A02, WSTG-CONF and WSTG-CRYP), exposed admin interfaces (WSTG-CONF-05) and known-vulnerable versions (A06, CWE-1104). Prove every lead at runtime with a status, version or error signature and a negative control, then submit the candidate. Never judge a finding.</li>
 <li><strong>Model tier:</strong> <code>standard</code> → <code>claude-opus-5-5</code> (Anthropic provider; Bedrock adds the <code>anthropic.</code> prefix)</li>
-<li><strong>Effort:</strong> <code>medium</code>; <strong>max turns:</strong> 60; <strong>default budget:</strong> $5</li>
+<li><strong>Effort:</strong> <code>medium</code>; <strong>max turns:</strong> 50; <strong>default budget:</strong> $5</li>
 <li><strong>Intrusiveness ceiling:</strong> <code>active_safe</code>; <strong>submission required:</strong> yes</li>
 <li><strong>Prompt version:</strong> <code>1.0.0</code></li>
 <li><strong>Allowed tools:</strong> <code>Bash</code>, <code>mcp__blackwing_target__tcp_probe</code>, <code>mcp__blackwing_findings__submit_candidate</code>, <code>mcp__blackwing_findings__attach_evidence</code></li>
-<li><strong>Disallowed tools:</strong> <code>WebFetch</code>, <code>WebSearch</code></li>
+<li><strong>Disallowed tools:</strong> <code>WebFetch</code>, <code>WebSearch</code>, <code>Bash(*nmap*)</code></li>
 <li><strong>Declared oracle types:</strong> <code>status_diff</code>, <code>error_signature</code>, <code>header_flag</code></li>
 <li><strong>Inputs:</strong> <code>surface_hosts</code>, <code>detected_versions</code>, <code>test_case_brief</code></li>
 <li><strong>Helpers:</strong> <em>none</em></li>

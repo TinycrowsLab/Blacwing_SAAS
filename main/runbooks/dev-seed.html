@@ -64,6 +64,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
 <li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
 <li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./oob-server.html">Runbook: out-of-band listener, interactsh-server (INFRA-010)</a></li>
 <li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
 <li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
 <li><a href="./db-migrations.html">Database migrations</a></li>
@@ -90,9 +91,12 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="./dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
 <li><a href="./dev-seed.html" aria-current="page">Dev seed data (`pnpm db:seed`)</a></li>
 <li><a href="./deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="./demo.html">Demo runbook (`pnpm demo`)</a></li>
+<li><a href="./demo-status.html">Demo status</a></li>
 <li><a href="./disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
 <li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
 <li><a href="./drift-checks.html">Drift checks</a></li>
+<li><a href="./oob-server.html">Runbook: out-of-band listener, interactsh-server (INFRA-010)</a></li>
 <li><a href="./e2e.html">End-to-end tests (CI-006, #140)</a></li>
 <li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
 <li><a href="./image-signing.html">Image signing and provenance (CI-010)</a></li>
@@ -101,6 +105,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
 <li><a href="./kill-slo.html">Kill SLO chaos suite runbook (KILL-008, §8.5)</a></li>
 <li><a href="./kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
+<li><a href="./memory.html">Agent memory: storage runbook</a></li>
 <li><a href="./node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
 <li><a href="./release.html">Release runbook (CI-016)</a></li>
 <li><a href="./renovate.html">Renovate dependency policy</a></li>
@@ -126,6 +131,7 @@ blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);co
 <li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
 <li><a href="../architecture/tenant-data-access.html">Tenant data access</a></li>
 <li><a href="../architecture/tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="../architecture/threat-model.html">Blackwing platform threat model</a></li>
 <li><a href="../architecture/third-party-notices.html">Third-party notices</a></li>
 <li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
 <li><a href="../adr/README.html">Architecture decision records</a></li>
@@ -164,8 +170,9 @@ others write tenant-scoped rows: <code>memberships</code>, <code>assets</code>, 
 is written. A step left out by <code>--only</code> is not reported as skipped. <code>--reset</code> clears every seeded row first,
 whatever <code>--only</code> says, so a reset never leaves a child row behind its deleted asset.</p>
 <p>It reads <code>.env</code> at the repository root: <code>DATABASE_URL</code> (app role, RLS applies), <code>MIGRATION_DATABASE_URL</code>
-(owner role, platform rows only), <code>BW_TARGET_JUICE_SHOP_URL</code> (default <code>http://127.0.0.1:13000</code>) and,
-optionally, <code>BW_DEV_KEYCLOAK_PUBLIC_URL</code>, <code>BW_DEV_KEYCLOAK_REALM</code>, <code>BW_DEV_KEYCLOAK_ADMIN_USER</code> and
+(owner role, platform rows only), <code>BW_TARGET_JUICE_SHOP_URL</code> (default <code>http://127.0.0.1:13000</code>, used by e2e),
+<code>BW_TARGET_JUICE_SHOP_GATEWAY_URL</code> (default <code>http://juice-shop:3000</code>, the compose service name the egress
+gateway targets; the seed refuses <code>localhost</code> and loopback) and, optionally, <code>BW_DEV_KEYCLOAK_PUBLIC_URL</code>, <code>BW_DEV_KEYCLOAK_REALM</code>, <code>BW_DEV_KEYCLOAK_ADMIN_USER</code> and
 <code>BW_DEV_KEYCLOAK_ADMIN_PASSWORD</code>. <code>${VAR}</code> references in <code>.env</code> are expanded.</p>
 <h2 id="what-it-writes">What it writes</h2>
 <table>
@@ -214,8 +221,8 @@ random other tenant sees nothing. It fails if any seeded row leaks.</p>
 (<code>packages/db/src/seed/schema-contract.ts</code>). The platform tables (<code>tenants</code>, <code>users</code>) must exist, or the run
 stops before writing anything and names what is missing. A tenant-scoped step whose tables are missing (or
 whose dependency was skipped) is skipped and logged as <code>seed.skipped</code> with the missing table or column, and
-the rest of the seed still runs. Run <code>pnpm db:migrate</code> to create them. The integration test uses a test-only
-fixture (<code>src/seed/__fixtures__/seed-tables.sql</code>) that follows the §7 RLS pattern.</li>
+the rest of the seed still runs. Run <code>pnpm db:migrate</code> to create them. The integration test runs against the
+real migrations, so every tenant-scoped table (assets, credentials, role matrices, standing authorisations) exists.</li>
 <li><strong>Separation of duties (§8.4).</strong> A plan where the requester is also the approver is rejected before any
 write.</li>
 <li><strong>Keycloak subjects.</strong> With admin credentials set, the seed looks up each user&#39;s <code>sub</code> in the dev realm.

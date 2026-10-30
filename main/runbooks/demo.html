@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo runbook (`pnpm demo`) | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./oob-server.html">Runbook: out-of-band listener, interactsh-server (INFRA-010)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+<li><a href="../api/reference.html">API reference</a></li>
+<li><a href="../api/conventions.html">API conventions</a></li>
+<li><a href="../api/auth.html">Authentication</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="./code-owners.html">Code owners</a></li>
+<li><a href="./codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="./dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="./dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="./dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="./deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="./demo.html" aria-current="page">Demo runbook (`pnpm demo`)</a></li>
+<li><a href="./demo-status.html">Demo status</a></li>
+<li><a href="./disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./drift-checks.html">Drift checks</a></li>
+<li><a href="./oob-server.html">Runbook: out-of-band listener, interactsh-server (INFRA-010)</a></li>
+<li><a href="./e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./incident-response.html">Incident response and on-call runbook (OBS, NOTIFY, KILL)</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./kill-slo.html">Kill SLO chaos suite runbook (KILL-008, §8.5)</a></li>
+<li><a href="./kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
+<li><a href="./memory.html">Agent memory: storage runbook</a></li>
+<li><a href="./node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./search-attributes.html">Temporal search attributes</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="./secrets-resolve.html">Runbook: internal secret resolve API (SECRETS-006)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./trivy.html">Trivy scanning (CI-009)</a></li>
+<li><a href="./web-bff-auth.html">Runbook: console sign-in (BFF OIDC)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/persona-catalogue.html">Persona catalogue</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/i18n.html">Console strings and i18n</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/tenant-data-access.html">Tenant data access</a></li>
+<li><a href="../architecture/tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="../architecture/threat-model.html">Blackwing platform threat model</a></li>
+<li><a href="../architecture/third-party-notices.html">Third-party notices</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="demo-runbook-pnpm-demo">Demo runbook (<code>pnpm demo</code>)</h1>
+<p>Localhost demo of the Blackwing console for a stakeholder walkthrough. Code: <code>scripts/demo.mjs</code>.
+This is a development setup: demo-only secrets, a demo database and a lab target. Never run it against
+production data.</p>
+<h2 id="start">Start</h2>
+<pre><code class="language-sh">pnpm dev:deps      # once: Postgres, Keycloak, Valkey, Temporal, ... (the demo calls it if they are down)
+pnpm demo          # idempotent: deps, Juice Shop, demo database, migrations, seed, API, worker, web
+pnpm demo status   # what is running
+pnpm demo stop     # stop the API, worker and web started by the demo
+</code></pre>
+<p><code>pnpm demo</code> prints the URLs and the demo users when it is up. Logs are in <code>.demo/logs/</code> (api.log, worker.log,
+web.log). Pids are in <code>.demo/pids.json</code>. Both directories are gitignored.</p>
+<h2 id="what-the-script-does">What the script does</h2>
+<ol>
+<li>Brings up the dependency stack with <code>pnpm dev:deps</code> only when Postgres or Keycloak is not healthy.</li>
+<li>Starts the Juice Shop lab target as container <code>bw-demo-juice</code> on <code>127.0.0.1:3001</code>
+(<code>docker run -d -p 127.0.0.1:3001:3000 bkimminich/juice-shop</code>). The first run pulls the image.</li>
+<li>Creates the database <code>blackwing_demo</code> on the dev Postgres. It does not share <code>blackwing</code> with other
+worktrees, whose migration journals differ from this checkout.</li>
+<li>Runs the migrations and <code>pnpm db:seed</code> against <code>blackwing_demo</code>. The seed skips tables that are not merged
+yet and logs <code>seed.skipped</code>, so the console still starts.</li>
+<li>Starts the API (<code>127.0.0.1:13400</code>), the worker (health <code>:13800</code>) and the web app (<code>DEMO_HOST</code>, default
+<code>127.0.0.1</code>, port <code>3000</code>).</li>
+</ol>
+<p>The script writes <code>.env.demo</code> on first run. It holds a demo-only <code>BW_WEB_SESSION_SECRET</code>. Overrides:
+<code>DEMO_HOST</code> (bind address and LAN IP), <code>DEMO_WEB_PORT</code>, <code>DEMO_JUICE_PORT</code>.</p>
+<h2 id="expected-results">Expected results</h2>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Expected</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>curl -s http://127.0.0.1:13400/health/live</code></td>
+<td>HTTP 200</td>
+</tr>
+<tr>
+<td><code>curl -s -o /dev/null -w &quot;%{http_code}&quot; http://127.0.0.1:3000/login</code></td>
+<td>200</td>
+</tr>
+<tr>
+<td><code>curl -s -o /dev/null -w &quot;%{redirect_url}&quot; http://127.0.0.1:3000/api/auth/login</code></td>
+<td>Keycloak <code>.../realms/blackwing-dev/protocol/openid-connect/auth?...client_id=bw-console-bff</code></td>
+</tr>
+<tr>
+<td><code>curl -s -o /dev/null -w &quot;%{http_code}&quot; http://127.0.0.1:3001/</code></td>
+<td>200 (Juice Shop)</td>
+</tr>
+</tbody></table>
+<p>Open <code>http://localhost:3000</code>, which redirects to the Keycloak login. The sign-in form is the realm
+<code>blackwing-dev</code>.</p>
+<h2 id="credentials">Credentials</h2>
+<table>
+<thead>
+<tr>
+<th>Role in the story</th>
+<th>Keycloak user</th>
+<th>Realm roles / group</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Requester (operator)</td>
+<td><code>appsec@acme.test</code></td>
+<td>appsec-engineer, <code>/acme/appsec-engineers</code></td>
+</tr>
+<tr>
+<td>Approver</td>
+<td><code>owner@acme.test</code></td>
+<td>asset-owner, <code>/acme/asset-owners</code></td>
+</tr>
+<tr>
+<td>Viewer</td>
+<td><code>auditor@acme.test</code></td>
+<td>auditor, <code>/acme/auditors</code></td>
+</tr>
+<tr>
+<td>Platform operator</td>
+<td><code>operator@blackwing.test</code></td>
+<td>platform-operator (separate realm path)</td>
+</tr>
+</tbody></table>
+<p>The password is <code>BW_DEV_KEYCLOAK_TEST_USER_PASSWORD</code> in the repository <code>.env</code>. Print it locally with
+<code>grep BW_DEV_KEYCLOAK_TEST_USER_PASSWORD .env</code>. Do not paste it into chat or tickets.</p>
+<h2 id="sign-in-with-google-optional">Sign in with Google (optional)</h2>
+<p>Google is brokered by Keycloak only. The app never talks to Google. The <code>google</code> identity provider lives in the
+realm <code>blackwing-dev</code>, and the console&#39;s <code>/login</code> page has a <strong>Continue with Google</strong> link that starts it directly
+(<code>/api/auth/login?idp=google</code>, which the BFF turns into Keycloak&#39;s <code>kc_idp_hint=google</code>). The normal
+<strong>Continue with single sign-on</strong> link is unchanged.</p>
+<p>To enable it:</p>
+<ol>
+<li>In Google Cloud Console, create an OAuth client (type <strong>Web application</strong>). Add the <strong>Authorised JavaScript origin</strong>
+<code>http://localhost:18080</code> and the <strong>Authorised redirect URI</strong>
+<code>http://localhost:18080/realms/blackwing-dev/broker/google/endpoint</code>.</li>
+<li>Put the client in the repository <code>.env</code> (gitignored, never commit it): <code>BW_DEV_GOOGLE_CLIENT_ID</code> and
+<code>BW_DEV_GOOGLE_CLIENT_SECRET</code>.</li>
+<li>Run <code>pnpm demo google</code>. It upserts the provider (idempotent: run it again after changing the secret) and the demo
+mappers. Without the two values it prints these instructions and changes nothing. <code>pnpm demo</code> runs the same step
+once Keycloak is up, and continues without Google if it is not configured.</li>
+</ol>
+<p>What a first Google sign-in does (demo mode only, <code>BW_DEMO_MODE=1</code>, which <code>pnpm demo</code> sets):</p>
+<ul>
+<li>The Google IdP mappers give the new Keycloak user the tenant attribute <code>acme</code>, the realm roles <code>appsec-engineer</code> and
+<code>auditor</code> (requester and read access), and the marker role <code>bw-demo-google</code>.</li>
+<li>The first demo request for that user creates its user row and a membership in the demo tenant <code>acme</code> in
+<code>blackwing_demo</code>. The marker is the only way in: a local user without it is still refused (<code>demo_user_unknown</code>).</li>
+<li>Keycloak may show its &quot;Update account information&quot; page once, because the provider asks to review the profile.</li>
+<li>The banner says the Google sign-in is the requester and read account. <strong>Gate 1 needs a second person:</strong> sign out and
+sign in as <code>owner@acme.test</code> to approve. A Google user cannot approve its own request (separation of duties).</li>
+</ul>
+<p><strong>Security note.</strong> With <code>pnpm demo google</code> set up, every Google account that can reach the dev Keycloak gets the demo
+tenant. Keep the dev Keycloak on <code>localhost</code>, and do not expose it on the LAN while Google is enabled. The mappers
+are demo-only; a real tenant never uses this realm.</p>
+<p>Check it: <code>curl -s -o /dev/null -w &quot;%{http_code}&quot; http://127.0.0.1:3000/login</code> is 200. The page shows both links.
+<code>curl -s -o /dev/null -w &quot;%{redirect_url}&quot; &quot;http://127.0.0.1:3000/api/auth/login?idp=google&quot;</code> redirects to
+<code>.../realms/blackwing-dev/protocol/openid-connect/auth?...kc_idp_hint=google...</code>. Keycloak then redirects to
+<code>accounts.google.com</code>. A second <code>idp</code> value (for example <code>idp=github</code>) is ignored, not forwarded.</p>
+<h2 id="expose-it-on-the-lan">Expose it on the LAN</h2>
+<ol>
+<li>Set <code>DEMO_HOST</code> to the machine&#39;s LAN IP or <code>0.0.0.0</code>, then run <code>pnpm demo</code>.</li>
+<li>Keycloak: the realm client <code>bw-console-bff</code> only allows <code>http://localhost:3000/auth/callback</code> (and the
+<code>app.bw.localhost</code> URIs). For a LAN host, add <code>http://&lt;LAN-IP&gt;:3000/auth/callback</code> to the redirect URIs
+and <code>http://&lt;LAN-IP&gt;:3000</code> to the web origins in <code>infra/compose/keycloak/realm-export.json</code>, then re-import
+the realm (<code>pnpm dev:keycloak:reset</code> only resets the dev stack, so back up first).
+<code>BW_CONSOLE_ORIGIN</code> in <code>.env.demo</code> must match the URL the browser uses.</li>
+<li>WSL2 (mirrored networking): add <code>networkingMode=mirrored</code> under <code>[wsl2]</code> in <code>%UserProfile%\.wslconfig</code>,
+run <code>wsl --shutdown</code>, then reach the console at the Windows host IP on port 3000.
+Without mirrored networking, forward the port with <code>netsh interface portproxy add v4tov4 listenport=3000 listenaddress=0.0.0.0 connectport=3000 connectaddress=&lt;WSL-IP&gt;</code> from an elevated Windows shell.</li>
+</ol>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>API not answering after 60 s</td>
+<td><code>tail -50 .demo/logs/api.log</code>. Usually config. Check <code>.env</code> has <code>NODE_ENV</code> and <code>WEB_ORIGIN</code>.</td>
+</tr>
+<tr>
+<td><code>relation &quot;memberships&quot; already exists</code> on migrate</td>
+<td>You are on the shared <code>blackwing</code> database. The demo uses <code>blackwing_demo</code>; check <code>PGDATABASE</code> in the log.</td>
+</tr>
+<tr>
+<td><code>must be superuser to create this extension</code></td>
+<td>Run <code>CREATE EXTENSION</code> for <code>vector</code>, <code>pgcrypto</code> and <code>citext</code> as the superuser in <code>blackwing_demo</code>.</td>
+</tr>
+<tr>
+<td>Login returns 500 <code>ConfigValidationError</code></td>
+<td><code>.env.demo</code> is missing <code>BW_WEB_SESSION_SECRET</code>. Delete <code>.env.demo</code> and rerun <code>pnpm demo</code>.</td>
+</tr>
+<tr>
+<td>Port 3000 in use</td>
+<td>Another dev server is on it. Set <code>DEMO_WEB_PORT=3010 pnpm demo</code> and update the Keycloak URIs.</td>
+</tr>
+<tr>
+<td>Keycloak timeout during seed</td>
+<td>Keycloak is up on <code>localhost:18080</code>. The seed only warns. Users keep a <code>pending:</code> subject, so sign-in may still work.</td>
+</tr>
+<tr>
+<td>Google button shows Keycloak &quot;identity provider not found&quot;</td>
+<td><code>pnpm demo google</code> has not run, or the <code>google</code> provider is disabled in realm <code>blackwing-dev</code>.</td>
+</tr>
+<tr>
+<td><code>pnpm demo google</code> says nothing is configured</td>
+<td><code>BW_DEV_GOOGLE_CLIENT_ID</code> or <code>BW_DEV_GOOGLE_CLIENT_SECRET</code> is empty in <code>.env</code>.</td>
+</tr>
+<tr>
+<td>Juice Shop not reachable</td>
+<td><code>docker logs bw-demo-juice</code>, or <code>docker rm -f bw-demo-juice</code> and rerun <code>pnpm demo</code>.</td>
+</tr>
+</tbody></table>
+<h2 id="the-story-click-by-click">The story, click by click</h2>
+<p><code>pnpm demo</code> sets <code>BW_DEMO_MODE=1</code>. That mounts the demo routes in the API (<code>/v1/demo</code>, <code>apps/api/src/demo</code>), starts the
+demo runner (<code>apps/worker/src/demo</code>) and serves the pages under <code>/demo</code> (<code>apps/web/src/app/demo</code>). Demo data lives in
+the <code>demo</code> schema of <code>blackwing_demo</code> (migration <code>20261029200000_demo_story_schema</code>). Every demo page is marked
+DEMO MODE.</p>
+<ol>
+<li>Open <code>http://localhost:3000/demo</code>. Sign in as <code>appsec@acme.test</code> (password in <code>.env</code>).</li>
+<li><strong>Dashboard</strong> (<code>/demo</code>): counts, pending Gate 1 requests, runs and confirmed findings. The fallback finding is
+already there, so the story always has a complete finding to show.</li>
+<li><strong>Assets</strong> (<code>/demo/assets</code>): the lab asset <code>OWASP Juice Shop (lab)</code> on <code>http://127.0.0.1:3001</code>, ownership
+<code>verified</code> (basis: demo stub, lab trust). Click <strong>Request assessment</strong>.</li>
+<li><strong>New assessment request</strong> (<code>/demo/requests/new</code>): test case is the pinned SQL injection check of issue #881
+(<code>GET /rest/products/search</code>, parameter <code>q</code>, CWE-89). Intrusiveness <code>active_safe</code>, scope host <code>127.0.0.1</code>, path
+prefix <code>/rest/products/search</code>, budget 8 requests and 300 seconds. Submit.</li>
+<li><strong>Gate 1</strong> on the request page: click <strong>Approve at Gate 1</strong> as the requester. It is refused with
+<code>separation_of_duties</code> (the requester cannot approve their own request).</li>
+<li>Click <strong>Sign out</strong>, then sign in as <code>owner@acme.test</code> (asset owner). Open the same request
+(<code>/demo/requests/&lt;id&gt;</code>) and approve. This is a real second login.</li>
+<li>Still as the owner, sign out and sign in as <code>appsec@acme.test</code> again. Click <strong>Start run</strong>.</li>
+<li><strong>Live run</strong> (<code>/demo/runs/&lt;id&gt;</code>): the timeline polls every 1.5 s. Stages: run accepted (pins), scope check, planner
+selection, detection probe (<code>apple&#39;</code>, benign), two replays, negative control (<code>apple</code>), finding, run completed. The
+probe and control are real HTTP requests to the lab target. The run takes about 8 seconds.</li>
+<li><strong>Finding</strong> (<code>/demo/findings/&lt;id&gt;</code>): the confirmed SQL injection. Evidence shows the probe response (HTTP 500,
+<code>SQLITE_ERROR</code>), the negative control (HTTP 200, no error), the replay table and a copyable <code>curl</code> repro.</li>
+<li><strong>Report</strong>: <strong>Download report (HTML)</strong> or <strong>Download report (Markdown)</strong> on the finding page.</li>
+<li><code>/demo/about</code> lists what is real and what is a stub. Read it before presenting.</li>
+</ol>
+<p>Check the whole story without a browser: <code>node scripts/demo.mjs smoke</code>. It runs Gate 1 (SoD refusal, then
+approval), a run, the repro on the lab target, both reports and the scope refusal, and exits 1 on any failure.</p>
+<h3 id="real-versus-demo-stub">Real versus demo stub</h3>
+<table>
+<thead>
+<tr>
+<th>Piece</th>
+<th>State</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Keycloak login, BFF session, roles</td>
+<td>Real</td>
+</tr>
+<tr>
+<td>Tenant <code>acme</code>, seeded users</td>
+<td>Real (seed in <code>blackwing_demo</code>)</td>
+</tr>
+<tr>
+<td>Asset ownership (lab trust)</td>
+<td>Demo stub: no DNS or HTTP proof</td>
+</tr>
+<tr>
+<td>Request scope, intrusiveness, budget checks</td>
+<td>Real rules, demo tables (<code>demo</code> schema, no RLS)</td>
+</tr>
+<tr>
+<td>Gate 1 separation of duties and asset-owner role</td>
+<td>Real rule, demo storage (not the audit ledger)</td>
+</tr>
+<tr>
+<td>Planner, specialist</td>
+<td>Demo stub: deterministic, no model call</td>
+</tr>
+<tr>
+<td>Sandbox, egress gateway, Temporal</td>
+<td>Demo stub: the runner probes the lab target from the demo worker process</td>
+</tr>
+<tr>
+<td>Probes, oracle (error signature), negative control</td>
+<td>Real logic and real HTTP to Juice Shop</td>
+</tr>
+<tr>
+<td>Severity (CVSS v4.0 score)</td>
+<td>Demo-assigned, not calculated</td>
+</tr>
+<tr>
+<td>Report (HTML, Markdown)</td>
+<td>Real rendering of the stored finding</td>
+</tr>
+<tr>
+<td>Kill switch, Gate 3 release, audit ledger</td>
+<td>Not in the demo</td>
+</tr>
+</tbody></table>
+<p>The browser never calls the demo API. The demo web server calls it with <code>BW_DEMO_INTERNAL_TOKEN</code> (in <code>.env.demo</code>)
+and the identity of the Keycloak session. The API refuses any call without that token (401).</p>
+<h3 id="demo-only-code-and-migration">Demo-only code and migration</h3>
+<ul>
+<li><code>apps/api/src/demo/**</code>, mounted by <code>apps/api/src/run.ts</code> only when <code>BW_DEMO_MODE=1</code>.</li>
+<li><code>apps/worker/src/demo/**</code>, started as the <code>demo-runner</code> service. It refuses to start unless <code>BW_DEMO_MODE=1</code>.</li>
+<li><code>apps/web/src/app/demo/**</code> and <code>apps/web/src/components/demo/**</code>.</li>
+<li><code>packages/db/migrations/20261029200000_demo_story_schema.sql</code>: schema <code>demo</code>, no RLS, granted to <code>bw_app</code>. It is
+inert unless the demo code reads it. Do not use it for customer data.</li>
+</ul>
+<h2 id="status-of-the-story">Status of the story</h2>
+<p>The story runs on localhost with the stubs listed above. The production assessment, Gate 1, run and finding
+pieces are still being built on <code>main</code>; the demo keeps its own tables until they land. See
+<code>docs/runbooks/demo-status.md</code>.</p>
+<h2 id="design-fidelity">Design fidelity</h2>
+<p>The demo follows the Blackwing design in <a href="https://github.com/TinycrowsLab/Blacwing_SAAS/blob/main/design/README.md"><code>design/</code></a>: tokens from <code>design/tokens.json</code>
+(CSS variables in <code>packages/ui</code>, never hex in pages), Poppins and JetBrains Mono self-hosted from
+<code>apps/web/public/fonts</code>, and the layout grammar of the pass-1 screens (top bar, icon rail, breadcrumb header,
+status chips, authorisation strip, right-hand context panel). The shell is <code>apps/web/src/components/demo/shell.tsx</code>,
+the components are in <code>apps/web/src/components/demo/design.tsx</code>.</p>
+<p>Screenshots (light and dark) are in <a href="./demo-screenshots"><code>demo-screenshots/</code></a>. Each design screen has a
+side-by-side pair: <code>design-*.png</code> is the Claude Design prototype, <code>demo-*.png</code> is this demo.</p>
+<table>
+<thead>
+<tr>
+<th>Demo page</th>
+<th>Design reference</th>
+<th>Deviation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Live run (<code>/demo/runs/:id</code>)</td>
+<td>1a Flight deck</td>
+<td>Lanes are the runner stages, not agents. There is no Pause or Kill in the demo API, so both are disabled with the reason. No Gate 2 banner: the demo has no runtime exception.</td>
+</tr>
+<tr>
+<td>Gate 1 (<code>/demo/requests/:id</code>)</td>
+<td>2a Gate 2 layout</td>
+<td>Gate 1 has no countdown (the demo does not auto-deny). Deny is the dark button and Approve the outlined one, as in the design. A requester sees Approve disabled with the reason.</td>
+</tr>
+<tr>
+<td>Kill (3a), emergency link (3b), Gate 2 (2a, 2b)</td>
+<td>Screens pass 1</td>
+<td>Not built. They need runtime controls the demo API does not have (KILL #170, GATE2 #203).</td>
+</tr>
+<tr>
+<td>Authorisation strip</td>
+<td>&quot;Authorised under SA-…&quot;</td>
+<td>The demo has no standing authorisation, so the strip shows the Gate 1 approver, scope and budget instead of an SA id and key.</td>
+</tr>
+<tr>
+<td>Top bar search and bell</td>
+<td>Top bar</td>
+<td>Search is shown but not wired. No alert count, because the demo has no alerts.</td>
+</tr>
+</tbody></table>
+<p>Sign-in (<code>/login</code>) takes the same tokens and the single brand-red word of the sign-in screen.</p>
+<p>Pairs for review (design prototype first, then this demo, light theme):</p>
+<table>
+<thead>
+<tr>
+<th>Design</th>
+<th>Demo</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="./demo-screenshots/design-flight-deck-1a.png"><code>design-flight-deck-1a.png</code></a> (1a Flight deck)</td>
+<td><a href="./demo-screenshots/demo-run-light.png"><code>demo-run-light.png</code></a>, <a href="./demo-screenshots/demo-run-dark.png"><code>demo-run-dark.png</code></a></td>
+</tr>
+<tr>
+<td>Gate 2 (2a) and Kill (3a)</td>
+<td>Not built, see the table above</td>
+</tr>
+</tbody></table>
+<p>The other pages have no design screen. They use the same components: <a href="./demo-screenshots/demo-dashboard-light.png">dashboard</a>,
+<a href="./demo-screenshots/demo-assets-light.png">assets</a>, <a href="./demo-screenshots/demo-new-request-light.png">new request</a>,
+<a href="./demo-screenshots/demo-request-light.png">Gate 1</a>, <a href="./demo-screenshots/demo-finding-light.png">finding</a> and
+<a href="./demo-screenshots/demo-about-light.png">about</a>. Each has a <code>-dark.png</code> pair.</p>
+</main>
+</div>
+</body>
+</html>

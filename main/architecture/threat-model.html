@@ -1,0 +1,1284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blackwing platform threat model | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/oob-server.html">Runbook: out-of-band listener, interactsh-server (INFRA-010)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+<li><a href="../api/reference.html">API reference</a></li>
+<li><a href="../api/conventions.html">API conventions</a></li>
+<li><a href="../api/auth.html">Authentication</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="../runbooks/branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="../runbooks/ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="../runbooks/code-owners.html">Code owners</a></li>
+<li><a href="../runbooks/codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="../runbooks/db-migrations.html">Database migrations</a></li>
+<li><a href="../runbooks/dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="../runbooks/dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="../runbooks/dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="../runbooks/dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="../runbooks/deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="../runbooks/demo.html">Demo runbook (`pnpm demo`)</a></li>
+<li><a href="../runbooks/demo-status.html">Demo status</a></li>
+<li><a href="../runbooks/disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
+<li><a href="../runbooks/dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="../runbooks/drift-checks.html">Drift checks</a></li>
+<li><a href="../runbooks/oob-server.html">Runbook: out-of-band listener, interactsh-server (INFRA-010)</a></li>
+<li><a href="../runbooks/e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="../runbooks/egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="../runbooks/image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="../runbooks/image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="../runbooks/incident-response.html">Incident response and on-call runbook (OBS, NOTIFY, KILL)</a></li>
+<li><a href="../runbooks/ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="../runbooks/kill-slo.html">Kill SLO chaos suite runbook (KILL-008, §8.5)</a></li>
+<li><a href="../runbooks/kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
+<li><a href="../runbooks/memory.html">Agent memory: storage runbook</a></li>
+<li><a href="../runbooks/node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="../runbooks/release.html">Release runbook (CI-016)</a></li>
+<li><a href="../runbooks/renovate.html">Renovate dependency policy</a></li>
+<li><a href="../runbooks/search-attributes.html">Temporal search attributes</a></li>
+<li><a href="../runbooks/secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="../runbooks/secrets-resolve.html">Runbook: internal secret resolve API (SECRETS-006)</a></li>
+<li><a href="../runbooks/ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="../runbooks/trivy.html">Trivy scanning (CI-009)</a></li>
+<li><a href="../runbooks/web-bff-auth.html">Runbook: console sign-in (BFF OIDC)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="./CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="./EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="./FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="./REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="./workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="./workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="./dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="./persona-catalogue.html">Persona catalogue</a></li>
+<li><a href="./egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="./i18n.html">Console strings and i18n</a></li>
+<li><a href="./storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="./tenant-data-access.html">Tenant data access</a></li>
+<li><a href="./tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="./threat-model.html" aria-current="page">Blackwing platform threat model</a></li>
+<li><a href="./third-party-notices.html">Third-party notices</a></li>
+<li><a href="./typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="blackwing-platform-threat-model">Blackwing platform threat model</h1>
+<p>This is the shared picture of what Blackwing defends, from whom, and by which deterministic mechanism. It covers the
+platform as a system: trust boundaries, data flows, assets, adversaries, the threats at each boundary (STRIDE), the
+mitigation for each threat, the <a href="./CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8</a>
+invariant it relies on, and the epic that owns it. It also records the residual risks and the sign-off status.</p>
+<p>It is a living document (see <a href="#9-change-procedure">Change procedure</a>). It grounds the invariant matrix (SECREVIEW-002)
+and the abuse tests (SECREVIEW-003 and SECREVIEW-004). The automated tests themselves, and infrastructure controls
+(INFRA), are out of scope here.</p>
+<p>Normative sources: <a href="./CONTEXT_PACK.html#3-architecture-saas">CONTEXT_PACK §3</a> (architecture),
+<a href="./CONTEXT_PACK.html#41-topology">§4.1</a> (sandbox and egress topology), <a href="./CONTEXT_PACK.html#45-policy--terms-constraints-must-follow">§4.5</a>
+(policy and prompt injection), <a href="./CONTEXT_PACK.html#7-core-domain-model-tables-in-packagesdb-all-tenant-tables-have-tenant_id-uuid-not-null--rls">§7</a>
+(domain) and <a href="./CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8</a>
+(invariants).</p>
+<aside class="callout callout-note" role="note"><p class="callout-title">Note</p>
+<p>the threat model describes the target design. Each mitigation is owned by an epic. Whether a mitigation is
+built yet is tracked by that epic&#39;s issues, not by this page.</p>
+</aside>
+<h2 id="contents">Contents</h2>
+<ol>
+<li><a href="#1-the-two-highest-stakes-properties">The two highest-stakes properties</a></li>
+<li><a href="#2-assets">Assets</a></li>
+<li><a href="#3-trust-boundaries-and-data-flows">Trust boundaries and data flows</a></li>
+<li><a href="#4-adversary-catalogue">Adversary catalogue</a></li>
+<li><a href="#5-threats-mitigations-and-invariants-by-boundary">Threats, mitigations and invariants by boundary</a></li>
+<li><a href="#6-invariant-coverage-matrix">Invariant coverage matrix</a></li>
+<li><a href="#7-residual-risk-register">Residual-risk register</a></li>
+<li><a href="#8-gaps-and-non-mitigations">Gaps and non-mitigations</a></li>
+<li><a href="#9-change-procedure">Change procedure</a></li>
+<li><a href="#10-sign-off">Sign-off</a></li>
+</ol>
+<h2 id="1-the-two-highest-stakes-properties">1. The two highest-stakes properties</h2>
+<h3 id="11-target-content-is-untrusted-and-enforcement-never-depends-on-the-model">1.1 Target content is untrusted, and enforcement never depends on the model</h3>
+<p>Every byte that comes from a target is untrusted data: HTTP bodies, HTML, JavaScript, source code, DNS records,
+certificate transparency entries, archived pages and OSINT material. An attacker who controls a target can put
+instructions in that content to steer the agent (prompt injection, <a href="./CONTEXT_PACK.html#45-policy--terms-constraints-must-follow">§4.5</a>).</p>
+<p>The model is never a control (<a href="./CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8.11</a>).
+Each safety property is enforced by deterministic code that sits outside the model:</p>
+<ul>
+<li>the PreToolUse hook, which asks the policy decision point (PDP) before every Bash command and every target-interaction
+tool call;</li>
+<li>the egress gateway, which decides every target connection, DNS answer and redirect;</li>
+<li>the request, time and cost budgets;</li>
+<li>the kill switch and the envelope expiry;</li>
+<li>the destructive-class hard block, the reversal-journal precondition and the separation-of-duties check.</li>
+</ul>
+<p>A prompt-injected agent can ask for anything. The only thing it can do is send requests through the controls above, and
+those controls decide the outcome without reading the model&#39;s intent.</p>
+<h3 id="12-the-platform-must-not-attack-itself-or-third-parties-outside-authorisation">1.2 The platform must not attack itself or third parties outside authorisation</h3>
+<p>Blackwing sends real traffic. Two failure modes are unacceptable:</p>
+<ul>
+<li><strong>Attacking itself.</strong> A sandbox or a target reaches Blackwing infrastructure: the control plane, the data stores, the
+cloud metadata endpoint, or another run&#39;s sandbox (SSRF of our own infrastructure).</li>
+<li><strong>Attacking third parties.</strong> Traffic reaches a host that is not in a verified asset, not in the standing
+authorisation&#39;s scope, outside the test window, outside the envelope, or in the destructive class.</li>
+</ul>
+<p>Deterministic controls that prevent both:</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Mechanism</th>
+<th>Invariant</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Ownership verification</td>
+<td>An unverified asset cannot be targeted (DNS TXT, HTTP file or manual letter).</td>
+<td><a href="./CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8.10</a></td>
+</tr>
+<tr>
+<td>Signed envelope</td>
+<td>Target traffic needs a signature-verified, unexpired envelope. Expiry mid-run blocks at once.</td>
+<td><a href="./CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8.1</a></td>
+</tr>
+<tr>
+<td>Scope rules and private-range block</td>
+<td>Include and exclude rules are enforced on hosts, paths, ports and methods. Private, link-local and metadata ranges are blocked unless explicitly in scope.</td>
+<td><a href="./CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8.2</a></td>
+</tr>
+<tr>
+<td>Destructive class blocked</td>
+<td>The baseline policy hard-blocks the destructive class. <code>state_changing</code> needs an approved SA, Gate 1 and a journal entry.</td>
+<td><a href="./CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8.3</a></td>
+</tr>
+<tr>
+<td>Egress network policy</td>
+<td>The sandbox has three allowed destinations (§1.2.1 below). All other traffic is denied at the network layer.</td>
+<td><a href="./CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8.2</a></td>
+</tr>
+<tr>
+<td>Budgets and kill</td>
+<td>Request, rate and cost budgets per test case. The kill switch stops everything in scope.</td>
+<td><a href="./CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8.5</a></td>
+</tr>
+</tbody></table>
+<h4 id="121-sandbox-egress-three-destinations-only">1.2.1 Sandbox egress: three destinations only</h4>
+<p>Every agent sandbox (<a href="./CONTEXT_PACK.html#41-topology">§4.1</a>) may reach exactly three destinations. All other egress is denied
+(Kubernetes NetworkPolicy plus host firewall):</p>
+<ol>
+<li>the <strong>egress gateway</strong>, for target traffic;</li>
+<li>the <strong>model gateway</strong>, for Claude, with a per-session virtual key;</li>
+<li>the <strong>Run Broker API</strong> (<code>/internal/broker/*</code>), for tool backends, with a run-scoped token.</li>
+</ol>
+<p>Not reachable from a sandbox: the internet, the cloud metadata endpoint (169.254.169.254), the host Docker socket, other
+runs, and the platform&#39;s own control plane.</p>
+<h2 id="2-assets">2. Assets</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Asset</th>
+<th>Why it matters</th>
+<th>Primary store or component</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A-1</td>
+<td>Tenant assets and their ownership proof</td>
+<td>Defines what may be tested. Wrong ownership means attacking a third party.</td>
+<td><code>assets</code>, verification records</td>
+</tr>
+<tr>
+<td>A-2</td>
+<td>Standing authorisations (SA) and envelopes</td>
+<td>The legal basis for all traffic. Signed and expiring.</td>
+<td><code>standing_authorisations</code>, envelope store</td>
+</tr>
+<tr>
+<td>A-3</td>
+<td>Test plans and approvals (Gate 1, Gate 2)</td>
+<td>Human decisions that authorise actions. Requester must differ from approver.</td>
+<td><code>test_plans</code>, <code>gate_decisions</code></td>
+</tr>
+<tr>
+<td>A-4</td>
+<td>Findings, evidence and repro artifacts</td>
+<td>Confidential and sensitive (exploitable). Must be tamper-evident.</td>
+<td><code>findings</code>, <code>evidence_items</code> (S3 Object Lock)</td>
+</tr>
+<tr>
+<td>A-5</td>
+<td>Tenant data in general</td>
+<td>Confidentiality between tenants.</td>
+<td>Postgres (RLS), Neo4j, S3, Valkey</td>
+</tr>
+<tr>
+<td>A-6</td>
+<td>Credentials for target roles</td>
+<td>Can log into customer systems. Must never be plaintext outside the gateway.</td>
+<td><code>secrets</code>, <code>asset_credentials</code> (references only), OpenBao</td>
+</tr>
+<tr>
+<td>A-7</td>
+<td>Platform secrets and signing keys</td>
+<td>Compromise lets an attacker mint envelopes or read tenant data.</td>
+<td>OpenBao KV v2 and Transit</td>
+</tr>
+<tr>
+<td>A-8</td>
+<td>Model provider credentials</td>
+<td>Billing and data-processing authority. Must not reach sandboxes.</td>
+<td>Model gateway only</td>
+</tr>
+<tr>
+<td>A-9</td>
+<td>Audit ledger</td>
+<td>Proof of who approved and did what. Must be append-only.</td>
+<td><code>audit_events</code> (hash chain per tenant)</td>
+</tr>
+<tr>
+<td>A-10</td>
+<td>Platform availability and kill capability</td>
+<td>Needed to stop a run quickly.</td>
+<td>Kill path, Temporal, egress gateway</td>
+</tr>
+<tr>
+<td>A-11</td>
+<td>Platform infrastructure (control plane, k3s, egress gateway)</td>
+<td>Must not be a target of sandbox or target traffic.</td>
+<td>Platform network</td>
+</tr>
+<tr>
+<td>A-12</td>
+<td>Build artifacts and images (sandbox image, binaries)</td>
+<td>Supply-chain integrity for every run.</td>
+<td>GHCR, cosign, SBOM</td>
+</tr>
+</tbody></table>
+<h2 id="3-trust-boundaries-and-data-flows">3. Trust boundaries and data flows</h2>
+<h3 id="31-component-view-with-trust-boundaries">3.1 Component view with trust boundaries</h3>
+<pre><code class="language-mermaid">flowchart LR
+  subgraph UNTRUSTED[&quot;Untrusted: Internet and customer-side actors&quot;]
+    ATK[&quot;External attacker&quot;]
+    USR[&quot;Tenant users (browser)&quot;]
+    CIC[&quot;CI pipeline or CLI (bw_ci_ token)&quot;]
+    SOCU[&quot;Customer SOC (emergency kill link)&quot;]
+    TGT[&quot;Target systems (in scope, possibly hostile)&quot;]
+  end
+
+  ING[&quot;TB-1 Ingress (Traefik, TLS)&quot;]
+
+  subgraph CTRL[&quot;Trusted control plane (Blackwing-operated)&quot;]
+    WEB[&quot;apps/web BFF&quot;]
+    API[&quot;apps/api REST and GraphQL&quot;]
+    KC[&quot;Keycloak (OIDC, MFA)&quot;]
+    WRK[&quot;apps/worker Temporal workflows&quot;]
+    SMG[&quot;apps/session-manager&quot;]
+    SBC[&quot;apps/sandbox-controller&quot;]
+    PDP[&quot;packages/policy (Cedar PDP)&quot;]
+  end
+
+  subgraph DATA[&quot;Data plane (RLS, per-tenant prefixes)&quot;]
+    PG[(&quot;Postgres 16, RLS&quot;)]
+    NEO[(&quot;Neo4j, tenantId guard&quot;)]
+    S3[(&quot;S3 Object Lock&quot;)]
+    VK[(&quot;Valkey, key prefixes&quot;)]
+    OB[(&quot;OpenBao&quot;)]
+    AUD[(&quot;Audit ledger, hash chain&quot;)]
+  end
+
+  subgraph GW[&quot;Gateways (fail-closed)&quot;]
+    EG[&quot;apps/egress-gateway (Go)&quot;]
+    MG[&quot;apps/model-gateway&quot;]
+  end
+
+  subgraph RUN[&quot;Per-run network: disposable sandboxes (untrusted)&quot;]
+    SBX[&quot;Agent sandbox: gVisor, non-root, read-only rootfs, agent-runtime&quot;]
+    BRK[&quot;Run Broker API (/internal/broker)&quot;]
+  end
+
+  PROV[&quot;Model providers: Anthropic API, Bedrock, Vertex, Foundry&quot;]
+  PRIV[&quot;Private, link-local, metadata, other runs, control plane&quot;]
+
+  ATK -. &quot;attacks&quot; .-&gt; ING
+  USR --&gt; ING
+  CIC --&gt; ING
+  SOCU --&gt; ING
+  ING --&gt; WEB
+  ING --&gt; API
+  WEB --&gt; KC
+  WEB --&gt; API
+  API --&gt; PDP
+  API --&gt; PG
+  API --&gt; OB
+  API --&gt; WRK
+  WRK --&gt; PG
+  WRK --&gt; VK
+  WRK --&gt; NEO
+  WRK --&gt; S3
+  WRK --&gt; SBC
+  SBC --&gt; SBX
+  SMG --&gt; EG
+  OB -. &quot;credentials by reference&quot; .-&gt; SMG
+  SBX -- &quot;target traffic (only route)&quot; --&gt; EG
+  SBX -- &quot;virtual key, Claude only&quot; --&gt; MG
+  SBX -- &quot;run-scoped token&quot; --&gt; BRK
+  EG --&gt; TGT
+  MG --&gt; PROV
+  BRK --&gt; PG
+  EG --&gt; AUD
+  API --&gt; AUD
+  SBX -. &quot;all else denied&quot; .-&gt; PRIV
+  TGT -. &quot;callbacks (OOB)&quot; .-&gt; CTRL
+</code></pre>
+<h3 id="32-egress-and-credential-flow-for-one-target-request">3.2 Egress and credential flow for one target request</h3>
+<pre><code class="language-mermaid">sequenceDiagram
+  autonumber
+  participant A as Agent (sandbox)
+  participant E as Egress gateway
+  participant P as Cedar PDP (mirror)
+  participant S as Session manager
+  participant T as Target (in scope)
+  A-&gt;&gt;E: request via HTTP_PROXY, proxy creds encode run, session, test case, role
+  E-&gt;&gt;E: verify envelope signature and expiry (fail closed)
+  E-&gt;&gt;E: check scope rules, budgets, private-range block
+  E-&gt;&gt;E: resolve DNS once, pin IP, re-check redirects
+  E-&gt;&gt;P: policy decision (fail closed on error)
+  E-&gt;&gt;E: write capture (no capture, no forward)
+  E-&gt;&gt;S: request role session (reference only)
+  S--&gt;&gt;E: role session returned to the gateway only
+  E-&gt;&gt;T: request with injected session
+  T--&gt;&gt;E: response
+  E--&gt;&gt;A: response, with known secret values redacted
+</code></pre>
+<p>The agent never receives role credentials. They are resolved and injected inside the gateway.</p>
+<h2 id="4-adversary-catalogue">4. Adversary catalogue</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Adversary</th>
+<th>Capability</th>
+<th>Goal</th>
+<th>Boundaries they reach</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ADV-1</td>
+<td>External attacker</td>
+<td>Internet access, no account</td>
+<td>Steal tenant data, take over accounts, abuse the platform for attacks</td>
+<td>TB-1, TB-2</td>
+</tr>
+<tr>
+<td>ADV-2</td>
+<td>Malicious or curious tenant user</td>
+<td>Valid account in one tenant, may hold admin or developer role</td>
+<td>Read other tenants&#39; data, target assets they do not own, bypass approvals</td>
+<td>TB-2, TB-3, TB-8, TB-10</td>
+</tr>
+<tr>
+<td>ADV-3</td>
+<td>Compromised or prompt-injected agent session</td>
+<td>Controls the content the agent reads (a target&#39;s HTTP, DOM, source or DNS). Can issue any tool call.</td>
+<td>Reach out-of-scope hosts, the platform itself or other tenants; forge findings; exfiltrate secrets</td>
+<td>TB-5, TB-6, TB-7, TB-8</td>
+</tr>
+<tr>
+<td>ADV-4</td>
+<td>Malicious insider or rogue platform operator</td>
+<td>Platform operator access (see §1.2 of the pack), infrastructure access</td>
+<td>Read tenant data, alter audit history, flip kill or release state, change policy</td>
+<td>TB-4, TB-9</td>
+</tr>
+<tr>
+<td>ADV-5</td>
+<td>Supply-chain attacker</td>
+<td>Compromises a dependency, build step, image, or an upstream binary (SDK, Claude Code, tool)</td>
+<td>Run malicious code in the platform or in every sandbox</td>
+<td>TB-11</td>
+</tr>
+<tr>
+<td>ADV-6</td>
+<td>Curious cross-tenant tenant</td>
+<td>A tenant with its own legitimate use, probing for side channels</td>
+<td>Infer another tenant&#39;s assets, findings or activity from timing, shared caches or shared infrastructure</td>
+<td>TB-8</td>
+</tr>
+</tbody></table>
+<p>ADV-3 is the case the platform is built around. It has no account and no trust. The agent is a tool that an adversary
+who controls target content can steer.</p>
+<h2 id="5-threats-mitigations-and-invariants-by-boundary">5. Threats, mitigations and invariants by boundary</h2>
+<p>Columns: <strong>ID</strong> (threat), <strong>STRIDE</strong>, <strong>Threat</strong>, <strong>Deterministic mitigation</strong>, <strong>§8</strong> (invariant relied on),
+<strong>Owner</strong> (epic that builds the mitigation). Threats are described at functional altitude. No payloads or walkthroughs
+are included (content-safety rule for this document).</p>
+<h3 id="tb-1-internet-and-customer-actors-to-ingress-and-console">TB-1: Internet and customer actors to ingress and console</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>STRIDE</th>
+<th>Threat</th>
+<th>Deterministic mitigation</th>
+<th>§8</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T-01</td>
+<td>S</td>
+<td>Account takeover of a console user (credential stuffing, reused passwords)</td>
+<td>Keycloak MFA and brute-force detection; OIDC Auth Code with PKCE through the Next.js BFF; tokens never reach the browser; httpOnly cookies</td>
+<td>8.8</td>
+<td>IAM</td>
+</tr>
+<tr>
+<td>T-02</td>
+<td>S</td>
+<td>Use of a stolen API token (<code>bw_pat_</code>, <code>bw_ci_</code>)</td>
+<td>Tokens stored as SHA-256 hashes with prefix lookup; expiry, revocation and <code>last_used_at</code>; scopes bound to <code>asset_ids</code> or an SA</td>
+<td>8.6, 8.10</td>
+<td>RBAC</td>
+</tr>
+<tr>
+<td>T-03</td>
+<td>T, I</td>
+<td>Interception or downgrade of traffic in transit</td>
+<td>TLS terminated at ingress with cert-manager certificates; HSTS; no plaintext listener for the API</td>
+<td>supporting</td>
+<td>INFRA</td>
+</tr>
+<tr>
+<td>T-04</td>
+<td>D</td>
+<td>Flooding of the API or the login endpoint</td>
+<td>Per-token rate limits (429 with <code>Retry-After</code>); edge rate limits; no unauthenticated expensive endpoints</td>
+<td>supporting</td>
+<td>API</td>
+</tr>
+<tr>
+<td>T-05</td>
+<td>E</td>
+<td>Kill-link token abused to stop another tenant&#39;s run, or reused after the event</td>
+<td>The SOC kill link is signed, scoped to one run, asset or tenant, and expires; use is audited; the link needs no Blackwing account, but grants only the kill action</td>
+<td>8.5, 8.8</td>
+<td>KILL</td>
+</tr>
+<tr>
+<td>T-06</td>
+<td>R</td>
+<td>An actor denies having approved a gate or a release</td>
+<td>Every login, approval, gate decision and release writes an audit event in the same transaction (outbox); the ledger is hash-chained per tenant</td>
+<td>8.8</td>
+<td>AUDIT</td>
+</tr>
+</tbody></table>
+<h3 id="tb-2-console-bff-and-api-session-cookie-or-bearer-token">TB-2: Console BFF and API (session cookie or bearer token)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>STRIDE</th>
+<th>Threat</th>
+<th>Deterministic mitigation</th>
+<th>§8</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T-07</td>
+<td>I, E</td>
+<td>IDOR: one tenant&#39;s user reads or changes another tenant&#39;s objects</td>
+<td>Every request runs in <code>withTenant</code> (<code>SET LOCAL app.tenant_id</code>); RLS with no <code>BYPASSRLS</code> on the app role; missing tenant context fails closed; Cedar resource check; cross-tenant tests per data-access module</td>
+<td>8.6</td>
+<td>TENANT, DB, POLICY</td>
+</tr>
+<tr>
+<td>T-08</td>
+<td>E, T</td>
+<td>Requester approves their own standing authorisation, plan or Gate 2 (mass assignment or direct call)</td>
+<td><code>requester_id</code> set server-side from the session; DB check constraint or trigger <code>approver_id &lt;&gt; requester_id</code>; Cedar check; SoD tested for SA, Gate 1 and Gate 2</td>
+<td>8.4</td>
+<td>AUTHZ, PLAN, GATE2</td>
+</tr>
+<tr>
+<td>T-09</td>
+<td>R</td>
+<td>A state change happens with no audit event</td>
+<td>Domain change and audit event (or outbox row) written in one transaction by <code>withOutbox</code></td>
+<td>8.8</td>
+<td>AUDIT</td>
+</tr>
+<tr>
+<td>T-10</td>
+<td>I</td>
+<td>Internal details leak through error responses or logs</td>
+<td>RFC 9457 problem+json with stable codes; no stack traces; logger redaction paths; no secrets in errors</td>
+<td>8.7</td>
+<td>API, OBS</td>
+</tr>
+</tbody></table>
+<h3 id="tb-3-api-and-temporal-workers-signals-workflows-schedules">TB-3: API and Temporal workers (signals, workflows, schedules)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>STRIDE</th>
+<th>Threat</th>
+<th>Deterministic mitigation</th>
+<th>§8</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T-11</td>
+<td>S, T</td>
+<td>A forged gate signal approves Gate 2 or Gate 1 without a human</td>
+<td>Signals accepted only from the authenticated service identity; each decision records the actor; requester is not approver; timeout means deny</td>
+<td>8.4</td>
+<td>GATE2, WORKFLOW</td>
+</tr>
+<tr>
+<td>T-12</td>
+<td>D</td>
+<td>A run keeps going after a kill, a window closes or an SA expires</td>
+<td>Kill cancels Temporal workflows; window and expiry are timers; expiry mid-run stops all traffic</td>
+<td>8.1, 8.5</td>
+<td>KILL, ORCH</td>
+</tr>
+<tr>
+<td>T-13</td>
+<td>T</td>
+<td>Non-deterministic replay changes the behaviour of a run already in progress</td>
+<td>Determinism lint on workflow code; <code>patched()</code> and Build IDs for versioning; pinned versions per run</td>
+<td>8.9</td>
+<td>WORKFLOW</td>
+</tr>
+<tr>
+<td>T-14</td>
+<td>E</td>
+<td>Run started with a budget or model setting that was not approved</td>
+<td>Run manifest pins budgets and model IDs; the approved envelope hash is recorded; runs do not float</td>
+<td>8.9</td>
+<td>ORCH, REGISTRY</td>
+</tr>
+</tbody></table>
+<h3 id="tb-4-control-plane-and-data-stores">TB-4: Control plane and data stores</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>STRIDE</th>
+<th>Threat</th>
+<th>Deterministic mitigation</th>
+<th>§8</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T-15</td>
+<td>I</td>
+<td>Cross-tenant read from Postgres through a missing or wrong tenant setting</td>
+<td>RLS on every tenant table (<code>tenant_id = current_setting(&#39;app.tenant_id&#39;)</code>), forced for the owner; migrations run as a separate owner role; <code>withSystem</code> is the only bypass and is audited</td>
+<td>8.6</td>
+<td>DB</td>
+</tr>
+<tr>
+<td>T-16</td>
+<td>I</td>
+<td>Plaintext secret read from the database</td>
+<td>Secret records hold only <code>secret_ref</code>; values are envelope-encrypted by OpenBao Transit; consumers use the Secrets Service, not the tables</td>
+<td>8.7</td>
+<td>SECRETS</td>
+</tr>
+<tr>
+<td>T-17</td>
+<td>T</td>
+<td>Audit events edited, reordered or removed</td>
+<td>Append-only grants; per-tenant hash chain with a verifier; evidence in S3 Object Lock with <code>legal_hold</code> and <code>retention_until</code></td>
+<td>8.8</td>
+<td>AUDIT, EVIDENCE</td>
+</tr>
+<tr>
+<td>T-18</td>
+<td>I</td>
+<td>Cross-tenant read of objects in S3</td>
+<td>Per-tenant key prefixes and per-tenant encryption context; no list across tenants</td>
+<td>8.6</td>
+<td>EVIDENCE, RETAIN</td>
+</tr>
+<tr>
+<td>T-19</td>
+<td>I</td>
+<td>Cross-tenant data in Valkey (queues, cache, live events)</td>
+<td>Every key carries a tenant prefix; BullMQ and Redis Streams are tenant-scoped</td>
+<td>8.6</td>
+<td>WORKFLOW</td>
+</tr>
+<tr>
+<td>T-20</td>
+<td>I</td>
+<td>Cross-tenant retrieval from the asset graph or memory</td>
+<td>Neo4j queries require a <code>tenantId</code> guard enforced by the repository layer; no cross-tenant retrieval in memory</td>
+<td>8.6</td>
+<td>GRAPH, MEMORY</td>
+</tr>
+</tbody></table>
+<h3 id="tb-5-sandbox-to-egress-gateway-target-traffic">TB-5: Sandbox to egress gateway (target traffic)</h3>
+<p>This is the highest-risk path. Every rule here is enforced in the gateway, not in the agent.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>STRIDE</th>
+<th>Threat</th>
+<th>Deterministic mitigation</th>
+<th>§8</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T-21</td>
+<td>E (SSRF of platform)</td>
+<td>Target traffic is pointed at the platform&#39;s own infrastructure, the metadata endpoint or private ranges</td>
+<td>Private, link-local and metadata ranges are blocked unless explicitly in scope; sandbox network policy denies everything except the gateway; the gateway runs in its own network</td>
+<td>8.2</td>
+<td>EGRESS, INFRA</td>
+</tr>
+<tr>
+<td>T-22</td>
+<td>E</td>
+<td>Redirect or DNS answer sends traffic to an out-of-scope host (DNS rebinding)</td>
+<td>Resolve once and pin the IP; re-check scope on every redirect and every new connection; out-of-scope answers blocked</td>
+<td>8.2</td>
+<td>EGRESS</td>
+</tr>
+<tr>
+<td>T-23</td>
+<td>D (fail open)</td>
+<td>Gateway cannot read policy, reach its config or write capture, and still forwards</td>
+<td>Fail closed: if policy evaluation, config or capture fails, the request is blocked; data planes bind only after readiness and deny on readiness loss</td>
+<td>8.2</td>
+<td>EGRESS</td>
+</tr>
+<tr>
+<td>T-24</td>
+<td>S, T</td>
+<td>Forged or unsigned envelope accepted</td>
+<td>Signature verified on load and on every policy refresh; pinned signing key ID; invalid signature means no traffic</td>
+<td>8.1</td>
+<td>EGRESS, AUTHZ</td>
+</tr>
+<tr>
+<td>T-25</td>
+<td>E</td>
+<td>Traffic continues after the envelope expires or the SA is revoked</td>
+<td>Expiry checked on every request and refresh; expiry mid-run blocks immediately and the run stops (<code>expired</code> state)</td>
+<td>8.1</td>
+<td>EGRESS, ORCH</td>
+</tr>
+<tr>
+<td>T-26</td>
+<td>E</td>
+<td>An out-of-scope or destructive action (denial of service, mass lockout, data deletion)</td>
+<td>Destructive class hard-blocked by the baseline policy; per-test-case request, rate and byte budgets; <code>state_changing</code> needs SA, Gate 1 and a journal entry</td>
+<td>8.3</td>
+<td>POLICY, SCOPE, REVERSAL</td>
+</tr>
+<tr>
+<td>T-27</td>
+<td>I</td>
+<td>Credentials for target roles reach the sandbox or the model</td>
+<td>Session manager and gateway inject role sessions at the gateway; the sandbox receives only a reference; known values redacted from tool output</td>
+<td>8.7</td>
+<td>SESSION, EGRESS</td>
+</tr>
+<tr>
+<td>T-28</td>
+<td>E</td>
+<td>A tool that ignores proxy settings reaches the target directly</td>
+<td>Sandbox network policy denies direct egress; tools that ignore proxy variables run under the proxy chaining wrapper; direct traffic is dropped at the network layer</td>
+<td>8.2</td>
+<td>SANDBOX, IMAGE</td>
+</tr>
+<tr>
+<td>T-29</td>
+<td>R</td>
+<td>Target traffic happens with no evidence</td>
+<td>Capture is a precondition: no capture, no forward; capture metadata goes to the evidence store with a hash</td>
+<td>8.2, 8.8</td>
+<td>EGRESS, EVIDENCE</td>
+</tr>
+<tr>
+<td>T-30</td>
+<td>E</td>
+<td>Traffic to a host whose ownership was never verified</td>
+<td>Gateway refuses targets whose asset is not <code>verified</code>; the verification state is part of the envelope</td>
+<td>8.10</td>
+<td>ASSET, EGRESS</td>
+</tr>
+</tbody></table>
+<h3 id="tb-6-sandbox-to-model-gateway">TB-6: Sandbox to model gateway</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>STRIDE</th>
+<th>Threat</th>
+<th>Deterministic mitigation</th>
+<th>§8</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T-31</td>
+<td>I</td>
+<td>Real provider credentials are read from the sandbox</td>
+<td>Sandbox holds only a per-session virtual key (<code>bwk_</code>), short-lived, scoped to run and session, revoked on kill; provider keys live only in the model gateway</td>
+<td>8.5, 8.7</td>
+<td>GATEWAY</td>
+</tr>
+<tr>
+<td>T-32</td>
+<td>I</td>
+<td>Target content or run data goes to a provider that is not approved for the tenant</td>
+<td>The gateway routes only to Claude endpoints approved for the tenant (Blackwing-managed Anthropic API, the tenant&#39;s API key, Bedrock, Vertex or Foundry); no other providers exist in the route table</td>
+<td>8.7</td>
+<td>GATEWAY</td>
+</tr>
+<tr>
+<td>T-33</td>
+<td>I</td>
+<td>Known secret values appear in prompts or model output</td>
+<td>Redaction of known secret values in PostToolUse (<code>updatedToolOutput</code>) and again in the model gateway</td>
+<td>8.7</td>
+<td>RUNTIME, GATEWAY</td>
+</tr>
+<tr>
+<td>T-34</td>
+<td>E</td>
+<td>A prompt-injected agent ignores its instructions and acts out of scope</td>
+<td>Not mitigated by the model. The PDP hook, the egress gateway and the budgets decide. See <a href="#8-gaps-and-non-mitigations">§8</a>.</td>
+<td>8.11</td>
+<td>RUNTIME, POLICY, EGRESS</td>
+</tr>
+<tr>
+<td>T-35</td>
+<td>D</td>
+<td>Runaway token or cost spend</td>
+<td>Cost caps and spend limits in the gateway (primary); <code>maxBudgetUsd</code> in the SDK (secondary); <code>maxTurns</code> per persona</td>
+<td>supporting (F38)</td>
+<td>COST, GATEWAY</td>
+</tr>
+</tbody></table>
+<h3 id="tb-7-sandbox-to-run-broker-api-internalbroker">TB-7: Sandbox to Run Broker API (<code>/internal/broker/*</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>STRIDE</th>
+<th>Threat</th>
+<th>Deterministic mitigation</th>
+<th>§8</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T-36</td>
+<td>E, T</td>
+<td>A sandbox writes candidate findings, evidence or journal entries for another run or tenant</td>
+<td>Broker is reachable only from the sandbox network; run-scoped tokens; every write is bound to the token&#39;s run and tenant and checked against the DB</td>
+<td>8.6</td>
+<td>API, MCP</td>
+</tr>
+<tr>
+<td>T-37</td>
+<td>T</td>
+<td>A sandbox claims a finding is confirmed without proof</td>
+<td>Only the deterministic validator confirms: replay in a fresh sandbox against a pre-declared oracle, with negative controls; Gate 3 release is human</td>
+<td>8.11</td>
+<td>VALIDATE, TRIAGE</td>
+</tr>
+<tr>
+<td>T-38</td>
+<td>R</td>
+<td>A state-changing action runs with no reversal entry</td>
+<td>PreToolUse denies <code>state_changing</code> calls with no prior journal entry; the broker requires the entry before the action is recorded</td>
+<td>8.3</td>
+<td>REVERSAL, RUNTIME</td>
+</tr>
+</tbody></table>
+<h3 id="tb-8-tenant-to-tenant">TB-8: Tenant to tenant</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>STRIDE</th>
+<th>Threat</th>
+<th>Deterministic mitigation</th>
+<th>§8</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T-39</td>
+<td>I, E</td>
+<td>Sandboxes of two runs, or two tenants, reach each other</td>
+<td>One run network per run; one sandbox per agent session; no route between runs; per-session workspace on tmpfs</td>
+<td>8.6</td>
+<td>SANDBOX, INFRA</td>
+</tr>
+<tr>
+<td>T-40</td>
+<td>I</td>
+<td>Memory or knowledge leaks across tenants</td>
+<td>Per-tenant memory with no cross-tenant retrieval; tenant guard on every memory query</td>
+<td>8.6</td>
+<td>MEMORY</td>
+</tr>
+<tr>
+<td>T-41</td>
+<td>I</td>
+<td>Side channel between tenants (timing, shared caches, shared queues)</td>
+<td>Tenant-prefixed keys and queues; per-tenant rate limits; no shared cache of tenant-visible data</td>
+<td>8.6</td>
+<td>WORKFLOW, DB</td>
+</tr>
+<tr>
+<td>T-42</td>
+<td>I, E</td>
+<td>Cross-tenant access through a missed query or a new module</td>
+<td>Cross-tenant access tests are mandatory for every data-access module (the <code>widget.cross-tenant</code> template); CI fails the change without them</td>
+<td>8.6</td>
+<td>DB, TENANT</td>
+</tr>
+</tbody></table>
+<h3 id="tb-9-platform-operator-to-tenant-data-and-configuration">TB-9: Platform operator to tenant data and configuration</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>STRIDE</th>
+<th>Threat</th>
+<th>Deterministic mitigation</th>
+<th>§8</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T-43</td>
+<td>I, E</td>
+<td>Rogue operator reads tenant data</td>
+<td>Operator access is a separate role and path; <code>withSystem</code> is the only bypass; every operator read or write is audited; no tenant role membership is implied</td>
+<td>8.6, 8.8</td>
+<td>ADMIN, AUDIT</td>
+</tr>
+<tr>
+<td>T-44</td>
+<td>E, T</td>
+<td>Operator flips a kill, release or policy state silently</td>
+<td>Operator actions are audited with actor and reason; kill and release are gate-controlled; the change is visible to the tenant audit feed</td>
+<td>8.5, 8.8</td>
+<td>ADMIN, KILL</td>
+</tr>
+<tr>
+<td>T-45</td>
+<td>T</td>
+<td>Baseline policy or a tenant policy changed without trace</td>
+<td>Baseline policy is non-overridable; policies are versioned with <code>sha256</code> and author; the policy hash is pinned per run</td>
+<td>8.9</td>
+<td>POLICY</td>
+</tr>
+</tbody></table>
+<h3 id="tb-10-tenant-to-target-ownership-and-authorisation">TB-10: Tenant to target (ownership and authorisation)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>STRIDE</th>
+<th>Threat</th>
+<th>Deterministic mitigation</th>
+<th>§8</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T-46</td>
+<td>E</td>
+<td>A tenant targets a host it does not own (abuse of the platform against third parties)</td>
+<td>Ownership verification (DNS TXT, HTTP file or manual letter) before any traffic; SA binds scope to verified assets; gateway refuses unverified targets</td>
+<td>8.10</td>
+<td>ASSET, AUTHZ</td>
+</tr>
+<tr>
+<td>T-47</td>
+<td>E</td>
+<td>Test runs outside the authorised window or after the authorisation is revoked</td>
+<td>Test-window timers; SA revocation and expiry propagate to the envelope and the gateway</td>
+<td>8.1</td>
+<td>SCHED, AUTHZ, KILL</td>
+</tr>
+<tr>
+<td>T-48</td>
+<td>S</td>
+<td>A stolen CI token starts runs for assets it was not scoped to</td>
+<td>CI tokens carry <code>asset_ids</code> or SA binding and expiry; scope checked at run creation and at the gateway</td>
+<td>8.1, 8.6</td>
+<td>RBAC, AUTHZ</td>
+</tr>
+</tbody></table>
+<h3 id="tb-11-build-dependencies-and-deployment-supply-chain">TB-11: Build, dependencies and deployment (supply chain)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>STRIDE</th>
+<th>Threat</th>
+<th>Deterministic mitigation</th>
+<th>§8</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T-49</td>
+<td>T</td>
+<td>Malicious dependency or base image runs in the platform or every sandbox</td>
+<td>Lockfile with frozen install; pinned digests; cosign signing; Syft SBOM; Trivy scans; Renovate policy with automerge limits</td>
+<td>8.9</td>
+<td>CI, IMAGE</td>
+</tr>
+<tr>
+<td>T-50</td>
+<td>T</td>
+<td>Silent change of the Claude Agent SDK, Claude Code or a sandbox tool between runs</td>
+<td>Exact SDK version pinned in <code>apps/agent-runtime</code>; SDK, Claude Code, tool and sandbox image digest recorded per run; runs never float</td>
+<td>8.9</td>
+<td>RUNTIME, REGISTRY</td>
+</tr>
+<tr>
+<td>T-51</td>
+<td>T</td>
+<td>Unreviewed change to a security control</td>
+<td>Code owners; required checks; the change needs the invariant tests it touches; this model must be updated when a new component is added</td>
+<td>8.11</td>
+<td>CI, SECREVIEW</td>
+</tr>
+</tbody></table>
+<h2 id="6-invariant-coverage-matrix">6. Invariant coverage matrix</h2>
+<p>Every invariant in <a href="./CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8</a>
+maps to at least one threat above, a deterministic mitigation and an owning epic. The SECREVIEW-002 matrix turns each row
+into tests.</p>
+<table>
+<thead>
+<tr>
+<th>§8</th>
+<th>Invariant (summary)</th>
+<th>Threats</th>
+<th>Deterministic mitigation (summary)</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>8.1</td>
+<td>No target traffic without a valid, unexpired, signed envelope</td>
+<td>T-12, T-24, T-25, T-47, T-48</td>
+<td>Signature verified on load and refresh; expiry blocks at once</td>
+<td>EGRESS, AUTHZ</td>
+</tr>
+<tr>
+<td>8.2</td>
+<td>Egress fails closed; redirects and DNS re-checked; private ranges blocked</td>
+<td>T-21, T-22, T-23, T-28, T-29</td>
+<td>Fail-closed readiness; pin and re-check; network deny; capture precondition</td>
+<td>EGRESS, SANDBOX</td>
+</tr>
+<tr>
+<td>8.3</td>
+<td>Destructive class never allowed; state change needs SA, Gate 1 and journal</td>
+<td>T-26, T-38</td>
+<td>Baseline hard block; journal precondition</td>
+<td>POLICY, REVERSAL</td>
+</tr>
+<tr>
+<td>8.4</td>
+<td>Requester is not approver (SA, Gate 1, Gate 2)</td>
+<td>T-08, T-11</td>
+<td>DB check and Cedar; server-side identity</td>
+<td>AUTHZ, GATE2</td>
+</tr>
+<tr>
+<td>8.5</td>
+<td>Measured kill switch: gateway, sandboxes, model keys and workflows</td>
+<td>T-05, T-12, T-31, T-44</td>
+<td>Ordered kill with measured halt time</td>
+<td>KILL</td>
+</tr>
+<tr>
+<td>8.6</td>
+<td>Tenant isolation everywhere</td>
+<td>T-02, T-07, T-15, T-18, T-19, T-20, T-36, T-39, T-40, T-41, T-42, T-43, T-48</td>
+<td>RLS, tenant prefixes, per-run sandboxes, tenant guards, cross-tenant tests</td>
+<td>DB, TENANT, SANDBOX</td>
+</tr>
+<tr>
+<td>8.7</td>
+<td>Secrets never reach the model, logs or sandbox in plaintext</td>
+<td>T-03, T-10, T-16, T-27, T-31, T-32, T-33</td>
+<td>References only; gateway injection; redaction; OpenBao</td>
+<td>SECRETS, SESSION, GATEWAY</td>
+</tr>
+<tr>
+<td>8.8</td>
+<td>Audit ledger append-only and tamper-evident</td>
+<td>T-01, T-05, T-06, T-09, T-17, T-29, T-38, T-43, T-44</td>
+<td>Same-transaction events; hash chain; Object Lock</td>
+<td>AUDIT, EVIDENCE</td>
+</tr>
+<tr>
+<td>8.9</td>
+<td>Pinned versions per run</td>
+<td>T-13, T-14, T-45, T-49, T-50</td>
+<td>Recorded and pinned run manifest; digests; exact pins</td>
+<td>ORCH, RUNTIME, CI</td>
+</tr>
+<tr>
+<td>8.10</td>
+<td>Unverified assets never targeted</td>
+<td>T-02, T-30, T-46</td>
+<td>Verification state checked in the envelope and at the gateway</td>
+<td>ASSET, EGRESS</td>
+</tr>
+<tr>
+<td>8.11</td>
+<td>No model-dependent safety</td>
+<td>T-34, T-37, T-51</td>
+<td>PDP hook, gateway, validator and Gate 3 decide; the model is not a control</td>
+<td>RUNTIME, POLICY, VALIDATE</td>
+</tr>
+</tbody></table>
+<h2 id="7-residual-risk-register">7. Residual-risk register</h2>
+<p>Each residual risk has an owner and an acceptance status. A disagreement about whether a mitigation is adequate is
+recorded here, not hidden. Owners are roles, and each person is named at sign-off.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Residual risk</th>
+<th>Why it remains</th>
+<th>Mitigations in place</th>
+<th>Owner (role)</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R-01</td>
+<td>Prompt-injected agent performs harmful actions inside the authorised scope and window</td>
+<td>Scope is authorised by the customer. Injected content can steer work within it.</td>
+<td>Scope rules, budgets, destructive block, Gate 2 for out-of-envelope actions, validator and Gate 3</td>
+<td>Security lead</td>
+<td>Open, pending sign-off</td>
+</tr>
+<tr>
+<td>R-02</td>
+<td>Sandbox escape from gVisor or the container runtime</td>
+<td>Kernel and runtime bugs are outside Blackwing&#39;s code</td>
+<td>Non-root, read-only rootfs, dropped capabilities, seccomp, no host socket, per-run network, patching cadence</td>
+<td>Infrastructure owner (INFRA)</td>
+<td>Open, pending sign-off</td>
+</tr>
+<tr>
+<td>R-03</td>
+<td>Over-broad scope authored by a customer</td>
+<td>The customer is the authority for their own assets</td>
+<td>Scope review at Gate 1, separation of duties, asset owner approval, audit</td>
+<td>Product owner (AUTHZ)</td>
+<td>Open, pending sign-off</td>
+</tr>
+<tr>
+<td>R-04</td>
+<td>Rogue operator with infrastructure access reads data or alters the platform</td>
+<td>Operators must be able to run the service</td>
+<td>Separate roles, audited access, least-privilege, hash-chained ledger that shows tampering</td>
+<td>Security lead</td>
+<td>Open, pending sign-off</td>
+</tr>
+<tr>
+<td>R-05</td>
+<td>Model provider processes target data under its own retention terms</td>
+<td>Provider behaviour is outside Blackwing&#39;s control</td>
+<td>Approved endpoints per tenant only, redaction, customer-owned provider keys option, contractual terms</td>
+<td>Platform owner (GATEWAY)</td>
+<td>Open, pending sign-off</td>
+</tr>
+<tr>
+<td>R-06</td>
+<td>Compromised upstream SDK or Claude Code binary</td>
+<td>Upstream builds are trusted once pinned</td>
+<td>Exact pins, digests, SBOM, recorded versions per run, review before upgrade</td>
+<td>Platform owner (RUNTIME)</td>
+<td>Open, pending sign-off</td>
+</tr>
+<tr>
+<td>R-07</td>
+<td>Kill-switch halt time exceeds target under load</td>
+<td>Targets are measured, not guaranteed under every load</td>
+<td>Measured halt time, gateway-first ordering, performance tests</td>
+<td>Platform owner (KILL, PERF)</td>
+<td>Open, pending sign-off</td>
+</tr>
+<tr>
+<td>R-08</td>
+<td>This model falls behind the system as components are added</td>
+<td>Living document with human maintenance</td>
+<td>Change procedure below; a checklist item on every epic that adds a component</td>
+<td>Security lead (SECREVIEW-008)</td>
+<td>Open, pending sign-off</td>
+</tr>
+</tbody></table>
+<h2 id="8-gaps-and-non-mitigations">8. Gaps and non-mitigations</h2>
+<p>These are recorded as gaps and are not counted as controls.</p>
+<ul>
+<li><strong>&quot;The model will refuse.&quot;</strong> A refusal is not a control (<a href="./CONTEXT_PACK.html#8-security-invariants-every-issue-must-preserve-these-tests-must-prove-the-ones-they-touch">§8.11</a>).
+Refusals are recorded as <code>model_declined</code> for coverage and for the eval harness only (<a href="./CONTEXT_PACK.html#44-result-handling">§4.4</a>).</li>
+<li><strong>&quot;The system prompt says stay in scope.&quot;</strong> The signed authorisation context in the system prompt is a statement to the
+agent, not an enforcement point (<a href="./CONTEXT_PACK.html#45-policy--terms-constraints-must-follow">§4.5</a>). The gateway and the PDP enforce scope.</li>
+<li><strong>&quot;The persona is told not to use the network.&quot;</strong> Persona allowlists and <code>disallowedTools</code> are defence in depth. The
+network policy and the gateway enforce it.</li>
+<li><strong>Model-written findings.</strong> A finding written by an agent is a candidate. Only the validator confirms it, and a human releases it.</li>
+<li><strong>Target-side defences.</strong> A target that blocks the agent is not a Blackwing control. Blackwing must not depend on
+targets behaving well.</li>
+</ul>
+<h2 id="9-change-procedure">9. Change procedure</h2>
+<ul>
+<li>A pull request that adds or changes a component, a trust boundary, a data flow or an adversary updates this page in the
+same change. The PR template carries this checklist item.</li>
+<li>Each new threat gets an ID (<code>T-nn</code>), a deterministic mitigation, a §8 invariant and an owner epic. A threat with no
+deterministic mitigation becomes a residual risk (section 7) with an owner, or a fail-closed gap (section 8).</li>
+<li>Each residual risk keeps its owner and acceptance status. Changing the status needs a second engineer&#39;s review.</li>
+<li>A change to this page is reviewed under the same separation-of-duties rule as other security decisions.</li>
+</ul>
+<h2 id="10-sign-off">10. Sign-off</h2>
+<p>Separation of duties applies: the author of this model cannot approve it.</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Role</th>
+<th>Name</th>
+<th>Status</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Author</td>
+<td>Engineer who drafted the model</td>
+<td>(author of this change)</td>
+<td>Drafted in this change</td>
+<td></td>
+</tr>
+<tr>
+<td>Second-engineer review</td>
+<td>Engineer other than the author</td>
+<td>(to be recorded)</td>
+<td><strong>Pending</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>Residual-risk acceptance</td>
+<td>Security lead</td>
+<td>(to be recorded)</td>
+<td><strong>Pending</strong></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>The approval is recorded only when a second engineer has reviewed and approved this page. Until then, the status is
+pending, and the residual risks in section 7 remain open.</p>
+</main>
+</div>
+</body>
+</html>

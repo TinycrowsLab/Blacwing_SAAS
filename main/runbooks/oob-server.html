@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Runbook: out-of-band listener, interactsh-server (INFRA-010) | Blackwing documentation</title>
+<style>:root{--bg:#FFFFFF;--surface:#FFFFFF;--surface2:#F4F4F5;--border:#E6E7EA;--text:#16171D;--muted:#5A5E69;--primary:#004777;--code:#FAFAFA;--ok-soft:#E8F4EC;--warn-soft:#FCF2E4;--bad-soft:#FBECEA;--info-soft:#F0F1F3;--font:Poppins,system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}}
+:root[data-theme="dark"]{--bg:#16171D;--surface:#1E1F26;--surface2:#26282F;--border:#30323A;--text:#ECECEE;--muted:#A0A3AC;--primary:#6CB4E4;--code:#191A20;--ok-soft:#132A1C;--warn-soft:#2E2210;--bad-soft:#351A18;--info-soft:#2A2C33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font)}
+a{color:var(--primary)}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.brand{font-weight:600;color:var(--text);text-decoration:none}
+.version{color:var(--muted);font-size:14px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.sidebar{border-right:1px solid var(--border);padding:16px;background:var(--surface2)}
+.sidebar h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.sidebar h2:first-child{margin-top:0}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.sidebar li a{display:block;padding:4px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+.sidebar li a[aria-current="page"]{background:var(--surface);font-weight:600;color:var(--primary)}
+.content{padding:24px 32px;max-width:860px;min-width:0;overflow-wrap:anywhere}
+h1,h2,h3,h4{line-height:1.25}
+h1{font-size:28px;margin-top:0}
+h2{font-size:22px;margin-top:32px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+h3{font-size:18px;margin-top:24px}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:16px 0}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface2)}
+code{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto}
+pre code{background:none;padding:0}
+img{max-width:100%;height:auto}
+blockquote{margin:16px 0;padding:8px 16px;border-left:4px solid var(--border);color:var(--muted)}
+.callout{margin:16px 0;padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--info-soft)}
+.callout-title{margin:0 0 4px;font-weight:600}
+.callout-warning,.callout-caution{background:var(--warn-soft)}
+.callout-important{background:var(--bad-soft)}
+.callout-tip,.callout-note{background:var(--ok-soft)}
+.index-list{padding-left:20px}
+@media (max-width:760px){
+.layout{grid-template-columns:1fr}
+.sidebar{border-right:0;border-bottom:1px solid var(--border)}
+.content{padding:16px}
+}</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="../index.html">Blackwing documentation</a>
+<span class="version">Version main</span>
+</header>
+<div class="layout">
+<nav class="sidebar" aria-label="Documentation">
+<h2>User Guide</h2>
+<ul>
+<li><a href="../user/onboarding.html">Developer onboarding and troubleshooting</a></li>
+<li><a href="../user/egress-ips.html">Blackwing egress IP addresses</a></li>
+</ul>
+<h2>Admin Guide</h2>
+<ul>
+<li><a href="../user/admin-guide.html">Blackwing admin guide</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./oob-server.html" aria-current="page">Runbook: out-of-band listener, interactsh-server (INFRA-010)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+</ul>
+<h2>API Reference</h2>
+<ul>
+<li><a href="../api/README.html">API reference</a></li>
+<li><a href="../api/reference.html">API reference</a></li>
+<li><a href="../api/conventions.html">API conventions</a></li>
+<li><a href="../api/auth.html">Authentication</a></li>
+</ul>
+<h2>Runbooks</h2>
+<ul>
+<li><a href="./branch-protection.html">Branch protection and required status checks</a></li>
+<li><a href="./ci-pr-checks.html">Pull-request checks</a></li>
+<li><a href="./code-owners.html">Code owners</a></li>
+<li><a href="./codeql.html">CodeQL static analysis (CI-013)</a></li>
+<li><a href="./db-migrations.html">Database migrations</a></li>
+<li><a href="./dependency-review.html">Dependency review (CI-014)</a></li>
+<li><a href="./dev-host-bootstrap.html">Dev-host bootstrap</a></li>
+<li><a href="./dev-k3s.html">Dev k3s with the gVisor RuntimeClass (DEVENV-014)</a></li>
+<li><a href="./dev-seed.html">Dev seed data (`pnpm db:seed`)</a></li>
+<li><a href="./deploy-rollback.html">Deploy, upgrade and rollback runbook (INFRA, LAUNCH)</a></li>
+<li><a href="./demo.html">Demo runbook (`pnpm demo`)</a></li>
+<li><a href="./demo-status.html">Demo status</a></li>
+<li><a href="./disaster-recovery.html">Disaster recovery runbook (INFRA, with DATA owners)</a></li>
+<li><a href="./dns-delegation.html">Runbook: application DNS zone and OOB delegation (INFRA-007)</a></li>
+<li><a href="./drift-checks.html">Drift checks</a></li>
+<li><a href="./oob-server.html" aria-current="page">Runbook: out-of-band listener, interactsh-server (INFRA-010)</a></li>
+<li><a href="./e2e.html">End-to-end tests (CI-006, #140)</a></li>
+<li><a href="./egress-ip-list.html">Runbook: published egress-IP list (INFRA-015)</a></li>
+<li><a href="./image-signing.html">Image signing and provenance (CI-010)</a></li>
+<li><a href="./image-verification.html">Image verification before deploy (CI-011)</a></li>
+<li><a href="./incident-response.html">Incident response and on-call runbook (OBS, NOTIFY, KILL)</a></li>
+<li><a href="./ingress-tls.html">Runbook: public ingress, TLS and cert-manager (INFRA-012)</a></li>
+<li><a href="./kill-slo.html">Kill SLO chaos suite runbook (KILL-008, §8.5)</a></li>
+<li><a href="./kill-switch.html">Kill switch runbook (KILL, §8.5)</a></li>
+<li><a href="./memory.html">Agent memory: storage runbook</a></li>
+<li><a href="./node-imds.html">Runbook: node IMDS hardening and security groups (INFRA-003)</a></li>
+<li><a href="./release.html">Release runbook (CI-016)</a></li>
+<li><a href="./renovate.html">Renovate dependency policy</a></li>
+<li><a href="./search-attributes.html">Temporal search attributes</a></li>
+<li><a href="./secret-scanning.html">Secret scanning (gitleaks)</a></li>
+<li><a href="./secrets-resolve.html">Runbook: internal secret resolve API (SECRETS-006)</a></li>
+<li><a href="./ses-email.html">Runbook: SES email (INFRA-008)</a></li>
+<li><a href="./trivy.html">Trivy scanning (CI-009)</a></li>
+<li><a href="./web-bff-auth.html">Runbook: console sign-in (BFF OIDC)</a></li>
+</ul>
+<h2>Architecture and Security</h2>
+<ul>
+<li><a href="../architecture/CONTEXT_PACK.html">Blackwing SaaS v1: Engineering Context Pack</a></li>
+<li><a href="../architecture/EPICS.html">Blackwing SaaS v1 — Epic Catalogue</a></li>
+<li><a href="../architecture/FEATURE_LIST.html">Blackwing — Feature List (v1)</a></li>
+<li><a href="../architecture/REFERENCES.html">Blackwing REFERENCES: prior art, patterns, SDK facts &amp; standards</a></li>
+<li><a href="../architecture/workflow-determinism.html">Workflow determinism</a></li>
+<li><a href="../architecture/workflow-versioning.html">Workflow versioning and patching</a></li>
+<li><a href="../architecture/dependency-graph.html">Allowed package dependency graph</a></li>
+<li><a href="../architecture/persona-catalogue.html">Persona catalogue</a></li>
+<li><a href="../architecture/egress-gateway.html">Egress gateway chassis</a></li>
+<li><a href="../architecture/i18n.html">Console strings and i18n</a></li>
+<li><a href="../architecture/storage-buckets.html">Storage buckets (INFRA-006)</a></li>
+<li><a href="../architecture/tenant-data-access.html">Tenant data access</a></li>
+<li><a href="../architecture/tenant-isolation-tests.html">Cross-tenant isolation tests (TENANT-003)</a></li>
+<li><a href="../architecture/threat-model.html">Blackwing platform threat model</a></li>
+<li><a href="../architecture/third-party-notices.html">Third-party notices</a></li>
+<li><a href="../architecture/typescript.html">TypeScript configuration and project references</a></li>
+<li><a href="../adr/README.html">Architecture decision records</a></li>
+<li><a href="../adr/template.html">ADR-NNNN: Short decision title in the imperative</a></li>
+<li><a href="../adr/0001-record-architecture-decisions.html">ADR-0001: Record architecture decisions as numbered, immutable ADRs</a></li>
+<li><a href="../adr/0002-pnpm-turborepo-monorepo.html">ADR-0002: Build Blackwing from scratch in one pnpm and Turborepo monorepo</a></li>
+<li><a href="../adr/0003-strict-typescript-zod-contracts.html">ADR-0003: Use strict TypeScript and shared Zod contracts at every boundary</a></li>
+<li><a href="../adr/0004-nestjs-fastify-rest-graphql-api.html">ADR-0004: Serve the control-plane API with NestJS on Fastify, REST for writes and GraphQL for reads</a></li>
+<li><a href="../adr/0005-temporal-run-lifecycle.html">ADR-0005: Drive the run lifecycle with Temporal workflows (hybrid orchestration)</a></li>
+<li><a href="../adr/0006-claude-agent-sdk-claude-only-models.html">ADR-0006: Run the product's agents on the Claude Agent SDK with Claude models only</a></li>
+<li><a href="../adr/0007-cedar-policy-decision-point.html">ADR-0007: Use Cedar as the policy decision point, shared between TypeScript and Go</a></li>
+<li><a href="../adr/0008-go-egress-gateway-fail-closed.html">ADR-0008: Route all target traffic through a fail-closed egress gateway written in Go</a></li>
+<li><a href="../adr/0009-openbao-secrets-byok.html">ADR-0009: Manage secrets with OpenBao envelope encryption and bring-your-own-key references</a></li>
+<li><a href="../adr/0010-postgres-rls-multi-tenancy.html">ADR-0010: Make the SaaS multi-tenant with Postgres row-level security as the isolation backbone</a></li>
+<li><a href="../adr/0011-gvisor-sandboxes-on-k3s.html">ADR-0011: Isolate agent sessions in gVisor sandboxes on k3s and never expose the host Docker socket</a></li>
+<li><a href="../labels.html">Label catalogue</a></li>
+<li><a href="../CONTRIBUTING-docs.html">Contributing to the documentation</a></li>
+</ul>
+</nav>
+<main class="content">
+<h1 id="runbook-out-of-band-listener-interactsh-server-infra-010">Runbook: out-of-band listener, interactsh-server (INFRA-010)</h1>
+<p>Files: <code>infra/helm/bw-oob/</code> (the pinned server, its ConfigMap, ClusterIP Service, wildcard Certificate and
+NetworkPolicy), <code>infra/compose/docker-compose.dev.yml</code> (<code>interactsh</code>, the same pinned digest, for local work),
+<code>infra/tofu/modules/dns</code> (delegation, <code>oob_server_ips</code>; see <code>dns-delegation.md</code>). Self-tests:
+<code>node --test scripts/oob-server.test.mjs</code> (offline, <code>helm template</code>) and
+<code>node --test scripts/oob-server.int.mjs</code> (local, needs docker; <code>pnpm test:oob-server</code>).</p>
+<p>The listener is the OAST oracle for blind-vulnerability confirmation (CONTEXT_PACK §5, §7). Blackwing owns it: no
+public collaborator is used. Sandboxes never reach it; specialists use the OOB MCP tools through the broker (OOB-006).</p>
+<h2 id="what-runs">What runs</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Image</td>
+<td><code>projectdiscovery/interactsh-server:v1.2.4@sha256:ffde50de…</code> (MIT). The digest is the one in <code>docker-compose.dev.yml</code>, and <code>scripts/oob-server.test.mjs</code> fails if they differ.</td>
+</tr>
+<tr>
+<td>Process</td>
+<td>uid 65532, read-only root filesystem, all capabilities dropped, no privilege escalation, <code>RuntimeDefault</code> seccomp, no service-account token.</td>
+</tr>
+<tr>
+<td>Listeners</td>
+<td>DNS 53 (UDP and TCP), HTTP 80, HTTPS 443, SMTP 25 on the node&#39;s public address (<code>hostPort</code>). The container binds 5353, 8080, 8443 and 2525.</td>
+</tr>
+<tr>
+<td>Zone</td>
+<td><code>oob.&lt;domain&gt;</code>, answered with <code>-ip &lt;publicIP&gt;</code>. The delegation comes from the app zone (dns module).</td>
+</tr>
+<tr>
+<td>TLS</td>
+<td>Wildcard <code>*.oob.&lt;domain&gt;</code> and apex, issued by cert-manager (DNS-01 through the bw-ingress ClusterIssuer), passed with <code>-cert</code> and <code>-privkey</code>. ACME is not used, so the server makes no outbound connection.</td>
+</tr>
+<tr>
+<td>Control API</td>
+<td>The poll and register API, token-gated (<code>-token</code> from Secret <code>existingSecret</code>, key <code>token</code>). Exposed as a ClusterIP Service for <code>bw-system</code> only.</td>
+</tr>
+<tr>
+<td>State</td>
+<td>In memory, evicted after <code>eviction</code> days. Persistence is OOB-004, not this server. Restarting loses unpolled interactions; the client polls often.</td>
+</tr>
+<tr>
+<td>Replicas</td>
+<td>1, <code>Recreate</code> strategy. Host ports and the in-memory store both forbid a second copy on the same address.</td>
+</tr>
+</tbody></table>
+<h2 id="install-real-cluster-after-the-dns-module-is-applied">Install (real cluster, after the dns module is applied)</h2>
+<ol>
+<li>Pick a node for the listener. Label and taint it, so that the Traefik host ports (80/443) are never on it:
+<code>kubectl label node &lt;node&gt; blackwing.io/oob=true</code> and
+<code>kubectl taint node &lt;node&gt; blackwing.io/oob=true:NoSchedule</code>. One release per public address, each on its own node.</li>
+<li>Create the namespace: <code>kubectl create namespace bw-oob</code> and
+<code>kubectl label namespace bw-oob pod-security.kubernetes.io/enforce=baseline</code>. The <code>restricted</code> profile forbids
+<code>hostPort</code>. The pods still run as non-root, read-only and without capabilities; the chart enforces that.</li>
+<li>Sync the token from OpenBao into Secret <code>bw-oob-token</code> (key <code>token</code>) in <code>bw-oob</code>. Never put the token in values,
+git or a shell history.</li>
+<li>Install:
+<code>helm upgrade --install bw-oob infra/helm/bw-oob -n bw-oob --set domain=&lt;domain&gt; --set publicIP=&lt;tofu oob_server_ips entry&gt;</code>.
+The chart refuses to render without a domain, a public IPv4 address (private, loopback, link-local, CGNAT and
+multicast are rejected), the token Secret, an image digest and the dedicated-node selector.</li>
+<li>Set the second address in <code>oob_server_ips</code> if you run two servers, then apply tofu, as <code>dns-delegation.md</code>
+describes.</li>
+</ol>
+<h2 id="validation">Validation</h2>
+<p>Offline (CI and any machine): <code>node --test scripts/oob-server.test.mjs</code> and <code>pnpm test:oob-server</code> (docker).</p>
+<p>Live, after install (staging first, then prod):</p>
+<ol>
+<li><code>kubectl -n bw-oob get pods</code> shows <code>Running</code>, <code>1/1</code>, and the readiness probe passes.</li>
+<li><code>dig NS oob.&lt;domain&gt; +short</code> returns <code>ns1.&lt;domain&gt;</code> and <code>ns2.&lt;domain&gt;</code> (see <code>dns-delegation.md</code>).</li>
+<li><code>dig A $(openssl rand -hex 6).oob.&lt;domain&gt; +short @&lt;publicIP&gt;</code> returns <code>&lt;publicIP&gt;</code>, and
+<code>dig A $(openssl rand -hex 6).oob.&lt;domain&gt; +short</code> returns it through the delegation.</li>
+<li><code>curl -sS -o /dev/null -w &#39;%{http_code}\n&#39; https://$(openssl rand -hex 6).oob.&lt;domain&gt;/</code> returns <code>200</code> with a
+certificate that validates (<code>curl -v</code> shows <code>SSL certificate verify ok</code>). Use <code>letsencrypt-staging</code> first. The
+staging CA is not trusted by curl, so use <code>--cacert</code> with the staging chain while proving the server.</li>
+<li><code>curl -sS -o /dev/null -w &#39;%{http_code}\n&#39; &quot;https://oob.&lt;domain&gt;/poll?id=x&amp;secret=y&quot;</code> returns <code>401</code> without the token.</li>
+<li>From a sandbox pod, <code>curl --max-time 5 http://&lt;publicIP&gt;/</code> and <code>curl --max-time 5 http://bw-oob.bw-oob.svc:8080/</code>
+both fail (the cluster CIDRs and the sandbox policy deny them).</li>
+</ol>
+<p>Each step must pass before the release is called live. Record the result and the image digest in the deploy note.</p>
+<h2 id="failure-modes">Failure modes</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Cause and action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Health check fails right after install</td>
+<td>Pod not ready, or the Secret or certificate is missing. <code>kubectl -n bw-oob describe pod</code>. The cert-manager <code>Certificate</code> must be <code>Ready</code>.</td>
+</tr>
+<tr>
+<td><code>dig NS oob.&lt;domain&gt;</code> is empty</td>
+<td>Delegation not live or not propagated. Check the registrar step in <code>dns-delegation.md</code>. The listener answers nothing until then.</td>
+</tr>
+<tr>
+<td>Certificate stays not Ready</td>
+<td>DNS-01 failed on Route53 (solver credentials or <code>hostedZoneID</code>). HTTP and DNS still work, but HTTPS and SMTPS are degraded. Raise an alarm and fix the solver.</td>
+</tr>
+<tr>
+<td>Pod stuck <code>Pending</code></td>
+<td>No node carries <code>blackwing.io/oob=true</code>, or the host port 80/443/53/25 is taken on that node (Traefik or another service). Move the listener to a clean node.</td>
+</tr>
+<tr>
+<td>Pod restarts after <code>CreateContainerConfigError</code></td>
+<td>The Secret <code>bw-oob-token</code> is missing or the key is not <code>token</code>.</td>
+</tr>
+<tr>
+<td>Server log shows ACME attempts</td>
+<td>The custom certificate was not read. Check the Secret mount at <code>/tls</code>. The server must not contact Let&#39;s Encrypt.</td>
+</tr>
+</tbody></table>
+<h2 id="rules-to-keep-it-working">Rules to keep it working</h2>
+<ul>
+<li>Never add a record at or below <code>oob.&lt;domain&gt;</code> in the app zone (see <code>dns-delegation.md</code>).</li>
+<li>Never allow the sandbox egress policy to reach this namespace. The cluster CIDRs are excluded from the public rule,
+so a sandbox pod is blocked from the listener and from the poll API.</li>
+<li>The poll API shares the public HTTP listener and is token-gated. The token is the only control; rotate it through
+OpenBao, then restart the pod. The token is visible in the container&#39;s process arguments inside the pod, so limit
+<code>kubectl exec</code> access to the platform team.</li>
+<li>Bump the image digest and <code>appVersion</code> together. Renovate proposes the digest; the chart test fails until the
+compose pin is updated in the same change.</li>
+<li>Do not change <code>-ip</code>, the zone or the certificate names without also changing the delegation (<code>dns-delegation.md</code>).</li>
+</ul>
+<h2 id="rollback">Rollback</h2>
+<p><code>helm rollback bw-oob &lt;revision&gt; -n bw-oob</code>. The previous digest is restored; interactions held in memory are lost
+on restart (see the state row above). Do not delete the namespace: it holds the token Secret synced from OpenBao.</p>
+<h2 id="open-items-porting-issue-910">Open items (porting issue #910)</h2>
+<p>The following are not verified offline and move to the online-porting issue (#910): applying the chart to a real dedicated
+node, the live delegation and certificate issuance, the Prometheus/Loki wiring (metrics <code>oob_server_up</code> and
+interaction counts), the <code>oob_server.deployed</code> audit event (version and domain, written by the control plane when
+the release is recorded), and the sandbox-to-listener check run from a real sandbox pod.</p>
+</main>
+</div>
+</body>
+</html>
