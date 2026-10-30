@@ -17,7 +17,6 @@
   --card-foreground: #16171d;
   --popover: #ffffff;
   --popover-foreground: #16171d;
-  --muted: #f4f4f5;
   --muted-foreground: #5a5e69;
   --border: #e6e7ea;
   --input: #cdd0d6;
@@ -59,7 +58,6 @@
   --card-foreground: #ececee;
   --popover: #1e1f26;
   --popover-foreground: #ececee;
-  --muted: #26282f;
   --muted-foreground: #a0a3ac;
   --border: #30323a;
   --input: #41444e;
@@ -92,4 +90,75 @@
   --sev-info-soft: #2a2c33;
   --code: #191a20;
   --navy: #0f4c75;
+}
+
+/* Design-system names (design/tokens.json), used by the demo and the component kit. */
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface2: #f4f4f5;
+  --border: #e6e7ea;
+  --border2: #cdd0d6;
+  --text: #16171d;
+  --muted: #5a5e69;
+  --primary: #004777;
+  --primary-soft: #e5eef4;
+  --on-primary: #ffffff;
+  --ok: #157a3a;
+  --ok-soft: #e8f4ec;
+  --warn: #9a4d00;
+  --warn-soft: #fcf2e4;
+  --bad: #b42318;
+  --bad-soft: #fbecea;
+  --kill: #b01a2d;
+  --on-kill: #ffffff;
+  --crit-bg: #6e1520;
+  --crit-fg: #ffffff;
+  --high: #b42318;
+  --high-soft: #fbecea;
+  --med: #a8450a;
+  --med-soft: #fdf1e7;
+  --low: #7a5600;
+  --low-soft: #faf3de;
+  --sinfo: #4b5160;
+  --sinfo-soft: #f0f1f3;
+  --code: #fafafa;
+  --focus: rgba(0, 71, 119, 0.3);
+  --navy: #00304f;
+  --kill-soft: rgba(176, 26, 45, 0.14);
+}
+
+.dark {
+  --bg: #16171d;
+  --surface: #1e1f26;
+  --surface2: #26282f;
+  --border: #30323a;
+  --border2: #41444e;
+  --text: #ececee;
+  --muted: #a0a3ac;
+  --primary: #6cb4e4;
+  --primary-soft: #122c3e;
+  --on-primary: #04131f;
+  --ok: #4cc27a;
+  --ok-soft: #132a1c;
+  --warn: #f0a83a;
+  --warn-soft: #2e2210;
+  --bad: #f2776b;
+  --bad-soft: #351a18;
+  --kill: #c8243a;
+  --on-kill: #ffffff;
+  --crit-bg: #4a0e16;
+  --crit-fg: #ffb4bd;
+  --high: #f2776b;
+  --high-soft: #351a18;
+  --med: #f59a5a;
+  --med-soft: #352312;
+  --low: #e3c04d;
+  --low-soft: #2e2812;
+  --sinfo: #a8aeba;
+  --sinfo-soft: #2a2c33;
+  --code: #191a20;
+  --focus: rgba(108, 180, 228, 0.4);
+  --navy: #0f4c75;
+  --kill-soft: rgba(200, 36, 58, 0.22);
 }

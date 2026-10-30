@@ -143,3 +143,36 @@ and the identity of the Keycloak session. The API refuses any call without that 
 The story runs on localhost with the stubs listed above. The production assessment, Gate 1, run and finding
 pieces are still being built on `main`; the demo keeps its own tables until they land. See
 `docs/runbooks/demo-status.md`.
+
+## Design fidelity
+
+The demo follows the Blackwing design in [`design/`](../../design/README.md): tokens from `design/tokens.json`
+(CSS variables in `packages/ui`, never hex in pages), Poppins and JetBrains Mono self-hosted from
+`apps/web/public/fonts`, and the layout grammar of the pass-1 screens (top bar, icon rail, breadcrumb header,
+status chips, authorisation strip, right-hand context panel). The shell is `apps/web/src/components/demo/shell.tsx`,
+the components are in `apps/web/src/components/demo/design.tsx`.
+
+Screenshots (light and dark) are in [`demo-screenshots/`](demo-screenshots/). Each design screen has a
+side-by-side pair: `design-*.png` is the Claude Design prototype, `demo-*.png` is this demo.
+
+| Demo page | Design reference | Deviation |
+|---|---|---|
+| Live run (`/demo/runs/:id`) | 1a Flight deck | Lanes are the runner stages, not agents. There is no Pause or Kill in the demo API, so both are disabled with the reason. No Gate 2 banner: the demo has no runtime exception. |
+| Gate 1 (`/demo/requests/:id`) | 2a Gate 2 layout | Gate 1 has no countdown (the demo does not auto-deny). Deny is the dark button and Approve the outlined one, as in the design. A requester sees Approve disabled with the reason. |
+| Kill (3a), emergency link (3b), Gate 2 (2a, 2b) | Screens pass 1 | Not built. They need runtime controls the demo API does not have (KILL #170, GATE2 #203). |
+| Authorisation strip | "Authorised under SA-…" | The demo has no standing authorisation, so the strip shows the Gate 1 approver, scope and budget instead of an SA id and key. |
+| Top bar search and bell | Top bar | Search is shown but not wired. No alert count, because the demo has no alerts. |
+
+Sign-in (`/login`) takes the same tokens and the single brand-red word of the sign-in screen.
+
+Pairs for review (design prototype first, then this demo, light theme):
+
+| Design | Demo |
+|---|---|
+| [`design-flight-deck-1a.png`](demo-screenshots/design-flight-deck-1a.png) (1a Flight deck) | [`demo-run-light.png`](demo-screenshots/demo-run-light.png), [`demo-run-dark.png`](demo-screenshots/demo-run-dark.png) |
+| Gate 2 (2a) and Kill (3a) | Not built, see the table above |
+
+The other pages have no design screen. They use the same components: [dashboard](demo-screenshots/demo-dashboard-light.png),
+[assets](demo-screenshots/demo-assets-light.png), [new request](demo-screenshots/demo-new-request-light.png),
+[Gate 1](demo-screenshots/demo-request-light.png), [finding](demo-screenshots/demo-finding-light.png) and
+[about](demo-screenshots/demo-about-light.png). Each has a `-dark.png` pair.

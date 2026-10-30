@@ -1,10 +1,25 @@
+/* CVSS v4 bands are FIRST's published ranges (9, 7, 4), not tunable values. */
+/* eslint-disable @typescript-eslint/no-magic-numbers -- CVSS v4 severity bands, see FIRST's specification */
 // DEMO-STORY finding detail: the confirmed finding, its evidence (request and response), the oracle, the replay
 // results, a copyable repro and the report download.
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 
-import { StatusPill } from '../../../../components/demo/status-pill';
+import {
+  AgentText,
+  Card,
+  CardHeader,
+  Chip,
+  DataTable,
+  Icon,
+  IdChip,
+  LinkButton,
+  PageHeader,
+  SeverityChip,
+  StatusChip,
+} from '../../../../components/demo/design';
+import { ContextPanel } from '../../../../components/demo/shell';
 import { getSession } from '../../../../lib/session';
 import { DemoApiError, demoApi } from '../../_lib/demo-api';
 import { findingSchema } from '../../_lib/schemas';
@@ -53,104 +68,164 @@ export default async function DemoFindingPage({
   const evidence = probeSchema.parse(finding.evidence);
   const replay = replaySchema.parse(finding.replay);
   const base = `/demo/api/findings/${encodeURIComponent(id)}/report`;
+  const score = finding.severity.cvssV4Score;
+  const severity =
+    score >= 9
+      ? 'critical'
+      : score >= 7
+        ? 'high'
+        : score >= 4
+          ? 'medium'
+          : score > 0
+            ? 'low'
+            : 'info';
+  const oracleSignature = text(
+    (finding.oracle.params as { signature?: unknown } | undefined)?.signature,
+  );
   return (
-    <article className="space-y-6">
-      <header className="space-y-2">
-        <p className="text-sm">
-          <Link className="underline" href={`/demo/runs/${finding.runId}`}>
-            Back to the run
-          </Link>
-        </p>
-        <h1 className="text-2xl font-semibold">{finding.title}</h1>
-        <p className="flex flex-wrap items-center gap-2 text-sm">
-          <StatusPill value={finding.status} />
-          <span>{finding.cwe}</span>
-          <span>{finding.owasp}</span>
-          <span>
-            CVSS v4.0 {finding.severity.cvssV4Score} (demo-assigned, not calculated)
-          </span>
-        </p>
-        <p className="flex flex-wrap gap-3 text-sm">
-          <a className="rounded border border-neutral-400 px-3 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800" href={`${base}?format=html`}>
-            Download report (HTML)
-          </a>
-          <a className="rounded border border-neutral-400 px-3 py-1 hover:bg-neutral-100 dark:hover:bg-neutral-800" href={`${base}?format=md`}>
-            Download report (Markdown)
-          </a>
-        </p>
-      </header>
+    <article className="flex flex-col gap-6">
+      <PageHeader
+        crumbs={[{ label: 'Findings', href: '/demo' }, { label: finding.id }]}
+        title={finding.title}
+        chips={<StatusChip value={finding.status} />}
+        actions={
+          <>
+            <LinkButton href={`${base}?format=html`} variant="secondary" icon="reports">
+              Download report (HTML)
+            </LinkButton>
+            <LinkButton href={`${base}?format=md`} variant="secondary" icon="reports">
+              Download report (Markdown)
+            </LinkButton>
+          </>
+        }
+      />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <SeverityChip severity={severity} />
+        <Chip tone="neutral" bordered>
+          {finding.cwe}
+        </Chip>
+        <Chip tone="neutral" bordered>
+          {finding.owasp}
+        </Chip>
+        <span className="text-[12.5px] text-muted-foreground">
+          CVSS v4.0 {score} (demo-assigned, not calculated)
+        </span>
+        <Link
+          className="ml-auto text-[13px] text-primary hover:underline"
+          href={`/demo/runs/${finding.runId}`}
+        >
+          Back to the run
+        </Link>
+      </div>
 
       {evidence.recorded === true ? (
-        <p className="rounded border border-amber-400 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
-          Recorded fallback: this finding comes from an earlier run of the same lab image, seeded so the story always has a
-          complete finding to show.
+        <p className="flex items-start gap-2.5 rounded-xl border border-warn bg-warn-soft p-4 text-[13.5px] text-warn">
+          <Icon name="info" size={18} />
+          Recorded fallback: this finding comes from an earlier run of the same lab image, seeded so
+          the story always has a complete finding to show.
         </p>
       ) : null}
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Confirmed by deterministic replay</h2>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          Oracle <code>{text(finding.oracle.id)}</code> (error signature <code>{text((finding.oracle.params as { signature?: unknown } | undefined)?.signature)}</code>) matched on every replay, and did not match on the negative control.
-        </p>
-        <table className="w-full max-w-2xl border-collapse text-sm">
-          <thead>
-            <tr className="text-left">
-              <th className="border-b border-neutral-300 py-1 pr-4">Replay</th>
-              <th className="border-b border-neutral-300 py-1 pr-4">HTTP status</th>
-              <th className="border-b border-neutral-300 py-1">Oracle matched</th>
-            </tr>
-          </thead>
-          <tbody>
-            {replay.replays.map((r) => (
-              <tr key={r.n}>
-                <td className="py-1 pr-4">{r.n}</td>
-                <td className="py-1 pr-4">{r.status}</td>
-                <td className="py-1">{r.matched ? 'yes' : 'no'}</td>
-              </tr>
-            ))}
-            <tr>
-              <td className="py-1 pr-4">Negative control</td>
-              <td className="py-1 pr-4">{replay.negativeControl.status}</td>
-              <td className="py-1">{replay.negativeControl.matched ? 'yes (unexpected)' : 'no (expected)'}</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="flex min-w-0 flex-col gap-6">
+          <Card aria-labelledby="replay-h">
+            <CardHeader id="replay-h" title="Confirmed by deterministic replay" />
+            <p className="px-4 pt-3 text-[13px] leading-6 text-muted-foreground">
+              Oracle <IdChip>{text(finding.oracle.id)}</IdChip> (error signature{' '}
+              <IdChip>{oracleSignature}</IdChip>) matched on every replay, and did not match on the
+              negative control.
+            </p>
+            <div className="p-4">
+              <DataTable label="Replays" head={['Replay', 'HTTP status', 'Oracle matched']}>
+                {replay.replays.map((r) => (
+                  <tr key={r.n} className="h-10">
+                    <td className="px-4">Replay {r.n}</td>
+                    <td className="px-4 font-mono">{r.status}</td>
+                    <td className="px-4">
+                      <Chip tone={r.matched ? 'ok' : 'bad'} icon={r.matched ? 'check' : 'x'} pill>
+                        {r.matched ? 'Yes' : 'No'}
+                      </Chip>
+                    </td>
+                  </tr>
+                ))}
+                <tr className="h-10">
+                  <td className="px-4">Negative control</td>
+                  <td className="px-4 font-mono">{replay.negativeControl.status}</td>
+                  <td className="px-4">
+                    <Chip
+                      tone={replay.negativeControl.matched ? 'bad' : 'ok'}
+                      icon={replay.negativeControl.matched ? 'x' : 'check'}
+                      pill
+                    >
+                      {replay.negativeControl.matched ? 'Yes (unexpected)' : 'No (expected)'}
+                    </Chip>
+                  </td>
+                </tr>
+              </DataTable>
+            </div>
+          </Card>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Evidence</h2>
-        <p className="text-sm">
-          Probe <code className="break-all">{evidence.probe.request?.url ?? 'n/a'}</code>, HTTP {evidence.probe.response?.status ?? 'n/a'}
-        </p>
-        <pre className="max-h-64 overflow-auto rounded bg-neutral-100 p-3 text-xs dark:bg-neutral-900">
-          {evidence.probe.response?.bodyExcerpt ?? '(no body excerpt)'}
-        </pre>
-        <p className="text-sm">
-          Negative control <code className="break-all">{evidence.negativeControl.request?.url ?? 'n/a'}</code>, HTTP{' '}
-          {evidence.negativeControl.response?.status ?? 'n/a'}
-        </p>
-      </section>
+          <Card aria-labelledby="evidence-h">
+            <CardHeader id="evidence-h" title="Evidence" />
+            <div className="flex flex-col gap-4 p-4 text-[13px]">
+              <p>
+                Probe{' '}
+                <span className="break-all font-mono text-[12.5px]">
+                  {evidence.probe.request?.url ?? 'n/a'}
+                </span>
+                , HTTP {evidence.probe.response?.status ?? 'n/a'}
+              </p>
+              <AgentText label="Target response, not verified">
+                <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all text-[12px]">
+                  {evidence.probe.response?.bodyExcerpt ?? '(no body excerpt)'}
+                </pre>
+              </AgentText>
+              <p>
+                Negative control{' '}
+                <span className="break-all font-mono text-[12.5px]">
+                  {evidence.negativeControl.request?.url ?? 'n/a'}
+                </span>
+                , HTTP {evidence.negativeControl.response?.status ?? 'n/a'}
+              </p>
+            </div>
+          </Card>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Repro</h2>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          The detection probe is benign: one quote breaks the SQL syntax. Run it on the lab target to see the same error
-          signature. No data is extracted.
-        </p>
-        <pre className="overflow-auto rounded bg-neutral-100 p-3 text-xs dark:bg-neutral-900">
-          <code>{finding.reproCurl}</code>
-        </pre>
-      </section>
+          <Card aria-labelledby="repro-h">
+            <CardHeader
+              id="repro-h"
+              title="Repro"
+              meta="The probe is benign. No data is extracted."
+            />
+            <div className="flex flex-col gap-3 p-4">
+              <p className="text-[13px] text-muted-foreground">
+                One quote breaks the SQL syntax on the lab target, which shows the same error
+                signature.
+              </p>
+              <pre className="overflow-auto rounded-lg border border-border bg-code p-3 font-mono text-[12px] text-foreground">
+                <code>{finding.reproCurl}</code>
+              </pre>
+            </div>
+          </Card>
+        </div>
 
-      <section className="space-y-1 text-sm">
-        <h2 className="text-lg font-semibold">Location</h2>
-        <p>
-          <code>
-            {text(finding.location.method)} {text(finding.location.urlTemplate)}
-          </code>{' '}
-          parameter <code>{text(finding.location.parameter)}</code>
-        </p>
-      </section>
+        <ContextPanel
+          sections={[
+            {
+              title: 'Location',
+              body: `${text(finding.location.method)} ${text(finding.location.urlTemplate)}, parameter ${text(finding.location.parameter)}.`,
+            },
+            {
+              title: 'Severity',
+              body: 'The CVSS v4.0 score is fixed for the story and is not computed. Severity bars: critical has four, low has one.',
+            },
+            {
+              title: 'Release',
+              body: 'A confirmed finding is released to the report only after Gate 3 triage in production.',
+            },
+          ]}
+        />
+      </div>
     </article>
   );
 }

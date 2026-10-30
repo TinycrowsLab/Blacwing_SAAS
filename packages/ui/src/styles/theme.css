@@ -12,7 +12,8 @@
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
-  --color-muted: var(--muted);
+  --color-muted: var(--surface2);
+  --color-muted-text: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -45,4 +46,35 @@
   --color-sev-info-soft: var(--sev-info-soft);
   --color-code: var(--code);
   --color-navy: var(--navy);
+}
+
+/* Design-system colour names (design/README.md). Use these, never hard-coded hex. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface2);
+  --color-border-strong: var(--border2);
+  --color-text: var(--text);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-kill-soft: var(--kill-soft);
+  --color-on-kill: var(--on-kill);
+  --color-crit: var(--crit-bg);
+  --color-crit-fg: var(--crit-fg);
+  --color-high: var(--high);
+  --color-high-soft: var(--high-soft);
+  --color-med: var(--med);
+  --color-med-soft: var(--med-soft);
+  --color-low: var(--low);
+  --color-low-soft: var(--low-soft);
+  --color-sinfo: var(--sinfo);
+  --color-sinfo-soft: var(--sinfo-soft);
+  --color-navy-bar: var(--navy);
+  --color-focus: var(--focus);
 }
