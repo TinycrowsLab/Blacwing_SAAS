@@ -89,6 +89,11 @@ const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   createOncallRoster: 'oncall',
   getOncallRoster: 'oncall',
   updateOncallRoster: 'oncall',
+  listNotificationChannels: 'notifications',
+  createNotificationChannel: 'notifications',
+  getNotificationChannel: 'notifications',
+  updateNotificationChannel: 'notifications',
+  deleteNotificationChannel: 'notifications',
   getKillEvent: 'kill',
   listKillEvents: 'kill',
   listAuditEvents: 'audit',
@@ -176,11 +181,13 @@ describe('public OpenAPI document', () => {
       'checkAssetVerification',
       'createAssessmentRequest',
       'createAsset',
+      'createNotificationChannel',
       'createOncallRoster',
       'createStandingAuthorisation',
       'createTestPlanVersion',
       'decideGate1',
       'deleteAsset',
+      'deleteNotificationChannel',
       'diffTestPlanVersions',
       'getAssessmentRequest',
       'getAsset',
@@ -188,6 +195,7 @@ describe('public OpenAPI document', () => {
       'getFinding',
       'getGate1Plan',
       'getKillEvent',
+      'getNotificationChannel',
       'getOncallRoster',
       'getPersona',
       'getPersonaOverride',
@@ -200,6 +208,7 @@ describe('public OpenAPI document', () => {
       'listAuditEvents',
       'listFindings',
       'listKillEvents',
+      'listNotificationChannels',
       'listOncallRosters',
       'listPersonas',
       'listStandingAuthorisations',
@@ -216,6 +225,7 @@ describe('public OpenAPI document', () => {
       'triggerKill',
       'updateAssessmentRequest',
       'updateAsset',
+      'updateNotificationChannel',
       'updateOncallRoster',
       'updateStandingAuthorisation',
       'updateTenantSettings',
@@ -224,7 +234,7 @@ describe('public OpenAPI document', () => {
       'verifySignup',
       'withdrawAssessmentRequest',
     ]);
-    expect(countOperations(doc)).toBe(53);
+    expect(countOperations(doc)).toBe(58);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -293,6 +303,7 @@ describe('public OpenAPI document', () => {
       'test-plans',
       'findings',
       'oncall',
+      'notifications',
     ]);
   });
 });
@@ -352,7 +363,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(53);
+    expect(result.operations).toBe(58);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

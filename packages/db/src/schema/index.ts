@@ -21,3 +21,4 @@ export * from './intel.js';
 export * from './audit-export.js';
 export * from './cost.js';
 export * from './memories.js';
+export * from './notifications.js';

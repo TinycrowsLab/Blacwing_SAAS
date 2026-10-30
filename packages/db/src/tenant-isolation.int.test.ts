@@ -290,6 +290,13 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, assetId, `blackwing-site-verification=${'A'.repeat(52)}`],
     );
   },
+  notification_channels: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO notification_channels (id, tenant_id, kind, name, config, status, created_by)
+       VALUES ($1, $2, 'email', 'iso-channel', '{"addresses":["soc@example.test"]}', 'active', $3)`,
+      [newId(), tenantId, newId()],
+    );
+  },
   soc_contacts: async (tx, tenantId) => {
     await tx.query(
       `INSERT INTO soc_contacts (id, tenant_id, name, email) VALUES ($1, $2, 'SOC desk', 'soc@example.test')`,

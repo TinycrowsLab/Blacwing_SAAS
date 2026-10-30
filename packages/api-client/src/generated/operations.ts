@@ -44,6 +44,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  createNotificationChannel: {
+    method: 'POST',
+    path: '/v1/notification-channels',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   createOncallRoster: {
     method: 'POST',
     path: '/v1/oncall/rosters',
@@ -77,6 +84,13 @@ export const OPERATIONS = {
     path: '/v1/assets/{id}',
     pathParams: ['id'],
     queryParams: [],
+    requiredHeaders: [],
+  },
+  deleteNotificationChannel: {
+    method: 'DELETE',
+    path: '/v1/notification-channels/{id}',
+    pathParams: ['id'],
+    queryParams: ['force'],
     requiredHeaders: [],
   },
   diffTestPlanVersions: {
@@ -124,6 +138,13 @@ export const OPERATIONS = {
   getKillEvent: {
     method: 'GET',
     path: '/v1/kill/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
+  getNotificationChannel: {
+    method: 'GET',
+    path: '/v1/notification-channels/{id}',
     pathParams: ['id'],
     queryParams: [],
     requiredHeaders: [],
@@ -230,6 +251,13 @@ export const OPERATIONS = {
     path: '/v1/kill',
     pathParams: [],
     queryParams: ['limit'],
+    requiredHeaders: [],
+  },
+  listNotificationChannels: {
+    method: 'GET',
+    path: '/v1/notification-channels',
+    pathParams: [],
+    queryParams: [],
     requiredHeaders: [],
   },
   listOncallRosters: {
@@ -343,6 +371,13 @@ export const OPERATIONS = {
     pathParams: ['id'],
     queryParams: [],
     requiredHeaders: ['If-Match'],
+  },
+  updateNotificationChannel: {
+    method: 'PATCH',
+    path: '/v1/notification-channels/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
   },
   updateOncallRoster: {
     method: 'PATCH',

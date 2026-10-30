@@ -72,6 +72,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = O
     'settings:write',
     'kill:trigger',
     'audit:read',
+    'notifications:manage',
   ]),
   appsec_engineer: freeze([
     'asset:read',
@@ -100,6 +101,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = O
     'member:read',
     'policy:read',
     'kill:trigger',
+    'notifications:manage',
   ]),
   asset_owner: freeze([
     'asset:read',

@@ -113,17 +113,13 @@
         "asset.verification_passed",
         "asset.verification_failed",
         "asset.verification_cancelled",
-        "graph.surface.upserted"
+        "graph.surface.upserted",
+        "notification.channel_changed"
       ]
     },
     "severity": {
       "type": "string",
-      "enum": [
-        "info",
-        "notice",
-        "warning",
-        "critical"
-      ]
+      "enum": ["info", "notice", "warning", "critical"]
     },
     "actor": {
       "oneOf": [
@@ -149,10 +145,7 @@
               "pattern": "^[\\x21-\\x7e]{1,255}$"
             }
           },
-          "required": [
-            "type",
-            "id"
-          ],
+          "required": ["type", "id"],
           "additionalProperties": false
         },
         {
@@ -177,10 +170,7 @@
               "pattern": "^[\\x21-\\x7e]{1,255}$"
             }
           },
-          "required": [
-            "type",
-            "id"
-          ],
+          "required": ["type", "id"],
           "additionalProperties": false
         },
         {
@@ -199,10 +189,7 @@
               "pattern": "^[\\x21-\\x7e]{1,255}$"
             }
           },
-          "required": [
-            "type",
-            "id"
-          ],
+          "required": ["type", "id"],
           "additionalProperties": false
         },
         {
@@ -217,9 +204,7 @@
               "pattern": "^[\\x21-\\x7e]{1,255}$"
             }
           },
-          "required": [
-            "type"
-          ],
+          "required": ["type"],
           "additionalProperties": false
         },
         {
@@ -230,9 +215,7 @@
               "const": "anonymous"
             }
           },
-          "required": [
-            "type"
-          ],
+          "required": ["type"],
           "additionalProperties": false
         }
       ]
@@ -272,19 +255,12 @@
           "pattern": "^[a-z]{1,16}_[0-9a-hjkmnp-tv-z]{26}$"
         }
       },
-      "required": [
-        "type",
-        "id"
-      ],
+      "required": ["type", "id"],
       "additionalProperties": false
     },
     "outcome": {
       "type": "string",
-      "enum": [
-        "success",
-        "failure",
-        "denied"
-      ]
+      "enum": ["success", "failure", "denied"]
     },
     "reason": {
       "type": "string",
@@ -317,11 +293,7 @@
           "maximum": 9007199254740991
         }
       },
-      "required": [
-        "evidenceKey",
-        "sha256",
-        "sizeBytes"
-      ],
+      "required": ["evidenceKey", "sha256", "sizeBytes"],
       "additionalProperties": false
     },
     "traceId": {

@@ -124,6 +124,11 @@ const SUBCLASSES: readonly (readonly [
 
 /** Codes whose subclass lives in the package that owns the failure, not here. */
 const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
+  // Notification channel API, apps/api notification-channels (NOTIFY-001): thrown as plain AppErrors.
+  'NOTIFICATION_CHANNEL_INVALID',
+  'CHANNEL_NAME_CONFLICT',
+  'CHANNEL_SECRET_UNAVAILABLE',
+  'CHANNEL_REFERENCED',
   // AuthzSodViolationError and StepUpRequiredError, apps/api standing-authorisation approval (AUTHZ-008, #380).
   'AUTHZ_SOD_VIOLATION',
   'AUTHZ_STEPUP_REQUIRED',

@@ -44,6 +44,7 @@ const RELEASED_DIGESTS: Readonly<Record<number, string>> = {
   1: '94b2f8ca5dd8b0594b6ab5c1c0823c5c42cb4ca18b164a484db1633f4ebdd298',
   2: '9438d61a035a0aec87515d3a63b592292fcb63870fbf2047049bc5f798f6c3b8',
   3: '444cbb7493fa2a7c16b8e002b4bf790598db23a857e2db97c175ce8e89db40af',
+  4: '68fe7ab8eee29ee74a17b22b08555973f68b53f4db27c1ff89ba236d31a91298',
 };
 
 const digest = (): string =>

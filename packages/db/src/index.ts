@@ -208,6 +208,18 @@ export {
   type TestPlanWithCases,
 } from './test-plans.repository.js';
 export {
+  type ChannelUpdateWrite,
+  type NewChannelWrite,
+  type NotificationChannelAuditEvent,
+  type NotificationChannelAuditHook,
+  type NotificationChannelOp,
+  NotificationChannelRepository,
+  type NotificationChannelRepositoryOptions,
+  type SealedChannelSecret,
+  NOTIFICATION_CHANNEL_LIST_LIMIT,
+} from './notification-channel.repository.js';
+export { type NotificationChannelRow } from './schema/notifications.js';
+export {
   type TenantSettingsAuditEvent,
   type TenantSettingsAuditHook,
   type TenantSettingsChange,

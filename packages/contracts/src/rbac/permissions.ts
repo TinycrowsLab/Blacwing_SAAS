@@ -12,7 +12,7 @@ import { z } from 'zod';
  */
 
 /** Version of the permission catalogue and role matrix. Bump on any change to either. */
-export const CATALOGUE_VERSION = 3;
+export const CATALOGUE_VERSION = 4;
 
 /** Format every permission string must match: `<resource>:<action>`, lowercase snake_case segments. */
 export const PERMISSION_PATTERN = /^[a-z_]+:[a-z_]+$/;
@@ -73,6 +73,8 @@ export const PERMISSIONS = Object.freeze([
   'kill:trigger',
   // audit ledger
   'audit:read',
+  // notification channels (NOTIFY-001): config and secret references of delivery channels
+  'notifications:manage',
 ] as const);
 
 /** A tenant permission: a closed union of `<resource>:<action>` strings. */

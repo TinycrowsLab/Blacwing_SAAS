@@ -383,6 +383,27 @@ const DEFINITIONS = {
     title: 'External secret backend unavailable',
     retryable: true,
   },
+  // notification channels (NOTIFY-001)
+  NOTIFICATION_CHANNEL_INVALID: {
+    status: 400,
+    title: 'Invalid notification channel',
+    retryable: false,
+  },
+  CHANNEL_NAME_CONFLICT: {
+    status: 409,
+    title: 'Notification channel name already in use',
+    retryable: false,
+  },
+  CHANNEL_SECRET_UNAVAILABLE: {
+    status: 409,
+    title: 'Notification channel secret is no longer available',
+    retryable: false,
+  },
+  CHANNEL_REFERENCED: {
+    status: 409,
+    title: 'Notification channel is referenced by active routing rules',
+    retryable: false,
+  },
   // Neo4j driver (GRAPH-001, §5/§8.6). Missing or invalid graph config is a deployment defect, caught at boot
   // (fail fast, 500). A saturated connection pool past its acquire timeout is a transient overload (503, retryable).
   GRAPH_CONFIG_MISSING: { status: 500, title: 'Graph configuration missing', retryable: false },

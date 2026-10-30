@@ -27,6 +27,7 @@ import {
   standingAuthorisationDtoSchema,
   surfaceRunViewSchema,
   tenantSettingsResponseSchema,
+  notificationChannelViewSchema,
 } from '@blackwing/contracts';
 
 import type { OperationId } from './generated/operations.js';
@@ -145,6 +146,13 @@ export const RESPONSE_SCHEMAS: Readonly<
   listPersonas: { 200: personaRegistryListSchema },
   getPersona: { 200: personaRegistryViewSchema },
   getTenantSettings: { 200: tenantSettingsResponseSchema },
+  listNotificationChannels: {
+    200: z.object({ items: z.array(notificationChannelViewSchema) }).strict(),
+  },
+  createNotificationChannel: { 201: notificationChannelViewSchema },
+  getNotificationChannel: { 200: notificationChannelViewSchema },
+  updateNotificationChannel: { 200: notificationChannelViewSchema },
+  deleteNotificationChannel: { 200: notificationChannelViewSchema },
   getGate1Plan: { 200: gate1PlanViewSchema },
   getRunSurface: { 200: surfaceRunViewSchema },
   submitGate1: { 200: gate1SubmitResponseSchema },

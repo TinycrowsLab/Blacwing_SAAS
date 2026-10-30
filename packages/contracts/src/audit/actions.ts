@@ -755,6 +755,15 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'Surface nodes or relationships of one run were upserted into the graph; metadata records the counts.',
   },
+  // notification channels (NOTIFY-001): appended so the released order above is untouched
+  {
+    action: 'notification.channel_changed',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'A notification channel was created, changed, disabled or had its secret reference rotated.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

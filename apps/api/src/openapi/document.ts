@@ -9,6 +9,7 @@ import { standingAuthorisationsOpenApiModule } from '../authorisations/openapi.j
 import { findingOpenApiModule } from '../findings/openapi.js';
 import { gate1OpenApiModule } from '../gate1/openapi.js';
 import { killOpenApiDocument } from '../kill/openapi.js';
+import { notificationChannelsOpenApiModule } from '../notification-channels/openapi.js';
 import { oncallOpenApiDocument } from '../oncall/openapi.js';
 import { personaOpenApiModule } from '../personas/openapi.js';
 import { runEventsOpenApiModule } from '../run-events/openapi.js';
@@ -88,6 +89,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     testPlansOpenApiModule(),
     findingOpenApiModule(),
     oncallOpenApiModule(),
+    notificationChannelsOpenApiModule(),
   ];
 }
 
