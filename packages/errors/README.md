@@ -52,6 +52,12 @@ frozen. Codes are public API: never rename or reuse one, add a new one instead.
 | `SCOPE_BUDGET_EXCEEDS_SA` | 403 | `BudgetError` (in `@blackwing/contracts`, SCOPE-004) | no |
 | `CONFIG_INVALID` | 500 | `ConfigValidationError` (in `@blackwing/config`, FOUND-007) | no |
 | `TELEMETRY_INIT_FAILED` | 500 | plain `AppError` (invalid OpenTelemetry configuration or SDK start failure, `@blackwing/telemetry`) | no |
+| `CONNECTOR_UNKNOWN_PROVIDER` | 422 | `ConnectorUnknownProviderError` (no ticket connector registered for the provider, `@blackwing/connectors`, CONNECT-001) | no |
+| `CONNECTOR_AUTH_FAILED` | 502 | `ConnectorAuthFailedError` (the upstream refused our resolved credential; never carries it) | no |
+| `CONNECTOR_RATE_LIMITED` | 429 | `ConnectorRateLimitedError` (`retryAfter` in whole seconds, when the upstream sent one) | yes |
+| `CONNECTOR_NOT_FOUND` | 404 | `ConnectorNotFoundError` (ticket absent upstream, or the ref names another provider or project) | no |
+| `CONNECTOR_UPSTREAM_ERROR` | 502 | `ConnectorUpstreamError` (any other upstream failure) | yes |
+| `CONNECTOR_VALIDATION` | 422 | `ConnectorValidationError` (payload, patch or webhook breaks a connector rule) | no |
 | `INTERNAL` | 500 | `InternalError` | no |
 
 `title` is the registry's English title (v1). Clients branch on `code`, never on `title` or `detail`.

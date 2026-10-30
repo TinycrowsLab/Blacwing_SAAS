@@ -131,7 +131,7 @@ Example: The newest kill of the tenant.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -167,6 +167,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -233,7 +245,7 @@ Example: Kill not permitted.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -329,6 +341,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -611,7 +635,7 @@ Example: Validation failed.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -623,6 +647,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -1119,7 +1155,7 @@ Example: Idempotency key reused with a different request.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -1131,6 +1167,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -1206,7 +1254,7 @@ Example: halted.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -1242,6 +1290,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -1584,7 +1644,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -1792,6 +1852,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -1888,9 +1972,33 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -1902,6 +2010,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -2056,7 +2176,7 @@ Example: Tenant context missing.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2152,6 +2272,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -2434,7 +2566,7 @@ Example: Validation failed.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2446,6 +2578,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -2501,7 +2645,7 @@ Example: Example.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2537,6 +2681,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -2615,7 +2771,7 @@ Example: Forbidden.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2711,6 +2867,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -3445,7 +3613,7 @@ Example: Validation failed.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -3457,6 +3625,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -3515,7 +3695,7 @@ Example: Example.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -3551,6 +3731,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -3798,7 +3990,7 @@ Example: Example.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -3834,6 +4026,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -4188,7 +4392,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -4396,6 +4600,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -4488,6 +4716,30 @@ Example: CVSS score does not match its vector.
   "title": "CVSS score does not match its vector",
   "status": 422,
   "code": "CVSS_VECTOR_SCORE_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -4810,7 +5062,7 @@ Example: set.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -4846,6 +5098,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -4924,7 +5188,7 @@ Example: Tenant context missing.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -5020,6 +5284,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -5284,7 +5560,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -5492,6 +5768,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -5588,9 +5888,33 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -5602,6 +5926,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -5670,7 +6006,7 @@ Example: set.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -5706,6 +6042,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -6078,7 +6426,7 @@ Example: Unknown persona.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6090,6 +6438,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -6146,7 +6506,7 @@ Example: set.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6182,6 +6542,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -6260,7 +6632,7 @@ Example: Tenant context missing.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6356,6 +6728,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -6638,7 +7022,7 @@ Example: Unknown persona.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6650,6 +7034,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -6725,7 +7121,7 @@ Example: set.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6761,6 +7157,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -6851,7 +7259,7 @@ Example: Persona override field not permitted.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6947,6 +7355,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -7241,7 +7661,7 @@ Example: Validation failed.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7253,6 +7673,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -7339,7 +7771,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7415,6 +7847,30 @@ Example: Run token required.
 }
 ```
 
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Service authentication failed.
 
 ```json
@@ -7429,7 +7885,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7601,6 +8057,18 @@ Example: Draft prompt forbidden in production.
 }
 ```
 
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Kill not permitted.
 
 ```json
@@ -7735,7 +8203,7 @@ Example: Destructive gate exception cannot be approved.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7831,6 +8299,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -8206,7 +8686,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -8282,6 +8762,30 @@ Example: Run token required.
 }
 ```
 
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Service authentication failed.
 
 ```json
@@ -8296,7 +8800,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -8468,6 +8972,18 @@ Example: Draft prompt forbidden in production.
 }
 ```
 
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Kill not permitted.
 
 ```json
@@ -8602,7 +9118,7 @@ Example: Destructive gate exception cannot be approved.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -8698,6 +9214,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -9033,7 +9561,7 @@ Example: Settings with a display zone.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -9073,6 +9601,18 @@ Example: Malformed request.
 }
 ```
 
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Idempotency key required.
 
 ```json
@@ -9099,7 +9639,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -9175,6 +9715,30 @@ Example: Run token required.
 }
 ```
 
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Service authentication failed.
 
 ```json
@@ -9189,7 +9753,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -9361,6 +9925,18 @@ Example: Draft prompt forbidden in production.
 }
 ```
 
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Kill not permitted.
 
 ```json
@@ -9495,7 +10071,7 @@ Example: Destructive gate exception cannot be approved.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -9591,6 +10167,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -9855,7 +10443,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -10063,6 +10651,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -10159,9 +10771,33 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -10173,6 +10809,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -10228,7 +10876,7 @@ Example: Settings with a display zone.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -10268,6 +10916,18 @@ Example: Malformed request.
 }
 ```
 
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Idempotency key required.
 
 ```json
@@ -10294,7 +10954,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -10370,6 +11030,30 @@ Example: Run token required.
 }
 ```
 
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Service authentication failed.
 
 ```json
@@ -10384,7 +11068,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -10556,6 +11240,18 @@ Example: Draft prompt forbidden in production.
 }
 ```
 
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Kill not permitted.
 
 ```json
@@ -10690,7 +11386,7 @@ Example: Destructive gate exception cannot be approved.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -10786,6 +11482,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -11080,7 +11788,7 @@ Example: ETag mismatch.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -11288,6 +11996,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -11384,6 +12116,30 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 428
 
 Problem details; code is one of PRECONDITION_REQUIRED.
@@ -11404,7 +12160,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -11416,6 +12172,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -11476,7 +12244,7 @@ Example: One draft.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -11516,6 +12284,18 @@ Example: Malformed request.
 }
 ```
 
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Idempotency key required.
 
 ```json
@@ -11542,7 +12322,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -11618,6 +12398,30 @@ Example: Run token required.
 }
 ```
 
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Service authentication failed.
 
 ```json
@@ -11632,7 +12436,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -11804,6 +12608,18 @@ Example: Draft prompt forbidden in production.
 }
 ```
 
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Kill not permitted.
 
 ```json
@@ -11938,7 +12754,7 @@ Example: Destructive gate exception cannot be approved.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -12034,6 +12850,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -12298,7 +13126,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -12506,6 +13334,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -12602,9 +13454,33 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -12616,6 +13492,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -12697,7 +13585,7 @@ Example: A draft request.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -12737,6 +13625,18 @@ Example: Malformed request.
 }
 ```
 
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Idempotency key required.
 
 ```json
@@ -12763,7 +13663,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -12839,6 +13739,30 @@ Example: Run token required.
 }
 ```
 
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Service authentication failed.
 
 ```json
@@ -12853,7 +13777,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13025,6 +13949,18 @@ Example: Draft prompt forbidden in production.
 }
 ```
 
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Kill not permitted.
 
 ```json
@@ -13159,7 +14095,7 @@ Example: Destructive gate exception cannot be approved.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13255,6 +14191,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -13525,7 +14473,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13537,6 +14485,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -13597,7 +14557,7 @@ Example: A draft request.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13637,6 +14597,18 @@ Example: Malformed request.
 }
 ```
 
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Idempotency key required.
 
 ```json
@@ -13663,7 +14635,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13739,6 +14711,30 @@ Example: Run token required.
 }
 ```
 
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Service authentication failed.
 
 ```json
@@ -13753,7 +14749,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13921,6 +14917,18 @@ Example: Draft prompt forbidden in production.
   "title": "Draft prompt forbidden in production",
   "status": 403,
   "code": "PROMPT_DRAFT_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -14323,7 +15331,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -14531,6 +15539,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -14627,9 +15659,33 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -14641,6 +15697,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -14708,7 +15776,7 @@ Example: A draft request.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -14748,6 +15816,18 @@ Example: Malformed request.
 }
 ```
 
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Idempotency key required.
 
 ```json
@@ -14774,7 +15854,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -14850,6 +15930,30 @@ Example: Run token required.
 }
 ```
 
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Service authentication failed.
 
 ```json
@@ -14864,7 +15968,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -15036,6 +16140,18 @@ Example: Draft prompt forbidden in production.
 }
 ```
 
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Kill not permitted.
 
 ```json
@@ -15170,7 +16286,7 @@ Example: Destructive gate exception cannot be approved.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -15266,6 +16382,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -15536,7 +16664,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -15744,6 +16872,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -15840,6 +16992,30 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 428
 
 If-Match is missing.
@@ -15848,7 +17024,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -15860,6 +17036,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -15923,7 +17111,7 @@ Example: A draft request.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -15963,6 +17151,18 @@ Example: Malformed request.
 }
 ```
 
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Idempotency key required.
 
 ```json
@@ -15989,7 +17189,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -16065,6 +17265,30 @@ Example: Run token required.
 }
 ```
 
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Service authentication failed.
 
 ```json
@@ -16079,7 +17303,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -16251,6 +17475,18 @@ Example: Draft prompt forbidden in production.
 }
 ```
 
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Kill not permitted.
 
 ```json
@@ -16385,7 +17621,7 @@ Example: Destructive gate exception cannot be approved.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -16485,6 +17721,18 @@ Example: Test case not found.
 }
 ```
 
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
 The tenant is halted (tenant_halted), or the request is no longer a draft.
@@ -16499,7 +17747,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -16511,6 +17759,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -16574,7 +17834,7 @@ Example: A draft request.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -16614,6 +17874,18 @@ Example: Malformed request.
 }
 ```
 
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Idempotency key required.
 
 ```json
@@ -16640,7 +17912,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -16716,6 +17988,30 @@ Example: Run token required.
 }
 ```
 
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Service authentication failed.
 
 ```json
@@ -16730,7 +18026,7 @@ Example: Service authentication failed.
 
 #### Response 403
 
-Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -16902,6 +18198,18 @@ Example: Draft prompt forbidden in production.
 }
 ```
 
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Kill not permitted.
 
 ```json
@@ -17036,7 +18344,7 @@ Example: Destructive gate exception cannot be approved.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -17132,6 +18440,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -17402,7 +18722,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -17610,6 +18930,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -17706,6 +19050,30 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 428
 
 If-Match is missing.
@@ -17714,7 +19082,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -17726,6 +19094,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -17779,7 +19159,7 @@ Example: Example.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -17815,6 +19195,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -17893,7 +19285,7 @@ Example: Forbidden.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -17989,6 +19381,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -18295,7 +19699,7 @@ Example: Invalid asset identifier.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -18307,6 +19711,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -18432,7 +19848,7 @@ Example: Example.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -18468,6 +19884,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -18546,7 +19974,7 @@ Example: Forbidden.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -18642,6 +20070,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -18948,7 +20388,7 @@ Example: Invalid asset identifier.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -18960,6 +20400,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -19032,7 +20484,7 @@ Example: Example.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -19068,6 +20520,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -19242,7 +20706,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -19254,6 +20718,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -19327,7 +20803,7 @@ Example: Example.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -19363,6 +20839,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -19567,7 +21055,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -19579,6 +21067,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -19662,7 +21162,7 @@ Example: Example.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -19698,6 +21198,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -19902,7 +21414,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -19914,6 +21426,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -19982,7 +21506,7 @@ Example: Example.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -20018,6 +21542,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -20162,7 +21698,7 @@ Example: Verification method not applicable.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -20174,6 +21710,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -20272,7 +21820,7 @@ Example: Example.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -20308,6 +21856,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -20452,7 +22012,7 @@ Example: Verification method not applicable.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -20464,6 +22024,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -20550,7 +22122,7 @@ Example: Example.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -20586,6 +22158,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -20730,7 +22314,7 @@ Example: Verification method not applicable.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -20742,6 +22326,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -20828,7 +22424,7 @@ Example: Example.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -20864,6 +22460,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -21008,7 +22616,7 @@ Example: Verification method not applicable.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -21020,6 +22628,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -21152,7 +22772,7 @@ Example: Invalid cursor.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -21228,6 +22848,30 @@ Example: Run token required.
 }
 ```
 
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Service authentication failed.
 
 ```json
@@ -21260,7 +22904,7 @@ Example: Forbidden.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -21356,6 +23000,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -21638,7 +23294,7 @@ Example: Validation failed.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -21650,6 +23306,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -21743,7 +23411,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -21815,6 +23483,30 @@ Example: Run token required.
   "title": "Run token required",
   "status": 401,
   "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -22013,7 +23705,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -22025,6 +23717,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -22094,7 +23798,7 @@ Example: A draft standing authorisation.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -22134,6 +23838,18 @@ Example: Malformed request.
 }
 ```
 
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Idempotency key required.
 
 ```json
@@ -22160,7 +23876,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -22232,6 +23948,30 @@ Example: Run token required.
   "title": "Run token required",
   "status": 401,
   "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -22544,7 +24284,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -22752,6 +24492,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -22848,9 +24612,33 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -22862,6 +24650,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -22938,7 +24738,7 @@ Example: A draft standing authorisation.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -22978,6 +24778,18 @@ Example: Malformed request.
 }
 ```
 
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Idempotency key required.
 
 ```json
@@ -23004,7 +24816,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -23076,6 +24888,30 @@ Example: Run token required.
   "title": "Run token required",
   "status": 401,
   "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -23262,7 +25098,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -23274,6 +25110,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -23346,7 +25194,7 @@ Example: A draft standing authorisation.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -23386,6 +25234,18 @@ Example: Malformed request.
 }
 ```
 
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Idempotency key required.
 
 ```json
@@ -23412,7 +25272,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -23484,6 +25344,30 @@ Example: Run token required.
   "title": "Run token required",
   "status": 401,
   "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -23670,7 +25554,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -23682,6 +25566,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -23754,7 +25650,7 @@ Example: A draft standing authorisation.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -23790,6 +25686,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -23958,7 +25866,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -23970,6 +25878,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -24064,7 +25984,7 @@ Example: A draft standing authorisation.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -24104,6 +26024,18 @@ Example: Malformed request.
 }
 ```
 
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Idempotency key required.
 
 ```json
@@ -24130,7 +26062,7 @@ Example: Signup token invalid or expired.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -24202,6 +26134,30 @@ Example: Run token required.
   "title": "Run token required",
   "status": 401,
   "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -24340,7 +26296,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -24352,6 +26308,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -24435,7 +26403,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -24507,6 +26475,30 @@ Example: Run token required.
   "title": "Run token required",
   "status": 401,
   "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -24663,7 +26655,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -24675,6 +26667,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -24771,7 +26775,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -24843,6 +26847,30 @@ Example: Run token required.
   "title": "Run token required",
   "status": 401,
   "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -24999,7 +27027,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -25011,6 +27039,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -25105,7 +27145,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -25177,6 +27217,30 @@ Example: Run token required.
   "title": "Run token required",
   "status": 401,
   "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -25333,7 +27397,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -25345,6 +27409,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -25419,7 +27495,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -25491,6 +27567,30 @@ Example: Run token required.
   "title": "Run token required",
   "status": 401,
   "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -25647,7 +27747,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -25659,6 +27759,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -25786,7 +27898,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -25858,6 +27970,30 @@ Example: Run token required.
   "title": "Run token required",
   "status": 401,
   "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -26014,7 +28150,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -26026,6 +28162,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -26094,7 +28242,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -26166,6 +28314,30 @@ Example: Run token required.
   "title": "Run token required",
   "status": 401,
   "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -26322,7 +28494,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -26334,6 +28506,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -26419,7 +28603,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -26491,6 +28675,30 @@ Example: Run token required.
   "title": "Run token required",
   "status": 401,
   "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -26647,7 +28855,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -26659,6 +28867,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -26756,7 +28976,7 @@ Example: Idempotency key required.
 
 #### Response 401
 
-Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -26828,6 +29048,30 @@ Example: Run token required.
   "title": "Run token required",
   "status": 401,
   "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -26984,7 +29228,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -26996,6 +29240,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -27086,7 +29342,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -27182,6 +29438,18 @@ Example: Test case not found.
   "title": "Test case not found",
   "status": 404,
   "code": "TEST_CASE_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -27446,7 +29714,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -27654,6 +29922,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -27750,9 +30042,33 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -27764,6 +30080,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -27855,7 +30183,7 @@ Example: A confirmed finding with one occurrence.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -27891,6 +30219,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -28197,7 +30537,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -28405,6 +30745,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -28501,9 +30865,33 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -28515,6 +30903,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -28584,7 +30984,7 @@ Example: one.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -28620,6 +31020,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -28962,7 +31374,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -29170,6 +31582,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -29266,9 +31702,33 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -29280,6 +31740,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -29397,7 +31869,7 @@ Example: created.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -29433,6 +31905,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -29499,7 +31983,7 @@ Example: Forbidden.
 
 #### Response 404
 
-Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.
+Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -29599,6 +32083,18 @@ Example: Test case not found.
 }
 ```
 
+Example: Ticket not found in connector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_NOT_FOUND",
+  "title": "Ticket not found in connector",
+  "status": 404,
+  "code": "CONNECTOR_NOT_FOUND",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 409
 
 Problem details; code is one of CONFLICT.
@@ -29637,7 +32133,7 @@ Example: Validation failed.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -29649,6 +32145,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -29735,7 +32243,7 @@ Example: roster.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -29771,6 +32279,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -30113,7 +32633,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -30321,6 +32841,30 @@ Example: Sandbox image missing.
 }
 ```
 
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 Example: Invalid kill scope.
 
 ```json
@@ -30417,9 +32961,33 @@ Example: CVSS score does not match its vector.
 }
 ```
 
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -30431,6 +32999,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -30530,7 +33110,7 @@ Example: updated.
 
 #### Response 400
 
-Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -30566,6 +33146,18 @@ Example: Malformed request.
   "title": "Malformed request",
   "status": 400,
   "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -30722,7 +33314,7 @@ Example: Precondition required.
 
 #### Response 429
 
-Problem details; code is one of RATE_LIMITED.
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -30734,6 +33326,18 @@ Example: Too many requests.
   "title": "Too many requests",
   "status": 429,
   "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```

@@ -2337,7 +2337,7 @@ export interface operations {
           'application/json': components['schemas']['KillEventList'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -2364,7 +2364,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -2391,7 +2391,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -2492,7 +2492,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -2532,7 +2532,7 @@ export interface operations {
           'application/json': components['schemas']['KillEvent'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -2577,7 +2577,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -2586,7 +2586,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -2771,7 +2771,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -2798,7 +2798,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -2853,7 +2853,7 @@ export interface operations {
           'text/event-stream': string;
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -2880,7 +2880,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -3038,7 +3038,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -3087,7 +3087,7 @@ export interface operations {
           'application/json': components['schemas']['Gate1SubmitResponse'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -3217,7 +3217,7 @@ export interface operations {
           'application/json': components['schemas']['Gate1PlanView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -3262,7 +3262,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -3421,7 +3421,7 @@ export interface operations {
           'application/json': components['schemas']['PersonaRegistryList'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -3448,7 +3448,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -3466,7 +3466,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -3475,7 +3475,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -3535,7 +3535,7 @@ export interface operations {
           'application/json': components['schemas']['PersonaRegistryView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -3589,7 +3589,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -3649,7 +3649,7 @@ export interface operations {
           'application/json': components['schemas']['PersonaOverrideView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -3676,7 +3676,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -3703,7 +3703,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -3767,7 +3767,7 @@ export interface operations {
           'application/json': components['schemas']['PersonaOverrideView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -3794,7 +3794,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -3821,7 +3821,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -3886,7 +3886,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -3895,7 +3895,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -3904,7 +3904,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -3978,7 +3978,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -3987,7 +3987,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -3996,7 +3996,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -4054,7 +4054,7 @@ export interface operations {
           'application/json': components['schemas']['TenantSettingsResponse'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -4063,7 +4063,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -4072,7 +4072,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -4081,7 +4081,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -4099,7 +4099,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -4108,7 +4108,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -4149,7 +4149,7 @@ export interface operations {
           'application/json': components['schemas']['TenantSettingsResponse'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -4158,7 +4158,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -4167,7 +4167,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -4176,7 +4176,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -4203,7 +4203,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -4221,7 +4221,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -4250,7 +4250,7 @@ export interface operations {
           'application/json': components['schemas']['AssessmentRequestList'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -4259,7 +4259,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -4268,7 +4268,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -4277,7 +4277,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -4295,7 +4295,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -4304,7 +4304,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -4339,7 +4339,7 @@ export interface operations {
           'application/json': components['schemas']['AssessmentRequest'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -4348,7 +4348,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -4357,7 +4357,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -4366,7 +4366,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -4393,7 +4393,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -4427,7 +4427,7 @@ export interface operations {
           'application/json': components['schemas']['AssessmentRequest'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -4436,7 +4436,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -4445,7 +4445,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -4472,7 +4472,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -4481,7 +4481,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -4525,7 +4525,7 @@ export interface operations {
           'application/json': components['schemas']['AssessmentRequest'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -4534,7 +4534,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -4543,7 +4543,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -4552,7 +4552,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -4579,7 +4579,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -4597,7 +4597,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -4634,7 +4634,7 @@ export interface operations {
           'application/json': components['schemas']['AssessmentRequest'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -4643,7 +4643,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -4652,7 +4652,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -4661,7 +4661,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -4688,7 +4688,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -4728,7 +4728,7 @@ export interface operations {
           'application/json': components['schemas']['AssessmentRequest'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -4737,7 +4737,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -4746,7 +4746,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
+      /** @description Problem details; code is one of FORBIDDEN, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -4755,7 +4755,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -4782,7 +4782,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -4800,7 +4800,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -4851,7 +4851,7 @@ export interface operations {
           'application/json': components['schemas']['AssetPage'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -4878,7 +4878,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -4905,7 +4905,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -5019,7 +5019,7 @@ export interface operations {
           'application/json': components['schemas']['AssetView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -5046,7 +5046,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -5073,7 +5073,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -5137,7 +5137,7 @@ export interface operations {
           'application/json': components['schemas']['AssetView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -5200,7 +5200,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -5267,7 +5267,7 @@ export interface operations {
           'application/json': components['schemas']['AssetView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -5339,7 +5339,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -5415,7 +5415,7 @@ export interface operations {
           'application/json': components['schemas']['AssetView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -5487,7 +5487,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -5550,7 +5550,7 @@ export interface operations {
           'application/json': components['schemas']['AssetVerificationView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -5604,7 +5604,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -5685,7 +5685,7 @@ export interface operations {
           'application/json': components['schemas']['AssetVerificationView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -5739,7 +5739,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -5811,7 +5811,7 @@ export interface operations {
           'application/json': components['schemas']['AssetVerificationView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -5865,7 +5865,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -5937,7 +5937,7 @@ export interface operations {
           'application/json': components['schemas']['AssetVerificationView'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -5991,7 +5991,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -6054,7 +6054,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -6072,7 +6072,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -6099,7 +6099,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -6149,7 +6149,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -6212,7 +6212,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -6249,7 +6249,7 @@ export interface operations {
           'application/json': components['schemas']['StandingAuthorisation'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -6258,7 +6258,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -6294,7 +6294,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -6303,7 +6303,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -6350,7 +6350,7 @@ export interface operations {
           'application/json': components['schemas']['StandingAuthorisation'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -6359,7 +6359,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -6422,7 +6422,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -6465,7 +6465,7 @@ export interface operations {
           'application/json': components['schemas']['StandingAuthorisation'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -6474,7 +6474,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -6537,7 +6537,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -6580,7 +6580,7 @@ export interface operations {
           'application/json': components['schemas']['StandingAuthorisation'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -6652,7 +6652,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -6708,7 +6708,7 @@ export interface operations {
           'application/json': components['schemas']['StandingAuthorisation'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -6717,7 +6717,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -6780,7 +6780,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -6832,7 +6832,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -6904,7 +6904,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -6949,7 +6949,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -7021,7 +7021,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -7064,7 +7064,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -7136,7 +7136,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -7181,7 +7181,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -7253,7 +7253,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -7307,7 +7307,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -7379,7 +7379,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -7419,7 +7419,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -7491,7 +7491,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -7539,7 +7539,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -7611,7 +7611,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -7663,7 +7663,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -7735,7 +7735,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -7800,7 +7800,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -7818,7 +7818,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -7827,7 +7827,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -7859,7 +7859,7 @@ export interface operations {
           'application/json': components['schemas']['Finding'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -7904,7 +7904,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -7913,7 +7913,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -7945,7 +7945,7 @@ export interface operations {
           };
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -7990,7 +7990,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -7999,7 +7999,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -8044,7 +8044,7 @@ export interface operations {
           'application/json': components['schemas']['OncallRoster'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -8071,7 +8071,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      /** @description Problem details; code is one of NOT_FOUND, PERSONA_NOT_DEFINED, PROMPT_NO_RELEASED_VERSION, RUN_NOT_FOUND, SECRET_NOT_FOUND, KEYCLOAK_NOT_FOUND, PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND, CONNECTOR_NOT_FOUND. */
       404: {
         headers: {
           [name: string]: unknown;
@@ -8098,7 +8098,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -8140,7 +8140,7 @@ export interface operations {
           'application/json': components['schemas']['OncallRoster'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -8185,7 +8185,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH. */
+      /** @description Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION. */
       422: {
         headers: {
           [name: string]: unknown;
@@ -8194,7 +8194,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;
@@ -8243,7 +8243,7 @@ export interface operations {
           'application/json': components['schemas']['OncallRoster'];
         };
       };
-      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
+      /** @description Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -8315,7 +8315,7 @@ export interface operations {
           'application/problem+json': components['schemas']['Problem'];
         };
       };
-      /** @description Problem details; code is one of RATE_LIMITED. */
+      /** @description Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED. */
       429: {
         headers: {
           [name: string]: unknown;

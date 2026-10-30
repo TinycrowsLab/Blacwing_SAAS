@@ -487,6 +487,32 @@ const DEFINITIONS = {
     title: 'Telemetry initialisation failed',
     retryable: false,
   },
+  // Ticket connectors (`@blackwing/connectors`, CONNECT-001 #765). Stable codes shared by every provider. A
+  // provider name with no registered connector is a configuration error (422). Upstream auth failure (502: our
+  // credential was refused, not the caller's session), not found (404), validation (422), rate limit (429,
+  // retryable after `retryAfter`) and any other upstream failure (502, retryable).
+  CONNECTOR_UNKNOWN_PROVIDER: {
+    status: 422,
+    title: 'Unknown ticket connector provider',
+    retryable: false,
+  },
+  CONNECTOR_AUTH_FAILED: {
+    status: 502,
+    title: 'Ticket connector authentication failed',
+    retryable: false,
+  },
+  CONNECTOR_RATE_LIMITED: { status: 429, title: 'Ticket connector rate limited', retryable: true },
+  CONNECTOR_NOT_FOUND: { status: 404, title: 'Ticket not found in connector', retryable: false },
+  CONNECTOR_UPSTREAM_ERROR: {
+    status: 502,
+    title: 'Ticket connector upstream error',
+    retryable: true,
+  },
+  CONNECTOR_VALIDATION: {
+    status: 422,
+    title: 'Ticket connector validation failed',
+    retryable: false,
+  },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

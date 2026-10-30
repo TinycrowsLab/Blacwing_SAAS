@@ -136,6 +136,13 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'AGENT_BUDGET_EXHAUSTED',
   'AGENT_FORBIDDEN_TOOL',
   'CONFIG_INVALID', // ConfigValidationError, @blackwing/config
+  // Ticket connector errors, @blackwing/connectors (CONNECT-001, #765): subclassed in that package.
+  'CONNECTOR_UNKNOWN_PROVIDER',
+  'CONNECTOR_AUTH_FAILED',
+  'CONNECTOR_RATE_LIMITED',
+  'CONNECTOR_NOT_FOUND',
+  'CONNECTOR_UPSTREAM_ERROR',
+  'CONNECTOR_VALIDATION',
   // Thrown as a plain AppError by @blackwing/telemetry initTelemetry (OBS-001, #298).
   'TELEMETRY_INIT_FAILED',
   // EvidenceIntegrityError, @blackwing/evidence (EVIDENCE binding, #724): carries its own code.
