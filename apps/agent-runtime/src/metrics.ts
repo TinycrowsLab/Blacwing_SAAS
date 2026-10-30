@@ -29,6 +29,8 @@ export interface RuntimeMetrics {
   readonly gate2Resumes: Counter<'decision' | 'outcome'>;
   /** `gate2_resume_failures_total`: resumes whose session could not be resumed (GATE2-007). */
   readonly gate2ResumeFailures: Counter;
+  /** `browser_launch_total{result}`: one per browser launch self-check, `success` or `failure` (BROWSER-001). */
+  readonly browserLaunches: Counter<'result'>;
 }
 
 export function createRuntimeMetrics(registry: Registry = new Registry()): RuntimeMetrics {
@@ -83,6 +85,12 @@ export function createRuntimeMetrics(registry: Registry = new Registry()): Runti
     gate2ResumeFailures: new Counter({
       name: 'gate2_resume_failures_total',
       help: 'Gate 2 resumes whose session could not be resumed.',
+      registers: [registry],
+    }),
+    browserLaunches: new Counter({
+      name: 'browser_launch_total',
+      help: 'Agent browser launch self-checks, by result.',
+      labelNames: ['result'],
       registers: [registry],
     }),
   };

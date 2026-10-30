@@ -142,6 +142,10 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'AGENT_MCP_SERVER_MISSING',
   'AGENT_BUDGET_EXHAUSTED',
   'AGENT_FORBIDDEN_TOOL',
+  // Agent browser, @blackwing/agent-runtime (BROWSER-001): thrown as plain AppError.
+  'BROWSER_PROXY_INVALID',
+  'BROWSER_VERSION_MISMATCH',
+  'BROWSER_LAUNCH_FAILED',
   'CONFIG_INVALID', // ConfigValidationError, @blackwing/config
   // Ticket connector errors, @blackwing/connectors (CONNECT-001, #765): subclassed in that package.
   'CONNECTOR_UNKNOWN_PROVIDER',

@@ -11,10 +11,12 @@
   "scripts": {
     "build": "tsc -b --pretty false",
     "lint": "eslint . --max-warnings=0",
-    "test": "vitest run",
+    "test": "vitest run --config src/vitest.config.ts",
+    "test:int": "vitest run --config src/vitest.int.config.ts",
     "typecheck": "tsc -b --pretty false"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "catalog:",
     "@types/node": "catalog:",
     "fast-check": "catalog:",
     "typescript": "catalog:",
@@ -29,6 +31,8 @@
     "@blackwing/logger": "workspace:*",
     "@blackwing/mcp-tools": "workspace:*",
     "@opentelemetry/api": "catalog:",
+    "@playwright/mcp": "catalog:",
+    "playwright-core": "catalog:",
     "prom-client": "catalog:",
     "zod": "catalog:"
   }

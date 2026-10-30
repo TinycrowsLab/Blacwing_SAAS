@@ -132,6 +132,8 @@
   "pnpm": {
     "overrides": {
       "@nestjs/platform-fastify>fastify": "catalog:",
+      "@playwright/mcp>playwright": "1.63.0",
+      "playwright-core": "1.63.0",
       "postcss@<8.5.18": "8.5.31",
       "tinypool@<2.1.2": "2.1.2"
     }

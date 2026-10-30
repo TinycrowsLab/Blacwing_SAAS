@@ -215,6 +215,15 @@ const DEFINITIONS = {
     title: 'Forbidden agent tool in allowlist',
     retryable: false,
   },
+  // Agent browser (BROWSER-001, #626): the browser never starts without a valid gateway proxy, a pinned Playwright
+  // triple, and a launch self-check that observed the navigation through the gateway.
+  BROWSER_PROXY_INVALID: { status: 500, title: 'Invalid agent browser proxy', retryable: false },
+  BROWSER_VERSION_MISMATCH: {
+    status: 500,
+    title: 'Agent browser version mismatch',
+    retryable: false,
+  },
+  BROWSER_LAUNCH_FAILED: { status: 503, title: 'Agent browser launch failed', retryable: true },
   // `secret_ref` URI grammar (SECRETS-003, §8.7): a malformed reference is invalid input, rejected at parse time.
   INVALID_SECRET_REF: { status: 422, title: 'Invalid secret reference', retryable: false },
   CONFIG_INVALID: { status: 500, title: 'Invalid configuration', retryable: false },
