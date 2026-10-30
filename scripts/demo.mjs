@@ -5,9 +5,11 @@
 //   node scripts/demo.mjs status     # show what is running
 //   node scripts/demo.mjs smoke      # run the story end to end against the live stack (exit 1 on any failure)
 //   node scripts/demo.mjs stop       # stop api, worker, demo runner and web started by this script
+//   node scripts/demo.mjs google     # only the Google identity provider in Keycloak (scripts/keycloak-google-idp.mjs)
 //
 // Steps, in order (each one is safe to re-run):
-//   1. dependency stack (`pnpm dev:deps` when Postgres or Keycloak is not healthy)
+//   1. dependency stack (`pnpm dev:deps` when Postgres or Keycloak is not healthy), then the Google identity
+//      provider when BW_DEV_GOOGLE_CLIENT_ID/SECRET are set (optional: a warning otherwise, never a failure)
 //   2. Juice Shop lab target on 127.0.0.1:3001 (docker container `bw-demo-juice`)
 //   3. demo database `blackwing_demo` (the shared dev database is migrated by other worktrees)
 //   4. migrations, then the dev seed (`pnpm db:seed`, which skips tables that are not merged yet)
@@ -163,6 +165,18 @@ function stepDeps(env) {
   log('starting dependency stack (pnpm dev:deps)');
   const r = run(PNPM, ['dev:deps'], { heavy: true });
   if (r.status !== 0) fail('pnpm dev:deps failed; see its output above');
+}
+
+/**
+ * Upserts the Google identity provider in Keycloak. Exit 0 when the client is not configured (the script prints
+ * the instructions). Returns the script's exit status; `up` treats a failure as a warning.
+ */
+function stepGoogle() {
+  const r = spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'keycloak-google-idp.mjs')], {
+    cwd: ROOT,
+    stdio: 'inherit',
+  });
+  return r.status ?? 1;
 }
 
 function stepJuice() {
@@ -614,13 +628,16 @@ async function main() {
   if (cmd === 'status') return status();
   if (cmd === 'stop') return stop();
   if (cmd === 'smoke') return smoke();
-  if (cmd !== 'up') fail(`unknown command ${cmd} (use up, status, smoke or stop)`);
+  if (cmd === 'google') process.exit(stepGoogle());
+  if (cmd !== 'up') fail(`unknown command ${cmd} (use up, status, smoke, stop or google)`);
 
   const demo = ensureDemoEnv();
   const baseEnv = demoEnv(demo);
   if (baseEnv.BW_DEV_POSTGRES_SUPERUSER === undefined)
     fail('.env is missing; run pnpm dev:deps first');
   stepDeps(baseEnv);
+  if (stepGoogle() !== 0)
+    log('Google sign-in is not set up (see the message above); the normal sign-in still works');
   stepJuice();
   stepDatabase(baseEnv);
   stepMigrateAndSeed(baseEnv);
