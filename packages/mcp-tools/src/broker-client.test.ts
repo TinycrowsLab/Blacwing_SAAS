@@ -20,6 +20,7 @@ interface Seen {
   method: string | undefined;
   url: string | undefined;
   authorization: string | undefined;
+  idempotencyKey: string | undefined;
   body: string;
 }
 
@@ -45,6 +46,7 @@ beforeEach(async () => {
         method: req.method,
         url: req.url,
         authorization: req.headers.authorization,
+        idempotencyKey: req.headers['idempotency-key'] as string | undefined,
         body,
       });
       respond(res);
@@ -87,6 +89,13 @@ describe('createBrokerClient', () => {
     respond = (res) => res.writeHead(204).end();
     await expect(client().post('tool-audit', { a: 1 })).resolves.toBeUndefined();
     expect(seen[0]).toMatchObject({ method: 'POST', body: '{"a":1}' });
+  });
+
+  it('sends the Idempotency-Key header only when the caller gives one', async () => {
+    await client().post('gate2/exceptions', { a: 1 }, undefined, { idempotencyKey: 'key-1' });
+    await client().post('tool-audit', { a: 1 });
+    expect(seen[0]).toMatchObject({ idempotencyKey: 'key-1', body: '{"a":1}' });
+    expect(seen[1]?.idempotencyKey).toBeUndefined();
   });
 
   it('maps an unreachable broker to TOOL_BACKEND_UNAVAILABLE without leaking the token', async () => {

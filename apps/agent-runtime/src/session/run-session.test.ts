@@ -534,6 +534,70 @@ describe('runSession: PreToolUse hook (RUNTIME-005)', () => {
   });
 });
 
+describe('runSession: tool_deferred (RUNTIME-006)', () => {
+  /** A session that the PreToolUse hook ended by deferring one call to Gate 2. */
+  function deferredQuery(): RunQuery {
+    return () =>
+      (async function* () {
+        await Promise.resolve();
+        yield {
+          type: 'result',
+          subtype: 'success',
+          terminal_reason: 'tool_deferred',
+          deferred_tool_use: { id: 'toolu_9', name: 'Bash', input: { command: 'curl x' } },
+          num_turns: 2,
+          total_cost_usd: 0.1,
+          modelUsage: {},
+        } as SessionStreamMessage;
+      })();
+  }
+
+  it('ends with stop_reason tool_deferred and persists the pending deferred_tool_use', async () => {
+    const broker = fakeBroker();
+    const summary = await runSession(DESCRIPTOR, {
+      broker,
+      runQuery: deferredQuery(),
+      sdkVersion: '0.3.308',
+      metrics: createRuntimeMetrics(),
+      log: fakeLog(),
+    });
+    expect(summary.status).toBe('tool_deferred');
+    expect(broker.posts).toHaveLength(1);
+    expect(broker.posts[0]?.suffix).toBe(AGENT_SESSION_RECORD_SUFFIX);
+    expect(broker.posts[0]?.body).toMatchObject({
+      sessionId: SESSION,
+      status: 'tool_deferred',
+      deferredToolUse: { toolUseId: 'toolu_9', toolName: 'Bash' },
+    });
+  });
+
+  it('never persists the deferred call input, which can carry secrets', async () => {
+    const broker = fakeBroker();
+    await runSession(DESCRIPTOR, {
+      broker,
+      runQuery: deferredQuery(),
+      sdkVersion: '0.3.308',
+      metrics: createRuntimeMetrics(),
+      log: fakeLog(),
+    });
+    expect(JSON.stringify(broker.posts)).not.toContain('curl x');
+  });
+
+  it('records a session without a deferred call as its SDK subtype, with no deferred field', async () => {
+    const broker = fakeBroker();
+    await runSession(DESCRIPTOR, {
+      broker,
+      runQuery: resultQuery(),
+      sdkVersion: '0.3.308',
+      metrics: createRuntimeMetrics(),
+      log: fakeLog(),
+    });
+    const body = broker.posts[0]?.body as Record<string, unknown>;
+    expect(body.status).toBe('success');
+    expect(body).not.toHaveProperty('deferredToolUse');
+  });
+});
+
 describe('buildRunOptions hooks (RUNTIME-005)', () => {
   it('adds no hooks key when no hooks are given', () => {
     const options = buildRunOptions(DESCRIPTOR, new AbortController());

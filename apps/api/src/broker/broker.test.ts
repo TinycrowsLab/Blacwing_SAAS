@@ -739,15 +739,22 @@ describe('Run Broker API', () => {
       });
     });
 
-    it('returns deny with the reason for an out-of-scope target and audits it', async () => {
+    it('answers an out-of-scope target with an exception (Gate 2 may approve it) and audits it', async () => {
       ctx = await wired();
       const res = await call(ctx, {
         url: PDP_URL,
         payload: { ...PDP_BODY, targets: ['https://other.example.test/'] },
       });
       expect(res.statusCode).toBe(200);
-      expect(res.json()).toEqual({ decision: 'deny', reason: 'out_of_scope' });
-      expect(ctx.audit.events.at(-1)).toMatchObject({ decision: 'deny', reason: 'out_of_scope' });
+      expect(res.json()).toEqual({
+        decision: 'exception',
+        reason: 'out_of_scope',
+        intrusiveness: 'active_safe',
+      });
+      expect(ctx.audit.events.at(-1)).toMatchObject({
+        decision: 'exception',
+        reason: 'out_of_scope',
+      });
     });
 
     it('denies a state_changing test case without its journal entry', async () => {

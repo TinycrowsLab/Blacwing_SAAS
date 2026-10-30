@@ -11,7 +11,8 @@ import {
  * §8.11). The decision is a pure function of facts the broker loads itself: the caller's claim about scope or
  * intrusiveness is never an input. Every rule is deny by default: a missing envelope, an expired or revoked
  * envelope, a class above the envelope, a `state_changing` call without a journal entry, or a target outside
- * scope each deny. Only the all-clear allows.
+ * scope each deny. Only the all-clear allows. Out of envelope or out of scope (but not a hard baseline block) answers
+ * `exception`, which the hook may turn into a Gate 2 deferral (RUNTIME-006).
  */
 
 /** The standing-authorisation envelope the run executes under (§8.1). */
@@ -56,6 +57,11 @@ const deny = (reason: BrokerPdpDecision['reason']): BrokerPdpDecision => ({
   reason,
 });
 
+const exception = (
+  reason: BrokerPdpDecision['reason'],
+  intrusiveness: IntrusivenessClass,
+): BrokerPdpDecision => ({ decision: 'exception', reason, intrusiveness });
+
 /** The decision for one call. Pure: the same facts, request and instant always give the same answer. */
 export function decidePdp(
   facts: PdpFacts,
@@ -75,11 +81,14 @@ export function decidePdp(
   const overCeiling =
     facts.testCaseClass !== null &&
     intrusivenessRank(facts.testCaseClass) > intrusivenessRank(facts.sessionCeiling);
-  if (overEnvelope || overCeiling) return deny('intrusiveness_exceeds_envelope');
+  // Above the envelope or out of scope is an exception a human may approve (Gate 2). The rest are hard denials.
+  if (overEnvelope || overCeiling) return exception('intrusiveness_exceeds_envelope', callClass);
   if (requiresReversalJournal(callClass) && !facts.reversalJournalPresent) {
     return deny('state_change_without_journal');
   }
-  if (request.targets.some((target) => !facts.inScope(target))) return deny('out_of_scope');
+  if (request.targets.some((target) => !facts.inScope(target))) {
+    return exception('out_of_scope', callClass);
+  }
   return { decision: 'allow', reason: 'in_envelope' };
 }
 

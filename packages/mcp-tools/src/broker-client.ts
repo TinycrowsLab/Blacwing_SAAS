@@ -12,7 +12,13 @@ export interface BrokerClient {
   /** `GET /internal/broker/runs/{runId}/{suffix}`; the body is parsed with `schema`. */
   get<T>(suffix: string, schema: z.ZodType<T>): Promise<T>;
   /** `POST /internal/broker/runs/{runId}/{suffix}`; resolves `undefined` for an empty response. */
-  post<T = undefined>(suffix: string, body: unknown, schema?: z.ZodType<T>): Promise<T>;
+  post<T = undefined>(
+    suffix: string,
+    body: unknown,
+    schema?: z.ZodType<T>,
+    /** `idempotencyKey` is sent as the `Idempotency-Key` header: a retry with the same key must not repeat a write (§9). */
+    options?: { readonly idempotencyKey?: string },
+  ): Promise<T>;
 }
 
 export interface BrokerClientOptions {
@@ -31,8 +37,8 @@ export interface BrokerClientOptions {
 const DEFAULT_TIMEOUT_MS = 10_000;
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
-/** One path segment, or a UUID segment (`engagement/subtasks/<id>/result`). */
-const SUFFIX = /^[a-z][a-z-]{0,31}(?:\/(?:[a-z][a-z-]{0,31}|[0-9a-f-]{36}))*$/;
+/** One path segment (`gate2` included), or a UUID segment (`engagement/subtasks/<id>/result`). */
+const SUFFIX = /^[a-z][a-z0-9-]{0,31}(?:\/(?:[a-z][a-z0-9-]{0,31}|[0-9a-f-]{36}))*$/;
 const RUN_ID = /^[0-9a-f-]{36}$/;
 
 /** The problem+json `code` of a failed broker response, if it has one. */
@@ -68,6 +74,7 @@ export function createBrokerClient(options: BrokerClientOptions): BrokerClient {
     suffix: string,
     body: unknown,
     schema: z.ZodType<T> | undefined,
+    idempotencyKey?: string,
   ): Promise<T> => {
     if (!SUFFIX.test(suffix)) throw new TypeError('invalid broker path');
     if (killed()) throw new ToolError('TOOL_KILLED', 'the run was killed');
@@ -82,6 +89,7 @@ export function createBrokerClient(options: BrokerClientOptions): BrokerClient {
           authorization: `Bearer ${options.token}`,
           accept: 'application/json',
           ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+          ...(idempotencyKey === undefined ? {} : { 'idempotency-key': idempotencyKey }),
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         // A redirect would replay the bearer token to another origin.
@@ -120,6 +128,7 @@ export function createBrokerClient(options: BrokerClientOptions): BrokerClient {
 
   return {
     get: (suffix, schema) => call('GET', suffix, undefined, schema),
-    post: (suffix, body, schema) => call('POST', suffix, body ?? {}, schema),
+    post: (suffix, body, schema, options) =>
+      call('POST', suffix, body ?? {}, schema, options?.idempotencyKey),
   };
 }

@@ -187,9 +187,9 @@ export function brokerOpenApiDocument(): JsonObject {
       [toOpenApiPath(BROKER_PDP_EVALUATE_ROUTE)]: {
         post: {
           operationId: 'evaluatePdp',
-          summary: 'Decide one PreToolUse tool call (allow or deny)',
+          summary: 'Decide one PreToolUse tool call (allow, deny or exception)',
           description:
-            'Evaluates a tool call against the run envelope, scope and journal facts the broker loads. Answers 501 until the PDP is wired; the runtime then denies (fail closed).',
+            'Evaluates a tool call against the run envelope, scope and journal facts the broker loads. `exception` is an out-of-envelope call a human may approve through Gate 2 (the runtime then opens that exception). Answers 501 until the PDP is wired; the runtime then denies (fail closed).',
           security: [{ runToken: [] }],
           parameters: [runIdParameter],
           requestBody: {

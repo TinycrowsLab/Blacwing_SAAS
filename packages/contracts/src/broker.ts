@@ -169,8 +169,11 @@ export type BrokerToolAuditRequest = z.infer<typeof brokerToolAuditRequestSchema
 export const PDP_TARGETS_MAX = 16;
 const PDP_NAME_MAX = 256;
 
-/** Decisions the PreToolUse PDP returns. `defer` is RUNTIME-006 and is not part of this contract. */
-const PDP_DECISIONS = ['allow', 'deny'] as const;
+/**
+ * Decisions the PreToolUse PDP returns. `exception` is an out-of-envelope call a human may still approve through
+ * Gate 2 (RUNTIME-006, #468). The hook turns it into `defer` for a single call, or `deny` for a batch.
+ */
+const PDP_DECISIONS = ['allow', 'deny', 'exception'] as const;
 export type PdpDecisionValue = (typeof PDP_DECISIONS)[number];
 
 /**
@@ -191,6 +194,10 @@ const PDP_REASONS = [
   'target_unresolved',
   'pdp_unavailable',
   'pdp_timeout',
+  'batch_out_of_envelope_paused',
+  'gate2_exception_unavailable',
+  'gate2_denied',
+  'gate2_resume_required',
 ] as const;
 export type PdpReason = (typeof PDP_REASONS)[number];
 
@@ -213,6 +220,11 @@ export type BrokerPdpEvaluateRequest = z.infer<typeof brokerPdpEvaluateRequestSc
 export const brokerPdpDecisionSchema = z.strictObject({
   decision: z.enum(PDP_DECISIONS),
   reason: z.enum(PDP_REASONS),
+  /**
+   * The intrusiveness class of the exception call. Set on `exception` only: Gate 2 records it, and the request
+   * needs it. Absent on `allow` and `deny`.
+   */
+  intrusiveness: intrusivenessClassSchema.optional(),
 });
 export type BrokerPdpDecision = z.infer<typeof brokerPdpDecisionSchema>;
 

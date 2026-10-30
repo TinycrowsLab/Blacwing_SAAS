@@ -21,6 +21,10 @@ export interface RuntimeMetrics {
   readonly pretoolDecisions: Counter<'decision' | 'reason'>;
   /** `agent_pdp_latency_ms`: time from the hook's PDP call to its decision, in milliseconds (RUNTIME-005). */
   readonly pdpLatency: Histogram;
+  /** `agent_gate2_defers_total`: single out-of-envelope calls deferred to Gate 2 (RUNTIME-006). */
+  readonly gate2Defers: Counter;
+  /** `agent_gate2_batch_denies_total`: out-of-envelope calls denied because they ran in a parallel batch (RUNTIME-006). */
+  readonly gate2BatchDenies: Counter;
 }
 
 export function createRuntimeMetrics(registry: Registry = new Registry()): RuntimeMetrics {
@@ -54,6 +58,16 @@ export function createRuntimeMetrics(registry: Registry = new Registry()): Runti
       name: 'agent_pdp_latency_ms',
       help: 'Latency of the PreToolUse policy decision, in milliseconds.',
       buckets: exponentialBuckets(PDP_LATENCY_START_MS, PDP_LATENCY_FACTOR, PDP_LATENCY_COUNT),
+      registers: [registry],
+    }),
+    gate2Defers: new Counter({
+      name: 'agent_gate2_defers_total',
+      help: 'Single out-of-envelope tool calls deferred to Gate 2.',
+      registers: [registry],
+    }),
+    gate2BatchDenies: new Counter({
+      name: 'agent_gate2_batch_denies_total',
+      help: 'Out-of-envelope tool calls denied because they ran in a parallel batch.',
       registers: [registry],
     }),
   };

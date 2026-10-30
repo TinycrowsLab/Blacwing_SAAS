@@ -58,10 +58,38 @@ describe('decidePdp (RUNTIME-005)', () => {
   it.each([
     ['another host', 'https://other.example.test/'],
     ['an IP outside scope', '10.0.0.9'],
-  ])('denies an out-of-scope target (%s) with out_of_scope', (_name, target) => {
-    expect(decidePdp(facts(), request({ targets: [IN_SCOPE, target] }), NOW)).toEqual({
+  ])(
+    'answers an out-of-scope target (%s) with an exception (Gate 2 may approve it)',
+    (_name, target) => {
+      expect(decidePdp(facts(), request({ targets: [IN_SCOPE, target] }), NOW)).toEqual({
+        decision: 'exception',
+        reason: 'out_of_scope',
+        intrusiveness: 'active_safe',
+      });
+    },
+  );
+
+  it('answers a call above the envelope with an exception, not a hard deny', () => {
+    const f = facts({ testCaseClass: 'state_changing', reversalJournalPresent: true });
+    expect(decidePdp(f, request(), NOW)).toEqual({
+      decision: 'exception',
+      reason: 'intrusiveness_exceeds_envelope',
+      intrusiveness: 'state_changing',
+    });
+  });
+
+  it('keeps a destructive call a hard deny, never an exception (§8.3)', () => {
+    const f = facts({ testCaseClass: 'destructive' });
+    expect(decidePdp(f, request({ targets: [IN_SCOPE, '10.0.0.9'] }), NOW)).toEqual({
       decision: 'deny',
-      reason: 'out_of_scope',
+      reason: 'destructive_class',
+    });
+  });
+
+  it('keeps a missing envelope a hard deny even for an out-of-scope target', () => {
+    expect(decidePdp(facts({ envelope: null }), request({ targets: ['10.0.0.9'] }), NOW)).toEqual({
+      decision: 'deny',
+      reason: 'no_envelope',
     });
   });
 

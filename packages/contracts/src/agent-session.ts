@@ -159,5 +159,18 @@ export const agentSessionRecordSchema = z.strictObject({
   numTurns: z.int().nonnegative(),
   totalCostUsd: z.number().nonnegative(),
   modelUsage: z.record(z.string().min(1).max(LIMITS.keyMax), z.unknown()),
+  /**
+   * Set when the session ended with `stop_reason: 'tool_deferred'` (RUNTIME-006, #468): the call waiting for Gate 2.
+   * Only its id and name are stored. Its input is never persisted, since it can carry secrets.
+   */
+  deferredToolUse: z
+    .strictObject({
+      toolUseId: z.string().min(1).max(LIMITS.keyMax),
+      toolName: z
+        .string()
+        .min(1)
+        .max(LIMITS.keyMax * 2),
+    })
+    .optional(),
 });
 export type AgentSessionRecord = z.infer<typeof agentSessionRecordSchema>;

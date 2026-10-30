@@ -52,7 +52,14 @@ interface SessionResultMessage {
   readonly modelUsage: Readonly<Record<string, unknown>>;
   /** The authoritative record of denied tool calls (RUNTIME-003). Names only; the call inputs are never read. */
   readonly permission_denials?: readonly { readonly tool_name: string }[];
+  /** Why the session ended when it did not run to completion, e.g. `tool_deferred` (RUNTIME-006). */
+  readonly terminal_reason?: string;
+  /** The call that ended the session with `tool_deferred`, waiting for Gate 2 (RUNTIME-006). */
+  readonly deferred_tool_use?: { readonly id: string; readonly name: string };
 }
+
+/** The `terminal_reason` the SDK reports when a PreToolUse hook deferred a call to Gate 2. */
+const TOOL_DEFERRED = 'tool_deferred';
 
 /** One stream message from the SDK. Only results are kept; every other message is ignored here. */
 export type SessionStreamMessage = SessionResultMessage | { readonly type: string };
@@ -133,10 +140,17 @@ function preToolUseHooks(
         latency: (ms) => {
           ports.metrics.pdpLatency.observe(ms);
         },
+        gate2Deferred: () => {
+          ports.metrics.gate2Defers.inc();
+        },
+        gate2BatchDenied: () => {
+          ports.metrics.gate2BatchDenies.inc();
+        },
       },
       log: ports.log,
     },
     {
+      sessionId: descriptor.sessionId,
       subtaskId: descriptor.subtaskId ?? null,
       testCaseId: descriptor.testCaseId ?? null,
       roleId: descriptor.roleId ?? null,
@@ -248,6 +262,8 @@ export async function runSession(
     preToolUseHooks(descriptor, ports),
   );
   recordDenials(descriptor, result.permission_denials, ports);
+  const deferred = result.terminal_reason === TOOL_DEFERRED;
+  const status = deferred ? TOOL_DEFERRED : result.subtype;
   const record = agentSessionRecordSchema.parse({
     sessionId: descriptor.sessionId,
     persona: descriptor.persona,
@@ -256,10 +272,18 @@ export async function runSession(
     model: descriptor.model,
     effort: descriptor.effort,
     sdkVersion: ports.sdkVersion,
-    status: result.subtype,
+    status,
     numTurns: result.num_turns,
     totalCostUsd: result.total_cost_usd,
     modelUsage: result.modelUsage,
+    ...(deferred && result.deferred_tool_use !== undefined
+      ? {
+          deferredToolUse: {
+            toolUseId: result.deferred_tool_use.id,
+            toolName: result.deferred_tool_use.name,
+          },
+        }
+      : {}),
   });
 
   try {
@@ -268,13 +292,10 @@ export async function runSession(
     throw new SessionExit(EXIT_CODES.brokerUnavailable, 'could not record the agent session');
   }
 
-  ports.log.info(
-    { ...started, status: result.subtype, numTurns: result.num_turns },
-    'session.recorded',
-  );
+  ports.log.info({ ...started, status, numTurns: result.num_turns }, 'session.recorded');
   return {
     sessionId: descriptor.sessionId,
-    status: result.subtype,
+    status,
     numTurns: result.num_turns,
     totalCostUsd: result.total_cost_usd,
   };
