@@ -2,7 +2,7 @@
   "name": "@blackwing/telemetry",
   "version": "0.0.0",
   "private": true,
-  "description": "OpenTelemetry traces and metrics setup",
+  "description": "OpenTelemetry SDK bootstrap (traces, metrics, logs), workflow context and span attribute guards",
   "license": "UNLICENSED",
   "type": "module",
   "exports": {
@@ -20,8 +20,20 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@blackwing/config": "workspace:*",
     "@blackwing/contracts": "workspace:*",
     "@blackwing/errors": "workspace:*",
-    "@opentelemetry/api": "catalog:"
+    "@blackwing/logger": "workspace:*",
+    "@opentelemetry/api": "catalog:",
+    "@opentelemetry/core": "catalog:",
+    "@opentelemetry/exporter-logs-otlp-grpc": "catalog:",
+    "@opentelemetry/exporter-metrics-otlp-grpc": "catalog:",
+    "@opentelemetry/exporter-trace-otlp-grpc": "catalog:",
+    "@opentelemetry/resources": "catalog:",
+    "@opentelemetry/sdk-logs": "catalog:",
+    "@opentelemetry/sdk-metrics": "catalog:",
+    "@opentelemetry/sdk-node": "catalog:",
+    "@opentelemetry/sdk-trace-base": "catalog:",
+    "zod": "catalog:"
   }
 }

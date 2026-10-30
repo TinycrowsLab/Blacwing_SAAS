@@ -20,7 +20,9 @@ packages:
 # telemetry package registers; the logger uses it only in tests.
 # prom-client is the Prometheus /metrics registry of apps/model-gateway (GATEWAY-001, #404),
 # @opentelemetry/core its W3C trace-context propagator and @opentelemetry/sdk-trace-base the
-# in-memory span exporter its tests assert spans with.
+# in-memory span exporter its tests assert spans with. @opentelemetry/sdk-node and its OTLP gRPC exporters,
+# sdk-metrics, sdk-logs and resources are the SDK @blackwing/telemetry boots (OBS-001, #298); they are pinned to
+# the 0.223 / 2.12 release train that sdk-node 0.223.0 itself depends on.
 # NestJS 11 on the Fastify adapter is the control-plane API framework fixed in §5 (apps/api, API-001,
 # #53), with reflect-metadata and rxjs as its required peers and @fastify/helmet, @fastify/cors and
 # @fastify/request-context as its HTTP plugins (@fastify/cors pinned to the copy the adapter bundles).
@@ -43,9 +45,16 @@ catalog:
   '@nestjs/platform-fastify': 11.2.7
   '@opentelemetry/api': 1.9.1
   '@playwright/test': 1.63.0
-  '@opentelemetry/context-async-hooks': 2.11.0
-  '@opentelemetry/core': 2.11.0
-  '@opentelemetry/sdk-trace-base': 2.11.0
+  '@opentelemetry/context-async-hooks': 2.12.0
+  '@opentelemetry/core': 2.12.0
+  '@opentelemetry/exporter-logs-otlp-grpc': 0.223.0
+  '@opentelemetry/exporter-metrics-otlp-grpc': 0.223.0
+  '@opentelemetry/exporter-trace-otlp-grpc': 0.223.0
+  '@opentelemetry/resources': 2.12.0
+  '@opentelemetry/sdk-logs': 0.223.0
+  '@opentelemetry/sdk-metrics': 2.12.0
+  '@opentelemetry/sdk-node': 0.223.0
+  '@opentelemetry/sdk-trace-base': 2.12.0
   '@tanstack/react-query': 5.104.3
   '@temporalio/activity': 1.13.2
   '@temporalio/client': 1.13.2

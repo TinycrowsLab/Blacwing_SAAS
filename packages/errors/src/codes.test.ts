@@ -158,6 +158,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   GATE2_ALREADY_DECIDED: 409,
   GATE2_SOD_VIOLATION: 403,
   GATE2_DESTRUCTIVE_FORBIDDEN: 403,
+  TELEMETRY_INIT_FAILED: 500,
   INTERNAL: 500,
 };
 
@@ -171,7 +172,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(143);
+    expect(ERROR_CODE_LIST).toHaveLength(144);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -410,6 +411,7 @@ describe('error-code registry', () => {
       | 'GATE2_ALREADY_DECIDED'
       | 'GATE2_SOD_VIOLATION'
       | 'GATE2_DESTRUCTIVE_FORBIDDEN'
+      | 'TELEMETRY_INIT_FAILED'
       | 'INTERNAL'
     >();
     expectTypeOf<HttpStatusOf<'NOT_FOUND'>>().toEqualTypeOf<404>();

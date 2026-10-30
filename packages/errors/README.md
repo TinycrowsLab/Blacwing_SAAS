@@ -51,6 +51,7 @@ frozen. Codes are public API: never rename or reuse one, add a new one instead.
 | `SCOPE_INVALID_BUDGET` | 422 | `BudgetError` (in `@blackwing/contracts`, SCOPE-004) | no |
 | `SCOPE_BUDGET_EXCEEDS_SA` | 403 | `BudgetError` (in `@blackwing/contracts`, SCOPE-004) | no |
 | `CONFIG_INVALID` | 500 | `ConfigValidationError` (in `@blackwing/config`, FOUND-007) | no |
+| `TELEMETRY_INIT_FAILED` | 500 | plain `AppError` (invalid OpenTelemetry configuration or SDK start failure, `@blackwing/telemetry`) | no |
 | `INTERNAL` | 500 | `InternalError` | no |
 
 `title` is the registry's English title (v1). Clients branch on `code`, never on `title` or `detail`.

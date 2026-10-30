@@ -457,6 +457,13 @@ const DEFINITIONS = {
     title: 'Destructive gate exception cannot be approved',
     retryable: false,
   },
+  // OpenTelemetry bootstrap (`@blackwing/telemetry`, OBS-001 #298): invalid telemetry configuration or an SDK that
+  // refused to start. Export failures never surface as this code: observability is best-effort (§8.7 / OBS-001).
+  TELEMETRY_INIT_FAILED: {
+    status: 500,
+    title: 'Telemetry initialisation failed',
+    retryable: false,
+  },
   INTERNAL: { status: 500, title: 'Internal server error', retryable: false },
 } as const satisfies Record<string, ErrorCodeSpec>;
 

@@ -136,6 +136,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'AGENT_BUDGET_EXHAUSTED',
   'AGENT_FORBIDDEN_TOOL',
   'CONFIG_INVALID', // ConfigValidationError, @blackwing/config
+  // Thrown as a plain AppError by @blackwing/telemetry initTelemetry (OBS-001, #298).
+  'TELEMETRY_INIT_FAILED',
   // EvidenceIntegrityError, @blackwing/evidence (EVIDENCE binding, #724): carries its own code.
   'EVIDENCE_INTEGRITY_FAILED',
   // Gate1Error, apps/api Gate 1 approval API (#877): plain AppError subclass with these codes.
