@@ -8,8 +8,10 @@
   "include": ["src"],
   "references": [
     { "path": "../../packages/config" },
+    { "path": "../../packages/contracts" },
     { "path": "../../packages/errors" },
     { "path": "../../packages/logger" },
+    { "path": "../../packages/secrets" },
     { "path": "../../packages/telemetry" },
     { "path": "../../packages/testing" }
   ]

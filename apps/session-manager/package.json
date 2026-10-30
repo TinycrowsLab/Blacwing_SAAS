@@ -19,8 +19,10 @@
   },
   "dependencies": {
     "@blackwing/config": "workspace:*",
+    "@blackwing/contracts": "workspace:*",
     "@blackwing/errors": "workspace:*",
     "@blackwing/logger": "workspace:*",
+    "@blackwing/secrets": "workspace:*",
     "@blackwing/telemetry": "workspace:*",
     "@opentelemetry/api": "catalog:",
     "fastify": "catalog:",

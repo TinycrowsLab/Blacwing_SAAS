@@ -9,6 +9,8 @@ export interface SessionManagerMetrics {
   readonly buildInfo: Gauge<'version' | 'commit'>;
   /** Rejected tokens, by bounded reason code (never the token). */
   readonly authFailures: Counter<'reason'>;
+  /** Secret reference resolutions, by outcome (SESSION-002). */
+  readonly secretResolves: Counter<'result'>;
 }
 
 /** A private registry per instance, so tests and multiple instances never share series. */
@@ -39,6 +41,12 @@ export function createSessionManagerMetrics(
       name: 'sm_auth_failures_total',
       help: 'Internal API requests refused for a missing or invalid token.',
       labelNames: ['reason'],
+      registers: [registry],
+    }),
+    secretResolves: new Counter({
+      name: 'sm_secret_resolve_total',
+      help: 'Secret reference resolutions by outcome (ok, denied, error).',
+      labelNames: ['result'],
       registers: [registry],
     }),
   };
