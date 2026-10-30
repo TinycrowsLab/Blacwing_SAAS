@@ -91,3 +91,59 @@ export const testPlanListQuerySchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(TEST_PLAN_PAGE_MAX).default(TEST_PLAN_PAGE_DEFAULT),
 });
 export type TestPlanListQuery = z.output<typeof testPlanListQuerySchema>;
+
+/**
+ * The test case fields a plan diff compares (PLAN-002). Names follow the `test_cases` columns; the reference
+ * arrays are named after their standard (`owasp_refs`, …) and `negative_control` after its column.
+ */
+export const PLAN_DIFF_FIELDS = [
+  'class',
+  'title',
+  'status',
+  'budget',
+  'oracle',
+  'negative_control',
+  'targets',
+  'roles',
+  'owasp_refs',
+  'wstg_refs',
+  'asvs_refs',
+  'cwe_candidates',
+] as const;
+const planDiffFieldSchema = z.enum(PLAN_DIFF_FIELDS);
+
+/** A test case named by identity and title, for the added and removed lists. */
+const testCaseRefSchema = z.strictObject({ caseId: uuidV7Schema, title: z.string() });
+export type TestCaseRef = z.infer<typeof testCaseRefSchema>;
+
+/** One field that differs: the canonical JSON value in each version (NFC strings, sorted object keys). */
+export const planFieldChangeSchema = z.strictObject({
+  field: planDiffFieldSchema,
+  before: z.json(),
+  after: z.json(),
+});
+export type PlanFieldChange = z.infer<typeof planFieldChangeSchema>;
+
+/**
+ * A case present in both versions with at least one differing field. `caseId` is its identity in the `from`
+ * version (the case the approver saw before), `title` its title in the `to` version.
+ */
+export const modifiedCaseSchema = z.strictObject({
+  caseId: uuidV7Schema,
+  title: z.string(),
+  changes: z.array(planFieldChangeSchema),
+});
+export type ModifiedCase = z.infer<typeof modifiedCaseSchema>;
+
+/**
+ * `GET /v1/runs/{runId}/test-plans/{version}/diff?against=` (PLAN-002): what changed from `against` (the
+ * `fromVersion`) to `version` (the `toVersion`). Lists are sorted by `caseId`, then `title`.
+ */
+export const planDiffSchema = z.strictObject({
+  fromVersion: z.int().min(1),
+  toVersion: z.int().min(1),
+  added: z.array(testCaseRefSchema),
+  removed: z.array(testCaseRefSchema),
+  modified: z.array(modifiedCaseSchema),
+});
+export type PlanDiff = z.infer<typeof planDiffSchema>;

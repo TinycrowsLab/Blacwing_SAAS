@@ -22552,6 +22552,384 @@
         }
       }
     },
+    "/runs/{runId}/test-plans/{version}/diff": {
+      "get": {
+        "tags": ["test-plans"],
+        "operationId": "diffTestPlanVersions",
+        "summary": "Diff two versions of a run plan",
+        "description": "What changed from `against` to `version`: cases added, removed and modified, with the before and after of each changed field. Cases match by caseId, then by title and targets, so a re-created case is not reported as a removal plus an addition. The answer is deterministic and sorted by caseId, then title.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "The version to diff to."
+          },
+          {
+            "name": "against",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "The version to diff from. Any earlier or later version of the run."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The changes from `against` to `version`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanDiff"
+                },
+                "examples": {
+                  "diff": {
+                    "summary": "One case re-titled and one added",
+                    "value": {
+                      "fromVersion": 1,
+                      "toVersion": 2,
+                      "added": [
+                        {
+                          "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
+                          "title": "Login rate limit is enforced"
+                        }
+                      ],
+                      "removed": [],
+                      "modified": [
+                        {
+                          "caseId": "0198f0a0-0000-7000-8000-0000000000c1",
+                          "title": "Login rate limit is enforced",
+                          "changes": [
+                            {
+                              "field": "status",
+                              "before": "proposed",
+                              "after": "approved"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_NO_CREDENTIALS": {
+                    "summary": "No credentials presented",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+                      "title": "No credentials presented",
+                      "status": 401,
+                      "code": "AUTH_NO_CREDENTIALS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_INVALID_TOKEN": {
+                    "summary": "Invalid credentials",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+                      "title": "Invalid credentials",
+                      "status": 401,
+                      "code": "AUTH_INVALID_TOKEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_EXPIRED": {
+                    "summary": "Credentials expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+                      "title": "Credentials expired",
+                      "status": 401,
+                      "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_UNAUTHENTICATED": {
+                    "summary": "Run token required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+                      "title": "Run token required",
+                      "status": 401,
+                      "code": "SBX_UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SERVICE_AUTH_FAILED": {
+                    "summary": "Service authentication failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+                      "title": "Service authentication failed",
+                      "status": 401,
+                      "code": "SERVICE_AUTH_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Problem details; code is one of PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PLAN_NOT_FOUND": {
+                    "summary": "Test plan not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PLAN_NOT_FOUND",
+                      "title": "Test plan not found",
+                      "status": 404,
+                      "code": "PLAN_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TEST_CASE_NOT_FOUND": {
+                    "summary": "Test case not found",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TEST_CASE_NOT_FOUND",
+                      "title": "Test case not found",
+                      "status": 404,
+                      "code": "TEST_CASE_NOT_FOUND",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Problem details; code is one of PLAN_VERSION_IMMUTABLE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PLAN_VERSION_IMMUTABLE": {
+                    "summary": "Approved test plan version is immutable",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PLAN_VERSION_IMMUTABLE",
+                      "title": "Approved test plan version is immutable",
+                      "status": 409,
+                      "code": "PLAN_VERSION_IMMUTABLE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Problem details; code is one of ETAG_MISMATCH.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "ETAG_MISMATCH": {
+                    "summary": "ETag mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ETAG_MISMATCH",
+                      "title": "ETag mismatch",
+                      "status": 412,
+                      "code": "ETAG_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Problem details; code is one of PLAN_PAYLOAD_TOO_LARGE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PLAN_PAYLOAD_TOO_LARGE": {
+                    "summary": "Test plan payload too large",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PLAN_PAYLOAD_TOO_LARGE",
+                      "title": "Test plan payload too large",
+                      "status": 413,
+                      "code": "PLAN_PAYLOAD_TOO_LARGE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "Problem details; code is one of PRECONDITION_REQUIRED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "PRECONDITION_REQUIRED": {
+                    "summary": "Precondition required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PRECONDITION_REQUIRED",
+                      "title": "Precondition required",
+                      "status": 428,
+                      "code": "PRECONDITION_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/test-plans/{planId}/cases": {
       "post": {
         "tags": ["test-plans"],
@@ -31415,6 +31793,103 @@
           "requiresSubmission",
           "helpers"
         ],
+        "additionalProperties": false
+      },
+      "PlanDiff": {
+        "type": "object",
+        "properties": {
+          "fromVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "toVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "added": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "caseId": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": ["caseId", "title"],
+              "additionalProperties": false
+            }
+          },
+          "removed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "caseId": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": ["caseId", "title"],
+              "additionalProperties": false
+            }
+          },
+          "modified": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "caseId": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "changes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "field": {
+                        "type": "string",
+                        "enum": [
+                          "class",
+                          "title",
+                          "status",
+                          "budget",
+                          "oracle",
+                          "negative_control",
+                          "targets",
+                          "roles",
+                          "owasp_refs",
+                          "wstg_refs",
+                          "asvs_refs",
+                          "cwe_candidates"
+                        ]
+                      },
+                      "before": {},
+                      "after": {}
+                    },
+                    "required": ["field", "before", "after"],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": ["caseId", "title", "changes"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["fromVersion", "toVersion", "added", "removed", "modified"],
         "additionalProperties": false
       },
       "PlanValidationResult": {

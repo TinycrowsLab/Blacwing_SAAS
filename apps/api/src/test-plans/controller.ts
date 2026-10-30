@@ -20,6 +20,7 @@ import { Idempotent } from '../idempotency/index.js';
 import type { Versioned, TestPlanService } from './service.js';
 import type { PlanValidationService } from './validation/service.js';
 import type {
+  PlanDiff,
   PlanValidationResult,
   TestCaseView,
   TestPlanPage,
@@ -85,6 +86,24 @@ export class TestPlanController {
   async validatePlan(@Param('planId') planId: string): Promise<PlanValidationResult> {
     const { tenantId, actor } = getTenantContextOrThrow();
     return this.validation.validatePlan({ tenantId, actorId: actor.id }, planId);
+  }
+
+  @Get('runs/:runId/test-plans/:version/diff')
+  async diffVersions(
+    @Param('runId') runId: string,
+    @Param('version') version: string,
+    @Query() query: Record<string, unknown>,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<PlanDiff> {
+    const { tenantId, actor } = getTenantContextOrThrow();
+    const diff = await this.service.diffVersions(
+      { tenantId, actorId: actor.id },
+      runId,
+      version,
+      query,
+    );
+    void reply.header('cache-control', 'no-store');
+    return diff;
   }
 
   @Post('test-plans/:planId/cases')

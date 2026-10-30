@@ -82,6 +82,8 @@ export {
   type TransitionResult,
 } from './run/state.js';
 
+export { type DiffablePlan, diffPlans } from './test-plans/diff.js';
+
 export { InvalidSurfaceInputError, SurfaceBatchTooLargeError } from './surface/errors.js';
 export {
   endpointKey,

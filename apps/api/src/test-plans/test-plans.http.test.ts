@@ -337,3 +337,68 @@ describe('GET /v1/test-plans/{planId}/validation', () => {
     expect(res.statusCode).toBe(403);
   });
 });
+
+describe('GET /v1/runs/{runId}/test-plans/{version}/diff', () => {
+  it('answers 200 with the diff and no-store, for a version against an earlier one', async () => {
+    const v1 = await call('POST', `/v1/runs/${RUN_A}/test-plans`, 'appsec-a', 'a');
+    await call('POST', `/v1/test-plans/${String(json(v1).planId)}/cases`, 'appsec-a', 'a', {
+      payload: plannedCase({ title: 'Login rate limit' }),
+      ifMatch: String(v1.headers.etag),
+    });
+    store.setPlanStatus(String(json(v1).planId), 'approved');
+    await call('POST', `/v1/runs/${RUN_A}/test-plans`, 'appsec-a', 'a');
+
+    const diff = await call(
+      'GET',
+      `/v1/runs/${RUN_A}/test-plans/2/diff?against=1`,
+      'auditor-a',
+      'a',
+    );
+    expect(diff.statusCode).toBe(200);
+    expect(diff.headers['cache-control']).toBe('no-store');
+    expect(json(diff)).toEqual({
+      fromVersion: 1,
+      toVersion: 2,
+      added: [],
+      removed: [],
+      modified: [],
+    });
+  });
+
+  it('answers 404 PLAN_NOT_FOUND when either version is missing', async () => {
+    await call('POST', `/v1/runs/${RUN_A}/test-plans`, 'appsec-a', 'a');
+    const missing = await call(
+      'GET',
+      `/v1/runs/${RUN_A}/test-plans/1/diff?against=7`,
+      'auditor-a',
+      'a',
+    );
+    expect(missing.statusCode).toBe(404);
+    expect(json(missing)).toMatchObject({ code: 'plan_not_found' });
+  });
+
+  it('answers 422 VALIDATION_FAILED when against is absent or not a positive version', async () => {
+    await call('POST', `/v1/runs/${RUN_A}/test-plans`, 'appsec-a', 'a');
+    const none = await call('GET', `/v1/runs/${RUN_A}/test-plans/1/diff`, 'auditor-a', 'a');
+    expect(none.statusCode).toBe(422);
+    expect(json(none)).toMatchObject({ code: 'validation_failed' });
+    const zero = await call(
+      'GET',
+      `/v1/runs/${RUN_A}/test-plans/1/diff?against=0`,
+      'auditor-a',
+      'a',
+    );
+    expect(zero.statusCode).toBe(422);
+  });
+
+  it('is tenant-scoped: a plan of tenant A is not found from tenant B', async () => {
+    await call('POST', `/v1/runs/${RUN_A}/test-plans`, 'appsec-a', 'a');
+    const other = await call(
+      'GET',
+      `/v1/runs/${RUN_A}/test-plans/1/diff?against=1`,
+      'appsec-b',
+      'b',
+    );
+    expect(other.statusCode).toBe(404);
+  });
+});

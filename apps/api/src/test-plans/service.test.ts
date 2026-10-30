@@ -1,5 +1,5 @@
 import { Registry } from 'prom-client';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { ConcurrencyError, runWithTenantContext } from '@blackwing/db';
 import { createLogger } from '@blackwing/logger';
@@ -17,6 +17,7 @@ import {
 } from './fixtures.test-helpers.js';
 import { createTestPlanMetrics } from './metrics.js';
 import { TestPlanService, type TestPlanPrincipal } from './service.js';
+import { computeEtag } from '../concurrency/index.js';
 
 const NO_ROLE = '0198f0a0-0000-7000-8000-0000000000c9';
 const MEMBERS = memoryMemberships({
@@ -343,5 +344,135 @@ describe('updateCase and removeCase', () => {
     expect(text).toContain('test_plan_mutations_total{op="add_case"} 1');
     expect(text).toContain('test_plan_mutations_total{op="update_case"} 1');
     expect(text).toContain('test_plan_mutations_total{op="create_version"} 1');
+  });
+});
+
+describe('diffVersions', () => {
+  /**
+   * Version 1 holds one approved case. Version 2 carries it over (a new case id, the same title and targets) and
+   * changes its class, then adds a case. The reader is an auditor: reads need only `testplan:read`.
+   */
+  async function twoVersions(ctx: ReturnType<typeof setup>) {
+    const v1 = await ctx.call(ctx.editor, () => ctx.service.createVersion(ctx.editor, RUN_A));
+    const first = await ctx.call(ctx.editor, () =>
+      ctx.service.addCase(
+        ctx.editor,
+        v1.body.planId,
+        v1.etag,
+        plannedCase({ title: 'Login rate limit' }),
+      ),
+    );
+    ctx.store.setPlanStatus(v1.body.planId, 'approved');
+    const v2 = await ctx.call(ctx.editor, () => ctx.service.createVersion(ctx.editor, RUN_A));
+    const carried = v2.body.cases[0];
+    if (carried === undefined) throw new Error('version 2 should carry the case over');
+    await ctx.call(ctx.editor, () =>
+      ctx.service.updateCase(
+        ctx.editor,
+        carried.caseId,
+        computeEtag({
+          caseId: carried.caseId,
+          status: carried.status,
+          updatedAt: carried.updatedAt,
+        }),
+        { class: 'active_safe' },
+      ),
+    );
+    const fresh = await ctx.call(ctx.editor, () => ctx.service.getVersion(ctx.editor, RUN_A, 2));
+    await ctx.call(ctx.editor, () =>
+      ctx.service.addCase(ctx.editor, fresh.body.planId, fresh.etag, plannedCase({ title: 'New' })),
+    );
+    return { firstCaseId: first.case.body.caseId, planId: v2.body.planId };
+  }
+
+  it('reports the added case and the carried-over case whose class changed', async () => {
+    const ctx = setup();
+    const { firstCaseId } = await twoVersions(ctx);
+    const diff = await ctx.call(ctx.reader, () =>
+      ctx.service.diffVersions(ctx.reader, RUN_A, 2, { against: 1 }),
+    );
+    expect(diff.fromVersion).toBe(1);
+    expect(diff.toVersion).toBe(2);
+    expect(diff.added.map((ref) => ref.title)).toEqual(['New']);
+    expect(diff.removed).toEqual([]);
+    expect(diff.modified).toEqual([
+      {
+        caseId: firstCaseId,
+        title: 'Login rate limit',
+        changes: [{ field: 'class', before: 'passive', after: 'active_safe' }],
+      },
+    ]);
+  });
+
+  it('is empty when a version is compared with itself', async () => {
+    const ctx = setup();
+    await twoVersions(ctx);
+    const diff = await ctx.call(ctx.reader, () =>
+      ctx.service.diffVersions(ctx.reader, RUN_A, 2, { against: 2 }),
+    );
+    expect(diff).toEqual({ fromVersion: 2, toVersion: 2, added: [], removed: [], modified: [] });
+  });
+
+  it('answers PLAN_NOT_FOUND when either version is missing', async () => {
+    const ctx = setup();
+    await twoVersions(ctx);
+    await expect(
+      ctx.call(ctx.reader, () => ctx.service.diffVersions(ctx.reader, RUN_A, 2, { against: 9 })),
+    ).rejects.toMatchObject({ code: 'PLAN_NOT_FOUND' });
+    await expect(
+      ctx.call(ctx.reader, () => ctx.service.diffVersions(ctx.reader, RUN_A, 9, { against: 1 })),
+    ).rejects.toMatchObject({ code: 'PLAN_NOT_FOUND' });
+  });
+
+  it('rejects a malformed version or a missing against with a validation error', async () => {
+    const ctx = setup();
+    await twoVersions(ctx);
+    await expect(
+      ctx.call(ctx.reader, () => ctx.service.diffVersions(ctx.reader, RUN_A, 2, {})),
+    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    await expect(
+      ctx.call(ctx.reader, () => ctx.service.diffVersions(ctx.reader, RUN_A, 2, { against: 0 })),
+    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    await expect(
+      ctx.call(ctx.reader, () =>
+        ctx.service.diffVersions(ctx.reader, RUN_A, 'two', { against: 1 }),
+      ),
+    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+  });
+
+  it('refuses a principal with no role (403 FORBIDDEN) before reading anything', async () => {
+    const ctx = setup();
+    await twoVersions(ctx);
+    const stranger: TestPlanPrincipal = { tenantId: TENANT_A, actorId: NO_ROLE };
+    await expect(
+      ctx.call(stranger, () => ctx.service.diffVersions(stranger, RUN_A, 2, { against: 1 })),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
+  it('is tenant-scoped: another tenant cannot diff a plan of tenant A (RLS)', async () => {
+    const ctx = setup();
+    await twoVersions(ctx);
+    const other: TestPlanPrincipal = { tenantId: TENANT_B, actorId: APPSEC_B };
+    await expect(
+      ctx.call(other, () => ctx.service.diffVersions(other, RUN_A, 2, { against: 1 })),
+    ).rejects.toMatchObject({ code: 'PLAN_NOT_FOUND' });
+  });
+
+  it('logs the versions and the change count, and never the tenant id in clear', async () => {
+    const ctx = setup();
+    await twoVersions(ctx);
+    const info = vi.fn();
+    const logged = new TestPlanService({
+      store: ctx.store,
+      memberships: MEMBERS,
+      metrics: createTestPlanMetrics(new Registry()),
+      logger: { info },
+    });
+    await ctx.call(ctx.reader, () => logged.diffVersions(ctx.reader, RUN_A, 2, { against: 1 }));
+    expect(info).toHaveBeenCalledWith(
+      expect.objectContaining({ fromVersion: 1, toVersion: 2, changeCount: 2 }),
+      'test_plan.diff',
+    );
+    expect(JSON.stringify(info.mock.calls)).not.toContain(TENANT_A);
   });
 });

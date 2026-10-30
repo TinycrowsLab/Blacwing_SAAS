@@ -65,6 +65,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  diffTestPlanVersions: {
+    method: 'GET',
+    path: '/v1/runs/{runId}/test-plans/{version}/diff',
+    pathParams: ['runId', 'version'],
+    queryParams: ['against'],
+    requiredHeaders: [],
+  },
   getAssessmentRequest: {
     method: 'GET',
     path: '/v1/assessment-requests/{id}',

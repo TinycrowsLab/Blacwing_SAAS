@@ -2,6 +2,7 @@ import { type Span, SpanStatusCode, trace, type Tracer } from '@opentelemetry/ap
 import { z } from 'zod';
 
 import {
+  type PlanDiff,
   type PlannedTestCase,
   type TestCasePatchBody,
   testCaseCreateBodySchema,
@@ -17,6 +18,7 @@ import {
 } from '@blackwing/contracts';
 import { ConcurrencyError, type TestCaseRow, type TestPlanRow } from '@blackwing/db';
 import { hashTenantId } from '@blackwing/db/tenant-context';
+import { diffPlans } from '@blackwing/domain';
 import {
   AppError,
   EtagMismatchError,
@@ -59,6 +61,8 @@ export interface TestPlanServiceDeps {
 
 const MAX_VERSION = 2_147_483_647;
 const versionSchema = z.coerce.number().int().min(1).max(MAX_VERSION);
+/** `GET .../diff?against=`: the version to diff from. The path's `{version}` is the one to diff to. */
+const diffQuerySchema = z.strictObject({ against: versionSchema });
 
 /** Parses a request value at the boundary; a failure names the offending fields, never their values. */
 function parseRequest<V>(schema: z.ZodType<V>, value: unknown, what: string): V {
@@ -357,6 +361,45 @@ export class TestPlanService {
         });
       }
       return { body: caseView(written.testCase), etag: caseEtag(written.testCase) };
+    });
+  }
+
+  /**
+   * What changed from `against` to `version` (PLAN-002). Reads need `testplan:read`. Both versions must exist in
+   * the tenant, or the answer is `PLAN_NOT_FOUND`. Pure comparison in the domain; nothing is written.
+   */
+  async diffVersions(
+    principal: TestPlanPrincipal,
+    runId: string,
+    version: unknown,
+    query: unknown,
+  ): Promise<PlanDiff> {
+    return this.inSpan('plan.diff', async (span) => {
+      await this.authorise(principal, 'testplan:read');
+      const toVersion = parseRequest(versionSchema, version, 'version');
+      const { against: fromVersion } = parseRequest(diffQuerySchema, query, 'diff query');
+      span.setAttributes({ runId, fromVersion, toVersion });
+      const from = await this.deps.store.findVersion(runId, fromVersion);
+      const to = await this.deps.store.findVersion(runId, toVersion);
+      if (from === undefined || to === undefined) throw new TestPlanNotFoundError();
+      const diff = diffPlans(
+        this.planView(from.plan, from.cases).body,
+        this.planView(to.plan, to.cases).body,
+      );
+      const changeCount = diff.added.length + diff.removed.length + diff.modified.length;
+      span.setAttribute('changeCount', changeCount);
+      this.deps.logger.info(
+        {
+          tenantId: hashTenantId(principal.tenantId),
+          actorId: principal.actorId,
+          runId,
+          fromVersion,
+          toVersion,
+          changeCount,
+        },
+        'test_plan.diff',
+      );
+      return diff;
     });
   }
 

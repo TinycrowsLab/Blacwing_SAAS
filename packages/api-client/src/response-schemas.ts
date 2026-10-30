@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   assetListResponseSchema,
   assetViewSchema,
+  planDiffSchema,
   testCaseViewSchema,
   testPlanPageSchema,
   testPlanViewSchema,
@@ -162,6 +163,7 @@ export const RESPONSE_SCHEMAS: Readonly<
   createTestPlanVersion: { 201: testPlanViewSchema },
   listTestPlanVersions: { 200: testPlanPageSchema },
   getTestPlanVersion: { 200: testPlanViewSchema },
+  diffTestPlanVersions: { 200: planDiffSchema },
   addTestCase: { 201: testCaseViewSchema },
   updateTestCase: { 200: testCaseViewSchema },
   removeTestCase: { 200: testCaseViewSchema },

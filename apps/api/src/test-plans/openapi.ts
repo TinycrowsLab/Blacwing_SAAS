@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
 import {
+  modifiedCaseSchema,
+  planDiffSchema,
+  planFieldChangeSchema,
   planValidationResultSchema,
   testCaseCreateBodySchema,
   testCaseViewSchema,
@@ -113,6 +116,14 @@ const EXAMPLE_VALIDATION = {
 
 const planDocument = testPlanSummarySchema.extend({ cases: z.array(caseDocument) });
 const pageDocument = testPlanPageSchema.extend({ items: z.array(testPlanSummarySchema) });
+/** A field change's before and after are any JSON value; the document leaves them untyped. */
+const diffDocument = planDiffSchema.extend({
+  modified: z.array(
+    modifiedCaseSchema.extend({
+      changes: z.array(planFieldChangeSchema.extend({ before: z.unknown(), after: z.unknown() })),
+    }),
+  ),
+});
 
 /** Editable test plans (PLAN-005, CONTEXT_PACK §9): numbered run plan versions and their test cases. */
 export function testPlansOpenApiModule(): OpenApiModule {
@@ -249,6 +260,67 @@ export function testPlansOpenApiModule(): OpenApiModule {
           responses: { ...planResponse('The version and its cases.'), ...problem },
         },
       },
+      '/v1/runs/{runId}/test-plans/{version}/diff': {
+        get: {
+          operationId: 'diffTestPlanVersions',
+          tags: ['test-plans'],
+          summary: 'Diff two versions of a run plan',
+          description:
+            'What changed from `against` to `version`: cases added, removed and modified, with the before and after of each changed field. Cases match by caseId, then by title and targets, so a re-created case is not reported as a removal plus an addition. The answer is deterministic and sorted by caseId, then title.',
+          security: SECURITY,
+          parameters: [
+            {
+              name: 'runId',
+              in: 'path',
+              required: true,
+              schema: { type: 'string', format: 'uuid' },
+            },
+            {
+              name: 'version',
+              in: 'path',
+              required: true,
+              schema: { type: 'integer', minimum: 1 },
+              description: 'The version to diff to.',
+            },
+            {
+              name: 'against',
+              in: 'query',
+              required: true,
+              schema: { type: 'integer', minimum: 1 },
+              description: 'The version to diff from. Any earlier or later version of the run.',
+            },
+          ],
+          responses: {
+            '200': {
+              description: 'The changes from `against` to `version`.',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/PlanDiff' },
+                  examples: {
+                    diff: {
+                      summary: 'One case re-titled and one added',
+                      value: {
+                        fromVersion: 1,
+                        toVersion: 2,
+                        added: [{ caseId: EXAMPLE_CASE.caseId, title: EXAMPLE_CASE.title }],
+                        removed: [],
+                        modified: [
+                          {
+                            caseId: EXAMPLE_CASE.caseId,
+                            title: 'Login rate limit is enforced',
+                            changes: [{ field: 'status', before: 'proposed', after: 'approved' }],
+                          },
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            ...problem,
+          },
+        },
+      },
       '/v1/test-plans/{planId}/cases': {
         post: {
           operationId: 'addTestCase',
@@ -365,6 +437,7 @@ export function testPlansOpenApiModule(): OpenApiModule {
       TestPlanView: jsonSchema(planDocument),
       TestPlanPage: jsonSchema(pageDocument),
       PlanValidationResult: jsonSchema(planValidationResultSchema),
+      PlanDiff: jsonSchema(diffDocument),
     },
   };
 }

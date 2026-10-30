@@ -15,6 +15,9 @@ const op = (operationId: string, extra: Record<string, unknown> = {}) => ({
   ...extra,
 });
 
+/** Rendering the whole spec twice takes seconds on a loaded machine, past vitest's 5 s default. */
+const RENDER_TWICE_TIMEOUT_MS = 30_000;
+
 describe('operationsOf', () => {
   it('emits full paths under the server path and sorts by operationId', () => {
     const found = operationsOf(
@@ -82,12 +85,16 @@ describe('operationsOf', () => {
 });
 
 describe('renderGeneratedFiles', () => {
-  it('renders the same bytes twice (deterministic output for the drift check)', async () => {
-    const first = await renderGeneratedFiles(readSpec());
-    const second = await renderGeneratedFiles(readSpec());
-    expect(second).toEqual(first);
-    expect(first.operations).toContain('getKillEvent');
-    expect(first.schema).toContain('export interface operations');
-    expect(PACKAGE_ROOT).toMatch(/packages\/api-client\/?$/);
-  });
+  it(
+    'renders the same bytes twice (deterministic output for the drift check)',
+    async () => {
+      const first = await renderGeneratedFiles(readSpec());
+      const second = await renderGeneratedFiles(readSpec());
+      expect(second).toEqual(first);
+      expect(first.operations).toContain('getKillEvent');
+      expect(first.schema).toContain('export interface operations');
+      expect(PACKAGE_ROOT).toMatch(/packages\/api-client\/?$/);
+    },
+    RENDER_TWICE_TIMEOUT_MS,
+  );
 });

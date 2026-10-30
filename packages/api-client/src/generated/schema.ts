@@ -536,6 +536,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/runs/{runId}/test-plans/{version}/diff': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Diff two versions of a run plan
+     * @description What changed from `against` to `version`: cases added, removed and modified, with the before and after of each changed field. Cases match by caseId, then by title and targets, so a re-created case is not reported as a removal plus an addition. The answer is deterministic and sorted by caseId, then title.
+     */
+    get: operations['diffTestPlanVersions'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/test-plans/{planId}/cases': {
     parameters: {
       query?: never;
@@ -1646,6 +1666,40 @@ export interface components {
         /** @enum {string} */
         tierAlias: 'deep' | 'standard' | 'fast';
         allowedTools: string[];
+      }[];
+    };
+    PlanDiff: {
+      fromVersion: number;
+      toVersion: number;
+      added: {
+        caseId: string;
+        title: string;
+      }[];
+      removed: {
+        caseId: string;
+        title: string;
+      }[];
+      modified: {
+        caseId: string;
+        title: string;
+        changes: {
+          /** @enum {string} */
+          field:
+            | 'class'
+            | 'title'
+            | 'status'
+            | 'budget'
+            | 'oracle'
+            | 'negative_control'
+            | 'targets'
+            | 'roles'
+            | 'owasp_refs'
+            | 'wstg_refs'
+            | 'asvs_refs'
+            | 'cwe_candidates';
+          before: unknown;
+          after: unknown;
+        }[];
       }[];
     };
     PlanValidationResult: {
@@ -6226,6 +6280,123 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['TestPlanView'];
+        };
+      };
+      /** @description Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SERVICE_AUTH_FAILED. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of FORBIDDEN. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of PLAN_NOT_FOUND, TEST_CASE_NOT_FOUND. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of PLAN_VERSION_IMMUTABLE. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of ETAG_MISMATCH. */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of PLAN_PAYLOAD_TOO_LARGE. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of VALIDATION_FAILED. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of PRECONDITION_REQUIRED. */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+      /** @description Problem details; code is one of RATE_LIMITED. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/problem+json': components['schemas']['Problem'];
+        };
+      };
+    };
+  };
+  diffTestPlanVersions: {
+    parameters: {
+      query: {
+        /** @description The version to diff from. Any earlier or later version of the run. */
+        against: number;
+      };
+      header?: never;
+      path: {
+        runId: string;
+        /** @description The version to diff to. */
+        version: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The changes from `against` to `version`. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlanDiff'];
         };
       };
       /** @description Problem details; code is one of IDEMPOTENCY_KEY_REQUIRED. */
