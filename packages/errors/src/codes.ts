@@ -63,6 +63,16 @@ const DEFINITIONS = {
     title: 'Test plan failed validation',
     retryable: false,
   },
+  // Run envelope (#399, §8.1): the approval is refused, nothing is signed, when the SA has expired or the run window
+  // has closed at signing time, or when the envelope is over its size cap. Verification failures share one code.
+  ENVELOPE_SA_EXPIRED: { status: 409, title: 'Standing authorisation expired', retryable: false },
+  ENVELOPE_WINDOW_CLOSED: { status: 409, title: 'Run window closed', retryable: false },
+  ENVELOPE_TOO_LARGE: { status: 413, title: 'Run envelope too large', retryable: false },
+  ENVELOPE_VERIFICATION_FAILED: {
+    status: 422,
+    title: 'Run envelope verification failed',
+    retryable: false,
+  },
   // A request that reaches a tenant-scoped path without a resolvable tenant context is refused outright
   // (§7/§8.6 fail closed, TENANT-003): 403, never retried, never served without isolation. A caller with no
   // principal at all is `UNAUTHENTICATED` (401) before this can happen.

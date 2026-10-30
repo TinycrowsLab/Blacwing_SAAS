@@ -4,12 +4,19 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { AuthError } from '@blackwing/errors';
 import { FixedClock } from '@blackwing/time';
 
+import { FakeEnvelopeSigner } from './envelope-signer.test-helpers.js';
 import { InMemoryGate1AuditSink, InMemoryGate1Signaler, InMemoryGate1Store } from './memory.js';
 import { createCedarGate1Policy } from './policy.js';
 import { registerGate1Routes } from './routes.js';
 import { Gate1Service } from './service.js';
 
-import type { Gate1Plan, Gate1PlanValidator, Gate1Principal, Gate1RunRecord } from './ports.js';
+import type {
+  Gate1AuthorisationSource,
+  Gate1Plan,
+  Gate1PlanValidator,
+  Gate1Principal,
+  Gate1RunRecord,
+} from './ports.js';
 import type { Gate1TestCase } from '@blackwing/contracts';
 
 const TENANT = '0190a5d0-1111-7111-8111-111111111111';
@@ -31,6 +38,17 @@ const plan: Gate1Plan = {
   expiresAt: '2026-10-29T12:00:00.000Z',
   testCases: [testCase],
 };
+/** The standing authorisation the run is approved under: its envelope is signed on approval (#399). */
+const authorisation: Gate1AuthorisationSource = {
+  saId: '0190a5d0-3333-7333-8333-333333333333',
+  saExpiresAt: '2026-10-29T18:00:00.000Z',
+  assetIds: ['0190a5d0-4444-7444-8444-444444444444'],
+  scopeRules: { rules: [{ effect: 'include', host: 'lab.example.test' }] },
+  testWindows: [],
+  maxIntrusiveness: 'passive',
+  budgets: { costCapUsd: 10, maxRequests: 1000, maxDurationMs: 3_600_000 },
+  runWindowEndsAt: null,
+};
 const run: Gate1RunRecord = {
   id: RUN,
   tenantId: TENANT,
@@ -39,6 +57,7 @@ const run: Gate1RunRecord = {
   requesterId: REQUESTER,
   plan,
   priorPlan: null,
+  authorisation,
 };
 
 /** Bearer tokens the fake authenticator knows. `revoked` mimics a revoked or expired credential. */
@@ -76,6 +95,7 @@ async function server(
     validator,
     signaler,
     policy: createCedarGate1Policy(),
+    signer: new FakeEnvelopeSigner(),
     clock: new FixedClock('2026-10-29T10:00:00.000Z'),
   });
   registerGate1Routes(app, {
@@ -150,7 +170,9 @@ describe('Gate 1 routes', () => {
     const replay = await decide(app, 'approver', { decision: 'approve', planVersion: 3 });
     expect(replay.statusCode).toBe(200);
     expect(replay.json()).toEqual(first.json());
-    expect(audit.records.filter((r) => r.outcome === 'success')).toHaveLength(1);
+    expect(
+      audit.records.filter((r) => r.action.startsWith('gate1.') && r.outcome === 'success'),
+    ).toHaveLength(1);
   });
 
   it('answers the requester with a problem+json 403 SOD_VIOLATION, even when the UI missed it', async () => {

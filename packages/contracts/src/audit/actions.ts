@@ -795,6 +795,15 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'A confirmed finding was marked a duplicate of a canonical finding at triage (Gate 3).',
   },
+  // run envelope (#399, §8.1, §8.9): appended; the event names the run, the SA, the envelope hash and the signing key.
+  {
+    action: 'run.envelope_signed',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'approval',
+    description:
+      'Gate 1 approval produced and signed the approved run envelope; metadata records the envelope hash, SA id and signing key id.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

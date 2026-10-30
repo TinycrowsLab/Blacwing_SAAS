@@ -9,6 +9,7 @@
   "include": ["src", "src/**/*.json"],
   "references": [
     { "path": "../contracts" },
+    { "path": "../crypto" },
     { "path": "../errors" },
     { "path": "../ids" },
     { "path": "../time" }

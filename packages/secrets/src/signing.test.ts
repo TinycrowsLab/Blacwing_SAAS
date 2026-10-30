@@ -278,6 +278,51 @@ describe('signEnvelope', () => {
   });
 });
 
+describe('envelopeSigningKey', () => {
+  it('returns a key whose kid names the current version and whose signatures verify with its JWK', async () => {
+    const { service } = setup();
+    const key = await service.envelopeSigningKey();
+    expect(key.kid).toBe(`${KEY}:v1`);
+    const input = new TextEncoder().encode('header.payload');
+    const signature = await key.sign(input);
+    expect(signature.byteLength).toBe(64);
+    const jwk = jwkFor((await service.getPublicJwks()).keys, key.kid);
+    const publicKey = createPublicKey({
+      key: { kty: 'OKP', crv: 'Ed25519', x: jwk.x },
+      format: 'jwk',
+    });
+    expect(verify(null, input, publicKey, Buffer.from(signature))).toBe(true);
+  });
+
+  it('pins the version at call time, so a rotation after the call does not change the signing key', async () => {
+    const { service, transit } = setup();
+    const key = await service.envelopeSigningKey();
+    transit.addVersion();
+    await key.sign(new TextEncoder().encode('x'));
+    const signCall = transit.calls.find((c) => c.path === `transit/sign/${KEY}`);
+    expect(signCall?.body).toMatchObject({ key_version: 1 });
+  });
+
+  it('fails closed with AUTHZ_SIGNER_UNAVAILABLE when OpenBao is down', async () => {
+    const { service, transit } = setup();
+    transit.down = true;
+    expect(await codeOf(service.envelopeSigningKey())).toBe('AUTHZ_SIGNER_UNAVAILABLE');
+  });
+
+  it('refuses to hand out an exportable key', async () => {
+    const { service, transit } = setup();
+    transit.overrides = { exportable: true };
+    expect(await codeOf(service.envelopeSigningKey())).toBe('INTERNAL');
+  });
+
+  it('refuses a signature whose version differs from the pinned version', async () => {
+    const { service, transit } = setup();
+    const key = await service.envelopeSigningKey();
+    transit.forcedSignaturePrefix = 'vault:v9:';
+    expect(await codeOf(key.sign(new TextEncoder().encode('x')))).toBe('AUTHZ_SIGNER_UNAVAILABLE');
+  });
+});
+
 describe('rotateSigningKey', () => {
   it('rotates to a new version; new SAs sign with it and the old signature still verifies', async () => {
     const { service } = setup();

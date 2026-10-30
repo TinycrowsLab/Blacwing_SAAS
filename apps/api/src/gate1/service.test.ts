@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
+import { canonicaliseValue, envelopeHash } from '@blackwing/crypto';
+import { verifyRunEnvelope } from '@blackwing/domain';
 import { AppError } from '@blackwing/errors';
 import { FixedClock } from '@blackwing/time';
 
+import { FakeEnvelopeSigner } from './envelope-signer.test-helpers.js';
 import { Gate1Error } from './errors.js';
 import { InMemoryGate1AuditSink, InMemoryGate1Signaler, InMemoryGate1Store } from './memory.js';
 import { createCedarGate1Policy } from './policy.js';
 import { Gate1Service } from './service.js';
 
 import type {
+  Gate1AuthorisationSource,
   Gate1Plan,
   Gate1PlanValidator,
   Gate1PlanVerdict,
@@ -26,6 +30,11 @@ const NOW = '2026-10-29T10:00:00.000Z';
 const FUTURE = '2026-10-29T12:00:00.000Z';
 const PAST = '2026-10-29T09:00:00.000Z';
 const KEY = 'gate1-decision-0001';
+const SA = '0190a5d0-3333-7333-8333-333333333333';
+const ASSET = '0190a5d0-4444-7444-8444-444444444444';
+const SA_EXPIRES = '2026-10-29T18:00:00.000Z';
+/** A run window that closed before the approval at NOW. */
+const WINDOW_CLOSED = '2026-10-29T09:00:00.000Z';
 
 const budget = { maxRequests: 100, maxRps: 5, maxConcurrency: 2, maxBytes: 1000 };
 
@@ -60,6 +69,22 @@ function runOf(over: Partial<Gate1RunRecord> = {}): Gate1RunRecord {
     requesterId: REQUESTER,
     plan: planOf(2, [testCase('tc-1'), testCase('tc-2', { class: 'active_safe' })]),
     priorPlan: null,
+    authorisation: authorisationOf(),
+    ...over,
+  };
+}
+
+/** The standing authorisation a run is approved under (#399). */
+function authorisationOf(over: Partial<Gate1AuthorisationSource> = {}): Gate1AuthorisationSource {
+  return {
+    saId: SA,
+    saExpiresAt: SA_EXPIRES,
+    assetIds: [ASSET],
+    scopeRules: { rules: [{ effect: 'include', host: 'lab.example.test' }] },
+    testWindows: [],
+    maxIntrusiveness: 'active_safe',
+    budgets: { costCapUsd: 10, maxRequests: 1000, maxDurationMs: 3_600_000 },
+    runWindowEndsAt: null,
     ...over,
   };
 }
@@ -87,15 +112,17 @@ function harness(run: Gate1RunRecord | null = runOf(), now = NOW) {
   const audit = new InMemoryGate1AuditSink();
   const signaler = new InMemoryGate1Signaler();
   const validator = new FakeValidator();
+  const signer = new FakeEnvelopeSigner();
   const service = new Gate1Service({
     store,
     audit,
     validator,
     signaler,
     policy: createCedarGate1Policy(),
+    signer,
     clock: new FixedClock(now),
   });
-  return { store, audit, signaler, validator, service };
+  return { store, audit, signaler, validator, signer, service };
 }
 
 async function captured(promise: Promise<unknown>): Promise<AppError> {
@@ -210,7 +237,7 @@ describe('Gate1Service.decide', () => {
       decidedAt: NOW,
     });
     expect((await store.getRun(TENANT, RUN))?.state).toBe('approved');
-    expect(audit.records).toHaveLength(1);
+    expect(audit.records).toHaveLength(2);
     expect(audit.records[0]).toMatchObject({
       action: 'gate1.approved',
       outcome: 'success',
@@ -219,6 +246,7 @@ describe('Gate1Service.decide', () => {
       target: { type: 'run', id: RUN },
       metadata: { decision: 'approve', planVersion: 2, toState: 'approved', reasonProvided: false },
     });
+    expect(audit.records[1]).toMatchObject({ action: 'run.envelope_signed', outcome: 'success' });
   });
 
   it.each([
@@ -318,14 +346,18 @@ describe('Gate1Service.decide', () => {
     const first = await decide(service);
     const second = await decide(service);
     expect(second).toEqual(first);
-    expect(audit.records.filter((r) => r.outcome === 'success')).toHaveLength(1);
+    expect(
+      audit.records.filter((r) => r.action.startsWith('gate1.') && r.outcome === 'success'),
+    ).toHaveLength(1);
   });
 
   it('answers a double submit (two concurrent requests, one key) with one decision', async () => {
     const { service, audit } = harness();
     const [a, b] = await Promise.all([decide(service), decide(service)]);
     expect(b).toEqual(a);
-    expect(audit.records.filter((r) => r.outcome === 'success')).toHaveLength(1);
+    expect(
+      audit.records.filter((r) => r.action.startsWith('gate1.') && r.outcome === 'success'),
+    ).toHaveLength(1);
   });
 
   it('refuses a key reused for a different decision with IDEMPOTENCY_KEY_MISMATCH', async () => {
@@ -355,7 +387,9 @@ describe('Gate1Service.decide', () => {
     expect(fulfilled).toHaveLength(1);
     expect(rejected).toHaveLength(1);
     expect(rejected[0]?.reason).toMatchObject({ code: 'GATE1_NOT_PENDING' });
-    expect(audit.records.filter((r) => r.outcome === 'success')).toHaveLength(1);
+    expect(
+      audit.records.filter((r) => r.action.startsWith('gate1.') && r.outcome === 'success'),
+    ).toHaveLength(1);
   });
 
   it('never decides another tenant run: 404 and no change', async () => {
@@ -472,6 +506,7 @@ describe('Gate1Service.submit (#398)', () => {
       validator: new FakeValidator(),
       signaler: new UnreachableSignaler(),
       policy: createCedarGate1Policy(),
+      signer: new FakeEnvelopeSigner(),
       clock: new FixedClock(NOW),
     });
     const error = await captured(
@@ -585,6 +620,7 @@ describe('Gate1Service.decide: workflow signal and per-outcome audit (#398)', ()
       validator: new FakeValidator(),
       signaler: new UnreachableSignaler(),
       policy: createCedarGate1Policy(),
+      signer: new FakeEnvelopeSigner(),
       clock: new FixedClock(NOW),
     });
     const error = await captured(
@@ -613,6 +649,7 @@ describe('Gate1Service.decide: workflow signal and per-outcome audit (#398)', ()
       validator: new FakeValidator(),
       signaler: new InMemoryGate1Signaler(),
       policy: { authorize: () => 'deny' },
+      signer: new FakeEnvelopeSigner(),
       clock: new FixedClock(NOW),
     });
     const error = await captured(
@@ -626,5 +663,200 @@ describe('Gate1Service.decide: workflow signal and per-outcome audit (#398)', ()
     );
     expect(error.code).toBe('FORBIDDEN');
     expect(await store.getRun(TENANT, RUN)).toMatchObject({ state: 'awaiting_gate1' });
+  });
+});
+
+describe('Gate1Service.decide: the approved run envelope (#399)', () => {
+  const approve = (service: Gate1Service, decision: 'approve' | 'request_changes' = 'approve') =>
+    service.decide({
+      principal: principal(),
+      runId: RUN,
+      body:
+        decision === 'approve'
+          ? REQUEST
+          : { decision, planVersion: 2, reason: 'Drop the admin panel from scope.' },
+      idempotencyKey: KEY,
+      traceId: null,
+    });
+
+  async function pinnedOf(store: InMemoryGate1Store, tenantId = TENANT) {
+    const pinned = await store.getPinnedEnvelope(tenantId, RUN);
+    if (pinned === null) throw new Error('expected a pinned envelope');
+    return pinned;
+  }
+
+  it('pins a signed envelope that verifies to exactly what the approver approved', async () => {
+    const { service, store, signer } = harness();
+    await approve(service);
+    const pinned = await pinnedOf(store);
+    expect(pinned).toMatchObject({
+      signingKeyId: 'bw-sa-signing:v1',
+      envelopeVersion: 1,
+      saId: SA,
+    });
+    const envelope = verifyRunEnvelope(pinned.jws, signer.resolver, new Date(NOW));
+    expect(envelope).toEqual({
+      runId: RUN,
+      tenantId: TENANT,
+      assetIds: [ASSET],
+      scopeRules: { rules: [{ effect: 'include', host: 'lab.example.test' }] },
+      testWindows: [],
+      maxIntrusiveness: 'active_safe',
+      approvedTestCaseIds: ['tc-1', 'tc-2'],
+      budgets: { costCapUsd: 10, maxRequests: 1000, maxDurationMs: 3_600_000 },
+      saId: SA,
+      saExpiresAt: SA_EXPIRES,
+      runWindowEndsAt: null,
+      approvedPlanVersion: 2,
+      approverId: APPROVER,
+      approvedAt: NOW,
+      envelopeVersion: 1,
+    });
+    expect(envelopeHash(canonicaliseValue(envelope))).toBe(pinned.envelopeHash);
+  });
+
+  it('audits run.envelope_signed with the envelope hash, SA id and signing key id that were pinned', async () => {
+    const { service, store, audit } = harness();
+    await approve(service);
+    const pinned = await pinnedOf(store);
+    expect(audit.records[1]).toMatchObject({
+      action: 'run.envelope_signed',
+      outcome: 'success',
+      tenantId: TENANT,
+      actor: { type: 'user', id: APPROVER },
+      target: { type: 'run', id: RUN },
+      metadata: {
+        envelopeHash: pinned.envelopeHash,
+        saId: SA,
+        signingKeyId: 'bw-sa-signing:v1',
+        envelopeVersion: 1,
+        planVersion: 2,
+      },
+    });
+  });
+
+  it('counts a successful signature once through the injected metrics', async () => {
+    const outcomes: string[] = [];
+    const store = new InMemoryGate1Store([runOf()]);
+    const service = new Gate1Service({
+      store,
+      audit: new InMemoryGate1AuditSink(),
+      validator: new FakeValidator(),
+      signaler: new InMemoryGate1Signaler(),
+      policy: createCedarGate1Policy(),
+      signer: new FakeEnvelopeSigner(),
+      envelopeMetrics: { sign: (result) => outcomes.push(result) },
+      clock: new FixedClock(NOW),
+    });
+    await approve(service);
+    expect(outcomes).toEqual(['ok']);
+  });
+
+  it('refuses the approval when the signer is down: nothing is signalled or recorded, and a retry after recovery succeeds', async () => {
+    const { service, store, audit, signaler, signer } = harness();
+    signer.down = true;
+    const error = await captured(approve(service));
+    expect(error.code).toBe('AUTHZ_SIGNER_UNAVAILABLE');
+    expect(error.httpStatus).toBe(503);
+    expect(error.retryable).toBe(true);
+    expect(signaler.signals).toEqual([]);
+    expect(await store.getRun(TENANT, RUN)).toMatchObject({
+      state: 'awaiting_gate1',
+      stateVersion: 7,
+    });
+    expect(await store.findDecision(TENANT, KEY)).toBeNull();
+    expect(await store.getPinnedEnvelope(TENANT, RUN)).toBeNull();
+    expect(audit.records).toHaveLength(1);
+    expect(audit.records[0]).toMatchObject({
+      action: 'gate1.decided',
+      outcome: 'denied',
+      metadata: { code: 'AUTHZ_SIGNER_UNAVAILABLE' },
+    });
+    signer.down = false;
+    const response = await approve(service);
+    expect(response.runState).toBe('approved');
+    expect(await pinnedOf(store)).toMatchObject({ envelopeVersion: 1 });
+  });
+
+  it('refuses to sign when the standing authorisation has expired: 409, nothing signed, audited', async () => {
+    const store = new InMemoryGate1Store([
+      runOf({ authorisation: authorisationOf({ saExpiresAt: '2026-10-29T09:30:00.000Z' }) }),
+    ]);
+    const audit = new InMemoryGate1AuditSink();
+    const signer = new FakeEnvelopeSigner();
+    const service = new Gate1Service({
+      store,
+      audit,
+      validator: new FakeValidator(),
+      signaler: new InMemoryGate1Signaler(),
+      policy: createCedarGate1Policy(),
+      signer,
+      clock: new FixedClock(NOW),
+    });
+    const error = await captured(approve(service));
+    expect(error.code).toBe('ENVELOPE_SA_EXPIRED');
+    expect(error.httpStatus).toBe(409);
+    expect(signer.keyRequests).toBe(0);
+    expect(await store.getRun(TENANT, RUN)).toMatchObject({ state: 'awaiting_gate1' });
+    expect(audit.records[0]).toMatchObject({
+      outcome: 'denied',
+      metadata: { code: 'ENVELOPE_SA_EXPIRED' },
+    });
+  });
+
+  it('refuses to sign when the run window has already closed', async () => {
+    const store = new InMemoryGate1Store([
+      runOf({ authorisation: authorisationOf({ runWindowEndsAt: WINDOW_CLOSED }) }),
+    ]);
+    const signer = new FakeEnvelopeSigner();
+    const service = new Gate1Service({
+      store,
+      audit: new InMemoryGate1AuditSink(),
+      validator: new FakeValidator(),
+      signaler: new InMemoryGate1Signaler(),
+      policy: createCedarGate1Policy(),
+      signer,
+      clock: new FixedClock(NOW),
+    });
+    expect((await captured(approve(service))).code).toBe('ENVELOPE_WINDOW_CLOSED');
+    expect(signer.keyRequests).toBe(0);
+  });
+
+  it('refuses an approval of a run with no standing authorisation to sign under', async () => {
+    const { service, store, signer } = harness(runOf({ authorisation: null }));
+    const error = await captured(approve(service));
+    expect(error.code).toBe('ENVELOPE_VERIFICATION_FAILED');
+    expect(signer.keyRequests).toBe(0);
+    expect(await store.getRun(TENANT, RUN)).toMatchObject({ state: 'awaiting_gate1' });
+  });
+
+  it('signs nothing for a request for changes or a rejection', async () => {
+    const { service, store, signer, audit } = harness();
+    await approve(service, 'request_changes');
+    expect(signer.keyRequests).toBe(0);
+    expect(await store.getPinnedEnvelope(TENANT, RUN)).toBeNull();
+    expect(audit.records.map((r) => r.action)).toEqual(['gate1.changes_requested']);
+  });
+
+  it('a re-approval produces the next envelope version and supersedes the previous hash', async () => {
+    const previous = {
+      jws: 'previous-token',
+      envelopeHash: '0'.repeat(64),
+      signingKeyId: 'bw-sa-signing:v1',
+      envelopeVersion: 1,
+      saId: SA,
+    };
+    const { service, store, signer } = harness(runOf({ pinnedEnvelope: previous }));
+    await approve(service);
+    const pinned = await pinnedOf(store);
+    expect(pinned.envelopeVersion).toBe(2);
+    expect(pinned.envelopeHash).not.toBe(previous.envelopeHash);
+    expect(verifyRunEnvelope(pinned.jws, signer.resolver, new Date(NOW)).envelopeVersion).toBe(2);
+  });
+
+  it('never exposes one tenant’s pinned envelope to another tenant', async () => {
+    const { service, store } = harness();
+    await approve(service);
+    expect(await store.getPinnedEnvelope(OTHER_TENANT, RUN)).toBeNull();
   });
 });

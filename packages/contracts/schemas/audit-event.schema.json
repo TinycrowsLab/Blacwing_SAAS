@@ -118,7 +118,8 @@
         "notification.requested",
         "notification.unrouted",
         "finding.rejected",
-        "finding.marked_duplicate"
+        "finding.marked_duplicate",
+        "run.envelope_signed"
       ]
     },
     "severity": {

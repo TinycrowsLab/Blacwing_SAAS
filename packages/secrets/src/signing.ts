@@ -135,6 +135,11 @@ export interface SigningKeyService {
    * never trimmed, so a deprecated version keeps verifying the SAs signed with it.
    */
   getPublicJwks(): Promise<{ readonly keys: readonly Ed25519Jwk[] }>;
+  /**
+   * The signing key pinned to the Transit version current at the call, for signing other canonical
+   * envelopes (run envelopes, #399). Only signatures leave OpenBao; the private key never does.
+   */
+  envelopeSigningKey(): Promise<EnvelopeSigningKey>;
 }
 
 interface KeyState {
@@ -227,16 +232,18 @@ export function createSigningKeyService(deps: SigningKeyServiceDeps): SigningKey
     return new Uint8Array(Buffer.from(match[2], 'base64'));
   }
 
+  /** The version is read once and pinned in both the header and the sign request, so a rotation cannot split them. */
+  function pinnedKey(state: KeyState): EnvelopeSigningKey {
+    return {
+      kid: `${config.keyName}:v${state.latestVersion}`,
+      sign: (signingInput) => transitSign(state.latestVersion, signingInput),
+    };
+  }
+
   return {
     async signEnvelope({ tenantId, saId, canonicalBytes }) {
       try {
-        // The version is read once and pinned in both the header and the sign request, so a rotation
-        // during approval cannot make the header name one key and the signature another.
-        const state = await readKey();
-        const key: EnvelopeSigningKey = {
-          kid: `${config.keyName}:v${state.latestVersion}`,
-          sign: (signingInput) => transitSign(state.latestVersion, signingInput),
-        };
+        const key = pinnedKey(await readKey());
         const signed: DetachedJws = await signEnvelope(
           canonicalBytes,
           key,
@@ -288,6 +295,10 @@ export function createSigningKeyService(deps: SigningKeyServiceDeps): SigningKey
         .map(([version, publicKey]) => ed25519Jwk(`${config.keyName}:v${version}`, publicKey));
       jwks = { keys, expiresAt: t + config.jwksTtlS * MS_PER_S };
       return { keys };
+    },
+
+    async envelopeSigningKey() {
+      return pinnedKey(await readKey());
     },
   };
 }

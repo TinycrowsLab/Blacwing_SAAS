@@ -8,6 +8,7 @@ import {
   envelopeHash,
   type JwsSigner,
   publicKeyOf,
+  signCanonicalJws,
   signEnvelope,
   signJws,
   verifyJws,
@@ -185,5 +186,75 @@ describe('ed25519Jwk', () => {
 
   it.each([0, 31, 33])('rejects a %i-byte public key', (length) => {
     expect(() => ed25519Jwk('k', new Uint8Array(length))).toThrow(RangeError);
+  });
+});
+
+describe('signCanonicalJws (attached, over canonical bytes)', () => {
+  const TYP = 'application/test-envelope+jcs';
+  const canonical = new TextEncoder().encode('{"a":1,"b":[true,null]}');
+  const keyFor = (signer: JwsSigner) => ({
+    kid: signer.kid,
+    sign: (input: Uint8Array) =>
+      Promise.resolve(new Uint8Array(sign(null, Buffer.from(input), signer.privateKey))),
+  });
+
+  it('emits an attached compact JWS that verifyJws reads back to the same payload and kid', async () => {
+    const token = await signCanonicalJws(canonical, keyFor(current), TYP);
+    expect(token.split('.')).toHaveLength(3);
+    expect(verifyJws(token, resolver(current))).toEqual({
+      payload: { a: 1, b: [true, null] },
+      kid: 'k1',
+    });
+  });
+
+  it('records the envelope type in the protected header', async () => {
+    const token = await signCanonicalJws(canonical, keyFor(current), TYP);
+    const header = JSON.parse(
+      Buffer.from(token.split('.')[0] ?? '', 'base64url').toString('utf8'),
+    ) as unknown;
+    expect(header).toEqual({ alg: 'EdDSA', kid: 'k1', typ: TYP });
+  });
+
+  it('signs exactly header.payload, the same signing input as the detached form', async () => {
+    const token = await signCanonicalJws(canonical, keyFor(current), TYP);
+    const [header, payload, signature] = token.split('.') as [string, string, string];
+    expect(payload).toBe(Buffer.from(canonical).toString('base64url'));
+    expect(
+      verify(
+        null,
+        Buffer.from(`${header}.${payload}`),
+        publicKeyOf(current),
+        Buffer.from(signature, 'base64url'),
+      ),
+    ).toBe(true);
+  });
+
+  it('fails verification when the payload is tampered with', async () => {
+    const token = await signCanonicalJws(canonical, keyFor(current), TYP);
+    const [h, , s] = token.split('.') as [string, string, string];
+    expect(verifyJws(`${h}.${part('{"a":2}')}.${s}`, resolver(current))).toBeNull();
+  });
+
+  it('fails verification under a different key, and under an unknown kid', async () => {
+    const token = await signCanonicalJws(canonical, keyFor(current), TYP);
+    expect(verifyJws(token, resolver(keypair('k1')))).toBeNull();
+    expect(verifyJws(token, () => undefined)).toBeNull();
+  });
+
+  it('refuses a signer that returns a signature of the wrong length (fail closed)', async () => {
+    const short = { kid: 'k1', sign: () => Promise.resolve(new Uint8Array(10)) };
+    await expect(signCanonicalJws(canonical, short, TYP)).rejects.toThrow(RangeError);
+  });
+
+  it('propagates a signer failure instead of emitting an unsigned token', async () => {
+    const down = { kid: 'k1', sign: () => Promise.reject(new Error('sealed')) };
+    await expect(signCanonicalJws(canonical, down, TYP)).rejects.toThrow('sealed');
+  });
+
+  it('caps the token size the verifier accepts, and a caller may raise the cap', async () => {
+    const big = new TextEncoder().encode(JSON.stringify({ blob: 'x'.repeat(5000) }));
+    const token = await signCanonicalJws(big, keyFor(current), TYP);
+    expect(verifyJws(token, resolver(current))).toBeNull();
+    expect(verifyJws(token, resolver(current), 64 * 1024)).not.toBeNull();
   });
 });

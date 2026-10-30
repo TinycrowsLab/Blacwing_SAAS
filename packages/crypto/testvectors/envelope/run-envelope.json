@@ -1,0 +1,148 @@
+{
+  "description": "Shared run-envelope test vectors (#399). Each case: a compact attached JWS, the time it is verified at, and the outcome. Any verifier (TS or the Go egress gateway) must reach the same outcome. The public key is the only key material; no private key is published.",
+  "typ": "application/run-envelope+jcs",
+  "clockSkewSeconds": 30,
+  "publicKeys": [
+    {
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "x": "7zum_l-oO_dpZh-bAc8cZeRYJH8G-GgJCOa3pSIogFY",
+      "kid": "bw-sa-signing:v1",
+      "alg": "EdDSA",
+      "use": "sig"
+    }
+  ],
+  "signed": {
+    "envelope": {
+      "runId": "run_01jbz3k6w8f5r4t2n9q7x0m1ab",
+      "tenantId": "0190a5d0-1111-7111-8111-111111111111",
+      "assetIds": ["0190a5d0-4444-7444-8444-444444444444", "0190a5d0-5555-7555-8555-555555555555"],
+      "scopeRules": {
+        "rules": [
+          {
+            "effect": "include",
+            "host": "app.lab.test"
+          },
+          {
+            "effect": "exclude",
+            "host": "admin.lab.test"
+          }
+        ]
+      },
+      "testWindows": [
+        {
+          "cron": "0 * * * *",
+          "timezone": "UTC",
+          "durationMs": 3600000
+        }
+      ],
+      "maxIntrusiveness": "active_safe",
+      "approvedTestCaseIds": ["tc-a", "tc-b"],
+      "budgets": {
+        "costCapUsd": 10,
+        "maxRequests": 1000,
+        "maxDurationMs": 3600000
+      },
+      "saId": "0190a5d0-3333-7333-8333-333333333333",
+      "saExpiresAt": "2026-10-29T18:00:00.000Z",
+      "runWindowEndsAt": "2026-10-29T12:00:00.000Z",
+      "approvedPlanVersion": 2,
+      "approverId": "user-approver",
+      "approvedAt": "2026-10-29T10:00:00.000Z",
+      "envelopeVersion": 1
+    },
+    "canonical": "{\"approvedAt\":\"2026-10-29T10:00:00.000Z\",\"approvedPlanVersion\":2,\"approvedTestCaseIds\":[\"tc-a\",\"tc-b\"],\"approverId\":\"user-approver\",\"assetIds\":[\"0190a5d0-4444-7444-8444-444444444444\",\"0190a5d0-5555-7555-8555-555555555555\"],\"budgets\":{\"costCapUsd\":10,\"maxDurationMs\":3600000,\"maxRequests\":1000},\"envelopeVersion\":1,\"maxIntrusiveness\":\"active_safe\",\"runId\":\"run_01jbz3k6w8f5r4t2n9q7x0m1ab\",\"runWindowEndsAt\":\"2026-10-29T12:00:00.000Z\",\"saExpiresAt\":\"2026-10-29T18:00:00.000Z\",\"saId\":\"0190a5d0-3333-7333-8333-333333333333\",\"scopeRules\":{\"rules\":[{\"effect\":\"include\",\"host\":\"app.lab.test\"},{\"effect\":\"exclude\",\"host\":\"admin.lab.test\"}]},\"tenantId\":\"0190a5d0-1111-7111-8111-111111111111\",\"testWindows\":[{\"cron\":\"0 * * * *\",\"durationMs\":3600000,\"timezone\":\"UTC\"}]}",
+    "envelopeHash": "e360d643b947b959bdd14a6f447cf8100e0ef29c991d388bbbf8ffa9d3803d80",
+    "signingKeyId": "bw-sa-signing:v1",
+    "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJ3LXNhLXNpZ25pbmc6djEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9ydW4tZW52ZWxvcGUramNzIn0.eyJhcHByb3ZlZEF0IjoiMjAyNi0xMC0yOVQxMDowMDowMC4wMDBaIiwiYXBwcm92ZWRQbGFuVmVyc2lvbiI6MiwiYXBwcm92ZWRUZXN0Q2FzZUlkcyI6WyJ0Yy1hIiwidGMtYiJdLCJhcHByb3ZlcklkIjoidXNlci1hcHByb3ZlciIsImFzc2V0SWRzIjpbIjAxOTBhNWQwLTQ0NDQtNzQ0NC04NDQ0LTQ0NDQ0NDQ0NDQ0NCIsIjAxOTBhNWQwLTU1NTUtNzU1NS04NTU1LTU1NTU1NTU1NTU1NSJdLCJidWRnZXRzIjp7ImNvc3RDYXBVc2QiOjEwLCJtYXhEdXJhdGlvbk1zIjozNjAwMDAwLCJtYXhSZXF1ZXN0cyI6MTAwMH0sImVudmVsb3BlVmVyc2lvbiI6MSwibWF4SW50cnVzaXZlbmVzcyI6ImFjdGl2ZV9zYWZlIiwicnVuSWQiOiJydW5fMDFqYnozazZ3OGY1cjR0Mm45cTd4MG0xYWIiLCJydW5XaW5kb3dFbmRzQXQiOiIyMDI2LTEwLTI5VDEyOjAwOjAwLjAwMFoiLCJzYUV4cGlyZXNBdCI6IjIwMjYtMTAtMjlUMTg6MDA6MDAuMDAwWiIsInNhSWQiOiIwMTkwYTVkMC0zMzMzLTczMzMtODMzMy0zMzMzMzMzMzMzMzMiLCJzY29wZVJ1bGVzIjp7InJ1bGVzIjpbeyJlZmZlY3QiOiJpbmNsdWRlIiwiaG9zdCI6ImFwcC5sYWIudGVzdCJ9LHsiZWZmZWN0IjoiZXhjbHVkZSIsImhvc3QiOiJhZG1pbi5sYWIudGVzdCJ9XX0sInRlbmFudElkIjoiMDE5MGE1ZDAtMTExMS03MTExLTgxMTEtMTExMTExMTExMTExIiwidGVzdFdpbmRvd3MiOlt7ImNyb24iOiIwICogKiAqICoiLCJkdXJhdGlvbk1zIjozNjAwMDAwLCJ0aW1lem9uZSI6IlVUQyJ9XX0.CpDydAq7r_WdmYhGOtFSZiV8bRtZzEob4LZS6o43SzfS_b__KybAo5cF-sIaPoSR9hm4N2Whpwk94t7NlqLHCg"
+  },
+  "cases": [
+    {
+      "name": "valid envelope verifies at approval time",
+      "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJ3LXNhLXNpZ25pbmc6djEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9ydW4tZW52ZWxvcGUramNzIn0.eyJhcHByb3ZlZEF0IjoiMjAyNi0xMC0yOVQxMDowMDowMC4wMDBaIiwiYXBwcm92ZWRQbGFuVmVyc2lvbiI6MiwiYXBwcm92ZWRUZXN0Q2FzZUlkcyI6WyJ0Yy1hIiwidGMtYiJdLCJhcHByb3ZlcklkIjoidXNlci1hcHByb3ZlciIsImFzc2V0SWRzIjpbIjAxOTBhNWQwLTQ0NDQtNzQ0NC04NDQ0LTQ0NDQ0NDQ0NDQ0NCIsIjAxOTBhNWQwLTU1NTUtNzU1NS04NTU1LTU1NTU1NTU1NTU1NSJdLCJidWRnZXRzIjp7ImNvc3RDYXBVc2QiOjEwLCJtYXhEdXJhdGlvbk1zIjozNjAwMDAwLCJtYXhSZXF1ZXN0cyI6MTAwMH0sImVudmVsb3BlVmVyc2lvbiI6MSwibWF4SW50cnVzaXZlbmVzcyI6ImFjdGl2ZV9zYWZlIiwicnVuSWQiOiJydW5fMDFqYnozazZ3OGY1cjR0Mm45cTd4MG0xYWIiLCJydW5XaW5kb3dFbmRzQXQiOiIyMDI2LTEwLTI5VDEyOjAwOjAwLjAwMFoiLCJzYUV4cGlyZXNBdCI6IjIwMjYtMTAtMjlUMTg6MDA6MDAuMDAwWiIsInNhSWQiOiIwMTkwYTVkMC0zMzMzLTczMzMtODMzMy0zMzMzMzMzMzMzMzMiLCJzY29wZVJ1bGVzIjp7InJ1bGVzIjpbeyJlZmZlY3QiOiJpbmNsdWRlIiwiaG9zdCI6ImFwcC5sYWIudGVzdCJ9LHsiZWZmZWN0IjoiZXhjbHVkZSIsImhvc3QiOiJhZG1pbi5sYWIudGVzdCJ9XX0sInRlbmFudElkIjoiMDE5MGE1ZDAtMTExMS03MTExLTgxMTEtMTExMTExMTExMTExIiwidGVzdFdpbmRvd3MiOlt7ImNyb24iOiIwICogKiAqICoiLCJkdXJhdGlvbk1zIjozNjAwMDAwLCJ0aW1lem9uZSI6IlVUQyJ9XX0.CpDydAq7r_WdmYhGOtFSZiV8bRtZzEob4LZS6o43SzfS_b__KybAo5cF-sIaPoSR9hm4N2Whpwk94t7NlqLHCg",
+      "now": "2026-10-29T10:00:00.000Z",
+      "expect": {
+        "ok": true
+      }
+    },
+    {
+      "name": "valid envelope verifies within the approval window",
+      "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJ3LXNhLXNpZ25pbmc6djEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9ydW4tZW52ZWxvcGUramNzIn0.eyJhcHByb3ZlZEF0IjoiMjAyNi0xMC0yOVQxMDowMDowMC4wMDBaIiwiYXBwcm92ZWRQbGFuVmVyc2lvbiI6MiwiYXBwcm92ZWRUZXN0Q2FzZUlkcyI6WyJ0Yy1hIiwidGMtYiJdLCJhcHByb3ZlcklkIjoidXNlci1hcHByb3ZlciIsImFzc2V0SWRzIjpbIjAxOTBhNWQwLTQ0NDQtNzQ0NC04NDQ0LTQ0NDQ0NDQ0NDQ0NCIsIjAxOTBhNWQwLTU1NTUtNzU1NS04NTU1LTU1NTU1NTU1NTU1NSJdLCJidWRnZXRzIjp7ImNvc3RDYXBVc2QiOjEwLCJtYXhEdXJhdGlvbk1zIjozNjAwMDAwLCJtYXhSZXF1ZXN0cyI6MTAwMH0sImVudmVsb3BlVmVyc2lvbiI6MSwibWF4SW50cnVzaXZlbmVzcyI6ImFjdGl2ZV9zYWZlIiwicnVuSWQiOiJydW5fMDFqYnozazZ3OGY1cjR0Mm45cTd4MG0xYWIiLCJydW5XaW5kb3dFbmRzQXQiOiIyMDI2LTEwLTI5VDEyOjAwOjAwLjAwMFoiLCJzYUV4cGlyZXNBdCI6IjIwMjYtMTAtMjlUMTg6MDA6MDAuMDAwWiIsInNhSWQiOiIwMTkwYTVkMC0zMzMzLTczMzMtODMzMy0zMzMzMzMzMzMzMzMiLCJzY29wZVJ1bGVzIjp7InJ1bGVzIjpbeyJlZmZlY3QiOiJpbmNsdWRlIiwiaG9zdCI6ImFwcC5sYWIudGVzdCJ9LHsiZWZmZWN0IjoiZXhjbHVkZSIsImhvc3QiOiJhZG1pbi5sYWIudGVzdCJ9XX0sInRlbmFudElkIjoiMDE5MGE1ZDAtMTExMS03MTExLTgxMTEtMTExMTExMTExMTExIiwidGVzdFdpbmRvd3MiOlt7ImNyb24iOiIwICogKiAqICoiLCJkdXJhdGlvbk1zIjozNjAwMDAwLCJ0aW1lem9uZSI6IlVUQyJ9XX0.CpDydAq7r_WdmYhGOtFSZiV8bRtZzEob4LZS6o43SzfS_b__KybAo5cF-sIaPoSR9hm4N2Whpwk94t7NlqLHCg",
+      "now": "2026-10-29T11:00:00.000Z",
+      "expect": {
+        "ok": true
+      }
+    },
+    {
+      "name": "tampered payload fails",
+      "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJ3LXNhLXNpZ25pbmc6djEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9ydW4tZW52ZWxvcGUramNzIn0.eyJhcHByb3ZlZEF0IjoiMjAyNi0xMC0yOVQxMDowMDowMC4wMDBaIiwiYXBwcm92ZWRQbGFuVmVyc2lvbiI6MiwiYXBwcm92ZWRUZXN0Q2FzZUlkcyI6WyJ0Yy1hIiwidGMtYiJdLCJhcHByb3ZlcklkIjoidXNlci1hcHByb3ZlciIsImFzc2V0SWRzIjpbIjAxOTBhNWQwLTQ0NDQtNzQ0NC04NDQ0LTQ0NDQ0NDQ0NDQ0NCIsIjAxOTBhNWQwLTU1NTUtNzU1NS04NTU1LTU1NTU1NTU1NTU1NSJdLCJidWRnZXRzIjp7ImNvc3RDYXBVc2QiOjEwLCJtYXhEdXJhdGlvbk1zIjozNjAwMDAwLCJtYXhSZXF1ZXN0cyI6MTAwMH0sImVudmVsb3BlVmVyc2lvbiI6MSwibWF4SW50cnVzaXZlbmVzcyI6InBhc3NpdmUiLCJydW5JZCI6InJ1bl8wMWpiejNrNnc4ZjVyNHQybjlxN3gwbTFhYiIsInJ1bldpbmRvd0VuZHNBdCI6IjIwMjYtMTAtMjlUMTI6MDA6MDAuMDAwWiIsInNhRXhwaXJlc0F0IjoiMjAyNi0xMC0yOVQxODowMDowMC4wMDBaIiwic2FJZCI6IjAxOTBhNWQwLTMzMzMtNzMzMy04MzMzLTMzMzMzMzMzMzMzMyIsInNjb3BlUnVsZXMiOnsicnVsZXMiOlt7ImVmZmVjdCI6ImluY2x1ZGUiLCJob3N0IjoiYXBwLmxhYi50ZXN0In0seyJlZmZlY3QiOiJleGNsdWRlIiwiaG9zdCI6ImFkbWluLmxhYi50ZXN0In1dfSwidGVuYW50SWQiOiIwMTkwYTVkMC0xMTExLTcxMTEtODExMS0xMTExMTExMTExMTEiLCJ0ZXN0V2luZG93cyI6W3siY3JvbiI6IjAgKiAqICogKiIsImR1cmF0aW9uTXMiOjM2MDAwMDAsInRpbWV6b25lIjoiVVRDIn1dfQ.CpDydAq7r_WdmYhGOtFSZiV8bRtZzEob4LZS6o43SzfS_b__KybAo5cF-sIaPoSR9hm4N2Whpwk94t7NlqLHCg",
+      "now": "2026-10-29T10:00:00.000Z",
+      "expect": {
+        "ok": false,
+        "code": "ENVELOPE_VERIFICATION_FAILED"
+      }
+    },
+    {
+      "name": "tampered signature fails",
+      "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJ3LXNhLXNpZ25pbmc6djEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9ydW4tZW52ZWxvcGUramNzIn0.eyJhcHByb3ZlZEF0IjoiMjAyNi0xMC0yOVQxMDowMDowMC4wMDBaIiwiYXBwcm92ZWRQbGFuVmVyc2lvbiI6MiwiYXBwcm92ZWRUZXN0Q2FzZUlkcyI6WyJ0Yy1hIiwidGMtYiJdLCJhcHByb3ZlcklkIjoidXNlci1hcHByb3ZlciIsImFzc2V0SWRzIjpbIjAxOTBhNWQwLTQ0NDQtNzQ0NC04NDQ0LTQ0NDQ0NDQ0NDQ0NCIsIjAxOTBhNWQwLTU1NTUtNzU1NS04NTU1LTU1NTU1NTU1NTU1NSJdLCJidWRnZXRzIjp7ImNvc3RDYXBVc2QiOjEwLCJtYXhEdXJhdGlvbk1zIjozNjAwMDAwLCJtYXhSZXF1ZXN0cyI6MTAwMH0sImVudmVsb3BlVmVyc2lvbiI6MSwibWF4SW50cnVzaXZlbmVzcyI6ImFjdGl2ZV9zYWZlIiwicnVuSWQiOiJydW5fMDFqYnozazZ3OGY1cjR0Mm45cTd4MG0xYWIiLCJydW5XaW5kb3dFbmRzQXQiOiIyMDI2LTEwLTI5VDEyOjAwOjAwLjAwMFoiLCJzYUV4cGlyZXNBdCI6IjIwMjYtMTAtMjlUMTg6MDA6MDAuMDAwWiIsInNhSWQiOiIwMTkwYTVkMC0zMzMzLTczMzMtODMzMy0zMzMzMzMzMzMzMzMiLCJzY29wZVJ1bGVzIjp7InJ1bGVzIjpbeyJlZmZlY3QiOiJpbmNsdWRlIiwiaG9zdCI6ImFwcC5sYWIudGVzdCJ9LHsiZWZmZWN0IjoiZXhjbHVkZSIsImhvc3QiOiJhZG1pbi5sYWIudGVzdCJ9XX0sInRlbmFudElkIjoiMDE5MGE1ZDAtMTExMS03MTExLTgxMTEtMTExMTExMTExMTExIiwidGVzdFdpbmRvd3MiOlt7ImNyb24iOiIwICogKiAqICoiLCJkdXJhdGlvbk1zIjozNjAwMDAwLCJ0aW1lem9uZSI6IlVUQyJ9XX0.AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ",
+      "now": "2026-10-29T10:00:00.000Z",
+      "expect": {
+        "ok": false,
+        "code": "ENVELOPE_VERIFICATION_FAILED"
+      }
+    },
+    {
+      "name": "token of another envelope type fails",
+      "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJ3LXNhLXNpZ25pbmc6djEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9zYS1lbnZlbG9wZStqY3MifQ.eyJhcHByb3ZlZEF0IjoiMjAyNi0xMC0yOVQxMDowMDowMC4wMDBaIiwiYXBwcm92ZWRQbGFuVmVyc2lvbiI6MiwiYXBwcm92ZWRUZXN0Q2FzZUlkcyI6WyJ0Yy1hIiwidGMtYiJdLCJhcHByb3ZlcklkIjoidXNlci1hcHByb3ZlciIsImFzc2V0SWRzIjpbIjAxOTBhNWQwLTQ0NDQtNzQ0NC04NDQ0LTQ0NDQ0NDQ0NDQ0NCIsIjAxOTBhNWQwLTU1NTUtNzU1NS04NTU1LTU1NTU1NTU1NTU1NSJdLCJidWRnZXRzIjp7ImNvc3RDYXBVc2QiOjEwLCJtYXhEdXJhdGlvbk1zIjozNjAwMDAwLCJtYXhSZXF1ZXN0cyI6MTAwMH0sImVudmVsb3BlVmVyc2lvbiI6MSwibWF4SW50cnVzaXZlbmVzcyI6ImFjdGl2ZV9zYWZlIiwicnVuSWQiOiJydW5fMDFqYnozazZ3OGY1cjR0Mm45cTd4MG0xYWIiLCJydW5XaW5kb3dFbmRzQXQiOiIyMDI2LTEwLTI5VDEyOjAwOjAwLjAwMFoiLCJzYUV4cGlyZXNBdCI6IjIwMjYtMTAtMjlUMTg6MDA6MDAuMDAwWiIsInNhSWQiOiIwMTkwYTVkMC0zMzMzLTczMzMtODMzMy0zMzMzMzMzMzMzMzMiLCJzY29wZVJ1bGVzIjp7InJ1bGVzIjpbeyJlZmZlY3QiOiJpbmNsdWRlIiwiaG9zdCI6ImFwcC5sYWIudGVzdCJ9LHsiZWZmZWN0IjoiZXhjbHVkZSIsImhvc3QiOiJhZG1pbi5sYWIudGVzdCJ9XX0sInRlbmFudElkIjoiMDE5MGE1ZDAtMTExMS03MTExLTgxMTEtMTExMTExMTExMTExIiwidGVzdFdpbmRvd3MiOlt7ImNyb24iOiIwICogKiAqICoiLCJkdXJhdGlvbk1zIjozNjAwMDAwLCJ0aW1lem9uZSI6IlVUQyJ9XX0.AVtWnoy7EVX4TgvFJfzw-HxYJWeniELC7qSMtbmt901Kx_aEi-O7KJ2dIXkzU9INfEEOcZsT3CLZ42AtxROWCA",
+      "now": "2026-10-29T10:00:00.000Z",
+      "expect": {
+        "ok": false,
+        "code": "ENVELOPE_VERIFICATION_FAILED"
+      }
+    },
+    {
+      "name": "approval beyond the clock skew fails",
+      "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJ3LXNhLXNpZ25pbmc6djEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9ydW4tZW52ZWxvcGUramNzIn0.eyJhcHByb3ZlZEF0IjoiMjAyNi0xMC0yOVQxMDowMDowMC4wMDBaIiwiYXBwcm92ZWRQbGFuVmVyc2lvbiI6MiwiYXBwcm92ZWRUZXN0Q2FzZUlkcyI6WyJ0Yy1hIiwidGMtYiJdLCJhcHByb3ZlcklkIjoidXNlci1hcHByb3ZlciIsImFzc2V0SWRzIjpbIjAxOTBhNWQwLTQ0NDQtNzQ0NC04NDQ0LTQ0NDQ0NDQ0NDQ0NCIsIjAxOTBhNWQwLTU1NTUtNzU1NS04NTU1LTU1NTU1NTU1NTU1NSJdLCJidWRnZXRzIjp7ImNvc3RDYXBVc2QiOjEwLCJtYXhEdXJhdGlvbk1zIjozNjAwMDAwLCJtYXhSZXF1ZXN0cyI6MTAwMH0sImVudmVsb3BlVmVyc2lvbiI6MSwibWF4SW50cnVzaXZlbmVzcyI6ImFjdGl2ZV9zYWZlIiwicnVuSWQiOiJydW5fMDFqYnozazZ3OGY1cjR0Mm45cTd4MG0xYWIiLCJydW5XaW5kb3dFbmRzQXQiOiIyMDI2LTEwLTI5VDEyOjAwOjAwLjAwMFoiLCJzYUV4cGlyZXNBdCI6IjIwMjYtMTAtMjlUMTg6MDA6MDAuMDAwWiIsInNhSWQiOiIwMTkwYTVkMC0zMzMzLTczMzMtODMzMy0zMzMzMzMzMzMzMzMiLCJzY29wZVJ1bGVzIjp7InJ1bGVzIjpbeyJlZmZlY3QiOiJpbmNsdWRlIiwiaG9zdCI6ImFwcC5sYWIudGVzdCJ9LHsiZWZmZWN0IjoiZXhjbHVkZSIsImhvc3QiOiJhZG1pbi5sYWIudGVzdCJ9XX0sInRlbmFudElkIjoiMDE5MGE1ZDAtMTExMS03MTExLTgxMTEtMTExMTExMTExMTExIiwidGVzdFdpbmRvd3MiOlt7ImNyb24iOiIwICogKiAqICoiLCJkdXJhdGlvbk1zIjozNjAwMDAwLCJ0aW1lem9uZSI6IlVUQyJ9XX0.CpDydAq7r_WdmYhGOtFSZiV8bRtZzEob4LZS6o43SzfS_b__KybAo5cF-sIaPoSR9hm4N2Whpwk94t7NlqLHCg",
+      "now": "2026-10-29T09:59:29.000Z",
+      "expect": {
+        "ok": false,
+        "code": "ENVELOPE_VERIFICATION_FAILED"
+      }
+    },
+    {
+      "name": "verifier clock lagging within the skew passes",
+      "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJ3LXNhLXNpZ25pbmc6djEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9ydW4tZW52ZWxvcGUramNzIn0.eyJhcHByb3ZlZEF0IjoiMjAyNi0xMC0yOVQxMDowMDowMC4wMDBaIiwiYXBwcm92ZWRQbGFuVmVyc2lvbiI6MiwiYXBwcm92ZWRUZXN0Q2FzZUlkcyI6WyJ0Yy1hIiwidGMtYiJdLCJhcHByb3ZlcklkIjoidXNlci1hcHByb3ZlciIsImFzc2V0SWRzIjpbIjAxOTBhNWQwLTQ0NDQtNzQ0NC04NDQ0LTQ0NDQ0NDQ0NDQ0NCIsIjAxOTBhNWQwLTU1NTUtNzU1NS04NTU1LTU1NTU1NTU1NTU1NSJdLCJidWRnZXRzIjp7ImNvc3RDYXBVc2QiOjEwLCJtYXhEdXJhdGlvbk1zIjozNjAwMDAwLCJtYXhSZXF1ZXN0cyI6MTAwMH0sImVudmVsb3BlVmVyc2lvbiI6MSwibWF4SW50cnVzaXZlbmVzcyI6ImFjdGl2ZV9zYWZlIiwicnVuSWQiOiJydW5fMDFqYnozazZ3OGY1cjR0Mm45cTd4MG0xYWIiLCJydW5XaW5kb3dFbmRzQXQiOiIyMDI2LTEwLTI5VDEyOjAwOjAwLjAwMFoiLCJzYUV4cGlyZXNBdCI6IjIwMjYtMTAtMjlUMTg6MDA6MDAuMDAwWiIsInNhSWQiOiIwMTkwYTVkMC0zMzMzLTczMzMtODMzMy0zMzMzMzMzMzMzMzMiLCJzY29wZVJ1bGVzIjp7InJ1bGVzIjpbeyJlZmZlY3QiOiJpbmNsdWRlIiwiaG9zdCI6ImFwcC5sYWIudGVzdCJ9LHsiZWZmZWN0IjoiZXhjbHVkZSIsImhvc3QiOiJhZG1pbi5sYWIudGVzdCJ9XX0sInRlbmFudElkIjoiMDE5MGE1ZDAtMTExMS03MTExLTgxMTEtMTExMTExMTExMTExIiwidGVzdFdpbmRvd3MiOlt7ImNyb24iOiIwICogKiAqICoiLCJkdXJhdGlvbk1zIjozNjAwMDAwLCJ0aW1lem9uZSI6IlVUQyJ9XX0.CpDydAq7r_WdmYhGOtFSZiV8bRtZzEob4LZS6o43SzfS_b__KybAo5cF-sIaPoSR9hm4N2Whpwk94t7NlqLHCg",
+      "now": "2026-10-29T09:59:30.000Z",
+      "expect": {
+        "ok": true
+      }
+    },
+    {
+      "name": "SA expired at verification time fails",
+      "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJ3LXNhLXNpZ25pbmc6djEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9ydW4tZW52ZWxvcGUramNzIn0.eyJhcHByb3ZlZEF0IjoiMjAyNi0xMC0yOVQxMDowMDowMC4wMDBaIiwiYXBwcm92ZWRQbGFuVmVyc2lvbiI6MiwiYXBwcm92ZWRUZXN0Q2FzZUlkcyI6WyJ0Yy1hIiwidGMtYiJdLCJhcHByb3ZlcklkIjoidXNlci1hcHByb3ZlciIsImFzc2V0SWRzIjpbIjAxOTBhNWQwLTQ0NDQtNzQ0NC04NDQ0LTQ0NDQ0NDQ0NDQ0NCIsIjAxOTBhNWQwLTU1NTUtNzU1NS04NTU1LTU1NTU1NTU1NTU1NSJdLCJidWRnZXRzIjp7ImNvc3RDYXBVc2QiOjEwLCJtYXhEdXJhdGlvbk1zIjozNjAwMDAwLCJtYXhSZXF1ZXN0cyI6MTAwMH0sImVudmVsb3BlVmVyc2lvbiI6MSwibWF4SW50cnVzaXZlbmVzcyI6ImFjdGl2ZV9zYWZlIiwicnVuSWQiOiJydW5fMDFqYnozazZ3OGY1cjR0Mm45cTd4MG0xYWIiLCJydW5XaW5kb3dFbmRzQXQiOiIyMDI2LTEwLTI5VDEyOjAwOjAwLjAwMFoiLCJzYUV4cGlyZXNBdCI6IjIwMjYtMTAtMjlUMTg6MDA6MDAuMDAwWiIsInNhSWQiOiIwMTkwYTVkMC0zMzMzLTczMzMtODMzMy0zMzMzMzMzMzMzMzMiLCJzY29wZVJ1bGVzIjp7InJ1bGVzIjpbeyJlZmZlY3QiOiJpbmNsdWRlIiwiaG9zdCI6ImFwcC5sYWIudGVzdCJ9LHsiZWZmZWN0IjoiZXhjbHVkZSIsImhvc3QiOiJhZG1pbi5sYWIudGVzdCJ9XX0sInRlbmFudElkIjoiMDE5MGE1ZDAtMTExMS03MTExLTgxMTEtMTExMTExMTExMTExIiwidGVzdFdpbmRvd3MiOlt7ImNyb24iOiIwICogKiAqICoiLCJkdXJhdGlvbk1zIjozNjAwMDAwLCJ0aW1lem9uZSI6IlVUQyJ9XX0.CpDydAq7r_WdmYhGOtFSZiV8bRtZzEob4LZS6o43SzfS_b__KybAo5cF-sIaPoSR9hm4N2Whpwk94t7NlqLHCg",
+      "now": "2026-10-29T18:00:00.000Z",
+      "expect": {
+        "ok": false,
+        "code": "ENVELOPE_SA_EXPIRED"
+      }
+    },
+    {
+      "name": "SA expiry is applied early by the skew",
+      "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJ3LXNhLXNpZ25pbmc6djEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9ydW4tZW52ZWxvcGUramNzIn0.eyJhcHByb3ZlZEF0IjoiMjAyNi0xMC0yOVQxMDowMDowMC4wMDBaIiwiYXBwcm92ZWRQbGFuVmVyc2lvbiI6MiwiYXBwcm92ZWRUZXN0Q2FzZUlkcyI6WyJ0Yy1hIiwidGMtYiJdLCJhcHByb3ZlcklkIjoidXNlci1hcHByb3ZlciIsImFzc2V0SWRzIjpbIjAxOTBhNWQwLTQ0NDQtNzQ0NC04NDQ0LTQ0NDQ0NDQ0NDQ0NCIsIjAxOTBhNWQwLTU1NTUtNzU1NS04NTU1LTU1NTU1NTU1NTU1NSJdLCJidWRnZXRzIjp7ImNvc3RDYXBVc2QiOjEwLCJtYXhEdXJhdGlvbk1zIjozNjAwMDAwLCJtYXhSZXF1ZXN0cyI6MTAwMH0sImVudmVsb3BlVmVyc2lvbiI6MSwibWF4SW50cnVzaXZlbmVzcyI6ImFjdGl2ZV9zYWZlIiwicnVuSWQiOiJydW5fMDFqYnozazZ3OGY1cjR0Mm45cTd4MG0xYWIiLCJydW5XaW5kb3dFbmRzQXQiOiIyMDI2LTEwLTI5VDEyOjAwOjAwLjAwMFoiLCJzYUV4cGlyZXNBdCI6IjIwMjYtMTAtMjlUMTg6MDA6MDAuMDAwWiIsInNhSWQiOiIwMTkwYTVkMC0zMzMzLTczMzMtODMzMy0zMzMzMzMzMzMzMzMiLCJzY29wZVJ1bGVzIjp7InJ1bGVzIjpbeyJlZmZlY3QiOiJpbmNsdWRlIiwiaG9zdCI6ImFwcC5sYWIudGVzdCJ9LHsiZWZmZWN0IjoiZXhjbHVkZSIsImhvc3QiOiJhZG1pbi5sYWIudGVzdCJ9XX0sInRlbmFudElkIjoiMDE5MGE1ZDAtMTExMS03MTExLTgxMTEtMTExMTExMTExMTExIiwidGVzdFdpbmRvd3MiOlt7ImNyb24iOiIwICogKiAqICoiLCJkdXJhdGlvbk1zIjozNjAwMDAwLCJ0aW1lem9uZSI6IlVUQyJ9XX0.CpDydAq7r_WdmYhGOtFSZiV8bRtZzEob4LZS6o43SzfS_b__KybAo5cF-sIaPoSR9hm4N2Whpwk94t7NlqLHCg",
+      "now": "2026-10-29T17:59:50.000Z",
+      "expect": {
+        "ok": false,
+        "code": "ENVELOPE_SA_EXPIRED"
+      }
+    },
+    {
+      "name": "run window closed at verification time fails",
+      "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImJ3LXNhLXNpZ25pbmc6djEiLCJ0eXAiOiJhcHBsaWNhdGlvbi9ydW4tZW52ZWxvcGUramNzIn0.eyJhcHByb3ZlZEF0IjoiMjAyNi0xMC0yOVQxMDowMDowMC4wMDBaIiwiYXBwcm92ZWRQbGFuVmVyc2lvbiI6MiwiYXBwcm92ZWRUZXN0Q2FzZUlkcyI6WyJ0Yy1hIiwidGMtYiJdLCJhcHByb3ZlcklkIjoidXNlci1hcHByb3ZlciIsImFzc2V0SWRzIjpbIjAxOTBhNWQwLTQ0NDQtNzQ0NC04NDQ0LTQ0NDQ0NDQ0NDQ0NCIsIjAxOTBhNWQwLTU1NTUtNzU1NS04NTU1LTU1NTU1NTU1NTU1NSJdLCJidWRnZXRzIjp7ImNvc3RDYXBVc2QiOjEwLCJtYXhEdXJhdGlvbk1zIjozNjAwMDAwLCJtYXhSZXF1ZXN0cyI6MTAwMH0sImVudmVsb3BlVmVyc2lvbiI6MSwibWF4SW50cnVzaXZlbmVzcyI6ImFjdGl2ZV9zYWZlIiwicnVuSWQiOiJydW5fMDFqYnozazZ3OGY1cjR0Mm45cTd4MG0xYWIiLCJydW5XaW5kb3dFbmRzQXQiOiIyMDI2LTEwLTI5VDEyOjAwOjAwLjAwMFoiLCJzYUV4cGlyZXNBdCI6IjIwMjYtMTAtMjlUMTg6MDA6MDAuMDAwWiIsInNhSWQiOiIwMTkwYTVkMC0zMzMzLTczMzMtODMzMy0zMzMzMzMzMzMzMzMiLCJzY29wZVJ1bGVzIjp7InJ1bGVzIjpbeyJlZmZlY3QiOiJpbmNsdWRlIiwiaG9zdCI6ImFwcC5sYWIudGVzdCJ9LHsiZWZmZWN0IjoiZXhjbHVkZSIsImhvc3QiOiJhZG1pbi5sYWIudGVzdCJ9XX0sInRlbmFudElkIjoiMDE5MGE1ZDAtMTExMS03MTExLTgxMTEtMTExMTExMTExMTExIiwidGVzdFdpbmRvd3MiOlt7ImNyb24iOiIwICogKiAqICoiLCJkdXJhdGlvbk1zIjozNjAwMDAwLCJ0aW1lem9uZSI6IlVUQyJ9XX0.CpDydAq7r_WdmYhGOtFSZiV8bRtZzEob4LZS6o43SzfS_b__KybAo5cF-sIaPoSR9hm4N2Whpwk94t7NlqLHCg",
+      "now": "2026-10-29T12:00:00.000Z",
+      "expect": {
+        "ok": false,
+        "code": "ENVELOPE_WINDOW_CLOSED"
+      }
+    }
+  ]
+}

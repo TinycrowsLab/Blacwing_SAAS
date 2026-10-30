@@ -121,6 +121,14 @@ export {
   type TransitionResult,
 } from './run/state.js';
 
+export {
+  buildRunEnvelope,
+  DEFAULT_CLOCK_SKEW_SECONDS,
+  type SignedRunEnvelope,
+  signRunEnvelope,
+  verifyRunEnvelope,
+} from './run/envelope.js';
+
 export { type DiffablePlan, diffPlans } from './test-plans/diff.js';
 
 export { InvalidSurfaceInputError, SurfaceBatchTooLargeError } from './surface/errors.js';

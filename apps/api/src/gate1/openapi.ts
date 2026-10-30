@@ -38,6 +38,11 @@ const GATE1_DECISION_ERRORS = [
   'GATE1_NOT_PENDING',
   'GATE1_PLAN_STALE',
   'GATE1_EXPIRED',
+  'ENVELOPE_SA_EXPIRED',
+  'ENVELOPE_WINDOW_CLOSED',
+  'ENVELOPE_TOO_LARGE',
+  'ENVELOPE_VERIFICATION_FAILED',
+  'AUTHZ_SIGNER_UNAVAILABLE',
   'TEMPORAL_UNAVAILABLE',
   'TENANT_CONTEXT_MISSING',
   'RATE_LIMITED',
@@ -146,7 +151,7 @@ export function gate1OpenApiModule(): {
           operationId: 'decideGate1',
           summary: 'Approve, request changes to, or reject a test plan',
           description:
-            'Requires testplan:approve and an Idempotency-Key. The requester may not decide their own plan (403 SOD_VIOLATION). `planVersion` must be the version reviewed (409 GATE1_PLAN_STALE otherwise). A replay with the same key and body answers the first result.',
+            'Requires testplan:approve and an Idempotency-Key. The requester may not decide their own plan (403 SOD_VIOLATION). `planVersion` must be the version reviewed (409 GATE1_PLAN_STALE otherwise). A replay with the same key and body answers the first result. An approval also signs the run envelope (#399): 409 ENVELOPE_SA_EXPIRED or ENVELOPE_WINDOW_CLOSED when the standing authorisation or the run window has ended, and 503 AUTHZ_SIGNER_UNAVAILABLE when the signer is down. Each refusal records nothing, so the approval can be retried.',
           security: [{ bearerAuth: [] }, { sessionCookie: [] }],
           parameters: [
             runIdParameter,

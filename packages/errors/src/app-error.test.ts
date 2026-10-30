@@ -349,6 +349,11 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'GATE2_ALREADY_DECIDED',
   'GATE2_SOD_VIOLATION',
   'GATE2_DESTRUCTIVE_FORBIDDEN',
+  // Run envelope, @blackwing/domain (#399): thrown as plain AppError by buildRunEnvelope and verifyRunEnvelope.
+  'ENVELOPE_SA_EXPIRED',
+  'ENVELOPE_WINDOW_CLOSED',
+  'ENVELOPE_TOO_LARGE',
+  'ENVELOPE_VERIFICATION_FAILED',
 ];
 
 describe('AppError subclasses', () => {

@@ -274,7 +274,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -328,6 +328,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -930,7 +950,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -984,6 +1004,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -1477,7 +1517,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1531,6 +1571,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -1729,7 +1789,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1763,6 +1823,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -2247,7 +2317,8 @@
                 "graph.surface.upserted",
                 "notification.channel_changed",
                 "notification.requested",
-                "notification.unrouted"
+                "notification.unrouted",
+                "run.envelope_signed"
               ]
             },
             "example": "kill.fired"
@@ -2570,7 +2641,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2624,6 +2695,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -3198,7 +3289,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3252,6 +3343,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -3727,7 +3838,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3781,6 +3892,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -4596,7 +4727,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4650,6 +4781,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -4848,7 +4999,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -4882,6 +5033,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -5209,7 +5370,7 @@
         "tags": ["gate1"],
         "operationId": "decideGate1",
         "summary": "Approve, request changes to, or reject a test plan",
-        "description": "Requires testplan:approve and an Idempotency-Key. The requester may not decide their own plan (403 SOD_VIOLATION). `planVersion` must be the version reviewed (409 GATE1_PLAN_STALE otherwise). A replay with the same key and body answers the first result.",
+        "description": "Requires testplan:approve and an Idempotency-Key. The requester may not decide their own plan (403 SOD_VIOLATION). `planVersion` must be the version reviewed (409 GATE1_PLAN_STALE otherwise). A replay with the same key and body answers the first result. An approval also signs the run envelope (#399): 409 ENVELOPE_SA_EXPIRED or ENVELOPE_WINDOW_CLOSED when the standing authorisation or the run window has ended, and 503 AUTHZ_SIGNER_UNAVAILABLE when the signer is down. Each refusal records nothing, so the approval can be retried.",
         "security": [
           {
             "bearerAuth": []
@@ -5384,7 +5545,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED.",
+            "description": "Problem details; code is one of GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5420,13 +5581,55 @@
                       "code": "GATE1_EXPIRED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Problem details; code is one of ENVELOPE_TOO_LARGE.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "ENVELOPE_TOO_LARGE": {
+                    "summary": "Run envelope too large",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_TOO_LARGE",
+                      "title": "Run envelope too large",
+                      "status": 413,
+                      "code": "ENVELOPE_TOO_LARGE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
                   }
                 }
               }
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, IDEMPOTENCY_KEY_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, IDEMPOTENCY_KEY_MISMATCH, ENVELOPE_VERIFICATION_FAILED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5450,6 +5653,16 @@
                       "title": "Idempotency key reused with a different request",
                       "status": 422,
                       "code": "IDEMPOTENCY_KEY_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -5480,13 +5693,23 @@
             }
           },
           "503": {
-            "description": "Problem details; code is one of TEMPORAL_UNAVAILABLE.",
+            "description": "Problem details; code is one of AUTHZ_SIGNER_UNAVAILABLE, TEMPORAL_UNAVAILABLE.",
             "content": {
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 },
                 "examples": {
+                  "AUTHZ_SIGNER_UNAVAILABLE": {
+                    "summary": "Authorisation signer unavailable",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SIGNER_UNAVAILABLE",
+                      "title": "Authorisation signer unavailable",
+                      "status": 503,
+                      "code": "AUTHZ_SIGNER_UNAVAILABLE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
                   "TEMPORAL_UNAVAILABLE": {
                     "summary": "Temporal unavailable",
                     "value": {
@@ -5796,7 +6019,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5850,6 +6073,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -6048,7 +6291,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6082,6 +6325,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -6676,7 +6929,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6730,6 +6983,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -7314,7 +7587,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7368,6 +7641,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -7983,7 +8276,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8037,6 +8330,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -8881,7 +9194,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -8935,6 +9248,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -9743,7 +10076,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -9797,6 +10130,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -10656,7 +11009,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -10710,6 +11063,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -10908,7 +11281,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -10942,6 +11315,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -11919,7 +12302,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -11973,6 +12356,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -12203,7 +12606,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12237,6 +12640,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -12868,7 +13281,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12922,6 +13335,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -13120,7 +13553,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13154,6 +13587,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -13873,7 +14316,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -13927,6 +14370,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -14855,7 +15318,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14909,6 +15372,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -15107,7 +15590,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15141,6 +15624,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -16135,7 +16628,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -16189,6 +16682,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -16985,7 +17498,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -17039,6 +17552,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -17237,7 +17770,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -17271,6 +17804,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -18269,7 +18812,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -18323,6 +18866,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -18531,7 +19094,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -18565,6 +19128,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -20277,7 +20850,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -20331,6 +20904,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -20539,7 +21132,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -20573,6 +21166,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -21277,7 +21880,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -21331,6 +21934,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -21956,7 +22579,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -22010,6 +22633,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -25701,7 +26344,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -25755,6 +26398,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -26325,7 +26988,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -26379,6 +27042,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -26577,7 +27260,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -26611,6 +27294,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -32497,7 +33190,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -32551,6 +33244,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -32749,7 +33462,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -32783,6 +33496,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -33331,7 +34054,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -33385,6 +34108,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -33583,7 +34326,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -33617,6 +34360,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -34178,7 +34931,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -34232,6 +34985,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -34430,7 +35203,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -34464,6 +35237,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -35492,7 +36275,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -35546,6 +36329,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -35744,7 +36547,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -35778,6 +36581,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -36896,7 +37709,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -36950,6 +37763,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -37148,7 +37981,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -37182,6 +38015,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -37789,7 +38632,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -37823,6 +38666,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -38460,7 +39313,7 @@
             }
           },
           "409": {
-            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
+            "description": "Problem details; code is one of CONFLICT, ILLEGAL_RUN_TRANSITION, GATE1_NOT_PENDING, GATE1_PLAN_STALE, GATE1_EXPIRED, ENVELOPE_SA_EXPIRED, ENVELOPE_WINDOW_CLOSED, AUTHZ_ILLEGAL_TRANSITION, AUTHZ_NOT_DRAFT, KEK_DISABLED, DB_SERIALIZATION_CONFLICT, KILL_ALREADY_IN_PROGRESS, GATE2_NO_ELIGIBLE_APPROVER, RUN_NOT_ACTIVE, INVALID_TRANSITION, SECRET_DISABLED, ASSET_STALE_WRITE, ASSET_IN_USE, ASSET_VERIFICATION_ILLEGAL_TRANSITION, CHANNEL_NAME_CONFLICT, CHANNEL_SECRET_UNAVAILABLE, CHANNEL_REFERENCED, KEYCLOAK_CONFLICT, PLAN_VERSION_IMMUTABLE, GATE2_ILLEGAL_TRANSITION, GATE2_ALREADY_DECIDED.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -38514,6 +39367,26 @@
                       "title": "Approval window expired",
                       "status": 409,
                       "code": "GATE1_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_SA_EXPIRED": {
+                    "summary": "Standing authorisation expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_SA_EXPIRED",
+                      "title": "Standing authorisation expired",
+                      "status": 409,
+                      "code": "ENVELOPE_SA_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_WINDOW_CLOSED": {
+                    "summary": "Run window closed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_WINDOW_CLOSED",
+                      "title": "Run window closed",
+                      "status": 409,
+                      "code": "ENVELOPE_WINDOW_CLOSED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -38712,7 +39585,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -38746,6 +39619,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -39360,7 +40243,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -39394,6 +40277,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -40063,7 +40956,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -40097,6 +40990,16 @@
                       "title": "Test plan failed validation",
                       "status": 422,
                       "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   },
@@ -41466,7 +42369,8 @@
               "graph.surface.upserted",
               "notification.channel_changed",
               "notification.requested",
-              "notification.unrouted"
+              "notification.unrouted",
+              "run.envelope_signed"
             ]
           },
           "severity": {

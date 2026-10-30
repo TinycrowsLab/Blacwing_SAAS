@@ -129,6 +129,7 @@ const RELEASED_ACTIONS = [
   'notification.unrouted',
   'finding.rejected',
   'finding.marked_duplicate',
+  'run.envelope_signed',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

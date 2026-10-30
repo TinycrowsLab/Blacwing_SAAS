@@ -35,13 +35,14 @@ export function signJws(payload: unknown, signer: JwsSigner): string {
  * Verifies a compact JWS and returns its payload and `kid`, or `null` for ANY defect (malformed,
  * wrong algorithm, unknown key, bad signature, non-canonical payload). One answer for every failure,
  * so a caller cannot become an oracle. It checks the signature only; claims such as `exp` are the
- * caller's.
+ * caller's. `maxBytes` caps the token before parsing; a larger envelope type passes its own cap.
  */
 export function verifyJws(
   token: string,
   resolveKey: JwsKeyResolver,
+  maxBytes = MAX_JWS_BYTES,
 ): { readonly payload: unknown; readonly kid: string } | null {
-  if (token.length > MAX_JWS_BYTES) return null;
+  if (token.length > maxBytes) return null;
   const parts = token.split('.');
   if (parts.length !== JWS_PARTS) return null;
   const [header, body, signature] = parts as [string, string, string];
@@ -153,4 +154,26 @@ export function ed25519Jwk(kid: string, rawPublicKey: Uint8Array): Ed25519Jwk {
     alg: SA_JWS_ALG,
     use: 'sig',
   };
+}
+
+/**
+ * Attached JWS for run envelopes (#399). The payload is the canonical bytes themselves, so a verifier
+ * recovers the envelope from the token alone and `verifyJws` re-checks that the payload is canonical.
+ * The signature covers `header.payload`, the same signing input as the detached form above, so the
+ * same signer serves both. `typ` names the envelope kind, so a token of one kind is never read as another.
+ */
+export async function signCanonicalJws(
+  canonicalBytes: Uint8Array,
+  key: EnvelopeSigningKey,
+  typ: string,
+): Promise<string> {
+  const header = b64u(
+    new TextEncoder().encode(JSON.stringify({ alg: SA_JWS_ALG, kid: key.kid, typ })),
+  );
+  const payload = b64u(canonicalBytes);
+  const signature = await key.sign(new TextEncoder().encode(`${header}.${payload}`));
+  if (signature.byteLength !== ED25519_SIGNATURE_BYTES) {
+    throw new RangeError('signCanonicalJws: signer did not return a 64-byte Ed25519 signature');
+  }
+  return `${header}.${payload}.${b64u(signature)}`;
 }

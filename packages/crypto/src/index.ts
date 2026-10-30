@@ -22,6 +22,7 @@ export {
   publicKeyOf,
   SA_ENVELOPE_TYP,
   SA_JWS_ALG,
+  signCanonicalJws,
   signEnvelope,
   signJws,
   verifyJws,

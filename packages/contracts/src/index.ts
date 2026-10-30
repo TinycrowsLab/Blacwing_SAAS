@@ -328,6 +328,12 @@ export {
   canTransitionAssessmentRequest,
 } from './entities/assessment-request.js';
 export {
+  RUN_ENVELOPE_MAX_BYTES,
+  RUN_ENVELOPE_TYP,
+  type RunEnvelope,
+  runEnvelopeSchema,
+} from './entities/run-envelope.js';
+export {
   projectSaEnvelope,
   SA_ENVELOPE_VERSION,
   type SaEnvelope,

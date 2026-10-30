@@ -2,6 +2,7 @@ import type {
   Gate1AuditRecord,
   Gate1AuditSink,
   Gate1DecisionWrite,
+  Gate1PinnedEnvelope,
   Gate1RunRecord,
   Gate1Store,
   Gate1StoredDecision,
@@ -78,10 +79,13 @@ export class InMemoryGate1Store implements Gate1Store {
     if (run.plan.planVersion !== write.expectedPlanVersion) {
       return Promise.resolve({ kind: 'plan_stale', planVersion: run.plan.planVersion });
     }
+    // An approval pins its envelope in the same critical section as the state change (#399, §8.9).
+    const pinned = write.envelope ?? run.pinnedEnvelope ?? null;
     this.runs.set(runKey(write.tenantId, write.runId), {
       ...run,
       state: write.nextState,
       stateVersion: write.nextStateVersion,
+      pinnedEnvelope: pinned,
     });
     this.decisions.set(decisionKey(write.tenantId, write.idempotency.key), {
       key: write.idempotency.key,
@@ -89,6 +93,10 @@ export class InMemoryGate1Store implements Gate1Store {
       response: write.response,
     });
     return Promise.resolve({ kind: 'decided', response: write.response });
+  }
+
+  getPinnedEnvelope(tenantId: string, runId: string): Promise<Gate1PinnedEnvelope | null> {
+    return Promise.resolve(this.runs.get(runKey(tenantId, runId))?.pinnedEnvelope ?? null);
   }
 }
 

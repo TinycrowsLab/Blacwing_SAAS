@@ -13,13 +13,17 @@ import {
   type Gate1PlanView,
   type Gate1PlanChanges,
   type Gate1SubmitResponse,
+  type RunEnvelope,
 } from '@blackwing/contracts';
 import {
   applyTransition,
+  buildRunEnvelope,
   hasPermission,
   IllegalRunEventError,
   type RunEvent,
   type RunStatus,
+  type SignedRunEnvelope,
+  signRunEnvelope,
 } from '@blackwing/domain';
 import {
   AppError,
@@ -36,6 +40,8 @@ import { TRACER_NAME } from '../bootstrap/request-context.js';
 import type {
   Gate1AuditRecord,
   Gate1AuditSink,
+  Gate1EnvelopeSigner,
+  Gate1PinnedEnvelope,
   Gate1Plan,
   Gate1PlanValidator,
   Gate1PolicyEngine,
@@ -48,6 +54,11 @@ import type {
 
 /** Span of one Gate 1 decision (traces, CONTEXT_PACK §10). */
 const GATE1_DECISION_SPAN = 'gate1.decision';
+/** Span of building and signing the run envelope of an approval (#399). */
+const ENVELOPE_SIGN_SPAN = 'envelope.sign';
+
+/** Run envelope signing metrics (#399): `envelope_sign_total{result}`, `ok` signed, `error` refused or signer failed. */
+const noopEnvelopeMetrics: { sign(result: 'ok' | 'error'): void } = { sign: () => undefined };
 
 /** Which run event each decision drives in the run state machine (§3.3). */
 const EVENT_FOR_DECISION: Readonly<Record<Gate1Decision, RunEvent>> = {
@@ -72,7 +83,11 @@ export interface Gate1ServiceDeps {
   readonly signaler: Gate1Signaler;
   /** The Cedar copy of the separation-of-duties rule, checked after RBAC and the service check (§8.4). */
   readonly policy: Gate1PolicyEngine;
+  /** Signs the approved run envelope (#399). Required: an approval cannot be released without its envelope. */
+  readonly signer: Gate1EnvelopeSigner;
   readonly clock?: Clock;
+  /** `envelope_sign_total{result}` (#399); a no-op when omitted. */
+  readonly envelopeMetrics?: { sign(result: 'ok' | 'error'): void };
 }
 
 export interface Gate1SubmitInput {
@@ -104,6 +119,8 @@ export class Gate1Service {
   private readonly validator: Gate1PlanValidator;
   private readonly signaler: Gate1Signaler;
   private readonly policy: Gate1PolicyEngine;
+  private readonly signer: Gate1EnvelopeSigner;
+  private readonly envelopeMetrics: { sign(result: 'ok' | 'error'): void };
   private readonly clock: Clock;
   private readonly tracer = trace.getTracer(TRACER_NAME);
 
@@ -113,6 +130,8 @@ export class Gate1Service {
     this.validator = deps.validator;
     this.signaler = deps.signaler;
     this.policy = deps.policy;
+    this.signer = deps.signer;
+    this.envelopeMetrics = deps.envelopeMetrics ?? noopEnvelopeMetrics;
     this.clock = deps.clock ?? systemClock;
   }
 
@@ -328,6 +347,18 @@ export class Gate1Service {
     }
 
     const next = transitionFor(run, request.decision, principal.id);
+    // An approval signs the run envelope before anything is recorded. If the signer or the envelope is refused, the
+    // approval is refused and nothing is signalled or written, so no run can start without its signed envelope (§8.1).
+    let sealed: SignedRunEnvelope | null = null;
+    if (request.decision === 'approve') {
+      try {
+        sealed = await this.sealEnvelope(run, tenantId, principal.id, now);
+      } catch (error) {
+        await audit('denied', { code: errorCodeOf(error), decision: request.decision });
+        throw error;
+      }
+    }
+    const pinned = sealed === null ? null : pinnedOf(sealed);
     // Signal first: a decision is recorded only after the workflow acknowledges it, so a lost signal is retried with
     // the same Idempotency-Key and is never left recorded but unapplied.
     await this.signalWorkflow(
@@ -355,6 +386,7 @@ export class Gate1Service {
       reason: request.reason ?? null,
       idempotency: { key, fingerprint },
       response,
+      ...(pinned === null ? {} : { envelope: pinned }),
     });
 
     switch (outcome.kind) {
@@ -374,6 +406,23 @@ export class Gate1Service {
           },
           traceId,
         });
+        if (sealed !== null) {
+          await this.recordAudit({
+            tenantId,
+            principal,
+            runId: run.id,
+            action: 'run.envelope_signed',
+            outcome: 'success',
+            metadata: {
+              envelopeHash: sealed.envelopeHash,
+              saId: sealed.envelope.saId,
+              signingKeyId: sealed.signingKeyId,
+              envelopeVersion: sealed.envelope.envelopeVersion,
+              planVersion: run.plan.planVersion,
+            },
+            traceId,
+          });
+        }
         return outcome.response;
       case 'replayed':
         return outcome.response;
@@ -393,6 +442,63 @@ export class Gate1Service {
           'GATE1_PLAN_STALE',
           `The plan is now version ${String(outcome.planVersion)}; reload it before deciding.`,
         );
+    }
+  }
+
+  /**
+   * Builds the run envelope from the run and its standing authorisation, and signs it with the tenant signing key.
+   * The envelope is refused (not signed) when the SA has expired, the window has closed or the body is over its
+   * cap. A signer that cannot answer is `AUTHZ_SIGNER_UNAVAILABLE` (503, retryable): the approval stays pending.
+   */
+  private async sealEnvelope(
+    run: Gate1RunRecord,
+    tenantId: string,
+    approverId: string,
+    now: Date,
+  ): Promise<SignedRunEnvelope> {
+    const span = this.tracer.startSpan(ENVELOPE_SIGN_SPAN);
+    span.setAttribute('run.id', run.id);
+    try {
+      const authorisation = run.authorisation;
+      if (authorisation === null || authorisation === undefined) {
+        throw new AppError(
+          'ENVELOPE_VERIFICATION_FAILED',
+          'the run has no standing authorisation to approve under',
+          { detail: 'Approval needs a standing authorisation to sign the run envelope.' },
+        );
+      }
+      const draft: RunEnvelope = {
+        runId: run.id,
+        tenantId,
+        ...authorisation,
+        approvedTestCaseIds: run.plan.testCases.map((testCase) => testCase.id),
+        approverId,
+        approvedPlanVersion: run.plan.planVersion,
+        approvedAt: now.toISOString(),
+        envelopeVersion: (run.pinnedEnvelope?.envelopeVersion ?? 0) + 1,
+      };
+      const envelope = buildRunEnvelope(draft, now);
+      let sealed: SignedRunEnvelope;
+      try {
+        sealed = await signRunEnvelope(envelope, await this.signer.envelopeSigningKey());
+      } catch (cause) {
+        if (cause instanceof AppError) throw cause;
+        throw new AppError(
+          'AUTHZ_SIGNER_UNAVAILABLE',
+          'the signing key service is unavailable; nothing was approved',
+          { cause, detail: 'The run envelope could not be signed. Retry the approval.' },
+        );
+      }
+      span.setAttribute('envelope.hash', sealed.envelopeHash);
+      this.envelopeMetrics.sign('ok');
+      return sealed;
+    } catch (error) {
+      this.envelopeMetrics.sign('error');
+      span.recordException(error instanceof Error ? error : new Error(String(error)));
+      span.setStatus({ code: SpanStatusCode.ERROR });
+      throw error;
+    } finally {
+      span.end();
     }
   }
 
@@ -433,6 +539,21 @@ export class Gate1Service {
       metadata: input.metadata,
     });
   }
+}
+
+function pinnedOf(sealed: SignedRunEnvelope): Gate1PinnedEnvelope {
+  return {
+    jws: sealed.jws,
+    envelopeHash: sealed.envelopeHash,
+    signingKeyId: sealed.signingKeyId,
+    envelopeVersion: sealed.envelope.envelopeVersion,
+    saId: sealed.envelope.saId,
+  };
+}
+
+/** The stable code of a refusal, or `INTERNAL` for an unexpected failure (never the raw message). */
+function errorCodeOf(error: unknown): string {
+  return error instanceof AppError ? error.code : 'INTERNAL';
 }
 
 function requireTenant(principal: Gate1Principal): string {

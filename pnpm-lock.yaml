@@ -1122,6 +1122,9 @@ importers:
       '@blackwing/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@blackwing/crypto':
+        specifier: workspace:*
+        version: link:../crypto
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../errors

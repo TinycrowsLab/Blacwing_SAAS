@@ -6,8 +6,10 @@ import type {
   Gate1Decision,
   Gate1DecisionResponse,
   Gate1TestCase,
+  RunEnvelope,
   RunState,
 } from '@blackwing/contracts';
+import type { EnvelopeSigningKey } from '@blackwing/crypto';
 
 /**
  * The ports the Gate 1 service composes (#877, built on the Gate 1 decision contract of #398). The Postgres
@@ -34,6 +36,34 @@ export interface Gate1Plan {
   readonly testCases: readonly Gate1TestCase[];
 }
 
+/**
+ * The standing authorisation a run is approved under: the facts the approved run envelope is built from (#399).
+ * A run without one cannot be approved, because its envelope would have nothing to authorise.
+ */
+export type Gate1AuthorisationSource = Pick<
+  RunEnvelope,
+  | 'saId'
+  | 'saExpiresAt'
+  | 'assetIds'
+  | 'scopeRules'
+  | 'testWindows'
+  | 'maxIntrusiveness'
+  | 'budgets'
+  | 'runWindowEndsAt'
+>;
+
+/**
+ * The run envelope an approval pinned (#399, §8.9): the signed token by reference, plus the hash and key id the
+ * run manifest carries. Re-approval after request-changes replaces the pin with a new `envelopeVersion`.
+ */
+export interface Gate1PinnedEnvelope {
+  readonly jws: string;
+  readonly envelopeHash: string;
+  readonly signingKeyId: string;
+  readonly envelopeVersion: number;
+  readonly saId: string;
+}
+
 /** A run as the Gate 1 flow needs it. Tenant-scoped: a store never returns another tenant's run. */
 export interface Gate1RunRecord {
   /** Public run id (`run_…`). */
@@ -47,6 +77,10 @@ export interface Gate1RunRecord {
   readonly plan: Gate1Plan;
   /** The version the current plan replaced, for the diff the approver sees; `null` for a first version. */
   readonly priorPlan: Gate1Plan | null;
+  /** The standing authorisation the run is approved under; `null` when it has none (approval then fails closed). */
+  readonly authorisation?: Gate1AuthorisationSource | null;
+  /** The envelope the last approval pinned on the run manifest; absent or `null` before the first approval. */
+  readonly pinnedEnvelope?: Gate1PinnedEnvelope | null;
 }
 
 /** The `Idempotency-Key` a decision was first made with, and the request fingerprint it was made with. */
@@ -74,6 +108,8 @@ export interface Gate1DecisionWrite {
   readonly reason: string | null;
   readonly idempotency: Gate1Idempotency;
   readonly response: Gate1DecisionResponse;
+  /** The envelope an approval signed; written with the decision, never on its own. Absent for other decisions. */
+  readonly envelope?: Gate1PinnedEnvelope;
 }
 
 /**
@@ -125,6 +161,16 @@ export interface Gate1Store {
    * the key. The check and the write must be one critical section (DB: row lock plus unique index).
    */
   recordDecision(write: Gate1DecisionWrite): Promise<Gate1WriteOutcome>;
+  /** The envelope pinned by the run's last approval in this tenant, if any. */
+  getPinnedEnvelope(tenantId: string, runId: string): Promise<Gate1PinnedEnvelope | null>;
+}
+
+/**
+ * Signs the approved run envelope (#399). The key is OpenBao Transit's signing key: only signatures leave the
+ * signer. A failure is `AUTHZ_SIGNER_UNAVAILABLE` and the approval is refused, so no traffic can start unsigned.
+ */
+export interface Gate1EnvelopeSigner {
+  envelopeSigningKey(): Promise<EnvelopeSigningKey>;
 }
 
 /**
@@ -192,7 +238,8 @@ export interface Gate1AuditRecord {
     | 'gate1.approved'
     | 'gate1.changes_requested'
     | 'gate1.rejected'
-    | 'gate1.decided';
+    | 'gate1.decided'
+    | 'run.envelope_signed';
   readonly severity: AuditSeverity;
   readonly outcome: AuditOutcome;
   readonly tenantId: string;
