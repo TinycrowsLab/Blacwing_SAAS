@@ -9,6 +9,7 @@
   "references": [
     { "path": "../../packages/config" },
     { "path": "../../packages/contracts" },
+    { "path": "../../packages/db" },
     { "path": "../../packages/errors" },
     { "path": "../../packages/logger" },
     { "path": "../../packages/telemetry" }

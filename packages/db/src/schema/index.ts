@@ -5,6 +5,7 @@ export * from './scope.js';
 export * from './service-accounts.js';
 export * from './secrets.js';
 export * from './persona-overrides.js';
+export * from './virtual-keys.js';
 export * from './tenancy.js';
 export * from './signups.js';
 export * from './authorisation.js';

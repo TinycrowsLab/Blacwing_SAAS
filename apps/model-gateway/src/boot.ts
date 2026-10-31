@@ -1,8 +1,19 @@
 import { CONFIG_EXIT_CODE, type EnvSource, isConfigValidationError } from '@blackwing/config';
+import {
+  createAppDatabase,
+  createPgVirtualKeyStore,
+  createVirtualKeyAuthenticator,
+  type AppDatabase,
+} from '@blackwing/db';
 import { createLogger, type Logger } from '@blackwing/logger';
 
 import { loggerAuditSink, type GatewayAuditSink } from './audit.js';
-import { staticVirtualKeyVerifier } from './auth.js';
+import {
+  anyVerifier,
+  type ClientKeyVerifier,
+  staticVirtualKeyVerifier,
+  virtualKeyVerifier,
+} from './auth.js';
 import { type GatewayConfig, loadGatewayConfig } from './config.js';
 import { DevSubscriptionAdapter } from './dev-subscription/adapter.js';
 import { announceDevSubscription } from './dev-subscription/banner.js';
@@ -26,6 +37,11 @@ export interface BootDependencies {
   readonly audit?: GatewayAuditSink;
   /** Plain-text sink for the dev provider banner. */
   readonly write: (text: string) => void;
+  /**
+   * Authenticates every `/v1/messages` request by its `bwk_` virtual key (GATEWAY-002, #405). Required on
+   * every provider: a gateway that cannot check keys must not serve the model.
+   */
+  readonly verifier: ClientKeyVerifier;
   readonly fetch?: typeof fetch;
   readonly tracer?: Tracer;
   readonly metrics?: GatewayMetrics;
@@ -63,7 +79,14 @@ export function bootGateway(
       },
       ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
     });
-    const app = buildGateway({ config, adapter, logger: deps.logger, audit, ...observability });
+    const app = buildGateway({
+      config,
+      adapter,
+      logger: deps.logger,
+      audit,
+      verifier: deps.verifier,
+      ...observability,
+    });
     return { app, stop: () => undefined };
   }
 
@@ -90,8 +113,11 @@ export function bootGateway(
     environment: () => config,
     ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
   });
-  // GATEWAY-002 (#405) replaces this single dev key with per-session virtual keys.
-  const verifier = staticVirtualKeyVerifier({ keySha256Hex, tenantId: firstTenant });
+  // The dev key stays usable beside the per-session keys (GATEWAY-002) for the POC only.
+  const verifier = anyVerifier(
+    staticVirtualKeyVerifier({ keySha256Hex, tenantId: firstTenant }),
+    deps.verifier,
+  );
   const app = buildGateway({
     config,
     adapter,
@@ -116,6 +142,8 @@ export interface RunOptions {
   readonly write: (text: string) => void;
   /** Overrides the logger built from config (tests). */
   readonly logger?: Logger;
+  /** Overrides the virtual-key verifier (tests). By default keys are checked against the database. */
+  readonly verifier?: ClientKeyVerifier;
 }
 
 /**
@@ -136,12 +164,31 @@ export async function runGateway(options: RunOptions): Promise<FastifyInstance |
     options.logger ??
     createLogger('model-gateway', { level: config.LOG_LEVEL, nodeEnv: config.NODE_ENV });
 
+  let database: AppDatabase | undefined;
+  let verifier = options.verifier;
+  if (verifier === undefined) {
+    const opened = createAppDatabase(
+      options.source === undefined ? { logger } : { source: options.source, logger },
+    );
+    database = opened;
+    verifier = virtualKeyVerifier(
+      createVirtualKeyAuthenticator({
+        store: createPgVirtualKeyStore(opened.db),
+        audit: (event) => {
+          logger.info(event, 'audit.db.system_access');
+        },
+        actor: 'model-gateway',
+      }),
+    );
+  }
+
   let booted: BootedGateway;
   try {
-    booted = bootGateway(config, { logger, write: options.write });
+    booted = bootGateway(config, { logger, write: options.write, verifier });
   } catch (error) {
     if (!(error instanceof DevSubscriptionRefusedError)) throw error;
     logger.fatal({ code: error.code, reason: error.message }, 'gw.boot_refused');
+    await database?.close();
     options.exit(CONFIG_EXIT_CODE);
     return undefined;
   }
@@ -150,14 +197,17 @@ export async function runGateway(options: RunOptions): Promise<FastifyInstance |
   const shutdown = (signal: string): void => {
     logger.info({ signal }, 'gw.shutdown');
     stop();
-    app.close().then(
-      () => {
-        options.exit(0);
-      },
-      () => {
-        options.exit(1);
-      },
-    );
+    app
+      .close()
+      .then(() => database?.close())
+      .then(
+        () => {
+          options.exit(0);
+        },
+        () => {
+          options.exit(1);
+        },
+      );
   };
   process.once('SIGTERM', shutdown);
   process.once('SIGINT', shutdown);

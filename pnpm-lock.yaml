@@ -539,6 +539,9 @@ importers:
       '@blackwing/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@blackwing/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../../packages/errors

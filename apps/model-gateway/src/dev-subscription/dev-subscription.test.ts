@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CONFIG_EXIT_CODE } from '@blackwing/config';
 import { createLogger } from '@blackwing/logger';
 
-import { staticVirtualKeyVerifier } from '../auth.js';
+import { staticVirtualKeyVerifier, virtualKeyVerifier } from '../auth.js';
 import { bootGateway, runGateway } from '../boot.js';
 import { type BwEnvironment, loadGatewayConfig } from '../config.js';
 import { DevSubscriptionAdapter } from './adapter.js';
@@ -25,6 +25,9 @@ import {
 import { redactSecretsInStream } from './redact-stream.js';
 
 import type { GatewayAuditEvent } from '../audit.js';
+
+/** Session keys are not used by these tests: every key is refused. */
+const NO_SESSION_KEYS = virtualKeyVerifier(() => Promise.resolve(undefined));
 
 const DEV_TENANT = '0192f7a0-0000-7000-8000-000000000001';
 const DEV_KEY = `bwk_${randomBytes(24).toString('hex')}`;
@@ -115,6 +118,7 @@ describe('boot refusal', () => {
         exit,
         write: () => undefined,
         logger: silentLogger,
+        verifier: NO_SESSION_KEYS,
       });
       expect(app).toBeUndefined();
       expect(exit).toHaveBeenCalledWith(CONFIG_EXIT_CODE);
@@ -126,25 +130,39 @@ describe('boot refusal', () => {
     delete env.BW_ENV;
     const exit = vi.fn<(code: number) => void>();
     expect(
-      await runGateway({ source: env, exit, write: () => undefined, logger: silentLogger }),
+      await runGateway({
+        source: env,
+        exit,
+        write: () => undefined,
+        logger: silentLogger,
+        verifier: NO_SESSION_KEYS,
+      }),
     ).toBeUndefined();
     expect(exit).toHaveBeenCalledWith(CONFIG_EXIT_CODE);
   });
 
   it('refuses dev_subscription as default provider without the explicit flag', () => {
     const config = loadGatewayConfig(devEnv({ GATEWAY_DEV_SUBSCRIPTION_ENABLED: 'false' }));
-    expect(() => bootGateway(config, { logger: silentLogger, write: () => undefined })).toThrow(
-      /GATEWAY_DEV_SUBSCRIPTION_ENABLED=true/,
-    );
+    expect(() =>
+      bootGateway(config, {
+        logger: silentLogger,
+        write: () => undefined,
+        verifier: NO_SESSION_KEYS,
+      }),
+    ).toThrow(/GATEWAY_DEV_SUBSCRIPTION_ENABLED=true/);
   });
 
   it('refuses the flag in a non-dev env even when the default provider is anthropic', () => {
     const config = loadGatewayConfig(
       devEnv({ BW_ENV: 'production', GATEWAY_DEFAULT_PROVIDER: 'anthropic' }),
     );
-    expect(() => bootGateway(config, { logger: silentLogger, write: () => undefined })).toThrow(
-      DevSubscriptionRefusedError,
-    );
+    expect(() =>
+      bootGateway(config, {
+        logger: silentLogger,
+        write: () => undefined,
+        verifier: NO_SESSION_KEYS,
+      }),
+    ).toThrow(DevSubscriptionRefusedError);
   });
 
   it('refuses without a dev tenant or a virtual key hash', () => {
@@ -154,7 +172,11 @@ describe('boot refusal', () => {
     ]) {
       const env = Object.fromEntries(Object.entries(devEnv()).filter(([key]) => key !== missing));
       expect(() =>
-        bootGateway(loadGatewayConfig(env), { logger: silentLogger, write: () => undefined }),
+        bootGateway(loadGatewayConfig(env), {
+          logger: silentLogger,
+          write: () => undefined,
+          verifier: NO_SESSION_KEYS,
+        }),
       ).toThrow(DevSubscriptionRefusedError);
     }
   });
@@ -168,7 +190,11 @@ describe('boot refusal', () => {
       }),
     );
     const written: string[] = [];
-    const booted = bootGateway(config, { logger: silentLogger, write: (t) => written.push(t) });
+    const booted = bootGateway(config, {
+      logger: silentLogger,
+      write: (t) => written.push(t),
+      verifier: NO_SESSION_KEYS,
+    });
     booted.stop();
     expect(written).toEqual([]);
   });

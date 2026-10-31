@@ -122,6 +122,8 @@ export const auditTargetTypeSchema = z.enum([
   // input manifests (SCOPE-006): appended, the uploads' audit target
   'input_manifest',
   'service_account',
+  // virtual model keys (GATEWAY-002): appended, the target of vkey.minted and vkey.revoked
+  'virtual_key',
 ]);
 export type AuditTargetType = z.infer<typeof auditTargetTypeSchema>;
 

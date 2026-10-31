@@ -1197,6 +1197,7 @@ export {
 export * from './test-plan-api.js';
 export * from './test-plan-validation.js';
 export * from './intel.js';
+export * from './virtual-key.js';
 export {
   GATE2_ACTION_SUMMARY_INPUT_MAX,
   GATE2_ACTION_SUMMARY_MAX,

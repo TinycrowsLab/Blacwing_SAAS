@@ -16,6 +16,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { createLogger } from '@blackwing/logger';
 
+import { virtualKeyVerifier } from '../auth.js';
 import { bootGateway } from '../boot.js';
 import { loadGatewayConfig, type BwEnvironment } from '../config.js';
 import { createGatewayMetrics, type GatewayMetrics } from '../metrics.js';
@@ -111,6 +112,7 @@ async function setup(options: { expiresAt?: number } = {}): Promise<Harness> {
     audit: { record: (event) => audit.push(event) },
     tracer,
     metrics,
+    verifier: virtualKeyVerifier(() => Promise.resolve(undefined)),
   });
   cleanups.push(() => {
     booted.stop();

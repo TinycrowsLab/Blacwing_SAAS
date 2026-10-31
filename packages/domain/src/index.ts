@@ -389,3 +389,4 @@ export {
 
 export * from './quota/plans.js';
 export * from './quota/evaluate.js';
+export { authenticateVirtualKey, type VirtualKeyRecord } from './virtual-key/index.js';

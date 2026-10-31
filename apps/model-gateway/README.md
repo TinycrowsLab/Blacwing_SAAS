@@ -61,6 +61,25 @@ upstream request is aborted at once, and the inflight gauge and socket are relea
 | `GATEWAY_DEV_VIRTUAL_KEY_SHA256` | unset | SHA-256 (hex) of the one dev `bwk_` key, until per-session keys (#405) land. |
 | `GATEWAY_DEV_SUBSCRIPTION_BANNER_INTERVAL_MS` | `300000` | How often the WARN banner repeats. |
 
+## Virtual keys (GATEWAY-002, #405)
+
+Every `POST /v1/messages` request must carry a per-session virtual key, `x-api-key` or
+`Authorization: Bearer bwk_…`. The key is `bwk_` plus 43 base62 characters (256 bits). The gateway hashes
+the presented key with SHA-256 and resolves that hash against `virtual_keys` (`@blackwing/db`
+`createVirtualKeyAuthenticator`). The key is accepted only while it is unexpired and unrevoked, with no clock
+leeway. Any refusal is the same Anthropic-shaped `401`, and a database error fails the request closed.
+
+- The lookup is cross-tenant by design, since the tenant is unknown before the key is resolved. It is
+  audited (`db.system_access`, logged as `audit.db.system_access`). Its database policy reveals a row only
+  when the exact hash is presented, so it opens no enumeration path.
+- The accepted key sets the request context: tenant, run, session, persona and budget context. The budget
+  context is carried for GATEWAY-011 and is not enforced here.
+- Keys are minted, revoked and validated by the API's internal endpoints (`apps/api/src/virtual-keys`),
+  which are reachable only from the internal network. The raw key is returned once, at mint.
+- The gateway reads the database through the app role (`BW_DB_*`, see `@blackwing/db`). `GATEWAY_DEV_VIRTUAL_KEY_SHA256`
+  still admits the one dev key, and only with the dev subscription provider.
+- `GATEWAY_VKEY_TTL_SECONDS` (default `3600`, at most `86400`) sets the lifetime of a minted key. It is read by the API.
+
 ## Dev subscription provider (POC only, #883)
 
 `dev_subscription` lets the internal POC call the model with the repo owner's local Claude Code login. It

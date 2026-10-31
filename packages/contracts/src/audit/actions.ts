@@ -920,6 +920,22 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     actionClass: 'config_change',
     description: 'A tenant was moved to another subscription plan; metadata carries the old and new plan names.',
   },
+  // Virtual model keys (GATEWAY-002): minted for a session, revoked on kill or by an explicit call. Never the key itself.
+  {
+    action: 'vkey.minted',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'A per-session virtual model key was minted (metadata: key id, prefix, run, session, expiry).',
+  },
+  {
+    action: 'vkey.revoked',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'kill',
+    description: 'One or more virtual model keys were revoked (metadata: key ids and the trigger).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

@@ -134,7 +134,9 @@
         "policy.activated",
         "policy.rolled_back",
         "tenant.quota_exceeded",
-        "tenant.plan_changed"
+        "tenant.plan_changed",
+        "vkey.minted",
+        "vkey.revoked"
       ]
     },
     "severity": {
@@ -265,7 +267,8 @@
             "platform",
             "assessment_request",
             "input_manifest",
-            "service_account"
+            "service_account",
+            "virtual_key"
           ]
         },
         "id": {

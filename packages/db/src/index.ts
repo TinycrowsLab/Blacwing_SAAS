@@ -246,6 +246,13 @@ export {
   type StoredPersonaOverride,
 } from './persona-overrides.js';
 export {
+  createPgVirtualKeyStore,
+  createVirtualKeyAuthenticator,
+  type NewVirtualKey,
+  type StoredVirtualKey,
+  type VirtualKeyStore,
+} from './virtual-keys.repository.js';
+export {
   AuthzGateDecisionRepository,
   type AuthzGateDecisionRepositoryOptions,
 } from './authz-gate-decision.repository.js';

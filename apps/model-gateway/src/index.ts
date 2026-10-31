@@ -7,10 +7,12 @@ export const version = '0.0.0';
 export { anthropicError, errorTypeForStatus } from './anthropic-error.js';
 export { type GatewayAuditEvent, type GatewayAuditSink, loggerAuditSink } from './audit.js';
 export {
+  anyVerifier,
   type ClientKeyVerifier,
   type ClientPrincipal,
   extractClientKey,
   staticVirtualKeyVerifier,
+  virtualKeyVerifier,
 } from './auth.js';
 export { bootGateway, type BootDependencies, type BootedGateway, runGateway } from './boot.js';
 export {
