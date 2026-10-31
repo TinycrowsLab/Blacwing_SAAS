@@ -46,3 +46,10 @@ export {
   RENDER_TEXT_MAX,
   type RenderOptions,
 } from './render.js';
+export {
+  matchRoutes,
+  type MatchedRoute,
+  type RouteQuery,
+  type RouteRule,
+  ruleRecipients,
+} from './routing.js';

@@ -164,6 +164,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'CHANNEL_NAME_CONFLICT',
   'CHANNEL_SECRET_UNAVAILABLE',
   'CHANNEL_REFERENCED',
+  // Notification routing rules API, apps/api notification-routes (NOTIFY-011): thrown as plain AppErrors.
+  'NOTIFICATION_ROUTE_INVALID',
   // AuthzSodViolationError and StepUpRequiredError, apps/api standing-authorisation approval (AUTHZ-008, #380).
   'AUTHZ_SOD_VIOLATION',
   'AUTHZ_STEPUP_REQUIRED',

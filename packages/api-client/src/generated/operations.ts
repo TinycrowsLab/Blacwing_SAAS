@@ -72,6 +72,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  createNotificationRoute: {
+    method: 'POST',
+    path: '/v1/notification-routes',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   createOncallRoster: {
     method: 'POST',
     path: '/v1/oncall/rosters',
@@ -133,6 +140,13 @@ export const OPERATIONS = {
     path: '/v1/notification-channels/{id}',
     pathParams: ['id'],
     queryParams: ['force'],
+    requiredHeaders: [],
+  },
+  deleteNotificationRoute: {
+    method: 'DELETE',
+    path: '/v1/notification-routes/{id}',
+    pathParams: ['id'],
+    queryParams: [],
     requiredHeaders: [],
   },
   deleteSecret: {
@@ -215,6 +229,13 @@ export const OPERATIONS = {
   getNotificationChannel: {
     method: 'GET',
     path: '/v1/notification-channels/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
+  getNotificationRoute: {
+    method: 'GET',
+    path: '/v1/notification-routes/{id}',
     pathParams: ['id'],
     queryParams: [],
     requiredHeaders: [],
@@ -347,6 +368,13 @@ export const OPERATIONS = {
   listNotificationChannels: {
     method: 'GET',
     path: '/v1/notification-channels',
+    pathParams: [],
+    queryParams: [],
+    requiredHeaders: [],
+  },
+  listNotificationRoutes: {
+    method: 'GET',
+    path: '/v1/notification-routes',
     pathParams: [],
     queryParams: [],
     requiredHeaders: [],
@@ -508,6 +536,13 @@ export const OPERATIONS = {
   updateNotificationChannel: {
     method: 'PATCH',
     path: '/v1/notification-channels/{id}',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
+  updateNotificationRoute: {
+    method: 'PATCH',
+    path: '/v1/notification-routes/{id}',
     pathParams: ['id'],
     queryParams: [],
     requiredHeaders: [],

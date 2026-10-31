@@ -518,6 +518,12 @@ const DEFINITIONS = {
     title: 'Notification channel is referenced by active routing rules',
     retryable: false,
   },
+  // notification routing rules (NOTIFY-011)
+  NOTIFICATION_ROUTE_INVALID: {
+    status: 400,
+    title: 'Invalid notification routing rule',
+    retryable: false,
+  },
   // Secret backend registry (issue #112, §8.6/§8.7). The contract enum admits a kind the registry does not hold: a
   // wiring defect (500, never retried, never answered by another backend).
   UNKNOWN_SECRET_BACKEND: {

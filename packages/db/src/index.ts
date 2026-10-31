@@ -226,7 +226,17 @@ export {
   type SealedChannelSecret,
   NOTIFICATION_CHANNEL_LIST_LIMIT,
 } from './notification-channel.repository.js';
-export { type NotificationChannelRow } from './schema/notifications.js';
+export { type NotificationChannelRow, type NotificationRouteRow } from './schema/notifications.js';
+export {
+  NOTIFICATION_ROUTE_LIST_LIMIT,
+  type NewRouteWrite,
+  type NotificationRouteAuditEvent,
+  type NotificationRouteAuditHook,
+  type NotificationRouteOp,
+  NotificationRouteRepository,
+  type NotificationRouteRepositoryOptions,
+  type RouteUpdateWrite,
+} from './notification-route.repository.js';
 export {
   type TenantSettingsAuditEvent,
   type TenantSettingsAuditHook,

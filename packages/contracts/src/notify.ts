@@ -34,12 +34,13 @@ export const notificationSeveritySchema = z.enum(NOTIFICATION_SEVERITIES);
 export type NotificationSeverity = z.infer<typeof notificationSeveritySchema>;
 
 /**
- * Events that must reach a human even when no channel routes them (kill switch, Gate 2 exception). When no
+ * Events that must reach a human even when no channel routes them (kill switch, Gate 2 exception, SOC test window). When no
  * channel delivers one of these, the core falls back to the tenant's organisation admins by e-mail.
  */
 export const CRITICAL_NOTIFICATION_EVENTS = [
   'kill.fired',
   'gate2.exception',
+  'soc.test_window',
 ] as const satisfies readonly NotificationEventType[];
 
 /** Events whose notify requests are audited (`notification.requested`), in addition to the unrouted audit. */

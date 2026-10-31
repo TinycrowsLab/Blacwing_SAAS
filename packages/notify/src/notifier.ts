@@ -4,6 +4,7 @@ import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import {
   isAuditedNotificationEvent,
   NOTIFICATION_RECIPIENTS_MAX,
+  notificationRouteEventSchema,
   outboxPayloadSchema,
   type NotificationChannelKind,
   type NotificationRequest,
@@ -14,8 +15,11 @@ import {
   type Database,
   memberships,
   notificationChannels,
+  notificationRoutes,
   OutboxDuplicateError,
   outbox,
+  oncallMembers,
+  oncallRosters,
   toAuditSqlTx,
   type TenantTx,
   users,
@@ -35,6 +39,7 @@ import {
 } from './plan.js';
 
 import type { ChannelRegistry } from './channel.js';
+import type { RouteRule } from './routing.js';
 import type { AuditEmitter } from '@blackwing/audit';
 
 /**
@@ -104,6 +109,13 @@ export interface NotifierDeps {
 
 const TRACER_NAME = '@blackwing/notify';
 const SPAN_NAME = 'notify.request';
+const ROUTE_SPAN_NAME = 'notify.route';
+
+/** What routing decided for one request, for metrics and the log line. Never a recipient address. */
+interface RouteStats {
+  matchedRules: number;
+  fallback: boolean;
+}
 const ORG_ADMIN_ROLE = 'org_admin';
 
 /** Validates the console origin once at wiring time. A bad origin is a configuration error, not a request error. */
@@ -132,8 +144,108 @@ export function createNotifier(deps: NotifierDeps): Notifier {
   const logger = deps.logger ?? createLogger('@blackwing/notify');
   const tracer = trace.getTracer(TRACER_NAME);
 
-  /** Reads what routing needs, inside the tenant's transaction: the tenant's channels and its org admins. */
+  /** The tenant's routing rules, parsed at the boundary (a row the contracts refuse is a bug, not a rule). */
+  async function loadRoutes(tx: TenantTx, tenantId: string): Promise<RouteRule[]> {
+    const rows = await tx
+      .select()
+      .from(notificationRoutes)
+      .where(eq(notificationRoutes.tenantId, tenantId))
+      .orderBy(asc(notificationRoutes.id));
+    return rows.map((row) => ({
+      id: row.id,
+      event: notificationRouteEventSchema.parse(row.event),
+      assetId: row.assetId,
+      severityMin: row.severityMin,
+      channelId: row.channelId,
+      recipientSpec: row.recipientSpec,
+      enabled: row.enabled,
+      priority: row.priority,
+    }));
+  }
+
+  /**
+   * The e-mail addresses of each on-call group named by an enabled rule: the members of the roster of that name
+   * (active users only). A name with no roster, or no active member, is absent, and the rule then uses the channel's
+   * own audience.
+   */
+  async function loadGroups(
+    tx: TenantTx,
+    tenantId: string,
+    routes: readonly RouteRule[],
+  ): Promise<Record<string, string[]>> {
+    const names = [
+      ...new Set(
+        routes.flatMap((rule) =>
+          rule.enabled && rule.recipientSpec.onCallGroup !== undefined
+            ? [rule.recipientSpec.onCallGroup]
+            : [],
+        ),
+      ),
+    ];
+    const groups: Record<string, string[]> = {};
+    if (names.length === 0) return groups;
+    const rows = await tx
+      .select({ name: oncallRosters.name, email: users.email })
+      .from(oncallMembers)
+      .innerJoin(oncallRosters, eq(oncallRosters.id, oncallMembers.rosterId))
+      .innerJoin(users, eq(users.id, oncallMembers.userId))
+      .where(
+        and(
+          eq(oncallMembers.tenantId, tenantId),
+          eq(oncallRosters.tenantId, tenantId),
+          inArray(oncallRosters.name, names),
+          eq(users.status, 'active'),
+        ),
+      )
+      .orderBy(asc(users.email));
+    for (const row of rows) (groups[row.name] ??= []).push(row.email);
+    return groups;
+  }
+
+  /** Reads what routing needs, inside the tenant's transaction: channels, routing rules, groups and org admins. */
   async function loadPlan(
+    tx: TenantTx,
+    request: NotificationRequest,
+    notificationId: string,
+    stats: RouteStats,
+  ): Promise<DeliveryPlan> {
+    const span = tracer.startSpan(ROUTE_SPAN_NAME);
+    try {
+      const plan = await planFor(tx, request, notificationId);
+      stats.matchedRules = plan.matchedRules;
+      stats.fallback = plan.fallback;
+      span.setAttributes({
+        'notify.event': request.event,
+        'notify.matched_rules': plan.matchedRules,
+        'notify.fallback': plan.fallback,
+      });
+      for (const skip of plan.skipped) {
+        if (skip.reason === 'disabled' || skip.reason === 'unknown_channel') {
+          logger.warn(
+            { tenantId: request.tenantId, channelId: skip.channelId, reason: skip.reason },
+            'notify.route_skipped',
+          );
+        }
+      }
+      logger.info(
+        {
+          tenantId: request.tenantId,
+          event: request.event,
+          matchedRuleCount: plan.matchedRules,
+        },
+        'notify.route',
+      );
+      return plan;
+    } catch (error) {
+      span.recordException(error instanceof Error ? error : String(error));
+      span.setStatus({ code: SpanStatusCode.ERROR });
+      throw error;
+    } finally {
+      span.end();
+    }
+  }
+
+  async function planFor(
     tx: TenantTx,
     request: NotificationRequest,
     notificationId: string,
@@ -143,6 +255,8 @@ export function createNotifier(deps: NotifierDeps): Notifier {
       .from(notificationChannels)
       .where(eq(notificationChannels.tenantId, request.tenantId))
       .orderBy(asc(notificationChannels.createdAt), asc(notificationChannels.id));
+    const routes = await loadRoutes(tx, request.tenantId);
+    const groups = await loadGroups(tx, request.tenantId, routes);
     const admins = await tx
       .select({ email: users.email })
       .from(memberships)
@@ -163,6 +277,8 @@ export function createNotifier(deps: NotifierDeps): Notifier {
       registry: deps.registry,
       consoleUrl,
       adminRecipients: admins.map((admin) => admin.email),
+      routes,
+      groups,
     });
   }
 
@@ -199,13 +315,17 @@ export function createNotifier(deps: NotifierDeps): Notifier {
     );
   }
 
-  async function run(request: NotificationRequest, options: NotifyOptions): Promise<NotifyOutcome> {
+  async function run(
+    request: NotificationRequest,
+    options: NotifyOptions,
+    stats: RouteStats,
+  ): Promise<NotifyOutcome> {
     const notificationId = newId();
     metrics.requested(request.event);
 
     if (options.dryRun === true) {
       const plan = await withTenant(deps.db, request.tenantId, (tx) =>
-        loadPlan(tx, request, notificationId),
+        loadPlan(tx, request, notificationId, stats),
       );
       return {
         status: 'dry_run',
@@ -223,7 +343,7 @@ export function createNotifier(deps: NotifierDeps): Notifier {
     let outcome: NotifyOutcome;
     try {
       outcome = await withTenant(deps.db, request.tenantId, async (tx): Promise<NotifyOutcome> => {
-        const plan = await loadPlan(tx, request, notificationId);
+        const plan = await loadPlan(tx, request, notificationId, stats);
         const duplicates = await existingDedupeKeys(
           tx,
           request.tenantId,
@@ -287,6 +407,8 @@ export function createNotifier(deps: NotifierDeps): Notifier {
 
     for (const kind of enqueuedKinds) metrics.enqueued(kind);
     if (outcome.status === 'unrouted') metrics.unrouted();
+    metrics.routesResolved(request.event, stats.matchedRules);
+    if (stats.fallback) metrics.fallbackUsed(request.event);
     return outcome;
   }
 
@@ -304,11 +426,17 @@ export function createNotifier(deps: NotifierDeps): Notifier {
           'notify.event': request.event,
           'notify.dry_run': options.dryRun === true,
         });
+        const stats: RouteStats = { matchedRules: 0, fallback: false };
         try {
-          const outcome = await run(request, options);
+          const outcome = await run(request, options, stats);
           span.setAttribute('notify.outcome', outcome.status);
           logger.info(
-            { tenantId: request.tenantId, event: request.event, outcome: outcome.status },
+            {
+              tenantId: request.tenantId,
+              event: request.event,
+              outcome: outcome.status,
+              matchedRuleCount: stats.matchedRules,
+            },
             'notify.request',
           );
           return outcome;

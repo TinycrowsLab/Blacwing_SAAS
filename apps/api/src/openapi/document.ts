@@ -10,6 +10,7 @@ import { findingOpenApiModule } from '../findings/openapi.js';
 import { gate1OpenApiModule } from '../gate1/openapi.js';
 import { killOpenApiDocument } from '../kill/openapi.js';
 import { notificationChannelsOpenApiModule } from '../notification-channels/openapi.js';
+import { notificationRoutesOpenApiModule } from '../notification-routes/openapi.js';
 import { oncallOpenApiDocument } from '../oncall/openapi.js';
 import { personaOpenApiModule } from '../personas/openapi.js';
 import { quotaOpenApiModule } from '../quota/openapi.js';
@@ -100,6 +101,7 @@ export function publicOpenApiModules(): readonly OpenApiModule[] {
     triageOpenApiModule(),
     oncallOpenApiModule(),
     notificationChannelsOpenApiModule(),
+    notificationRoutesOpenApiModule(),
     serviceAccountOpenApiModule(),
     secretsOpenApiModule(),
   ];

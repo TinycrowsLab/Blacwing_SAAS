@@ -4,9 +4,11 @@ import {
   type NotificationChannelKind,
   type NotificationRequest,
   type NotifySendPayload,
+  type NotificationRouteRecipientSpec,
 } from '@blackwing/contracts';
 
 import { renderNotification } from './render.js';
+import { matchRoutes, type RouteRule, ruleRecipients } from './routing.js';
 
 import type { ChannelRegistry } from './channel.js';
 
@@ -15,9 +17,10 @@ import type { ChannelRegistry } from './channel.js';
  * registry and returns what to enqueue. The notifier does the I/O (load the rows, write the outbox), so this
  * module is tested without a database.
  *
- * Routing policy until NOTIFY-011 adds per-event rules: every active channel of the tenant receives every
- * event, so no event is silently unrouted by a missing rule. A critical event that no channel delivers falls
- * back to the tenant's organisation admins by e-mail.
+ * Routing policy (NOTIFY-011): when the tenant has no enabled routing rule, every active channel receives every
+ * event (the broadcast default, so no event is silently unrouted before rules exist). Once it has one, only the
+ * channels that matching rules name receive the event (`routing.ts`). A critical event that no channel delivers
+ * falls back to the tenant's organisation admins by e-mail, whichever mode routed it.
  */
 
 /** A channel row as the planner reads it: the tenant's own, active or not. */
@@ -31,7 +34,12 @@ export interface RoutableChannel {
 
 /** Why a channel received nothing. Every skip is reported, never dropped silently. */
 export type SkipReason =
-  'wrong_tenant' | 'disabled' | 'no_implementation' | 'invalid_config' | 'no_matching_recipient';
+  | 'wrong_tenant'
+  | 'disabled'
+  | 'no_implementation'
+  | 'invalid_config'
+  | 'no_matching_recipient'
+  | 'unknown_channel';
 
 export interface SkippedChannel {
   readonly channelId: string;
@@ -54,6 +62,8 @@ export interface DeliveryPlan {
   readonly fallback: boolean;
   /** True when nothing will be delivered: the request is recorded as unrouted. */
   readonly unrouted: boolean;
+  /** Routing rules that matched the request (0 in broadcast mode). */
+  readonly matchedRules: number;
 }
 
 export interface PlanInput {
@@ -64,6 +74,16 @@ export interface PlanInput {
   readonly consoleUrl: string;
   /** E-mail addresses of the tenant's organisation admins, for the critical fallback. */
   readonly adminRecipients: readonly string[];
+  /** The tenant's routing rules (all of them; the matcher keeps the enabled ones). Absent: none. */
+  readonly routes?: readonly RouteRule[];
+  /** On-call group name to the e-mail addresses of its members, for rules that name a group. */
+  readonly groups?: Readonly<Record<string, readonly string[]>>;
+}
+
+/** A channel one request is routed to, with the recipient narrowing of the rule that routed it (if any). */
+interface Target {
+  readonly channel: RoutableChannel;
+  readonly spec: NotificationRouteRecipientSpec | undefined;
 }
 
 /** The outbox dedupe key of one delivery. The request's own key, or the notification id when it has none. */
@@ -81,8 +101,9 @@ export function planDeliveries(input: PlanInput): DeliveryPlan {
   const deliveries: PlannedDelivery[] = [];
   const skipped: SkippedChannel[] = [];
   const wanted = request.recipients?.map((address) => address.toLowerCase());
+  const { targets, matchedRules } = routeTargets(input, skipped);
 
-  for (const channel of input.channels) {
+  for (const { channel, spec } of targets) {
     if (channel.tenantId !== request.tenantId) {
       skipped.push({ channelId: channel.id, reason: 'wrong_tenant' });
       continue;
@@ -103,8 +124,12 @@ export function planDeliveries(input: PlanInput): DeliveryPlan {
         skipped.push({ channelId: channel.id, reason: 'invalid_config' });
         continue;
       }
+      // The channel's own audience, narrowed by the request and then by the rule. Neither ever widens it.
+      const routed = spec === undefined ? undefined : ruleRecipients(spec, input.groups);
       recipients = parsed.data.addresses.filter(
-        (address) => wanted === undefined || wanted.includes(address.toLowerCase()),
+        (address) =>
+          (wanted === undefined || wanted.includes(address.toLowerCase())) &&
+          (routed === undefined || routed.includes(address.toLowerCase())),
       );
       if (recipients.length === 0) {
         skipped.push({ channelId: channel.id, reason: 'no_matching_recipient' });
@@ -141,11 +166,55 @@ export function planDeliveries(input: PlanInput): DeliveryPlan {
           recipients: [...input.adminRecipients],
         }),
       );
-      return { deliveries, skipped, fallback: true, unrouted: false };
+      return { deliveries, skipped, fallback: true, unrouted: false, matchedRules };
     }
   }
 
-  return { deliveries, skipped, fallback: false, unrouted: deliveries.length === 0 };
+  return { deliveries, skipped, fallback: false, unrouted: deliveries.length === 0, matchedRules };
+}
+
+/**
+ * The channels a request is routed to. Broadcast when the tenant has no enabled rule; otherwise the channels of the
+ * matching rules, in rule order, each channel once (a channel named by two rules gets one message). A rule naming
+ * an unknown or disabled channel is skipped and reported, and the other rules still apply.
+ */
+function routeTargets(
+  input: PlanInput,
+  skipped: SkippedChannel[],
+): { readonly targets: readonly Target[]; readonly matchedRules: number } {
+  const routes = input.routes ?? [];
+  if (!routes.some((rule) => rule.enabled)) {
+    return {
+      targets: input.channels.map((channel) => ({ channel, spec: undefined })),
+      matchedRules: 0,
+    };
+  }
+  const matches = matchRoutes(
+    {
+      event: input.request.event,
+      assetId: input.request.assetId,
+      severity: input.request.severity,
+    },
+    routes,
+  );
+  const byId = new Map(input.channels.map((channel) => [channel.id, channel] as const));
+  const seen = new Set<string>();
+  const targets: Target[] = [];
+  for (const { rule } of matches) {
+    if (seen.has(rule.channelId)) continue;
+    seen.add(rule.channelId);
+    const channel = byId.get(rule.channelId);
+    if (channel === undefined) {
+      skipped.push({ channelId: rule.channelId, reason: 'unknown_channel' });
+      continue;
+    }
+    if (channel.status !== 'active') {
+      skipped.push({ channelId: channel.id, reason: 'disabled' });
+      continue;
+    }
+    targets.push({ channel, spec: rule.recipientSpec });
+  }
+  return { targets, matchedRules: matches.length };
 }
 
 /** True when the implementation accepts the stored config. A throwing validator counts as invalid. */
