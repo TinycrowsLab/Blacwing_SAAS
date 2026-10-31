@@ -12,7 +12,7 @@ Related: [release.md](release.md), [db-migrations.md](db-migrations.md), [image-
 
 > **Status: not yet validated, and the deploy step is not in the repo.** `last_validated: never` stays until the
 > staging drill in [Validation](#validation) has run. The release, build, verify and migrate workflows exist on
-> `main`. The deploy workflow (CI-017/CI-018), the application Helm chart and the staging cluster rollout do not.
+> `main`. The staging deploy workflow (CI-017) is on `main`. The production deploy (CI-018) and the staging cluster rollout do not.
 > Steps that need them are marked **not implemented**.
 
 ## 1. The pipeline on main
@@ -25,7 +25,7 @@ Related: [release.md](release.md), [db-migrations.md](db-migrations.md), [image-
 | Record | `release.yml` ("Record release") | Stores the release record: tag, commit and image digests | implemented |
 | Verify | `verify-images.yml` (reusable) | Deploy-time supply-chain gate. Fails closed on any signature, attestation, registry or timeout failure | implemented, reusable only |
 | Migrate | `migrate.yml` (reusable) | Forward-only database migrations, with the destructive-migration guard (`NODE_ENV=production`) | implemented, but the secret-store step is a stub (online-porting #893) and fails on purpose |
-| Deploy | CI-017/CI-018 deploy workflow | Calls `verify-images` and `migrate`, then rolls out Helm releases | **not implemented** |
+| Deploy (staging) | `deploy-staging.yml` (CI-017, #151) | Resolves the release record, runs `verify-images`, then `helm upgrade --install --atomic` of `infra/helm/blackwing` with digest-pinned values, a smoke check and a rollback on a failed smoke check | implemented; the live rollout needs the staging cluster (online-porting #915). Production (CI-018) **not implemented** |
 | Infrastructure | OpenTofu under `infra/tofu/environments/{dev,staging,prod}` | AWS, k3s, storage (INFRA-006), DNS and email | IaC on main. Applying it needs the AWS account (online) |
 
 Two rules hold regardless of stage:
@@ -64,8 +64,8 @@ Run these on the target environment before any change:
    set you are watching.
 6. Record the deploy in the release record: the environment, time, operator and digests.
 
-Helm releases are named by the chart. The only charts in the repo today are `infra/helm/bw-ingress` and
-`infra/helm/bw-keycloak-realm`. **The application chart is not in the repo.** Do not invent release names.
+Helm releases are named by the chart. The charts in the repo are `infra/helm/blackwing` (the application, release
+`blackwing`, namespace `bw-system`), `infra/helm/bw-ingress` and `infra/helm/bw-keycloak-realm`. Do not invent release names.
 
 ## 4. Rollback
 
