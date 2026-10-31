@@ -17,9 +17,11 @@
   },
   "dependencies": {
     "@blackwing/contracts": "workspace:*",
+    "@blackwing/crypto": "workspace:*",
     "@blackwing/errors": "workspace:*",
     "@blackwing/logger": "workspace:*",
     "@cedar-policy/cedar-wasm": "catalog:",
+    "@opentelemetry/api": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

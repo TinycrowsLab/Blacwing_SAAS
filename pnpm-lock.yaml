@@ -1576,6 +1576,9 @@ importers:
       '@blackwing/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@blackwing/crypto':
+        specifier: workspace:*
+        version: link:../crypto
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../errors
@@ -1585,6 +1588,9 @@ importers:
       '@cedar-policy/cedar-wasm':
         specifier: 'catalog:'
         version: 4.13.0
+      '@opentelemetry/api':
+        specifier: 'catalog:'
+        version: 1.9.1
       zod:
         specifier: 'catalog:'
         version: 4.6.7

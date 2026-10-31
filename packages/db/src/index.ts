@@ -395,6 +395,12 @@ export {
   type TenantPolicyRepositoryOptions,
 } from './tenant-policy.repository.js';
 export {
+  PolicyDecisionLogRepository,
+  type PolicyDecisionLogEntry,
+  type PolicyDecisionLogRecord,
+  type PolicyDecisionLogRepositoryOptions,
+} from './policy-decision-log.repository.js';
+export {
   roleSessionRepository,
   type RoleSessionWrite,
   type TerminalStoredSessionStatus,

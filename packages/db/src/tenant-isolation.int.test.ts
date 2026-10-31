@@ -176,6 +176,14 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, createHash('sha256').update('').digest('hex'), newId()],
     );
   },
+  policy_decision_logs: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO policy_decision_logs
+         (id, tenant_id, action, decision, determining_policy_ids, errored, latency_ms, context_digest, now_utc)
+       VALUES ($1, $2, 'Policy::Action::edit', 'deny', '{}', false, 0, $3, now())`,
+      [newId(), tenantId, createHash('sha256').update('').digest('hex')],
+    );
+  },
   persona_overrides: async (tx, tenantId) => {
     await tx.query(
       `INSERT INTO persona_overrides (tenant_id, persona, max_turns) VALUES ($1, 'osint', 5)`,

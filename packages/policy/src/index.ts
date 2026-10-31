@@ -103,3 +103,31 @@ export {
   type PolicySetLayer,
   type TenantPolicyVersionRef,
 } from './tenant-policy.js';
+export {
+  createDecisionLogPolicy,
+  DECISION_LOG_MODES,
+  DEFAULT_DECISION_LOG_POLICY,
+  shouldWriteDecisionLog,
+  type DecisionLogEntry,
+  type DecisionLogMode,
+  type DecisionLogPolicy,
+  type DecisionLogSink,
+} from './decision-log.js';
+export {
+  createMemoryPolicySetCache,
+  effectivePolicySetKeyString,
+  getEffectivePolicySet,
+  type EffectivePolicySetKey,
+  type EffectivePolicySetResult,
+  type PolicySetCache,
+  type TenantPolicyVersion,
+  type TenantPolicyVersionSource,
+} from './effective-set.js';
+export {
+  createPolicyEngine,
+  type PolicyDecision,
+  type PolicyEngine,
+  type PolicyEngineOptions,
+  type PolicyEntityRef,
+  type PolicyRequest,
+} from './engine.js';
