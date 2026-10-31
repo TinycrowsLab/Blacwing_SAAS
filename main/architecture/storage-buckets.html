@@ -225,6 +225,23 @@ versions expire after <code>evidence_noncurrent_expiration_days</code>, which mu
 S3 refuses to delete a still-locked or held version either way.</li>
 <li>The OpenTofu state bucket (bootstrap) is separate and never has Object Lock.</li>
 </ul>
+<h2 id="application-writes-evidence-002-blackwingevidence">Application writes (EVIDENCE-002, <code>@blackwing/evidence</code>)</h2>
+<ul>
+<li><code>createEvidenceStore</code> is the only writer of evidence bytes. It checks <code>GetObjectLockConfiguration</code> at startup and
+refuses to start when the bucket has no Object Lock (fail closed, §8.8).</li>
+<li>Keys are <code>t/&lt;tenantId&gt;/runs/&lt;runId&gt;/&lt;kind&gt;/&lt;uuidv7&gt;</code>. The <code>t/</code> prefix is the one the bucket policy above allows, so a
+different prefix would be denied on AWS. Reads and deletes refuse any key outside the caller&#39;s tenant before S3 is
+called.</li>
+<li>Each write sends SSE-KMS with the bucket key (<code>EVIDENCE_KMS_KEY_ID</code>) and the context <code>{&quot;tenantId&quot;:&quot;&lt;id&gt;&quot;}</code>. A write
+first asks the tenant key service (OpenBao) for the tenant key, so an unreachable or disabled key stops the write.</li>
+<li>Retention is COMPLIANCE, floored at <code>EVIDENCE_DEFAULT_RETENTION_DAYS</code>. The retain-until recorded is the value S3
+returns for the version. <code>delete</code> refuses while retention runs or a legal hold is on.</li>
+<li>Config keys: <code>EVIDENCE_BUCKET</code>, <code>EVIDENCE_OBJECT_LOCK_MODE</code> (default <code>COMPLIANCE</code>), <code>EVIDENCE_DEFAULT_RETENTION_DAYS</code>
+(default 365), <code>EVIDENCE_SSE</code> (<code>aws:kms</code> or <code>minio</code>), <code>EVIDENCE_KMS_KEY_ID</code>. The schema is <code>evidenceStoreEnvSchema</code>
+in <code>@blackwing/config</code>.</li>
+<li>Dev and test: MinIO with object locking, and a static MinIO KMS key for SSE-KMS (<code>MINIO_KMS_SECRET_KEY</code>). The
+integration test is <code>packages/evidence/src/store.int.test.ts</code> (<code>pnpm --filter @blackwing/evidence test:int</code>).</li>
+</ul>
 <h2 id="tenant-isolation-8-6">Tenant isolation (§8 #6)</h2>
 <p>Every KMS key policy:</p>
 <ol>
