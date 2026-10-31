@@ -15,6 +15,10 @@ export interface ControllerMetrics {
   readonly caRevoked: Counter;
   /** Run NetworkPolicy applies by outcome (`applied`, `failed`, `unsupported`), SANDBOX-005. */
   readonly netpolApply: Counter<'result'>;
+  /** Run input stagings by outcome (`staged`, `failed`), INGEST/SANDBOX input stager. */
+  readonly inputsStaged: Counter<'result'>;
+  /** Bytes of source checked out for runs (after the shallow checkout, before read-only). */
+  readonly sourceBytes: Counter;
 }
 
 /** A private registry per instance, so tests and multiple instances never share series. */
@@ -58,6 +62,17 @@ export function createControllerMetrics(version: string, commit: string): Contro
       name: 'sbx_netpol_apply_total',
       help: 'Run NetworkPolicy applies, by result.',
       labelNames: ['result'],
+      registers: [registry],
+    }),
+    inputsStaged: new Counter({
+      name: 'sbx_inputs_staged_total',
+      help: 'Run input stagings, by result.',
+      labelNames: ['result'],
+      registers: [registry],
+    }),
+    sourceBytes: new Counter({
+      name: 'sbx_source_bytes',
+      help: 'Bytes of source checked out for runs.',
       registers: [registry],
     }),
   };

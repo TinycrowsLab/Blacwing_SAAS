@@ -18,6 +18,7 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1146.0",
     "@blackwing/config": "workspace:*",
     "@blackwing/contracts": "workspace:*",
     "@blackwing/errors": "workspace:*",

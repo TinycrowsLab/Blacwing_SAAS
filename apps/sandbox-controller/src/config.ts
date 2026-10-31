@@ -40,6 +40,10 @@ export const MIN_RUN_TOKEN_SECRET_LENGTH = 32;
 export const NETPOL_ENFORCERS = ['calico', 'cilium', 'kube-router'] as const;
 export type NetpolEnforcer = (typeof NETPOL_ENFORCERS)[number];
 
+const DEFAULT_INPUTS_MAX_MIB = 256;
+const DEFAULT_SRC_MAX_MIB = 1024;
+const DEFAULT_STAGING_DIR = '/var/lib/blackwing/staging';
+const MAX_INPUT_MIB = 65_536;
 const MAX_PORT = 65_535;
 const MAX_TTL_SECONDS = 86_400;
 const MAX_BODY_BYTES_CEILING = 67_108_864;
@@ -119,6 +123,14 @@ export const sandboxControllerEnvShape = {
     .default('false')
     .transform((v) => v === 'true'),
   SBX_TTL_SECONDS: positiveInt(MAX_TTL_SECONDS).default(DEFAULT_TTL_SECONDS),
+  /** Run inputs (spec objects) staged under `/inputs`: total size cap in MiB (`SBX_INPUT_TOO_LARGE` above it). */
+  SBX_INPUTS_MAX_MIB: positiveInt(MAX_INPUT_MIB).default(DEFAULT_INPUTS_MAX_MIB),
+  /** Source checkout staged under `/src`: size cap in MiB after the shallow checkout. */
+  SBX_SRC_MAX_MIB: positiveInt(MAX_INPUT_MIB).default(DEFAULT_SRC_MAX_MIB),
+  /** Bucket holding uploaded spec objects (MinIO locally, S3 online). Keys are tenant-prefixed (§8.6). */
+  SBX_INPUTS_BUCKET: dnsLabel.default('bw-inputs'),
+  /** Controller-local root for per-run staging dirs; wiped on teardown. */
+  SBX_STAGING_DIR: z.string().startsWith('/').max(MAX_SOCKET_PATH).default(DEFAULT_STAGING_DIR),
   /** Default CPU cores per sandbox (fractional allowed); per-request and per-persona values override it. */
   SBX_CPU: z
     .string()

@@ -46,6 +46,11 @@
       // tenant-status lookup, the bw_relay login and the Valkey/Temporal clients, which no issue provides yet).
       "entry": ["src/outbox/index.ts"],
     },
+    "apps/sandbox-controller": {
+      // The run input stager (SANDBOX inputs) is a library until the run-start path reads the run's input_manifest_id and
+      // calls it; that composition needs the manifest reader and the deploy-token resolver, which no issue has wired yet.
+      "entry": ["src/inputs/stage.ts", "src/inputs/object-store.ts", "src/inputs/mounts.ts"],
+    },
     "apps/api": {
       // Spawned as a child process by shutdown.process.test.ts (never imported).
       // The dashboard metrics factory (DASH-001) is wired by the API composition root, which no issue has built yet.

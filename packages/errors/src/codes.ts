@@ -336,6 +336,29 @@ const DEFINITIONS = {
     title: 'NetworkPolicy enforcement not available',
     retryable: false,
   },
+  // Input staging (INGEST/SANDBOX inputs): read-only /inputs and /src volumes. Oversize input (413) and
+  // source-auth failure (502, upstream refused) block the run before any partial mount; an integrity
+  // failure (sha256 or missing object, 422) and an escaping symlink (422) fail closed.
+  SBX_INPUT_TOO_LARGE: {
+    status: 413,
+    title: 'Run input exceeds the staging size cap',
+    retryable: false,
+  },
+  SBX_SOURCE_AUTH_FAILED: {
+    status: 502,
+    title: 'Source repository authentication failed',
+    retryable: false,
+  },
+  SBX_INPUT_INTEGRITY_FAILED: {
+    status: 422,
+    title: 'Run input failed integrity check',
+    retryable: false,
+  },
+  SBX_SOURCE_SYMLINK_ESCAPE: {
+    status: 422,
+    title: 'Source symlink points outside the checkout',
+    retryable: false,
+  },
   // Session manager (SESSION-001, #612). Its internal API refuses callers without a valid run-scoped or
   // control-plane token (401, fail closed) and any caller whose tenant or run does not match the token (403).
   // A bad body is refused before processing (400); a bad environment stops the process (500).

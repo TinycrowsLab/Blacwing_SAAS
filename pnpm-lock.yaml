@@ -582,6 +582,9 @@ importers:
 
   apps/sandbox-controller:
     dependencies:
+      '@aws-sdk/client-s3':
+        specifier: 3.1146.0
+        version: 3.1146.0
       '@blackwing/config':
         specifier: workspace:*
         version: link:../../packages/config

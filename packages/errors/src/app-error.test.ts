@@ -291,7 +291,7 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'WORKER_QUEUE_UNKNOWN',
   // Raised by apps/worker's search attribute registration as a plain AppError (WORKFLOW-003).
   'SEARCH_ATTR_TYPE_CONFLICT',
-  // Subclassed by apps/sandbox-controller (SANDBOX-001).
+  // Subclassed by apps/sandbox-controller (SANDBOX-001, input staging in src/inputs/errors.ts).
   'SBX_UNAUTHENTICATED',
   'SBX_BAD_REQUEST',
   'SBX_CONFIG_INVALID',
@@ -300,6 +300,10 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'SBX_IMAGE_MISSING',
   'SBX_NETWORK_UNAVAILABLE',
   'SBX_NETPOL_UNSUPPORTED',
+  'SBX_INPUT_TOO_LARGE',
+  'SBX_SOURCE_AUTH_FAILED',
+  'SBX_INPUT_INTEGRITY_FAILED',
+  'SBX_SOURCE_SYMLINK_ESCAPE',
   // Subclassed by apps/session-manager (SESSION-001).
   'SM_UNAUTHENTICATED',
   'SM_TENANT_MISMATCH',

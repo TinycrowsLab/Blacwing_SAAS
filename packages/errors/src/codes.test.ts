@@ -128,6 +128,10 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   SBX_IMAGE_MISSING: 422,
   SBX_NETWORK_UNAVAILABLE: 503,
   SBX_NETPOL_UNSUPPORTED: 500,
+  SBX_INPUT_TOO_LARGE: 413,
+  SBX_SOURCE_AUTH_FAILED: 502,
+  SBX_INPUT_INTEGRITY_FAILED: 422,
+  SBX_SOURCE_SYMLINK_ESCAPE: 422,
   SM_UNAUTHENTICATED: 401,
   SM_TENANT_MISMATCH: 403,
   SM_BAD_REQUEST: 400,
@@ -232,7 +236,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(204);
+    expect(ERROR_CODE_LIST).toHaveLength(208);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -450,6 +454,10 @@ describe('error-code registry', () => {
       | 'SBX_IMAGE_MISSING'
       | 'SBX_NETWORK_UNAVAILABLE'
       | 'SBX_NETPOL_UNSUPPORTED'
+      | 'SBX_INPUT_TOO_LARGE'
+      | 'SBX_SOURCE_AUTH_FAILED'
+      | 'SBX_INPUT_INTEGRITY_FAILED'
+      | 'SBX_SOURCE_SYMLINK_ESCAPE'
       | 'SM_UNAUTHENTICATED'
       | 'SM_TENANT_MISMATCH'
       | 'SM_BAD_REQUEST'

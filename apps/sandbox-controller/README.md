@@ -32,6 +32,10 @@ pnpm --filter sandbox-controller test:int   # Testcontainers Valkey + real proce
 | `SBX_MAX_BODY_BYTES`                                   | `1048576`    | Larger bodies get 400 `SBX_BAD_REQUEST`.                                                           |
 | `SBX_RUN_TOKEN_SECRET`                                 | required     | HMAC key for `bw_run_` tokens, at least 32 characters. Secret.                                     |
 | `VALKEY_URL`                                           | required     | `redis://` or `rediss://`. Secret.                                                                 |
+| `SBX_INPUTS_MAX_MIB`                                   | `256`        | Cap on a run's spec objects staged under `/inputs`. Larger: `SBX_INPUT_TOO_LARGE`.                  |
+| `SBX_SRC_MAX_MIB`                                      | `1024`       | Cap on the shallow source checkout staged under `/src`. Larger: `SBX_INPUT_TOO_LARGE`.             |
+| `SBX_INPUTS_BUCKET`                                    | `bw-inputs`  | Bucket of uploaded spec objects (MinIO locally, S3 online). Keys are tenant-prefixed.              |
+| `SBX_STAGING_DIR`                                      | `/var/lib/blackwing/staging` | Controller-local root of per-run staging dirs. Absolute path. Wiped on teardown.   |
 | `SBX_BUILD_COMMIT`                                     | `unknown`    | Reported by `sbx_build_info`.                                                                      |
 | `NODE_ENV`, `LOG_LEVEL`, `OTEL_EXPORTER_OTLP_ENDPOINT` |              | From the shared base schema.                                                                       |
 
@@ -109,6 +113,26 @@ for a kind this build does not ship. The factory no longer uses it, since both s
 
 The integration test (`drivers/kubernetes.int.test.ts`) runs against a real k3s cluster with the gVisor RuntimeClass
 when `SBX_IT=1`, and is skipped otherwise.
+
+## Run inputs (INGEST / #456)
+
+`src/inputs/` stages a run's inputs before any sandbox starts. `stageRunInputs` reads the run's input manifest,
+fetches each spec object by key from object storage, and verifies its size and sha256 against the manifest.
+A source repository is shallow-checked out (`git init`, `fetch --depth 1`, detached checkout) with its deploy token
+resolved from `@blackwing/secrets` by reference. The token travels only in the git child's `http.extraHeader`.
+
+- **Mounts:** `stagedInputMounts` returns read-only `inputs` at `/inputs` and `source` at `/src` (`file://` refs,
+  bound `:ro` by the Docker driver). The Kubernetes driver refuses them until #913.
+- **Fail closed:** missing object, size or sha256 mismatch, or an unsafe name -> `SBX_INPUT_INTEGRITY_FAILED`.
+  Oversize -> `SBX_INPUT_TOO_LARGE`. Auth refused -> `SBX_SOURCE_AUTH_FAILED`. A symlink that resolves outside
+  `/src` -> `SBX_SOURCE_SYMLINK_ESCAPE`. Every failure removes the run's staging dir, so no partial mount exists.
+- **Credentials:** the checkout's `.git/config` holds the bare URL only, and `stripGitConfigCredentials` removes any
+  userinfo or `extraheader` that appears. Repository URLs must be `https:` with no userinfo.
+- **Audit and metrics:** `inputs.staged` (object keys, bytes) and `source.checked_out` (credential-free URL and ref)
+  go out as `audit` log lines. Counters: `sbx_inputs_staged_total{result}`, `sbx_source_bytes`.
+
+Tests: `src/inputs/*.test.ts` (unit, real git against a local repository), and `src/inputs/stage.int.test.ts`
+(real MinIO via Testcontainers). Run the integration test with `pnpm --filter sandbox-controller test:int`.
 
 ## Run CA (SANDBOX-008)
 
