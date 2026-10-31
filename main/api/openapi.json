@@ -2025,7 +2025,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2421,6 +2421,36 @@
                       "code": "SCHEDULE_NO_ASSETS",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
                   }
                 }
               }
@@ -2590,6 +2620,7 @@
                 "scope.request.updated",
                 "scope.request.submitted",
                 "scope.request.withdrawn",
+                "scope.preflight.dry_run",
                 "test_plan.version_created",
                 "test_case.created",
                 "test_case.updated",
@@ -5614,7 +5645,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -6008,6 +6039,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -7046,7 +7107,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -7440,6 +7501,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -12596,7 +12687,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -12990,6 +13081,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -14071,7 +14192,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -14465,6 +14586,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -15148,7 +15299,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15542,6 +15693,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -17143,7 +17324,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -17537,6 +17718,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -18593,7 +18804,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -18987,6 +19198,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -21003,7 +21244,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -21397,6 +21638,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -22477,7 +22748,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -22871,6 +23142,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -23616,6 +23917,1028 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "RATE_LIMITED": {
+                    "summary": "Too many requests",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/RATE_LIMITED",
+                      "title": "Too many requests",
+                      "status": 429,
+                      "code": "RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "CONNECTOR_RATE_LIMITED": {
+                    "summary": "Ticket connector rate limited",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+                      "title": "Ticket connector rate limited",
+                      "status": 429,
+                      "code": "CONNECTOR_RATE_LIMITED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assessment-requests/{id}/preflight": {
+      "post": {
+        "tags": ["assessment-requests"],
+        "operationId": "dryRunAssessmentRequestPreflight",
+        "summary": "Dry-run the preflight checks of a request before submit",
+        "description": "Read-only feasibility report (#579): the checks that read our own records (authorisation, scope coverage, a DNS lookup of each target host (resolve once, no request to the target), asset verification, the test window, the budgets and the model provider probe). It sends no target traffic, logs in nowhere, notifies nobody and changes no state. A halted tenant answers 409 tenant_halted. Every run is audited.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The `areq_…` public id of the assessment request.",
+            "schema": {
+              "type": "string",
+              "pattern": "^areq_[A-Za-z0-9]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The dry-run report. ok is false when a blocking check failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreflightDryRun"
+                },
+                "examples": {
+                  "notReady": {
+                    "summary": "A verified asset with no open test window",
+                    "value": {
+                      "requestId": "areq_01m64cavacexhrddgjb6xd80xv",
+                      "dryRun": true,
+                      "ok": false,
+                      "results": [
+                        {
+                          "id": "assertWindowOpen",
+                          "title": "Test window is open",
+                          "severity": "blocking",
+                          "status": "fail",
+                          "detail": "no test window of the standing authorisation is open",
+                          "code": "WINDOW_CLOSED",
+                          "remediation": "Schedule the run inside an open test window of the standing authorisation."
+                        }
+                      ],
+                      "blockingFailures": ["assertWindowOpen"]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID, NOTIFICATION_CHANNEL_INVALID.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "INVALID_CURSOR": {
+                    "summary": "Invalid cursor",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+                      "title": "Invalid cursor",
+                      "status": 400,
+                      "code": "INVALID_CURSOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_QUERY": {
+                    "summary": "Invalid query",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_QUERY",
+                      "title": "Invalid query",
+                      "status": 400,
+                      "code": "INVALID_QUERY",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_BAD_REQUEST": {
+                    "summary": "Malformed request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+                      "title": "Malformed request",
+                      "status": 400,
+                      "code": "SBX_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SM_BAD_REQUEST": {
+                    "summary": "Malformed session request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+                      "title": "Malformed session request",
+                      "status": 400,
+                      "code": "SM_BAD_REQUEST",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_REQUIRED": {
+                    "summary": "Idempotency key required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+                      "title": "Idempotency key required",
+                      "status": 400,
+                      "code": "IDEMPOTENCY_KEY_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SIGNUP_TOKEN_INVALID": {
+                    "summary": "Signup token invalid or expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+                      "title": "Signup token invalid or expired",
+                      "status": 400,
+                      "code": "SIGNUP_TOKEN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "NOTIFICATION_CHANNEL_INVALID": {
+                    "summary": "Invalid notification channel",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOTIFICATION_CHANNEL_INVALID",
+                      "title": "Invalid notification channel",
+                      "status": 400,
+                      "code": "NOTIFICATION_CHANNEL_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "UNAUTHENTICATED": {
+                    "summary": "Authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+                      "title": "Authentication required",
+                      "status": 401,
+                      "code": "UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_NO_CREDENTIALS": {
+                    "summary": "No credentials presented",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+                      "title": "No credentials presented",
+                      "status": 401,
+                      "code": "AUTH_NO_CREDENTIALS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_INVALID_TOKEN": {
+                    "summary": "Invalid credentials",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+                      "title": "Invalid credentials",
+                      "status": 401,
+                      "code": "AUTH_INVALID_TOKEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTH_EXPIRED": {
+                    "summary": "Credentials expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+                      "title": "Credentials expired",
+                      "status": 401,
+                      "code": "AUTH_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_STEPUP_REQUIRED": {
+                    "summary": "Step up authentication required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+                      "title": "Step up authentication required",
+                      "status": 401,
+                      "code": "AUTHZ_STEPUP_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_UNAUTHENTICATED": {
+                    "summary": "Run token required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+                      "title": "Run token required",
+                      "status": 401,
+                      "code": "SBX_UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SM_UNAUTHENTICATED": {
+                    "summary": "Session service token required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+                      "title": "Session service token required",
+                      "status": 401,
+                      "code": "SM_UNAUTHENTICATED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SM_SESSION_EXPIRED": {
+                    "summary": "Session expired",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+                      "title": "Session expired",
+                      "status": 401,
+                      "code": "SM_SESSION_EXPIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SERVICE_AUTH_FAILED": {
+                    "summary": "Service authentication failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+                      "title": "Service authentication failed",
+                      "status": 401,
+                      "code": "SERVICE_AUTH_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Problem details; code is one of FORBIDDEN, FORBIDDEN_ROLE, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, AUTHZ_SA_NOT_VALID, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "Forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN",
+                      "title": "Forbidden",
+                      "status": 403,
+                      "code": "FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "summary": "Role does not permit this action",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/FORBIDDEN_ROLE",
+                      "title": "Role does not permit this action",
+                      "status": 403,
+                      "code": "FORBIDDEN_ROLE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TENANT_CONTEXT_MISSING": {
+                    "summary": "Tenant context missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+                      "title": "Tenant context missing",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "CROSS_TENANT_DENIED": {
+                    "summary": "Cross tenant access denied",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CROSS_TENANT_DENIED",
+                      "title": "Cross tenant access denied",
+                      "status": 403,
+                      "code": "CROSS_TENANT_DENIED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SEED_FORBIDDEN_IN_PROD": {
+                    "summary": "Seeding forbidden in this environment",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SEED_FORBIDDEN_IN_PROD",
+                      "title": "Seeding forbidden in this environment",
+                      "status": 403,
+                      "code": "SEED_FORBIDDEN_IN_PROD",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TENANT_CONTEXT_MISMATCH": {
+                    "summary": "Tenant context mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISMATCH",
+                      "title": "Tenant context mismatch",
+                      "status": 403,
+                      "code": "TENANT_CONTEXT_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_VIOLATION": {
+                    "summary": "Out of authorised scope",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_VIOLATION",
+                      "title": "Out of authorised scope",
+                      "status": 403,
+                      "code": "SCOPE_VIOLATION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING": {
+                    "summary": "Intrusiveness exceeds the authorised ceiling",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+                      "title": "Intrusiveness exceeds the authorised ceiling",
+                      "status": 403,
+                      "code": "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_DESTRUCTIVE_FORBIDDEN": {
+                    "summary": "Destructive intrusiveness is forbidden",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_DESTRUCTIVE_FORBIDDEN",
+                      "title": "Destructive intrusiveness is forbidden",
+                      "status": 403,
+                      "code": "SCOPE_DESTRUCTIVE_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_BUDGET_EXCEEDS_SA": {
+                    "summary": "Budget exceeds the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_BUDGET_EXCEEDS_SA",
+                      "title": "Budget exceeds the standing authorisation",
+                      "status": 403,
+                      "code": "SCOPE_BUDGET_EXCEEDS_SA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SOD_VIOLATION": {
+                    "summary": "Separation of duties violated for the standing authorisation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+                      "title": "Separation of duties violated for the standing authorisation",
+                      "status": 403,
+                      "code": "AUTHZ_SOD_VIOLATION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "OVERRIDE_FIELD_FORBIDDEN": {
+                    "summary": "Persona override field not permitted",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+                      "title": "Persona override field not permitted",
+                      "status": 403,
+                      "code": "OVERRIDE_FIELD_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "MODEL_NOT_ALLOWED": {
+                    "summary": "Model not allowed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/MODEL_NOT_ALLOWED",
+                      "title": "Model not allowed",
+                      "status": 403,
+                      "code": "MODEL_NOT_ALLOWED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AAD_MISMATCH": {
+                    "summary": "Secret context mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AAD_MISMATCH",
+                      "title": "Secret context mismatch",
+                      "status": 403,
+                      "code": "AAD_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PROMPT_DRAFT_FORBIDDEN": {
+                    "summary": "Draft prompt forbidden in production",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PROMPT_DRAFT_FORBIDDEN",
+                      "title": "Draft prompt forbidden in production",
+                      "status": 403,
+                      "code": "PROMPT_DRAFT_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SM_TENANT_MISMATCH": {
+                    "summary": "Token does not match the tenant or run",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+                      "title": "Token does not match the tenant or run",
+                      "status": 403,
+                      "code": "SM_TENANT_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_FORBIDDEN": {
+                    "summary": "Kill not permitted",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+                      "title": "Kill not permitted",
+                      "status": 403,
+                      "code": "KILL_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_GLOBAL_NOT_ALLOWED_HERE": {
+                    "summary": "Global kill is not allowed on this endpoint",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+                      "title": "Global kill is not allowed on this endpoint",
+                      "status": 403,
+                      "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "NOT_OPERATOR": {
+                    "summary": "Platform operator required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+                      "title": "Platform operator required",
+                      "status": 403,
+                      "code": "NOT_OPERATOR",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "OPERATOR_MFA_REQUIRED": {
+                    "summary": "Operator MFA required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+                      "title": "Operator MFA required",
+                      "status": 403,
+                      "code": "OPERATOR_MFA_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TENANT_MISMATCH": {
+                    "summary": "Tenant mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TENANT_MISMATCH",
+                      "title": "Tenant mismatch",
+                      "status": 403,
+                      "code": "TENANT_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SECRET_PURPOSE_DENIED": {
+                    "summary": "Secret purpose not permitted",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SECRET_PURPOSE_DENIED",
+                      "title": "Secret purpose not permitted",
+                      "status": 403,
+                      "code": "SECRET_PURPOSE_DENIED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "GRAPH_NO_TENANT_CONTEXT": {
+                    "summary": "Graph tenant context missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+                      "title": "Graph tenant context missing",
+                      "status": 403,
+                      "code": "GRAPH_NO_TENANT_CONTEXT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "GRAPH_TENANT_MISMATCH": {
+                    "summary": "Graph tenant mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+                      "title": "Graph tenant mismatch",
+                      "status": 403,
+                      "code": "GRAPH_TENANT_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SOD_VIOLATION": {
+                    "summary": "Separation of duties violated",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SOD_VIOLATION",
+                      "title": "Separation of duties violated",
+                      "status": 403,
+                      "code": "SOD_VIOLATION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_SA_NOT_VALID": {
+                    "summary": "Standing authorisation is not valid for traffic",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_SA_NOT_VALID",
+                      "title": "Standing authorisation is not valid for traffic",
+                      "status": 403,
+                      "code": "AUTHZ_SA_NOT_VALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "GATE2_SOD_VIOLATION": {
+                    "summary": "Gate exception separation of duties violated",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/GATE2_SOD_VIOLATION",
+                      "title": "Gate exception separation of duties violated",
+                      "status": 403,
+                      "code": "GATE2_SOD_VIOLATION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "GATE2_DESTRUCTIVE_FORBIDDEN": {
+                    "summary": "Destructive gate exception cannot be approved",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/GATE2_DESTRUCTIVE_FORBIDDEN",
+                      "title": "Destructive gate exception cannot be approved",
+                      "status": 403,
+                      "code": "GATE2_DESTRUCTIVE_FORBIDDEN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found in this tenant.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The tenant is halted (tenant_halted).",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "Validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+                      "title": "Validation failed",
+                      "status": 422,
+                      "code": "VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "EVIDENCE_INTEGRITY_FAILED": {
+                    "summary": "Evidence integrity check failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+                      "title": "Evidence integrity check failed",
+                      "status": 422,
+                      "code": "EVIDENCE_INTEGRITY_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "GATE1_PLAN_INVALID": {
+                    "summary": "Test plan failed validation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/GATE1_PLAN_INVALID",
+                      "title": "Test plan failed validation",
+                      "status": 422,
+                      "code": "GATE1_PLAN_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_VERIFICATION_FAILED": {
+                    "summary": "Run envelope verification failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+                      "title": "Run envelope verification failed",
+                      "status": 422,
+                      "code": "ENVELOPE_VERIFICATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "POLICY_VALIDATION_FAILED": {
+                    "summary": "Policy failed validation",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/POLICY_VALIDATION_FAILED",
+                      "title": "Policy failed validation",
+                      "status": 422,
+                      "code": "POLICY_VALIDATION_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_INVALID_CLASS": {
+                    "summary": "Invalid intrusiveness class",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
+                      "title": "Invalid intrusiveness class",
+                      "status": 422,
+                      "code": "SCOPE_INVALID_CLASS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_INVALID_BUDGET": {
+                    "summary": "Invalid request budget",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
+                      "title": "Invalid request budget",
+                      "status": 422,
+                      "code": "SCOPE_INVALID_BUDGET",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCOPE_INVALID_RULE": {
+                    "summary": "Invalid scope rule",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
+                      "title": "Invalid scope rule",
+                      "status": 422,
+                      "code": "SCOPE_INVALID_RULE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "NEGATIVE_CONTROL_MISSING": {
+                    "summary": "Negative control missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NEGATIVE_CONTROL_MISSING",
+                      "title": "Negative control missing",
+                      "status": 422,
+                      "code": "NEGATIVE_CONTROL_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "NEGATIVE_CONTROL_ORACLE_MISMATCH": {
+                    "summary": "Negative control does not suit the oracle",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/NEGATIVE_CONTROL_ORACLE_MISMATCH",
+                      "title": "Negative control does not suit the oracle",
+                      "status": 422,
+                      "code": "NEGATIVE_CONTROL_ORACLE_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "POLICY_BUILDER_INVALID": {
+                    "summary": "Invalid policy builder document",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/POLICY_BUILDER_INVALID",
+                      "title": "Invalid policy builder document",
+                      "status": 422,
+                      "code": "POLICY_BUILDER_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_INVALID_WINDOW": {
+                    "summary": "Invalid standing authorisation window",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+                      "title": "Invalid standing authorisation window",
+                      "status": 422,
+                      "code": "AUTHZ_INVALID_WINDOW",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUTHZ_ASSET_UNVERIFIED": {
+                    "summary": "Asset is not verified for this tenant",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUTHZ_ASSET_UNVERIFIED",
+                      "title": "Asset is not verified for this tenant",
+                      "status": 422,
+                      "code": "AUTHZ_ASSET_UNVERIFIED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PERSONA_UNKNOWN": {
+                    "summary": "Unknown persona",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+                      "title": "Unknown persona",
+                      "status": 422,
+                      "code": "PERSONA_UNKNOWN",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PERSONA_FORBIDDEN_TOOL": {
+                    "summary": "Forbidden tool in persona",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL",
+                      "title": "Forbidden tool in persona",
+                      "status": 422,
+                      "code": "PERSONA_FORBIDDEN_TOOL",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PERSONA_INVALID": {
+                    "summary": "Invalid persona definition",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PERSONA_INVALID",
+                      "title": "Invalid persona definition",
+                      "status": 422,
+                      "code": "PERSONA_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ENVELOPE_INVALID": {
+                    "summary": "Invalid secret envelope",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
+                      "title": "Invalid secret envelope",
+                      "status": 422,
+                      "code": "ENVELOPE_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PROMPT_INVALID": {
+                    "summary": "Invalid prompt file",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PROMPT_INVALID",
+                      "title": "Invalid prompt file",
+                      "status": 422,
+                      "code": "PROMPT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "PROMPT_PLACEHOLDER_MISSING": {
+                    "summary": "Prompt placeholder unfilled",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
+                      "title": "Prompt placeholder unfilled",
+                      "status": 422,
+                      "code": "PROMPT_PLACEHOLDER_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AGENT_UNKNOWN_PERSONA": {
+                    "summary": "Unknown agent persona",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AGENT_UNKNOWN_PERSONA",
+                      "title": "Unknown agent persona",
+                      "status": 422,
+                      "code": "AGENT_UNKNOWN_PERSONA",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "INVALID_SECRET_REF": {
+                    "summary": "Invalid secret reference",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
+                      "title": "Invalid secret reference",
+                      "status": 422,
+                      "code": "INVALID_SECRET_REF",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SBX_IMAGE_MISSING": {
+                    "summary": "Sandbox image missing",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SBX_IMAGE_MISSING",
+                      "title": "Sandbox image missing",
+                      "status": 422,
+                      "code": "SBX_IMAGE_MISSING",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SM_RECIPE_INVALID": {
+                    "summary": "Login recipe invalid",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+                      "title": "Login recipe invalid",
+                      "status": 422,
+                      "code": "SM_RECIPE_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SM_LOGIN_FAILED": {
+                    "summary": "Login rejected by the target",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+                      "title": "Login rejected by the target",
+                      "status": 422,
+                      "code": "SM_LOGIN_FAILED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_SCOPE_INVALID": {
+                    "summary": "Invalid kill scope",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+                      "title": "Invalid kill scope",
+                      "status": 422,
+                      "code": "KILL_SCOPE_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "KILL_REF_REQUIRED": {
+                    "summary": "Kill scope reference required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+                      "title": "Kill scope reference required",
+                      "status": 422,
+                      "code": "KILL_REF_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "IDEMPOTENCY_KEY_MISMATCH": {
+                    "summary": "Idempotency key reused with a different request",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+                      "title": "Idempotency key reused with a different request",
+                      "status": 422,
+                      "code": "IDEMPOTENCY_KEY_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "GATE2_NO_ONCALL_CONFIGURED": {
+                    "summary": "No on call configured",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/GATE2_NO_ONCALL_CONFIGURED",
+                      "title": "No on call configured",
+                      "status": 422,
+                      "code": "GATE2_NO_ONCALL_CONFIGURED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "AUDIT_EVENT_INVALID": {
+                    "summary": "Invalid audit event",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/AUDIT_EVENT_INVALID",
+                      "title": "Invalid audit event",
+                      "status": 422,
+                      "code": "AUDIT_EVENT_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_INVALID_IDENTIFIER": {
+                    "summary": "Invalid asset identifier",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+                      "title": "Invalid asset identifier",
+                      "status": 422,
+                      "code": "ASSET_INVALID_IDENTIFIER",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "ASSET_VERIFICATION_METHOD_NOT_APPLICABLE": {
+                    "summary": "Verification method not applicable",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/ASSET_VERIFICATION_METHOD_NOT_APPLICABLE",
+                      "title": "Verification method not applicable",
+                      "status": 422,
+                      "code": "ASSET_VERIFICATION_METHOD_NOT_APPLICABLE",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "CVSS_VECTOR_SCORE_MISMATCH": {
+                    "summary": "CVSS score does not match its vector",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+                      "title": "CVSS score does not match its vector",
+                      "status": 422,
+                      "code": "CVSS_VECTOR_SCORE_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TRIAGE_REASON_REQUIRED": {
+                    "summary": "Triage reason required",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+                      "title": "Triage reason required",
+                      "status": 422,
+                      "code": "TRIAGE_REASON_REQUIRED",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TRIAGE_EXPIRY_INVALID": {
+                    "summary": "Invalid accepted risk expiry",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+                      "title": "Invalid accepted risk expiry",
+                      "status": 422,
+                      "code": "TRIAGE_EXPIRY_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "TRIAGE_CANONICAL_INVALID": {
+                    "summary": "Invalid canonical finding for a duplicate",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+                      "title": "Invalid canonical finding for a duplicate",
+                      "status": 422,
+                      "code": "TRIAGE_CANONICAL_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "CONNECTOR_UNKNOWN_PROVIDER": {
+                    "summary": "Unknown ticket connector provider",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+                      "title": "Unknown ticket connector provider",
+                      "status": 422,
+                      "code": "CONNECTOR_UNKNOWN_PROVIDER",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "CONNECTOR_VALIDATION": {
+                    "summary": "Ticket connector validation failed",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+                      "title": "Ticket connector validation failed",
+                      "status": 422,
+                      "code": "CONNECTOR_VALIDATION",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "MEMORY_EMBED_DIM_MISMATCH": {
+                    "summary": "Embedding dimension mismatch",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/MEMORY_EMBED_DIM_MISMATCH",
+                      "title": "Embedding dimension mismatch",
+                      "status": 422,
+                      "code": "MEMORY_EMBED_DIM_MISMATCH",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_NO_ASSETS": {
+                    "summary": "Schedule has no assets",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+                      "title": "Schedule has no assets",
+                      "status": 422,
+                      "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  }
                 }
               }
             }
@@ -24685,7 +26008,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -25079,6 +26402,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -30473,7 +31826,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -30867,6 +32220,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -32782,7 +34165,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -33176,6 +34559,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -39124,7 +40537,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -39518,6 +40931,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -40118,7 +41561,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -40512,6 +41955,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -41125,7 +42598,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -41519,6 +42992,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -42609,7 +44112,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -43003,6 +44506,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -44183,7 +45716,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -44577,6 +46110,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -44894,7 +46457,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -45288,6 +46851,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -45977,7 +47570,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -46371,6 +47964,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -46695,7 +48318,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -47089,6 +48712,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -47468,7 +49121,7 @@
             }
           },
           "422": {
-            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.",
+            "description": "Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -47862,6 +49515,36 @@
                       "title": "Schedule has no assets",
                       "status": 422,
                       "code": "SCHEDULE_NO_ASSETS",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_CRON_INVALID": {
+                    "summary": "Invalid schedule cron expression",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+                      "title": "Invalid schedule cron expression",
+                      "status": 422,
+                      "code": "SCHEDULE_CRON_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TZ_INVALID": {
+                    "summary": "Invalid schedule time zone",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+                      "title": "Invalid schedule time zone",
+                      "status": 422,
+                      "code": "SCHEDULE_TZ_INVALID",
+                      "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+                    }
+                  },
+                  "SCHEDULE_TOO_FREQUENT": {
+                    "summary": "Schedule fires more often than hourly",
+                    "value": {
+                      "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+                      "title": "Schedule fires more often than hourly",
+                      "status": 422,
+                      "code": "SCHEDULE_TOO_FREQUENT",
                       "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
                     }
                   }
@@ -54385,6 +56068,7 @@
               "scope.request.updated",
               "scope.request.submitted",
               "scope.request.withdrawn",
+              "scope.preflight.dry_run",
               "test_plan.version_created",
               "test_case.created",
               "test_case.updated",
@@ -58091,6 +59775,77 @@
           "budgetTotals",
           "validatedAt"
         ],
+        "additionalProperties": false
+      },
+      "PreflightDryRun": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "pattern": "^areq_[A-Za-z0-9]+$"
+          },
+          "dryRun": {
+            "type": "boolean",
+            "const": true
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": ["blocking", "warning"]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["pass", "fail", "skip"]
+                },
+                "detail": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "remediation": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "evidence": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": ["string", "number", "boolean", "null"]
+                  }
+                }
+              },
+              "required": ["id", "title", "severity", "status", "detail"],
+              "additionalProperties": false
+            }
+          },
+          "blockingFailures": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": ["requestId", "dryRun", "ok", "results", "blockingFailures"],
         "additionalProperties": false
       },
       "Problem": {
