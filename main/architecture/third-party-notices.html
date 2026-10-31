@@ -287,6 +287,42 @@ Playwright packages are the agent runtime&#39;s own pinned dependencies (<code>p
 </tbody></table>
 <p>The Playwright licence text ships in the installed <code>playwright-core</code> package as <code>LICENSE</code>. Chromium&#39;s licence files ship
 in the browser directory under <code>/opt/bw/browsers</code>.</p>
+<h2 id="wordlists-bundled-in-the-bw-sandbox-image">Wordlists (bundled in the bw-sandbox image)</h2>
+<p>The sandbox image bundles a small curated set of content, parameter and subdomain wordlists for <code>ffuf</code> and <code>katana</code>
+discovery (IMAGE-006, #604). The lists are vendored under <code>infra/docker/sandbox/wordlists/</code> and pinned in
+<code>infra/docker/sandbox/wordlists.pin.json</code> by upstream commit, sha256 and licence. Every list is copied verbatim into
+<code>/opt/bw/wordlists</code> at build time, and the build fails on any checksum mismatch, a licence off the allowlist or a total
+above <code>IMAGE_WORDLISTS_MAX_MIB</code> (default 64).</p>
+<table>
+<thead>
+<tr>
+<th>List</th>
+<th>Upstream file</th>
+<th>Version (commit)</th>
+<th>Licence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>common</td>
+<td><code>Discovery/Web-Content/common.txt</code></td>
+<td>SecLists <code>0008f434</code></td>
+<td>MIT</td>
+</tr>
+<tr>
+<td>burp-parameter-names</td>
+<td><code>Discovery/Web-Content/burp-parameter-names.txt</code></td>
+<td>SecLists <code>0008f434</code></td>
+<td>MIT</td>
+</tr>
+<tr>
+<td>subdomains-top1million-5000</td>
+<td><code>Discovery/DNS/subdomains-top1million-5000.txt</code></td>
+<td>SecLists <code>0008f434</code></td>
+<td>MIT</td>
+</tr>
+</tbody></table>
+<p>Source: <a href="https://github.com/danielmiessler/SecLists">https://github.com/danielmiessler/SecLists</a> (SecLists, Copyright (c) 2018 Daniel Miessler). The MIT licence text
+ships in the image as <code>/opt/bw/wordlists/LICENSES/LICENSE.seclists</code>.</p>
 </main>
 </div>
 </body>
