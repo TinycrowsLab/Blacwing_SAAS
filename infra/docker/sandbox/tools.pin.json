@@ -44,6 +44,27 @@
       "licence": "MIT"
     }
   ],
+  "templates": [
+    {
+      "name": "nuclei-templates",
+      "version": "10.5.1",
+      "repo": "https://github.com/projectdiscovery/nuclei-templates",
+      "commit": "79fb682760ab3d5b0e22afbb44709353cbebf023",
+      "url": "https://github.com/projectdiscovery/nuclei-templates/archive/79fb682760ab3d5b0e22afbb44709353cbebf023.tar.gz",
+      "sha256": "c5c158cb79368158a8fc85aad4ee504c7d6483b0891d0e102c0572ac578d060a",
+      "treeSha256": "2f50bf9c75b25580281b57845e342a3cc35711a48e408b35a322d566e4cac1da",
+      "licence": "MIT",
+      "keep": ["dns", "helpers", "http", "network", "ssl"],
+      "exclude": [
+        "http/credential-stuffing",
+        "http/default-logins",
+        "http/fuzzing",
+        "http/honeypot",
+        "http/osint",
+        "http/token-spray"
+      ]
+    }
+  ],
   "browser": {
     "playwright": "1.63.0",
     "playwrightMcp": "0.0.80",

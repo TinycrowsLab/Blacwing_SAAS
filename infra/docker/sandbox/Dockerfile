@@ -65,6 +65,11 @@ COPY infra/docker/sandbox/wordlists.pin.json /build/wordlists.pin.json
 COPY infra/docker/sandbox/wordlists /build/wordlists
 COPY infra/docker/sandbox/tools/install-wordlists.mjs /build/install-wordlists.mjs
 RUN IMAGE_WORDLISTS_MAX_MIB=${IMAGE_WORDLISTS_MAX_MIB} node /build/install-wordlists.mjs /build/wordlists.pin.json /opt/bw/wordlists
+# Vendored nuclei-templates at the commit pinned in tools.pin.json (IMAGE-004, #602). The archive is verified by sha256,
+# pruned to the safe categories and checked against the pinned tree digest before it lands in /opt/bw/templates/official.
+COPY infra/docker/sandbox/tools/install-templates.mjs /build/
+RUN mkdir -p /opt/bw/templates \
+ && node /build/install-templates.mjs /pin/tools.pin.json /opt/bw/templates/official
 
 FROM ${NODE_IMAGE} AS runtime
 ARG VERSION=dev
@@ -86,7 +91,7 @@ RUN apt-get update \
  && groupadd --system --gid 10001 bw \
  && useradd --system --uid 10001 --gid 10001 --no-create-home --home-dir /workspace --shell /usr/sbin/nologin bw \
  && mkdir -p /opt/bw/tools/bin /opt/bw/templates /opt/bw/wordlists /etc/bw /workspace /app \
- && chown -R bw:bw /opt/bw/templates /etc/bw /workspace \
+ && chown -R bw:bw /etc/bw /workspace \
  && chmod 0555 /opt/bw /etc/bw \
  && rm -rf /var/lib/apt/lists/*
 
@@ -94,6 +99,12 @@ COPY --from=builder --chown=root:root /out /app
 COPY --from=tools --chown=root:root /opt/bw/tools /opt/bw/tools
 COPY --from=tools --chown=root:root /opt/bw/wordlists /opt/bw/wordlists
 COPY --chown=root:root --chmod=0555 infra/docker/sandbox/entrypoint.sh /opt/bw/entrypoint.sh
+
+# Pinned nuclei-templates (IMAGE-004, #602) are root-owned and read-only for bw, so a runtime template update cannot
+# write into them. The default profile is the nuclei config /etc/bw/nuclei.yaml (safe tags only, update disabled).
+COPY --from=tools --chown=root:root /opt/bw/templates /opt/bw/templates
+COPY --chown=root:root --chmod=0444 infra/docker/sandbox/templates/blackwing/README.md /opt/bw/templates/blackwing/README.md
+COPY --chown=root:root --chmod=0444 infra/docker/sandbox/templates/nuclei.yaml /etc/bw/nuclei.yaml
 
 # Headless Chromium and the pinned fonts (IMAGE-005, #603). The Chromium build is the one the pinned playwright-core
 # downloads at build time into the root-owned /opt/bw/browsers. Nothing downloads at runtime. The script checks every

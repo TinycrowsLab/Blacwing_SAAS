@@ -1,0 +1,74 @@
+# Default nuclei profile for bw-sandbox (IMAGE-004, #602). The sandbox runs `nuclei -config /etc/bw/nuclei.yaml`.
+# Keys are nuclei flag names. Only safe, non-intrusive detections run by default (CONTEXT_PACK F4: passive and
+# active-safe, never destructive). Templates are never updated at runtime, so a run stays reproducible against the
+# nuclei-templates commit pinned in tools.pin.json (S8.9). scripts/check-sandbox-templates.mjs asserts this profile.
+
+# The pinned official templates (verified at build time) and the Blackwing custom directory.
+templates:
+  - /opt/bw/templates/official
+  - /opt/bw/templates/blackwing
+
+# Runtime template updates are off: no template update, no update check.
+update-templates: false
+disable-update-check: true
+
+# Out-of-band callbacks (interactsh) are off. The OOB oracle is a separate epic.
+no-interactsh: true
+
+# Informational and low severity findings only.
+severity:
+  - info
+  - low
+
+# A template runs only when it carries one of these safe detection tags.
+tags:
+  - tech
+  - detect
+  - exposure
+  - misconfig
+  - ssl
+  - dns
+  - panel
+
+# Intrusive, destructive, exploit and brute-force tags are excluded even when a template also carries a safe tag.
+exclude-tags:
+  - intrusive
+  - dos
+  - fuzz
+  - fuzzing
+  - brute-force
+  - bruteforce
+  - default-login
+  - default-logins
+  - credential-stuffing
+  - token-spray
+  - sqli
+  - xss
+  - rce
+  - lfi
+  - ssrf
+  - injection
+  - exploit
+  - oast
+  - oob
+  - dast
+  - ssti
+  - xxe
+  - crlf
+  - file-upload
+  - auth-bypass
+  - unauth
+  - redirect
+  - open-redirect
+  - prototype-pollution
+  - osint
+  - honeypot
+  - headless
+  - code
+  - local
+  - txt-service
+
+# Modes that send crafted traffic or run code are off. Templates in these modes are never loaded.
+code: false
+dast: false
+headless: false

@@ -97,8 +97,8 @@ describe('checkSandboxDockerfile', () => {
     assert.ok(
       errs(
         df.replace(
-          'chown -R bw:bw /opt/bw/templates',
-          'chown -R bw:bw /opt/bw/tools/bin /opt/bw/templates',
+          'chown -R bw:bw /etc/bw /workspace',
+          'chown -R bw:bw /opt/bw/tools/bin /etc/bw /workspace',
         ),
       ).some((e) => e.includes('root-owned')),
     );

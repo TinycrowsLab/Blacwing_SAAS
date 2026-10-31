@@ -10,6 +10,12 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  checkNucleiProfile,
+  checkTemplatesDockerfile,
+  checkTemplatesPin,
+  NUCLEI_PROFILE,
+} from './check-sandbox-templates.mjs';
 import { checkToolPins } from './check-sandbox-tools.mjs';
 import { checkWordlistsRepo } from './check-sandbox-wordlists.mjs';
 
@@ -273,6 +279,9 @@ export function checkRepo(root) {
     ...checkToolPins(JSON.parse(read(SANDBOX_SCANNER_PINS))),
     ...checkBrowserPin(read(SANDBOX_TOOLS_PIN), read(WORKSPACE_MANIFEST)),
     ...checkWordlistsRepo(root),
+    ...checkTemplatesPin(read(SANDBOX_TOOLS_PIN)),
+    ...checkNucleiProfile(read(NUCLEI_PROFILE)),
+    ...checkTemplatesDockerfile(read(SANDBOX_DOCKERFILE), read(SANDBOX_DOCKERIGNORE)),
   ];
 }
 

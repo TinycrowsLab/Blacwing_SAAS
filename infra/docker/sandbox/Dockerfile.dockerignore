@@ -16,6 +16,9 @@
 !infra/docker/sandbox/tools/install-wordlists.mjs
 !infra/docker/sandbox/wordlists.pin.json
 !infra/docker/sandbox/wordlists
+!infra/docker/sandbox/tools/install-templates.mjs
+!infra/docker/sandbox/templates/nuclei.yaml
+!infra/docker/sandbox/templates/blackwing/README.md
 **/node_modules
 **/.turbo
 **/dist

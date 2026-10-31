@@ -44,6 +44,23 @@ Runtime contract (SANDBOX): user `bw` uid/gid 10001, read-only rootfs, `/workspa
 Checks: `pnpm check:sandbox-image` (static: Dockerfile, dockerignore, both tool pins), `pnpm test:sandbox-image`
 (builds and runs the image; also proves the checksum guard refuses a mismatched archive).
 
+## Vendored nuclei-templates (IMAGE-004, #602)
+
+The `templates` entry in `tools.pin.json` pins `projectdiscovery/nuclei-templates` to one commit (SHA, version, archive
+sha256 and a kept-tree digest). The `tools` stage runs `tools/install-templates.mjs`, which downloads the commit's archive
+over HTTPS, verifies its sha256 before unpacking, keeps only the `keep` directories (`dns`, `helpers`, `http`, `network`,
+`ssl`), deletes the `exclude` paths (the non-safe `http/` categories) and checks the kept tree against `treeSha256`. Any
+mismatch fails the build and nothing is written to `/opt/bw/templates/official`. The installed tree records its pin in
+`.bw-template-pin.json`; the run manifest (IMAGE-008) surfaces the same commit.
+
+- The runtime stage copies `/opt/bw/templates` root-owned and read-only for `bw`, so a run cannot write templates.
+- `templates/nuclei.yaml` is the default profile, installed at `/etc/bw/nuclei.yaml` and passed with `-config`. It selects
+  `info` and `low` severities and the safe tags only, excludes the intrusive tags, disables out-of-band callbacks and
+  turns off template updates (`update-templates: false`, `disable-update-check: true`).
+- `templates/blackwing/README.md` is the authoring convention for Blackwing's own templates (`/opt/bw/templates/blackwing`).
+- Static guard: `scripts/check-sandbox-templates.mjs`, run by `pnpm check:sandbox-image`. Unit tests:
+  `node --test scripts/check-sandbox-templates.test.mjs scripts/install-templates.test.mjs`.
+
 ## Headless browser and fonts (IMAGE-005, #603)
 
 The image bakes in the Chromium build that the pinned `playwright-core` downloads, into the root-owned
