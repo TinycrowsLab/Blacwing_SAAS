@@ -1,3 +1,9 @@
+import { SpanStatusCode } from '@opentelemetry/api';
+import {
+  BasicTracerProvider,
+  InMemorySpanExporter,
+  SimpleSpanProcessor,
+} from '@opentelemetry/sdk-trace-base';
 import { describe, expect, it } from 'vitest';
 
 import { VIRTUAL_KEY_PATTERN, DEFAULT_VIRTUAL_KEY_TTL_SECONDS } from '@blackwing/contracts';
@@ -187,5 +193,47 @@ describe('virtual key service: authenticate', () => {
     expect(await service.authenticate('not-a-key')).toBeUndefined();
     clock.now = new Date(T0.getTime() + 61_000);
     expect(await service.authenticate(minted.key)).toBeUndefined();
+  });
+});
+
+describe('virtual key service: tracing', () => {
+  it('runs mint, validate and revoke in gw.key spans that never carry the key', async () => {
+    const exporter = new InMemorySpanExporter();
+    const provider = new BasicTracerProvider({
+      spanProcessors: [new SimpleSpanProcessor(exporter)],
+    });
+    const service = createVirtualKeyService({
+      store: createFakeVirtualKeyStore(),
+      audit: () => Promise.resolve(),
+      systemAudit: () => undefined,
+      metrics: createVirtualKeyMetrics(),
+      tracer: provider.getTracer('test'),
+    });
+    const minted = await service.mint(mintBody(), CALLER);
+    await service.authenticate(minted.key);
+    await service.revoke({ tenantId: TENANT_A, runId: RUN }, CALLER);
+    const spans = exporter.getFinishedSpans();
+    expect(spans.map((span) => span.name)).toEqual([
+      'gw.key.mint',
+      'gw.key.validate',
+      'gw.key.revoke',
+    ]);
+    expect(JSON.stringify(spans.map((span) => span.attributes))).not.toContain(minted.key);
+  });
+
+  it('marks a failed mint span as an error and rethrows the refusal unchanged', async () => {
+    const exporter = new InMemorySpanExporter();
+    const provider = new BasicTracerProvider({
+      spanProcessors: [new SimpleSpanProcessor(exporter)],
+    });
+    const service = createVirtualKeyService({
+      store: createFakeVirtualKeyStore(),
+      audit: () => Promise.resolve(),
+      systemAudit: () => undefined,
+      metrics: createVirtualKeyMetrics(),
+      tracer: provider.getTracer('test'),
+    });
+    await expect(service.mint({}, CALLER)).rejects.toThrow(ValidationError);
+    expect(exporter.getFinishedSpans()[0]?.status.code).toBe(SpanStatusCode.ERROR);
   });
 });

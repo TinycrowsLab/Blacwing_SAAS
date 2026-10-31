@@ -472,6 +472,14 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [id, `rvj_${id.replaceAll('-', '')}`, tenantId, runId, caseId],
     );
   },
+  // A virtual model key (GATEWAY-002): the hash-gated resolve policy reveals nothing without the exact hash.
+  virtual_keys: async (tx, tenantId) => {
+    await tx.query(
+      `INSERT INTO virtual_keys (id, tenant_id, run_id, session_id, key_prefix, key_sha256, scope, persona, expires_at)
+       VALUES ($1, $2, $3, $4, 'bwk_ABCDEFGH', $5, '{"persona":"planner"}', 'planner', now() + interval '1 hour')`,
+      [newId(), tenantId, newId(), newId(), createHash('sha256').update(randomBytes(32)).digest()],
+    );
+  },
 };
 
 /** An asset row (and the user that owns it, the users table being global). Returns the asset id. */
