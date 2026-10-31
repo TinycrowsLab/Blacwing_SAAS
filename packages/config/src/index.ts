@@ -66,6 +66,16 @@ export {
   valkeyEnvShape,
 } from './schema.js';
 export {
+  type StallEnv,
+  stallConfigFromEnv,
+  stallEnvSchema,
+  stallEnvShape,
+  type StallThresholds,
+  type StallThresholdsOverride,
+  stallThresholdsOverrideSchema,
+  stallThresholdsSchema,
+} from './stall.js';
+export {
   DEFAULT_TEMPORAL_ADDRESS,
   DEFAULT_TEMPORAL_NAMESPACE,
   parseTemporalConfig,

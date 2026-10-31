@@ -16,9 +16,12 @@
     "gen:persona-catalogue": "tsx src/persona-catalogue-cli.ts"
   },
   "dependencies": {
+    "@blackwing/config": "workspace:*",
     "@blackwing/contracts": "workspace:*",
     "@blackwing/errors": "workspace:*",
+    "@blackwing/logger": "workspace:*",
     "@blackwing/mcp-tools": "workspace:*",
+    "@opentelemetry/api": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

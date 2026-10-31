@@ -910,15 +910,24 @@ importers:
 
   packages/agents:
     dependencies:
+      '@blackwing/config':
+        specifier: workspace:*
+        version: link:../config
       '@blackwing/contracts':
         specifier: workspace:*
         version: link:../contracts
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../errors
+      '@blackwing/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@blackwing/mcp-tools':
         specifier: workspace:*
         version: link:../mcp-tools
+      '@opentelemetry/api':
+        specifier: 'catalog:'
+        version: 1.9.1
       zod:
         specifier: 'catalog:'
         version: 4.6.7
