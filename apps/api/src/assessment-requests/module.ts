@@ -18,6 +18,9 @@ export interface AssessmentRequestModuleOptions extends Pick<
   | 'logger'
   | 'tracer'
   | 'now'
+  | 'modelProbe'
+  | 'targetResolver'
+  | 'preflightAudit'
 > {
   /** Registry the scoping-form counters live on. */
   readonly registry: Registry;
@@ -44,6 +47,9 @@ export class AssessmentRequestModule {
       metrics: createAssessmentRequestMetrics(options.registry),
       ...(options.tracer === undefined ? {} : { tracer: options.tracer }),
       ...(options.now === undefined ? {} : { now: options.now }),
+      ...(options.modelProbe === undefined ? {} : { modelProbe: options.modelProbe }),
+      ...(options.targetResolver === undefined ? {} : { targetResolver: options.targetResolver }),
+      preflightAudit: options.preflightAudit,
     });
     return {
       module: AssessmentRequestModule,

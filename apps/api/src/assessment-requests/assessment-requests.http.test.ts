@@ -15,6 +15,7 @@ import {
   memoryAssets,
   memoryHalts,
   memoryMemberships,
+  memoryPreflightAudit,
   memoryStandingAuthorisations,
   NOW,
   SA_A,
@@ -29,7 +30,11 @@ import { createHttpMetrics, type HttpMetrics } from '../bootstrap/metrics.js';
 import { loadApiConfig } from '../config.js';
 import { InMemoryIdempotencyStore } from '../idempotency/memory.js';
 
-import type { AssessmentRequestResponse, Problem } from '@blackwing/contracts';
+import type {
+  AssessmentRequestResponse,
+  PreflightDryRunResponse,
+  Problem,
+} from '@blackwing/contracts';
 import type { TenantPrincipal } from '@blackwing/db/tenant-context';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { FastifyRequest } from 'fastify';
@@ -58,11 +63,13 @@ let metrics: HttpMetrics;
 let store: ReturnType<typeof memoryAssessmentStore>;
 let halted: Set<string>;
 let saTable: Parameters<typeof memoryStandingAuthorisations>[0];
+let preflightAudit: ReturnType<typeof memoryPreflightAudit>;
 
 beforeEach(async () => {
   metrics = createHttpMetrics();
   store = memoryAssessmentStore();
   halted = new Set();
+  preflightAudit = memoryPreflightAudit();
   saTable = {
     [`${TENANT_A}:${SA_A}`]: activeSaA(),
     [`${TENANT_A}:${SA_EXPIRED_A}`]: {
@@ -95,6 +102,9 @@ beforeEach(async () => {
         logger: createLogger('api', { level: 'silent', nodeEnv: 'test' }),
         registry: metrics.registry,
         now: () => NOW,
+        preflightAudit,
+        modelProbe: { reachable: () => Promise.resolve(true) },
+        targetResolver: { resolve: () => Promise.resolve(['203.0.113.10']) },
       }),
     ],
   });
@@ -515,5 +525,67 @@ describe('reads and withdraw', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json<AssessmentRequestResponse>().status).toBe('withdrawn');
+  });
+});
+
+describe('POST /v1/assessment-requests/:id/preflight (#579 dry run)', () => {
+  it('answers the read-only report with no-store, and audits the run', async () => {
+    const draft = await createDraft();
+    const res = await call({ principal: 'admin-a@a', path: `/${draft.id}/preflight` });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['cache-control']).toBe('no-store');
+    const body = res.json<PreflightDryRunResponse>();
+    expect(body).toMatchObject({
+      requestId: draft.id,
+      dryRun: true,
+      ok: true,
+      blockingFailures: [],
+    });
+    expect(body.results.map((result) => result.id)).not.toContain('loginPerRole');
+    expect(body.results.map((result) => result.id)).not.toContain('deliverSocNotice');
+    expect(preflightAudit.events).toHaveLength(1);
+    expect(preflightAudit.events[0]?.action).toBe('scope.preflight.dry_run');
+  });
+
+  it('answers ok false with the unverified asset named and remediated', async () => {
+    const draft = await createDraft({ ...goodDraft, assetIds: [ASSET_UNVERIFIED_A] });
+    const res = await call({ principal: 'admin-a@a', path: `/${draft.id}/preflight` });
+    const body = res.json<PreflightDryRunResponse>();
+    expect(body.ok).toBe(false);
+    expect(body.blockingFailures).toEqual(['verifyAssetsVerified']);
+    expect(
+      body.results.find((result) => result.id === 'verifyAssetsVerified')?.remediation,
+    ).toBeTruthy();
+  });
+
+  it('leaves the request unchanged', async () => {
+    const draft = await createDraft();
+    await call({ principal: 'admin-a@a', path: `/${draft.id}/preflight` });
+    const after = await call({ principal: 'admin-a@a', method: 'GET', path: `/${draft.id}` });
+    expect(after.json<AssessmentRequestResponse>().status).toBe('draft');
+    expect(etagOf(after)).toBe('"v0"');
+  });
+
+  it('answers 409 tenant_halted and audits nothing while the kill switch is active', async () => {
+    const draft = await createDraft();
+    halted.add(TENANT_A);
+    const res = await call({ principal: 'admin-a@a', path: `/${draft.id}/preflight` });
+    expect(res.statusCode).toBe(409);
+    expect(res.json<Problem>().code).toBe('tenant_halted');
+    expect(preflightAudit.events).toEqual([]);
+  });
+
+  it('refuses a caller without assessment:create (403) and a foreign id (404)', async () => {
+    const draft = await createDraft();
+    expect(
+      (await call({ principal: 'auditor-a@a', path: `/${draft.id}/preflight` })).statusCode,
+    ).toBe(403);
+    expect(
+      (await call({ principal: 'admin-b@b', path: `/${draft.id}/preflight` })).statusCode,
+    ).toBe(404);
+    expect((await call({ principal: 'admin-a@a', path: '/not-an-id/preflight' })).statusCode).toBe(
+      404,
+    );
+    expect(preflightAudit.events).toEqual([]);
   });
 });

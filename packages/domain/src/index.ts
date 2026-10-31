@@ -93,6 +93,32 @@ export {
   storedBandOfSeverity,
 } from './findings/dashboard-severity.js';
 export {
+  dryRunDefinitions,
+  isPreflightCheckId,
+  PREFLIGHT_CATALOGUE,
+  PREFLIGHT_CHECK_IDS,
+  type PreflightCheckDefinition,
+  type PreflightCheckId,
+  PREFLIGHT_SEVERITIES,
+  type PreflightSeverity,
+} from './preflight/catalogue.js';
+export {
+  PREFLIGHT_DEFAULT_CHECK_TIMEOUT_MS,
+  PREFLIGHT_DEFAULT_CONCURRENCY,
+  type PreflightCheck,
+  type PreflightEvidence,
+  PreflightConfigError,
+  type PreflightReport,
+  type PreflightResult,
+  PREFLIGHT_RUNNER_CODES,
+  PREFLIGHT_STATUSES,
+  type PreflightStatus,
+  runDryRunPreflight,
+  runPreflight,
+  type RunPreflightOptions,
+} from './preflight/runner.js';
+
+export {
   assertSeverityMatchesVectors,
   FINDING_CVSS_SPAN,
   FINDING_SEVERITY_METRIC,

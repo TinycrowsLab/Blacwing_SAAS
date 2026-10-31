@@ -1,3 +1,4 @@
+import type { AuditEventInput } from '@blackwing/audit';
 import type {
   AssessmentRequestStatus,
   BudgetCeiling,
@@ -39,6 +40,16 @@ export interface AssetFact {
   readonly verificationStatus: VerificationStatus;
   /** The owner, for the asset-level Cedar check (`assessment/policy.ts`). */
   readonly ownerUserId: string;
+  /** Hostnames the asset's targets resolve through (#579 dry run). Empty when the asset has none. */
+  readonly hosts?: readonly string[];
+}
+
+/**
+ * Resolves a hostname to its addresses for the dry run (#579). It is a DNS lookup only: no request is sent to the
+ * target. A rejection means the name did not resolve.
+ */
+export interface TargetResolver {
+  resolve(host: string): Promise<readonly string[]>;
 }
 
 /** Asset lookup. Tenant-scoped: an asset of another tenant is simply absent from the result. */
@@ -73,4 +84,20 @@ export interface AssessmentRequestMemberships {
 /** Tenant kill switch (§8.4): a halted tenant may not submit a request. */
 export interface TenantHaltState {
   isHalted(tenantId: string): Promise<boolean>;
+}
+
+/**
+ * Model-provider reachability for the dry run (#579). `reachable()` answers true only when the provider
+ * answered a probe; it must not send a prompt or spend budget. A rejection means "could not answer".
+ */
+export interface ModelProviderProbe {
+  reachable(): Promise<boolean>;
+}
+
+/**
+ * Records the dry-run audit event (§8.8). The event is appended to the tenant's ledger; a failed write rejects,
+ * so a dry run whose audit cannot be stored does not report a verdict.
+ */
+export interface PreflightDryRunAudit {
+  record(input: AuditEventInput): Promise<void>;
 }

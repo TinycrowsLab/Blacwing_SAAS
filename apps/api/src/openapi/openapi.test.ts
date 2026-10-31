@@ -133,6 +133,7 @@ const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   updateAsset: 'assets',
   deleteAsset: 'assets',
   createAssessmentRequest: 'assessment-requests',
+  dryRunAssessmentRequestPreflight: 'assessment-requests',
   getAssessmentRequest: 'assessment-requests',
   updateAssessmentRequest: 'assessment-requests',
   submitAssessmentRequest: 'assessment-requests',
@@ -211,6 +212,7 @@ describe('public OpenAPI document', () => {
       'deleteSecret',
       'diffTestPlanVersions',
       'disableServiceAccount',
+      'dryRunAssessmentRequestPreflight',
       'getAssessmentRequest',
       'getAsset',
       'getAssetVerification',
@@ -264,7 +266,7 @@ describe('public OpenAPI document', () => {
       'verifySignup',
       'withdrawAssessmentRequest',
     ]);
-    expect(countOperations(doc)).toBe(73);
+    expect(countOperations(doc)).toBe(75);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -397,7 +399,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(73);
+    expect(result.operations).toBe(75);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });

@@ -600,6 +600,14 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     isAlwaysAudited: true,
     description: 'An assessment request was withdrawn by its requester.',
   },
+  // pre-submit preflight dry run (#579): read-only, audited so a feasibility check leaves a trace (§8.8)
+  {
+    action: 'scope.preflight.dry_run',
+    defaultSeverity: 'info',
+    isAlwaysAudited: true,
+    description:
+      'A read-only preflight dry run ran against an assessment request; metadata records the verdict and the blocking failures.',
+  },
   // test plans (PLAN-005, #395): appended; metadata carries ids, versions and the changed field names only
   {
     action: 'test_plan.version_created',

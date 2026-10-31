@@ -2,7 +2,7 @@
 
 The public `/v1` REST API, version 0.0.0. This page is generated from [`openapi.json`](openapi.json) by `pnpm openapi:generate`; do not edit it by hand. CI fails when it is stale.
 
-It documents 74 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
+It documents 75 operations. Read [Conventions](conventions.md) for pagination, idempotency, concurrency and errors, and [Authentication](auth.md) for tokens and scopes.
 
 The internal Run Broker API (`/internal/broker`) is not part of this reference.
 
@@ -44,6 +44,7 @@ The internal Run Broker API (`/internal/broker`) is not part of this reference.
   - [GET /assessment-requests/{id}](#get-assessment-requestsid)
   - [PATCH /assessment-requests/{id}](#patch-assessment-requestsid)
   - [POST /assessment-requests/{id}/submit](#post-assessment-requestsidsubmit)
+  - [POST /assessment-requests/{id}/preflight](#post-assessment-requestsidpreflight)
   - [POST /assessment-requests/{id}/withdraw](#post-assessment-requestsidwithdraw)
 - assets
   - [GET /assets](#get-assets)
@@ -2139,7 +2140,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -2611,6 +2612,42 @@ Example: Schedule has no assets.
 }
 ```
 
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
 #### Response 429
 
 Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
@@ -2672,18 +2709,18 @@ Requires audit:read (auditor, org_admin). Newest first, by (occurredAt, seq). Th
 - Operation ID: `listAuditEvents`
 - Authentication: `bearerAuth` or `sessionCookie`
 
-| Parameter      | In    | Required | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Description                               |
-| -------------- | ----- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `actorId`      | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |                                           |
-| `action`       | query | no       | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"`, `"asset.updated"`, `"asset.deleted"`, `"asset.owner_assigned"`, `"test_plan.validated"`, `"oncall.roster.updated"`, `"oncall.sod_skipped"`, `"gate2.exception.created"`, `"gate2.decision.recorded"`, `"gate1.submitted"`, `"gate1.approved"`, `"gate1.changes_requested"`, `"gate1.rejected"`, `"asset.verification_started"`, `"asset.verification_passed"`, `"asset.verification_failed"`, `"asset.verification_cancelled"`, `"graph.surface.upserted"`, `"notification.channel_changed"`, `"notification.requested"`, `"notification.unrouted"`, `"finding.rejected"`, `"finding.marked_duplicate"`, `"run.envelope_signed"`, `"scope.manifest.upload_requested"`, `"scope.manifest.upload_completed"`, `"scope.manifest.upload_deleted"`, `"authz.sa.expired"`, `"service_account.created"`, `"service_account.updated"`, `"service_account.disabled"`, `"secret.created"`, `"secret.updated"`, `"secret.deleted"`, `"policy.version.created"`, `"policy.activated"`, `"policy.rolled_back"`, `"tenant.quota_exceeded"`, `"tenant.plan_changed"`, `"vkey.minted"`, `"vkey.revoked"` |                                           |
-| `targetId`     | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |                                           |
-| `runId`        | query | no       | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |                                           |
-| `outcome`      | query | no       | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |                                           |
-| `from`         | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |                                           |
-| `to`           | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |                                           |
-| `includeChain` | query | no       | enum: `"true"`, `"false"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Auditors only: include hash and prevHash. |
-| `cursor`       | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |                                           |
-| `limit`        | query | no       | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |                                           |
+| Parameter      | In    | Required | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Description                               |
+| -------------- | ----- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `actorId`      | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |                                           |
+| `action`       | query | no       | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"scope.preflight.dry_run"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"`, `"asset.updated"`, `"asset.deleted"`, `"asset.owner_assigned"`, `"test_plan.validated"`, `"oncall.roster.updated"`, `"oncall.sod_skipped"`, `"gate2.exception.created"`, `"gate2.decision.recorded"`, `"gate1.submitted"`, `"gate1.approved"`, `"gate1.changes_requested"`, `"gate1.rejected"`, `"asset.verification_started"`, `"asset.verification_passed"`, `"asset.verification_failed"`, `"asset.verification_cancelled"`, `"graph.surface.upserted"`, `"notification.channel_changed"`, `"notification.requested"`, `"notification.unrouted"`, `"finding.rejected"`, `"finding.marked_duplicate"`, `"run.envelope_signed"`, `"scope.manifest.upload_requested"`, `"scope.manifest.upload_completed"`, `"scope.manifest.upload_deleted"`, `"authz.sa.expired"`, `"service_account.created"`, `"service_account.updated"`, `"service_account.disabled"`, `"secret.created"`, `"secret.updated"`, `"secret.deleted"`, `"policy.version.created"`, `"policy.activated"`, `"policy.rolled_back"`, `"tenant.quota_exceeded"`, `"tenant.plan_changed"`, `"vkey.minted"`, `"vkey.revoked"` |                                           |
+| `targetId`     | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |                                           |
+| `runId`        | query | no       | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                           |
+| `outcome`      | query | no       | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |                                           |
+| `from`         | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |                                           |
+| `to`           | query | no       | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |                                           |
+| `includeChain` | query | no       | enum: `"true"`, `"false"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Auditors only: include hash and prevHash. |
+| `cursor`       | query | no       | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |                                           |
+| `limit`        | query | no       | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |                                           |
 
 #### Response 200
 
@@ -5643,7 +5680,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -6111,6 +6148,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -7165,7 +7238,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -7633,6 +7706,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -13212,7 +13321,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -13680,6 +13789,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -14869,7 +15014,7 @@ Example: ETag mismatch.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -15337,6 +15482,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -16071,7 +16252,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -16539,6 +16720,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -18259,7 +18476,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -18727,6 +18944,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -19909,7 +20162,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -20377,6 +20630,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -22606,7 +22895,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -23074,6 +23363,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -24251,7 +24576,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -24719,6 +25044,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -25499,6 +25860,1145 @@ Content type `application/problem+json`: [Problem](#problem).
 One or more submit checks failed; errors[] lists every failing check.
 
 Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 429
+
+Problem details; code is one of RATE_LIMITED, CONNECTOR_RATE_LIMITED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Too many requests.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/RATE_LIMITED",
+  "title": "Too many requests",
+  "status": 429,
+  "code": "RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector rate limited.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_RATE_LIMITED",
+  "title": "Ticket connector rate limited",
+  "status": 429,
+  "code": "CONNECTOR_RATE_LIMITED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+### POST /assessment-requests/{id}/preflight
+
+**Dry-run the preflight checks of a request before submit**
+
+Read-only feasibility report (#579): the checks that read our own records (authorisation, scope coverage, a DNS lookup of each target host (resolve once, no request to the target), asset verification, the test window, the budgets and the model provider probe). It sends no target traffic, logs in nowhere, notifies nobody and changes no state. A halted tenant answers 409 tenant_halted. Every run is audited.
+
+- Operation ID: `dryRunAssessmentRequestPreflight`
+- Authentication: `bearerAuth` or `sessionCookie`
+
+| Parameter | In   | Required | Type   | Description                                       |
+| --------- | ---- | -------- | ------ | ------------------------------------------------- |
+| `id`      | path | yes      | string | The `areq_…` public id of the assessment request. |
+
+#### Response 200
+
+The dry-run report. ok is false when a blocking check failed.
+
+Content type `application/json`: [PreflightDryRun](#preflightdryrun).
+
+Example: A verified asset with no open test window.
+
+```json
+{
+  "requestId": "areq_01m64cavacexhrddgjb6xd80xv",
+  "dryRun": true,
+  "ok": false,
+  "results": [
+    {
+      "id": "assertWindowOpen",
+      "title": "Test window is open",
+      "severity": "blocking",
+      "status": "fail",
+      "detail": "no test window of the standing authorisation is open",
+      "code": "WINDOW_CLOSED",
+      "remediation": "Schedule the run inside an open test window of the standing authorisation."
+    }
+  ],
+  "blockingFailures": ["assertWindowOpen"]
+}
+```
+
+#### Response 400
+
+Problem details; code is one of INVALID_CURSOR, INVALID_QUERY, SBX_BAD_REQUEST, SM_BAD_REQUEST, IDEMPOTENCY_KEY_REQUIRED, SIGNUP_TOKEN_INVALID, NOTIFICATION_CHANNEL_INVALID.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Invalid cursor.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_CURSOR",
+  "title": "Invalid cursor",
+  "status": 400,
+  "code": "INVALID_CURSOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid query.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_QUERY",
+  "title": "Invalid query",
+  "status": 400,
+  "code": "INVALID_QUERY",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_BAD_REQUEST",
+  "title": "Malformed request",
+  "status": 400,
+  "code": "SBX_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Malformed session request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_BAD_REQUEST",
+  "title": "Malformed session request",
+  "status": 400,
+  "code": "SM_BAD_REQUEST",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_REQUIRED",
+  "title": "Idempotency key required",
+  "status": 400,
+  "code": "IDEMPOTENCY_KEY_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Signup token invalid or expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SIGNUP_TOKEN_INVALID",
+  "title": "Signup token invalid or expired",
+  "status": 400,
+  "code": "SIGNUP_TOKEN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid notification channel.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOTIFICATION_CHANNEL_INVALID",
+  "title": "Invalid notification channel",
+  "status": 400,
+  "code": "NOTIFICATION_CHANNEL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 401
+
+Problem details; code is one of UNAUTHENTICATED, AUTH_NO_CREDENTIALS, AUTH_INVALID_TOKEN, AUTH_EXPIRED, AUTHZ_STEPUP_REQUIRED, SBX_UNAUTHENTICATED, SM_UNAUTHENTICATED, SM_SESSION_EXPIRED, SERVICE_AUTH_FAILED.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/UNAUTHENTICATED",
+  "title": "Authentication required",
+  "status": 401,
+  "code": "UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No credentials presented.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_NO_CREDENTIALS",
+  "title": "No credentials presented",
+  "status": 401,
+  "code": "AUTH_NO_CREDENTIALS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid credentials.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_INVALID_TOKEN",
+  "title": "Invalid credentials",
+  "status": 401,
+  "code": "AUTH_INVALID_TOKEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Credentials expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTH_EXPIRED",
+  "title": "Credentials expired",
+  "status": 401,
+  "code": "AUTH_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Step up authentication required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_STEPUP_REQUIRED",
+  "title": "Step up authentication required",
+  "status": 401,
+  "code": "AUTHZ_STEPUP_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_UNAUTHENTICATED",
+  "title": "Run token required",
+  "status": 401,
+  "code": "SBX_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session service token required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_UNAUTHENTICATED",
+  "title": "Session service token required",
+  "status": 401,
+  "code": "SM_UNAUTHENTICATED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Session expired.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_SESSION_EXPIRED",
+  "title": "Session expired",
+  "status": 401,
+  "code": "SM_SESSION_EXPIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Service authentication failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SERVICE_AUTH_FAILED",
+  "title": "Service authentication failed",
+  "status": 401,
+  "code": "SERVICE_AUTH_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 403
+
+Problem details; code is one of FORBIDDEN, FORBIDDEN_ROLE, TENANT_CONTEXT_MISSING, CROSS_TENANT_DENIED, SEED_FORBIDDEN_IN_PROD, TENANT_CONTEXT_MISMATCH, SCOPE_VIOLATION, SCOPE_INTRUSIVENESS_EXCEEDS_CEILING, SCOPE_DESTRUCTIVE_FORBIDDEN, SCOPE_BUDGET_EXCEEDS_SA, AUTHZ_SOD_VIOLATION, OVERRIDE_FIELD_FORBIDDEN, MODEL_NOT_ALLOWED, AAD_MISMATCH, PROMPT_DRAFT_FORBIDDEN, SM_TENANT_MISMATCH, KILL_FORBIDDEN, KILL_GLOBAL_NOT_ALLOWED_HERE, NOT_OPERATOR, OPERATOR_MFA_REQUIRED, TENANT_MISMATCH, SECRET_PURPOSE_DENIED, GRAPH_NO_TENANT_CONTEXT, GRAPH_TENANT_MISMATCH, SOD_VIOLATION, AUTHZ_SA_NOT_VALID, GATE2_SOD_VIOLATION, GATE2_DESTRUCTIVE_FORBIDDEN.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN",
+  "title": "Forbidden",
+  "status": 403,
+  "code": "FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Role does not permit this action.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/FORBIDDEN_ROLE",
+  "title": "Role does not permit this action",
+  "status": 403,
+  "code": "FORBIDDEN_ROLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISSING",
+  "title": "Tenant context missing",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Cross tenant access denied.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CROSS_TENANT_DENIED",
+  "title": "Cross tenant access denied",
+  "status": 403,
+  "code": "CROSS_TENANT_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Seeding forbidden in this environment.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SEED_FORBIDDEN_IN_PROD",
+  "title": "Seeding forbidden in this environment",
+  "status": 403,
+  "code": "SEED_FORBIDDEN_IN_PROD",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_CONTEXT_MISMATCH",
+  "title": "Tenant context mismatch",
+  "status": 403,
+  "code": "TENANT_CONTEXT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Out of authorised scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_VIOLATION",
+  "title": "Out of authorised scope",
+  "status": 403,
+  "code": "SCOPE_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Intrusiveness exceeds the authorised ceiling.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "title": "Intrusiveness exceeds the authorised ceiling",
+  "status": 403,
+  "code": "SCOPE_INTRUSIVENESS_EXCEEDS_CEILING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive intrusiveness is forbidden.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive intrusiveness is forbidden",
+  "status": 403,
+  "code": "SCOPE_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Budget exceeds the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_BUDGET_EXCEEDS_SA",
+  "title": "Budget exceeds the standing authorisation",
+  "status": 403,
+  "code": "SCOPE_BUDGET_EXCEEDS_SA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated for the standing authorisation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SOD_VIOLATION",
+  "title": "Separation of duties violated for the standing authorisation",
+  "status": 403,
+  "code": "AUTHZ_SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Persona override field not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OVERRIDE_FIELD_FORBIDDEN",
+  "title": "Persona override field not permitted",
+  "status": 403,
+  "code": "OVERRIDE_FIELD_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Model not allowed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/MODEL_NOT_ALLOWED",
+  "title": "Model not allowed",
+  "status": 403,
+  "code": "MODEL_NOT_ALLOWED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret context mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AAD_MISMATCH",
+  "title": "Secret context mismatch",
+  "status": 403,
+  "code": "AAD_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Draft prompt forbidden in production.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_DRAFT_FORBIDDEN",
+  "title": "Draft prompt forbidden in production",
+  "status": 403,
+  "code": "PROMPT_DRAFT_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Token does not match the tenant or run.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_TENANT_MISMATCH",
+  "title": "Token does not match the tenant or run",
+  "status": 403,
+  "code": "SM_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_FORBIDDEN",
+  "title": "Kill not permitted",
+  "status": 403,
+  "code": "KILL_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Global kill is not allowed on this endpoint.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "title": "Global kill is not allowed on this endpoint",
+  "status": 403,
+  "code": "KILL_GLOBAL_NOT_ALLOWED_HERE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Platform operator required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NOT_OPERATOR",
+  "title": "Platform operator required",
+  "status": 403,
+  "code": "NOT_OPERATOR",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Operator MFA required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/OPERATOR_MFA_REQUIRED",
+  "title": "Operator MFA required",
+  "status": 403,
+  "code": "OPERATOR_MFA_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TENANT_MISMATCH",
+  "title": "Tenant mismatch",
+  "status": 403,
+  "code": "TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Secret purpose not permitted.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SECRET_PURPOSE_DENIED",
+  "title": "Secret purpose not permitted",
+  "status": 403,
+  "code": "SECRET_PURPOSE_DENIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant context missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_NO_TENANT_CONTEXT",
+  "title": "Graph tenant context missing",
+  "status": 403,
+  "code": "GRAPH_NO_TENANT_CONTEXT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Graph tenant mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GRAPH_TENANT_MISMATCH",
+  "title": "Graph tenant mismatch",
+  "status": 403,
+  "code": "GRAPH_TENANT_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SOD_VIOLATION",
+  "title": "Separation of duties violated",
+  "status": 403,
+  "code": "SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Standing authorisation is not valid for traffic.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_SA_NOT_VALID",
+  "title": "Standing authorisation is not valid for traffic",
+  "status": 403,
+  "code": "AUTHZ_SA_NOT_VALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Gate exception separation of duties violated.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_SOD_VIOLATION",
+  "title": "Gate exception separation of duties violated",
+  "status": 403,
+  "code": "GATE2_SOD_VIOLATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Destructive gate exception cannot be approved.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_DESTRUCTIVE_FORBIDDEN",
+  "title": "Destructive gate exception cannot be approved",
+  "status": 403,
+  "code": "GATE2_DESTRUCTIVE_FORBIDDEN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+#### Response 404
+
+Not found in this tenant.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 409
+
+The tenant is halted (tenant_halted).
+
+Content type `application/problem+json`: [Problem](#problem).
+
+#### Response 422
+
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
+
+Content type `application/problem+json`: [Problem](#problem).
+
+Example: Validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/VALIDATION_FAILED",
+  "title": "Validation failed",
+  "status": 422,
+  "code": "VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Evidence integrity check failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/EVIDENCE_INTEGRITY_FAILED",
+  "title": "Evidence integrity check failed",
+  "status": 422,
+  "code": "EVIDENCE_INTEGRITY_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Test plan failed validation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE1_PLAN_INVALID",
+  "title": "Test plan failed validation",
+  "status": 422,
+  "code": "GATE1_PLAN_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Run envelope verification failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_VERIFICATION_FAILED",
+  "title": "Run envelope verification failed",
+  "status": 422,
+  "code": "ENVELOPE_VERIFICATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Policy failed validation.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/POLICY_VALIDATION_FAILED",
+  "title": "Policy failed validation",
+  "status": 422,
+  "code": "POLICY_VALIDATION_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid intrusiveness class.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_CLASS",
+  "title": "Invalid intrusiveness class",
+  "status": 422,
+  "code": "SCOPE_INVALID_CLASS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid request budget.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_BUDGET",
+  "title": "Invalid request budget",
+  "status": 422,
+  "code": "SCOPE_INVALID_BUDGET",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid scope rule.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCOPE_INVALID_RULE",
+  "title": "Invalid scope rule",
+  "status": 422,
+  "code": "SCOPE_INVALID_RULE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Negative control missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NEGATIVE_CONTROL_MISSING",
+  "title": "Negative control missing",
+  "status": 422,
+  "code": "NEGATIVE_CONTROL_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Negative control does not suit the oracle.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/NEGATIVE_CONTROL_ORACLE_MISMATCH",
+  "title": "Negative control does not suit the oracle",
+  "status": 422,
+  "code": "NEGATIVE_CONTROL_ORACLE_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid policy builder document.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/POLICY_BUILDER_INVALID",
+  "title": "Invalid policy builder document",
+  "status": 422,
+  "code": "POLICY_BUILDER_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid standing authorisation window.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_INVALID_WINDOW",
+  "title": "Invalid standing authorisation window",
+  "status": 422,
+  "code": "AUTHZ_INVALID_WINDOW",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Asset is not verified for this tenant.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUTHZ_ASSET_UNVERIFIED",
+  "title": "Asset is not verified for this tenant",
+  "status": 422,
+  "code": "AUTHZ_ASSET_UNVERIFIED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_UNKNOWN",
+  "title": "Unknown persona",
+  "status": 422,
+  "code": "PERSONA_UNKNOWN",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Forbidden tool in persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_FORBIDDEN_TOOL",
+  "title": "Forbidden tool in persona",
+  "status": 422,
+  "code": "PERSONA_FORBIDDEN_TOOL",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid persona definition.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PERSONA_INVALID",
+  "title": "Invalid persona definition",
+  "status": 422,
+  "code": "PERSONA_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret envelope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ENVELOPE_INVALID",
+  "title": "Invalid secret envelope",
+  "status": 422,
+  "code": "ENVELOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid prompt file.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_INVALID",
+  "title": "Invalid prompt file",
+  "status": 422,
+  "code": "PROMPT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Prompt placeholder unfilled.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/PROMPT_PLACEHOLDER_MISSING",
+  "title": "Prompt placeholder unfilled",
+  "status": 422,
+  "code": "PROMPT_PLACEHOLDER_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown agent persona.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AGENT_UNKNOWN_PERSONA",
+  "title": "Unknown agent persona",
+  "status": 422,
+  "code": "AGENT_UNKNOWN_PERSONA",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid secret reference.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/INVALID_SECRET_REF",
+  "title": "Invalid secret reference",
+  "status": 422,
+  "code": "INVALID_SECRET_REF",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Sandbox image missing.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SBX_IMAGE_MISSING",
+  "title": "Sandbox image missing",
+  "status": 422,
+  "code": "SBX_IMAGE_MISSING",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login recipe invalid.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_RECIPE_INVALID",
+  "title": "Login recipe invalid",
+  "status": 422,
+  "code": "SM_RECIPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Login rejected by the target.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SM_LOGIN_FAILED",
+  "title": "Login rejected by the target",
+  "status": 422,
+  "code": "SM_LOGIN_FAILED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid kill scope.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_SCOPE_INVALID",
+  "title": "Invalid kill scope",
+  "status": 422,
+  "code": "KILL_SCOPE_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Kill scope reference required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/KILL_REF_REQUIRED",
+  "title": "Kill scope reference required",
+  "status": 422,
+  "code": "KILL_REF_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Idempotency key reused with a different request.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/IDEMPOTENCY_KEY_MISMATCH",
+  "title": "Idempotency key reused with a different request",
+  "status": 422,
+  "code": "IDEMPOTENCY_KEY_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: No on call configured.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/GATE2_NO_ONCALL_CONFIGURED",
+  "title": "No on call configured",
+  "status": 422,
+  "code": "GATE2_NO_ONCALL_CONFIGURED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid audit event.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/AUDIT_EVENT_INVALID",
+  "title": "Invalid audit event",
+  "status": 422,
+  "code": "AUDIT_EVENT_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid asset identifier.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_INVALID_IDENTIFIER",
+  "title": "Invalid asset identifier",
+  "status": 422,
+  "code": "ASSET_INVALID_IDENTIFIER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Verification method not applicable.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/ASSET_VERIFICATION_METHOD_NOT_APPLICABLE",
+  "title": "Verification method not applicable",
+  "status": 422,
+  "code": "ASSET_VERIFICATION_METHOD_NOT_APPLICABLE",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: CVSS score does not match its vector.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CVSS_VECTOR_SCORE_MISMATCH",
+  "title": "CVSS score does not match its vector",
+  "status": 422,
+  "code": "CVSS_VECTOR_SCORE_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Triage reason required.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_REASON_REQUIRED",
+  "title": "Triage reason required",
+  "status": 422,
+  "code": "TRIAGE_REASON_REQUIRED",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid accepted risk expiry.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_EXPIRY_INVALID",
+  "title": "Invalid accepted risk expiry",
+  "status": 422,
+  "code": "TRIAGE_EXPIRY_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid canonical finding for a duplicate.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/TRIAGE_CANONICAL_INVALID",
+  "title": "Invalid canonical finding for a duplicate",
+  "status": 422,
+  "code": "TRIAGE_CANONICAL_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Unknown ticket connector provider.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_UNKNOWN_PROVIDER",
+  "title": "Unknown ticket connector provider",
+  "status": 422,
+  "code": "CONNECTOR_UNKNOWN_PROVIDER",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Ticket connector validation failed.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/CONNECTOR_VALIDATION",
+  "title": "Ticket connector validation failed",
+  "status": 422,
+  "code": "CONNECTOR_VALIDATION",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Embedding dimension mismatch.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/MEMORY_EMBED_DIM_MISMATCH",
+  "title": "Embedding dimension mismatch",
+  "status": 422,
+  "code": "MEMORY_EMBED_DIM_MISMATCH",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule has no assets.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_NO_ASSETS",
+  "title": "Schedule has no assets",
+  "status": 422,
+  "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
 
 #### Response 429
 
@@ -26669,7 +28169,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -27137,6 +28637,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -32285,7 +33821,7 @@ Content type `application/problem+json`: [Problem](#problem).
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -32753,6 +34289,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -34703,7 +36275,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -35171,6 +36743,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -40487,7 +42095,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -40955,6 +42563,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -41586,7 +43230,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -42054,6 +43698,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -42699,7 +44379,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -43167,6 +44847,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -44258,7 +45974,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -44726,6 +46442,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -45908,7 +47660,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -46376,6 +48128,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -46672,7 +48460,7 @@ Example: Notification channel is referenced by active routing rules.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -47140,6 +48928,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -47871,7 +49695,7 @@ Example: Gate exception already decided.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -48339,6 +50163,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -48671,7 +50531,7 @@ Example: Notification channel is referenced by active routing rules.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -49139,6 +50999,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -49434,7 +51330,7 @@ Example: Notification channel is referenced by active routing rules.
 
 #### Response 422
 
-Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS.
+Problem details; code is one of VALIDATION_FAILED, EVIDENCE_INTEGRITY_FAILED, GATE1_PLAN_INVALID, ENVELOPE_VERIFICATION_FAILED, POLICY_VALIDATION_FAILED, SCOPE_INVALID_CLASS, SCOPE_INVALID_BUDGET, SCOPE_INVALID_RULE, NEGATIVE_CONTROL_MISSING, NEGATIVE_CONTROL_ORACLE_MISMATCH, POLICY_BUILDER_INVALID, AUTHZ_INVALID_WINDOW, AUTHZ_ASSET_UNVERIFIED, PERSONA_UNKNOWN, PERSONA_FORBIDDEN_TOOL, PERSONA_INVALID, ENVELOPE_INVALID, PROMPT_INVALID, PROMPT_PLACEHOLDER_MISSING, AGENT_UNKNOWN_PERSONA, INVALID_SECRET_REF, SBX_IMAGE_MISSING, SM_RECIPE_INVALID, SM_LOGIN_FAILED, KILL_SCOPE_INVALID, KILL_REF_REQUIRED, IDEMPOTENCY_KEY_MISMATCH, GATE2_NO_ONCALL_CONFIGURED, AUDIT_EVENT_INVALID, ASSET_INVALID_IDENTIFIER, ASSET_VERIFICATION_METHOD_NOT_APPLICABLE, CVSS_VECTOR_SCORE_MISMATCH, TRIAGE_REASON_REQUIRED, TRIAGE_EXPIRY_INVALID, TRIAGE_CANONICAL_INVALID, CONNECTOR_UNKNOWN_PROVIDER, CONNECTOR_VALIDATION, MEMORY_EMBED_DIM_MISMATCH, SCHEDULE_NO_ASSETS, SCHEDULE_CRON_INVALID, SCHEDULE_TZ_INVALID, SCHEDULE_TOO_FREQUENT.
 
 Content type `application/problem+json`: [Problem](#problem).
 
@@ -49902,6 +51798,42 @@ Example: Schedule has no assets.
   "title": "Schedule has no assets",
   "status": 422,
   "code": "SCHEDULE_NO_ASSETS",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule cron expression.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_CRON_INVALID",
+  "title": "Invalid schedule cron expression",
+  "status": 422,
+  "code": "SCHEDULE_CRON_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Invalid schedule time zone.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TZ_INVALID",
+  "title": "Invalid schedule time zone",
+  "status": 422,
+  "code": "SCHEDULE_TZ_INVALID",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+```
+
+Example: Schedule fires more often than hourly.
+
+```json
+{
+  "type": "https://errors.blackwing.dev/SCHEDULE_TOO_FREQUENT",
+  "title": "Schedule fires more often than hourly",
+  "status": 422,
+  "code": "SCHEDULE_TOO_FREQUENT",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
@@ -56310,23 +58242,23 @@ Full schema:
 
 ### AuditEventView
 
-| Property      | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Required | Description                                                              |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ |
-| `id`          | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | yes      |                                                                          |
-| `seq`         | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | yes      |                                                                          |
-| `occurredAt`  | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | yes      |                                                                          |
-| `action`      | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"`, `"asset.updated"`, `"asset.deleted"`, `"asset.owner_assigned"`, `"test_plan.validated"`, `"oncall.roster.updated"`, `"oncall.sod_skipped"`, `"gate2.exception.created"`, `"gate2.decision.recorded"`, `"gate1.submitted"`, `"gate1.approved"`, `"gate1.changes_requested"`, `"gate1.rejected"`, `"asset.verification_started"`, `"asset.verification_passed"`, `"asset.verification_failed"`, `"asset.verification_cancelled"`, `"graph.surface.upserted"`, `"notification.channel_changed"`, `"notification.requested"`, `"notification.unrouted"`, `"finding.rejected"`, `"finding.marked_duplicate"`, `"run.envelope_signed"`, `"scope.manifest.upload_requested"`, `"scope.manifest.upload_completed"`, `"scope.manifest.upload_deleted"`, `"authz.sa.expired"`, `"service_account.created"`, `"service_account.updated"`, `"service_account.disabled"`, `"secret.created"`, `"secret.updated"`, `"secret.deleted"`, `"policy.version.created"`, `"policy.activated"`, `"policy.rolled_back"`, `"tenant.quota_exceeded"`, `"tenant.plan_changed"`, `"vkey.minted"`, `"vkey.revoked"` | yes      |                                                                          |
-| `severity`    | enum: `"info"`, `"notice"`, `"warning"`, `"critical"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | yes      |                                                                          |
-| `actor`       | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | yes      | Who acted. `email` is only returned to auditors.                         |
-| `target`      | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | yes      |                                                                          |
-| `outcome`     | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | yes      |                                                                          |
-| `reason`      | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | yes      |                                                                          |
-| `metadata`    | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | yes      | Empty for callers that are not auditors.                                 |
-| `metadataRef` | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | no       | Only returned to auditors.                                               |
-| `traceId`     | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | yes      |                                                                          |
-| `runId`       | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | yes      |                                                                          |
-| `hash`        | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | no       | Hex SHA-256 chain hash. Only with includeChain=true.                     |
-| `prevHash`    | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | no       | Hex previous hash; null on the genesis row. Only with includeChain=true. |
+| Property      | Type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Required | Description                                                              |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ |
+| `id`          | string (uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | yes      |                                                                          |
+| `seq`         | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | yes      |                                                                          |
+| `occurredAt`  | string (date-time)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | yes      |                                                                          |
+| `action`      | enum: `"auth.login"`, `"auth.logout"`, `"auth.sso_link"`, `"auth.api_token_issued"`, `"auth.api_token_revoked"`, `"authz.denied"`, `"authz.role_changed"`, `"asset.created"`, `"asset.verified"`, `"sa.requested"`, `"sa.approved"`, `"sa.rejected"`, `"sa.revoked"`, `"gate1.decided"`, `"gate2.decided"`, `"gate3.released"`, `"run.created"`, `"run.state_changed"`, `"tool.invoked"`, `"egress.blocked"`, `"kill.fired"`, `"kill.completed"`, `"finding.released"`, `"finding.risk_accepted"`, `"export.generated"`, `"secret.resolved"`, `"config.changed"`, `"connector.configured"`, `"kill.triggered"`, `"kill.forbidden"`, `"kill.egress_blocked"`, `"kill.sandboxes_terminated"`, `"secret.kek_provisioned"`, `"secret.kek_rotated"`, `"secret.kek_disabled"`, `"kill.keys_revoked"`, `"kill.workflows_cancelled"`, `"activity.started"`, `"activity.succeeded"`, `"activity.failed"`, `"workflow.started"`, `"workflow.completed"`, `"workflow.failed"`, `"workflow.cancelled"`, `"workflow.continued_as_new"`, `"soc_kill.link_minted"`, `"soc_kill.triggered"`, `"soc_kill.rejected"`, `"outbox.delivery_failed"`, `"scope.request.created"`, `"scope.request.status_changed"`, `"operator.kill_previewed"`, `"operator.kill_fired"`, `"audit.queried"`, `"secret.rotated"`, `"secret.rewrapped"`, `"persona.override_changed"`, `"auth.sso_config_changed"`, `"tenant.created"`, `"signup.verified"`, `"tenant.settings_updated"`, `"auth.operator_login"`, `"auth.operator_logout"`, `"auth.operator_session_revoked"`, `"authz.sa.created"`, `"authz.sa.state_changed"`, `"authz.sa.signed"`, `"authz.signing_key.rotated"`, `"authz.gate.decision"`, `"authz.sa.updated"`, `"authz.sa.submitted"`, `"run.surface.viewed"`, `"scope.request.updated"`, `"scope.request.submitted"`, `"scope.request.withdrawn"`, `"scope.preflight.dry_run"`, `"test_plan.version_created"`, `"test_case.created"`, `"test_case.updated"`, `"test_case.removed"`, `"asset.updated"`, `"asset.deleted"`, `"asset.owner_assigned"`, `"test_plan.validated"`, `"oncall.roster.updated"`, `"oncall.sod_skipped"`, `"gate2.exception.created"`, `"gate2.decision.recorded"`, `"gate1.submitted"`, `"gate1.approved"`, `"gate1.changes_requested"`, `"gate1.rejected"`, `"asset.verification_started"`, `"asset.verification_passed"`, `"asset.verification_failed"`, `"asset.verification_cancelled"`, `"graph.surface.upserted"`, `"notification.channel_changed"`, `"notification.requested"`, `"notification.unrouted"`, `"finding.rejected"`, `"finding.marked_duplicate"`, `"run.envelope_signed"`, `"scope.manifest.upload_requested"`, `"scope.manifest.upload_completed"`, `"scope.manifest.upload_deleted"`, `"authz.sa.expired"`, `"service_account.created"`, `"service_account.updated"`, `"service_account.disabled"`, `"secret.created"`, `"secret.updated"`, `"secret.deleted"`, `"policy.version.created"`, `"policy.activated"`, `"policy.rolled_back"`, `"tenant.quota_exceeded"`, `"tenant.plan_changed"`, `"vkey.minted"`, `"vkey.revoked"` | yes      |                                                                          |
+| `severity`    | enum: `"info"`, `"notice"`, `"warning"`, `"critical"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | yes      |                                                                          |
+| `actor`       | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | yes      | Who acted. `email` is only returned to auditors.                         |
+| `target`      | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | yes      |                                                                          |
+| `outcome`     | enum: `"success"`, `"failure"`, `"denied"`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | yes      |                                                                          |
+| `reason`      | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | yes      |                                                                          |
+| `metadata`    | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | yes      | Empty for callers that are not auditors.                                 |
+| `metadataRef` | object                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | no       | Only returned to auditors.                                               |
+| `traceId`     | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | yes      |                                                                          |
+| `runId`       | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | yes      |                                                                          |
+| `hash`        | string                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | no       | Hex SHA-256 chain hash. Only with includeChain=true.                     |
+| `prevHash`    | any                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | no       | Hex previous hash; null on the genesis row. Only with includeChain=true. |
 
 Full schema:
 
@@ -56439,6 +58371,7 @@ Full schema:
         "scope.request.updated",
         "scope.request.submitted",
         "scope.request.withdrawn",
+        "scope.preflight.dry_run",
         "test_plan.version_created",
         "test_case.created",
         "test_case.updated",
@@ -60638,6 +62571,92 @@ Full schema:
     "budgetTotals",
     "validatedAt"
   ],
+  "additionalProperties": false
+}
+```
+
+### PreflightDryRun
+
+| Property           | Type            | Required | Description |
+| ------------------ | --------------- | -------- | ----------- |
+| `requestId`        | string          | yes      |             |
+| `dryRun`           | boolean         | yes      |             |
+| `ok`               | boolean         | yes      |             |
+| `results`          | array of object | yes      |             |
+| `blockingFailures` | array of string | yes      |             |
+
+Full schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "requestId": {
+      "type": "string",
+      "pattern": "^areq_[A-Za-z0-9]+$"
+    },
+    "dryRun": {
+      "type": "boolean",
+      "const": true
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["blocking", "warning"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "skip"]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "remediation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": ["string", "number", "boolean", "null"]
+            }
+          }
+        },
+        "required": ["id", "title", "severity", "status", "detail"],
+        "additionalProperties": false
+      }
+    },
+    "blockingFailures": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": ["requestId", "dryRun", "ok", "results", "blockingFailures"],
   "additionalProperties": false
 }
 ```

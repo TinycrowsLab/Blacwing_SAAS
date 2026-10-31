@@ -8,14 +8,18 @@ import type {
   AssessmentRequestStore,
   AssetCatalog,
   AssetFact,
+  PreflightDryRunAudit,
   StandingAuthorisationFact,
   StandingAuthorisationReader,
   AssessmentRequestMemberships,
   TenantHaltState,
 } from './ports.js';
+import type { AuditEventInput } from '@blackwing/audit';
 
 /** The owner of every fixture asset. The appsec engineers of the fixtures may act on it (Cedar, `policy.ts`). */
 export const ASSET_OWNER = '0198f0a0-0000-7000-8000-0000000000a9';
+/** The hostname every fixture asset resolves through; the test resolver answers it without DNS. */
+export const ASSET_HOST = 'app.example.test';
 export const TENANT_A = '0198f0a0-0000-7000-8000-00000000000a';
 export const TENANT_B = '0198f0a0-0000-7000-8000-00000000000b';
 export const ADMIN_A = '0198f0a0-0000-7000-8000-0000000000a1';
@@ -158,7 +162,12 @@ export function memoryAssets(
       for (const id of assetIds) {
         const status = assets[id];
         if (status !== undefined)
-          found.push({ id, verificationStatus: status, ownerUserId: ASSET_OWNER });
+          found.push({
+            id,
+            verificationStatus: status,
+            ownerUserId: ASSET_OWNER,
+            hosts: [ASSET_HOST],
+          });
       }
       return Promise.resolve(found);
     },
@@ -195,5 +204,19 @@ export function activeSaA(): StandingAuthorisationFact {
     scopeRules: { rules: [GRANTED_RULE] },
     maxIntrusiveness: 'active_safe',
     defaultBudgets: { costCapUsd: 10, maxRequests: 10_000, maxDurationMs: 7_200_000 },
+  };
+}
+
+/** Records every dry-run audit event, as the audit port appends it to the ledger. */
+export function memoryPreflightAudit(): PreflightDryRunAudit & {
+  readonly events: AuditEventInput[];
+} {
+  const events: AuditEventInput[] = [];
+  return {
+    events,
+    record(input) {
+      events.push(input);
+      return Promise.resolve();
+    },
   };
 }

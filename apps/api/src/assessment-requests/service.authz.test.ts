@@ -12,6 +12,7 @@ import {
   memoryAssets,
   memoryHalts,
   memoryMemberships,
+  memoryPreflightAudit,
   memoryStandingAuthorisations,
   NOW,
   TENANT_A,
@@ -35,6 +36,13 @@ const body: CreateAssessmentRequest = {
   trigger: 'api',
 };
 
+const noopMetrics = {
+  submitted: () => undefined,
+  validationFailed: () => undefined,
+  preflightCheck: () => undefined,
+  preflightDryRun: () => undefined,
+};
+
 /** A service over the in-memory fixtures with the given asset-level policy. */
 function serviceWith(policy: AssessmentPolicyEngine) {
   const store = memoryAssessmentStore();
@@ -45,9 +53,10 @@ function serviceWith(policy: AssessmentPolicyEngine) {
     memberships: memoryMemberships({ [TENANT_A]: { [ADMIN_A]: ['appsec_engineer'] } }),
     halts: memoryHalts(new Set()),
     policy,
-    metrics: { submitted: () => undefined, validationFailed: () => undefined },
+    metrics: noopMetrics,
     logger: createLogger('api', { level: 'silent', nodeEnv: 'test' }),
     now: () => NOW,
+    preflightAudit: memoryPreflightAudit(),
   });
   return { service, store };
 }
@@ -91,9 +100,15 @@ describe('AssessmentRequestService asset-level policy (SCOPE-005 requirement 6)'
       memberships: memoryMemberships({ [TENANT_A]: { [ADMIN_A]: ['appsec_engineer'] } }),
       halts: memoryHalts(new Set()),
       policy: { authorize: () => 'deny' },
-      metrics: { submitted: () => undefined, validationFailed: () => undefined },
+      metrics: {
+        submitted: () => undefined,
+        validationFailed: () => undefined,
+        preflightCheck: () => undefined,
+        preflightDryRun: () => undefined,
+      },
       logger: createLogger('api', { level: 'silent', nodeEnv: 'test' }),
       now: () => NOW,
+      preflightAudit: memoryPreflightAudit(),
     });
     await expect(
       inTenant(() =>

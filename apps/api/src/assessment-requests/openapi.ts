@@ -3,6 +3,7 @@ import {
   assessmentRequestResponseSchema,
   createAssessmentRequestSchema,
   patchAssessmentRequestSchema,
+  preflightDryRunResponseSchema,
 } from '@blackwing/contracts';
 
 import { type JsonObject, type OpenApiModule, jsonSchema } from '../openapi/schema.js';
@@ -196,6 +197,52 @@ export function assessmentRequestOpenApiModule(): OpenApiModule {
           },
         },
       },
+      [`${ITEM}/preflight`]: {
+        post: {
+          operationId: 'dryRunAssessmentRequestPreflight',
+          tags: ['assessment-requests'],
+          summary: 'Dry-run the preflight checks of a request before submit',
+          description:
+            'Read-only feasibility report (#579): the checks that read our own records (authorisation, scope coverage, a DNS lookup of each target host (resolve once, no request to the target), asset verification, the test window, the budgets and the model provider probe). It sends no target traffic, logs in nowhere, notifies nobody and changes no state. A halted tenant answers 409 tenant_halted. Every run is audited.',
+          security: SECURITY,
+          parameters: [ID_PARAMETER],
+          responses: {
+            '200': {
+              description: 'The dry-run report. ok is false when a blocking check failed.',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/PreflightDryRun' },
+                  examples: {
+                    notReady: {
+                      summary: 'A verified asset with no open test window',
+                      value: {
+                        requestId: EXAMPLE_REQUEST.id,
+                        dryRun: true,
+                        ok: false,
+                        results: [
+                          {
+                            id: 'assertWindowOpen',
+                            title: 'Test window is open',
+                            severity: 'blocking',
+                            status: 'fail',
+                            detail: 'no test window of the standing authorisation is open',
+                            code: 'WINDOW_CLOSED',
+                            remediation:
+                              'Schedule the run inside an open test window of the standing authorisation.',
+                          },
+                        ],
+                        blockingFailures: ['assertWindowOpen'],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            '404': problem('Not found in this tenant.'),
+            '409': problem('The tenant is halted (tenant_halted).'),
+          },
+        },
+      },
       [`${ITEM}/withdraw`]: {
         post: {
           operationId: 'withdrawAssessmentRequest',
@@ -217,6 +264,7 @@ export function assessmentRequestOpenApiModule(): OpenApiModule {
       AssessmentRequestList: jsonSchema(assessmentRequestListResponseSchema),
       AssessmentRequestCreate: jsonSchema(createAssessmentRequestSchema),
       AssessmentRequestPatch: jsonSchema(patchAssessmentRequestSchema),
+      PreflightDryRun: jsonSchema(preflightDryRunResponseSchema),
     },
   };
 }

@@ -7,13 +7,28 @@ import {
   type CreateAssessmentRequest,
   type PatchAssessmentRequest,
   type Permission,
+  type PreflightDryRunResponse,
 } from '@blackwing/contracts';
 import { hashTenantId } from '@blackwing/db/tenant-context';
-import { hasPermission } from '@blackwing/domain';
+import {
+  hasPermission,
+  type PreflightReport,
+  type PreflightResult,
+  type PreflightStatus,
+  runDryRunPreflight,
+} from '@blackwing/domain';
 import { ForbiddenError, NotFoundError } from '@blackwing/errors';
 import { toPublicId, toUuid } from '@blackwing/ids';
 
 import { tenantHaltedError } from './errors.js';
+import {
+  CATALOGUE_BY_ID,
+  type DryRunCheckId,
+  dryRunRegistry,
+  type DryRunContext,
+  PREFLIGHT_DRY_RUN_CHECK_TIMEOUT_MS,
+  systemTargetResolver,
+} from './preflight.js';
 import { checkSubmission, type SubmitFailure } from './submit-checks.js';
 import { requireIfMatch, versionEtag } from '../concurrency/index.js';
 import { FieldValidationError } from '../errors/problem-errors.js';
@@ -25,7 +40,10 @@ import type {
   AssessmentRequestStore,
   AssetCatalog,
   AssetFact,
+  ModelProviderProbe,
+  PreflightDryRunAudit,
   StandingAuthorisationReader,
+  TargetResolver,
   TenantHaltState,
 } from './ports.js';
 import type {
@@ -37,6 +55,8 @@ import type { Logger } from '@blackwing/logger';
 
 const TRACER_NAME = '@blackwing/api/assessment-requests';
 const SUBMIT_SPAN = 'api.scope.submit';
+const DRY_RUN_SPAN = 'scope.preflight.dryrun';
+const MS_PER_SECOND = 1000;
 
 /** Run budgets a request gets when it names none: the seed's standing defaults (SCOPE-004). */
 const RUN_BUDGET_DEFAULTS: RunBudget = Object.freeze({
@@ -76,6 +96,12 @@ export interface AssessmentRequestServiceDeps {
   readonly policy: AssessmentPolicyEngine;
   /** Clock of the submit gate (SA expiry). Tests pass a fixed instant. */
   readonly now?: () => Date;
+  /** Reachability of the model provider for the dry run (#579). Absent: the check fails closed. */
+  readonly modelProbe?: ModelProviderProbe;
+  /** Hostname resolution for the dry run (#579). Absent: the system resolver (a DNS lookup, no target traffic). */
+  readonly targetResolver?: TargetResolver;
+  /** Writes the `scope.preflight.dry_run` audit event (§8.8). */
+  readonly preflightAudit: PreflightDryRunAudit;
 }
 
 /** An answer: the body and the ETag that validates it (the version the row is at). */
@@ -267,6 +293,82 @@ export class AssessmentRequestService {
     });
   }
 
+  /**
+   * The pre-submit dry run (#579): the read-only subset of the preflight checks, answered for a request in the
+   * caller's tenant. It sends no target traffic, logs in nowhere and notifies nobody, and it changes no state. A
+   * halted tenant is refused with 409 like a submit (§8.4). Every run is audited (§8.8).
+   */
+  async dryRun(
+    principal: AssessmentRequestPrincipal,
+    requestPublicId: string,
+  ): Promise<PreflightDryRunResponse> {
+    return this.inSpan(DRY_RUN_SPAN, requestPublicId, async () => {
+      const started = performance.now();
+      const roles = await this.authorise(principal, 'assessment:create');
+      const current = await this.findOrNotFound(requestPublicId);
+      if (await this.deps.halts.isHalted(principal.tenantId)) throw tenantHaltedError();
+      const assets = await this.deps.assets.findInTenant(principal.tenantId, current.assetIds);
+      if (assets.length !== new Set(current.assetIds).size) {
+        throw new NotFoundError('assessment request asset not found');
+      }
+      this.authoriseAssets(principal, roles, assets);
+      const sa =
+        current.saId === null
+          ? undefined
+          : await this.deps.standingAuthorisations.findInTenant(principal.tenantId, current.saId);
+      const now = this.now();
+      const failures = checkSubmission(
+        {
+          assetIds: current.assetIds,
+          saId: current.saId,
+          maxIntrusiveness: current.maxIntrusiveness,
+          scopeRules: current.scopeRules,
+          budgets: current.budgets,
+        },
+        assets,
+        sa,
+        now,
+      );
+      const context: DryRunContext = {
+        facts: {
+          now,
+          failures,
+          sa,
+          assetCount: assets.length,
+          assetHosts: assets.map((asset) => asset.hosts ?? []),
+        },
+        modelProbe: this.deps.modelProbe,
+        resolver: this.deps.targetResolver ?? systemTargetResolver,
+      };
+      const report = await runDryRunPreflight(
+        dryRunRegistry((id, run) => this.observeCheck(id, current.publicId, run)),
+        context,
+        { timeoutMs: PREFLIGHT_DRY_RUN_CHECK_TIMEOUT_MS },
+      );
+      const body = dryRunBody(current.publicId, report);
+      await this.deps.preflightAudit.record({
+        tenantId: principal.tenantId,
+        action: 'scope.preflight.dry_run',
+        actor: { type: 'user', id: principal.actorId },
+        target: { type: 'assessment_request', id: current.id, publicId: current.publicId },
+        outcome: 'success',
+        metadata: { ok: report.ok, blockingFailures: [...report.blockingFailures] },
+      });
+      this.deps.metrics.preflightDryRun(report.ok);
+      this.deps.logger.info(
+        {
+          tenantId: hashTenantId(principal.tenantId),
+          requestId: current.publicId,
+          ok: report.ok,
+          blockingFailures: [...report.blockingFailures],
+          durationMs: Math.round(performance.now() - started),
+        },
+        'scope.preflight.dry_run',
+      );
+      return body;
+    });
+  }
+
   /** Withdraws a draft or a submitted request. `If-Match` is required, as on every state change. */
   async withdraw(
     principal: AssessmentRequestPrincipal,
@@ -368,6 +470,23 @@ export class AssessmentRequestService {
     }
   }
 
+  /** One dry-run check, timed and counted, inside its own span. The id is a closed set (the catalogue). */
+  private async observeCheck(
+    id: DryRunCheckId,
+    requestPublicId: string,
+    run: () => Promise<PreflightResult>,
+  ): Promise<PreflightResult> {
+    const started = performance.now();
+    let status: PreflightStatus = 'fail';
+    try {
+      const result = await this.inSpan(`scope.preflight.check.${id}`, requestPublicId, run);
+      status = result.status;
+      return result;
+    } finally {
+      this.deps.metrics.preflightCheck(id, status, (performance.now() - started) / MS_PER_SECOND);
+    }
+  }
+
   private recordFailures(failures: readonly SubmitFailure[]): void {
     this.deps.metrics.submitted('validation_failed');
     for (const failure of failures) this.deps.metrics.validationFailed(failure.code);
@@ -390,4 +509,29 @@ export class AssessmentRequestService {
       },
     );
   }
+}
+
+/** The wire body of a dry run: each result carries its catalogue title and severity, and a failure its remediation. */
+function dryRunBody(requestPublicId: string, report: PreflightReport): PreflightDryRunResponse {
+  return {
+    requestId: requestPublicId,
+    dryRun: true,
+    ok: report.ok,
+    results: report.results.map((result) => {
+      const definition = CATALOGUE_BY_ID.get(result.id);
+      return {
+        id: result.id,
+        title: definition?.title ?? result.id,
+        severity: definition?.severity ?? 'blocking',
+        status: result.status,
+        detail: result.detail,
+        ...(result.code === undefined ? {} : { code: result.code }),
+        ...(result.status === 'fail' && definition !== undefined
+          ? { remediation: definition.remediation }
+          : {}),
+        ...(result.evidence === undefined ? {} : { evidence: { ...result.evidence } }),
+      };
+    }),
+    blockingFailures: [...report.blockingFailures],
+  };
 }

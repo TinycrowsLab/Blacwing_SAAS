@@ -16,6 +16,7 @@ import {
   type AssessmentRequestListResponse,
   type AssessmentRequestResponse,
   createAssessmentRequestSchema,
+  type PreflightDryRunResponse,
   patchAssessmentRequestSchema,
 } from '@blackwing/contracts';
 import { getTenantContextOrThrow } from '@blackwing/db/tenant-context';
@@ -48,7 +49,8 @@ function requestId(value: string): string {
 
 /**
  * Assessment-request routes (SCOPE-005): `POST /v1/assessment-requests` (draft), `GET` list and detail,
- * `PATCH /:id` (If-Match), `POST /:id/submit` (Idempotency-Key, the gate) and `POST /:id/withdraw` (If-Match).
+ * `PATCH /:id` (If-Match), `POST /:id/submit` (Idempotency-Key, the gate), `POST /:id/preflight` (the read-only
+ * dry run) and `POST /:id/withdraw` (If-Match).
  * The tenant and the actor come from the guard-resolved context, never from the body.
  */
 @Controller('assessment-requests')
@@ -106,6 +108,21 @@ export class AssessmentRequestController {
   ): Promise<AssessmentRequestResponse> {
     const { tenantId, actor } = getTenantContextOrThrow();
     return answer(reply, await this.service.submit({ tenantId, actorId: actor.id }, requestId(id)));
+  }
+
+  /**
+   * The pre-submit dry run (#579): read-only, so it needs no `Idempotency-Key` and no `If-Match`. It answers the
+   * feasibility of a submit (the checks that read our own records) and changes nothing.
+   */
+  @Post(':id/preflight')
+  @HttpCode(HTTP_OK)
+  async preflight(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<PreflightDryRunResponse> {
+    const { tenantId, actor } = getTenantContextOrThrow();
+    void reply.header('cache-control', 'no-store');
+    return this.service.dryRun({ tenantId, actorId: actor.id }, requestId(id));
   }
 
   @Post(':id/withdraw')

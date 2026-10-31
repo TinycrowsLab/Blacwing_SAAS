@@ -149,6 +149,13 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: ['If-Match'],
   },
+  dryRunAssessmentRequestPreflight: {
+    method: 'POST',
+    path: '/v1/assessment-requests/{id}/preflight',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: [],
+  },
   getAssessmentRequest: {
     method: 'GET',
     path: '/v1/assessment-requests/{id}',

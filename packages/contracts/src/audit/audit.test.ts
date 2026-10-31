@@ -103,6 +103,7 @@ const RELEASED_ACTIONS = [
   'scope.request.updated',
   'scope.request.submitted',
   'scope.request.withdrawn',
+  'scope.preflight.dry_run',
   'test_plan.version_created',
   'test_case.created',
   'test_case.updated',

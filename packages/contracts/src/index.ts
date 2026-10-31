@@ -334,6 +334,12 @@ export {
   runEnvelopeSchema,
 } from './entities/run-envelope.js';
 export {
+  type PreflightCheckResultView,
+  type PreflightDryRunResponse,
+  preflightCheckResultSchema,
+  preflightDryRunResponseSchema,
+} from './entities/assessment-request-preflight.js';
+export {
   projectSaEnvelope,
   SA_ENVELOPE_VERSION,
   type SaEnvelope,
