@@ -390,3 +390,12 @@ export {
 export * from './quota/plans.js';
 export * from './quota/evaluate.js';
 export { authenticateVirtualKey, type VirtualKeyRecord } from './virtual-key/index.js';
+export {
+  isWithinWindow,
+  nextFireAfter,
+  nextNFires,
+  parseSchedule,
+  SCHEDULE_PREVIEW_MAX,
+  type ScheduleSpec,
+  WINDOW_DURATION_MAX_MINUTES,
+} from './schedule/cron.js';

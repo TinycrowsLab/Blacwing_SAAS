@@ -652,6 +652,17 @@ const DEFINITIONS = {
   },
   // Recurring-run schedules (SCHED-001, #311). A schedule must bind at least one asset (CHECK backstop in the DB).
   SCHEDULE_NO_ASSETS: { status: 422, title: 'Schedule has no assets', retryable: false },
+  SCHEDULE_CRON_INVALID: {
+    status: 422,
+    title: 'Invalid schedule cron expression',
+    retryable: false,
+  },
+  SCHEDULE_TZ_INVALID: { status: 422, title: 'Invalid schedule time zone', retryable: false },
+  SCHEDULE_TOO_FREQUENT: {
+    status: 422,
+    title: 'Schedule fires more often than hourly',
+    retryable: false,
+  },
   // Out-of-band client (OOB-002, #636). Upstream failures are 502 and retryable; a decrypt or protocol
   // mismatch is never retried as is (the same server and key will fail again). Never a silent "no interaction".
   OOB_REGISTER_FAILED: { status: 502, title: 'OOB listener registration failed', retryable: true },

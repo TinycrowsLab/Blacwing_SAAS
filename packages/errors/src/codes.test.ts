@@ -206,6 +206,9 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   CONNECTOR_UPSTREAM_ERROR: 502,
   CONNECTOR_VALIDATION: 422,
   SCHEDULE_NO_ASSETS: 422,
+  SCHEDULE_CRON_INVALID: 422,
+  SCHEDULE_TZ_INVALID: 422,
+  SCHEDULE_TOO_FREQUENT: 422,
   OOB_REGISTER_FAILED: 502,
   OOB_POLL_FAILED: 502,
   OOB_DEREGISTER_FAILED: 502,
@@ -229,7 +232,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(201);
+    expect(ERROR_CODE_LIST).toHaveLength(204);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -525,6 +528,9 @@ describe('error-code registry', () => {
       | 'CONNECTOR_VALIDATION'
       | 'MEMORY_EMBED_DIM_MISMATCH'
       | 'SCHEDULE_NO_ASSETS'
+      | 'SCHEDULE_CRON_INVALID'
+      | 'SCHEDULE_TZ_INVALID'
+      | 'SCHEDULE_TOO_FREQUENT'
       | 'OOB_REGISTER_FAILED'
       | 'OOB_POLL_FAILED'
       | 'OOB_DEREGISTER_FAILED'

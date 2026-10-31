@@ -22,6 +22,7 @@
     "@blackwing/ids": "workspace:*",
     "@blackwing/time": "workspace:*",
     "@pandatix/js-cvss": "0.4.4",
+    "cron-parser": "5.10.1",
     "zod": "catalog:"
   },
   "devDependencies": {
