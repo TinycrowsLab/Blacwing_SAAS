@@ -31,6 +31,8 @@ export interface RuntimeMetrics {
   readonly gate2ResumeFailures: Counter;
   /** `browser_launch_total{result}`: one per browser launch self-check, `success` or `failure` (BROWSER-001). */
   readonly browserLaunches: Counter<'result'>;
+  /** `harness_scaffolded_total{result}`: one per PoC-harness scaffold attempt, `success` or `failure` (EXPLOIT-002). */
+  readonly harnessScaffolded: Counter<'result'>;
 }
 
 export function createRuntimeMetrics(registry: Registry = new Registry()): RuntimeMetrics {
@@ -90,6 +92,12 @@ export function createRuntimeMetrics(registry: Registry = new Registry()): Runti
     browserLaunches: new Counter({
       name: 'browser_launch_total',
       help: 'Agent browser launch self-checks, by result.',
+      labelNames: ['result'],
+      registers: [registry],
+    }),
+    harnessScaffolded: new Counter({
+      name: 'harness_scaffolded_total',
+      help: 'PoC-harness scaffold attempts in the sandbox workspace, by result.',
       labelNames: ['result'],
       registers: [registry],
     }),
