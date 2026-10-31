@@ -586,6 +586,29 @@ const DEFINITIONS = {
     title: 'Finding does not meet the triage precondition',
     retryable: false,
   },
+  // Triage API (TRIAGE-001, the Gate 3 decision routes): the wire codes of the refusals above, as the API names them.
+  // A decision on a finding whose status does not allow it (409); an `If-Match` that is no longer current (412, the
+  // caller re-reads and decides again); an invalid duplicate target or accepted-risk expiry (422). Refusals change nothing.
+  TRIAGE_INVALID_TRANSITION: {
+    status: 409,
+    title: 'Triage decision not allowed for this finding status',
+    retryable: false,
+  },
+  TRIAGE_CONCURRENCY: {
+    status: 412,
+    title: 'Finding changed since it was read',
+    retryable: false,
+  },
+  TRIAGE_DUPLICATE_TARGET_INVALID: {
+    status: 422,
+    title: 'Duplicate target not valid',
+    retryable: false,
+  },
+  TRIAGE_RISK_EXPIRY_INVALID: {
+    status: 422,
+    title: 'Accepted risk expiry not valid',
+    retryable: false,
+  },
   // Standing-authorisation signing (AUTHZ-004, #376): OpenBao Transit unreachable or unusable. Fail closed:
   // the SA stays pending and nothing is signed or persisted, so the caller retries later.
   AUTHZ_SIGNER_UNAVAILABLE: {

@@ -227,6 +227,11 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'TRIAGE_EXPIRY_INVALID',
   'TRIAGE_CANONICAL_INVALID',
   'TRIAGE_PRECONDITION_FAILED',
+  // The triage API's wire codes (apps/api triage routes, TRIAGE-001).
+  'TRIAGE_INVALID_TRANSITION',
+  'TRIAGE_CONCURRENCY',
+  'TRIAGE_DUPLICATE_TARGET_INVALID',
+  'TRIAGE_RISK_EXPIRY_INVALID',
   // Raised as a plain AppError by the audit query API (apps/api audit-query, #86).
   'INVALID_CURSOR',
   // AuthNoCredentialsError, AuthInvalidTokenError and AuthExpiredError, apps/api auth guard (#335).

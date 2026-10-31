@@ -2,6 +2,13 @@
 // Do not edit by hand: `pnpm test` fails when this file is stale.
 
 export const OPERATIONS = {
+  acceptFindingRisk: {
+    method: 'POST',
+    path: '/v1/findings/{id}/accept-risk',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['Idempotency-Key', 'If-Match'],
+  },
   addTestCase: {
     method: 'POST',
     path: '/v1/test-plans/{planId}/cases',
@@ -386,6 +393,13 @@ export const OPERATIONS = {
     queryParams: ['cursor', 'limit'],
     requiredHeaders: [],
   },
+  markFindingDuplicate: {
+    method: 'POST',
+    path: '/v1/findings/{id}/duplicate',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['Idempotency-Key', 'If-Match'],
+  },
   putPersonaOverride: {
     method: 'PUT',
     path: '/v1/personas/{persona}/override',
@@ -393,12 +407,26 @@ export const OPERATIONS = {
     queryParams: [],
     requiredHeaders: [],
   },
+  rejectFinding: {
+    method: 'POST',
+    path: '/v1/findings/{id}/reject',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['Idempotency-Key', 'If-Match'],
+  },
   rejectStandingAuthorisation: {
     method: 'POST',
     path: '/v1/standing-authorisations/{id}/reject',
     pathParams: ['id'],
     queryParams: [],
     requiredHeaders: ['If-Match'],
+  },
+  releaseFinding: {
+    method: 'POST',
+    path: '/v1/findings/{id}/release',
+    pathParams: ['id'],
+    queryParams: [],
+    requiredHeaders: ['Idempotency-Key', 'If-Match'],
   },
   removeTestCase: {
     method: 'DELETE',

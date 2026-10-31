@@ -467,6 +467,14 @@ export {
   findingSummarySchema,
 } from './entities/finding-api.js';
 export {
+  acceptRiskFindingSchema,
+  duplicateFindingSchema,
+  findingTriageResponseSchema,
+  type FindingTriageResponse,
+  releaseFindingSchema,
+  rejectFindingSchema,
+} from './entities/triage-api.js';
+export {
   coverageEntrySchema,
   type CoverageEntry,
   type CoverageSummary,

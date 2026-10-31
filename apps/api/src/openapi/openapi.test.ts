@@ -157,6 +157,11 @@ const TAG_OF_OPERATION: Readonly<Record<string, string>> = {
   rejectStandingAuthorisation: 'standing-authorisations',
   listFindings: 'findings',
   getFinding: 'findings',
+  releaseFinding: 'triage',
+  getTenantQuotas: 'quotas',
+  rejectFinding: 'triage',
+  markFindingDuplicate: 'triage',
+  acceptFindingRisk: 'triage',
   validateTestPlan: 'test-plans',
 };
 
@@ -191,6 +196,7 @@ describe('public OpenAPI document', () => {
       }
     }
     expect(ids.sort()).toEqual([
+      'acceptFindingRisk',
       'addTestCase',
       'approveStandingAuthorisation',
       'cancelAssetVerification',
@@ -228,6 +234,7 @@ describe('public OpenAPI document', () => {
       'getSecret',
       'getServiceAccount',
       'getStandingAuthorisation',
+      'getTenantQuotas',
       'getTenantSettings',
       'getTestPlanVersion',
       'listAssessmentRequests',
@@ -242,8 +249,11 @@ describe('public OpenAPI document', () => {
       'listServiceAccounts',
       'listStandingAuthorisations',
       'listTestPlanVersions',
+      'markFindingDuplicate',
       'putPersonaOverride',
+      'rejectFinding',
       'rejectStandingAuthorisation',
+      'releaseFinding',
       'removeTestCase',
       'requestSignup',
       'startAssetVerification',
@@ -266,7 +276,7 @@ describe('public OpenAPI document', () => {
       'verifySignup',
       'withdrawAssessmentRequest',
     ]);
-    expect(countOperations(doc)).toBe(75);
+    expect(countOperations(doc)).toBe(79);
   });
 
   it('declares the standard error statuses and the common parameters', () => {
@@ -330,12 +340,14 @@ describe('public OpenAPI document', () => {
       'signup',
       'tenant',
       'organisation',
+      'quotas',
       'assessment-requests',
       'assets',
       'input-manifests',
       'standing-authorisations',
       'test-plans',
       'findings',
+      'triage',
       'oncall',
       'notifications',
       'rbac',
@@ -399,7 +411,7 @@ describe('docs/api/openapi.json drift check', () => {
     writeFileSync(file, JSON.stringify(stale));
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(true);
     const result = emitOpenApi({ mode: 'emit', file });
-    expect(result.operations).toBe(75);
+    expect(result.operations).toBe(79);
     expect(emitOpenApi({ mode: 'check', file }).stale).toBe(false);
   });
 });
