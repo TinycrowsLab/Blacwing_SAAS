@@ -137,6 +137,8 @@ export const reproArtifacts = pgTable(
     publicId: text('public_id').notNull(),
     tenantId: tenantIdColumn(),
     findingId: uuid('finding_id').notNull(),
+    /** The run that produced the bundle (the replay it reproduces). */
+    runId: uuid('run_id').notNull(),
     /** Object-storage key of the bundle. Under the tenant's own prefix, like `object_key`. */
     bundleKey: text('bundle_key').notNull(),
     /** Lowercase hex SHA-256 of the bundle bytes. */
@@ -144,13 +146,16 @@ export const reproArtifacts = pgTable(
     /** Version of the bundle layout, so readers can refuse a format they do not know. */
     formatVersion: text('format_version').notNull(),
     size: bigint('size', { mode: 'number' }),
+    /** When a replay of the bundle matched its declared oracle. Null until verified; set once. */
+    verifiedAt: timestamp('verified_at', { withTimezone: true }),
     ...timestamps(),
   },
   (t): PgTableExtraConfigValue[] => [
     tenantIdIndex('repro_artifacts', t.tenantId),
     uniqueIndex('repro_artifacts_public_id_key').on(t.publicId),
     uniqueIndex('repro_artifacts_bundle_key_key').on(t.bundleKey),
-    index('repro_artifacts_finding_id_idx').on(t.findingId),
+    index('repro_artifacts_tenant_finding_idx').on(t.tenantId, t.findingId),
+    index('repro_artifacts_run_id_idx').on(t.runId),
     foreignKey({
       name: 'repro_artifacts_finding_fk',
       columns: [t.tenantId, t.findingId],

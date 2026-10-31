@@ -136,10 +136,13 @@ export const reproArtifactSchema = z
     publicId: reproArtifactPublicIdSchema.nullable(),
     tenantId: uuidV7Schema,
     findingId: uuidV7Schema,
+    runId: uuidV7Schema,
     bundleKey: evidenceRefSchema,
     sha256: sha256HexSchema,
     formatVersion: reproFormatVersionSchema,
     size: evidenceSizeSchema.nullable(),
+    /** When the bundle was last replayed and matched its declared oracle; null until verified. */
+    verifiedAt: isoDateTimeSchema.nullable(),
     createdAt: isoDateTimeSchema,
     updatedAt: isoDateTimeSchema,
   })
@@ -148,6 +151,7 @@ export const reproArtifactSchema = z
 /** Input of creating a repro artifact. The id, public id and tenant are assigned by the writer, never the caller. */
 export const reproArtifactCreateSchema = z.strictObject({
   findingId: uuidV7Schema,
+  runId: uuidV7Schema,
   bundleKey: evidenceRefSchema,
   sha256: sha256HexSchema,
   formatVersion: reproFormatVersionSchema,

@@ -1,0 +1,46 @@
+{
+  "formatVersion": "1.0",
+  "findingPublicId": "fnd_01m67bj0zcekntsgtb57q5eetf",
+  "runPublicId": "run_01m67bj0zcekntsgtb58569v6r",
+  "assetPublicId": "asset_01m67bj0zcekntsgtb5fw19xmd",
+  "class": "active_safe",
+  "cweId": "CWE-639",
+  "owaspCategory": "A01:2021-Broken Access Control",
+  "oracle": {
+    "type": "status_diff",
+    "params": {
+      "baselineRef": "evidence/baseline-403",
+      "compare": "status",
+      "threshold": 0
+    }
+  },
+  "negativeControl": {
+    "strategy": "unmodified_request",
+    "steps": [
+      {
+        "kind": "http_request",
+        "method": "GET",
+        "endpoint": {
+          "assetId": "018f3b2a-7c1d-7a00-8000-000000000001",
+          "urlTemplate": "https://app.example.test/orders/{id}"
+        },
+        "roleKey": "viewer",
+        "inputRef": null
+      }
+    ]
+  },
+  "requestCount": 1,
+  "baseUrlPlaceholder": "${TARGET_BASE_URL}",
+  "pinned": {
+    "sandboxImageDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "toolVersions": {
+      "nuclei": "3.3.0"
+    },
+    "nucleiTemplateCommit": "0123456789abcdef0123456789abcdef01234567",
+    "formatVersion": "1.0"
+  },
+  "createdAt": "2026-10-31T10:00:00.000Z",
+  "sanitised": true,
+  "truncated": false,
+  "bundleSha256": "61079ff43c9aecfc68b6720eaba37a6e13dc2b4fc57cde77a2d86912db54c8f5"
+}

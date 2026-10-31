@@ -1,0 +1,10 @@
+{
+  "index": 1,
+  "method": "GET",
+  "url": "${TARGET_BASE_URL}/orders/1001",
+  "headers": {
+    "accept": "application/json"
+  },
+  "body": null,
+  "roleName": "${ROLE_VIEWER}"
+}

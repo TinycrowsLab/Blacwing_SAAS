@@ -94,10 +94,12 @@ const BUNDLE = {
   publicId: 'rpa_01fwhe4ydgfk1shh6w1g60eecf',
   tenantId: ITEM.tenantId,
   findingId: newId(),
+  runId: newId(),
   bundleKey: 'tenants/t1/repro/bundle.tar.zst',
   sha256: HASH,
   formatVersion: '1.0',
   size: null,
+  verifiedAt: null,
   createdAt: T0,
   updatedAt: T0,
 };
@@ -143,6 +145,7 @@ describe('reproArtifactSchema', () => {
 describe('reproArtifactCreateSchema', () => {
   const input = {
     findingId: newId(),
+    runId: newId(),
     bundleKey: 'tenants/t1/repro/bundle.tar.zst',
     sha256: HASH,
     formatVersion: '1.0',

@@ -106,6 +106,8 @@ const bindSchema = z.strictObject({
     .min(1),
 });
 
+const reproVerifiedSchema = z.strictObject({ verifiedAt: z.date() });
+
 const markSuspectedSchema = z.strictObject({
   findingId: uuidV7Schema,
   occurrenceId: uuidV7Schema,
@@ -370,6 +372,7 @@ export class ReproArtifactRepository {
             publicId: publicId('rpa', id),
             tenantId,
             findingId: values.findingId,
+            runId: values.runId,
             bundleKey: values.bundleKey,
             sha256: values.sha256,
             formatVersion: values.formatVersion,
@@ -380,6 +383,36 @@ export class ReproArtifactRepository {
         return inserted;
       },
       'create',
+    );
+  }
+
+  /**
+   * Records that a replay of the bundle matched its declared oracle. Set once: a bundle already verified is a conflict.
+   * An unknown or foreign bundle is not found, so a cross-tenant write cannot be told apart from a missing row.
+   */
+  async setVerified(id: string, input: unknown): Promise<ReproArtifactRow> {
+    const rowId = parse(uuidV7Schema, id, 'repro artifact id');
+    const values = parse(reproVerifiedSchema, input, 'repro verification');
+    return runInTenant(
+      this.options,
+      async (tx, tenantId) => {
+        const [current] = await tx
+          .select({ verifiedAt: reproArtifacts.verifiedAt })
+          .from(reproArtifacts)
+          .where(and(eq(reproArtifacts.tenantId, tenantId), eq(reproArtifacts.id, rowId)))
+          .limit(1);
+        if (current === undefined) throw new NotFoundError('repro artifact not found');
+        if (current.verifiedAt !== null) throw new ConflictError('repro artifact already verified');
+        const [row] = await tx
+          .update(reproArtifacts)
+          .set({ verifiedAt: values.verifiedAt, updatedAt: new Date() })
+          .where(and(eq(reproArtifacts.tenantId, tenantId), eq(reproArtifacts.id, rowId)))
+          .returning();
+        if (row === undefined) throw new NotFoundError('repro artifact not found');
+        return row;
+      },
+      'setVerified',
+      { 'repro_artifact.id': rowId },
     );
   }
 

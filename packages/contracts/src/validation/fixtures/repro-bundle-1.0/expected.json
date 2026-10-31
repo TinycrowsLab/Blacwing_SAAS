@@ -1,0 +1,13 @@
+{
+  "oracle": {
+    "type": "status_diff",
+    "params": {
+      "baselineRef": "evidence/baseline-403",
+      "compare": "status",
+      "threshold": 0
+    }
+  },
+  "expectedResult": {
+    "status": 200
+  }
+}

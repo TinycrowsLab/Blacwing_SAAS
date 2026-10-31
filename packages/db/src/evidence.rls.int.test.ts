@@ -554,8 +554,10 @@ describe('repro artifacts', () => {
 
   it('records a bundle for a finding and reads it back by id and by finding', async () => {
     const { finding } = await seedBinding(tenantA, 0);
+    const runId = newId();
     const created = await reproRepo(tenantA).create({
       findingId: finding.id,
+      runId,
       bundleKey: bundleKey(tenantA),
       sha256: sha('bundle'),
       formatVersion: '1.0',
@@ -565,6 +567,7 @@ describe('repro artifacts', () => {
     expect(await reproRepo(tenantA).get(created.id)).toMatchObject({
       id: created.id,
       findingId: finding.id,
+      runId,
       size: 2048,
     });
     expect((await reproRepo(tenantA).listForFinding(finding.id)).map((row) => row.id)).toEqual([
@@ -576,6 +579,7 @@ describe('repro artifacts', () => {
     const { finding } = await seedBinding(tenantA, 0);
     const created = await reproRepo(tenantA).create({
       findingId: finding.id,
+      runId: newId(),
       bundleKey: bundleKey(tenantA),
       sha256: sha('visible'),
       formatVersion: '1.0',
@@ -589,6 +593,7 @@ describe('repro artifacts', () => {
     await expect(
       reproRepo(tenantB).create({
         findingId: finding.id,
+        runId: newId(),
         bundleKey: bundleKey(tenantB),
         sha256: sha('cross'),
         formatVersion: '1.0',
@@ -601,6 +606,7 @@ describe('repro artifacts', () => {
     const key = bundleKey(tenantA);
     await reproRepo(tenantA).create({
       findingId: finding.id,
+      runId: newId(),
       bundleKey: key,
       sha256: sha('one'),
       formatVersion: '1.0',
@@ -608,6 +614,7 @@ describe('repro artifacts', () => {
     await expect(
       reproRepo(tenantA).create({
         findingId: finding.id,
+        runId: newId(),
         bundleKey: key,
         sha256: sha('two'),
         formatVersion: '1.0',
@@ -617,7 +624,12 @@ describe('repro artifacts', () => {
 
   it('refuses an input that breaks the contract: bad digest, traversal key, unknown field', async () => {
     const { finding } = await seedBinding(tenantA, 0);
-    const base = { findingId: finding.id, bundleKey: bundleKey(tenantA), sha256: sha('ok') };
+    const base = {
+      findingId: finding.id,
+      runId: newId(),
+      bundleKey: bundleKey(tenantA),
+      sha256: sha('ok'),
+    };
     await expect(
       reproRepo(tenantA).create({ ...base, sha256: 'NOT-HEX', formatVersion: '1.0' }),
     ).rejects.toThrow(ValidationError);
@@ -638,6 +650,7 @@ describe('repro artifacts', () => {
     await expect(
       reproRepo(tenantA).create({
         findingId: finding.id,
+        runId: newId(),
         bundleKey: `${tenantB}/repro/x`,
         sha256: sha('prefix'),
         formatVersion: '1.0',
@@ -649,6 +662,7 @@ describe('repro artifacts', () => {
     const { finding } = await seedBinding(tenantA, 0);
     const created = await reproRepo(tenantA).create({
       findingId: finding.id,
+      runId: newId(),
       bundleKey: bundleKey(tenantA),
       sha256: sha('frozen'),
       formatVersion: '1.0',
@@ -676,10 +690,61 @@ describe('repro artifacts', () => {
     await expect(
       anonymous.create({
         findingId: finding.id,
+        runId: newId(),
         bundleKey: bundleKey(tenantA),
         sha256: sha('anon'),
         formatVersion: '1.0',
       }),
     ).rejects.toThrow(TenantContextMissingError);
+  });
+
+  it('records verification once and refuses a second one as a conflict', async () => {
+    const { finding } = await seedBinding(tenantA, 0);
+    const created = await reproRepo(tenantA).create({
+      findingId: finding.id,
+      runId: newId(),
+      bundleKey: bundleKey(tenantA),
+      sha256: sha('verify'),
+      formatVersion: '1.0',
+    });
+    expect(created.verifiedAt).toBeNull();
+    const verifiedAt = new Date('2026-10-31T10:00:00.000Z');
+    const verified = await reproRepo(tenantA).setVerified(created.id, { verifiedAt });
+    expect(verified.verifiedAt?.toISOString()).toBe(verifiedAt.toISOString());
+    await expect(
+      reproRepo(tenantA).setVerified(created.id, { verifiedAt: new Date() }),
+    ).rejects.toThrow(ConflictError);
+  });
+
+  it('refuses to verify another tenant bundle as not found', async () => {
+    const { finding } = await seedBinding(tenantA, 0);
+    const created = await reproRepo(tenantA).create({
+      findingId: finding.id,
+      runId: newId(),
+      bundleKey: bundleKey(tenantA),
+      sha256: sha('foreign-verify'),
+      formatVersion: '1.0',
+    });
+    await expect(
+      reproRepo(tenantB).setVerified(created.id, { verifiedAt: new Date() }),
+    ).rejects.toThrow(NotFoundError);
+    expect((await reproRepo(tenantA).get(created.id))?.verifiedAt).toBeNull();
+  });
+
+  it('keeps the digest frozen when the runtime role sets verified_at (42501 on sha256)', async () => {
+    const { finding } = await seedBinding(tenantA, 0);
+    const created = await reproRepo(tenantA).create({
+      findingId: finding.id,
+      runId: newId(),
+      bundleKey: bundleKey(tenantA),
+      sha256: sha('column-grant'),
+      formatVersion: '1.0',
+    });
+    const digest = await pgCode(
+      db.withTenant(tenantA, (tx) =>
+        tx.query(`UPDATE repro_artifacts SET sha256 = $2 WHERE id = $1`, [created.id, sha('x')]),
+      ),
+    );
+    expect(digest).toBe('42501');
   });
 });

@@ -150,13 +150,14 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
     );
     const rpaId = newId();
     await tx.query(
-      `INSERT INTO repro_artifacts (id, public_id, tenant_id, finding_id, bundle_key, sha256, format_version)
-       VALUES ($1, $2, $3, $4, $5, $6, '1')`,
+      `INSERT INTO repro_artifacts (id, public_id, tenant_id, finding_id, run_id, bundle_key, sha256, format_version)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, '1')`,
       [
         rpaId,
         publicId('rpa', rpaId),
         tenantId,
         findingId,
+        runId,
         `${tenantId}/${runId}/repro`,
         createHash('sha256').update('iso-repro').digest('hex'),
       ],
@@ -272,6 +273,28 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
     await tx.query(
       `INSERT INTO memberships (tenant_id, user_id, roles) VALUES ($1, $2, '{admin}')`,
       [tenantId, userId],
+    );
+  },
+  service_accounts: async (tx, tenantId) => {
+    // The owner must be a member of the tenant (composite FK), so the row gets its own user and membership.
+    await tx.query(
+      `INSERT INTO tenants (id, slug, name, region) VALUES ($1, $2, 'Isolation tenant', 'eu')
+       ON CONFLICT (id) DO NOTHING`,
+      [tenantId, `iso-${tenantId.replaceAll('-', '')}`],
+    );
+    const ownerId = newId();
+    await tx.query(`INSERT INTO users (id, keycloak_sub, email) VALUES ($1, $2, $3)`, [
+      ownerId,
+      `iso-${ownerId}`,
+      `iso-${ownerId}@example.test`,
+    ]);
+    await tx.query(
+      `INSERT INTO memberships (tenant_id, user_id, roles) VALUES ($1, $2, '{admin}')`,
+      [tenantId, ownerId],
+    );
+    await tx.query(
+      `INSERT INTO service_accounts (id, tenant_id, name, roles, owner_user_id) VALUES ($1, $2, 'iso-sa', '{}', $3)`,
+      [newId(), tenantId, ownerId],
     );
   },
   assets: async (tx, tenantId) => {

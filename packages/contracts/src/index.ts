@@ -1157,6 +1157,18 @@ export {
   type ToReplaySpec,
 } from './validation/poc-harness.js';
 export {
+  ReproManifestSchema,
+  type ReproManifest,
+  parseReproManifest,
+  REPRO_BASE_URL_PLACEHOLDER,
+  REPRO_BODY_INLINE_MAX_BYTES,
+  REPRO_CREDENTIAL_HEADERS,
+  REPRO_FORMAT_VERSION,
+  REPRO_HEADER_ALLOWLIST,
+  ReproRequestDescriptorSchema,
+  type ReproRequestDescriptor,
+} from './validation/repro.js';
+export {
   MAX_REPLAY_MS,
   MAX_VALIDATION_ATTEMPTS,
   type ValidationOutcome,
