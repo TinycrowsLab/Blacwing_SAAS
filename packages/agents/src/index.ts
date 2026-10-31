@@ -12,3 +12,6 @@ export * from './personas/index.js';
 export * from './tier.js';
 export * from './persona-overrides.js';
 export * from './mentor/index.js';
+export * from './test-case-library/template.js';
+export * from './test-case-library/library.js';
+export * from './test-case-library/plan-templates.metrics.js';

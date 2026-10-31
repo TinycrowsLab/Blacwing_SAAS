@@ -60,6 +60,7 @@ const EXPECTED_STATUS: Readonly<Record<ErrorCode, number>> = {
   PLAN_VERSION_IMMUTABLE: 409,
   ETAG_MISMATCH: 412,
   PLAN_PAYLOAD_TOO_LARGE: 413,
+  TEST_CASE_LIBRARY_INVALID: 500,
   SCOPE_INVALID_RULE: 422,
   POLICY_BUILDER_INVALID: 422,
   NEGATIVE_CONTROL_MISSING: 422,
@@ -244,7 +245,7 @@ describe('error-code registry', () => {
 
   it('is exhaustive: every registered code is in the table and every table entry is registered', () => {
     expect([...ERROR_CODE_LIST].sort()).toEqual(Object.keys(EXPECTED_STATUS).sort());
-    expect(ERROR_CODE_LIST).toHaveLength(216);
+    expect(ERROR_CODE_LIST).toHaveLength(217);
   });
 
   it('has unique codes, unique problem type URIs and stable SCREAMING_SNAKE_CASE keys', () => {
@@ -422,6 +423,7 @@ describe('error-code registry', () => {
       | 'PERSONA_NOT_DEFINED'
       | 'PERSONA_FORBIDDEN_TOOL'
       | 'PERSONA_INVALID'
+      | 'TEST_CASE_LIBRARY_INVALID'
       | 'OVERRIDE_FIELD_FORBIDDEN'
       | 'MODEL_NOT_ALLOWED'
       | 'PROMPT_INVALID'

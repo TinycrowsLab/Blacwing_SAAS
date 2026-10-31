@@ -657,6 +657,12 @@ const DEFINITIONS = {
   },
   ETAG_MISMATCH: { status: 412, title: 'ETag mismatch', retryable: false },
   PLAN_PAYLOAD_TOO_LARGE: { status: 413, title: 'Test plan payload too large', retryable: false },
+  // Test-case template library (PLANNER-002, #428). Checked at build time: an invalid library fails CI, never a run.
+  TEST_CASE_LIBRARY_INVALID: {
+    status: 500,
+    title: 'Test case template library is invalid',
+    retryable: false,
+  },
   // Gate 2 runtime exceptions (GATE2-001, F13/F31, §8.3/§8.4). A double decision or a refused
   // transition is a conflict (409); separation of duties and the destructive block are refusals (403).
   GATE2_ILLEGAL_TRANSITION: {

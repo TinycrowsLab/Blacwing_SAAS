@@ -256,6 +256,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   // PersonaOverrideFieldError, @blackwing/agents (REGISTRY-010).
   'OVERRIDE_FIELD_FORBIDDEN',
   'PERSONA_INVALID',
+  // TestCaseLibraryError, @blackwing/agents (PLANNER-002, #428).
+  'TEST_CASE_LIBRARY_INVALID',
   // TierError, @blackwing/agents (REGISTRY-003).
   'MODEL_NOT_ALLOWED',
   // PromptError, @blackwing/agents (REGISTRY-002).
