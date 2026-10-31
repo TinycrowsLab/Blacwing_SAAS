@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { createOracleDispatcher } from '../dispatch.js';
-import { observationWith, exchange } from './fixtures.js';
-import { createSignalEvaluators } from './index.js';
+import { createOracleDispatcher, UnknownOracleError } from '../dispatch.js';
+import { exchange, header, observation, observationWith } from './fixtures.js';
+import { createDeterministicEvaluators, createSignalEvaluators } from './index.js';
 
 describe('createSignalEvaluators', () => {
   it('registers exactly the four declared oracle types', () => {
@@ -52,5 +52,53 @@ describe('createSignalEvaluators', () => {
   it('fails closed through the dispatcher for an unregistered type', () => {
     const dispatch = createOracleDispatcher(createSignalEvaluators(() => undefined));
     expect(() => dispatch('header_cookie', observationWith([]), {})).toThrow();
+  });
+});
+
+describe('createDeterministicEvaluators', () => {
+  const dispatch = createOracleDispatcher(createDeterministicEvaluators());
+
+  it('reaches each of the four evaluators through the dispatcher by oracle type', () => {
+    const baseline = exchange({
+      stepIndex: 0,
+      evidenceRef: 'evidence/baseline-1',
+      status: 200,
+      body: '{}',
+    });
+    const probe = exchange({
+      stepIndex: 1,
+      status: 500,
+      body: 'token-42 SQLSTATE[42000]',
+      headers: [header('set-cookie', 'session=abc; HttpOnly')],
+    });
+    const recorded = observation([baseline, probe]);
+    expect(dispatch('marker', recorded, { token: 'token-42' }).matched).toBe(true);
+    expect(
+      dispatch('status_diff', recorded, { baselineRef: 'evidence/baseline-1', compare: 'status' })
+        .matched,
+    ).toBe(true);
+    expect(
+      dispatch('error_signature', recorded, { signatures: ['SQLSTATE[42000]'], scope: 'body' })
+        .matched,
+    ).toBe(true);
+    expect(
+      dispatch('header_cookie', recorded, {
+        assertions: [
+          { target: 'cookie', name: 'session', expectation: 'present', attribute: 'HttpOnly' },
+        ],
+      }).matched,
+    ).toBe(false);
+  });
+
+  it('fails closed for an oracle type with no deterministic evaluator', () => {
+    expect(() => dispatch('timing_baseline', observation([exchange()]), {})).toThrow(
+      UnknownOracleError,
+    );
+  });
+
+  it('does not resolve a prototype key as an evaluator', () => {
+    expect(() => dispatch('constructor', observation([exchange()]), {})).toThrow(
+      UnknownOracleError,
+    );
   });
 });

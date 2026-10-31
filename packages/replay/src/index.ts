@@ -6,7 +6,7 @@ export const version = '0.0.0';
 
 export { httpFetcher } from './fetcher.js';
 export { assertLabTarget, LAB_HOSTS, type LabTarget } from './lab-guard.js';
-export { createDeterministicEvaluators, OracleBaselineMissingError } from './oracles/index.js';
+export { OracleBaselineMissingError } from './oracles/index.js';
 export {
   bodyDigest,
   evaluateErrorSignature,
@@ -32,6 +32,7 @@ export {
   ACCESS_MATRIX_REASONS,
   accessMatrixEvaluator,
   assertBenignSentinel,
+  createDeterministicEvaluators,
   createSignalEvaluators,
   FILE_READ_REASONS,
   fileReadEvaluator,

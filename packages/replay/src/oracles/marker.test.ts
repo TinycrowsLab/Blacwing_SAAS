@@ -31,8 +31,8 @@ describe('evaluateMarker', () => {
   });
 
   it('matches canonically equal Unicode (NFC) on both sides', () => {
-    const token = 'café-marker';
-    const decomposed = 'café-marker';
+    const token = 'caf\u00e9-marker';
+    const decomposed = 'cafe\u0301-marker';
     expect(evaluateMarker(observation([exchange({ body: decomposed })]), { token }).matched).toBe(
       true,
     );

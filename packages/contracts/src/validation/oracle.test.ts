@@ -24,7 +24,7 @@ const VALID_BINDINGS: Record<OracleBindingType, unknown> = {
   status_diff: {
     type: 'status_diff',
     declaredAt: DECLARED_AT,
-    params: { expectedStatus: 403, baselineStatus: 200 },
+    params: { baselineRef: 'evidence/baseline-1', compare: 'status' },
   },
   timing_baseline: {
     type: 'timing_baseline',
@@ -45,7 +45,7 @@ const VALID_BINDINGS: Record<OracleBindingType, unknown> = {
   error_signature: {
     type: 'error_signature',
     declaredAt: DECLARED_AT,
-    params: { signature: 'SQLSTATE class 42' },
+    params: { signatures: ['SQLSTATE class 42'] },
   },
   file_read: {
     type: 'file_read',
@@ -55,7 +55,9 @@ const VALID_BINDINGS: Record<OracleBindingType, unknown> = {
   header_cookie: {
     type: 'header_cookie',
     declaredAt: DECLARED_AT,
-    params: { target: 'header', name: 'Strict-Transport-Security', expectation: 'absent' },
+    params: {
+      assertions: [{ target: 'header', name: 'Strict-Transport-Security', expectation: 'present' }],
+    },
   },
   code_plus_runtime: {
     type: 'code_plus_runtime',
@@ -77,68 +79,109 @@ describe('OracleBindingSchema: deterministic evaluator params', () => {
       'body',
     );
     expect(bind('marker', { token: 'probe-1', location: 'header' }).success).toBe(true);
+    expect(bind('marker', { token: 'probe-1', location: 'dom' }).success).toBe(true);
     expect(bind('marker', { token: 'probe-1', location: 'query' }).success).toBe(false);
   });
 
-  it('refuses a status differential whose expected and baseline statuses are equal', () => {
-    expect(bind('status_diff', { expectedStatus: 200, baselineStatus: 200 }).success).toBe(false);
+  it('accepts a status comparison with no threshold and a length or structural threshold', () => {
+    expect(bind('status_diff', { baselineRef: 'evidence/b-1', compare: 'status' }).success).toBe(
+      true,
+    );
+    expect(
+      bind('status_diff', { baselineRef: 'evidence/b-1', compare: 'length', threshold: 40 })
+        .success,
+    ).toBe(true);
+    expect(
+      bind('status_diff', { baselineRef: 'evidence/b-1', compare: 'structural', threshold: 0 })
+        .success,
+    ).toBe(true);
   });
 
-  it('defaults an error signature to a body scope and accepts a header scope', () => {
-    const parsed = bind('error_signature', { signature: 'SQLSTATE' });
+  it('refuses a status comparison with a threshold, an unknown compare, and a path-like baseline', () => {
+    expect(
+      bind('status_diff', { baselineRef: 'evidence/b-1', compare: 'status', threshold: 1 }).success,
+    ).toBe(false);
+    expect(bind('status_diff', { baselineRef: 'evidence/b-1', compare: 'bytes' }).success).toBe(
+      false,
+    );
+    expect(bind('status_diff', { baselineRef: '../secret', compare: 'status' }).success).toBe(
+      false,
+    );
+    expect(
+      bind('status_diff', { baselineRef: 'evidence/b-1', compare: 'length', threshold: -1 })
+        .success,
+    ).toBe(false);
+  });
+
+  it('defaults an error signature to a body scope, takes a list, and refuses duplicates or none', () => {
+    const parsed = bind('error_signature', { signatures: ['SQLSTATE'] });
     expect(
       parsed.success && parsed.data.type === 'error_signature' && parsed.data.params.scope,
     ).toBe('body');
-    expect(bind('error_signature', { signature: 'PHP', scope: 'header' }).success).toBe(true);
-    expect(bind('error_signature', { signature: 'PHP', scope: 'url' }).success).toBe(false);
+    expect(bind('error_signature', { signatures: ['PHP', 'Fatal'], scope: 'header' }).success).toBe(
+      true,
+    );
+    expect(bind('error_signature', { signatures: [] }).success).toBe(false);
+    expect(bind('error_signature', { signatures: ['PHP', 'PHP'] }).success).toBe(false);
+    expect(bind('error_signature', { signatures: ['PHP'], scope: 'url' }).success).toBe(false);
   });
 
-  it('accepts a cookie attribute check and a header disallowed value', () => {
+  it('accepts cookie attribute checks and a header disallowed value in one check', () => {
     expect(
       bind('header_cookie', {
-        target: 'cookie',
-        name: 'session',
-        expectation: 'present',
-        attribute: 'HttpOnly',
-      }).success,
-    ).toBe(true);
-    expect(
-      bind('header_cookie', {
-        target: 'header',
-        name: 'Access-Control-Allow-Origin',
-        expectation: 'present',
-        disallowedValue: '*',
+        assertions: [
+          { target: 'cookie', name: 'session', expectation: 'present', attribute: 'HttpOnly' },
+          { target: 'cookie', name: 'session', expectation: 'present', attribute: 'SameSite' },
+          {
+            target: 'header',
+            name: 'Access-Control-Allow-Origin',
+            expectation: 'not_value',
+            disallowedValue: '*',
+          },
+        ],
       }).success,
     ).toBe(true);
   });
 
-  it('refuses a cookie check without an attribute, an attribute on a header, and a value on a cookie', () => {
-    expect(
-      bind('header_cookie', { target: 'cookie', name: 'session', expectation: 'present' }).success,
-    ).toBe(false);
+  it('refuses an empty assertion list and malformed header or cookie assertions', () => {
+    expect(bind('header_cookie', { assertions: [] }).success).toBe(false);
     expect(
       bind('header_cookie', {
-        target: 'header',
-        name: 'Server',
-        expectation: 'absent',
-        attribute: 'Secure',
+        assertions: [{ target: 'cookie', name: 'session', expectation: 'present' }],
       }).success,
     ).toBe(false);
     expect(
       bind('header_cookie', {
-        target: 'cookie',
-        name: 'session',
-        expectation: 'present',
-        attribute: 'Secure',
-        disallowedValue: '*',
+        assertions: [
+          { target: 'header', name: 'Server', expectation: 'absent', attribute: 'Secure' },
+        ],
       }).success,
     ).toBe(false);
     expect(
       bind('header_cookie', {
-        target: 'header',
-        name: 'Server',
-        expectation: 'absent',
-        disallowedValue: 'nginx',
+        assertions: [
+          {
+            target: 'cookie',
+            name: 'session',
+            expectation: 'present',
+            attribute: 'Secure',
+            disallowedValue: '*',
+          },
+        ],
+      }).success,
+    ).toBe(false);
+    expect(
+      bind('header_cookie', {
+        assertions: [
+          { target: 'header', name: 'Access-Control-Allow-Origin', expectation: 'not_value' },
+        ],
+      }).success,
+    ).toBe(false);
+    expect(
+      bind('header_cookie', {
+        assertions: [
+          { target: 'header', name: 'Server', expectation: 'absent', disallowedValue: 'nginx' },
+        ],
       }).success,
     ).toBe(false);
   });
@@ -169,7 +212,7 @@ describe('OracleBindingSchema', () => {
     const result = OracleBindingSchema.safeParse({
       type: 'status_diff',
       declaredAt: DECLARED_AT,
-      params: { expectedStatus: 999, baselineStatus: 200 },
+      params: { baselineRef: 'evidence/baseline-1', compare: 'status', threshold: 2 },
     });
     expect(result.success).toBe(false);
   });

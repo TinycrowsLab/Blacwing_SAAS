@@ -33,7 +33,7 @@ function validSpec(): Record<string, unknown> {
     oracle: {
       type: 'status_diff',
       declaredAt: DECLARED_AT,
-      params: { expectedStatus: 200, baselineStatus: 403 },
+      params: { baselineRef: 'evidence/baseline-1', compare: 'status' },
     },
     testStartedAt: TEST_STARTED_AT,
     negativeControl: {

@@ -52,7 +52,7 @@ function specFixture(overrides: Partial<Record<string, unknown>> = {}): ReplaySp
     oracle: {
       type: 'error_signature',
       declaredAt: '2026-10-01T00:00:00.000Z',
-      params: { signature: 'SQLITE_ERROR' },
+      params: { signatures: ['SQLITE_ERROR'] },
     },
     testStartedAt: '2026-10-02T00:00:00.000Z',
     negativeControl: {

@@ -49,9 +49,6 @@ export const evidenceRefSchema = z
   .refine((value) => !value.split('/').includes('..'), 'must not contain dot segments');
 export const evidenceRefsSchema = z.array(evidenceRefSchema).max(LIMITS.shortTextMax);
 
-const HTTP_STATUS_MIN = 100;
-const HTTP_STATUS_MAX = 599;
-const httpStatusSchema = z.int().min(HTTP_STATUS_MIN).max(HTTP_STATUS_MAX);
 /** Longest injected-delay window a timing check may declare (one minute). */
 const TIMING_DELTA_MAX_MS = 60_000;
 /** Fewest timed samples a timing verdict may rest on; below this a median is not meaningful. */
@@ -113,71 +110,90 @@ export const accessMatrixParamsSchema = z
 const MARKER_LOCATIONS = ['body', 'header', 'dom'] as const;
 /** Where an error signature is searched: the body or the response headers. */
 const ERROR_SIGNATURE_SCOPES = ['body', 'header'] as const;
+/** How a status differential compares the probe with its recorded baseline. */
+const STATUS_DIFF_COMPARES = ['status', 'length', 'structural'] as const;
 /** Security attributes a cookie check can require (RFC 6265bis and the SameSite draft). */
 const COOKIE_ATTRIBUTES = ['HttpOnly', 'Secure', 'SameSite'] as const;
 const HEADER_DISALLOWED_VALUE_MAX = 120;
+/** Most signatures one error check declares, and most assertions one header check declares. */
+const ERROR_SIGNATURES_MAX = 32;
+const HEADER_ASSERTIONS_MAX = 32;
+/** Largest tolerated length or structural difference a status differential may declare (one body's bound). */
+const STATUS_DIFF_THRESHOLD_MAX = 65_536;
 
 export const markerParamsSchema = z.strictObject({
   token: nfcTextSchema(LIMITS.shortTextMax),
   location: z.enum(MARKER_LOCATIONS).default('body'),
 });
 
-/** A status differential: the probe must return `expectedStatus`, and that must differ from the recorded baseline. */
+/**
+ * A status differential against a baseline recorded earlier in the same replay. `baselineRef` names that exchange's
+ * evidence reference. `compare: 'status'` fires when the status differs and takes no threshold. `'length'` and
+ * `'structural'` fire when the difference exceeds `threshold` (characters, or differing structural tokens).
+ */
 export const statusDiffParamsSchema = z
   .strictObject({
-    expectedStatus: httpStatusSchema,
-    baselineStatus: httpStatusSchema,
+    baselineRef: evidenceRefSchema,
+    compare: z.enum(STATUS_DIFF_COMPARES),
+    threshold: z.int().min(0).max(STATUS_DIFF_THRESHOLD_MAX).default(0),
   })
   .refine(
-    (params) => params.expectedStatus !== params.baselineStatus,
-    'expected and baseline statuses must differ',
+    (params) => params.compare !== 'status' || params.threshold === 0,
+    'a status comparison takes no threshold',
   );
 
 export const errorSignatureParamsSchema = z.strictObject({
-  signature: nfcTextSchema(LIMITS.shortTextMax),
+  signatures: z
+    .array(nfcTextSchema(LIMITS.shortTextMax))
+    .min(1)
+    .max(ERROR_SIGNATURES_MAX)
+    .refine((values) => new Set(values).size === values.length, 'signatures must be distinct'),
   scope: z.enum(ERROR_SIGNATURE_SCOPES).default('body'),
 });
 
 /**
- * A header or cookie assertion. `expectation: 'present'` fails when the header is missing, and `'absent'` fails
- * when it is set. A cookie assertion names one security `attribute` and fails on the cookie's attribute state.
- * A header assertion may name a `disallowedValue` (for example `*` on `Access-Control-Allow-Origin`) that fails when
- * the header carries exactly that value.
+ * One header or cookie assertion. A header with `expectation: 'present'` fails when it is missing, `'absent'` fails
+ * when it is set, and `'not_value'` fails when it carries `disallowedValue` (for example `*` on
+ * `Access-Control-Allow-Origin`). A missing header is never a `not_value` failure. A cookie assertion names one
+ * security `attribute` and fails on the cookie's attribute state (`'present'`: the attribute is missing).
  */
-export const headerCookieParamsSchema = z
+const headerCookieAssertionSchema = z
   .strictObject({
     target: z.enum(['header', 'cookie']),
     name: httpTokenSchema,
-    expectation: z.enum(['present', 'absent']),
+    expectation: z.enum(['present', 'absent', 'not_value']),
     attribute: z.enum(COOKIE_ATTRIBUTES).optional(),
     disallowedValue: nfcTextSchema(HEADER_DISALLOWED_VALUE_MAX).optional(),
   })
-  .superRefine((params, ctx) => {
-    if (params.target === 'cookie' && params.attribute === undefined) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'a cookie assertion must name an attribute',
-        path: ['attribute'],
-      });
+  .superRefine((assertion, ctx) => {
+    const issue = (message: string, path: string): void => {
+      ctx.addIssue({ code: 'custom', message, path: [path] });
+    };
+    if (assertion.target === 'cookie') {
+      if (assertion.attribute === undefined)
+        issue('a cookie assertion must name an attribute', 'attribute');
+      if (assertion.expectation === 'not_value') {
+        issue('a cookie assertion cannot use not_value', 'expectation');
+      }
+      if (assertion.disallowedValue !== undefined) {
+        issue('a disallowed value applies only to a header', 'disallowedValue');
+      }
+      return;
     }
-    if (params.target === 'header' && params.attribute !== undefined) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'only a cookie assertion names an attribute',
-        path: ['attribute'],
-      });
+    if (assertion.attribute !== undefined)
+      issue('only a cookie assertion names an attribute', 'attribute');
+    if (assertion.expectation === 'not_value' && assertion.disallowedValue === undefined) {
+      issue('a not_value assertion must name the disallowed value', 'disallowedValue');
     }
-    if (
-      params.disallowedValue !== undefined &&
-      (params.target !== 'header' || params.expectation !== 'present')
-    ) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'a disallowed value applies only to a header that must be present',
-        path: ['disallowedValue'],
-      });
+    if (assertion.expectation !== 'not_value' && assertion.disallowedValue !== undefined) {
+      issue('a disallowed value applies only to not_value', 'disallowedValue');
     }
   });
+
+/** A header-cookie check: it fires when any one of its assertions fails. */
+export const headerCookieParamsSchema = z.strictObject({
+  assertions: z.array(headerCookieAssertionSchema).min(1).max(HEADER_ASSERTIONS_MAX),
+});
 
 /** Typed `params` per oracle type. Each shape is strict and holds check parameters only, never a payload. */
 export const oracleParamsSchemas = {

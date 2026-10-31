@@ -2,7 +2,7 @@ import { createServer, type Server } from 'node:http';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { httpFetcher } from './fetcher.js';
+import { httpFetcher, REPLAY_RESPONSE_BODY_MAX_BYTES } from './fetcher.js';
 
 import type { AddressInfo } from 'node:net';
 
@@ -14,6 +14,11 @@ beforeEach(async () => {
     if (request.url === '/redirect') {
       response.writeHead(302, { location: 'http://203.0.113.10/' });
       response.end();
+      return;
+    }
+    if (request.url === '/large') {
+      response.writeHead(200, { 'content-type': 'text/plain' });
+      response.end('a'.repeat(REPLAY_RESPONSE_BODY_MAX_BYTES + 4096));
       return;
     }
     if (request.url === '/cookies') {
@@ -57,6 +62,12 @@ describe('httpFetcher', () => {
       ]),
     );
     expect(result.headers?.filter((header) => header.name === 'set-cookie')).toHaveLength(2);
+  });
+
+  it('cuts an oversized body at the byte bound instead of loading it whole', async () => {
+    const result = await httpFetcher(`${origin}/large`);
+    expect(result.body).toHaveLength(REPLAY_RESPONSE_BODY_MAX_BYTES);
+    expect(result.status).toBe(200);
   });
 
   it('refuses to follow a redirect out of the verified scope (fails closed)', async () => {

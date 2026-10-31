@@ -23,14 +23,17 @@ export const NO_OBSERVATION: OracleVerdict = { matched: false, reason: 'no_obser
 /** The declared params do not match the oracle's contract. Malformed input never fires an oracle. */
 export const INVALID_PARAMS: OracleVerdict = { matched: false, reason: 'invalid_params' };
 
-/** A status differential cannot be judged without its recorded baseline. The error keeps the candidate Suspected. */
+/**
+ * A differential cannot be judged without its recorded baseline: the baseline is missing, was not recorded before the
+ * probe, or has no status. The error keeps the candidate Suspected.
+ */
 export class OracleBaselineMissingError extends ValidationError {
   constructor() {
-    super('a status differential needs a recorded baseline status');
+    super('a differential oracle needs a recorded baseline observation');
   }
 }
 
-/** NFC-normalises text before any comparison, so canonically equal Unicode strings compare equal (§ edge cases). */
+/** NFC-normalises text before any comparison, so canonically equal Unicode strings compare equal. */
 export function nfc(text: string): string {
   return text.normalize('NFC');
 }

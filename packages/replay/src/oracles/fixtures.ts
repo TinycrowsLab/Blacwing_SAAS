@@ -36,14 +36,15 @@ export function exchange(overrides: Partial<ReplayExchange> = {}): ReplayExchang
   };
 }
 
-/** A recorded observation with the given status (completed by default), for the deterministic evaluators. */
+/** A recorded observation around the given exchanges, with the given status (completed by default). */
 export function observation(
   exchanges: readonly ReplayExchange[],
   status: RawObservation['status'] = 'completed',
 ): RawObservation {
-  return { ...observationWith(exchanges), status, oracleType: 'marker' };
+  return { ...observationWith(exchanges), status };
 }
 
+/** One response header, for an exchange's `headers`. */
 export function header(name: string, value: string): ObservedHeader {
   return { name, value };
 }
