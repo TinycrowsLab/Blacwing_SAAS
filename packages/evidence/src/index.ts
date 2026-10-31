@@ -5,7 +5,11 @@ export const name = '@blackwing/evidence';
 export const version = '0.0.0';
 
 export { verifyEvidenceChain, type ChainedItem, type ChainVerdict } from './chain.js';
-export { EvidenceIntegrityError, type EvidenceIntegrityReason } from './errors.js';
+export {
+  EvidenceImmutableError,
+  EvidenceIntegrityError,
+  type EvidenceIntegrityReason,
+} from './errors.js';
 export {
   type BindEvidenceDeps,
   type BindEvidenceResult,
@@ -29,4 +33,20 @@ export {
   type StoredObjectHead,
   type UploadObjectStore,
 } from './upload-store.js';
-export { type EvidenceMetrics, EVIDENCE_TRACER, noopEvidenceMetrics } from './telemetry.js';
+export {
+  createEvidenceStore,
+  type EvidenceObjectHead,
+  type EvidenceStore,
+  type EvidenceStoreConfig,
+  type EvidenceStoreDeps,
+  type PutEvidenceOptions,
+  type PutEvidenceResult,
+  type TenantKeyGate,
+} from './store.js';
+export {
+  type EvidenceMetrics,
+  EVIDENCE_TRACER,
+  type EvidenceStoreMetrics,
+  noopEvidenceMetrics,
+  noopEvidenceStoreMetrics,
+} from './telemetry.js';

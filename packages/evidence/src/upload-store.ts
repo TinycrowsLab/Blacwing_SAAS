@@ -6,7 +6,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 
-import { s3ObjectBytesSource } from './objects.js';
+import { isMissingObject, s3ObjectBytesSource } from './objects.js';
 
 /**
  * Object storage for customer uploads (SCOPE-006): a presigned POST policy the browser or CLI posts to, and the
@@ -51,16 +51,6 @@ export interface UploadObjectStore {
   deleteObject(bucket: string, key: string): Promise<void>;
 }
 
-const HTTP_NOT_FOUND = 404;
-
-/** A missing object is a normal answer, not a failure: `head` maps it to `undefined`. */
-function isNotFound(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) return false;
-  const name = (error as { name?: unknown }).name;
-  const status = (error as { $metadata?: { httpStatusCode?: unknown } }).$metadata?.httpStatusCode;
-  return name === 'NotFound' || name === 'NoSuchKey' || status === HTTP_NOT_FOUND;
-}
-
 /** The S3/MinIO implementation of {@link UploadObjectStore}, over the process's AWS SDK v3 client. */
 export function s3UploadObjectStore(client: S3Client): UploadObjectStore {
   const bytes = s3ObjectBytesSource(client);
@@ -93,7 +83,7 @@ export function s3UploadObjectStore(client: S3Client): UploadObjectStore {
           metadata: response.Metadata ?? {},
         };
       } catch (error) {
-        if (isNotFound(error)) return undefined;
+        if (isMissingObject(error)) return undefined;
         throw error;
       }
     },

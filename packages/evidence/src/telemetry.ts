@@ -24,3 +24,17 @@ export const noopEvidenceMetrics: EvidenceMetrics = {
   bound: () => undefined,
   integrityFailed: () => undefined,
 };
+
+/**
+ * Metrics port of the object store (#731): `evidence_put_total{result}` and `evidence_bytes_total`. `result` is `ok` or
+ * `error`. Span `evidence.put` carries `tenantId`, `kind` and `size`, never the object body.
+ */
+export interface EvidenceStoreMetrics {
+  put(result: 'ok' | 'error'): void;
+  bytes(size: number): void;
+}
+
+export const noopEvidenceStoreMetrics: EvidenceStoreMetrics = {
+  put: () => undefined,
+  bytes: () => undefined,
+};

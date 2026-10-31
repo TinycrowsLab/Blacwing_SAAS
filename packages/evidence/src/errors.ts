@@ -17,3 +17,18 @@ export class EvidenceIntegrityError extends AppError {
     this.reason = reason;
   }
 }
+
+/**
+ * `CONFLICT` (409): an evidence object is write-once. It cannot be overwritten, or deleted, while its retention runs
+ * or while a legal hold is on. The store refuses before it calls S3, and maps S3's own WORM refusal to this error too.
+ */
+export class EvidenceImmutableError extends AppError {
+  declare readonly code: 'CONFLICT';
+
+  constructor(
+    message = 'evidence object is write-once until its retention ends',
+    options: AppErrorOptions = {},
+  ) {
+    super('CONFLICT', message, options);
+  }
+}

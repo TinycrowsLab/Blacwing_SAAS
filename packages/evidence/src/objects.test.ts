@@ -23,30 +23,30 @@ function sourceOf(bodies: Record<string, string>) {
 
 describe('createObjectReader', () => {
   it('hashes the bytes stored under the tenant prefix', async () => {
-    const key = `${TENANT}/run-1/000001`;
+    const key = `t/${TENANT}/run-1/000001`;
     const { source } = sourceOf({ [key]: 'body' });
     const reader = createObjectReader({ source, bucket: 'evidence', tenantId: TENANT });
     expect(await reader.sha256Of(key)).toBe(sha256Hex('body'));
   });
 
   it('refuses another tenant prefix before any read', async () => {
-    const { source, reads } = sourceOf({ [`${OTHER}/run-1/000001`]: 'secret' });
+    const { source, reads } = sourceOf({ [`t/${OTHER}/run-1/000001`]: 'secret' });
     const reader = createObjectReader({ source, bucket: 'evidence', tenantId: TENANT });
-    await expect(reader.sha256Of(`${OTHER}/run-1/000001`)).rejects.toThrow(ValidationError);
+    await expect(reader.sha256Of(`t/${OTHER}/run-1/000001`)).rejects.toThrow(ValidationError);
     expect(reads).toEqual([]);
   });
 
   it('refuses a key that only looks like the tenant prefix', async () => {
     const { source, reads } = sourceOf({});
     const reader = createObjectReader({ source, bucket: 'evidence', tenantId: TENANT });
-    await expect(reader.sha256Of(`${TENANT}x/run-1/000001`)).rejects.toThrow(ValidationError);
+    await expect(reader.sha256Of(`t/${TENANT}x/run-1/000001`)).rejects.toThrow(ValidationError);
     expect(reads).toEqual([]);
   });
 
   it('lets a missing object reject, so the binding can fail closed', async () => {
     const { source } = sourceOf({});
     const reader = createObjectReader({ source, bucket: 'evidence', tenantId: TENANT });
-    await expect(reader.sha256Of(`${TENANT}/run-1/000009`)).rejects.toThrow('NoSuchKey');
+    await expect(reader.sha256Of(`t/${TENANT}/run-1/000009`)).rejects.toThrow('NoSuchKey');
   });
 });
 

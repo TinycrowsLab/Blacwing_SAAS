@@ -22,11 +22,15 @@ const MINIO_PORT = 9000;
 const REGION = 'us-east-1';
 const HTTP_OK = 200;
 const ACCESS_KEY_SUFFIX_LENGTH = 10;
+/** 32 random bytes as hex: the size of a MinIO static KMS key. */
+const KMS_KEY_HEX_LENGTH = 64;
 
 /** Options for {@link withMinio}. */
 export interface WithMinioOptions extends ContainerOptions {
   /** Default retention applied to every new object version in the bucket. Off by default. */
   readonly defaultRetention?: { readonly mode: ObjectLockRetentionMode; readonly days: number };
+  /** Name of a static KMS key to create for SSE-KMS (with encryption context). Off by default. */
+  readonly kmsKeyId?: string;
 }
 
 /** A MinIO server and an Object Lock-enabled bucket created for this call. */
@@ -37,6 +41,8 @@ export interface MinioHandle {
   readonly credentials: { readonly accessKeyId: string; readonly secretAccessKey: string };
   /** Bucket with Object Lock enabled (and therefore versioning), unique to this call. */
   readonly bucket: string;
+  /** The static KMS key name, when {@link WithMinioOptions.kmsKeyId} was set. */
+  readonly kmsKeyId?: string;
   /** AWS SDK v3 S3 client (§5: the only way to talk to object storage), path-style. */
   readonly client: S3Client;
   readonly reused: boolean;
@@ -54,6 +60,18 @@ export async function withMinio(options: WithMinioOptions = {}): Promise<MinioHa
     accessKeyId: `bwtest${containerCredential('minio:user', reuse).slice(0, ACCESS_KEY_SUFFIX_LENGTH)}`,
     secretAccessKey: containerCredential('minio:password', reuse),
   };
+  const kmsEnv =
+    options.kmsKeyId === undefined
+      ? {}
+      : {
+          // MinIO's static KMS: `<key name>:<base64 of 32 bytes>`. Per run, so no key is shared between runs.
+          MINIO_KMS_SECRET_KEY: `${options.kmsKeyId}:${Buffer.from(
+            (
+              containerCredential('minio:kms:a', reuse) + containerCredential('minio:kms:b', reuse)
+            ).slice(0, KMS_KEY_HEX_LENGTH),
+            'hex',
+          ).toString('base64')}`,
+        };
   const started = await startContainer({
     service: 'minio',
     image,
@@ -61,6 +79,7 @@ export async function withMinio(options: WithMinioOptions = {}): Promise<MinioHa
     env: {
       MINIO_ROOT_USER: credentials.accessKeyId,
       MINIO_ROOT_PASSWORD: credentials.secretAccessKey,
+      ...kmsEnv,
     },
     command: ['server', '/data', '--address', `:${MINIO_PORT}`],
     wait: Wait.forHttp('/minio/health/ready', MINIO_PORT).forStatusCode(HTTP_OK),
@@ -110,6 +129,7 @@ export async function withMinio(options: WithMinioOptions = {}): Promise<MinioHa
     region: REGION,
     credentials,
     bucket,
+    ...(options.kmsKeyId === undefined ? {} : { kmsKeyId: options.kmsKeyId }),
     client,
     reused: started.reused,
     containerId: started.containerId,

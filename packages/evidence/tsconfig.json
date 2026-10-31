@@ -20,7 +20,13 @@
       "path": "../errors"
     },
     {
+      "path": "../ids"
+    },
+    {
       "path": "../logger"
+    },
+    {
+      "path": "../testing"
     }
   ]
 }

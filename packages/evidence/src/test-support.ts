@@ -35,7 +35,7 @@ export function buildStream(items: readonly SeedItem[], tenantId = 'tenant-a'): 
     const id = uuid(ITEM_LABEL_BASE + index);
     const sha256 = sha256Hex(item.body);
     const size = Buffer.byteLength(item.body, 'utf8');
-    const objectKey = `${tenantId}/run-1/${String(index + 1).padStart(SEQUENCE_WIDTH, '0')}`;
+    const objectKey = `t/${tenantId}/run-1/${String(index + 1).padStart(SEQUENCE_WIDTH, '0')}`;
     const chain = evidenceChainLink({
       prevChain,
       sha256,

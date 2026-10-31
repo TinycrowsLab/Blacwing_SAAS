@@ -71,3 +71,28 @@ export const oobEnvShape = {
 } as const;
 export const oobEnvSchema = z.object(oobEnvShape);
 export type OobEnv = z.output<typeof oobEnvSchema>;
+
+/**
+ * Evidence object store (EVIDENCE #731, CONTEXT_PACK §5, §8.6-§8.8). The store in `@blackwing/evidence` receives these
+ * parsed values and never reads the environment itself. The lock mode defaults to COMPLIANCE, the mode that nobody can
+ * shorten. `EVIDENCE_KMS_KEY_ID` names the bucket's own key (AWS KMS CMK, or the MinIO KMS key in dev); it is required,
+ * because the per-tenant encryption context is only meaningful under a named key.
+ */
+/** Retention floor default and ceiling, in days (one year by default, one hundred years at most). */
+const EVIDENCE_RETENTION_DAYS_DEFAULT = 365;
+const EVIDENCE_RETENTION_DAYS_MAX = 36_500;
+
+export const evidenceStoreEnvShape = {
+  EVIDENCE_BUCKET: zString({ trim: true }),
+  EVIDENCE_OBJECT_LOCK_MODE: z.enum(['COMPLIANCE', 'GOVERNANCE']).default('COMPLIANCE'),
+  EVIDENCE_DEFAULT_RETENTION_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(EVIDENCE_RETENTION_DAYS_MAX)
+    .default(EVIDENCE_RETENTION_DAYS_DEFAULT),
+  EVIDENCE_SSE: z.enum(['aws:kms', 'minio']).default('aws:kms'),
+  EVIDENCE_KMS_KEY_ID: zString({ trim: true }),
+} as const;
+export const evidenceStoreEnvSchema = z.object(evidenceStoreEnvShape);
+export type EvidenceStoreEnv = z.output<typeof evidenceStoreEnvSchema>;

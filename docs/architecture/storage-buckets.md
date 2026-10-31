@@ -41,6 +41,23 @@ Outputs for Helm values and app config: `bucket_names`, `bucket_arns`, `kms_key_
   S3 refuses to delete a still-locked or held version either way.
 - The OpenTofu state bucket (bootstrap) is separate and never has Object Lock.
 
+## Application writes (EVIDENCE-002, `@blackwing/evidence`)
+
+- `createEvidenceStore` is the only writer of evidence bytes. It checks `GetObjectLockConfiguration` at startup and
+  refuses to start when the bucket has no Object Lock (fail closed, §8.8).
+- Keys are `t/<tenantId>/runs/<runId>/<kind>/<uuidv7>`. The `t/` prefix is the one the bucket policy above allows, so a
+  different prefix would be denied on AWS. Reads and deletes refuse any key outside the caller's tenant before S3 is
+  called.
+- Each write sends SSE-KMS with the bucket key (`EVIDENCE_KMS_KEY_ID`) and the context `{"tenantId":"<id>"}`. A write
+  first asks the tenant key service (OpenBao) for the tenant key, so an unreachable or disabled key stops the write.
+- Retention is COMPLIANCE, floored at `EVIDENCE_DEFAULT_RETENTION_DAYS`. The retain-until recorded is the value S3
+  returns for the version. `delete` refuses while retention runs or a legal hold is on.
+- Config keys: `EVIDENCE_BUCKET`, `EVIDENCE_OBJECT_LOCK_MODE` (default `COMPLIANCE`), `EVIDENCE_DEFAULT_RETENTION_DAYS`
+  (default 365), `EVIDENCE_SSE` (`aws:kms` or `minio`), `EVIDENCE_KMS_KEY_ID`. The schema is `evidenceStoreEnvSchema`
+  in `@blackwing/config`.
+- Dev and test: MinIO with object locking, and a static MinIO KMS key for SSE-KMS (`MINIO_KMS_SECRET_KEY`). The
+  integration test is `packages/evidence/src/store.int.test.ts` (`pnpm --filter @blackwing/evidence test:int`).
+
 ## Tenant isolation (§8 #6)
 
 Every KMS key policy:
