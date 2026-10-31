@@ -1,0 +1,26 @@
+# Blackwing-authored sink-shape rules (CODESPEC-004, #511). Sink shapes only; no payload strings.
+rules:
+  - id: bw-whitebox-cwe-78-shell-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: A shell command string is built from a non-literal value (sink for CWE-78).
+    metadata:
+      cwe: CWE-78
+      wstg: WSTG-INPV-12
+      owasp: A03:2021
+    pattern-either:
+      - pattern: '$CP.exec($CMD)'
+      - pattern: '$CP.execSync($CMD)'
+      - pattern: '$CP.spawnSync($CMD, ..., {shell: true, ...})'
+  - id: bw-whitebox-cwe-78-shell-py
+    languages: [python]
+    severity: WARNING
+    message: A shell command is executed from a non-literal value (sink for CWE-78).
+    metadata:
+      cwe: CWE-78
+      wstg: WSTG-INPV-12
+      owasp: A03:2021
+    pattern-either:
+      - pattern: 'os.system($CMD)'
+      - pattern: 'os.popen($CMD)'
+      - pattern: 'subprocess.$F($CMD, ..., shell=True, ...)'

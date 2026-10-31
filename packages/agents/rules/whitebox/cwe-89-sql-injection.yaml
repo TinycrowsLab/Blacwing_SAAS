@@ -1,0 +1,27 @@
+# Blackwing-authored sink-shape rules (CODESPEC-004, #511). Not derived from the Semgrep registry (REFERENCES §5).
+# They match where untrusted data is concatenated into a query, never a payload. Output is a lead, not a finding.
+rules:
+  - id: bw-whitebox-cwe-89-query-concat-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Query text is built by string concatenation with a non-literal value (sink for CWE-89).
+    metadata:
+      cwe: CWE-89
+      wstg: WSTG-INPV-05
+      owasp: A03:2021
+    pattern-either:
+      - pattern: '$DB.query($SQL + $X)'
+      - pattern: '$DB.execute($SQL + $X)'
+      - pattern: '$DB.raw($SQL + $X)'
+  - id: bw-whitebox-cwe-89-query-concat-py
+    languages: [python]
+    severity: WARNING
+    message: Query text is built by string formatting or concatenation with a non-literal value (sink for CWE-89).
+    metadata:
+      cwe: CWE-89
+      wstg: WSTG-INPV-05
+      owasp: A03:2021
+    pattern-either:
+      - pattern: '$C.execute($SQL + $X)'
+      - pattern: '$C.execute($SQL % $X)'
+      - pattern: '$C.execute($SQL.format(...))'

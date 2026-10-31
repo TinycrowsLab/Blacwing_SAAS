@@ -1,0 +1,25 @@
+# Blackwing-authored sink-shape rules (CODESPEC-004, #511). Sink shapes only; no payload strings.
+rules:
+  - id: bw-whitebox-cwe-1336-template-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: A template source is compiled or rendered from a non-literal value (sink for SSTI, CWE-1336).
+    metadata:
+      cwe: CWE-1336
+      wstg: WSTG-INPV-18
+      owasp: A03:2021
+    pattern-either:
+      - pattern: 'ejs.render($TPL, ...)'
+      - pattern: 'pug.render($TPL, ...)'
+      - pattern: 'Handlebars.compile($TPL, ...)'
+  - id: bw-whitebox-cwe-1336-template-py
+    languages: [python]
+    severity: WARNING
+    message: A template source is rendered from a non-literal value (sink for SSTI, CWE-1336).
+    metadata:
+      cwe: CWE-1336
+      wstg: WSTG-INPV-18
+      owasp: A03:2021
+    pattern-either:
+      - pattern: 'render_template_string($TPL, ...)'
+      - pattern: 'Template($TPL).render(...)'

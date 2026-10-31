@@ -1,0 +1,28 @@
+# Blackwing-authored sink-shape rules (CODESPEC-004, #511). Sink shapes only; no payload strings.
+rules:
+  - id: bw-whitebox-cwe-918-outbound-request-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: An outbound request URL is taken from a non-literal value (sink for CWE-918).
+    metadata:
+      cwe: CWE-918
+      wstg: WSTG-INPV-19
+      owasp: A10:2021
+    pattern-either:
+      - pattern: 'fetch($URL, ...)'
+      - pattern: 'axios.get($URL, ...)'
+      - pattern: 'axios($URL, ...)'
+      - pattern: 'http.get($URL, ...)'
+      - pattern: 'https.get($URL, ...)'
+  - id: bw-whitebox-cwe-918-outbound-request-py
+    languages: [python]
+    severity: WARNING
+    message: An outbound request URL is taken from a non-literal value (sink for CWE-918).
+    metadata:
+      cwe: CWE-918
+      wstg: WSTG-INPV-19
+      owasp: A10:2021
+    pattern-either:
+      - pattern: 'requests.get($URL, ...)'
+      - pattern: 'requests.post($URL, ...)'
+      - pattern: 'urllib.request.urlopen($URL, ...)'

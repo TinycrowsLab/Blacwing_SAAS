@@ -1,0 +1,26 @@
+# Blackwing-authored sink-shape rules (CODESPEC-004, #511). Sink shapes only; no payload strings.
+rules:
+  - id: bw-whitebox-cwe-22-file-access-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: A filesystem path is derived from a non-literal value (sink for CWE-22).
+    metadata:
+      cwe: CWE-22
+      wstg: WSTG-ATHZ-01
+      owasp: A01:2021
+    pattern-either:
+      - pattern: 'fs.readFile($P, ...)'
+      - pattern: 'fs.readFileSync($P, ...)'
+      - pattern: 'fs.createReadStream($P, ...)'
+      - pattern: 'res.sendFile($P, ...)'
+  - id: bw-whitebox-cwe-22-file-access-py
+    languages: [python]
+    severity: WARNING
+    message: A filesystem path is opened from a non-literal value (sink for CWE-22).
+    metadata:
+      cwe: CWE-22
+      wstg: WSTG-ATHZ-01
+      owasp: A01:2021
+    pattern-either:
+      - pattern: 'open($P, ...)'
+      - pattern: 'send_file($P, ...)'

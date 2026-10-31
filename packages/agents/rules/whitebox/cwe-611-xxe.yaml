@@ -1,0 +1,25 @@
+# Blackwing-authored sink-shape rules (CODESPEC-004, #511). Sink shapes only; no payload strings.
+rules:
+  - id: bw-whitebox-cwe-611-xml-parse-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: An XML document is parsed with external entity resolution possibly enabled (sink for CWE-611).
+    metadata:
+      cwe: CWE-611
+      wstg: WSTG-INPV-07
+      owasp: A05:2021
+    pattern-either:
+      - pattern: 'libxmljs.parseXml($XML, {noent: true, ...})'
+      - pattern: 'libxmljs.parseXmlString($XML, {noent: true, ...})'
+  - id: bw-whitebox-cwe-611-xml-parse-py
+    languages: [python]
+    severity: WARNING
+    message: An XML document is parsed from untrusted input (sink for CWE-611).
+    metadata:
+      cwe: CWE-611
+      wstg: WSTG-INPV-07
+      owasp: A05:2021
+    pattern-either:
+      - pattern: 'etree.fromstring($XML, ...)'
+      - pattern: 'etree.parse($XML, ...)'
+      - pattern: 'lxml.etree.fromstring($XML, ...)'

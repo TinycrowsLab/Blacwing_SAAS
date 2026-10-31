@@ -35,6 +35,7 @@ catalog:
   '@modelcontextprotocol/sdk': 1.32.2
   '@cedar-policy/cedar-wasm': 4.13.0
   dataloader: 2.2.3
+  yaml: 2.9.1
   '@fastify/cors': 11.3.0
   '@fastify/helmet': 13.2.0
   '@fastify/request-context': 7.0.4

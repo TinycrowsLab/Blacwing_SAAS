@@ -1,0 +1,26 @@
+# Blackwing-authored sink-shape rules (CODESPEC-004, #511). Sink shapes only; no payload strings.
+rules:
+  - id: bw-whitebox-cwe-502-deserialize-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Untrusted data reaches a deserializer that can instantiate objects (sink for CWE-502).
+    metadata:
+      cwe: CWE-502
+      wstg: WSTG-INPV-11
+      owasp: A08:2021
+    pattern-either:
+      - pattern: 'serialize.unserialize($X)'
+      - pattern: 'unserialize($X)'
+  - id: bw-whitebox-cwe-502-deserialize-py
+    languages: [python]
+    severity: WARNING
+    message: Untrusted data reaches a deserializer that can execute code (sink for CWE-502).
+    metadata:
+      cwe: CWE-502
+      wstg: WSTG-INPV-11
+      owasp: A08:2021
+    pattern-either:
+      - pattern: 'pickle.loads($X)'
+      - pattern: 'pickle.load($X)'
+      - pattern: 'marshal.loads($X)'
+      - pattern: 'yaml.load($X, ...)'

@@ -171,6 +171,9 @@ catalogs:
     vitest:
       specifier: 3.2.6
       version: 3.2.6
+    yaml:
+      specifier: 2.9.1
+      version: 2.9.1
     zod:
       specifier: 4.6.7
       version: 4.6.7
@@ -928,6 +931,9 @@ importers:
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../errors
+      '@blackwing/ids':
+        specifier: workspace:*
+        version: link:../ids
       '@blackwing/logger':
         specifier: workspace:*
         version: link:../logger
@@ -956,6 +962,9 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 3.2.6(@types/node@22.20.5)(jiti@2.7.0)(jsdom@30.1.3)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      yaml:
+        specifier: 'catalog:'
+        version: 2.9.1
 
   packages/api-client:
     dependencies:

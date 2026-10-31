@@ -79,6 +79,13 @@ export {
   stallThresholdsSchema,
 } from './stall.js';
 export {
+  WHITEBOX_MAX_LEADS_DEFAULT,
+  WHITEBOX_MAX_LEADS_LIMIT,
+  type WhiteboxEnv,
+  whiteboxEnvSchema,
+  whiteboxEnvShape,
+} from './whitebox.js';
+export {
   DEFAULT_TEMPORAL_ADDRESS,
   DEFAULT_TEMPORAL_NAMESPACE,
   parseTemporalConfig,
