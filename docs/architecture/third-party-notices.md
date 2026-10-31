@@ -99,3 +99,20 @@ Playwright packages are the agent runtime's own pinned dependencies (`playwright
 
 The Playwright licence text ships in the installed `playwright-core` package as `LICENSE`. Chromium's licence files ship
 in the browser directory under `/opt/bw/browsers`.
+
+## Wordlists (bundled in the bw-sandbox image)
+
+The sandbox image bundles a small curated set of content, parameter and subdomain wordlists for `ffuf` and `katana`
+discovery (IMAGE-006, #604). The lists are vendored under `infra/docker/sandbox/wordlists/` and pinned in
+`infra/docker/sandbox/wordlists.pin.json` by upstream commit, sha256 and licence. Every list is copied verbatim into
+`/opt/bw/wordlists` at build time, and the build fails on any checksum mismatch, a licence off the allowlist or a total
+above `IMAGE_WORDLISTS_MAX_MIB` (default 64).
+
+| List | Upstream file | Version (commit) | Licence |
+|---|---|---|---|
+| common | `Discovery/Web-Content/common.txt` | SecLists `0008f434` | MIT |
+| burp-parameter-names | `Discovery/Web-Content/burp-parameter-names.txt` | SecLists `0008f434` | MIT |
+| subdomains-top1million-5000 | `Discovery/DNS/subdomains-top1million-5000.txt` | SecLists `0008f434` | MIT |
+
+Source: https://github.com/danielmiessler/SecLists (SecLists, Copyright (c) 2018 Daniel Miessler). The MIT licence text
+ships in the image as `/opt/bw/wordlists/LICENSES/LICENSE.seclists`.

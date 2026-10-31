@@ -13,6 +13,9 @@
 !infra/docker/sandbox/scanners.pin.json
 !infra/docker/sandbox/tools/install-tools.mjs
 !infra/docker/sandbox/tools/bw-sqlmap.mjs
+!infra/docker/sandbox/tools/install-wordlists.mjs
+!infra/docker/sandbox/wordlists.pin.json
+!infra/docker/sandbox/wordlists
 **/node_modules
 **/.turbo
 **/dist

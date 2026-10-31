@@ -11,6 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { checkToolPins } from './check-sandbox-tools.mjs';
+import { checkWordlistsRepo } from './check-sandbox-wordlists.mjs';
 
 export const SANDBOX_DOCKERFILE = 'infra/docker/sandbox/Dockerfile';
 export const SANDBOX_DOCKERIGNORE = 'infra/docker/sandbox/Dockerfile.dockerignore';
@@ -136,6 +137,9 @@ export function checkSandboxDockerfile(dockerfile, dockerignore) {
     'scanners.pin.json',
     'tools/install-tools.mjs',
     'tools/bw-sqlmap.mjs',
+    'tools/install-wordlists.mjs',
+    'wordlists.pin.json',
+    'wordlists',
   ]) {
     if (
       !new RegExp(`^!infra/docker/sandbox/${input.replaceAll('.', '\\.')}$`, 'm').test(dockerignore)
@@ -268,6 +272,7 @@ export function checkRepo(root) {
     ...checkToolsPin(read(SANDBOX_TOOLS_PIN)),
     ...checkToolPins(JSON.parse(read(SANDBOX_SCANNER_PINS))),
     ...checkBrowserPin(read(SANDBOX_TOOLS_PIN), read(WORKSPACE_MANIFEST)),
+    ...checkWordlistsRepo(root),
   ];
 }
 

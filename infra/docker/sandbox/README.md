@@ -60,6 +60,23 @@ runtime, so a launch works with `--network none`.
 - Headful mode is not supported in the sandbox. Only headless Chromium is installed.
 - Build smoke and offline launch are covered by `pnpm test:sandbox-image`.
 
+## Bundled wordlists (IMAGE-006, #604)
+
+`wordlists.pin.json` pins the wordlists baked into `/opt/bw/wordlists` for `ffuf` and `katana` discovery: content paths,
+parameter names and subdomain prefixes, vendored under `wordlists/<category>/` from SecLists (MIT) at one upstream commit.
+Each entry records `{name, category, version, licence, source, sha256}`, and each licence text is listed and checked too.
+
+- The `tools` stage runs `tools/install-wordlists.mjs`. It checks every list against its sha256, requires an allowlisted
+  licence (MIT, Apache-2.0, BSD-2/3-Clause, ISC, CC0-1.0) with its licence text, requires valid UTF-8, and enforces the
+  total against `IMAGE_WORDLISTS_MAX_MIB` (default 64). Bytes are copied verbatim, and `manifest.json` is written. The
+  runtime stage copies the tree root-owned, so `bw` cannot edit the lists.
+- Trimming an oversized list to its top-N entries is a reviewed change to the vendored file and its pin. It never happens
+  at build time.
+- Static guard: `node scripts/check-sandbox-wordlists.mjs`, run by `pnpm check:sandbox-image`. It also fails on any file
+  under `wordlists/` that no pin entry lists. Unit tests: `node --test scripts/install-wordlists.test.mjs`.
+- Tenant-supplied lists are out of scope. The convention for a later mounted input is `/opt/bw/wordlists/tenant/<name>.txt`,
+  read-only, outside the pinned tree.
+
 ## Seccomp profile (SANDBOX-007)
 
 `seccomp/bw-sandbox.json` is the default-deny seccomp profile every sandbox runs under. It allows only the

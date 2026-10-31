@@ -20,6 +20,8 @@ ARG NODE_IMAGE=node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e3
 # Go toolchain for the `go` tool kind (fingerprintx). Same golang digest as apps/egress-gateway/Dockerfile.
 ARG GO_IMAGE=golang:1.26.10-bookworm@sha256:ee3901c61e423732605a51f1b8157c849ec01194ea0a274213b5202b2c11e7bf
 ARG PNPM_INSTALL_FLAGS=""
+# Upper bound for the bundled wordlists (IMAGE-006, #604), enforced by tools/install-wordlists.mjs at build time.
+ARG IMAGE_WORDLISTS_MAX_MIB=64
 
 FROM ${NODE_IMAGE} AS builder
 ARG PNPM_INSTALL_FLAGS
@@ -56,6 +58,14 @@ RUN mkdir -p /opt/bw/tools/lib \
  && node /build/install-tools.mjs /build/scanners.pin.json /build \
  && rm -rf /tmp/bw-tools-*
 
+# Bundled wordlists (IMAGE-006, #604): each list is checked against its pinned sha256, its licence allowlist and
+# the size cap, then copied verbatim into /opt/bw/wordlists. Any violation fails the build.
+ARG IMAGE_WORDLISTS_MAX_MIB
+COPY infra/docker/sandbox/wordlists.pin.json /build/wordlists.pin.json
+COPY infra/docker/sandbox/wordlists /build/wordlists
+COPY infra/docker/sandbox/tools/install-wordlists.mjs /build/install-wordlists.mjs
+RUN IMAGE_WORDLISTS_MAX_MIB=${IMAGE_WORDLISTS_MAX_MIB} node /build/install-wordlists.mjs /build/wordlists.pin.json /opt/bw/wordlists
+
 FROM ${NODE_IMAGE} AS runtime
 ARG VERSION=dev
 ARG COMMIT=unknown
@@ -76,12 +86,13 @@ RUN apt-get update \
  && groupadd --system --gid 10001 bw \
  && useradd --system --uid 10001 --gid 10001 --no-create-home --home-dir /workspace --shell /usr/sbin/nologin bw \
  && mkdir -p /opt/bw/tools/bin /opt/bw/templates /opt/bw/wordlists /etc/bw /workspace /app \
- && chown -R bw:bw /opt/bw/templates /opt/bw/wordlists /etc/bw /workspace \
+ && chown -R bw:bw /opt/bw/templates /etc/bw /workspace \
  && chmod 0555 /opt/bw /etc/bw \
  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder --chown=root:root /out /app
 COPY --from=tools --chown=root:root /opt/bw/tools /opt/bw/tools
+COPY --from=tools --chown=root:root /opt/bw/wordlists /opt/bw/wordlists
 COPY --chown=root:root --chmod=0555 infra/docker/sandbox/entrypoint.sh /opt/bw/entrypoint.sh
 
 # Headless Chromium and the pinned fonts (IMAGE-005, #603). The Chromium build is the one the pinned playwright-core

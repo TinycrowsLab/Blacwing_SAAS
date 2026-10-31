@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "$comment": "Pinned wordlists baked into bw-sandbox (IMAGE-006, #604). Each list is vendored under infra/docker/sandbox/wordlists/<category>/ and verified by its sha256 at build time by tools/install-wordlists.mjs; a mismatch, a licence outside the allowlist, a non-UTF-8 file or a total above IMAGE_WORDLISTS_MAX_MIB fails the build. Paths are relative to this file. Every list and licence text must be recorded here; scripts/check-sandbox-wordlists.mjs fails on an unlisted file. Lists are curated for size: trim to the top-N entries in a reviewed change, never at build time.",
+  "licences": [
+    {
+      "licence": "MIT",
+      "copyright": "Copyright (c) 2018 Daniel Miessler",
+      "file": "wordlists/LICENSE.seclists",
+      "sha256": "3dbdc93d5f8829de0941744841730a09c106d0732e5ae0e98ca1d77be7ded66c"
+    }
+  ],
+  "lists": [
+    {
+      "name": "common",
+      "category": "web-content",
+      "file": "wordlists/web-content/common.txt",
+      "sha256": "47fb86ca6fb3f97e5491161581900d6d99851fb16764eacddf16aa85617c956a",
+      "version": "0008f4343439b48257c0815fc797955d0ab1e755",
+      "licence": "MIT",
+      "source": "https://github.com/danielmiessler/SecLists/blob/0008f4343439b48257c0815fc797955d0ab1e755/Discovery/Web-Content/common.txt",
+      "use": "ffuf and katana content discovery (common web paths)"
+    },
+    {
+      "name": "burp-parameter-names",
+      "category": "parameters",
+      "file": "wordlists/parameters/burp-parameter-names.txt",
+      "sha256": "91f7e457415ffd0e4278d13887804036b62240a135a022a6fd6e831a7151899f",
+      "version": "0008f4343439b48257c0815fc797955d0ab1e755",
+      "licence": "MIT",
+      "source": "https://github.com/danielmiessler/SecLists/blob/0008f4343439b48257c0815fc797955d0ab1e755/Discovery/Web-Content/burp-parameter-names.txt",
+      "use": "ffuf parameter discovery (common query and body parameter names)"
+    },
+    {
+      "name": "subdomains-top1million-5000",
+      "category": "subdomains",
+      "file": "wordlists/subdomains/subdomains-top1million-5000.txt",
+      "sha256": "e331367c140298cb179114fdeefa78f58f696219f0dec017a28bb79487cfcf19",
+      "version": "0008f4343439b48257c0815fc797955d0ab1e755",
+      "licence": "MIT",
+      "source": "https://github.com/danielmiessler/SecLists/blob/0008f4343439b48257c0815fc797955d0ab1e755/Discovery/DNS/subdomains-top1million-5000.txt",
+      "use": "ffuf subdomain prefix discovery (common subdomain labels)"
+    }
+  ]
+}
