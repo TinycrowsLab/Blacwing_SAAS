@@ -141,7 +141,12 @@
         "vkey.minted",
         "vkey.revoked",
         "soc.portal.opened",
-        "policy.snapshot.built"
+        "policy.snapshot.built",
+        "schedule.created",
+        "schedule.updated",
+        "schedule.paused",
+        "schedule.resumed",
+        "schedule.deleted"
       ]
     },
     "severity": {
@@ -273,7 +278,8 @@
             "assessment_request",
             "input_manifest",
             "service_account",
-            "virtual_key"
+            "virtual_key",
+            "schedule"
           ]
         },
         "id": {
