@@ -20,6 +20,7 @@ import {
   type EffectivePolicySet,
   policySourceSha256,
   validatePolicies,
+  type TenantPolicyVersionRef,
   type ValidationResult,
 } from '@blackwing/policy';
 
@@ -53,6 +54,12 @@ export interface TenantPolicyServiceDeps {
   readonly engine?: TenantPolicyEngine;
   /** Validation of a tenant source before it can become active; defaults to Cedar strict validation. */
   readonly validate?: (source: string) => ValidationResult;
+  /**
+   * Runs after a version becomes the active one (activation or rollback). The policy snapshot builder (POLICY-007)
+   * plugs in here, so every activation produces a new signed snapshot. A returned promise is awaited, and an error
+   * propagates to the caller.
+   */
+  readonly onActivated?: (tenantId: string, active: TenantPolicyVersionRef) => unknown;
 }
 
 export interface CreatePolicyVersionInput {
@@ -134,6 +141,7 @@ export class TenantPolicyService {
         { tenantId, version: target.version, sha256: target.sha256 },
         'policy.activated',
       );
+      await this.notifyActivated(tenantId, target);
     }
     return result;
   }
@@ -170,6 +178,7 @@ export class TenantPolicyService {
         { tenantId, version: target.version, sha256: target.sha256 },
         'policy.rolled_back',
       );
+      await this.notifyActivated(tenantId, target);
     }
     return result;
   }
@@ -205,6 +214,14 @@ export class TenantPolicyService {
         ? null
         : { version: active.version, sha256: active.sha256, cedarSource: active.cedarSource },
     );
+  }
+
+  private async notifyActivated(tenantId: string, target: PolicyVersion): Promise<void> {
+    await this.deps.onActivated?.(tenantId, {
+      version: target.version,
+      sha256: target.sha256,
+      cedarSource: target.cedarSource,
+    });
   }
 
   private async requireValidVersion(tenantId: string, version: number): Promise<PolicyVersion> {

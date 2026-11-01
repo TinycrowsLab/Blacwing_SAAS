@@ -140,7 +140,8 @@
         "tenant.plan_changed",
         "vkey.minted",
         "vkey.revoked",
-        "soc.portal.opened"
+        "soc.portal.opened",
+        "policy.snapshot.built"
       ]
     },
     "severity": {

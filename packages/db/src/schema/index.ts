@@ -29,4 +29,5 @@ export * from './schedules.js';
 export * from './reversal-journal.js';
 export * from './tenant-policies.js';
 export * from './policy-decision-logs.js';
+export * from './policy-snapshots.js';
 export * from './role-sessions.js';

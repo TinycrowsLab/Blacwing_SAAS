@@ -969,6 +969,15 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     isAlwaysAudited: true,
     description: 'A SOC portal link was accepted and its scoped portal session was established.',
   },
+  // Signed policy snapshots (POLICY-007): appended. Metadata carries ids, versions, the digest and the key id only.
+  {
+    action: 'policy.snapshot.built',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description:
+      'A signed policy snapshot of a tenant effective policy set was stored and recorded (metadata: snapshot id, versions and signing key id).',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

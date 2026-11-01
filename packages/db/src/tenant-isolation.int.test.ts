@@ -176,6 +176,14 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       [newId(), tenantId, createHash('sha256').update('').digest('hex'), newId()],
     );
   },
+  policy_snapshots: async (tx, tenantId) => {
+    const digest = createHash('sha256').update(`snapshot:${tenantId}`).digest('hex');
+    await tx.query(
+      `INSERT INTO policy_snapshots (id, tenant_id, snapshot_sha256, signing_key_id, baseline_version, object_key)
+       VALUES ($1, $2, $3, 'bw-sa-signing:v1', '1.0.0', $4)`,
+      [newId(), tenantId, digest, `t/${tenantId}/policy-snapshots/${digest}.jws`],
+    );
+  },
   policy_decision_logs: async (tx, tenantId) => {
     await tx.query(
       `INSERT INTO policy_decision_logs
@@ -362,6 +370,19 @@ const ISOLATION_TABLES: Record<string, Seeder> = {
       `INSERT INTO notification_channels (id, tenant_id, kind, name, config, status, created_by)
        VALUES ($1, $2, 'email', 'iso-channel', '{"addresses":["soc@example.test"]}', 'active', $3)`,
       [newId(), tenantId, newId()],
+    );
+  },
+  notification_routes: async (tx, tenantId) => {
+    const channelId = newId();
+    await tx.query(
+      `INSERT INTO notification_channels (id, tenant_id, kind, name, config, status, created_by)
+       VALUES ($1, $2, 'email', 'iso-route-channel', '{"addresses":["soc@example.test"]}', 'active', $3)`,
+      [channelId, tenantId, newId()],
+    );
+    await tx.query(
+      `INSERT INTO notification_routes (id, tenant_id, event, channel_id, created_by)
+       VALUES ($1, $2, 'system.alert', $3, $4)`,
+      [newId(), tenantId, channelId, newId()],
     );
   },
   soc_contacts: async (tx, tenantId) => {

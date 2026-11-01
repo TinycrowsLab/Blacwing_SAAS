@@ -411,6 +411,14 @@ export {
   type PolicyDecisionLogRepositoryOptions,
 } from './policy-decision-log.repository.js';
 export {
+  type PolicySnapshotAuditEvent,
+  type PolicySnapshotAuditHook,
+  type PolicySnapshotEntry,
+  PolicySnapshotRepository,
+  type PolicySnapshotRecordInput,
+  type PolicySnapshotRepositoryOptions,
+} from './policy-snapshot.repository.js';
+export {
   roleSessionRepository,
   type RoleSessionWrite,
   type TerminalStoredSessionStatus,

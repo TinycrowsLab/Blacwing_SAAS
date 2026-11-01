@@ -371,6 +371,77 @@ describe('TenantPolicyService: activation and rollback', () => {
   });
 });
 
+describe('TenantPolicyService: activation hook (policy snapshots)', () => {
+  interface Active {
+    version: number;
+    sha256: string;
+    cedarSource: string;
+  }
+  function hooked(onActivated: (tenantId: string, active: Active) => unknown) {
+    const store = new MemoryPolicyStore();
+    const metrics = createTenantPolicyMetrics(new Registry());
+    const service = new TenantPolicyService({ store, metrics, logger: silentLogger, onActivated });
+    return { store, service };
+  }
+
+  it('runs after an activation with the tenant and the newly active version', async () => {
+    const seen: unknown[] = [];
+    const { service } = hooked((tenantId, active) => {
+      seen.push({ tenantId, active });
+    });
+    const v2 = await service.createVersion(admin(), { source: PERMIT });
+    await service.activate(admin(), { version: v2.version, expectedActiveVersion: null });
+    expect(seen).toEqual([
+      {
+        tenantId: TENANT_A,
+        active: { version: 2, sha256: policySourceSha256(PERMIT), cedarSource: PERMIT },
+      },
+    ]);
+  });
+
+  it('runs after a rollback with the version rolled back to', async () => {
+    const seen: number[] = [];
+    const { service } = hooked((_tenantId, active) => {
+      seen.push(active.version);
+      return Promise.resolve();
+    });
+    const v2 = await service.createVersion(admin(), { source: PERMIT });
+    const v3 = await service.createVersion(admin(), { source: FORBID_ALL });
+    await service.activate(admin(), { version: v2.version, expectedActiveVersion: null });
+    await service.activate(admin(), { version: v3.version, expectedActiveVersion: 2 });
+    await service.rollback(admin(), { toVersion: 2 });
+    expect(seen).toEqual([2, 3, 2]);
+  });
+
+  it('does not run for a refused activation or a no-op activation', async () => {
+    let calls = 0;
+    const { service } = hooked(() => {
+      calls += 1;
+      return Promise.resolve();
+    });
+    const bad = await service.createVersion(admin(), { source: INVALID });
+    await captureError(
+      service.activate(admin(), { version: bad.version, expectedActiveVersion: null }),
+    );
+    expect(calls).toBe(0);
+    const v2 = await service.createVersion(admin(), { source: PERMIT });
+    await service.activate(admin(), { version: v2.version, expectedActiveVersion: null });
+    expect(calls).toBe(1);
+    await service.activate(admin(), { version: v2.version, expectedActiveVersion: v2.version });
+    expect(calls).toBe(1);
+  });
+
+  it('surfaces a snapshot build failure to the caller', async () => {
+    const { service } = hooked(() => Promise.reject(new Error('openbao unreachable')));
+    const v2 = await service.createVersion(admin(), { source: PERMIT });
+    expect(
+      await captureError(
+        service.activate(admin(), { version: v2.version, expectedActiveVersion: null }),
+      ),
+    ).toMatchObject({ message: 'openbao unreachable' });
+  });
+});
+
 describe('TenantPolicyService: reads and the effective set', () => {
   it('lets a read-only role read, and never write', async () => {
     const { service } = setup();
