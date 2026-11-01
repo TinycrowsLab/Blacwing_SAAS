@@ -134,6 +134,8 @@ const DEFINITIONS = {
   SCOPE_INVALID_BUDGET: { status: 422, title: 'Invalid request budget', retryable: false },
   // Malformed scope rule (SCOPE-002, #566): invalid input, rejected at parse time.
   SCOPE_INVALID_RULE: { status: 422, title: 'Invalid scope rule', retryable: false },
+  // Unknown assessment mode (ORCH-004 / SCOPE recon plan, §3.2): the mode table has no row for it. Fail closed.
+  SCOPE_INVALID_MODE: { status: 422, title: 'Invalid assessment mode', retryable: false },
   // NegativeControlError, @blackwing/contracts (F16): a non-passive test case without a negative control,
   // or one that does not suit its oracle, is a malformed test case (422).
   NEGATIVE_CONTROL_MISSING: { status: 422, title: 'Negative control missing', retryable: false },

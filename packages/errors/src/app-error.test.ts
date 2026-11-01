@@ -179,6 +179,8 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'MEMORY_EMBED_DIM_MISMATCH',
   // PolicyBuilderError, @blackwing/policy rule-builder compiler (POLICY-004): carries the issues with JSON pointers.
   'POLICY_BUILDER_INVALID',
+  // InvalidAssessmentModeError, @blackwing/domain recon plan (ORCH-004 / SCOPE, §3.2): thrown for an unknown mode.
+  'SCOPE_INVALID_MODE',
   // Agent session descriptor, @blackwing/agent-runtime (RUNTIME-001): thrown as a plain AppError.
   'AGENT_BRIEF_TOO_LARGE',
   'AGENT_UNKNOWN_PERSONA',

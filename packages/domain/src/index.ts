@@ -281,6 +281,16 @@ export {
   resolveReconManifest,
 } from './recon/manifest.js';
 
+export {
+  decideReconPlan,
+  InvalidAssessmentModeError,
+  type ReconInputManifest,
+  type ReconPlan,
+  type ReconRequest,
+  reconInputManifestSchema,
+  reconPlanSchema,
+} from './scoping/mode-decision.js';
+
 export { type Classification, classifyFinding } from './findings/classify.js';
 export {
   FindingTriageError,
