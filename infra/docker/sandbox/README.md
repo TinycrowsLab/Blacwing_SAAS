@@ -44,6 +44,28 @@ Runtime contract (SANDBOX): user `bw` uid/gid 10001, read-only rootfs, `/workspa
 Checks: `pnpm check:sandbox-image` (static: Dockerfile, dockerignore, both tool pins), `pnpm test:sandbox-image`
 (builds and runs the image; also proves the checksum guard refuses a mismatched archive).
 
+## Proxy-unaware tools via proxychains-ng (IMAGE-007, #605)
+
+`proxy/build-proxychains.sh` builds the pinned proxychains-ng 4.17 (`tools.pin.json`, `proxychains`) from its source tarball
+in the `proxychains` stage, after a sha256 check. Only the launcher and preload library are kept, under
+`/opt/bw/tools/lib/proxychains-ng` (off PATH).
+
+`/opt/bw/tools/bin/bw-proxy <tool> [args...]` (`tools/bw-proxy.sh`) runs a tool that ignores proxy env under proxychains:
+
+- The gateway comes from `ALL_PROXY` (`socks5://` or `socks5h://`, hostname or IPv4 plus port). Anything else, including
+  userinfo, an IPv6 literal, a missing gateway or a bad port, exits 69 before the tool starts.
+- `proxy/proxychains.conf.template` (root-owned at `/etc/bw/proxychains.conf`) is rendered into a 0600 file in `/tmp`
+  per call and removed afterwards. It sets `strict_chain` (a down gateway fails the connect; there is no direct fallback),
+  `proxy_dns` (names resolve through the gateway) and no `localnet` bypass.
+- Nested calls (`LD_PRELOAD` already holds `libproxychains4.so`) run the tool directly, so nothing is wrapped twice.
+- UDP and raw sockets cannot be proxychained. Such tools are not on the specialist allowlist and must not be added.
+- Tests: `node --test scripts/bw-proxy.test.mjs`. The unit suite uses a fake launcher. The integration suite runs real
+  proxychains-ng against a stub SOCKS5 gateway (set `BW_PROXYCHAINS_HOME` to a local build, or run in the image).
+
+Default proxy-unaware tools: none of the bundled tools needs `bw-proxy` yet. `naabu` (raw sockets, SYN scans) cannot be
+proxychained and stays off the allowlist. Go tools such as `ffuf`, `httpx` and `nuclei` honour `HTTP_PROXY`, `HTTPS_PROXY` and
+`ALL_PROXY`, so they use env, not `bw-proxy`. Add a tool to the `bw-proxy` list only after it is verified to honour proxychains.
+
 ## Vendored nuclei-templates (IMAGE-004, #602)
 
 The `templates` entry in `tools.pin.json` pins `projectdiscovery/nuclei-templates` to one commit (SHA, version, archive

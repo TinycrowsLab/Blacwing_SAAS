@@ -1,0 +1,15 @@
+# bw-proxy config template (IMAGE-007, #605). Root-owned and read-only in the image at /etc/bw/proxychains.conf.
+# bw-proxy renders @GATEWAY_HOST@ and @GATEWAY_PORT@ from ALL_PROXY into a private 0600 copy per call and
+# passes that copy with -f. Nothing here is a secret.
+#
+# strict_chain: every connection must traverse the gateway. If the gateway is down, connect fails and the tool
+# fails closed. proxy_dns: names resolve through the gateway, so no lookup leaves the sandbox resolver.
+# No localnet entries: loopback and private targets are also sent through the gateway.
+strict_chain
+proxy_dns
+remote_dns_subnet 224
+tcp_read_time_out 15000
+tcp_connect_time_out 8000
+
+[ProxyList]
+socks5 @GATEWAY_HOST@ @GATEWAY_PORT@

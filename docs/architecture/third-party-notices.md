@@ -156,3 +156,11 @@ They are eval-only: they are started from their pinned images on the isolated `b
 bundled into a Blackwing product image, and `redistributed` is `false` in every manifest. The public targets are
 OWASP Juice Shop, crAPI, VAmPI, DVGA, DVWA and WebGoat. The two Blackwing synthetic labs under
 `eval/targets/synthetic/` are first-party code (no third-party code).
+
+## proxychains-ng (bundled in the bw-sandbox image)
+
+proxychains-ng 4.17 (GPL-2.0-only, https://github.com/rofl0r/proxychains-ng) is built from the pinned source tarball
+(`infra/docker/sandbox/tools.pin.json`, `proxychains`, sha256-checked before the build) in the image's proxychains stage.
+Only the `proxychains4` launcher and `libproxychains4.so` are installed, under `/opt/bw/tools/lib/proxychains-ng`, never on
+PATH. It runs as a separate process through `bw-proxy` and is never linked into Blackwing code. The GPL-2.0 licence text
+ships in the upstream source tree (`COPYING`).

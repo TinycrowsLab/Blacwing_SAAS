@@ -71,6 +71,15 @@ COPY infra/docker/sandbox/tools/install-templates.mjs /build/
 RUN mkdir -p /opt/bw/templates \
  && node /build/install-templates.mjs /pin/tools.pin.json /opt/bw/templates/official
 
+# proxychains-ng (IMAGE-007, #605) for proxy-unaware tools, built from the pinned source tarball with a sha256 check.
+# Only the launcher and preload library are kept, under /opt/bw/tools/lib (never on PATH). bw-proxy is the entry point.
+# build-essential exists only in this stage; the runtime stage copies just the built files from /opt/bw/tools.
+COPY infra/docker/sandbox/proxy/build-proxychains.sh /pin/build-proxychains.sh
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends build-essential \
+ && rm -rf /var/lib/apt/lists/* \
+ && sh /pin/build-proxychains.sh /pin/tools.pin.json /opt/bw/tools/lib/proxychains-ng
+
 FROM ${NODE_IMAGE} AS runtime
 ARG VERSION=dev
 ARG COMMIT=unknown
@@ -98,6 +107,9 @@ RUN apt-get update \
 COPY --from=builder --chown=root:root /out /app
 COPY --from=tools --chown=root:root /opt/bw/tools /opt/bw/tools
 COPY --from=tools --chown=root:root /opt/bw/wordlists /opt/bw/wordlists
+# proxychains-ng and the bw-proxy entry point (IMAGE-007, #605). The config template is rendered per call from ALL_PROXY.
+COPY --chown=root:root --chmod=0444 infra/docker/sandbox/proxy/proxychains.conf.template /etc/bw/proxychains.conf
+COPY --chown=root:root --chmod=0555 infra/docker/sandbox/tools/bw-proxy.sh /opt/bw/tools/bin/bw-proxy
 COPY --chown=root:root --chmod=0555 infra/docker/sandbox/entrypoint.sh /opt/bw/entrypoint.sh
 
 # Pinned nuclei-templates (IMAGE-004, #602) are root-owned and read-only for bw, so a runtime template update cannot
