@@ -20,3 +20,21 @@ export {
   type ToolEvent,
   type TurnEvent,
 } from './stall-window.js';
+export {
+  createOtelMentorSummaryObserver,
+  createNoOpSummaryObserver,
+  type MentorSummaryEvent,
+  type MentorSummaryObserver,
+} from './summary-observer.js';
+export {
+  fenceUntrusted,
+  type GoalNarrator,
+  MENTOR_SUMMARY_MAX_WINDOW_TURNS,
+  type MentorAction,
+  type MentorInput,
+  type MentorSummaryInput,
+  type TranscriptArchive,
+  type TranscriptRecord,
+  summariseForMentor,
+  transcriptRecordSchema,
+} from './transcript-summariser.js';

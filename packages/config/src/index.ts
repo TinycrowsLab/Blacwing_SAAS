@@ -79,6 +79,14 @@ export {
   stallThresholdsSchema,
 } from './stall.js';
 export {
+  MENTOR_SUMMARY_DEFAULT_MAX_CHARS,
+  MENTOR_SUMMARY_MAX_MAX_CHARS,
+  MENTOR_SUMMARY_MIN_MAX_CHARS,
+  type MentorEnv,
+  mentorEnvSchema,
+  mentorEnvShape,
+} from './mentor.js';
+export {
   WHITEBOX_MAX_LEADS_DEFAULT,
   WHITEBOX_MAX_LEADS_LIMIT,
   type WhiteboxEnv,
