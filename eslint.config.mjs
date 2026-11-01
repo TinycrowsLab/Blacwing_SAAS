@@ -113,11 +113,13 @@ export default defineConfig(
       parserOptions: {
         projectService: {
           // Root-level tool configs (eslint.config.mjs, prettier.config.mjs) sit outside every
-          // member; they are typechecked with the scripts/ settings.
+          // member; they are typechecked with the scripts/ settings. So are the eval lab sources
+          // (eval/ holds no tsconfig of its own, EVAL-001); scripts/tsconfig.json includes them.
           allowDefaultProject: [
             '*.config.mjs',
             'apps/web/*.config.mjs',
             'packages/testing/src/vitest/ci-preload.mjs',
+            'eval/targets/synthetic/*/*.mjs',
           ],
           defaultProject: 'scripts/tsconfig.json',
         },

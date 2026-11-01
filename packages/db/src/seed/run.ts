@@ -8,8 +8,18 @@ import { type IsoTimestamp, nowIso } from '@blackwing/time';
 
 import { publicId } from '../columns.js';
 import {
+  buildEvalTenantSeedPlan,
+  type EvalSeedTarget,
+  type EvalTenantSeedPlan,
+  evalTenantRow,
+} from './eval-plan.js';
+import { loadEvalSeedTargets } from './eval-targets.js';
+import {
   buildTenantSeedPlan,
   type PersonaKey,
+  type SeedAssetRow,
+  type SeedMembershipRow,
+  type SeedStandingAuthorisationRow,
   SEED_PERSONAS,
   tenantRow,
   type TenantSeedPlan,
@@ -69,6 +79,8 @@ export interface SeedOptions {
   readonly appPool: pg.Pool;
   /** The Juice Shop address the egress gateway targets (the lab service name, #880). */
   readonly juiceShopUrl: string;
+  /** The eval targets the `eval` tenant seeds (EVAL-001). Default: every manifest under eval/targets. */
+  readonly evalTargets?: readonly EvalSeedTarget[];
   /** `BW_ENV` for the private-range lab gate (`dev` or `test`). */
   readonly labEnv?: LabRuleEnv;
   /** Keycloak `sub` per persona; personas absent here keep (or get) a `pending:` subject. */
@@ -88,6 +100,8 @@ export interface SeedSummary {
   readonly tenantId: Uuid;
   readonly tenantSlug: string;
   readonly counts: Readonly<Record<string, number>>;
+  readonly evalTenantId: Uuid;
+  readonly evalCounts: Readonly<Record<string, number>>;
 }
 
 const json = (value: unknown): string => JSON.stringify(value);
@@ -96,8 +110,9 @@ async function upsertPlatformRows(
   owner: pg.Pool,
   now: IsoTimestamp,
   subjects: Partial<Record<PersonaKey, string>>,
-): Promise<{ tenantId: Uuid; userIds: Record<PersonaKey, Uuid> }> {
+): Promise<{ tenantId: Uuid; evalTenantId: Uuid; userIds: Record<PersonaKey, Uuid> }> {
   const tenant = tenantRow(now);
+  const evalTenant = evalTenantRow(now);
   const client = await owner.connect();
   try {
     await client.query('BEGIN');
@@ -126,13 +141,31 @@ async function upsertPlatformRows(
       const id = u.rows[0]?.id;
       if (id !== undefined) userIds[user.persona] = id;
     }
+    // The eval tenant (EVAL-001) is platform scope too: its row is written under its own context.
+    await client.query("SELECT set_config('app.tenant_id', $1, true)", [evalTenant.id]);
+    const e = await client.query<{ id: Uuid }>(
+      `INSERT INTO tenants (id, slug, name, status, region, plan, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, now(), now())
+       ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, status = EXCLUDED.status,
+         region = EXCLUDED.region, plan = EXCLUDED.plan, updated_at = now()
+       RETURNING id`,
+      [
+        evalTenant.id,
+        evalTenant.slug,
+        evalTenant.name,
+        evalTenant.status,
+        evalTenant.region,
+        evalTenant.plan,
+      ],
+    );
     await client.query('COMMIT');
     const tenantId = t.rows[0]?.id;
+    const evalTenantId = e.rows[0]?.id;
     const missing = SEED_PERSONAS.filter((p) => userIds[p.key] === undefined);
-    if (tenantId === undefined || missing.length > 0) {
+    if (tenantId === undefined || evalTenantId === undefined || missing.length > 0) {
       throw new Error('db:seed: the tenant or user upsert returned no id');
     }
-    return { tenantId, userIds: userIds as Record<PersonaKey, Uuid> };
+    return { tenantId, evalTenantId, userIds: userIds as Record<PersonaKey, Uuid> };
   } catch (error) {
     await client.query('ROLLBACK').catch(() => undefined);
     throw error;
@@ -165,25 +198,42 @@ async function deleteSeededRows(
   ]);
 }
 
-async function upsertTenantRows(
+/** Deletes the eval tenant rows this seed owns (under the eval tenant context, as the owner, like the demo). */
+async function deleteEvalRows(
   tx: pg.PoolClient,
-  plan: TenantSeedPlan,
-  steps: ReadonlySet<string>,
+  plan: EvalTenantSeedPlan,
+  present: ReadonlySet<string>,
 ): Promise<void> {
-  const tenantId = plan.tenantId;
-  if (steps.has('memberships'))
-    for (const m of plan.memberships) {
-      await tx.query(
-        `INSERT INTO memberships (tenant_id, user_id, roles, created_at, updated_at)
-       VALUES ($1, $2, $3::text[], now(), now())
-       ON CONFLICT (tenant_id, user_id) DO UPDATE SET roles = EXCLUDED.roles, updated_at = now()`,
-        [tenantId, m.userId, m.roles],
-      );
-    }
-  const a = plan.asset;
-  if (steps.has('assets'))
-    await tx.query(
-      `INSERT INTO assets (id, tenant_id, public_id, type, name, identifiers, environment, owner_user_id,
+  const del = async (table: string, sql: string, params: unknown[]): Promise<void> => {
+    if (present.has(table)) await tx.query(sql, params);
+  };
+  await del('standing_authorisations', 'DELETE FROM standing_authorisations WHERE id = $1', [
+    plan.standingAuthorisation.id,
+  ]);
+  await del('assets', 'DELETE FROM assets WHERE id = ANY($1::uuid[])', [
+    plan.assets.map((a) => a.id),
+  ]);
+  await del('memberships', 'DELETE FROM memberships WHERE user_id = ANY($1::uuid[])', [
+    plan.memberships.map((m) => m.userId),
+  ]);
+}
+
+async function upsertMembership(
+  tx: pg.PoolClient,
+  tenantId: Uuid,
+  m: SeedMembershipRow,
+): Promise<void> {
+  await tx.query(
+    `INSERT INTO memberships (tenant_id, user_id, roles, created_at, updated_at)
+     VALUES ($1, $2, $3::text[], now(), now())
+     ON CONFLICT (tenant_id, user_id) DO UPDATE SET roles = EXCLUDED.roles, updated_at = now()`,
+    [tenantId, m.userId, m.roles],
+  );
+}
+
+async function upsertAsset(tx: pg.PoolClient, tenantId: Uuid, a: SeedAssetRow): Promise<void> {
+  await tx.query(
+    `INSERT INTO assets (id, tenant_id, public_id, type, name, identifiers, environment, owner_user_id,
        verification_status, verification_method, verified_at, attestation, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10,
        CASE WHEN $9 = 'verified' THEN now() END, $11::jsonb, now(), now())
@@ -194,20 +244,71 @@ async function upsertTenantRows(
        verification_method = EXCLUDED.verification_method,
        verified_at = EXCLUDED.verified_at, attestation = EXCLUDED.attestation,
        updated_at = now()`,
-      [
-        a.id,
-        tenantId,
-        publicId('asset', a.id),
-        a.type,
-        a.name,
-        json(a.identifiers),
-        a.environment,
-        a.ownerUserId,
-        a.verificationStatus,
-        a.verificationMethod,
-        json(a.attestation),
-      ],
-    );
+    [
+      a.id,
+      tenantId,
+      publicId('asset', a.id),
+      a.type,
+      a.name,
+      json(a.identifiers),
+      a.environment,
+      a.ownerUserId,
+      a.verificationStatus,
+      a.verificationMethod,
+      json(a.attestation),
+    ],
+  );
+}
+
+async function upsertStandingAuthorisation(
+  tx: pg.PoolClient,
+  tenantId: Uuid,
+  s: SeedStandingAuthorisationRow,
+): Promise<void> {
+  await tx.query(
+    `INSERT INTO standing_authorisations (id, tenant_id, public_id, asset_ids, scope_rules, max_intrusiveness,
+     pre_approved_test_classes, default_budgets, test_windows, valid_from, expires_at, requester_id,
+     approver_id, signature, signing_key_id, status, created_at, updated_at)
+     VALUES ($1, $2, $3, $4::uuid[], $5::jsonb, $6, $7::text[], $8::jsonb, $9::jsonb, $10, $11, $12, $13,
+       $14, $15, $16, now(), now())
+     ON CONFLICT (id) DO UPDATE SET asset_ids = EXCLUDED.asset_ids, scope_rules = EXCLUDED.scope_rules,
+       max_intrusiveness = EXCLUDED.max_intrusiveness,
+       pre_approved_test_classes = EXCLUDED.pre_approved_test_classes,
+       default_budgets = EXCLUDED.default_budgets, test_windows = EXCLUDED.test_windows,
+       valid_from = EXCLUDED.valid_from, expires_at = EXCLUDED.expires_at,
+       requester_id = EXCLUDED.requester_id, approver_id = EXCLUDED.approver_id,
+       signature = EXCLUDED.signature, signing_key_id = EXCLUDED.signing_key_id,
+       status = EXCLUDED.status, updated_at = now()`,
+    [
+      s.id,
+      tenantId,
+      publicId('sa', s.id),
+      s.assetIds,
+      json(s.scopeRules),
+      s.maxIntrusiveness,
+      s.preApprovedTestClasses,
+      json(s.defaultBudgets),
+      json(s.testWindows),
+      s.validFrom,
+      s.expiresAt,
+      s.requesterId,
+      s.approverId,
+      s.signature,
+      s.signingKeyId,
+      s.status,
+    ],
+  );
+}
+
+async function upsertTenantRows(
+  tx: pg.PoolClient,
+  plan: TenantSeedPlan,
+  steps: ReadonlySet<string>,
+): Promise<void> {
+  const tenantId = plan.tenantId;
+  if (steps.has('memberships'))
+    for (const m of plan.memberships) await upsertMembership(tx, tenantId, m);
+  if (steps.has('assets')) await upsertAsset(tx, tenantId, plan.asset);
   if (steps.has('credentials'))
     for (const c of plan.credentials) {
       await tx.query(
@@ -219,41 +320,8 @@ async function upsertTenantRows(
         [c.id, tenantId, c.assetId, c.roleName, c.secretRef, json(c.loginRecipe), c.mfaType],
       );
     }
-  const s = plan.standingAuthorisation;
   if (steps.has('standing-authorisations'))
-    await tx.query(
-      `INSERT INTO standing_authorisations (id, tenant_id, public_id, asset_ids, scope_rules, max_intrusiveness,
-       pre_approved_test_classes, default_budgets, test_windows, valid_from, expires_at, requester_id,
-       approver_id, signature, signing_key_id, status, created_at, updated_at)
-     VALUES ($1, $2, $3, $4::uuid[], $5::jsonb, $6, $7::text[], $8::jsonb, $9::jsonb, $10, $11, $12, $13,
-       $14, $15, $16, now(), now())
-     ON CONFLICT (id) DO UPDATE SET asset_ids = EXCLUDED.asset_ids, scope_rules = EXCLUDED.scope_rules,
-       max_intrusiveness = EXCLUDED.max_intrusiveness,
-       pre_approved_test_classes = EXCLUDED.pre_approved_test_classes,
-       default_budgets = EXCLUDED.default_budgets, test_windows = EXCLUDED.test_windows,
-       valid_from = EXCLUDED.valid_from, expires_at = EXCLUDED.expires_at,
-       requester_id = EXCLUDED.requester_id, approver_id = EXCLUDED.approver_id,
-       signature = EXCLUDED.signature, signing_key_id = EXCLUDED.signing_key_id,
-       status = EXCLUDED.status, updated_at = now()`,
-      [
-        s.id,
-        tenantId,
-        publicId('sa', s.id),
-        s.assetIds,
-        json(s.scopeRules),
-        s.maxIntrusiveness,
-        s.preApprovedTestClasses,
-        json(s.defaultBudgets),
-        json(s.testWindows),
-        s.validFrom,
-        s.expiresAt,
-        s.requesterId,
-        s.approverId,
-        s.signature,
-        s.signingKeyId,
-        s.status,
-      ],
-    );
+    await upsertStandingAuthorisation(tx, tenantId, plan.standingAuthorisation);
   const r = plan.roleMatrix;
   if (steps.has('role-matrices'))
     await tx.query(
@@ -263,6 +331,19 @@ async function upsertTenantRows(
        active = EXCLUDED.active, updated_at = now()`,
       [r.id, tenantId, r.assetId, r.version, json(r.matrix), r.active],
     );
+}
+
+/** The eval tenant's rows: its memberships, one verified asset per target, and the eval SA (EVAL-001). */
+async function upsertEvalRows(
+  tx: pg.PoolClient,
+  plan: EvalTenantSeedPlan,
+  steps: ReadonlySet<string>,
+): Promise<void> {
+  if (steps.has('memberships'))
+    for (const m of plan.memberships) await upsertMembership(tx, plan.tenantId, m);
+  if (steps.has('assets')) for (const a of plan.assets) await upsertAsset(tx, plan.tenantId, a);
+  if (steps.has('standing-authorisations'))
+    await upsertStandingAuthorisation(tx, plan.tenantId, plan.standingAuthorisation);
 }
 
 const TENANT_TABLES = [
@@ -324,7 +405,7 @@ export async function runSeed(options: SeedOptions): Promise<SeedSummary> {
   const reset = options.reset === true;
   log?.info({ reset, only: options.only ?? 'all' }, 'seed.start');
   await assertSeedSchema(options.ownerPool, CORE_SEED_TABLES);
-  const { tenantId, userIds } = await upsertPlatformRows(
+  const { tenantId, evalTenantId, userIds } = await upsertPlatformRows(
     options.ownerPool,
     now,
     options.subjects ?? {},
@@ -338,6 +419,13 @@ export async function runSeed(options: SeedOptions): Promise<SeedSummary> {
     ...(options.requester === undefined ? {} : { requester: options.requester }),
     ...(options.approver === undefined ? {} : { approver: options.approver }),
   });
+  const evalPlan = buildEvalTenantSeedPlan({
+    now,
+    tenantId: evalTenantId,
+    userIds,
+    targets: options.evalTargets ?? loadEvalSeedTargets(),
+    ...(options.labEnv === undefined ? {} : { labEnv: options.labEnv }),
+  });
   log?.info(
     {
       event: 'scope.private_rule_created',
@@ -345,6 +433,17 @@ export async function runSeed(options: SeedOptions): Promise<SeedSummary> {
       asset: 'juice-shop',
       privateRules: plan.labScope.privateRuleCount,
       labNetworks: plan.labScope.labNetworks,
+      labEnv: options.labEnv ?? 'dev',
+    },
+    'audit',
+  );
+  log?.info(
+    {
+      event: 'scope.private_rule_created',
+      tenant: 'eval',
+      assets: evalPlan.assets.length,
+      privateRules: evalPlan.labScope.privateRuleCount,
+      labNetworks: evalPlan.labScope.labNetworks,
       labEnv: options.labEnv ?? 'dev',
     },
     'audit',
@@ -359,27 +458,33 @@ export async function runSeed(options: SeedOptions): Promise<SeedSummary> {
   // A reset deletes rows the runtime role may not delete (assets and role matrices are soft-deleted or versioned,
   // never removed by bw_app: migration 20261029162611). It runs as the owner under the same tenant context, so
   // FORCE RLS still applies; the upsert then runs as the runtime role as before.
-  if (reset)
+  if (reset) {
     await inTenant(options.ownerPool, tenantId, (tx) => deleteSeededRows(tx, plan, present));
+    await inTenant(options.ownerPool, evalTenantId, (tx) => deleteEvalRows(tx, evalPlan, present));
+  }
   await inTenant(options.appPool, tenantId, (tx) => upsertTenantRows(tx, plan, steps));
+  await inTenant(options.appPool, evalTenantId, (tx) => upsertEvalRows(tx, evalPlan, steps));
   const rows = rowsPerStep(plan);
   for (const name of selection.run) {
     log?.info({ seeder: name, rows: rows[name] ?? 0 }, 'seed.seeded');
   }
   const visible = await countVisible(options.appPool, tenantId, present);
+  const evalCounts = await countVisible(options.appPool, evalTenantId, present);
   await assertIsolated(options.appPool, present);
   const counts = { tenants: 1, users: SEED_PERSONAS.length, ...visible };
   log?.info(
     {
       tenant: 'acme',
       counts,
+      evalTenant: 'eval',
+      evalCounts,
       reset,
       skipped: selection.skipped.map((skip) => skip.name),
       asset: 'juice-shop (verified)',
     },
     'seed.complete',
   );
-  return { tenantId, tenantSlug: 'acme', counts };
+  return { tenantId, tenantSlug: 'acme', counts, evalTenantId, evalCounts };
 }
 
 /**

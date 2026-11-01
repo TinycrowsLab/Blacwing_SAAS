@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "name": "dvwa",
+  "title": "Damn Vulnerable Web Application",
+  "assetType": "web_app",
+  "synthetic": false,
+  "source": {
+    "kind": "registry",
+    "image": "vulnerables/web-dvwa:latest@sha256:dae203fe11646a86937bf04db0079adef295f426da68a92b40e3b181f337daa7"
+  },
+  "service": "dvwa",
+  "port": 80,
+  "baseUrl": "http://127.0.0.1:13040",
+  "modes": ["grey_box", "black_box"],
+  "primaryMode": "grey_box",
+  "credentials": [
+    {
+      "role": "admin",
+      "username": "admin",
+      "secretRef": "openbao://secret/data/eval/targets/dvwa/admin"
+    }
+  ],
+  "specs": [],
+  "classes": ["sql_injection", "xss", "command_injection", "file_inclusion", "csrf"],
+  "groundTruth": "eval/ground-truth/dvwa.json",
+  "licence": {
+    "spdx": "GPL-3.0-only",
+    "upstream": "https://github.com/digininja/DVWA",
+    "redistributed": false,
+    "note": "Eval-only. Reset with pnpm targets:reset dvwa. Verify licence before redistribution."
+  }
+}

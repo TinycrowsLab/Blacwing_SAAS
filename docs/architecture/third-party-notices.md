@@ -147,3 +147,12 @@ above `IMAGE_WORDLISTS_MAX_MIB` (default 64).
 
 Source: https://github.com/danielmiessler/SecLists (SecLists, Copyright (c) 2018 Daniel Miessler). The MIT licence text
 ships in the image as `/opt/bw/wordlists/LICENSES/LICENSE.seclists`.
+
+## Eval lab targets (EVAL-001, #796)
+
+The eval harness runs against open-source vulnerable applications pinned by image digest in
+`eval/targets/<name>/target.json`. Each manifest records the upstream project, its SPDX licence and a note.
+They are eval-only: they are started from their pinned images on the isolated `bw-targets` network, are never
+bundled into a Blackwing product image, and `redistributed` is `false` in every manifest. The public targets are
+OWASP Juice Shop, crAPI, VAmPI, DVGA, DVWA and WebGoat. The two Blackwing synthetic labs under
+`eval/targets/synthetic/` are first-party code (no third-party code).

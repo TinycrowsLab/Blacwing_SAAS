@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "name": "ssrf-lab",
+  "title": "Blackwing SSRF lab",
+  "assetType": "web_app",
+  "synthetic": true,
+  "source": {
+    "kind": "local",
+    "dockerfile": "eval/targets/synthetic/ssrf-lab/Dockerfile",
+    "baseImage": "node:22.23.3-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402"
+  },
+  "service": "ssrf-lab",
+  "port": 8080,
+  "baseUrl": "http://127.0.0.1:13070",
+  "modes": ["grey_box", "black_box"],
+  "primaryMode": "grey_box",
+  "credentials": [
+    {
+      "role": "user",
+      "username": "guest",
+      "secretRef": "openbao://secret/data/eval/targets/ssrf-lab/user"
+    }
+  ],
+  "specs": [],
+  "classes": ["ssrf"],
+  "groundTruth": "eval/ground-truth/ssrf-lab.json",
+  "licence": {
+    "spdx": "UNLICENSED",
+    "upstream": "https://github.com/TinycrowsLab/Blacwing_SAAS",
+    "redistributed": false,
+    "note": "Blackwing's own synthetic lab; no third-party code."
+  }
+}

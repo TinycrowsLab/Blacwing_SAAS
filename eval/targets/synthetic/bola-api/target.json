@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "name": "bola-api",
+  "title": "Blackwing BOLA/BFLA API lab",
+  "assetType": "api",
+  "synthetic": true,
+  "source": {
+    "kind": "local",
+    "dockerfile": "eval/targets/synthetic/bola-api/Dockerfile",
+    "baseImage": "node:22.23.3-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402"
+  },
+  "service": "bola-api",
+  "port": 8080,
+  "baseUrl": "http://127.0.0.1:13060",
+  "modes": ["grey_box", "black_box"],
+  "primaryMode": "grey_box",
+  "credentials": [
+    {
+      "role": "alice",
+      "username": "alice",
+      "secretRef": "openbao://secret/data/eval/targets/bola-api/alice"
+    },
+    {
+      "role": "bob",
+      "username": "bob",
+      "secretRef": "openbao://secret/data/eval/targets/bola-api/bob"
+    },
+    {
+      "role": "admin",
+      "username": "admin",
+      "secretRef": "openbao://secret/data/eval/targets/bola-api/admin"
+    }
+  ],
+  "specs": [
+    {
+      "kind": "openapi",
+      "path": "eval/targets/synthetic/bola-api/openapi.json"
+    }
+  ],
+  "classes": ["bola", "bfla"],
+  "groundTruth": "eval/ground-truth/bola-api.json",
+  "licence": {
+    "spdx": "UNLICENSED",
+    "upstream": "https://github.com/TinycrowsLab/Blacwing_SAAS",
+    "redistributed": false,
+    "note": "Blackwing's own synthetic lab; no third-party code."
+  }
+}

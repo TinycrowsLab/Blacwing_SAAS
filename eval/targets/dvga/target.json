@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "name": "dvga",
+  "title": "Damn Vulnerable GraphQL Application",
+  "assetType": "api",
+  "synthetic": false,
+  "source": {
+    "kind": "registry",
+    "image": "dolevf/dvga:latest@sha256:040aa33c199d99f3380c9ff9a1ee5d725e9abca7b189c63a35a2a73bda79c957"
+  },
+  "service": "dvga",
+  "port": 5013,
+  "baseUrl": "http://127.0.0.1:13030",
+  "modes": ["grey_box", "black_box"],
+  "primaryMode": "grey_box",
+  "credentials": [],
+  "specs": [],
+  "classes": ["graphql_introspection", "bola", "injection", "dos_batching"],
+  "groundTruth": "eval/ground-truth/dvga.json",
+  "licence": {
+    "spdx": "MIT",
+    "upstream": "https://github.com/dolevf/Damn-Vulnerable-GraphQL-Application",
+    "redistributed": false,
+    "note": "Eval-only. Verify the upstream licence before redistribution."
+  }
+}

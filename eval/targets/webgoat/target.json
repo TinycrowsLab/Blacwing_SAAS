@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "name": "webgoat",
+  "title": "OWASP WebGoat",
+  "assetType": "web_app",
+  "synthetic": false,
+  "source": {
+    "kind": "registry",
+    "image": "webgoat/webgoat:v2023.8@sha256:01672eb9aeba60d042ae1131d6de683b98fa64e9da60fa5d3daad2642a6795dd"
+  },
+  "service": "webgoat",
+  "port": 8080,
+  "baseUrl": "http://127.0.0.1:13050",
+  "modes": ["grey_box", "black_box"],
+  "primaryMode": "grey_box",
+  "credentials": [],
+  "specs": [],
+  "classes": ["broken_access_control", "injection", "xxe", "insecure_deserialization", "jwt"],
+  "groundTruth": "eval/ground-truth/webgoat.json",
+  "licence": {
+    "spdx": "GPL-2.0-only",
+    "upstream": "https://github.com/WebGoat/WebGoat",
+    "redistributed": false,
+    "note": "Eval-only. Verify licence before redistribution."
+  }
+}

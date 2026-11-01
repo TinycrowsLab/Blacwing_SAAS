@@ -1,0 +1,45 @@
+# Blackwing synthetic labs (EVAL-001, #796). Eval-only: built locally from this repo on digest-pinned Node
+# bases, never part of the product image. Public targets (juice-shop, crapi, vampi, dvga, dvwa, webgoat) come from
+# the `targets` profile in infra/compose/docker-compose.dev.yml (`pnpm targets:up --all`); `pnpm eval:targets:up`
+# brings up both sets. This file runs in its own compose project (`bweval`) so `pnpm targets:down` and the dev
+# stack (`bwdev`) never touch it.
+#
+# Isolation: the labs join only `bw-targets` (never `bw-dev`), publish on 127.0.0.1 only, and drop every Linux
+# capability with a read-only root filesystem. Build context is the repo root so the Dockerfiles can COPY
+# their server file from eval/targets/synthetic.
+
+name: bweval
+
+x-lab: &lab
+  restart: unless-stopped
+  networks: [bw-targets]
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ['no-new-privileges:true']
+  logging:
+    driver: json-file
+    options: { max-size: 10m, max-file: '3' }
+
+services:
+  bola-api:
+    <<: *lab
+    build:
+      context: ../..
+      dockerfile: eval/targets/synthetic/bola-api/Dockerfile
+    image: blackwing/eval-bola-api:local
+    ports:
+      - '127.0.0.1:${BW_TARGET_BOLA_API_PORT:-13060}:8080'
+
+  ssrf-lab:
+    <<: *lab
+    build:
+      context: ../..
+      dockerfile: eval/targets/synthetic/ssrf-lab/Dockerfile
+    image: blackwing/eval-ssrf-lab:local
+    ports:
+      - '127.0.0.1:${BW_TARGET_SSRF_LAB_PORT:-13070}:8080'
+
+networks:
+  bw-targets:
+    name: bw-targets
+    external: true

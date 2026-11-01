@@ -7,6 +7,7 @@ import { newId } from '@blackwing/ids';
 import { type PostgresHandle, withPostgres } from '@blackwing/testing/containers';
 
 import { migrateDatabase } from '../index.js';
+import { loadEvalSeedTargets } from './eval-targets.js';
 import { tenantRow } from './plan.js';
 import { inTenant, runSeed, seedForTest, type SeedSummary } from './run.js';
 
@@ -186,6 +187,60 @@ describe('db:seed', () => {
     const before = await seed();
     const after = await seed({ reset: true });
     expect(after.counts).toEqual(before.counts);
+    expect(after.evalCounts).toEqual(before.evalCounts);
+  });
+
+  it('seeds the eval tenant: a verified dev asset per target and one active SA, isolated from acme (EVAL-001)', async () => {
+    const summary = await seed();
+    const targets = loadEvalSeedTargets().length;
+    expect(summary.evalTenantId).not.toBe(summary.tenantId);
+    // Credentials and role matrices stay in the manifests (secret refs), not in the eval tenant's rows.
+    expect(summary.evalCounts).toEqual({
+      memberships: 2,
+      assets: targets,
+      standing_authorisations: 1,
+      asset_credentials: 0,
+      role_matrices: 0,
+    });
+    await inTenant(db.appPool, summary.evalTenantId, async (tx) => {
+      const assets = await tx.query<{
+        verification_status: string;
+        environment: string;
+        url: string;
+      }>(
+        `SELECT verification_status, environment, identifiers->0->>'value' AS url FROM assets ORDER BY name`,
+      );
+      expect(assets.rows).toHaveLength(targets);
+      for (const a of assets.rows) {
+        expect(a).toMatchObject({ verification_status: 'verified', environment: 'dev' });
+        expect(a.url).toMatch(/^http:\/\/[a-z][a-z0-9-]*:[0-9]+$/);
+      }
+      const sa = await tx.query<{
+        status: string;
+        ok: boolean;
+        sod: boolean;
+        n: string;
+        level: string;
+      }>(
+        `SELECT status, (valid_from <= now() AND expires_at > now()) AS ok, requester_id <> approver_id AS sod,
+                cardinality(asset_ids)::text AS n, max_intrusiveness AS level
+           FROM standing_authorisations`,
+      );
+      expect(sa.rows).toEqual([
+        { status: 'active', ok: true, sod: true, n: String(targets), level: 'active_safe' },
+      ]);
+    });
+    // The demo tenant still sees only its own single asset and SA.
+    const acme = await inTenant(db.appPool, summary.tenantId, async (tx) => ({
+      assets: Number(
+        (await tx.query<{ n: string }>('SELECT count(*) AS n FROM assets')).rows[0]?.n,
+      ),
+      sas: Number(
+        (await tx.query<{ n: string }>('SELECT count(*) AS n FROM standing_authorisations')).rows[0]
+          ?.n,
+      ),
+    }));
+    expect(acme).toEqual({ assets: 1, sas: 1 });
   });
 
   it('renews the SA relative to now, so it is never seeded already expired', async () => {

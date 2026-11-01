@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "name": "crapi",
+  "title": "OWASP crAPI (completely ridiculous API)",
+  "assetType": "api",
+  "synthetic": false,
+  "source": {
+    "kind": "registry",
+    "image": "crapi/crapi-web:latest@sha256:b27d246c646bd33898e7d1d2095b6e7576c0993a7b81a73aa7386929493d7151"
+  },
+  "service": "crapi",
+  "port": 80,
+  "baseUrl": "http://127.0.0.1:13010",
+  "modes": ["grey_box", "black_box"],
+  "primaryMode": "grey_box",
+  "credentials": [],
+  "specs": [],
+  "classes": [
+    "bola",
+    "bfla",
+    "broken_authentication",
+    "mass_assignment",
+    "excessive_data_exposure"
+  ],
+  "groundTruth": "eval/ground-truth/crapi.json",
+  "licence": {
+    "spdx": "Apache-2.0",
+    "upstream": "https://github.com/OWASP/crAPI",
+    "redistributed": false,
+    "note": "Multi-service app; only the web gateway is published (sidecars stay on bw-targets). Verify licence against upstream before redistribution."
+  }
+}

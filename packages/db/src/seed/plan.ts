@@ -130,7 +130,7 @@ export const SEED_PERSONAS: readonly SeedPersona[] = Object.freeze([
 export const SEED_LAB_CIDR = '172.30.250.0/24';
 
 /** Lifetime of the seeded SA, counted from the seed time (re-seeding renews it). */
-const SEED_SA_LIFETIME = '90d';
+export const SEED_SA_LIFETIME = '90d';
 
 /** Juice Shop application roles that get a credential (§7 `asset_credentials`). */
 const SEED_CREDENTIAL_ROLES = ['customer', 'admin'] as const;
@@ -166,15 +166,23 @@ export interface SeedTenantRow {
   readonly plan: string;
 }
 
+/** A tenant the seed creates: its slug names it, its id is derived from the slug. */
+export interface SeedTenantSpec {
+  readonly slug: string;
+  readonly name: string;
+  readonly region: string;
+  readonly plan: string;
+}
+
 /** The tenant row (platform scope; created before any tenant-scoped insert). */
-export function tenantRow(now: IsoTimestamp): SeedTenantRow {
+export function tenantRow(now: IsoTimestamp, tenant: SeedTenantSpec = SEED_TENANT): SeedTenantRow {
   const row = {
-    id: seedUuid(`tenant:${SEED_TENANT.slug}`),
-    slug: SEED_TENANT.slug,
-    name: SEED_TENANT.name,
+    id: seedUuid(`tenant:${tenant.slug}`),
+    slug: tenant.slug,
+    name: tenant.name,
     status: 'active' as const,
-    region: SEED_TENANT.region,
-    plan: SEED_TENANT.plan,
+    region: tenant.region,
+    plan: tenant.plan,
   };
   tenantSchema.parse({ ...row, createdAt: now, updatedAt: now });
   return row;
@@ -221,12 +229,12 @@ export function userRows(
   });
 }
 
-interface SeedMembershipRow {
+export interface SeedMembershipRow {
   readonly userId: Uuid;
   readonly roles: readonly Role[];
 }
 
-interface SeedAssetRow {
+export interface SeedAssetRow {
   readonly id: Uuid;
   readonly type: Asset['type'];
   readonly name: string;
@@ -248,7 +256,7 @@ interface SeedCredentialRow {
   readonly mfaType: 'none';
 }
 
-interface SeedStandingAuthorisationRow {
+export interface SeedStandingAuthorisationRow {
   readonly id: Uuid;
   readonly assetIds: readonly Uuid[];
   readonly scopeRules: StandingAuthorisation['scopeRules'];

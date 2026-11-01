@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "name": "juice-shop",
+  "title": "OWASP Juice Shop",
+  "assetType": "web_app",
+  "synthetic": false,
+  "source": {
+    "kind": "registry",
+    "image": "bkimminich/juice-shop:v17.1.1@sha256:9e437b456e444ff001d1663e4f6f05c796fe02f1058dd2651d6791a15b43dfeb"
+  },
+  "service": "juice-shop",
+  "port": 3000,
+  "baseUrl": "http://127.0.0.1:13000",
+  "modes": ["grey_box", "black_box"],
+  "primaryMode": "grey_box",
+  "credentials": [
+    {
+      "role": "customer",
+      "username": "jim@juice-sh.op",
+      "secretRef": "openbao://secret/data/eval/targets/juice-shop/customer"
+    },
+    {
+      "role": "admin",
+      "username": "admin@juice-sh.op",
+      "secretRef": "openbao://secret/data/eval/targets/juice-shop/admin"
+    }
+  ],
+  "specs": [],
+  "classes": [
+    "broken_access_control",
+    "injection",
+    "xss",
+    "sensitive_data_exposure",
+    "broken_authentication"
+  ],
+  "groundTruth": "eval/ground-truth/juice-shop.json",
+  "licence": {
+    "spdx": "MIT",
+    "upstream": "https://github.com/juice-shop/juice-shop",
+    "redistributed": false,
+    "note": "Public training app; eval-only, pulled by digest and never bundled in the product image."
+  }
+}

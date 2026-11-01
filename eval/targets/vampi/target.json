@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "name": "vampi",
+  "title": "VAmPI (Vulnerable Flask REST API)",
+  "assetType": "api",
+  "synthetic": false,
+  "source": {
+    "kind": "registry",
+    "image": "erev0s/vampi:latest@sha256:0a5a224b6e14ae7da6a6ea265178ff71286ff903aec74adee98f660bb0e4ca12"
+  },
+  "service": "vampi",
+  "port": 5000,
+  "baseUrl": "http://127.0.0.1:13020",
+  "modes": ["grey_box", "black_box"],
+  "primaryMode": "grey_box",
+  "credentials": [
+    {
+      "role": "user",
+      "username": "name1",
+      "secretRef": "openbao://secret/data/eval/targets/vampi/user"
+    },
+    {
+      "role": "admin",
+      "username": "admin",
+      "secretRef": "openbao://secret/data/eval/targets/vampi/admin"
+    }
+  ],
+  "specs": [],
+  "classes": ["bola", "bfla", "broken_authentication", "sql_injection"],
+  "groundTruth": "eval/ground-truth/vampi.json",
+  "licence": {
+    "spdx": "GPL-3.0-only",
+    "upstream": "https://github.com/erev0s/VAmPI",
+    "redistributed": false,
+    "note": "Eval-only. Verify the upstream licence (GPL) before any redistribution; never bundled in the product image."
+  }
+}
