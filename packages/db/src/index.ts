@@ -138,6 +138,7 @@ export {
   type ReproArtifactRow,
   ReproArtifactRepository,
 } from './evidence.repository.js';
+export { toSchedule } from './schedules.repository.js';
 export * from './schema/index.js';
 export * from './columns.js';
 export * from './vector.js';

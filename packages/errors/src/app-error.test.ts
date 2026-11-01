@@ -159,6 +159,9 @@ const SUBCLASSED_ELSEWHERE: readonly ErrorCode[] = [
   'SCHEDULE_CRON_INVALID',
   'SCHEDULE_TOO_FREQUENT',
   'SCHEDULE_TZ_INVALID',
+  // Raised as plain AppErrors by the worker's ScheduleManager (SCHED-003).
+  'SCHEDULE_CONFLICT',
+  'SCHEDULE_TENANT_SUSPENDED',
   // Notification channel API, apps/api notification-channels (NOTIFY-001): thrown as plain AppErrors.
   'NOTIFICATION_CHANNEL_INVALID',
   'CHANNEL_NAME_CONFLICT',

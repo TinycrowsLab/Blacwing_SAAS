@@ -26,7 +26,7 @@ export interface ScheduleRepositoryOptions {
 }
 
 /** Maps a stored row to the contract shape (UTC ISO-8601 instants) and validates it against the contract on the way out. */
-function toSchedule(row: ScheduleRow): Schedule {
+export function toSchedule(row: ScheduleRow): Schedule {
   return scheduleRowSchema.parse({
     id: row.id,
     tenantId: row.tenantId,

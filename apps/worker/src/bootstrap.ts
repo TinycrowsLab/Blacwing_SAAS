@@ -5,16 +5,19 @@ import { SpanStatusCode, trace } from '@opentelemetry/api';
 import { bundleWorkflowCode, NativeConnection, Runtime, Worker } from '@temporalio/worker';
 
 import { parseTemporalConfig, type EnvSource, type TemporalConfig } from '@blackwing/config';
+import { getDb } from '@blackwing/db';
 import { AppError } from '@blackwing/errors';
 import { createLogger } from '@blackwing/logger';
-import { closeTemporal, createDataConverter } from '@blackwing/workflow-shared';
+import { closeTemporal, createDataConverter, getTemporalClient } from '@blackwing/workflow-shared';
 
 import { activities } from './activities/index.js';
 import { parseWorkerConfig } from './config.js';
 import { createHealthServer } from './health.js';
 import { createContextWorkerOptions, WORKFLOW_INTERCEPTOR_MODULE } from './interceptors/context.js';
 import { WorkerRuntime } from './runtime.js';
+import { createScheduleSync } from './schedules/sync.js';
 import { createSdkLogger } from './sdk-logger.js';
+import { TASK_QUEUES } from './task-queues.js';
 
 import type { FastifyInstance } from 'fastify';
 
@@ -80,6 +83,15 @@ export async function startWorkerProcess(env: EnvSource = process.env): Promise<
       const connection = await nativeConnect(temporal);
       const dataConverter = createDataConverter();
       const contextOptions = createContextWorkerOptions(log);
+      // Schedules are reconciled only where the `scheduler` queue is served (SCHED-003); the activity is still registered.
+      const schedules = config.taskQueues.includes(TASK_QUEUES.SCHEDULER)
+        ? createScheduleSync({
+            db: getDb(),
+            temporal: await getTemporalClient({ config: temporal, dataConverter }),
+            log,
+          })
+        : undefined;
+      const workerActivities = { ...activities, ...schedules?.activities };
 
       const runtime = new WorkerRuntime({
         config,
@@ -90,7 +102,7 @@ export async function startWorkerProcess(env: EnvSource = process.env): Promise<
             namespace: temporal.namespace,
             taskQueue,
             workflowBundle: { code },
-            activities,
+            activities: workerActivities,
             dataConverter,
             maxConcurrentActivityTaskExecutions: config.maxConcurrentActivityTaskExecutions,
             maxConcurrentWorkflowTaskExecutions: config.maxConcurrentWorkflowTaskExecutions,
@@ -106,6 +118,7 @@ export async function startWorkerProcess(env: EnvSource = process.env): Promise<
       const health = createHealthServer(() => runtime.health());
 
       await runtime.start();
+      const reconciler = schedules?.startReconciler();
       await health.listen({ port: config.healthPort, host: '0.0.0.0' });
       log.info(
         {
@@ -120,6 +133,7 @@ export async function startWorkerProcess(env: EnvSource = process.env): Promise<
         runtime,
         health,
         shutdown: async (reason: string) => {
+          reconciler?.stop();
           await runtime.shutdown(reason);
           await health.close();
         },

@@ -124,6 +124,8 @@ export const auditTargetTypeSchema = z.enum([
   'service_account',
   // virtual model keys (GATEWAY-002): appended, the target of vkey.minted and vkey.revoked
   'virtual_key',
+  // recurring-run schedules (SCHED-008): appended, the target of schedule.*
+  'schedule',
 ]);
 export type AuditTargetType = z.infer<typeof auditTargetTypeSchema>;
 

@@ -978,6 +978,42 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     description:
       'A signed policy snapshot of a tenant effective policy set was stored and recorded (metadata: snapshot id, versions and signing key id).',
   },
+  // Recurring-run schedules (SCHED-008, §8.8): every create, change, pause, resume and delete is audited.
+  {
+    action: 'schedule.created',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A recurring-run schedule was created.',
+  },
+  {
+    action: 'schedule.updated',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A recurring-run schedule was changed.',
+  },
+  {
+    action: 'schedule.paused',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A recurring-run schedule was paused and stopped firing.',
+  },
+  {
+    action: 'schedule.resumed',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A recurring-run schedule was resumed and fires again on its cron spec.',
+  },
+  {
+    action: 'schedule.deleted',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    actionClass: 'config_change',
+    description: 'A recurring-run schedule was deleted.',
+  },
 ] as const satisfies readonly AuditActionEntry[]);
 
 /** Every audited action name. */

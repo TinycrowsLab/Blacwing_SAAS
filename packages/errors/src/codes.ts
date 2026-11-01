@@ -739,6 +739,13 @@ const DEFINITIONS = {
     title: 'Schedule fires more often than hourly',
     retryable: false,
   },
+  // Schedule sync (SCHED-003): a stale write loses to a newer one, and a suspended tenant's schedules never resume.
+  SCHEDULE_CONFLICT: { status: 409, title: 'Schedule was changed concurrently', retryable: false },
+  SCHEDULE_TENANT_SUSPENDED: {
+    status: 409,
+    title: 'Tenant is suspended and schedules cannot resume',
+    retryable: false,
+  },
   // Out-of-band client (OOB-002, #636). Upstream failures are 502 and retryable; a decrypt or protocol
   // mismatch is never retried as is (the same server and key will fail again). Never a silent "no interaction".
   OOB_REGISTER_FAILED: { status: 502, title: 'OOB listener registration failed', retryable: true },
