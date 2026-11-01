@@ -150,6 +150,7 @@ const RELEASED_ACTIONS = [
   'tenant.plan_changed',
   'vkey.minted',
   'vkey.revoked',
+  'soc.portal.opened',
 ] as const;
 
 /** The §8.8 sentence, class by class, with the actions that must exist for it. */

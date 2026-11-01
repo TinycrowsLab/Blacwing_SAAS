@@ -13,6 +13,11 @@ export const LOGIN_COOKIE = '__Host-bw_login';
  */
 export const OPERATOR_SESSION_COOKIE = '__Host-bw_op_session';
 export const OPERATOR_LOGIN_COOKIE = '__Host-bw_op_login';
+/**
+ * The scoped SOC portal session (SOCUI-001, #553): a sealed copy of a verified link's claims. Defined here, not in
+ * the portal module, so the edge middleware can name it without importing the Node crypto it needs to open it.
+ */
+export const SOC_PORTAL_COOKIE = '__Host-bw_soc_portal';
 
 /** `Set-Cookie` header value. `maxAgeSeconds` omitted makes a browser-session cookie; 0 deletes it. */
 export function serializeCookie(name: string, value: string, maxAgeSeconds?: number): string {

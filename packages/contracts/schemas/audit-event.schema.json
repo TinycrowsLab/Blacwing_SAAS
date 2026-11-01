@@ -139,7 +139,8 @@
         "tenant.quota_exceeded",
         "tenant.plan_changed",
         "vkey.minted",
-        "vkey.revoked"
+        "vkey.revoked",
+        "soc.portal.opened"
       ]
     },
     "severity": {

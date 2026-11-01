@@ -943,7 +943,8 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     defaultSeverity: 'notice',
     isAlwaysAudited: true,
     actionClass: 'config_change',
-    description: 'A tenant was moved to another subscription plan; metadata carries the old and new plan names.',
+    description:
+      'A tenant was moved to another subscription plan; metadata carries the old and new plan names.',
   },
   // Virtual model keys (GATEWAY-002): minted for a session, revoked on kill or by an explicit call. Never the key itself.
   {
@@ -960,6 +961,13 @@ export const AUDIT_ACTION_CATALOGUE = Object.freeze([
     isAlwaysAudited: true,
     actionClass: 'kill',
     description: 'One or more virtual model keys were revoked (metadata: key ids and the trigger).',
+  },
+  // SOC portal (SOCUI-001): appended so the catalogue stays additive-only
+  {
+    action: 'soc.portal.opened',
+    defaultSeverity: 'notice',
+    isAlwaysAudited: true,
+    description: 'A SOC portal link was accepted and its scoped portal session was established.',
   },
 ] as const satisfies readonly AuditActionEntry[]);
 
