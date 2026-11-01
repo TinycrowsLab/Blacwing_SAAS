@@ -13,7 +13,7 @@ const PIN_PATH = path.join(REPO_ROOT, 'infra/docker/sandbox/scanners.pin.json');
 
 /**
  * @typedef {{
- *   name: string, version: string, licence: string, source: string, entrypoint: string,
+ *   name: string, version: string, licence: string, source: string, entrypoint: string, binarySha256: string,
  *   versionArgs: string[],
  *   install: { kind: string, member?: string, entry?: string, shim?: boolean, module?: string, package?: string, zipHash?: string },
  *   artifacts: Record<string, { url: string, sha256: string }>
@@ -65,6 +65,14 @@ describe('checkToolPins mutations', () => {
     ffuf.sha256 = 'b2a3c725';
     assert.ok(
       checkToolPins(pins).some((e) => e.includes('ffuf') && e.includes('sha256 must be 64')),
+    );
+  });
+
+  it('fails when a tool has no pinned binary digest (mutation: binarySha256 malformed)', () => {
+    const pins = load();
+    toolOf(pins, 'gitleaks').binarySha256 = 'not-a-digest';
+    assert.ok(
+      checkToolPins(pins).some((e) => e.includes('gitleaks') && e.includes('binarySha256')),
     );
   });
 

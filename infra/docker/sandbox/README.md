@@ -116,6 +116,25 @@ Each entry records `{name, category, version, licence, source, sha256}`, and eac
 - Tenant-supplied lists are out of scope. The convention for a later mounted input is `/opt/bw/wordlists/tenant/<name>.txt`,
   read-only, outside the pinned tree.
 
+## Tool manifest (IMAGE-008, #606)
+
+The `tools` stage ends by running `tools/gen-manifest.mjs`. It re-hashes every file in `/opt/bw/tools/bin` and fails the
+build unless the set of installed files equals the set of pinned entrypoints (`tools.pin.json` and `scanners.pin.json`,
+where a tool with no `entrypoint` is installed under its own name) and each sha256 equals its `binarySha256` pin. A
+planted, tampered or missing binary, an unpinned file or a symlink in the bin directory therefore fails the build. The
+manifest then records every tool's version, sha256, licence and source, the nuclei-templates commit (from
+`.bw-template-pin.json`), the Playwright version and Chromium revision (from `tools.pin.json`) and the base image digest.
+
+- Output: `/etc/bw/tool-manifest.json` in the runtime image, root-owned and read-only (0444). The shape is the
+  `ToolManifest` Zod schema in `packages/contracts/src/tool-manifest.ts`; the runtime reads it from `TOOL_MANIFEST_PATH`.
+- Reproducible: keys are sorted, tools are sorted by name and `generatedAt` comes from `SOURCE_DATE_EPOCH` (a build
+  argument, default `0`; CI passes the commit time). Identical inputs give identical bytes.
+- `imageDigest` is `null` in the image. IMAGE-012 fills in the full image digest reference at publish.
+- `binarySha256` is the digest of the installed file, not the release archive. `fingerprintx` is a Go build, so its digest
+  holds only for the pinned Go toolchain (`GO_IMAGE`).
+- Unit tests: `node --test scripts/gen-manifest.test.mjs`. Pin guards: `scripts/check-sandbox-tools.mjs`,
+  `scripts/check-sandbox-image.mjs`.
+
 ## Seccomp profile (SANDBOX-007)
 
 `seccomp/bw-sandbox.json` is the default-deny seccomp profile every sandbox runs under. It allows only the

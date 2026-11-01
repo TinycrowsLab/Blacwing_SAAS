@@ -86,6 +86,9 @@ export function checkToolPins(pins) {
     if (typeof tool.entrypoint !== 'string' || tool.entrypoint.length === 0) {
       errors.push(`${label}: entrypoint is required`);
     }
+    if (typeof tool.binarySha256 !== 'string' || !DIGEST_HEX.test(tool.binarySha256)) {
+      errors.push(`${label}: binarySha256 must be the pinned digest of the installed entrypoint`);
+    }
     if (!Array.isArray(tool.versionArgs) || !tool.versionArgs.every((a) => typeof a === 'string')) {
       errors.push(`${label}: versionArgs must be a string array`);
     }

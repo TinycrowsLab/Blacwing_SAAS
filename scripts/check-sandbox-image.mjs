@@ -185,7 +185,7 @@ export function checkToolsPin(text) {
   }
   if (new Set(names).size !== names.length) errors.push('tools.pin.json lists a tool twice');
   for (const t of tools) {
-    const { name, version, url, sha256, licence } = t;
+    const { name, version, url, sha256, licence, binarySha256, source } = t;
     if (typeof name !== 'string' || !REQUIRED_TOOLS.includes(name)) {
       errors.push(`tools.pin.json has an unknown tool "${JSON.stringify(name)}"`);
       continue;
@@ -198,6 +198,10 @@ export function checkToolsPin(text) {
     if (typeof sha256 !== 'string' || !SHA256.test(sha256))
       errors.push(`${name}: sha256 must be 64 lowercase hex characters`);
     if (licence !== 'MIT') errors.push(`${name}: licence must be MIT`);
+    if (typeof binarySha256 !== 'string' || !SHA256.test(binarySha256))
+      errors.push(`${name}: binarySha256 must be 64 lowercase hex characters`);
+    if (source !== `https://github.com/projectdiscovery/${name}`)
+      errors.push(`${name}: source must be https://github.com/projectdiscovery/${name}`);
   }
   return errors;
 }

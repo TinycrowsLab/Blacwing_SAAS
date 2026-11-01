@@ -12,6 +12,7 @@
 !infra/docker/sandbox/tools.pin.json
 !infra/docker/sandbox/scanners.pin.json
 !infra/docker/sandbox/tools/install-tools.mjs
+!infra/docker/sandbox/tools/gen-manifest.mjs
 !infra/docker/sandbox/tools/bw-sqlmap.mjs
 !infra/docker/sandbox/tools/bw-proxy.sh
 !infra/docker/sandbox/proxy

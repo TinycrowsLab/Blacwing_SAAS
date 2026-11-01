@@ -1316,3 +1316,4 @@ export {
   retentionPolicyUpdateItemSchema,
   retentionPolicyUpdateSchema,
 } from './retention.js';
+export * from './tool-manifest.js';

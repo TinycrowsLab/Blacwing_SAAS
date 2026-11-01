@@ -79,6 +79,20 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends build-essential \
  && rm -rf /var/lib/apt/lists/* \
  && sh /pin/build-proxychains.sh /pin/tools.pin.json /opt/bw/tools/lib/proxychains-ng
+# Tool manifest (IMAGE-008, #606). Re-hashes every installed binary in /opt/bw/tools/bin against its pinned sha256 and
+# fails the build on any mismatch, unpinned file or missing tool. It then writes the canonical manifest (sorted keys,
+# generatedAt from SOURCE_DATE_EPOCH, so identical inputs give identical bytes). Build argument SOURCE_DATE_EPOCH is set by
+# CI to the commit time; the default 0 keeps local builds reproducible.
+ARG NODE_IMAGE
+ARG SOURCE_DATE_EPOCH=0
+COPY infra/docker/sandbox/tools/gen-manifest.mjs /build/
+RUN SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH} node /build/gen-manifest.mjs \
+      --tools-pin /pin/tools.pin.json \
+      --scanners-pin /build/scanners.pin.json \
+      --bin-dir /opt/bw/tools/bin \
+      --templates-dir /opt/bw/templates/official \
+      --base-image "${NODE_IMAGE}" \
+      --out /opt/bw/tool-manifest.json
 
 FROM ${NODE_IMAGE} AS runtime
 ARG VERSION=dev
@@ -110,6 +124,8 @@ COPY --from=tools --chown=root:root /opt/bw/wordlists /opt/bw/wordlists
 # proxychains-ng and the bw-proxy entry point (IMAGE-007, #605). The config template is rendered per call from ALL_PROXY.
 COPY --chown=root:root --chmod=0444 infra/docker/sandbox/proxy/proxychains.conf.template /etc/bw/proxychains.conf
 COPY --chown=root:root --chmod=0555 infra/docker/sandbox/tools/bw-proxy.sh /opt/bw/tools/bin/bw-proxy
+# The tool manifest (IMAGE-008, #606) is root-owned and read-only for bw, so a run cannot rewrite what it records.
+COPY --from=tools --chown=root:root --chmod=0444 /opt/bw/tool-manifest.json /etc/bw/tool-manifest.json
 COPY --chown=root:root --chmod=0555 infra/docker/sandbox/entrypoint.sh /opt/bw/entrypoint.sh
 
 # Pinned nuclei-templates (IMAGE-004, #602) are root-owned and read-only for bw, so a runtime template update cannot
