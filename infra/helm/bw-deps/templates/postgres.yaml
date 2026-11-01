@@ -1,0 +1,101 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "postgres" "ctx" $) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "postgres" "ctx" $) | nindent 4 }}
+spec:
+  serviceName: postgres
+  replicas: 1
+  # Deleting or scaling the StatefulSet keeps its PVCs. Data is only removed by an explicit PVC delete.
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  template:
+    metadata:
+      labels:
+        {{- include "bw-deps.labels" (dict "component" "postgres" "ctx" $) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      # The image entrypoint starts as root and drops to the postgres user (uid 999). fsGroup lets it write the volume.
+      securityContext:
+        fsGroup: 999
+      containers:
+        - name: postgres
+          image: {{ include "bw-deps.image" (dict "ref" .Values.images.postgres) }}
+          args:
+            - postgres
+            - -c
+            - shared_buffers={{ .Values.postgres.sharedBuffers }}
+            - -c
+            - max_connections={{ .Values.postgres.maxConnections }}
+            - -c
+            - wal_level={{ .Values.postgres.wal.level }}
+            - -c
+            - max_wal_senders={{ .Values.postgres.wal.maxWalSenders }}
+            - -c
+            - archive_mode={{ .Values.postgres.wal.archiveMode }}
+            {{- if .Values.postgres.wal.archiveCommand }}
+            - -c
+            - archive_command={{ .Values.postgres.wal.archiveCommand }}
+            {{- end }}
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.superuser | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.database | quote }}
+            # Keeps PGDATA below the PVC mount point (lost+found lives at the mount root).
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            {{- include "bw-deps.secretEnv" (dict "name" "POSTGRES_PASSWORD" "secret" .Values.postgres.secretName "key" "superuser-password") | nindent 12 }}
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command: ['sh', '-c', 'pg_isready -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"']
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            exec:
+              command: ['sh', '-c', 'pg_isready -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"']
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+          {{- include "bw-deps.resources" .Values.postgres.resources | nindent 10 }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ['ReadWriteOnce']
+        {{- include "bw-deps.storageClass" . | nindent 8 }}
+        resources:
+          requests:
+            storage: {{ .Values.postgres.storage }}
+{{- end }}

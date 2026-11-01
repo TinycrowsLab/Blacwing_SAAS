@@ -1,0 +1,96 @@
+{{- if .Values.interactsh.enabled }}
+# interactsh-server (DEVENV-008 logic): the OOB callback server for the validator. Token auth, no ACME in the
+# cluster (the public zone and its TLS are the online step, INFRA-007 / INFRA-012). Cluster-internal Service
+# only; the OOB Service is exposed by the online issue.
+# OFFLINE-STUB(online-porting #911): public OOB zone, DNS delegation and the public IP for the OOB Service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: interactsh
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "interactsh" "ctx" $) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: interactsh
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+    - name: dns-tcp
+      port: 53
+      targetPort: dns
+      protocol: TCP
+    - name: dns-udp
+      port: 53
+      targetPort: dns
+      protocol: UDP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: interactsh
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "interactsh" "ctx" $) | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: interactsh
+  template:
+    metadata:
+      labels:
+        {{- include "bw-deps.labels" (dict "component" "interactsh" "ctx" $) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: interactsh
+          image: {{ include "bw-deps.image" (dict "ref" .Values.images.interactsh) }}
+          # The token is read from the Secret by the shell, never placed on the command line of a value file.
+          command:
+            - sh
+            - -c
+            - >-
+              exec interactsh-server -domain "$INTERACTSH_DOMAIN" -ip "$INTERACTSH_IP"
+              -token "$INTERACTSH_TOKEN" -skip-acme -disable-update-check -eviction 1
+          env:
+            - name: INTERACTSH_DOMAIN
+              value: {{ .Values.interactsh.domain | quote }}
+            - name: INTERACTSH_IP
+              value: {{ .Values.interactsh.advertiseIp | quote }}
+            {{- include "bw-deps.secretEnv" (dict "name" "INTERACTSH_TOKEN" "secret" .Values.interactsh.secretName "key" "token") | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 80
+            - name: dns
+              containerPort: 53
+              protocol: UDP
+            - name: dns-tcp
+              containerPort: 53
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ['ALL']
+              # Binding ports 80 and 53 needs NET_BIND_SERVICE; nothing else is granted.
+              add: ['NET_BIND_SERVICE']
+          {{- include "bw-deps.resources" .Values.interactsh.resources | nindent 10 }}
+{{- end }}

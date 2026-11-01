@@ -1,0 +1,170 @@
+{{- if .Values.neo4j.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: neo4j
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "neo4j" "ctx" $) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: neo4j
+  ports:
+    - name: http
+      port: 7474
+      targetPort: http
+    - name: bolt
+      port: 7687
+      targetPort: bolt
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: neo4j
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "neo4j" "ctx" $) | nindent 4 }}
+spec:
+  serviceName: neo4j
+  replicas: 1
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: neo4j
+  template:
+    metadata:
+      labels:
+        {{- include "bw-deps.labels" (dict "component" "neo4j" "ctx" $) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 7474
+      containers:
+        - name: neo4j
+          image: {{ include "bw-deps.image" (dict "ref" .Values.images.neo4j) }}
+          env:
+            # Value is "neo4j/<password>", the NEO4J_AUTH form the image expects.
+            {{- include "bw-deps.secretEnv" (dict "name" "NEO4J_AUTH" "secret" .Values.neo4j.secretName "key" "auth") | nindent 12 }}
+            - name: NEO4J_PLUGINS
+              value: {{ .Values.neo4j.plugins | quote }}
+            - name: NEO4J_server_memory_heap_initial__size
+              value: {{ .Values.neo4j.heapInitial | quote }}
+            - name: NEO4J_server_memory_heap_max__size
+              value: {{ .Values.neo4j.heapMax | quote }}
+            - name: NEO4J_server_memory_pagecache_size
+              value: {{ .Values.neo4j.pagecache | quote }}
+            - name: NEO4J_dbms_usage__report_enabled
+              value: 'false'
+          ports:
+            - name: http
+              containerPort: 7474
+            - name: bolt
+              containerPort: 7687
+          readinessProbe:
+            tcpSocket:
+              port: bolt
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 18
+          livenessProbe:
+            tcpSocket:
+              port: bolt
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ['ALL']
+          {{- include "bw-deps.resources" .Values.neo4j.resources | nindent 10 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            # APOC core settings (apoc.trigger.enabled, refresh) that the tenantId guard depends on.
+            - name: conf
+              mountPath: /conf/apoc.conf
+              subPath: apoc.conf
+              readOnly: true
+      volumes:
+        - name: conf
+          configMap:
+            name: neo4j-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ['ReadWriteOnce']
+        {{- include "bw-deps.storageClass" . | nindent 8 }}
+        resources:
+          requests:
+            storage: {{ .Values.neo4j.storage }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neo4j-config
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "neo4j" "ctx" $) | nindent 4 }}
+data:
+  apoc.conf: |-
+    {{- .Files.Get "files/neo4j/apoc.conf" | nindent 4 }}
+---
+# Installs and verifies the tenantId guard (files/neo4j/install-guard.sh). The release fails if the guard is
+# not verified, so an unguarded graph never reports success.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neo4j-guard
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "neo4j" "ctx" $) | nindent 4 }}
+data:
+  install-guard.sh: |-
+    {{- .Files.Get "files/neo4j/install-guard.sh" | nindent 4 }}
+  tenant-guard.cypher: |-
+    {{- .Files.Get "files/neo4j/tenant-guard.cypher" | nindent 4 }}
+  tenant-indexes.cypher: |-
+    {{- .Files.Get "files/neo4j/tenant-indexes.cypher" | nindent 4 }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: neo4j-guard
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: '10'
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "neo4j" "ctx" $) | nindent 4 }}
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        {{- include "bw-deps.labels" (dict "component" "neo4j" "ctx" $) | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+        - name: guard
+          image: {{ include "bw-deps.image" (dict "ref" .Values.images.neo4j) }}
+          command: ['bash', '/bw/neo4j/install-guard.sh']
+          env:
+            - name: NEO4J_BOLT_URI
+              value: bolt://neo4j:7687
+            {{- include "bw-deps.secretEnv" (dict "name" "NEO4J_AUTH" "secret" .Values.neo4j.secretName "key" "auth") | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ['ALL']
+          volumeMounts:
+            - name: guard
+              mountPath: /bw/neo4j
+              readOnly: true
+      volumes:
+        - name: guard
+          configMap:
+            name: neo4j-guard
+            defaultMode: 0555
+{{- end }}

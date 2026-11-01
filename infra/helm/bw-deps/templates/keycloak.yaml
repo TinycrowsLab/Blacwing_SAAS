@@ -1,0 +1,124 @@
+{{- if .Values.keycloak.enabled }}
+# Realm import (IAM owns the content, files/keycloak/realm-blackwing.json). `--import-realm` imports it on the
+# first boot and skips a realm that already exists, so later configuration is done through the Admin API.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "keycloak" "ctx" $) | nindent 4 }}
+data:
+  realm-blackwing.json: |-
+    {{- .Files.Get "files/keycloak/realm-blackwing.json" | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "keycloak" "ctx" $) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: keycloak
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+    - name: management
+      port: 9000
+      targetPort: management
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "keycloak" "ctx" $) | nindent 4 }}
+spec:
+  # One replica until a shared cache (Infinispan) is configured for HA in the online issue.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: keycloak
+  template:
+    metadata:
+      labels:
+        {{- include "bw-deps.labels" (dict "component" "keycloak" "ctx" $) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: keycloak
+          image: {{ include "bw-deps.image" (dict "ref" .Values.images.keycloak) }}
+          args: ['start', '--import-realm']
+          env:
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_URL
+              value: jdbc:postgresql://postgres:5432/{{ .Values.keycloak.database }}
+            - name: KC_DB_USERNAME
+              value: {{ .Values.keycloak.dbUser | quote }}
+            {{- include "bw-deps.secretEnv" (dict "name" "KC_DB_PASSWORD" "secret" .Values.keycloak.secretName "key" "db-password") | nindent 12 }}
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              value: {{ .Values.keycloak.adminUser | quote }}
+            {{- include "bw-deps.secretEnv" (dict "name" "KC_BOOTSTRAP_ADMIN_PASSWORD" "secret" .Values.keycloak.secretName "key" "admin-password") | nindent 12 }}
+            # Behind Traefik (INFRA-012): TLS ends at the ingress, Keycloak trusts its forwarded headers.
+            - name: KC_HOSTNAME
+              value: {{ .Values.keycloak.publicUrl | quote }}
+            - name: KC_PROXY_HEADERS
+              value: xforwarded
+            - name: KC_HTTP_ENABLED
+              value: 'true'
+            - name: KC_HEALTH_ENABLED
+              value: 'true'
+            - name: KC_METRICS_ENABLED
+              value: 'true'
+            - name: KC_LOG_CONSOLE_OUTPUT
+              value: json
+            - name: JAVA_OPTS_KC_HEAP
+              value: -XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=25
+            # Placeholders resolved by the realm import.
+            - name: BW_ENVIRONMENT
+              value: {{ include "bw-deps.environment" . | quote }}
+            - name: BW_KEYCLOAK_PUBLIC_URL
+              value: {{ .Values.keycloak.publicUrl | quote }}
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: management
+              containerPort: 9000
+          # Management port 9000: /health/started, /health/live and /health/ready (KC_HEALTH_ENABLED).
+          startupProbe:
+            httpGet:
+              path: /health/started
+              port: management
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: management
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: management
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          securityContext:
+            {{- include "bw-deps.securityContext" . | nindent 12 }}
+          {{- include "bw-deps.resources" .Values.keycloak.resources | nindent 10 }}
+          volumeMounts:
+            - name: realm
+              mountPath: /opt/keycloak/data/import
+              readOnly: true
+      volumes:
+        - name: realm
+          configMap:
+            name: keycloak-realm
+{{- end }}

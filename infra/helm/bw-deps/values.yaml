@@ -1,0 +1,178 @@
+# bw-deps values (INFRA-010). Production-safe defaults: every image pinned by digest, every credential
+# read from a pre-created Secret (the chart renders no Secret), TLS required for OpenBao, and ClusterIP
+# Services only. values-dev.yaml relaxes sizes and the OpenBao TLS requirement for a local cluster.
+#
+# Install into the platform namespace the apps already use (bw-system), so the Services keep the
+# names the other charts expect (for example otel-collector.bw-system.svc.cluster.local):
+#   helm upgrade --install bw-deps infra/helm/bw-deps -n bw-system -f infra/helm/bw-deps/values-prod.yaml
+#
+# Secrets this release reads (create them first, from the secret store; keys are listed in README.md):
+#   postgres.secretName, valkey.secretName, neo4j.secretName, minio.secretName, keycloak.secretName,
+#   openbao.secretName, interactsh.secretName, grafana.secretName
+
+global:
+  # dev | staging | prod. Required: the render fails without it.
+  environment: ''
+
+# Digests are the same ones pinned in infra/compose/docker-compose.dev.yml and infra/images.lock, so
+# CI, dev and the cluster run the same bits (CONTEXT_PACK §8.9). Bump them together with the compose file.
+images:
+  postgres: pgvector/pgvector:0.8.1-pg16@sha256:33198da2828a14c30348d2ccb4750833d5ed9a44c88d840a0e523d7417120337
+  valkey: valkey/valkey:8.1.4-alpine@sha256:e706d1213aaba6896c162bb6a3a9e1894e1a435f28f8f856d14fab2e10aa098b
+  neo4j: neo4j:5.26.12-community@sha256:9f75e8df4325a24f00fdd7a8c0bcce650a58375049b1058e496e8b43d6c36b37
+  minio: cgr.dev/chainguard/minio:latest@sha256:cff197fef764642223ef9f4444c903d51aee9b544a7be8bc007fef6b7b00d136
+  # OFFLINE-STUB(online-porting #911): pinned to the auto-setup image that runs the Temporal 1.29.x server and
+  # its schema tool. Splitting the server from admin-tools is part of the online porting issue.
+  temporal: temporalio/auto-setup:1.29.7@sha256:f14912b699cf73015ad5c4fc18d522d4b014db90e794039214dfb7c022c2644f
+  temporalUi: temporalio/ui:2.49.0@sha256:a8b78ea822ae3b0e6079acf84b521ecb75bdd6554c2716aaa97dc0c521364a57
+  keycloak: quay.io/keycloak/keycloak:26.4.2@sha256:3617b09bb4b7510a8d8d9b9fc5707399e2d70688dbcc2f8fb013a144829be1b9
+  openbao: openbao/openbao:2.4.3@sha256:48174d0c98dbb955731c5d54a7e7083987fd25a7fb5d793181db8576ada8ed64
+  interactsh: projectdiscovery/interactsh-server:v1.2.4@sha256:ffde50de2cdc9113b9bb024d9dbe63a7a4826de213be1cc63a7ffd5fd3b14481
+  otelCollector: otel/opentelemetry-collector-contrib:0.116.1@sha256:d0ebf65280da2e1b1491d1b93648281afd353d4b9ea19160090303cec9a233bd
+  prometheus: prom/prometheus:v3.1.0@sha256:6559acbd5d770b15bb3c954629ce190ac3cbbdb2b7f1c30f0385c4e05104e218
+  loki: grafana/loki:3.3.2@sha256:8af2de1abbdd7aa92b27c9bcc96f0f4140c9096b507c77921ffddf1c6ad6c48f
+  tempo: grafana/tempo:2.7.1@sha256:4443be217c396b065ee34845534199c36fdba4dc619cb96550e228d73fba6e69
+  grafana: grafana/grafana:11.4.0@sha256:d8ea37798ccc41061a62ab080f2676dda6bf7815558499f901bdb0f533a456fb
+
+# Storage class for every PVC. gp3 on EKS/k3s-on-EC2. Empty uses the cluster default (dev).
+storageClassName: gp3
+
+postgres:
+  enabled: true
+  # Reads: superuser-password, app-password, migrator-password (see README.md).
+  secretName: bw-deps-postgres
+  storage: 100Gi
+  resources:
+    requests: { cpu: '1', memory: 2Gi }
+    limits: { cpu: '2', memory: 4Gi }
+  # Superuser and database name only. The runtime roles come from files/postgres/roles.sql (DB-001).
+  superuser: bw_admin
+  database: blackwing
+  appRole: bw_app
+  migratorRole: bw_migrator
+  maxConnections: 200
+  sharedBuffers: 1GB
+  # WAL settings for INFRA-013 (backups). wal_level and the sender count need no restart later; the
+  # archive settings do, so they are set here and enabled by INFRA-013 with archiveMode: 'on' and a real
+  # archiveCommand (for example WAL-G to S3). Left off until then so no WAL is archived to nowhere.
+  wal:
+    level: replica
+    maxWalSenders: 10
+    archiveMode: 'off'
+    archiveCommand: ''
+
+valkey:
+  enabled: true
+  # Reads: password.
+  secretName: bw-deps-valkey
+  storage: 10Gi
+  # Single primary. Production adds a replica (BullMQ, Redis Streams, rate limits; §8 #6).
+  replicas: 1
+  maxMemory: 512mb
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { cpu: '1', memory: 768Mi }
+
+neo4j:
+  enabled: true
+  # Reads: auth (the value "neo4j/<password>", as NEO4J_AUTH expects).
+  secretName: bw-deps-neo4j
+  storage: 50Gi
+  # APOC core only. The tenantId guard is installed by the post-install Job (files/neo4j).
+  plugins: '["apoc"]'
+  heapInitial: 512m
+  heapMax: 2g
+  pagecache: 1g
+  resources:
+    requests: { cpu: '1', memory: 2Gi }
+    limits: { cpu: '2', memory: 3Gi }
+
+minio:
+  # OFFLINE-STUB(online-porting #911): MinIO stands in for S3 with Object Lock (AWS, staging and prod).
+  enabled: true
+  # Reads: root-user, root-password. App credentials are created by the bucket bootstrap (online issue).
+  secretName: bw-deps-minio
+  storage: 200Gi
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { cpu: '1', memory: 1Gi }
+
+temporal:
+  enabled: true
+  # Uses the postgres superuser-password key. Create the temporal databases on first boot (auto-setup).
+  namespace: blackwing
+  retention: 72h
+  logLevel: info
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { cpu: '2', memory: 1Gi }
+  ui:
+    resources:
+      requests: { cpu: 50m, memory: 128Mi }
+      limits: { cpu: 500m, memory: 256Mi }
+
+keycloak:
+  enabled: true
+  # Reads: admin-password (bootstrap admin) and db-password (the bw_keycloak role, set by postgres-provision).
+  secretName: bw-deps-keycloak
+  # Public issuer URL behind ingress (INFRA-012), for example https://id.<domain>. Required in prod.
+  publicUrl: ''
+  adminUser: bw_kc_admin
+  database: keycloak
+  dbUser: bw_keycloak
+  # Realm import on first boot. Keycloak skips a realm that already exists (IGNORE_EXISTING), so
+  # re-running the release never overwrites IAM changes made through the API.
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits: { cpu: '2', memory: 1536Mi }
+
+openbao:
+  enabled: true
+  # Reads: bootstrap-token (a token that can enable mounts, used by the mounts Job only).
+  secretName: bw-deps-openbao
+  storage: 20Gi
+  # TLS for the listener. The secret holds tls.crt and tls.key (cert-manager, INFRA-012). Required unless
+  # allowPlaintext is true, which dev values set. The render fails closed otherwise.
+  # OFFLINE-STUB(online-porting #911): the TLS Secret is issued by cert-manager (INFRA-012) on the cluster.
+  tls:
+    secretName: bw-deps-openbao-tls
+  allowPlaintext: false
+  mounts:
+    # transit (per-tenant envelope keys) and kv-v2 (platform secrets), enabled by a post-install Job.
+    enabled: true
+  resources:
+    requests: { cpu: 250m, memory: 256Mi }
+    limits: { cpu: '1', memory: 512Mi }
+
+interactsh:
+  enabled: true
+  # Reads: token. OOB zone for the validator (INFRA-007). Public delegation is an online step.
+  secretName: bw-deps-interactsh
+  domain: oob.bw.localhost
+  # OFFLINE-STUB(online-porting #911): IP the server advertises in DNS answers. Loopback in dev; the public IP of
+  # the OOB Service in prod.
+  advertiseIp: 127.0.0.1
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: '1', memory: 512Mi }
+
+# The observability profile (DEVENV-009). Scale or disable it independently of the data plane.
+obs:
+  enabled: true
+  retention: 72h
+  storage:
+    prometheus: 20Gi
+    loki: 20Gi
+    tempo: 10Gi
+    grafana: 2Gi
+  grafana:
+    # Reads: admin-password (the grafana secretName).
+    secretName: bw-deps-grafana
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits: { cpu: '1', memory: 384Mi }
+  resources:
+    otelCollector: { requests: { cpu: 100m, memory: 128Mi }, limits: { cpu: 500m, memory: 512Mi } }
+    prometheus: { requests: { cpu: 250m, memory: 512Mi }, limits: { cpu: '1', memory: 1Gi } }
+    loki: { requests: { cpu: 100m, memory: 256Mi }, limits: { cpu: '1', memory: 512Mi } }
+    tempo: { requests: { cpu: 100m, memory: 256Mi }, limits: { cpu: '1', memory: 512Mi } }

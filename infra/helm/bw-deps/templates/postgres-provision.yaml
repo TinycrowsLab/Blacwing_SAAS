@@ -1,0 +1,71 @@
+{{- if .Values.postgres.enabled }}
+# Idempotent role, database and extension provisioning (files/postgres/provision.sh). Re-runs on every
+# upgrade so role passwords rotate from the Secret and the DB-001 role model stays applied.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-provision
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "postgres" "ctx" $) | nindent 4 }}
+data:
+  provision.sh: |-
+    {{- .Files.Get "files/postgres/provision.sh" | nindent 4 }}
+  roles.sql: |-
+    {{- .Files.Get "files/postgres/roles.sql" | nindent 4 }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgres-provision
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: '5'
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "postgres" "ctx" $) | nindent 4 }}
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        {{- include "bw-deps.labels" (dict "component" "postgres" "ctx" $) | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+        - name: provision
+          image: {{ include "bw-deps.image" (dict "ref" .Values.images.postgres) }}
+          command: ['bash', '/bw/postgres/provision.sh']
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGUSER
+              value: {{ .Values.postgres.superuser | quote }}
+            - name: BW_DB
+              value: {{ .Values.postgres.database | quote }}
+            - name: BW_APP_ROLE
+              value: {{ .Values.postgres.appRole | quote }}
+            - name: BW_MIGRATOR_ROLE
+              value: {{ .Values.postgres.migratorRole | quote }}
+            - name: BW_KEYCLOAK_DB
+              value: {{ .Values.keycloak.database | quote }}
+            - name: BW_KEYCLOAK_DB_USER
+              value: {{ .Values.keycloak.dbUser | quote }}
+            {{- include "bw-deps.secretEnv" (dict "name" "PGPASSWORD" "secret" .Values.postgres.secretName "key" "superuser-password") | nindent 12 }}
+            {{- include "bw-deps.secretEnv" (dict "name" "BW_APP_PASSWORD" "secret" .Values.postgres.secretName "key" "app-password") | nindent 12 }}
+            {{- include "bw-deps.secretEnv" (dict "name" "BW_MIGRATOR_PASSWORD" "secret" .Values.postgres.secretName "key" "migrator-password") | nindent 12 }}
+            {{- include "bw-deps.secretEnv" (dict "name" "BW_KEYCLOAK_DB_PASSWORD" "secret" .Values.keycloak.secretName "key" "db-password") | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ['ALL']
+          volumeMounts:
+            - name: provision
+              mountPath: /bw/postgres
+              readOnly: true
+      volumes:
+        - name: provision
+          configMap:
+            name: postgres-provision
+            defaultMode: 0555
+{{- end }}

@@ -1,0 +1,209 @@
+{{- if .Values.openbao.enabled }}
+{{- $tls := not .Values.openbao.allowPlaintext }}
+{{- $scheme := ternary "https" "http" $tls }}
+# OpenBao (INFRA-010): raft storage on a PVC, one node (HA is an online step), TLS on the listener.
+# Auto-unseal is an ONLINE step (a cloud KMS seal stanza added to config.hcl). Until then the operator
+# initialises and unseals the server (README.md). Apps fail closed while it is sealed.
+# OFFLINE-STUB(online-porting #911): single raft node and manual unseal; KMS auto-unseal and HA come online.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openbao-config
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "openbao" "ctx" $) | nindent 4 }}
+data:
+  config.hcl: |
+    ui          = false
+    disable_mlock = true
+    api_addr    = "{{ $scheme }}://openbao:8200"
+    cluster_addr = "{{ $scheme }}://openbao:8201"
+
+    storage "raft" {
+      path    = "/openbao/data"
+      node_id = "bw-openbao-0"
+    }
+
+    listener "tcp" {
+    {{- if $tls }}
+      address       = "0.0.0.0:8200"
+      tls_cert_file = "/openbao/tls/tls.crt"
+      tls_key_file  = "/openbao/tls/tls.key"
+    {{- else }}
+      address     = "0.0.0.0:8200"
+      tls_disable = true
+    {{- end }}
+    }
+  audit.hcl: |-
+    {{- .Files.Get "files/openbao/audit.hcl" | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openbao
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "openbao" "ctx" $) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: openbao
+  ports:
+    - name: api
+      port: 8200
+      targetPort: api
+    - name: cluster
+      port: 8201
+      targetPort: cluster
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: openbao
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "openbao" "ctx" $) | nindent 4 }}
+spec:
+  serviceName: openbao
+  replicas: 1
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openbao
+  template:
+    metadata:
+      labels:
+        {{- include "bw-deps.labels" (dict "component" "openbao" "ctx" $) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: openbao
+          image: {{ include "bw-deps.image" (dict "ref" .Values.images.openbao) }}
+          args: ['server', '-config=/openbao/config']
+          env:
+            - name: SKIP_SETCAP
+              value: 'true'
+          ports:
+            - name: api
+              containerPort: 8200
+            - name: cluster
+              containerPort: 8201
+          # Readiness passes only when unsealed and active. Liveness passes while sealed, so a sealed pod is
+          # not restarted in a loop (it waits for the operator's unseal).
+          readinessProbe:
+            httpGet:
+              path: /v1/sys/health?standbyok=true
+              port: api
+              scheme: {{ upper $scheme }}
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /v1/sys/health?standbyok=true&sealedcode=200&uninitcode=200
+              port: api
+              scheme: {{ upper $scheme }}
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          securityContext:
+            {{- include "bw-deps.securityContext" . | nindent 12 }}
+          {{- include "bw-deps.resources" .Values.openbao.resources | nindent 10 }}
+          volumeMounts:
+            - name: config
+              mountPath: /openbao/config
+              readOnly: true
+            - name: data
+              mountPath: /openbao/data
+            {{- if $tls }}
+            - name: tls
+              mountPath: /openbao/tls
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: openbao-config
+        {{- if $tls }}
+        - name: tls
+          secret:
+            secretName: {{ .Values.openbao.tls.secretName }}
+            defaultMode: 0440
+        {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ['ReadWriteOnce']
+        {{- include "bw-deps.storageClass" . | nindent 8 }}
+        resources:
+          requests:
+            storage: {{ .Values.openbao.storage }}
+---
+# Enables transit/ and secret/ (KV v2): files/openbao/enable-mounts.sh.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openbao-mounts
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "openbao" "ctx" $) | nindent 4 }}
+data:
+  enable-mounts.sh: |-
+    {{- .Files.Get "files/openbao/enable-mounts.sh" | nindent 4 }}
+{{- if .Values.openbao.mounts.enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: openbao-mounts
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: '30'
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "openbao" "ctx" $) | nindent 4 }}
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        {{- include "bw-deps.labels" (dict "component" "openbao" "ctx" $) | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+        - name: mounts
+          image: {{ include "bw-deps.image" (dict "ref" .Values.images.openbao) }}
+          command: ['/bin/sh', '/bw/openbao/enable-mounts.sh']
+          env:
+            - name: BAO_ADDR
+              value: {{ printf "%s://openbao:8200" $scheme | quote }}
+            {{- if $tls }}
+            - name: BAO_CACERT
+              value: /openbao/tls/ca.crt
+            {{- end }}
+            {{- include "bw-deps.secretEnv" (dict "name" "BAO_TOKEN" "secret" .Values.openbao.secretName "key" "bootstrap-token") | nindent 12 }}
+          securityContext:
+            {{- include "bw-deps.securityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: mounts
+              mountPath: /bw/openbao
+              readOnly: true
+            {{- if $tls }}
+            - name: tls
+              mountPath: /openbao/tls
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: mounts
+          configMap:
+            name: openbao-mounts
+            defaultMode: 0555
+        {{- if $tls }}
+        - name: tls
+          secret:
+            secretName: {{ .Values.openbao.tls.secretName }}
+            defaultMode: 0440
+        {{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,20 @@
+{{- /*
+Render-time guards. Every check fails closed: a release that would run without TLS for OpenBao, without the
+public Keycloak issuer in production, or with an unpinned image never renders.
+*/ -}}
+{{- $env := include "bw-deps.environment" . -}}
+{{- if and (eq $env "prod") (not .Values.keycloak.publicUrl) -}}
+{{- fail "keycloak.publicUrl is required in prod (the public issuer behind ingress, INFRA-012)" -}}
+{{- end -}}
+{{- if and .Values.openbao.enabled (not .Values.openbao.tls.secretName) (not .Values.openbao.allowPlaintext) -}}
+{{- fail "openbao.tls.secretName is required: OpenBao never serves plaintext unless openbao.allowPlaintext is set (dev only)" -}}
+{{- end -}}
+{{- if and .Values.openbao.allowPlaintext (ne $env "dev") -}}
+{{- fail "openbao.allowPlaintext is only allowed with global.environment=dev" -}}
+{{- end -}}
+{{- if and .Values.obs.enabled (not .Values.obs.grafana.secretName) -}}
+{{- fail "obs.grafana.secretName is required when obs.enabled" -}}
+{{- end -}}
+{{- range $name, $ref := .Values.images -}}
+{{- $pinned := include "bw-deps.image" (dict "ref" $ref) -}}
+{{- end -}}

@@ -1,0 +1,86 @@
+{{- if .Values.minio.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "minio" "ctx" $) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: minio
+  ports:
+    - name: s3
+      port: 9000
+      targetPort: s3
+    - name: console
+      port: 9001
+      targetPort: console
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "minio" "ctx" $) | nindent 4 }}
+spec:
+  serviceName: minio
+  replicas: 1
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minio
+  template:
+    metadata:
+      labels:
+        {{- include "bw-deps.labels" (dict "component" "minio" "ctx" $) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: minio
+          image: {{ include "bw-deps.image" (dict "ref" .Values.images.minio) }}
+          args: ['server', '/data', '--address', ':9000', '--console-address', ':9001']
+          env:
+            {{- include "bw-deps.secretEnv" (dict "name" "MINIO_ROOT_USER" "secret" .Values.minio.secretName "key" "root-user") | nindent 12 }}
+            {{- include "bw-deps.secretEnv" (dict "name" "MINIO_ROOT_PASSWORD" "secret" .Values.minio.secretName "key" "root-password") | nindent 12 }}
+            # Metrics are scraped by the obs profile's Prometheus without a token (in-cluster only).
+            - name: MINIO_PROMETHEUS_AUTH_TYPE
+              value: public
+          ports:
+            - name: s3
+              containerPort: 9000
+            - name: console
+              containerPort: 9001
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: s3
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: s3
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+          securityContext:
+            {{- include "bw-deps.securityContext" . | nindent 12 }}
+          {{- include "bw-deps.resources" .Values.minio.resources | nindent 10 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ['ReadWriteOnce']
+        {{- include "bw-deps.storageClass" . | nindent 8 }}
+        resources:
+          requests:
+            storage: {{ .Values.minio.storage }}
+{{- end }}

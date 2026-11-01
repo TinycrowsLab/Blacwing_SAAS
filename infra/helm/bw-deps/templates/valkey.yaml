@@ -1,0 +1,88 @@
+{{- if .Values.valkey.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "valkey" "ctx" $) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: valkey
+  ports:
+    - name: valkey
+      port: 6379
+      targetPort: valkey
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: valkey
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "valkey" "ctx" $) | nindent 4 }}
+spec:
+  serviceName: valkey
+  replicas: {{ .Values.valkey.replicas }}
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: valkey
+  template:
+    metadata:
+      labels:
+        {{- include "bw-deps.labels" (dict "component" "valkey" "ctx" $) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+        - name: valkey
+          image: {{ include "bw-deps.image" (dict "ref" .Values.images.valkey) }}
+          # Password from the Secret. noeviction keeps queue and lock data; the cap is the memory limit.
+          command:
+            - sh
+            - -c
+            - >-
+              exec valkey-server --appendonly yes --appendfsync everysec
+              --maxmemory {{ .Values.valkey.maxMemory }} --maxmemory-policy noeviction
+              --requirepass "$BW_VALKEY_PASSWORD"
+          env:
+            {{- include "bw-deps.secretEnv" (dict "name" "BW_VALKEY_PASSWORD" "secret" .Values.valkey.secretName "key" "password") | nindent 12 }}
+          ports:
+            - name: valkey
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ['sh', '-c', 'REDISCLI_AUTH="$BW_VALKEY_PASSWORD" valkey-cli ping | grep -q PONG']
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            exec:
+              command: ['sh', '-c', 'REDISCLI_AUTH="$BW_VALKEY_PASSWORD" valkey-cli ping | grep -q PONG']
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          securityContext:
+            {{- include "bw-deps.securityContext" . | nindent 12 }}
+            readOnlyRootFilesystem: false
+          {{- include "bw-deps.resources" .Values.valkey.resources | nindent 10 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ['ReadWriteOnce']
+        {{- include "bw-deps.storageClass" . | nindent 8 }}
+        resources:
+          requests:
+            storage: {{ .Values.valkey.storage }}
+{{- end }}

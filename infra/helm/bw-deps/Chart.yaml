@@ -1,0 +1,6 @@
+apiVersion: v2
+name: bw-deps
+description: Blackwing third-party dependencies (INFRA-010) - PostgreSQL 16 + pgvector, Valkey 8, Neo4j 5 Community, MinIO, Temporal + UI, Keycloak 26, OpenBao, interactsh-server and the optional obs profile (OpenTelemetry Collector, Prometheus, Loki, Tempo, Grafana). Every image is pinned by digest and every credential is read from a Secret the chart never renders.
+type: application
+version: 0.1.0
+appVersion: '0.1.0'

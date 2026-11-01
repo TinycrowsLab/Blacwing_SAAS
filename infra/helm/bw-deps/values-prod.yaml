@@ -1,0 +1,8 @@
+# Production overlay. The render fails closed unless the required values are supplied at install time:
+#   --set keycloak.publicUrl=https://id.<domain>            (the public issuer behind INFRA-012)
+#   --set interactsh.advertiseIp=<public IP of the OOB Service>
+# and the referenced Secrets exist (README.md lists their keys). OpenBao must have a TLS Secret (the default).
+global:
+  environment: prod
+
+storageClassName: gp3

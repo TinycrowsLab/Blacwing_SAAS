@@ -1,0 +1,207 @@
+{{- if .Values.temporal.enabled }}
+# Temporal server and Web UI (DEVENV-007 logic). The auto-setup image creates and migrates the temporal and
+# temporal_visibility databases on start. Keep one replica so schema setup is never raced.
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "temporal" "ctx" $) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: temporal
+  ports:
+    - name: grpc
+      port: 7233
+      targetPort: grpc
+    - name: metrics
+      port: 8000
+      targetPort: metrics
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "temporal" "ctx" $) | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: temporal
+  template:
+    metadata:
+      labels:
+        {{- include "bw-deps.labels" (dict "component" "temporal" "ctx" $) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: temporal
+          image: {{ include "bw-deps.image" (dict "ref" .Values.images.temporal) }}
+          env:
+            - name: DB
+              value: postgres12
+            - name: DB_PORT
+              value: '5432'
+            - name: POSTGRES_SEEDS
+              value: postgres
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.superuser | quote }}
+            {{- include "bw-deps.secretEnv" (dict "name" "POSTGRES_PWD" "secret" .Values.postgres.secretName "key" "superuser-password") | nindent 12 }}
+            - name: DBNAME
+              value: temporal
+            - name: VISIBILITY_DBNAME
+              value: temporal_visibility
+            # The namespace is created by the temporal-bootstrap Job, not by the image.
+            - name: SKIP_DEFAULT_NAMESPACE_CREATION
+              value: 'true'
+            - name: LOG_LEVEL
+              value: {{ .Values.temporal.logLevel | quote }}
+            - name: PROMETHEUS_ENDPOINT
+              value: 0.0.0.0:8000
+          ports:
+            - name: grpc
+              containerPort: 7233
+            - name: metrics
+              containerPort: 8000
+          startupProbe:
+            tcpSocket:
+              port: grpc
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket:
+              port: grpc
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          securityContext:
+            {{- include "bw-deps.securityContext" . | nindent 12 }}
+          {{- include "bw-deps.resources" .Values.temporal.resources | nindent 10 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-ui
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "temporal-ui" "ctx" $) | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: temporal-ui
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-ui
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "temporal-ui" "ctx" $) | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: temporal-ui
+  template:
+    metadata:
+      labels:
+        {{- include "bw-deps.labels" (dict "component" "temporal-ui" "ctx" $) | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: temporal-ui
+          image: {{ include "bw-deps.image" (dict "ref" .Values.images.temporalUi) }}
+          env:
+            - name: TEMPORAL_ADDRESS
+              value: temporal:7233
+            - name: TEMPORAL_DEFAULT_NAMESPACE
+              value: {{ .Values.temporal.namespace | quote }}
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 6
+          securityContext:
+            {{- include "bw-deps.securityContext" . | nindent 12 }}
+          {{- include "bw-deps.resources" .Values.temporal.ui.resources | nindent 10 }}
+---
+# Creates the namespace and registers the search attributes (files/temporal/bootstrap.sh). Idempotent. A search
+# attribute registered with another type fails the Job instead of being changed.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-bootstrap
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "temporal" "ctx" $) | nindent 4 }}
+data:
+  bootstrap.sh: |-
+    {{- .Files.Get "files/temporal/bootstrap.sh" | nindent 4 }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: temporal-bootstrap
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: '20'
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+  labels:
+    {{- include "bw-deps.labels" (dict "component" "temporal" "ctx" $) | nindent 4 }}
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        {{- include "bw-deps.labels" (dict "component" "temporal" "ctx" $) | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+        - name: bootstrap
+          image: {{ include "bw-deps.image" (dict "ref" .Values.images.temporal) }}
+          command: ['/bin/sh', '/bw/temporal/bootstrap.sh']
+          env:
+            - name: TEMPORAL_ADDRESS
+              value: temporal:7233
+            - name: TEMPORAL_NAMESPACE
+              value: {{ .Values.temporal.namespace | quote }}
+            - name: BW_TEMPORAL_RETENTION
+              value: {{ .Values.temporal.retention | quote }}
+          securityContext:
+            {{- include "bw-deps.securityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: bootstrap
+              mountPath: /bw/temporal
+              readOnly: true
+      volumes:
+        - name: bootstrap
+          configMap:
+            name: temporal-bootstrap
+            defaultMode: 0555
+{{- end }}

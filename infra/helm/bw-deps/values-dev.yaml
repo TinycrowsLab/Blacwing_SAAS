@@ -1,0 +1,41 @@
+# Local cluster overlay (kind or k3s on the dev host). Smaller volumes, the cluster's default storage class,
+# plaintext OpenBao on the cluster network (the only allowed use of allowPlaintext), and the local Keycloak URL.
+# Never use this overlay in staging or prod: the render refuses allowPlaintext outside dev.
+global:
+  environment: dev
+
+storageClassName: ''
+
+keycloak:
+  publicUrl: http://localhost:18080
+
+openbao:
+  allowPlaintext: true
+
+interactsh:
+  domain: oob.bw.localhost
+  advertiseIp: 127.0.0.1
+
+postgres:
+  storage: 10Gi
+
+valkey:
+  storage: 2Gi
+
+neo4j:
+  storage: 5Gi
+
+minio:
+  storage: 10Gi
+
+openbao:
+  storage: 2Gi
+  allowPlaintext: true
+
+obs:
+  enabled: true
+  storage:
+    prometheus: 5Gi
+    loki: 5Gi
+    tempo: 2Gi
+    grafana: 1Gi
