@@ -1665,6 +1665,9 @@ importers:
       '@blackwing/errors':
         specifier: workspace:*
         version: link:../errors
+      '@blackwing/ids':
+        specifier: workspace:*
+        version: link:../ids
       '@blackwing/logger':
         specifier: workspace:*
         version: link:../logger

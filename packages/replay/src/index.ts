@@ -80,6 +80,19 @@ export {
   type StepHandler,
   type StepHandlers,
 } from './engine.js';
+export {
+  type NegativeControlAudit,
+  type NegativeControlAuditEvent,
+  type NegativeControlBudget,
+  type NegativeControlDeps,
+  type NegativeControlEngine,
+  type NegativeControlMetrics,
+  type NegativeControlReason,
+  type NegativeControlResult,
+  type NegativeControlSpec,
+  noopNegativeControlMetrics,
+  runWithNegativeControl,
+} from './negative-control.js';
 export { noopReplayMetrics, REPLAY_TRACER, type ReplayMetrics } from './telemetry.js';
 export {
   type Fetcher,

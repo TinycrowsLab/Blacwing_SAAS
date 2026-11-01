@@ -12,6 +12,7 @@
     { "path": "../domain" },
     { "path": "../logger" },
     { "path": "../errors" },
+    { "path": "../ids" },
     { "path": "../oob" }
   ]
 }
