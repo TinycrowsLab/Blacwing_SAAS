@@ -45,7 +45,12 @@ function BlockedRow({ e }: { readonly e: DemoRunEvent }) {
 
 function Gate2Card({ gate2 }: { readonly gate2: DemoGate2 }) {
   const pending = gate2.status === 'pending';
-  const { left, total } = useGate2Clock(gate2.deadlineAt, gate2.createdAt, pending);
+  const { left, total } = useGate2Clock(
+    gate2.deadlineAt,
+    gate2.createdAt,
+    pending,
+    gate2.secondsLeft,
+  );
   const open = pending && left > 0;
   const expired = pending && left === 0;
   return (
@@ -82,6 +87,9 @@ const NOTE_KINDS = new Set([
   'candidate.submitted',
   'finding.confirmed',
   'finding.not_confirmed',
+  'finding.suspected',
+  'finding.released',
+  'finding.dismissed',
   'run.paused',
   'run.resumed',
   'run.completed',
@@ -114,10 +122,7 @@ export function Transcript({
                   not verified
                 </span>
               </div>
-              <Markdown
-                text={str(e.data.text)}
-                className="pl-[34px] text-[14px] leading-6"
-              />
+              <Markdown text={str(e.data.text)} className="pl-[34px] text-[14px] leading-6" />
             </div>
           );
         }

@@ -23,6 +23,8 @@ const env = defineConfig(
     BW_ENV: z.string().default('production'),
     BW_HUNT_MODEL: z.string().default('claude-sonnet-5-5'),
     BW_HUNT_CONCURRENCY: z.coerce.number().int().min(1).default(DEFAULT_CONCURRENCY),
+    BW_DEMO_WEBHOOK_URL: z.url({ protocol: /^https?$/ }).optional(),
+    BW_CONSOLE_ORIGIN: z.string().min(1).default('http://localhost:3000'),
     BW_GATE2_TIMEOUT_S: z.coerce.number().int().min(1).default(DEFAULT_GATE2_TIMEOUT_S),
     HOME: z.string().min(1),
     PATH: z.string().min(1),
@@ -47,7 +49,14 @@ const config = {
   },
   allowHostLogin: env.BW_ENV === 'dev',
 };
-const deps = { fetch, sleep, now: Date.now, gate2TimeoutMs: env.BW_GATE2_TIMEOUT_S * MS_PER_S };
+const deps = {
+  fetch,
+  sleep,
+  now: Date.now,
+  gate2TimeoutMs: env.BW_GATE2_TIMEOUT_S * MS_PER_S,
+  webhookUrl: env.BW_DEMO_WEBHOOK_URL ?? null,
+  consoleOrigin: env.BW_CONSOLE_ORIGIN,
+};
 
 let stopping = false;
 const active = new Set<Promise<void>>();
@@ -55,7 +64,7 @@ const active = new Set<Promise<void>>();
 /** A worker that died mid-run leaves it `running`: fail it so the console does not wait forever. */
 async function recoverStaleRuns(): Promise<void> {
   for (const stale of await store.failStaleRuns()) {
-    const log = new EventLog(store, stale.id, await store.nextSeq(stale.id), logger);
+    const log = new EventLog(store, stale.id, logger);
     await log.emit('run.failed', 'done', 'Run failed: the worker restarted', {
       requestsUsed: stale.requestsUsed,
       costUsd: stale.costUsd,

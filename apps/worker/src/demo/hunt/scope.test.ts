@@ -49,9 +49,10 @@ describe('checkScope', () => {
     expect(checkScope('https://shop.example.com/administrator', scope).ok).toBe(true);
   });
 
-  it('keys Gate 2 approvals on method, origin and path without the query', () => {
+  it('keys Gate 2 approvals on method, origin, path without the query, and the test account role', () => {
     const verdict = checkScope('https://shop.example.com/api/x?a=1', scope);
     if (!verdict.ok) throw new Error('expected ok');
-    expect(gateKey('post', verdict.url)).toBe('POST https://shop.example.com/api/x');
+    expect(gateKey('post', verdict.url)).toBe('POST https://shop.example.com/api/x as no test account');
+    expect(gateKey('post', verdict.url, 'Admin')).toBe('POST https://shop.example.com/api/x as admin');
   });
 });

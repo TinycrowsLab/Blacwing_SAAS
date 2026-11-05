@@ -8,10 +8,15 @@ production data.
 
 ```sh
 pnpm dev:deps      # once: Postgres, Keycloak, Valkey, Temporal, ... (the demo calls it if they are down)
-pnpm demo          # idempotent: deps, demo database, migrations, seed, API, worker, web
+pnpm demo          # idempotent: deps, demo database, migrations, seed, lab, API, worker, web
 pnpm demo status   # what is running
 pnpm demo stop     # stop the API, worker and web started by the demo
 ```
+
+Pre-pull the lab image once so `up` does not wait on the download: `docker pull bkimminich/juice-shop`.
+
+After pulling changes that add a migration, run `node scripts/demo.mjs stop && node scripts/demo.mjs up`; `up` applies
+the migration and re-seeds the persona names.
 
 `pnpm demo` prints the URLs and the demo users when it is up. Logs are in `.demo/logs/` (api.log, worker.log,
 web.log). Pids are in `.demo/pids.json`. Both directories are gitignored.
@@ -19,8 +24,11 @@ web.log). Pids are in `.demo/pids.json`. Both directories are gitignored.
 ## What the script does
 
 1. Brings up the dependency stack with `pnpm dev:deps` only when Postgres or Keycloak is not healthy.
-2. Starts no target. You register any authorised URL in the console. `node scripts/demo.mjs lab` optionally starts
-   a local practice lab (`DEMO_LAB_IMAGE`, default an OWASP Juice Shop image) on `127.0.0.1:3001` (`DEMO_LAB_PORT`).
+2. Starts the Juice Shop lab (`DEMO_LAB_IMAGE`, default `bkimminich/juice-shop`) on `127.0.0.1:3001`
+   (`DEMO_LAB_PORT`) when Docker is available. Without Docker it warns and continues; register any authorised URL in
+   the console instead. `node scripts/demo.mjs lab` starts the lab alone. Once the API is healthy, `up` waits for the
+   lab and registers it as the verified asset **Juice Shop lab** (idempotent: an existing asset for that origin is
+   reused). A failure there is a warning, never fatal.
 3. Creates the database `blackwing_demo` on the dev Postgres. It does not share `blackwing` with other
    worktrees, whose migration journals differ from this checkout.
 4. Runs the migrations and `pnpm db:seed` against `blackwing_demo`. The seed skips tables that are not merged
@@ -30,6 +38,10 @@ web.log). Pids are in `.demo/pids.json`. Both directories are gitignored.
 
 The script writes `.env.demo` on first run. It holds a demo-only `BW_WEB_SESSION_SECRET`. Overrides:
 `DEMO_HOST` (bind address), `DEMO_PUBLIC_ORIGIN` (public URL), `DEMO_WEB_PORT`, `DEMO_LAB_PORT`.
+
+Optional webhook: add `BW_DEMO_WEBHOOK_URL=<Slack incoming webhook or any receiver>` to `.env.demo` (every service
+inherits it) and restart. Each released finding is then posted as Slack-compatible JSON (`{"text": ...}`) and the
+result is shown on the finding page. Unset, nothing is sent. Never paste the URL into chat or tickets.
 
 ## Expected results
 
@@ -135,15 +147,28 @@ The runner drives a Claude agent team through the Claude Agent SDK.
    token at `/.well-known/blackwing-verification.txt`) or **Attest ownership** (lab or owned system). Requests are
    refused until the asset is verified.
 3. As the requester: **New assessment**. Objective, max intrusiveness (active-safe), request budget, minutes, cost cap.
+   Optionally add up to three test accounts (role, header name, header value) for a grey-box run. The values are
+   stored in plaintext in the demo database, so use throwaway accounts only. The model never sees them, and they are
+   redacted in stored exchanges and never returned by the API. The run header shows **Grey box** or **Black box**.
+   Passive runs send only GET/HEAD/OPTIONS.
 4. **Gate 1**: the requester cannot approve (separation of duties). The asset owner approves.
 5. The requester starts the run. **Flight deck**: one lane per agent (orchestrator, recon, web-api-specialist,
    authz-specialist, validator) on a two-minute time axis, the authorisation strip, cost/requests/duration gauges,
    the activity feed with filters and the candidate findings. **Transcript** shows the agents' messages (not verified).
 6. **Gate 2**: when an agent needs a state-changing request (POST/PUT/PATCH), its lane pauses and a banner with a
-   countdown appears. **Review** opens the Gate 2 page (works on mobile). No decision means denied.
+   countdown appears. **Review** opens the Gate 2 page (works on mobile). Approving needs a reason of at least 8
+   characters, which is shown after the decision; denying does not. No decision means denied.
 7. **Kill run**: choose the scope (run), type the run short id, and the dialog reports the measured halt time.
 8. **Findings**: only the deterministic validator confirms (3 replays match the oracle, the negative control does
-   not). Each finding shows the probe vs control, the replays, a curl repro and HTML/Markdown reports.
+   not). Each finding shows the probe vs control, the replays and a curl repro.
+9. **Gate 3**: validator-proven findings are released automatically. Candidates the validator did not confirm are kept as
+   **suspected** (analyst-only). The appsec engineer opens a finding and releases or dismisses it with a reason.
+   Only released findings reach the reports and the webhook. **Findings** (`/demo/findings`) lists them with severity
+   and status filters.
+10. **Reports**: the run page downloads the run report as HTML, Markdown, JSON or SARIF (released findings only).
+11. **Audit ledger** (`/demo/audit`): a hash-chained, read-only log of Gate 1 and Gate 2 decisions, kills, and
+    release/dismiss decisions, with chain verification. Each action shows `Recorded in the audit ledger · evt_… ·
+    sha256:…`.
 
 Without a browser: `DEMO_SMOKE_TARGET=<authorised URL> node scripts/demo.mjs smoke` runs registration, attestation,
 Gate 1 (with the SoD refusal), a short live hunt, and checks that at least two agents worked.
@@ -168,6 +193,11 @@ Gate 1 (with the SoD refusal), a short live hunt, and checks that at least two a
 | Keycloak login, roles, Gate 1 SoD, Gate 2, kill, pause | Real (demo tables, schema `demo`) |
 | Claude agent team (orchestrator + 3 specialists) | Real, Claude Agent SDK. Calls go directly to Claude, not through the model gateway (OFFLINE-STUB) |
 | HTTP to the target, scope enforcement, validator | Real, from the runner process |
-| Sandbox (gVisor), egress gateway, Temporal, audit ledger, Gate 3 | Not in the POC: the runner is the egress point |
+| Gate 3 release (auto-release of proven findings, release/dismiss with a reason) | Real, simplified |
+| Audit ledger (hash chain, verification on `/demo/audit`) | Real, simplified: one table, no external anchoring |
+| Webhook delivery (`BW_DEMO_WEBHOOK_URL`) | Real, optional |
+| Run reports (HTML, MD, JSON, SARIF) | Real, released findings only |
+| Grey-box test accounts | Real, stored in plaintext in the demo database |
+| Sandbox (gVisor), egress gateway, Temporal | Not in the POC: the runner is the egress point |
 | Ownership verification | Real HTTP token, or owner attestation |
 | Severity | Proposed by the agent, not computed |

@@ -94,5 +94,8 @@ describe('evidence', () => {
     expect(reproCurl({ method: 'post', url: "https://t.example/a'b", headers: { 'X-A': "it's" }, body: '{"a":1}' })).toBe(
       `curl -sS -i -X POST -H 'X-A: it'\\''s' --data-raw '{"a":1}' 'https://t.example/a'\\''b'`,
     );
+    expect(reproCurl({ method: 'get', url: 'https://t.example/me', as_role: 'customer' }, 'Authorization')).toBe(
+      `curl -sS -i -X GET -H 'Authorization: <customer credential>' 'https://t.example/me'`,
+    );
   });
 });

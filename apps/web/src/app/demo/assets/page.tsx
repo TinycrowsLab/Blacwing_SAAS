@@ -145,7 +145,7 @@ export default async function DemoAssetsPage({
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {asset.ownership.status === 'verified' ? (
+                    {asset.ownership.status !== 'verified' ? null : canRegister ? (
                       <LinkButton
                         href={`/demo/requests/new?assetId=${encodeURIComponent(asset.id)}`}
                         variant="secondary"
@@ -153,7 +153,11 @@ export default async function DemoAssetsPage({
                       >
                         Request assessment
                       </LinkButton>
-                    ) : null}
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        Only an AppSec engineer can request an assessment.
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

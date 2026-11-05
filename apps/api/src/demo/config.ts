@@ -15,6 +15,10 @@ const demoEnvSchema = z
     /** Tenant the demo story runs in (the seeded `acme` tenant). */
     BW_DEMO_TENANT_ID: z.string().min(1).optional(),
     DATABASE_URL: z.string().min(1).optional(),
+    /** Optional Slack-compatible webhook: each released finding is POSTed there. Unset means no delivery. */
+    BW_DEMO_WEBHOOK_URL: z.url({ protocol: /^https?$/ }).optional(),
+    /** Console origin used for the finding links in the webhook message. */
+    BW_CONSOLE_ORIGIN: z.string().min(1).default('http://localhost:3000'),
   })
   .superRefine((env, ctx) => {
     if (env.BW_DEMO_MODE !== '1') return;
@@ -30,6 +34,8 @@ export interface DemoConfig {
   readonly internalToken: string;
   readonly tenantId: string;
   readonly databaseUrl: string;
+  readonly webhookUrl: string | null;
+  readonly consoleOrigin: string;
 }
 
 /** Reads the demo variables. Disabled (and inert) unless BW_DEMO_MODE=1. */
@@ -40,5 +46,7 @@ export function loadDemoConfig(source?: EnvSource): DemoConfig {
     internalToken: env.BW_DEMO_INTERNAL_TOKEN ?? '',
     tenantId: env.BW_DEMO_TENANT_ID ?? '',
     databaseUrl: env.DATABASE_URL ?? '',
+    webhookUrl: env.BW_DEMO_WEBHOOK_URL ?? null,
+    consoleOrigin: env.BW_CONSOLE_ORIGIN,
   };
 }

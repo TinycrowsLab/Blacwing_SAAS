@@ -35,7 +35,7 @@ export function SignOutButton() {
       type="button"
       onClick={() => void signOut()}
       disabled={busy}
-      className="inline-flex h-8 items-center rounded-lg border border-border-strong bg-card px-3 text-[13px] font-medium text-foreground hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus disabled:opacity-50"
+      className="inline-flex h-8 items-center whitespace-nowrap rounded-lg border border-border-strong bg-card px-3 text-[13px] font-medium text-foreground hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus disabled:opacity-50"
     >
       {failed ? 'Sign out failed, retry' : busy ? 'Signing out…' : 'Sign out'}
     </button>

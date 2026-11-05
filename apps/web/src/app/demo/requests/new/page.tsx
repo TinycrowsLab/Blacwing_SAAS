@@ -121,7 +121,7 @@ export default async function NewRequestPage({
                 <span className="flex flex-col gap-0.5">
                   <span className="font-semibold">Passive</span>
                   <span className="text-muted-foreground">
-                    Read-only observation of ordinary responses.
+                    Only GET, HEAD and OPTIONS. Nothing state-changing is sent or asked for.
                   </span>
                 </span>
               </label>
@@ -153,6 +153,52 @@ export default async function NewRequestPage({
                 </span>
               </div>
             </fieldset>
+          </Card>
+
+          <Card>
+            <CardHeader title="Test accounts (grey box)" meta="Optional, up to 3" />
+            <div className="flex flex-col gap-3 p-4">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="grid gap-3 md:grid-cols-3">
+                  <label className={LABEL}>
+                    Role
+                    <input
+                      name={`ta_role_${i}`}
+                      maxLength={32}
+                      placeholder="customer"
+                      className={INPUT_CLASS}
+                    />
+                  </label>
+                  <label className={LABEL}>
+                    Header
+                    <input
+                      name={`ta_header_${i}`}
+                      maxLength={64}
+                      placeholder="Authorization"
+                      className={`${INPUT_CLASS} font-mono`}
+                    />
+                  </label>
+                  <label className={LABEL}>
+                    Value
+                    <input
+                      name={`ta_value_${i}`}
+                      type="password"
+                      autoComplete="off"
+                      placeholder="Bearer …"
+                      className={`${INPUT_CLASS} font-mono`}
+                    />
+                  </label>
+                </div>
+              ))}
+              <span className={HINT}>
+                The agents pick a role by name. The runner adds the header; the model never sees the
+                value and the API never returns it.
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-warn">
+                <Icon name="warn" size={13} />
+                Stored in the demo database in plain text. Use throwaway test accounts only.
+              </span>
+            </div>
           </Card>
 
           <Card>

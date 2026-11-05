@@ -24,7 +24,10 @@ export class DemoModule {
         {
           provide: DEMO_SERVICE,
           inject: [DEMO_STORE],
-          useFactory: (store: DemoStore) => new DemoService(store, config.tenantId),
+          useFactory: (store: DemoStore) => new DemoService(store, config.tenantId, fetch, {
+              webhookUrl: config.webhookUrl,
+              consoleOrigin: config.consoleOrigin,
+            }),
         },
       ],
     };

@@ -10,11 +10,11 @@
 // Steps, in order (each one is safe to re-run):
 //   1. dependency stack (`pnpm dev:deps` when Postgres or Keycloak is not healthy), then the Google identity
 //      provider when BW_DEV_GOOGLE_CLIENT_ID/SECRET are set (optional: a warning otherwise, never a failure)
-//   2. (no target is started: register any URL in the console; `node scripts/demo.mjs lab` starts an optional local lab)
+//   2. the Juice Shop lab (`node scripts/demo.mjs lab` starts it alone) when Docker is available; skipped otherwise
 //   3. demo database `blackwing_demo` (the shared dev database is migrated by other worktrees)
 //   4. migrations, then the dev seed (`pnpm db:seed`, which skips tables that are not merged yet)
 //   5. API (127.0.0.1:13400, BW_DEMO_MODE=1 mounts the demo story routes), worker, demo runner and web
-//      (DEMO_HOST, default 127.0.0.1, port 3000). The demo API seeds the lab asset and one finished fallback run.
+//      (DEMO_HOST, default 127.0.0.1, port 3000). Once the API is healthy the lab is registered and verified as an asset.
 //
 // Configuration: the repository `.env` (written by `pnpm dev:deps`) plus `.env.demo`, which this script
 // writes on first run (gitignored, holds the demo-only session secret). Logs and pids live in `.demo/`.
@@ -45,7 +45,7 @@ const HEAVY = existsSync('/home/lamp/.local/bin/bwheavy')
   ? '/home/lamp/.local/bin/bwheavy'
   : undefined;
 
-// Optional local lab for trying the tool (`node scripts/demo.mjs lab`). Never used by the platform itself.
+// Local lab (OWASP Juice Shop) started by `up` when Docker is available. Never used by the platform itself.
 const LAB_CONTAINER = 'bw-demo-lab';
 const LAB_IMAGE = process.env.DEMO_LAB_IMAGE ?? 'bkimminich/juice-shop';
 const LAB_PORT = Number(process.env.DEMO_LAB_PORT ?? 3001);
@@ -184,10 +184,15 @@ function stepGoogle() {
   return r.status ?? 1;
 }
 
+/** Starts the Juice Shop lab. Returns false (never exits) when Docker or the container is not available. */
 function stepLab() {
+  if (spawnSync('docker', ['info'], { stdio: 'ignore' }).status !== 0) {
+    log('WARNING: Docker is not available: the Juice Shop lab is skipped (register any URL in the console instead)');
+    return false;
+  }
   if (dockerRunning(LAB_CONTAINER)) {
     log(`lab already running on http://127.0.0.1:${LAB_PORT}`);
-    return;
+    return true;
   }
   spawnSync('docker', ['rm', '-f', LAB_CONTAINER], { stdio: 'ignore' });
   log(`starting lab ${LAB_IMAGE} on http://127.0.0.1:${LAB_PORT}`);
@@ -196,8 +201,12 @@ function stepLab() {
     ['run', '-d', '--name', LAB_CONTAINER, '-p', `127.0.0.1:${LAB_PORT}:${LAB_CONTAINER_PORT}`, LAB_IMAGE],
     { stdio: 'inherit' },
   );
-  if (r.status !== 0) fail('could not start the lab container');
-  log(`lab is up: register http://127.0.0.1:${LAB_PORT} as a target in the console`);
+  if (r.status !== 0) {
+    log('WARNING: could not start the lab container; continuing without it');
+    return false;
+  }
+  log(`lab is starting on http://127.0.0.1:${LAB_PORT}`);
+  return true;
 }
 
 function psqlSuper(sql, env, database = 'blackwing') {
@@ -325,7 +334,7 @@ function waitFor(label, url, timeoutMs) {
   return false;
 }
 
-function printSummary(env) {
+function printSummary(env, labRegistered) {
   const host = env.DEMO_HOST ?? '127.0.0.1';
   const kc = `http://localhost:${env.BW_DEV_KEYCLOAK_PORT ?? 18080}`;
   const pw =
@@ -348,11 +357,61 @@ Story (click by click in docs/runbooks/demo.md):
   Start here     http://localhost:${WEB_PORT}/demo
   Assets         http://localhost:${WEB_PORT}/demo/assets
   New request    http://localhost:${WEB_PORT}/demo/requests/new
-  Optional lab   node scripts/demo.mjs lab   (then register its URL as a target)
+  Lab            ${labRegistered ? `http://127.0.0.1:${LAB_PORT} (registered as Juice Shop lab)` : 'not running (node scripts/demo.mjs lab starts it)'}
   Check it       node scripts/demo.mjs smoke
 
 Logs: ${LOG_DIR}   Stop: node scripts/demo.mjs stop
 `);
+}
+
+/** Calls the demo API with the internal token and a demo identity (what the web sends after Keycloak login). */
+async function demoCall(token, user, method, route, body, roles) {
+  const headers = { accept: 'application/json', 'x-bw-demo-token': token };
+  if (user !== undefined) headers['x-bw-demo-user'] = user;
+  if (roles !== undefined) headers['x-bw-demo-roles'] = roles;
+  if (body !== undefined) headers['content-type'] = 'application/json';
+  const res = await fetch(`${DEMO_API_ORIGIN}/v1/demo${route}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+    redirect: 'manual',
+  });
+  const text = await res.text();
+  let json = {};
+  try {
+    json = text === '' ? {} : JSON.parse(text);
+  } catch {
+    json = { raw: text.slice(0, 200) };
+  }
+  return { status: res.status, json, text };
+}
+
+/** Registers the lab as an asset and has the owner verify it. Idempotent (the API reuses an asset for the same origin). */
+async function registerLab(demo) {
+  const token = demo.BW_DEMO_INTERNAL_TOKEN ?? '';
+  try {
+    const appsec = [DEMO_USERS.requester, 'appsec-engineer'];
+    const owner = [DEMO_USERS.approver, 'asset-owner'];
+    const baseUrl = `http://127.0.0.1:${LAB_PORT}`;
+    const created = await demoCall(token, appsec[0], 'POST', '/assets', { name: 'Juice Shop lab', baseUrl }, appsec[1]);
+    if (created.status !== 200 && created.status !== 201) throw new Error(`register HTTP ${created.status}`);
+    if (created.json.ownership?.status !== 'verified') {
+      const verified = await demoCall(
+        token,
+        owner[0],
+        'POST',
+        `/assets/${created.json.id}/verify`,
+        { method: 'owner_attestation', statement: 'Local demo lab (OWASP Juice Shop) started by scripts/demo.mjs.' },
+        owner[1],
+      );
+      if (verified.status !== 200) throw new Error(`verify HTTP ${verified.status}`);
+    }
+    log('lab registered and verified as an asset: Juice Shop lab');
+    return true;
+  } catch (error) {
+    log(`WARNING: could not register the lab as an asset (${error instanceof Error ? error.message : String(error)})`);
+    return false;
+  }
 }
 
 /**
@@ -373,26 +432,7 @@ async function smoke() {
   const demoFile = parseEnvFile(DEMO_ENV_FILE);
   const token = demoFile.BW_DEMO_INTERNAL_TOKEN ?? '';
   if (token === '') fail('no demo token in .env.demo; run pnpm demo first');
-  const api = async (user, method, route, body, roles) => {
-    const headers = { accept: 'application/json', 'x-bw-demo-token': token };
-    if (user !== undefined) headers['x-bw-demo-user'] = user;
-    if (roles !== undefined) headers['x-bw-demo-roles'] = roles;
-    if (body !== undefined) headers['content-type'] = 'application/json';
-    const res = await fetch(`${DEMO_API_ORIGIN}/v1/demo${route}`, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-      redirect: 'manual',
-    });
-    const text = await res.text();
-    let json = {};
-    try {
-      json = text === '' ? {} : JSON.parse(text);
-    } catch {
-      json = { raw: text.slice(0, 200) };
-    }
-    return { status: res.status, json, text };
-  };
+  const api = (user, method, route, body, roles) => demoCall(token, user, method, route, body, roles);
   const requester = { user: DEMO_USERS.requester, roles: 'appsec-engineer' };
   const approver = { user: DEMO_USERS.approver, roles: 'asset-owner' };
   const results = [];
@@ -434,12 +474,17 @@ async function smoke() {
     const r = await api(requester.user, 'POST', '/assets', { name: `Smoke target ${new URL(target).host}`, baseUrl: target }, requester.roles);
     expect(r.status === 201 || r.status === 200, `HTTP ${r.status} ${r.json.code ?? ''}`);
     ctx.assetId = r.json.id;
+    // Registering an origin that is already an asset (the lab registered by `up`) returns that asset.
+    ctx.alreadyVerified = r.json.ownership?.status === 'verified';
+    return ctx.alreadyVerified ? 'already registered and verified' : '';
   });
   await check('request refused while the target is unverified', async () => {
+    if (ctx.alreadyVerified) return 'skipped: the target was verified earlier';
     const r = await api(requester.user, 'POST', '/requests', smokeRequest(ctx.assetId), requester.roles);
     expect(r.status >= 400, `HTTP ${r.status}`);
   });
   await check('asset owner attests ownership', async () => {
+    if (ctx.alreadyVerified) return 'skipped: the target was verified earlier';
     const r = await api(approver.user, 'POST', `/assets/${ctx.assetId}/verify`, { method: 'owner_attestation', statement: 'Smoke test: lab target owned by the demo team.' }, approver.roles);
     expect(r.status === 200, `HTTP ${r.status} ${r.json.code ?? ''}`);
   });
@@ -517,7 +562,10 @@ async function main() {
   if (cmd === 'stop') return stop();
   if (cmd === 'smoke') return smoke();
   if (cmd === 'google') process.exit(stepGoogle());
-  if (cmd === 'lab') return stepLab();
+  if (cmd === 'lab') {
+    if (!stepLab()) process.exit(1);
+    return;
+  }
   if (cmd !== 'up') fail(`unknown command ${cmd} (use up, status, smoke, stop, lab or google)`);
 
   const demo = ensureDemoEnv();
@@ -529,15 +577,20 @@ async function main() {
     log('Google sign-in is not set up (see the message above); the normal sign-in still works');
   stepDatabase(baseEnv);
   stepMigrateAndSeed(baseEnv);
+  const labUp = stepLab();
   // The tenant id is known only after the seed; the demo API and runner need it.
   const tenantId = demoTenantId(baseEnv);
   if (tenantId === '')
     fail('the demo tenant acme is not in blackwing_demo; see the seed output above');
   const env = demoEnv({ ...demo, BW_DEMO_TENANT_ID: tenantId });
   stepServices(env);
-  waitFor('API', `http://127.0.0.1:${API_PORT}/health/live`, 60_000);
+  const apiUp = waitFor('API', `http://127.0.0.1:${API_PORT}/health/live`, 60_000);
+  let labRegistered = false;
+  if (labUp && apiUp && waitFor('lab', `http://127.0.0.1:${LAB_PORT}`, 120_000)) {
+    labRegistered = await registerLab(demo);
+  }
   waitFor('web', `http://127.0.0.1:${WEB_PORT}/login`, 120_000);
-  printSummary(env);
+  printSummary(env, labRegistered);
 }
 
 await main();

@@ -1,5 +1,9 @@
 // DEMO-STORY persistence: every query against the `demo` schema (migrations 20261029200000_demo_story_schema, 20261105000000_demo_ai_hunt).
 // Every query filters on tenant_id. The schema has no RLS (demo only, see the migration header).
+import { newId } from '@blackwing/ids';
+
+import { GENESIS, auditHash, type AuditFields, type AuditPayload, type AuditRef } from './audit.js';
+
 import type pg from 'pg';
 
 export interface UserRow {
@@ -38,6 +42,7 @@ export interface RequestRow {
   readonly budget_requests: number;
   readonly budget_seconds: number;
   readonly cost_cap_usd: string;
+  readonly test_accounts: readonly { readonly role: string; readonly header_name: string; readonly header_value: string }[];
   readonly status: string;
   readonly decision_reason: string | null;
   readonly decided_at: Date | null;
@@ -94,7 +99,17 @@ export interface FindingRow {
   readonly evidence: Record<string, unknown>;
   readonly replay: Record<string, unknown>;
   readonly repro_curl: string;
+  readonly location: { readonly method?: string; readonly url?: string };
+  readonly test_case_id: string | null;
+  readonly triaged_by: string | null;
+  readonly triaged_at: Date | null;
+  readonly triage_reason: string | null;
+  readonly delivery_status: 'delivered' | 'failed' | null;
+  readonly delivery_detail: string | null;
+  readonly delivered_at: Date | null;
   readonly created_at: Date;
+  readonly asset_name: string | null;
+  readonly triaged_by_name: string | null;
 }
 
 export interface ExchangeRow {
@@ -128,8 +143,16 @@ export interface Gate2Row {
   readonly status: string;
   readonly deadline_at: Date;
   readonly decided_by: string | null;
+  readonly decision_reason: string | null;
   readonly decided_at: Date | null;
   readonly created_at: Date;
+  readonly decided_by_name: string | null;
+}
+
+export interface AuditRow extends AuditFields {
+  readonly eventId: string;
+  readonly prevHash: string;
+  readonly hash: string;
 }
 
 export interface DashboardCounts {
@@ -153,6 +176,15 @@ const REQUEST_SELECT = `
   FROM demo.assessment_requests r
   JOIN users req ON req.id = r.requester_id
   LEFT JOIN users appr ON appr.id = r.approver_id`;
+
+const GATE2_SELECT = `
+  SELECT g.*, u.name AS decided_by_name FROM demo.gate2_requests g LEFT JOIN users u ON u.id = g.decided_by`;
+
+const FINDING_SELECT = `
+  SELECT f.*, a.name AS asset_name, u.name AS triaged_by_name
+  FROM demo.findings f
+  JOIN demo.assets a ON a.id = f.asset_id
+  LEFT JOIN users u ON u.id = f.triaged_by`;
 
 const RUN_SELECT = `
   SELECT ru.*, rq.budget_seconds, rq.cost_cap_usd, a.name AS asset_name
@@ -299,11 +331,12 @@ export class DemoStore {
     budget_requests: number;
     budget_seconds: number;
     cost_cap_usd: number;
+    test_accounts: { role: string; header_name: string; header_value: string }[];
   }): Promise<void> {
     await this.pool.query(
       `INSERT INTO demo.assessment_requests (id, tenant_id, asset_id, requester_id, objective, scope,
-         intrusiveness, budget_requests, budget_seconds, cost_cap_usd)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+         intrusiveness, budget_requests, budget_seconds, cost_cap_usd, test_accounts)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
         row.id,
         row.tenant_id,
@@ -315,6 +348,7 @@ export class DemoStore {
         row.budget_requests,
         row.budget_seconds,
         row.cost_cap_usd,
+        JSON.stringify(row.test_accounts),
       ],
     );
   }
@@ -493,7 +527,7 @@ export class DemoStore {
 
   async listGate2ForRun(tenantId: string, runId: string): Promise<Gate2Row[]> {
     const r = await this.pool.query<Gate2Row>(
-      'SELECT * FROM demo.gate2_requests WHERE tenant_id = $1 AND run_id = $2 ORDER BY created_at',
+      `${GATE2_SELECT} WHERE g.tenant_id = $1 AND g.run_id = $2 ORDER BY g.created_at`,
       [tenantId, runId],
     );
     return r.rows;
@@ -501,8 +535,8 @@ export class DemoStore {
 
   async listPendingGate2(tenantId: string): Promise<Gate2Row[]> {
     const r = await this.pool.query<Gate2Row>(
-      `SELECT * FROM demo.gate2_requests
-       WHERE tenant_id = $1 AND status = 'pending' AND deadline_at > now() ORDER BY deadline_at`,
+      `${GATE2_SELECT}
+       WHERE g.tenant_id = $1 AND g.status = 'pending' AND g.deadline_at > now() ORDER BY g.deadline_at`,
       [tenantId],
     );
     return r.rows;
@@ -510,7 +544,7 @@ export class DemoStore {
 
   async getGate2(tenantId: string, id: string): Promise<Gate2Row | null> {
     const r = await this.pool.query<Gate2Row>(
-      'SELECT * FROM demo.gate2_requests WHERE tenant_id = $1 AND id = $2',
+      `${GATE2_SELECT} WHERE g.tenant_id = $1 AND g.id = $2`,
       [tenantId, id],
     );
     return r.rows[0] ?? null;
@@ -522,37 +556,159 @@ export class DemoStore {
     id: string,
     status: 'approved' | 'denied',
     decidedBy: string,
+    reason: string | null,
   ): Promise<boolean> {
     const r = await this.pool.query(
-      `UPDATE demo.gate2_requests SET status = $3, decided_by = $4, decided_at = now()
+      `UPDATE demo.gate2_requests SET status = $3, decided_by = $4, decision_reason = $5, decided_at = now()
        WHERE tenant_id = $1 AND id = $2 AND status = 'pending' AND deadline_at > now()`,
-      [tenantId, id, status, decidedBy],
+      [tenantId, id, status, decidedBy, reason],
     );
     return (r.rowCount ?? 0) === 1;
   }
 
   async getFinding(tenantId: string, id: string): Promise<FindingRow | null> {
     const r = await this.pool.query<FindingRow>(
-      'SELECT * FROM demo.findings WHERE tenant_id = $1 AND id = $2',
+      `${FINDING_SELECT} WHERE f.tenant_id = $1 AND f.id = $2`,
       [tenantId, id],
     );
     return r.rows[0] ?? null;
   }
 
-  async listFindings(tenantId: string, limit: number): Promise<FindingRow[]> {
+  /** Suspected findings are for analysts only: they are left out unless `includeSuspected`. */
+  async listFindings(tenantId: string, limit: number, includeSuspected: boolean): Promise<FindingRow[]> {
     const r = await this.pool.query<FindingRow>(
-      'SELECT * FROM demo.findings WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT $2',
-      [tenantId, limit],
+      `${FINDING_SELECT} WHERE f.tenant_id = $1 AND ($3 OR f.status <> 'suspected')
+       ORDER BY f.created_at DESC LIMIT $2`,
+      [tenantId, limit, includeSuspected],
     );
     return r.rows;
   }
 
-  async listFindingsForRun(tenantId: string, runId: string): Promise<FindingRow[]> {
+  async listFindingsForRun(tenantId: string, runId: string, includeSuspected: boolean): Promise<FindingRow[]> {
     const r = await this.pool.query<FindingRow>(
-      'SELECT * FROM demo.findings WHERE tenant_id = $1 AND run_id = $2 ORDER BY created_at',
-      [tenantId, runId],
+      `${FINDING_SELECT} WHERE f.tenant_id = $1 AND f.run_id = $2 AND ($3 OR f.status <> 'suspected')
+       ORDER BY f.created_at`,
+      [tenantId, runId, includeSuspected],
     );
     return r.rows;
+  }
+
+  /** Conditional update: the finding moves to `to` only from one of the `from` statuses. */
+  async triageFinding(
+    tenantId: string,
+    id: string,
+    from: readonly string[],
+    to: 'released' | 'dismissed',
+    by: string,
+    reason: string,
+  ): Promise<boolean> {
+    const r = await this.pool.query(
+      `UPDATE demo.findings SET status = $4, triaged_by = $5, triaged_at = now(), triage_reason = $6
+       WHERE tenant_id = $1 AND id = $2 AND status = ANY($3)`,
+      [tenantId, id, [...from], to, by, reason],
+    );
+    return (r.rowCount ?? 0) === 1;
+  }
+
+  /** Records the result of the last webhook POST (never the URL). */
+  async recordDelivery(id: string, status: 'delivered' | 'failed', detail: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE demo.findings SET delivery_status = $2, delivery_detail = $3, delivered_at = now() WHERE id = $1`,
+      [id, status, detail],
+    );
+  }
+
+  /** Appends to the tenant's hash chain: the last row is read under an advisory lock, then seq + 1 is written. */
+  async appendAudit(
+    tenantId: string,
+    entry: {
+      actorId: string;
+      actorName: string;
+      action: string;
+      targetType: string;
+      targetId: string;
+      payload: AuditPayload;
+    },
+  ): Promise<AuditRef> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('demo.audit_events:' || $1::text))", [tenantId]);
+      const last = await client.query<{ seq: number; hash: string }>(
+        'SELECT seq, hash FROM demo.audit_events WHERE tenant_id = $1 ORDER BY seq DESC LIMIT 1',
+        [tenantId],
+      );
+      const prevHash = last.rows[0]?.hash ?? GENESIS;
+      const fields: AuditFields = { ...entry, seq: (last.rows[0]?.seq ?? 0) + 1, at: new Date() };
+      const hash = auditHash(prevHash, fields);
+      const eventId = newId();
+      await client.query(
+        `INSERT INTO demo.audit_events (id, tenant_id, seq, actor_id, actor_name, action, target_type, target_id,
+           payload, prev_hash, hash, at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+        [
+          eventId,
+          tenantId,
+          fields.seq,
+          fields.actorId,
+          fields.actorName,
+          fields.action,
+          fields.targetType,
+          fields.targetId,
+          JSON.stringify(fields.payload),
+          prevHash,
+          hash,
+          fields.at,
+        ],
+      );
+      await client.query('COMMIT');
+      return { eventId, hash };
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async latestAudit(tenantId: string, targetType: string, targetId: string): Promise<AuditRef | null> {
+    const r = await this.pool.query<{ id: string; hash: string }>(
+      `SELECT id, hash FROM demo.audit_events
+       WHERE tenant_id = $1 AND target_type = $2 AND target_id = $3 ORDER BY seq DESC LIMIT 1`,
+      [tenantId, targetType, targetId],
+    );
+    const row = r.rows[0];
+    return row === undefined ? null : { eventId: row.id, hash: row.hash };
+  }
+
+  /** The whole ledger in seq order (the chain is verified over all of it). */
+  async listAudit(tenantId: string): Promise<AuditRow[]> {
+    const r = await this.pool.query<{
+      id: string;
+      seq: number;
+      actor_id: string | null;
+      actor_name: string;
+      action: string;
+      target_type: string;
+      target_id: string;
+      payload: AuditPayload;
+      prev_hash: string;
+      hash: string;
+      at: Date;
+    }>('SELECT * FROM demo.audit_events WHERE tenant_id = $1 ORDER BY seq', [tenantId]);
+    return r.rows.map((row) => ({
+      eventId: row.id,
+      seq: row.seq,
+      at: row.at,
+      actorId: row.actor_id,
+      actorName: row.actor_name,
+      action: row.action,
+      targetType: row.target_type,
+      targetId: row.target_id,
+      payload: row.payload,
+      prevHash: row.prev_hash,
+      hash: row.hash,
+    }));
   }
 
   async dashboardCounts(tenantId: string): Promise<DashboardCounts> {
@@ -562,7 +718,7 @@ export class DemoStore {
                  WHERE tenant_id = $1 AND status = 'pending_gate1')::text AS "requestsPendingGate1",
               (SELECT count(*) FROM demo.runs WHERE tenant_id = $1 AND state = 'running')::text AS "runsRunning",
               (SELECT count(*) FROM demo.findings
-                 WHERE tenant_id = $1 AND status = 'confirmed')::text AS "confirmedFindings"`,
+                 WHERE tenant_id = $1 AND status IN ('confirmed', 'released'))::text AS "confirmedFindings"`,
       [tenantId],
     );
     const row = r.rows[0];

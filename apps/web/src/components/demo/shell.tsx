@@ -56,7 +56,7 @@ export function DemoShell({
 }: DemoShellProps) {
   return (
     <div className="min-h-screen bg-bg text-text">
-      <header className="flex h-14 items-center gap-4 border-b border-border bg-surface px-5">
+      <header className="flex h-14 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-4 sm:px-5">
         <Link href="/demo" className="flex items-center gap-2.5 text-foreground no-underline">
           <BrandMark />
           <span className="text-base font-semibold">Blackwing</span>

@@ -39,7 +39,7 @@ export interface AgentEnd {
 
 /** Stamps the calling agent into the tool input, so the model cannot claim to be another agent. */
 const stampAgent: HookCallbackMatcher = {
-  matcher: 'mcp__blackwing__(http_request|submit_candidate)',
+  matcher: 'mcp__blackwing__(http_request|submit_candidate|record_test_cases|update_test_case)',
   hooks: [
     (input) => {
       const parsed = hookInput.safeParse(input);
@@ -59,7 +59,7 @@ async function streamAgents(ctx: HuntContext, config: HuntConfig, abort: AbortCo
       options: {
         model: config.model,
         systemPrompt: systemPrompt(ctx.run),
-        agents: subagents(),
+        agents: subagents(ctx.run),
         mcpServers: { blackwing: createHuntServer(ctx) },
         tools: ['Agent', 'TodoWrite'],
         allowedTools: ['Agent', 'TodoWrite', 'mcp__blackwing__*'],
@@ -107,7 +107,7 @@ async function streamAgents(ctx: HuntContext, config: HuntConfig, abort: AbortCo
  * run with a `run.failed` event.
  */
 export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps, config: HuntConfig, logger: Logger): Promise<void> {
-  const log = new EventLog(store, run.id, await store.nextSeq(run.id), logger);
+  const log = new EventLog(store, run.id, logger);
   const router = new MessageRouter(log);
   const abort = new AbortController();
   const ctx: HuntContext = {
@@ -116,7 +116,7 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
     log,
     signal: abort.signal,
     deps,
-    state: { requestsUsed: 0, exchangeSeq: 0, paused: false, findings: 0, approved: new Set() },
+    state: { requestsUsed: 0, exchangeSeq: 0, paused: false, findings: 0, approved: new Set(), cases: new Map() },
   };
   const finishFailed = async (reason: string): Promise<void> => {
     await log.emit('run.failed', 'done', `Run failed: ${reason}`, { requestsUsed: ctx.state.requestsUsed, costUsd: router.totalCost, findings: ctx.state.findings, reason });

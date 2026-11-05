@@ -40,6 +40,12 @@ export const assetSchema = z.object({
 });
 export type DemoAsset = z.infer<typeof assetSchema>;
 
+/** The newest audit ledger event of a decision: its id and chain hash. */
+export const auditRefSchema = z
+  .object({ eventId: z.string(), hash: z.string() })
+  .nullable()
+  .default(null);
+
 const personSchema = z.object({ id: z.string(), name: z.string().nullable() });
 
 export const requestSchema = z.object({
@@ -62,6 +68,8 @@ export const requestSchema = z.object({
   createdAt: iso,
   runId: z.string().nullable().default(null),
   viewerIsRequester: z.boolean().default(false),
+  testAccounts: z.array(z.object({ role: z.string(), headerName: z.string() })).default([]),
+  audit: auditRefSchema,
 });
 export type DemoRequest = z.infer<typeof requestSchema>;
 
@@ -87,7 +95,12 @@ export const pinsSchema = z
       })
       .optional(),
     request: z
-      .object({ id: z.string(), objective: z.string().default(''), intrusiveness: z.string() })
+      .object({
+        id: z.string(),
+        objective: z.string().default(''),
+        intrusiveness: z.string(),
+        testAccounts: z.array(z.object({ role: z.string(), headerName: z.string() })).optional(),
+      })
       .loose()
       .optional(),
     authorisation: z
@@ -111,6 +124,8 @@ export const gate2Schema = z.object({
   createdAt: iso.optional(),
   decidedBy: z.string().nullable().default(null),
   decidedAt: nullableIso,
+  secondsLeft: z.number().default(0),
+  decisionReason: z.string().nullable().default(null),
   run: z.object({ id: z.string(), assetName: z.string().optional() }).optional(),
 });
 export type DemoGate2 = z.infer<typeof gate2Schema>;
@@ -118,6 +133,7 @@ export type DemoGate2 = z.infer<typeof gate2Schema>;
 export const findingSummarySchema = z.object({
   id: z.string(),
   runId: z.string().optional(),
+  assetName: z.string().nullable().default(null),
   title: z.string(),
   status: z.string().default('confirmed'),
   severity: severitySchema.default('info'),
@@ -160,8 +176,8 @@ export const runSchema = z.object({
 });
 export type DemoRun = z.infer<typeof runSchema>;
 
-/** Gate 2 as the decision page needs it: the DTO plus the seconds left when the server answered. */
-export const gate2DetailSchema = gate2Schema.extend({ secondsLeft: z.number().default(0) });
+/** Gate 2 as the decision page needs it: the DTO plus the audit event of the decision. */
+export const gate2DetailSchema = gate2Schema.extend({ audit: auditRefSchema });
 
 const findingEvidenceSchema = z.object({
   request: z
@@ -191,8 +207,19 @@ export const findingSchema = findingSummarySchema.extend({
       replays: z
         .array(z.object({ n: z.number(), status: z.number(), matched: z.boolean() }))
         .default([]),
+      reason: z.string().optional(),
     })
     .default({ probe: {}, control: {}, replays: [] }),
+  testCaseId: z.string().nullable().default(null),
+  triage: z
+    .object({ at: iso, by: z.string().nullable(), reason: z.string().nullable() })
+    .nullable()
+    .default(null),
+  delivery: z
+    .object({ status: z.enum(['delivered', 'failed']), detail: z.string(), at: iso })
+    .nullable()
+    .default(null),
+  audit: auditRefSchema,
   reproCurl: z.string().default(''),
   agent: z.string().nullable().default(null),
 });
@@ -226,3 +253,23 @@ export const dashboardSchema = z.object({
   pendingGate2: z.array(gate2Schema).default([]),
 });
 export type DemoDashboard = z.infer<typeof dashboardSchema>;
+
+export const auditListSchema = z.object({
+  items: z.array(
+    z.object({
+      eventId: z.string(),
+      seq: z.number(),
+      at: iso,
+      actor: z.object({ id: z.string().nullable(), name: z.string() }),
+      action: z.string(),
+      targetType: z.string(),
+      targetId: z.string(),
+      hash: z.string(),
+    }),
+  ),
+  chain: z.object({
+    verified: z.boolean(),
+    count: z.number(),
+    brokenAtSeq: z.number().nullable(),
+  }),
+});

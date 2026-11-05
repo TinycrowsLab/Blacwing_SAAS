@@ -14,7 +14,7 @@ function assistant(parent: string | null, content: unknown[], tokens = 10): SDKM
 describe('MessageRouter', () => {
   it('attributes subagent messages to the lane named in the Agent tool call', async () => {
     const store = new FakeStore();
-    const router = new MessageRouter(new EventLog(store, 'r', 1, { warn: () => undefined, error: () => undefined }));
+    const router = new MessageRouter(new EventLog(store, 'r', { warn: () => undefined, error: () => undefined }));
     await router.handle(assistant(null, [{ type: 'tool_use', id: 'tu1', name: 'Agent', input: { subagent_type: 'recon', description: 'map it' } }]));
     await router.handle(assistant('tu1', [{ type: 'text', text: 'checking robots.txt' }, { type: 'tool_use', id: 'h1', name: 'mcp__blackwing__http_request', input: {} }], 30));
     await router.handle(assistant('tu1', [{ type: 'tool_use', id: 's1', name: 'mcp__blackwing__list_exchanges', input: {} }], 10));
@@ -40,7 +40,7 @@ describe('MessageRouter', () => {
 
   it('ignores non-assistant messages', async () => {
     const store = new FakeStore();
-    const router = new MessageRouter(new EventLog(store, 'r', 1, { warn: () => undefined, error: () => undefined }));
+    const router = new MessageRouter(new EventLog(store, 'r', { warn: () => undefined, error: () => undefined }));
     await router.handle({ type: 'result' } as unknown as SDKMessage);
     expect(store.events).toEqual([]);
   });

@@ -8,7 +8,16 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Card, Chip, Icon, PageHeader, StatusChip, buttonClass } from './design';
-import { ActivityTable, AgentTeam, CandidateList, Gauge, ProgressCard, SummaryCard } from './flight-deck';
+import {
+  ActivityTable,
+  AgentTeam,
+  CandidateList,
+  Gauge,
+  ProgressCard,
+  ReportCard,
+  SummaryCard,
+  TestCasesCard,
+} from './flight-deck';
 import { useGate2Clock } from './gate2-actions';
 import { KillButton } from './kill-dialog';
 import { Modal } from './modal';
@@ -21,6 +30,7 @@ import {
   pathOf,
   shortId,
   mergeEvents,
+  testCases,
 } from './run-model';
 import { Transcript } from './transcript';
 import { useNow } from './use-now';
@@ -35,7 +45,7 @@ const POLL_MS = 1500;
 type Tab = 'deck' | 'transcript';
 
 function Gate2Banner({ gate2 }: { readonly gate2: DemoGate2 }) {
-  const { left } = useGate2Clock(gate2.deadlineAt, gate2.createdAt, true);
+  const { left } = useGate2Clock(gate2.deadlineAt, gate2.createdAt, true, gate2.secondsLeft);
   return (
     <div
       role="status"
@@ -71,7 +81,10 @@ function AuthStrip({ run, nowMs }: { readonly run: DemoRun; readonly nowMs: numb
       k: 'Max intrusiveness',
       v: (run.pins.request?.intrusiveness ?? 'active_safe').replace(/_/g, '-'),
     },
-    { k: 'Expires', v: nowMs === 0 ? '' : end > nowMs ? `in ${Math.ceil((end - nowMs) / 60000)} min` : 'expired' },
+    {
+      k: 'Expires',
+      v: nowMs === 0 ? '' : end > nowMs ? `in ${Math.ceil((end - nowMs) / 60000)} min` : 'expired',
+    },
   ];
   return (
     <div className="flex flex-wrap rounded-xl border border-border bg-card">
@@ -154,11 +167,13 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
 
   const assetName = run.pins.asset?.name ?? 'Assessment';
   const start = new Date(run.startedAt ?? run.createdAt).getTime();
-  const end = run.finishedAt === null ? (nowMs === 0 ? start : nowMs) : new Date(run.finishedAt).getTime();
+  const end =
+    run.finishedAt === null ? (nowMs === 0 ? start : nowMs) : new Date(run.finishedAt).getTime();
   const elapsed = Math.max(0, (end - start) / 1000);
   const lanes = useMemo(() => agentLanes(events), [events]);
   const rows = useMemo(() => events.flatMap((e) => describe(e) ?? []), [events]);
   const cands = useMemo(() => candidates(events), [events]);
+  const plan = useMemo(() => testCases(events), [events]);
   const pending = run.gate2.filter(
     (g) => g.status === 'pending' && new Date(g.deadlineAt).getTime() > nowMs,
   );
@@ -166,7 +181,12 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
 
   const pausedFrom = (agent: string): number | null => {
     const g = pending.find((x) => x.agent === agent);
-    if (g !== undefined) return g.createdAt === undefined ? (nowMs === 0 ? start : nowMs) : new Date(g.createdAt).getTime();
+    if (g !== undefined)
+      return g.createdAt === undefined
+        ? nowMs === 0
+          ? start
+          : nowMs
+        : new Date(g.createdAt).getTime();
     return run.paused && lastPause !== undefined ? new Date(lastPause.at).getTime() : null;
   };
 
@@ -176,15 +196,18 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
   const durationPct = (elapsed / Math.max(1, run.budget.seconds)) * 100;
   const side = (
     <div className="flex flex-col gap-4">
+      <TestCasesCard plan={plan} />
       <ProgressCard
         stats={{
           httpSent: run.stats.httpSent,
           blocked: run.stats.blocked,
           candidates: cands.length,
-          confirmed: cands.filter((c) => c.status === 'confirmed').length,
+          confirmed: cands.filter((c) => c.status === 'confirmed' || c.status === 'released')
+            .length,
         }}
       />
       <CandidateList items={cands} running={running} />
+      {running ? null : <ReportCard runId={run.id} />}
     </div>
   );
 
@@ -196,7 +219,7 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
         chips={
           <>
             <Chip tone="muted" bordered>
-              Black box
+              {(run.pins.request?.testAccounts?.length ?? 0) > 0 ? 'Grey box' : 'Black box'}
             </Chip>
             <StatusChip value={state} />
           </>

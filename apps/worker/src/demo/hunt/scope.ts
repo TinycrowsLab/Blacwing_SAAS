@@ -65,7 +65,7 @@ export function checkScope(rawUrl: string, scope: Scope): ScopeVerdict {
   return { ok: true, url };
 }
 
-/** Gate 2 approval covers this METHOD + path (no query) for the rest of the run. */
-export function gateKey(method: string, url: URL): string {
-  return `${method.toUpperCase()} ${url.origin}${url.pathname}`;
+/** Gate 2 approval covers this METHOD + path (no query), sent as this test account role (or none), for the rest of the run. */
+export function gateKey(method: string, url: URL, role?: string): string {
+  return `${method.toUpperCase()} ${url.origin}${url.pathname} as ${role?.toLowerCase() ?? 'no test account'}`;
 }

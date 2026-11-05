@@ -207,6 +207,8 @@ export function StatusChip({ value }: { readonly value: string }) {
     confirmed: { tone: 'ok', icon: 'check', label: 'Confirmed' },
     validating: { tone: 'primary', icon: 'clock', label: 'Validating' },
     suspected: { tone: 'warn', icon: 'info', label: 'Suspected' },
+    released: { tone: 'ok', icon: 'check', label: 'Released' },
+    dismissed: { tone: 'muted', icon: 'minus', label: 'Dismissed' },
   };
   const m = map[v] ?? { tone: 'muted' as Tone, label: v.charAt(0).toUpperCase() + v.slice(1) };
   return (

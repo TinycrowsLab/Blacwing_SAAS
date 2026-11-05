@@ -21,6 +21,8 @@ const PAUSE_POLL_MS = 500;
 const MAX_METHOD_LENGTH = 16;
 const MAX_URL_LENGTH = 4096;
 const MAX_BODY_LENGTH = 100_000;
+const MAX_ROLE_LENGTH = 32;
+const REDACTED = '[redacted]';
 const DROPPED_REQUEST_HEADERS = new Set(['host', 'content-length', 'connection', 'transfer-encoding']);
 
 export const probeSchema = z.object({
@@ -28,6 +30,7 @@ export const probeSchema = z.object({
   url: z.string().min(1).max(MAX_URL_LENGTH),
   headers: z.record(z.string(), z.string()).optional(),
   body: z.string().max(MAX_BODY_LENGTH).optional(),
+  as_role: z.string().max(MAX_ROLE_LENGTH).optional().describe('Send as this test account role; the runner adds its credential header'),
 });
 export type HttpRequest = z.infer<typeof probeSchema>;
 
@@ -41,11 +44,19 @@ interface SendOptions {
   readonly askGate2: boolean;
 }
 
-/** Reads the body and cuts it to at most `limit` bytes. */
-async function readCapped(response: Response, limit: number): Promise<{ text: string; bytes: number }> {
+/** Reads the body, redacts it (before cutting, so no credential is split at the cut) and cuts it to at most `limit` bytes. */
+async function readCapped(response: Response, limit: number, redact: (text: string) => string): Promise<{ text: string; bytes: number }> {
   const buffer = Buffer.from(await response.arrayBuffer());
   const bytes = Math.min(buffer.byteLength, limit);
-  return { text: buffer.subarray(0, limit).toString('utf8'), bytes };
+  return { text: Buffer.from(redact(buffer.toString('utf8'))).subarray(0, limit).toString('utf8'), bytes };
+}
+
+/** Every test-account credential as it may come back: the full header value, the bare token after the scheme, and their JSON-escaped forms. */
+function secretsOf(accounts: HuntContext['run']['testAccounts']): string[] {
+  const values = accounts.flatMap((a) => [a.headerValue, a.headerValue.slice(a.headerValue.indexOf(' ') + 1)]);
+  return [...new Set(values.flatMap((v) => [v, v.replaceAll('/', '\\/')]))]
+    .filter((v) => v !== '')
+    .sort((a, b) => b.length - a.length);
 }
 
 async function recordExchange(
@@ -53,7 +64,7 @@ async function recordExchange(
   agent: string,
   req: HttpRequest,
   outcome: 'sent' | 'blocked' | 'denied' | 'error',
-  extra: { reason?: string; status?: number; headers?: Record<string, string>; body?: string; ms?: number; id?: string },
+  extra: { reason?: string; status?: number; headers?: Record<string, string>; body?: string; ms?: number; id?: string; credential?: { headerName: string; role: string } },
 ): Promise<string> {
   const id = extra.id ?? newId();
   ctx.state.exchangeSeq += 1;
@@ -63,7 +74,7 @@ async function recordExchange(
     agent,
     method: req.method.toUpperCase(),
     url: req.url,
-    requestHeaders: req.headers ?? {},
+    requestHeaders: { ...req.headers, ...(extra.credential === undefined ? {} : { [extra.credential.headerName]: `[redacted: role ${extra.credential.role}]` }) },
     requestBody: req.body ?? null,
     status: extra.status ?? null,
     responseHeaders: extra.headers ?? null,
@@ -87,8 +98,9 @@ async function block(ctx: HuntContext, agent: string, req: HttpRequest, rule: st
 }
 
 /** Raises a Gate 2 request and waits for a human. No decision before the deadline means denied. */
-async function awaitGate2(ctx: HuntContext, agent: string, req: HttpRequest, url: URL, purpose: string): Promise<Gate2Status> {
+async function awaitGate2(ctx: HuntContext, agent: string, req: HttpRequest, url: URL, purpose: string, role: string | undefined): Promise<Gate2Status> {
   const method = req.method.toUpperCase();
+  const identity = role === undefined ? 'without a test account credential' : `as test account role ${role}`;
   const id = newId();
   const deadlineAt = new Date(ctx.deps.now() + ctx.deps.gate2TimeoutMs);
   await ctx.store.insertGate2(ctx.run, {
@@ -96,16 +108,17 @@ async function awaitGate2(ctx: HuntContext, agent: string, req: HttpRequest, url
     agent,
     method,
     url: req.url,
-    pathKey: gateKey(method, url),
+    pathKey: gateKey(method, url, role),
     reason: purpose,
-    whyOutside: `${method} is a state-changing method; the authorisation covers only active-safe requests.`,
+    whyOutside: `${method} is a state-changing method; the authorisation covers only active-safe requests. It would be sent ${identity}.`,
     deadlineAt,
   });
-  await ctx.log.emit('gate2.requested', 'gate2', `${agent} asks to send ${method} ${url.pathname}`, {
+  await ctx.log.emit('gate2.requested', 'gate2', `${agent} asks to send ${method} ${url.pathname} ${identity}`, {
     agent,
     gate2Id: id,
     method,
     url: req.url,
+    ...(role === undefined ? {} : { asRole: role }),
     deadlineAt: deadlineAt.toISOString(),
   });
   let status: Gate2Status = 'pending';
@@ -132,12 +145,15 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
   if (!scope.ok) return block(ctx, agent, req, scope.rule);
   const methodClass = classifyMethod(method);
   if (methodClass === 'destructive') return block(ctx, agent, req, 'destructive_method');
+  if (ctx.run.intrusiveness === 'passive' && methodClass !== 'active_safe') return block(ctx, agent, req, 'above_max_intrusiveness');
+  const account = req.as_role === undefined ? undefined : ctx.run.testAccounts.find((a) => a.role.toLowerCase() === req.as_role?.toLowerCase());
+  if (req.as_role !== undefined && account === undefined) return block(ctx, agent, req, 'unknown_role');
   if (ctx.state.requestsUsed >= ctx.run.budgetRequests) return block(ctx, agent, req, 'request_budget');
   if (methodClass === 'state_changing') {
-    const key = gateKey(method, scope.url);
+    const key = gateKey(method, scope.url, account?.role);
     if (!ctx.state.approved.has(key)) {
       if (!options.askGate2) return block(ctx, agent, req, 'gate2_required');
-      const decision = await awaitGate2(ctx, agent, req, scope.url, options.purpose);
+      const decision = await awaitGate2(ctx, agent, req, scope.url, options.purpose, account?.role);
       if (decision !== 'approved') {
         await recordExchange(ctx, agent, req, 'denied', { reason: `gate2_${decision}` });
         return { ok: false, refusal: `Gate 2 ${decision}: a human did not approve ${key}. The request was not sent.` };
@@ -155,6 +171,10 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
   for (const [name, value] of Object.entries(req.headers ?? {})) {
     if (!DROPPED_REQUEST_HEADERS.has(name.toLowerCase())) headers[name.toLowerCase()] = value;
   }
+  if (account !== undefined) headers[account.headerName.toLowerCase()] = account.headerValue;
+  const credential = account === undefined ? undefined : { headerName: account.headerName, role: account.role };
+  const secrets = secretsOf(ctx.run.testAccounts);
+  const redact = (text: string): string => secrets.reduce((acc, secret) => acc.replaceAll(secret, REDACTED), text);
   const started = ctx.deps.now();
   try {
     const response = await ctx.deps.fetch(scope.url, {
@@ -164,10 +184,10 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
       redirect: 'manual',
       signal: AbortSignal.any([AbortSignal.timeout(REQUEST_TIMEOUT_MS), ctx.signal]),
     });
-    const body = await readCapped(response, STORED_BODY_BYTES);
+    const body = await readCapped(response, STORED_BODY_BYTES, redact);
     const ms = ctx.deps.now() - started;
-    const responseHeaders = Object.fromEntries(response.headers.entries());
-    const exchangeId = await recordExchange(ctx, agent, req, 'sent', { status: response.status, headers: responseHeaders, body: body.text, ms });
+    const responseHeaders = Object.fromEntries([...response.headers.entries()].map(([name, value]) => [name, redact(value)]));
+    const exchangeId = await recordExchange(ctx, agent, req, 'sent', { status: response.status, headers: responseHeaders, body: body.text, ms, ...(credential === undefined ? {} : { credential }) });
     await ctx.log.emit('http.sent', agent, `${agent}: ${method} ${req.url} -> ${response.status}`, {
       agent,
       exchangeId,
@@ -176,11 +196,12 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
       status: response.status,
       bytes: body.bytes,
       ms,
+      ...(account === undefined ? {} : { asRole: account.role }),
     });
     return { ok: true, exchangeId, status: response.status, headers: responseHeaders, body: body.text, bodyBytes: body.bytes };
   } catch (error) {
     const reason = error instanceof Error ? error.name : 'unknown';
-    await recordExchange(ctx, agent, req, 'error', { reason, ms: ctx.deps.now() - started });
+    await recordExchange(ctx, agent, req, 'error', { reason, ms: ctx.deps.now() - started, ...(credential === undefined ? {} : { credential }) });
     return { ok: false, refusal: `The request failed (${reason}).` };
   }
 }

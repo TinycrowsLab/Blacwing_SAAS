@@ -1,6 +1,16 @@
 import { describe as suite, expect, it } from 'vitest';
 
-import { agentLanes, candidates, describe, killConfirmed, mergeEvents, mmss, secondsLeft } from './run-model';
+import {
+  agentLanes,
+  auditLine,
+  candidates,
+  describe,
+  killConfirmed,
+  mergeEvents,
+  mmss,
+  secondsLeft,
+  testCases,
+} from './run-model';
 
 import type { DemoRunEvent } from '../../app/demo/_lib/schemas';
 
@@ -112,6 +122,71 @@ suite('event mapping', () => {
       }),
     ]);
     expect(done[0]).toMatchObject({ status: 'confirmed', findingId: 'f1' });
+  });
+});
+
+suite('gate 3 and test plan', () => {
+  const submitted = ev(1, 'candidate.submitted', 'validator', {
+    agent: 'recon',
+    candidateId: 'c1',
+    title: 'T',
+    severity: 'high',
+  });
+  it('moves a candidate to suspected, released and dismissed', () => {
+    const suspected = ev(2, 'finding.suspected', 'validator', {
+      candidateId: 'c1',
+      findingId: 'f1',
+      title: 'T',
+    });
+    expect(candidates([submitted, suspected])[0]).toMatchObject({
+      status: 'suspected',
+      findingId: 'f1',
+    });
+    const released = ev(3, 'finding.released', 'gate3', {
+      findingId: 'f1',
+      title: 'T',
+      auto: false,
+    });
+    expect(candidates([submitted, suspected, released])[0]?.status).toBe('released');
+    const dismissed = ev(4, 'finding.dismissed', 'gate3', { findingId: 'f1', title: 'T' });
+    expect(candidates([submitted, suspected, released, dismissed])[0]?.status).toBe('dismissed');
+    expect(describe(released)).toMatchObject({ agent: 'gate3', meta: 'Gate 3' });
+    expect(describe(ev(5, 'finding.suspected', 'validator', { title: 'T' }))).toMatchObject({
+      meta: 'analyst only',
+      isError: false,
+    });
+  });
+  it('counts test cases by their latest status', () => {
+    const plan = ev(1, 'plan.cases', 'plan', {
+      cases: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+      total: 3,
+    });
+    const executed = ev(3, 'case.status', 'plan', {
+      caseId: 'a',
+      status: 'executed',
+      by: 'validator',
+    });
+    const events = [
+      plan,
+      ev(2, 'case.status', 'plan', { caseId: 'a', status: 'executing', by: 'model' }),
+      executed,
+      ev(4, 'plan.cases', 'plan', { cases: [{ id: 'a' }, { id: 'd' }], total: 4 }),
+    ];
+    expect(testCases(events)).toEqual({
+      total: 4,
+      counts: { executed: 1, executing: 0, proposed: 3, skipped: 0, blocked: 0 },
+    });
+    expect(describe(plan)?.text).toBe('Recorded 3 test cases (3 in plan)');
+    expect(describe(executed)).toMatchObject({
+      text: 'Test case a: executed',
+      meta: 'by validator',
+    });
+  });
+  it('words the audit line', () => {
+    expect(auditLine(null)).toBe('Recorded in the audit ledger');
+    expect(auditLine({ eventId: '0194ab12-3456-7abc-8def-0123456789ab', hash: 'abcd1234'.repeat(8) })).toBe(
+      'Recorded in the audit ledger · evt_456789ab · sha256:abcd...1234',
+    );
   });
 });
 

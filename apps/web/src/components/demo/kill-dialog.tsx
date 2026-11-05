@@ -9,7 +9,8 @@ import { useEffect, useState } from 'react';
 
 import { buttonClass, Icon, INPUT_CLASS } from './design';
 import { Modal } from './modal';
-import { killConfirmed, shortId } from './run-model';
+import { auditLine, killConfirmed, shortId } from './run-model';
+import { auditRefSchema } from '../../app/demo/_lib/schemas';
 
 const POLL_MS = 500;
 const NO_EVENTS = 1_000_000;
@@ -32,6 +33,8 @@ export function KillButton({
   readonly run: { readonly id: string; readonly assetName: string } | null;
   readonly className?: string;
 }) {
+  // The run the dialog was opened for: it stays mounted after the halt, when `run` becomes null.
+  const [target, setTarget] = useState(run);
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -39,16 +42,20 @@ export function KillButton({
         type="button"
         disabled={run === null}
         onClick={() => {
+          setTarget(run);
           setOpen(true);
         }}
         className={buttonClass('kill', className ?? 'h-9 px-4')}
       >
         <Icon name="kill" size={16} />
-        {className === undefined ? 'Kill' : 'Kill run'}
+        <span className={className === undefined ? 'hidden sm:inline' : undefined}>
+          {className === undefined ? 'Kill' : 'Kill run'}
+        </span>
       </button>
-      {run === null ? null : (
+      {target === null ? null : (
         <KillDialog
-          run={run}
+          key={target.id}
+          run={target}
           open={open}
           onClose={() => {
             setOpen(false);
@@ -73,6 +80,7 @@ function KillDialog({
   const [phase, setPhase] = useState<Phase>('form');
   const [error, setError] = useState<string | null>(null);
   const [haltMs, setHaltMs] = useState<number | null>(null);
+  const [audit, setAudit] = useState<{ eventId: string; hash: string } | null>(null);
   const expected = run.id.slice(0, 8);
 
   async function stop() {
@@ -87,6 +95,8 @@ function KillDialog({
       setError(typeof problem.message === 'string' ? problem.message : 'Kill was refused.');
       return;
     }
+    const answer = auditRefSchema.parse(((await res.json()) as { audit?: unknown }).audit ?? null);
+    setAudit(answer);
     setPhase('halting');
   }
 
@@ -202,7 +212,7 @@ function KillDialog({
               )}
               <div className="flex items-center justify-end gap-2.5">
                 <span className="mr-auto text-xs text-muted-foreground">
-                  Recorded in the run log
+                  Recorded in the audit ledger
                 </span>
                 <button type="button" onClick={onClose} className={buttonClass('secondary')}>
                   Cancel
@@ -238,6 +248,9 @@ function KillDialog({
                 {phase === 'halted'
                   ? `run.killed  run_${shortId(run.id)}  halt ${haltMs === null ? 'not recorded' : `${haltMs} ms`}`
                   : 'Waiting for the worker to confirm the halt...'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {phase === 'halted' ? auditLine(audit) : 'Recording to audit ledger'}
               </p>
               {phase === 'halted' ? (
                 <div className="flex justify-end">

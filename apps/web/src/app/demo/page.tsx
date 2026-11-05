@@ -146,7 +146,15 @@ export default async function DemoDashboard(): Promise<ReactNode> {
       </div>
 
       <Card aria-labelledby="findings">
-        <CardHeader id="findings" title="Recent findings" meta="Confirmed by the validator" />
+        <CardHeader
+          id="findings"
+          title="Recent findings"
+          meta={
+            <Link className="text-primary hover:underline" href="/demo/findings">
+              View all
+            </Link>
+          }
+        />
         {data.findings.length === 0 ? (
           <p className={EMPTY}>None yet.</p>
         ) : (

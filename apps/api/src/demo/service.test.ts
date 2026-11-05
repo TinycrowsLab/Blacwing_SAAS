@@ -2,9 +2,10 @@
 // the Gate 2 countdown and the ownership proof.
 import { describe, expect, it, vi } from 'vitest';
 
+import { gate2DecisionSchema } from './controller.js';
 import { DemoRefusal, DemoService, actorHasRole, originsOf, secondsLeft, shortId } from './service.js';
 
-import type { AssetRow, DemoStore } from './store.js';
+import type { AssetRow, DemoStore, FindingRow } from './store.js';
 
 describe('actorHasRole', () => {
   it('accepts the Keycloak dash form and the seed underscore form', () => {
@@ -96,6 +97,7 @@ describe('kill', () => {
       killQueuedRun: vi.fn().mockResolvedValue(null),
       requestKill: vi.fn().mockResolvedValue(new Date('2026-11-05T10:00:00Z')),
       appendEvent: vi.fn(),
+      appendAudit: vi.fn().mockResolvedValue({ eventId: 'e1', hash: 'h1' }),
     };
     return { store, service: new DemoService(store as unknown as DemoStore, 't1') };
   }
@@ -108,5 +110,123 @@ describe('kill', () => {
     expect(store.requestKill).not.toHaveBeenCalled();
     const result = await service.kill(actor, run.id, shortId(run.id).toUpperCase());
     expect(result.killRequestedAt).toBe('2026-11-05T10:00:00.000Z');
+    expect(result.audit).toEqual({ eventId: 'e1', hash: 'h1' });
+    expect(store.appendAudit).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ action: 'run.kill', payload: { confirm: shortId(run.id).toUpperCase(), queued: false } }),
+    );
+  });
+});
+
+describe('createAsset', () => {
+  const engineer = { ...owner, roles: ['appsec-engineer'] };
+  const input = { name: 'Again', baseUrl: 'https://app.example.com/other', extraOrigins: [], excludedPaths: [] };
+
+  it('returns the existing asset for an origin that is already registered and inserts nothing', async () => {
+    const store = { listAssets: vi.fn().mockResolvedValue([asset('abc')]), insertAsset: vi.fn() };
+    const service = new DemoService(store as unknown as DemoStore, 't1');
+    const dto = await service.createAsset(engineer, input);
+    expect(dto.id).toBe('a1');
+    expect(store.insertAsset).not.toHaveBeenCalled();
+  });
+});
+
+describe('Gate 2 decision body', () => {
+  it('needs a reason of at least 8 characters to approve, and none to deny', () => {
+    expect(gate2DecisionSchema.safeParse({ decision: 'approve' }).success).toBe(false);
+    expect(gate2DecisionSchema.safeParse({ decision: 'approve', reason: ' short ' }).success).toBe(false);
+    expect(gate2DecisionSchema.safeParse({ decision: 'approve', reason: 'safe, read-only probe' }).success).toBe(true);
+    expect(gate2DecisionSchema.safeParse({ decision: 'deny' }).success).toBe(true);
+  });
+});
+
+describe('triage', () => {
+  const engineer = { ...owner, roles: ['appsec-engineer'] };
+  const finding = (status: string) =>
+    ({
+      id: 'f1',
+      run_id: 'r1',
+      title: 'IDOR',
+      severity: 'high',
+      status,
+      asset_name: 'X',
+      confidence: '0.9',
+      triaged_at: null,
+      delivery_status: null,
+      created_at: new Date(),
+    }) as unknown as FindingRow;
+
+  function triageService(status: string, transitioned: boolean) {
+    const store = {
+      getFinding: vi.fn().mockResolvedValue(finding(status)),
+      triageFinding: vi.fn().mockResolvedValue(transitioned),
+      appendAudit: vi.fn().mockResolvedValue({ eventId: 'e1', hash: 'h1' }),
+      appendEvent: vi.fn(),
+      latestAudit: vi.fn(),
+      recordDelivery: vi.fn(),
+    };
+    return { store, service: new DemoService(store as unknown as DemoStore, 't1') };
+  }
+
+  it('only an AppSec engineer may triage', async () => {
+    const { store, service } = triageService('suspected', true);
+    await expect(service.triage(owner, 'f1', 'release', 'real issue, confirmed by hand')).rejects.toMatchObject({
+      response: { code: 'role_required' },
+    });
+    expect(store.triageFinding).not.toHaveBeenCalled();
+  });
+
+  it('releases a suspected finding, appends the audit and run event, and skips delivery without a webhook', async () => {
+    const { store, service } = triageService('suspected', true);
+    const dto = await service.triage(engineer, 'f1', 'release', 'real issue, confirmed by hand');
+    expect(store.triageFinding).toHaveBeenCalledWith('t1', 'f1', ['suspected', 'confirmed'], 'released', 'u1', 'real issue, confirmed by hand');
+    expect(store.appendEvent).toHaveBeenCalledWith('r1', expect.objectContaining({ kind: 'finding.released' }));
+    expect(store.recordDelivery).not.toHaveBeenCalled();
+    expect(dto.audit).toEqual({ eventId: 'e1', hash: 'h1' });
+  });
+
+  it('refuses a transition the conditional update rejects', async () => {
+    const { service } = triageService('dismissed', false);
+    await expect(service.triage(engineer, 'f1', 'release', 'second thoughts here')).rejects.toMatchObject({
+      response: { code: 'finding_not_triageable' },
+    });
+  });
+
+  it('records the webhook result without ever failing the release', async () => {
+    const { store } = triageService('suspected', true);
+    const fetchImpl = vi.fn().mockRejectedValue(new DOMException('slow', 'TimeoutError'));
+    const service = new DemoService(store as unknown as DemoStore, 't1', fetchImpl, {
+      webhookUrl: 'https://hooks.example.com/x',
+      consoleOrigin: 'http://localhost:3000',
+    });
+    await service.triage(engineer, 'f1', 'release', 'real issue, confirmed by hand');
+    expect(store.recordDelivery).toHaveBeenCalledWith('f1', 'failed', 'TimeoutError');
+  });
+
+  it('hides a suspected finding from a non-AppSec actor', async () => {
+    const { service } = triageService('suspected', true);
+    await expect(service.finding(owner, 'f1')).rejects.toMatchObject({ response: { code: 'not_found' } });
+  });
+});
+
+describe('run events', () => {
+  it('hides finding.suspected events from a non-AppSec actor', async () => {
+    const at = new Date();
+    const store = {
+      getRun: vi.fn().mockResolvedValue({ id: 'r1', state: 'running', created_at: at, started_at: null, finished_at: null, kill_requested_at: null }),
+      listEvents: vi.fn().mockResolvedValue([
+        { seq: 1, kind: 'http.sent', stage: 'recon', message: 'GET', data: {}, at },
+        { seq: 2, kind: 'finding.suspected', stage: 'validator', message: 'Suspected: T', data: {}, at },
+      ]),
+      listFindingsForRun: vi.fn().mockResolvedValue([]),
+      listGate2ForRun: vi.fn().mockResolvedValue([]),
+      runStats: vi.fn().mockResolvedValue({}),
+    };
+    const service = new DemoService(store as unknown as DemoStore, 't1');
+    const view = async (roles: string[]) =>
+      ((await service.run({ ...owner, roles }, 'r1', 0)) as { events: { kind: string }[]; lastSeq: number });
+    expect((await view(['asset-owner'])).events.map((e) => e.kind)).toEqual(['http.sent']);
+    expect((await view(['asset-owner'])).lastSeq).toBe(2);
+    expect((await view(['appsec-engineer'])).events.map((e) => e.kind)).toEqual(['http.sent', 'finding.suspected']);
   });
 });

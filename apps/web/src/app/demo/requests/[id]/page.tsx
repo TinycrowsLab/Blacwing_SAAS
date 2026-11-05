@@ -15,6 +15,7 @@ import {
   StatusChip,
   buttonClass,
 } from '../../../../components/demo/design';
+import { auditLine } from '../../../../components/demo/run-model';
 import { ContextPanel } from '../../../../components/demo/shell';
 import { getSession } from '../../../../lib/session';
 import { DemoApiError, demoApi } from '../../_lib/demo-api';
@@ -157,6 +158,18 @@ export default async function DemoRequestPage({
               <dd>{request.approver?.name ?? 'not yet'}</dd>
               <dt className="text-muted-foreground">Decision reason</dt>
               <dd>{request.decisionReason ?? 'none'}</dd>
+              <dt className="text-muted-foreground">Test accounts</dt>
+              <dd>
+                {request.testAccounts.length === 0
+                  ? 'None (black box)'
+                  : request.testAccounts.map((a) => `${a.role} (${a.headerName})`).join(', ')}
+              </dd>
+              {pending ? null : (
+                <>
+                  <dt className="text-muted-foreground">Audit</dt>
+                  <dd className="font-mono text-xs">{auditLine(request.audit)}</dd>
+                </>
+              )}
             </dl>
           </Card>
 
@@ -165,7 +178,7 @@ export default async function DemoRequestPage({
               <CardHeader
                 id="decide-h"
                 title="Gate 1 decision"
-                meta="Recorded in the run log"
+                meta="Recorded in the audit ledger"
               />
               <form action={decideRequestAction} className="flex flex-col gap-4 p-4">
                 <input type="hidden" name="requestId" value={request.id} />

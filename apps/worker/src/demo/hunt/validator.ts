@@ -115,15 +115,17 @@ function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
-export function reproCurl(probe: HttpRequest): string {
+/** A probe sent as a test account gets a placeholder for that credential header, never its value. */
+export function reproCurl(probe: HttpRequest, credentialHeader?: string): string {
   const parts = ['curl', '-sS', '-i', '-X', probe.method.toUpperCase()];
   for (const [name, value] of Object.entries(probe.headers ?? {})) parts.push('-H', shellQuote(`${name}: ${value}`));
+  if (probe.as_role !== undefined && credentialHeader !== undefined) parts.push('-H', shellQuote(`${credentialHeader}: <${probe.as_role} credential>`));
   if (probe.body !== undefined) parts.push('--data-raw', shellQuote(probe.body));
   parts.push(shellQuote(probe.url));
   return parts.join(' ');
 }
 
-function sideEvidence(request: HttpRequest, response: Sent): Record<string, unknown> {
+export function sideEvidence(request: HttpRequest, response: Sent): Record<string, unknown> {
   return {
     request: { method: request.method.toUpperCase(), url: request.url, headers: request.headers ?? {}, body: request.body ?? null },
     response: { status: response.status, bodyExcerpt: response.body.slice(0, EXCERPT_CHARS), bodySha256: sha256(response.body) },

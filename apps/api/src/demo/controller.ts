@@ -18,8 +18,14 @@ import { z } from 'zod';
 
 import { DemoRefusalFilter } from './filter.js';
 import { isGoogleDemoSignIn } from './google-signin.js';
-import { REPORT_FORMATS, renderReport, type ReportFormat } from './report.js';
-import { DemoRefusal, INTRUSIVENESS, findingDto, type DemoActor, type DemoService } from './service.js';
+import {
+  REPORT_FORMATS,
+  RUN_REPORT_FORMATS,
+  renderReport,
+  renderRunReport,
+  type ReportFormat,
+} from './report.js';
+import { DemoRefusal, INTRUSIVENESS, type DemoActor, type DemoService } from './service.js';
 import { DEMO_CONFIG, DEMO_SERVICE, DEMO_STORE } from './tokens.js';
 import { PublicRoute } from '../tenant/public-route.js';
 import { createZodDto, ZodBody, ZodQuery } from '../validation/index.js';
@@ -42,7 +48,15 @@ const LIMITS = {
   costCapMin: 0.5,
   costCapMax: 100,
   statementMin: 10,
+  testAccounts: 3,
+  roleName: 32,
+  headerName: 64,
+  headerValue: 4096,
+  reasonMin: 8,
 } as const;
+
+/** Headers the runner must control itself; a test account cannot set them. */
+const RESERVED_HEADERS = ['host', 'content-length', 'connection', 'transfer-encoding'];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -66,6 +80,15 @@ const verifyAssetSchema = z
     message: 'owner_attestation needs a statement',
   });
 
+const testAccountSchema = z.strictObject({
+  role: z.string().trim().regex(/^[a-z][a-z0-9_-]{0,31}$/i),
+  headerName: z
+    .string()
+    .regex(/^[A-Za-z0-9-]{1,64}$/)
+    .refine((name) => !RESERVED_HEADERS.includes(name.toLowerCase()), 'This header cannot carry a credential.'),
+  headerValue: z.string().min(1).max(LIMITS.headerValue),
+});
+
 const createRequestSchema = z.strictObject({
   assetId: z.string().regex(UUID),
   objective: z.string().trim().min(1).max(LIMITS.objective),
@@ -74,6 +97,13 @@ const createRequestSchema = z.strictObject({
   budgetSeconds: z.int().min(LIMITS.budgetSecondsMin).max(LIMITS.budgetSecondsMax),
   costCapUsd: z.number().min(LIMITS.costCapMin).max(LIMITS.costCapMax),
   excludedPaths,
+  testAccounts: z
+    .array(testAccountSchema)
+    .max(LIMITS.testAccounts)
+    .default([])
+    .refine((accounts) => new Set(accounts.map((a) => a.role.toLowerCase())).size === accounts.length, {
+      message: 'Test account roles must be unique.',
+    }),
 });
 
 const decisionSchema = z.strictObject({
@@ -82,10 +112,23 @@ const decisionSchema = z.strictObject({
 });
 
 const killSchema = z.strictObject({ scope: z.literal('run'), confirm: z.string().max(LIMITS.name) });
-const gate2DecisionSchema = z.strictObject({ decision: z.enum(['approve', 'deny']) });
+export const gate2DecisionSchema = z
+  .strictObject({
+    decision: z.enum(['approve', 'deny']),
+    reason: z.string().trim().max(LIMITS.reason).optional(),
+  })
+  .refine((v) => v.decision === 'deny' || (v.reason ?? '').length >= LIMITS.reasonMin, {
+    path: ['reason'],
+    message: 'Approve needs a reason of at least 8 characters.',
+  });
+const triageSchema = z.strictObject({
+  decision: z.enum(['release', 'dismiss']),
+  reason: z.string().trim().min(LIMITS.reasonMin).max(LIMITS.reason),
+});
 
 const afterSeqQuerySchema = z.object({ afterSeq: z.coerce.number().int().min(0).default(0) });
 const reportQuerySchema = z.object({ format: z.enum(REPORT_FORMATS).default('html') });
+const runReportQuerySchema = z.object({ format: z.enum(RUN_REPORT_FORMATS).default('html') });
 
 class CreateAssetDto extends createZodDto(createAssetSchema) {}
 class VerifyAssetDto extends createZodDto(verifyAssetSchema) {}
@@ -94,7 +137,9 @@ class DecisionDto extends createZodDto(decisionSchema) {}
 class KillDto extends createZodDto(killSchema) {}
 class Gate2DecisionDto extends createZodDto(gate2DecisionSchema) {}
 class AfterSeqQueryDto extends createZodDto(afterSeqQuerySchema) {}
+class TriageDto extends createZodDto(triageSchema) {}
 class ReportQueryDto extends createZodDto(reportQuerySchema) {}
+class RunReportQueryDto extends createZodDto(runReportQuerySchema) {}
 
 type RequestHeaders = Record<string, string | string[] | undefined>;
 
@@ -233,8 +278,7 @@ export class DemoController {
     @Param('id') id: string,
     @ZodQuery(AfterSeqQueryDto) query: AfterSeqQueryDto,
   ): Promise<unknown> {
-    await this.actor(headers);
-    return this.service.run(uuid(id, 'run'), query.afterSeq);
+    return this.service.run(await this.actor(headers), uuid(id, 'run'), query.afterSeq);
   }
 
   @Get('runs/:id/exchanges')
@@ -282,19 +326,32 @@ export class DemoController {
     @Param('id') id: string,
     @ZodBody(Gate2DecisionDto) body: Gate2DecisionDto,
   ): Promise<unknown> {
-    return this.service.decideGate2(await this.actor(headers), uuid(id, 'Gate 2 request'), body.decision);
+    return this.service.decideGate2(
+      await this.actor(headers),
+      uuid(id, 'Gate 2 request'),
+      body.decision,
+      body.reason === undefined || body.reason === '' ? null : body.reason,
+    );
   }
 
   @Get('findings')
   async findings(@Headers() headers: RequestHeaders): Promise<unknown> {
-    await this.actor(headers);
-    return { items: await this.service.listFindings() };
+    return { items: await this.service.listFindings(await this.actor(headers)) };
   }
 
   @Get('findings/:id')
   async finding(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
-    await this.actor(headers);
-    return findingDto(await this.service.finding(uuid(id, 'finding')));
+    return this.service.findingDetail(await this.actor(headers), uuid(id, 'finding'));
+  }
+
+  @Post('findings/:id/triage')
+  @HttpCode(HttpStatus.OK)
+  async triage(
+    @Headers() headers: RequestHeaders,
+    @Param('id') id: string,
+    @ZodBody(TriageDto) body: TriageDto,
+  ): Promise<unknown> {
+    return this.service.triage(await this.actor(headers), uuid(id, 'finding'), body.decision, body.reason);
   }
 
   @Get('findings/:id/report')
@@ -303,8 +360,24 @@ export class DemoController {
     @Param('id') id: string,
     @ZodQuery(ReportQueryDto) query: ReportQueryDto,
   ): Promise<unknown> {
-    await this.actor(headers);
+    const actor = await this.actor(headers);
     const format: ReportFormat = query.format;
-    return renderReport(await this.service.reportContext(uuid(id, 'finding')), format);
+    return renderReport(await this.service.reportContext(actor, uuid(id, 'finding')), format);
+  }
+
+  @Get('runs/:id/report')
+  async runReport(
+    @Headers() headers: RequestHeaders,
+    @Param('id') id: string,
+    @ZodQuery(RunReportQueryDto) query: RunReportQueryDto,
+  ): Promise<unknown> {
+    await this.actor(headers);
+    return renderRunReport(await this.service.runReportContext(uuid(id, 'run')), query.format);
+  }
+
+  @Get('audit')
+  async audit(@Headers() headers: RequestHeaders): Promise<unknown> {
+    await this.actor(headers);
+    return this.service.auditLedger();
   }
 }

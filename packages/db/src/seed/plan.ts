@@ -83,28 +83,28 @@ export const SEED_PERSONAS: readonly SeedPersona[] = Object.freeze([
     key: 'appsec',
     username: 'appsec@acme.test',
     email: 'appsec@acme.test',
-    name: 'Ada AppSec',
+    name: 'Avery Appsec',
     roles: ['appsec_engineer'],
   },
   {
     key: 'owner',
     username: 'owner@acme.test',
     email: 'owner@acme.test',
-    name: 'Omar Owner',
+    name: 'Olive Owner',
     roles: ['asset_owner'],
   },
   {
     key: 'dev',
     username: 'dev@acme.test',
     email: 'dev@acme.test',
-    name: 'Dana Developer',
+    name: 'Devon Developer',
     roles: ['developer'],
   },
   {
     key: 'admin',
     username: 'admin@acme.test',
     email: 'admin@acme.test',
-    name: 'Alex Admin',
+    name: 'Adrian Admin',
     roles: ['org_admin'],
   },
   {
@@ -118,7 +118,7 @@ export const SEED_PERSONAS: readonly SeedPersona[] = Object.freeze([
     key: 'operator',
     username: 'operator@blackwing.test',
     email: 'operator@blackwing.test',
-    name: 'Blackwing Platform Operator',
+    name: 'Oscar Operator',
     roles: null,
   },
 ]);
@@ -458,7 +458,7 @@ export function buildTenantSeedPlan(input: TenantSeedInput): TenantSeedPlan {
       sharedLoginService: false,
       thirdPartyHosting: false,
       lockoutExemption: true,
-      contacts: [{ name: 'Omar Owner', email: 'owner@acme.test', role: 'asset_owner' }],
+      contacts: [{ name: 'Olive Owner', email: 'owner@acme.test', role: 'asset_owner' }],
     },
   };
   assetSchema.parse({

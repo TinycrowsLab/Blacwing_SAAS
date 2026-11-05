@@ -7,13 +7,15 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { Card, CardHeader, Chip, SeverityChip, StatusChip, type Tone } from './design';
+import { Card, CardHeader, Chip, LinkButton, SeverityChip, StatusChip, type Tone } from './design';
 import { Markdown, stripMarkdown } from './markdown';
 import {
   type Activity,
   type AgentLane,
   type Candidate,
+  type CaseStatus,
   type MarkShape,
+  CASE_STATUSES,
   LANE_WINDOW_S,
   clock,
 } from './run-model';
@@ -319,6 +321,71 @@ export function SummaryCard({ text }: { readonly text: string }) {
   );
 }
 
+const CASE_BAR: Record<CaseStatus, string> = {
+  executed: 'bg-primary',
+  executing: 'bg-primary/60',
+  proposed: 'bg-border-strong',
+  skipped: 'bg-muted-foreground',
+  blocked: 'bg-warn',
+};
+
+/** Design 1a "Test cases, N in plan": a stacked bar and a legend with the status counts. */
+export function TestCasesCard({
+  plan,
+}: {
+  readonly plan: { readonly total: number; readonly counts: Record<CaseStatus, number> };
+}) {
+  return (
+    <Card aria-labelledby="cases-h" as="section">
+      <CardHeader id="cases-h" title="Test cases" meta={`${plan.total} in plan`} />
+      {plan.total === 0 ? (
+        <p className="px-4 py-5 text-[13px] text-muted-foreground">
+          No test plan yet. The orchestrator records it after recon.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3 p-4">
+          <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
+            {CASE_STATUSES.map((k) => (
+              <div
+                key={k}
+                className={CASE_BAR[k]}
+                style={{ width: `${(plan.counts[k] / plan.total) * 100}%` }}
+              />
+            ))}
+          </div>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
+            {CASE_STATUSES.map((k) => (
+              <div key={k} className="flex items-center gap-2">
+                <span className={`size-2 rounded-[2px] ${CASE_BAR[k]}`} aria-hidden="true" />
+                <dt className="text-muted-foreground">{k.charAt(0).toUpperCase() + k.slice(1)}</dt>
+                <dd className="ml-auto font-semibold tabular-nums">{plan.counts[k]}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+/** Run report downloads, shown once the run is over. Only released findings are in them. */
+export function ReportCard({ runId }: { readonly runId: string }) {
+  const base = `/demo/api/runs/${encodeURIComponent(runId)}/report`;
+  return (
+    <Card aria-labelledby="report-h" as="section">
+      <CardHeader id="report-h" title="Report" meta="Released findings only" />
+      <div className="flex flex-wrap gap-2 p-4">
+        <LinkButton href={`${base}?format=html`} icon="reports">
+          Download report (HTML)
+        </LinkButton>
+        <LinkButton href={`${base}?format=md`}>Markdown</LinkButton>
+        <LinkButton href={`${base}?format=json`}>JSON</LinkButton>
+        <LinkButton href={`${base}?format=sarif`}>SARIF</LinkButton>
+      </div>
+    </Card>
+  );
+}
+
 export function ProgressCard({
   stats,
 }: {
@@ -371,7 +438,7 @@ export function CandidateList({
 }) {
   return (
     <Card aria-labelledby="cand-h" as="section">
-      <CardHeader id="cand-h" title="Candidate findings" meta="Confirmed only by the validator" />
+      <CardHeader id="cand-h" title="Candidate findings" meta="Released only after Gate 3" />
       {items.length === 0 ? (
         <p className="px-4 py-5 text-[13px] text-muted-foreground">
           {running

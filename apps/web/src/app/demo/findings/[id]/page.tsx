@@ -9,16 +9,22 @@ import {
   CardHeader,
   Chip,
   DataTable,
+  ErrorBanner,
+  INPUT_CLASS,
   IdChip,
   LinkButton,
   PageHeader,
   SeverityChip,
   StatusChip,
+  buttonClass,
+  queryText,
 } from '../../../../components/demo/design';
+import { auditLine, clock } from '../../../../components/demo/run-model';
 import { ContextPanel } from '../../../../components/demo/shell';
 import { getSession } from '../../../../lib/session';
 import { DemoApiError, demoApi } from '../../_lib/demo-api';
 import { type DemoFinding, findingSchema } from '../../_lib/schemas';
+import { triageFindingAction } from '../../actions';
 
 import type { ReactNode } from 'react';
 
@@ -56,14 +62,37 @@ function ExchangeCard({
   );
 }
 
+function triageText(finding: DemoFinding): string {
+  const { triage, status } = finding;
+  if (status === 'suspected')
+    return 'Pending Gate 3. Suspected findings are visible to analysts only.';
+  if (status === 'confirmed') return 'Pending Gate 3.';
+  if (triage === null) return 'No Gate 3 decision recorded.';
+  if (status === 'released' && triage.by === null)
+    return 'Released automatically: proven by deterministic replay.';
+  const verb = status === 'released' ? 'Released' : 'Dismissed';
+  return `${verb} by ${triage.by ?? 'the system'} at ${clock(triage.at)} UTC. Reason: ${triage.reason ?? 'none given'}`;
+}
+
+function deliveryText(delivery: DemoFinding['delivery']): string {
+  if (delivery === null) return 'Not delivered: no webhook configured.';
+  return delivery.status === 'delivered'
+    ? `Delivered to webhook · ${delivery.detail} · ${clock(delivery.at)} UTC`
+    : `Webhook delivery failed · ${delivery.detail}`;
+}
+
 export default async function DemoFindingPage({
   params,
+  searchParams,
 }: {
   readonly params: Promise<{ readonly id: string }>;
+  readonly searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<ReactNode> {
   const session = await getSession();
   if (session === null) return null;
   const { id } = await params;
+  const query = await searchParams;
+  const canTriage = session.roles.includes('appsec-engineer');
   let finding: DemoFinding;
   try {
     finding = findingSchema.parse(await demoApi(session, `/findings/${encodeURIComponent(id)}`));
@@ -73,23 +102,29 @@ export default async function DemoFindingPage({
   }
   const base = `/demo/api/findings/${encodeURIComponent(id)}/report`;
   const { probe, control, replays } = finding.evidence;
+  // Only a candidate the validator did not confirm carries a reason; it keeps it after a manual release.
+  const unproven = finding.evidence.reason !== undefined;
+  const released = finding.status === 'released';
   return (
     <article className="flex flex-col gap-6">
       <PageHeader
-        crumbs={[{ label: 'Findings', href: '/demo#findings' }, { label: finding.id }]}
+        crumbs={[{ label: 'Findings', href: '/demo/findings' }, { label: finding.id }]}
         title={finding.title}
         chips={<StatusChip value={finding.status} />}
         actions={
-          <>
-            <LinkButton href={`${base}?format=html`} variant="secondary" icon="reports">
-              Download report (HTML)
-            </LinkButton>
-            <LinkButton href={`${base}?format=md`} variant="secondary" icon="reports">
-              Download report (Markdown)
-            </LinkButton>
-          </>
+          released ? (
+            <>
+              <LinkButton href={`${base}?format=html`} variant="secondary" icon="reports">
+                Download report (HTML)
+              </LinkButton>
+              <LinkButton href={`${base}?format=md`} variant="secondary" icon="reports">
+                Download report (Markdown)
+              </LinkButton>
+            </>
+          ) : undefined
         }
       />
+      <ErrorBanner error={queryText(query.error)} message={queryText(query.message)} />
 
       <div className="flex flex-wrap items-center gap-2">
         <SeverityChip severity={finding.severity} />
@@ -127,11 +162,22 @@ export default async function DemoFindingPage({
           )}
 
           <Card aria-labelledby="replay-h">
-            <CardHeader id="replay-h" title="Confirmed by deterministic replay" />
+            <CardHeader
+              id="replay-h"
+              title={
+                unproven ? 'Not confirmed by the validator' : 'Confirmed by deterministic replay'
+              }
+            />
             <p className="px-4 pt-3 text-[13px] leading-6 text-muted-foreground">
-              Oracle <IdChip>{finding.oracle.type ?? 'unknown'}</IdChip>{' '}
-              <IdChip>{finding.oracle.value ?? ''}</IdChip> matched on every replay and did not
-              match on the negative control.
+              {unproven ? (
+                finding.evidence.reason
+              ) : (
+                <>
+                  Oracle <IdChip>{finding.oracle.type ?? 'unknown'}</IdChip>{' '}
+                  <IdChip>{finding.oracle.value ?? ''}</IdChip> matched on every replay and did not
+                  match on the negative control.
+                </>
+              )}
             </p>
             <div className="p-4">
               <DataTable label="Replays" head={['Replay', 'HTTP status', 'Oracle matched']}>
@@ -174,6 +220,65 @@ export default async function DemoFindingPage({
               </pre>
             </div>
           </Card>
+
+          <Card aria-labelledby="triage-h">
+            <CardHeader id="triage-h" title="Gate 3 triage" meta="AppSec engineer" />
+            <div className="flex flex-col gap-4 p-4 text-[13px]">
+              <p className="m-0">{triageText(finding)}</p>
+              {finding.status === 'dismissed' ? null : (
+                <form action={triageFindingAction} className="flex flex-col gap-3">
+                  <input type="hidden" name="findingId" value={finding.id} />
+                  <label className="flex flex-col gap-1.5 text-[12.5px] font-medium">
+                    Reason (required)
+                    <input
+                      name="reason"
+                      required
+                      minLength={8}
+                      maxLength={500}
+                      disabled={!canTriage}
+                      placeholder="Why this finding is real, or why it is not"
+                      className={INPUT_CLASS}
+                    />
+                  </label>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {released ? null : (
+                      <button
+                        name="decision"
+                        value="release"
+                        type="submit"
+                        disabled={!canTriage}
+                        className={buttonClass('primary')}
+                      >
+                        Release
+                      </button>
+                    )}
+                    <button
+                      name="decision"
+                      value="dismiss"
+                      type="submit"
+                      disabled={!canTriage}
+                      className={buttonClass('deny')}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                  {canTriage ? null : (
+                    <span className="text-xs text-muted-foreground">
+                      Only an AppSec engineer can release or dismiss a finding.
+                    </span>
+                  )}
+                </form>
+              )}
+              <span className="font-mono text-xs text-muted-foreground">
+                {auditLine(finding.audit)}
+              </span>
+              {released ? (
+                <span className="text-xs text-muted-foreground">
+                  {deliveryText(finding.delivery)}
+                </span>
+              ) : null}
+            </div>
+          </Card>
         </div>
 
         <ContextPanel
@@ -184,7 +289,7 @@ export default async function DemoFindingPage({
             },
             {
               title: 'Release',
-              body: 'A confirmed finding is released to the report only after Gate 3 triage in production.',
+              body: 'Validator-proven findings are released automatically. Suspected findings wait for an AppSec engineer. Only released findings reach reports and the webhook.',
             },
           ]}
         />

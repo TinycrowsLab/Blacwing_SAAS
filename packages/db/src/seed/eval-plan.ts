@@ -92,7 +92,7 @@ function devAttestation(): Readonly<Record<string, unknown>> {
     sharedLoginService: false,
     thirdPartyHosting: false,
     lockoutExemption: true,
-    contacts: [{ name: 'Omar Owner', email: 'owner@acme.test', role: 'asset_owner' }],
+    contacts: [{ name: 'Olive Owner', email: 'owner@acme.test', role: 'asset_owner' }],
   };
 }
 

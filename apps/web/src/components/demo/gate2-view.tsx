@@ -7,7 +7,7 @@ import Link from 'next/link';
 
 import { AgentText, Card, Chip, PageHeader } from './design';
 import { Gate2Buttons, useGate2Clock } from './gate2-actions';
-import { mmss, pathOf, shortId } from './run-model';
+import { auditLine, mmss, pathOf, shortId } from './run-model';
 
 import type { gate2DetailSchema } from '../../app/demo/_lib/schemas';
 import type { z } from 'zod';
@@ -18,7 +18,12 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 export function Gate2View({ gate2 }: { readonly gate2: z.infer<typeof gate2DetailSchema> }) {
   const deadline = new Date(gate2.deadlineAt);
   const pending = gate2.status === 'pending';
-  const { left, total } = useGate2Clock(gate2.deadlineAt, gate2.createdAt, pending);
+  const { left, total } = useGate2Clock(
+    gate2.deadlineAt,
+    gate2.createdAt,
+    pending,
+    gate2.secondsLeft,
+  );
   const open = pending && left > 0;
   const closed = pending && left === 0 ? 'expired' : gate2.status;
   const urgent = open && left < 60;
@@ -45,7 +50,7 @@ export function Gate2View({ gate2 }: { readonly gate2: z.infer<typeof gate2Detai
       />
       <Card as="div" className="grid lg:grid-cols-[360px_minmax(0,1fr)]">
         <div className="flex flex-col items-center gap-4 border-b border-border p-6 lg:border-b-0 lg:border-r">
-          <div className="relative size-[270px] max-w-full">
+          <div className="relative aspect-square w-full max-w-[270px]">
             <svg viewBox="0 0 270 270" className="size-full -rotate-90" aria-hidden="true">
               <circle
                 cx="135"
@@ -150,14 +155,21 @@ export function Gate2View({ gate2 }: { readonly gate2: z.infer<typeof gate2Detai
           {pending ? (
             <Gate2Buttons gate2Id={gate2.id} open={open} size="lg" />
           ) : (
-            <p role="status" className="m-0 text-[13.5px]">
-              Decision: <strong>{closed}</strong>.
-              {closed === 'approved'
-                ? ` Approval covers ${gate2.method} ${pathOf(gate2.url).split('?')[0]} for the rest of the run.`
-                : ''}
-            </p>
+            <div role="status" className="flex flex-col gap-1 text-[13.5px]">
+              <p className="m-0">
+                Decision: <strong>{closed}</strong> by {gate2.decidedBy ?? 'the deadline'}.
+                {closed === 'approved'
+                  ? ` Approval covers ${gate2.method} ${pathOf(gate2.url).split('?')[0]} for the rest of the run.`
+                  : ''}
+              </p>
+              {gate2.decisionReason === null ? null : (
+                <p className="m-0">Reason: {gate2.decisionReason}</p>
+              )}
+            </div>
           )}
-          <span className="text-xs text-muted-foreground">Recorded in the run log</span>
+          <span className="text-xs text-muted-foreground">
+            {pending ? 'No decision means deny' : auditLine(gate2.audit)}
+          </span>
         </div>
       </Card>
     </div>

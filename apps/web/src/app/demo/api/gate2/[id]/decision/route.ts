@@ -5,7 +5,10 @@ import { postAsUser } from '../../../../_lib/post-route';
 
 export const dynamic = 'force-dynamic';
 
-const bodySchema = z.object({ decision: z.enum(['approve', 'deny']) }).strict();
+const MAX_REASON = 500;
+const bodySchema = z
+  .object({ decision: z.enum(['approve', 'deny']), reason: z.string().max(MAX_REASON).optional() })
+  .strict();
 
 export async function POST(
   request: Request,

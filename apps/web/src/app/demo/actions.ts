@@ -85,6 +85,13 @@ export async function createRequestAction(form: FormData): Promise<void> {
         budgetSeconds: Number(text(form, 'budgetMinutes')) * SECONDS_PER_MINUTE,
         costCapUsd: Number(text(form, 'costCapUsd')),
         excludedPaths: list(form, 'excludedPaths'),
+        testAccounts: [0, 1, 2]
+          .map((i) => ({
+            role: text(form, `ta_role_${i}`),
+            headerName: text(form, `ta_header_${i}`),
+            headerValue: text(form, `ta_value_${i}`),
+          }))
+          .filter((a) => a.role !== ''),
       },
     });
   } catch (error) {
@@ -121,4 +128,19 @@ export async function startRunAction(form: FormData): Promise<void> {
     refuse(`/demo/requests/${enc(id)}`, error);
   }
   redirect(`/demo/runs/${run.id}`);
+}
+
+export async function triageFindingAction(form: FormData): Promise<void> {
+  const session = await requireSession();
+  const id = text(form, 'findingId');
+  const decision = text(form, 'decision') === 'dismiss' ? 'dismiss' : 'release';
+  try {
+    await demoApi(session, `/findings/${enc(id)}/triage`, {
+      method: 'POST',
+      body: { decision, reason: text(form, 'reason') },
+    });
+  } catch (error) {
+    refuse(`/demo/findings/${enc(id)}`, error);
+  }
+  redirect(`/demo/findings/${enc(id)}`);
 }

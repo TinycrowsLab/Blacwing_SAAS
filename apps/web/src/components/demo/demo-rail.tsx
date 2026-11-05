@@ -36,8 +36,14 @@ const RAIL: readonly RailItem[] = [
   {
     label: 'Findings',
     icon: 'findings',
-    href: '/demo#findings',
+    href: '/demo/findings',
     match: (p) => p.startsWith('/demo/findings'),
+  },
+  {
+    label: 'Audit ledger',
+    icon: 'ledger',
+    href: '/demo/audit',
+    match: (p) => p.startsWith('/demo/audit'),
   },
   {
     label: 'About the demo',

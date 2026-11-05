@@ -20,7 +20,7 @@ const ROWS: readonly [string, string, string][] = [
   [
     'Gate 1 and Gate 2',
     'Real rule, demo storage',
-    'The requester cannot approve. A Gate 2 request with no decision before its deadline is denied. Decisions are stored in the demo schema, not the audit ledger.',
+    'The requester cannot approve. A Gate 2 request with no decision before its deadline is denied. Decisions are appended to a hash-chained audit ledger in the demo schema (see Audit ledger).',
   ],
   [
     'Agent team',
@@ -45,9 +45,23 @@ const ROWS: readonly [string, string, string][] = [
   [
     'Report',
     'Real rendering',
-    'HTML and Markdown rendered from the stored finding, evidence and pins.',
+    'Per finding: HTML and Markdown. Per run: HTML, Markdown, JSON and SARIF, released findings only.',
   ],
-  ['Release gate (Gate 3), audit ledger', 'Not in the demo', 'Out of scope for this slice.'],
+  [
+    'Release gate (Gate 3)',
+    'Real, simplified',
+    'Validator-proven findings are released automatically. Suspected findings wait for an AppSec engineer to release or dismiss them with a reason. Only released findings reach reports and the webhook.',
+  ],
+  [
+    'Audit ledger',
+    'Real rule, demo storage',
+    'Gate 1, Gate 2, kill and Gate 3 decisions are appended to a SHA-256 hash chain. The audit page re-verifies the chain.',
+  ],
+  [
+    'Delivery',
+    'Real, optional',
+    'With BW_DEMO_WEBHOOK_URL set, each released finding is posted as Slack-compatible JSON and the result is shown on the finding.',
+  ],
 ];
 
 export default function DemoAboutPage(): ReactNode {
@@ -67,12 +81,7 @@ export default function DemoAboutPage(): ReactNode {
             <tr key={piece} className="align-top">
               <td className="px-4 py-3 font-medium">{piece}</td>
               <td className="px-4 py-3">
-                <Chip
-                  tone={
-                    state.startsWith('Real') ? 'ok' : state === 'Not in the demo' ? 'muted' : 'warn'
-                  }
-                  pill
-                >
+                <Chip tone={state.startsWith('Real') ? 'ok' : 'warn'} pill>
                   {state}
                 </Chip>
               </td>

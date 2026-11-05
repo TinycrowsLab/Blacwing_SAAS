@@ -8,6 +8,7 @@ export class FakeStore implements HuntStore {
   readonly exchanges: ExchangeRow[] = [];
   readonly gate2 = new Map<string, { row: Gate2Row; status: Gate2Status; decidedBy: string | null }>();
   readonly findings: FindingRow[] = [];
+  readonly deliveries: { findingId: string; status: string; detail: string }[] = [];
   control: RunControl = { paused: false, kill: null };
   finished: RunOutcome | null = null;
   killedHaltMs: number | null = null;
@@ -19,10 +20,7 @@ export class FakeStore implements HuntStore {
   failStaleRuns(): Promise<StaleRun[]> {
     return Promise.resolve([]);
   }
-  nextSeq(): Promise<number> {
-    return Promise.resolve(this.events.length + 1);
-  }
-  appendEvent(_runId: string, _seq: number, event: RunEvent): Promise<void> {
+  appendEvent(_runId: string, event: RunEvent): Promise<void> {
     this.events.push(event);
     return Promise.resolve();
   }
@@ -59,10 +57,20 @@ export class FakeStore implements HuntStore {
     }
     return Promise.resolve(ids);
   }
-  insertFinding(_run: HuntRun, row: FindingRow): Promise<boolean> {
-    if (this.findings.some((f) => f.fingerprint === row.fingerprint)) return Promise.resolve(false);
+  insertFinding(_run: HuntRun, row: FindingRow): Promise<string | null> {
+    const existing = this.findings.findIndex((f) => f.fingerprint === row.fingerprint);
+    if (existing >= 0) {
+      const old = this.findings[existing];
+      if (old?.status !== 'suspected' || row.status !== 'released') return Promise.resolve(null);
+      this.findings[existing] = { ...row, id: old.id };
+      return Promise.resolve(old.id);
+    }
     this.findings.push(row);
-    return Promise.resolve(true);
+    return Promise.resolve(row.id);
+  }
+  recordDelivery(findingId: string, status: 'delivered' | 'failed', detail: string): Promise<void> {
+    this.deliveries.push({ findingId, status, detail });
+    return Promise.resolve();
   }
   saveProgress(_runId: string, requestsUsed: number, costUsd: number): Promise<void> {
     this.progress = { requestsUsed, costUsd };

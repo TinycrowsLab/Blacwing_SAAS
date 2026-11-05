@@ -11,6 +11,10 @@ export interface HuntRun {
   readonly budgetRequests: number;
   readonly budgetSeconds: number;
   readonly costCapUsd: number;
+  /** The request's ceiling: passive allows only GET, HEAD and OPTIONS. */
+  readonly intrusiveness: 'passive' | 'active_safe';
+  /** Grey-box credentials. The header value stays inside the runner: the model only names the role. */
+  readonly testAccounts: readonly { readonly role: string; readonly headerName: string; readonly headerValue: string }[];
 }
 
 export interface RunEvent {
@@ -64,6 +68,9 @@ export interface FindingRow {
   readonly evidence: Record<string, unknown>;
   readonly replay: Record<string, unknown>;
   readonly reproCurl: string;
+  /** `released`: validator-proven, released automatically. `suspected`: not confirmed, analysts only. */
+  readonly status: 'released' | 'suspected';
+  readonly testCaseId: string | null;
 }
 
 export interface RunControl {
@@ -91,8 +98,8 @@ export interface HuntStore {
   claimQueuedRun(): Promise<HuntRun | null>;
   /** Marks runs left `running` by a dead worker as failed and denies their pending Gate 2 requests. */
   failStaleRuns(): Promise<StaleRun[]>;
-  nextSeq(runId: string): Promise<number>;
-  appendEvent(runId: string, seq: number, event: RunEvent): Promise<void>;
+  /** Allocates the next seq itself: the API appends events to the same run. */
+  appendEvent(runId: string, event: RunEvent): Promise<void>;
   readControl(runId: string): Promise<RunControl>;
   insertExchange(run: HuntRun, row: ExchangeRow): Promise<void>;
   listExchanges(runId: string, limit: number): Promise<{ method: string; url: string; status: number | null; bytes: number }[]>;
@@ -101,8 +108,10 @@ export interface HuntStore {
   /** Moves a still-pending request to `status`; returns the status it ends with. */
   closeGate2(id: string, status: 'denied' | 'expired'): Promise<Gate2Status>;
   denyPendingGate2(runId: string): Promise<string[]>;
-  /** Returns false when the fingerprint already exists. */
-  insertFinding(run: HuntRun, row: FindingRow): Promise<boolean>;
+  /** Returns the id of the inserted row (a released row also upgrades a suspected one), or null for a duplicate. */
+  insertFinding(run: HuntRun, row: FindingRow): Promise<string | null>;
+  /** Records the result of the webhook POST for a released finding. */
+  recordDelivery(findingId: string, status: 'delivered' | 'failed', detail: string): Promise<void>;
   saveProgress(runId: string, requestsUsed: number, costUsd: number): Promise<void>;
   finishRun(run: HuntRun, outcome: RunOutcome): Promise<void>;
   /** Sets state=killed, killed_at=now and halt_ms from kill_requested_at; returns halt_ms. */

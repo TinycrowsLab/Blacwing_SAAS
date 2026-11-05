@@ -34,7 +34,10 @@ export function secondsLeft(deadlineAt: string, nowMs: number): number {
 }
 
 /** Merge polled events into the list: unique by seq, ascending. Overlapping polls can return the same rows. */
-export function mergeEvents(prev: readonly DemoRunEvent[], next: readonly DemoRunEvent[]): DemoRunEvent[] {
+export function mergeEvents(
+  prev: readonly DemoRunEvent[],
+  next: readonly DemoRunEvent[],
+): DemoRunEvent[] {
   const bySeq = new Map<number, DemoRunEvent>();
   for (const e of [...prev, ...next]) bySeq.set(e.seq, e);
   return [...bySeq.values()].sort((a, b) => a.seq - b.seq);
@@ -171,6 +174,50 @@ export function describe(e: DemoRunEvent): Activity | null {
         isError: true,
         mark: 'diamond',
       };
+    case 'finding.suspected':
+      return {
+        ...base,
+        agent: 'validator',
+        kind: 'Finding',
+        text: `Suspected: ${str(d.title)}`,
+        meta: 'analyst only',
+        mark: 'diamond',
+      };
+    case 'finding.released': {
+      const auto = d.auto === true;
+      return {
+        ...base,
+        agent: auto ? 'validator' : 'gate3',
+        kind: 'Finding',
+        text: `Released: ${str(d.title)}`,
+        meta: auto ? 'auto, proven by replay' : 'Gate 3',
+        mark: 'diamond',
+      };
+    }
+    case 'finding.dismissed':
+      return {
+        ...base,
+        agent: 'gate3',
+        kind: 'Finding',
+        text: `Dismissed: ${str(d.title)}`,
+        meta: 'Gate 3',
+        mark: 'diamond',
+      };
+    case 'plan.cases':
+      return {
+        ...base,
+        kind: 'Tool',
+        text: `Recorded ${Array.isArray(d.cases) ? d.cases.length : 0} test cases (${num(d.total)} in plan)`,
+        meta: '',
+        mark: 'square',
+      };
+    case 'case.status':
+      return {
+        ...base,
+        kind: 'Tool',
+        text: `Test case ${str(d.caseId)}: ${str(d.status)}`,
+        meta: d.by === 'validator' ? 'by validator' : '',
+      };
     case 'run.failed':
       return {
         ...base,
@@ -241,9 +288,7 @@ export function agentLanes(events: readonly DemoRunEvent[]): AgentLane[] {
         : [];
     });
     const deterministic = name === 'validator';
-    const latest = deterministic
-      ? events.findLast((e) => describe(e)?.agent === name)
-      : undefined;
+    const latest = deterministic ? events.findLast((e) => describe(e)?.agent === name) : undefined;
     return {
       name,
       turns: num(turn?.data.turns),
@@ -259,16 +304,30 @@ export interface Candidate {
   readonly candidateId: string;
   readonly title: string;
   readonly severity: string;
-  readonly status: 'confirmed' | 'validating' | 'not_confirmed';
+  readonly status:
+    'validating' | 'confirmed' | 'released' | 'suspected' | 'dismissed' | 'not_confirmed';
   readonly replays: number;
   readonly findingId: string | null;
 }
 
-/** Candidate findings come from validator events, so unconfirmed ones show too. */
+const CANDIDATE_STATUS: Readonly<Record<string, Candidate['status']>> = {
+  'finding.confirmed': 'confirmed',
+  'finding.released': 'released',
+  'finding.suspected': 'suspected',
+  'finding.dismissed': 'dismissed',
+  'finding.not_confirmed': 'not_confirmed',
+};
+
+/** Candidate findings come from validator events, so unconfirmed ones show too. Gate 3 events may carry only a findingId. */
 export function candidates(events: readonly DemoRunEvent[]): Candidate[] {
   const byId = new Map<string, Candidate>();
   for (const e of events) {
-    const id = str(e.data.candidateId);
+    const findingId = str(e.data.findingId) || null;
+    const id =
+      str(e.data.candidateId) ||
+      ([...byId.values()].find((c) => findingId !== null && c.findingId === findingId)
+        ?.candidateId ??
+        '');
     if (id === '') continue;
     const prev = byId.get(id);
     if (e.kind === 'candidate.submitted') {
@@ -282,13 +341,46 @@ export function candidates(events: readonly DemoRunEvent[]): Candidate[] {
       });
     } else if (prev && e.kind === 'validator.replay') {
       byId.set(id, { ...prev, replays: Math.max(prev.replays, num(e.data.n)) });
-    } else if (prev && (e.kind === 'finding.confirmed' || e.kind === 'finding.not_confirmed')) {
+    } else if (prev && CANDIDATE_STATUS[e.kind] !== undefined) {
       byId.set(id, {
         ...prev,
-        status: e.kind === 'finding.confirmed' ? 'confirmed' : 'not_confirmed',
-        findingId: str(e.data.findingId) || null,
+        status: CANDIDATE_STATUS[e.kind],
+        findingId: findingId ?? prev.findingId,
       });
     }
   }
   return [...byId.values()];
+}
+
+export const CASE_STATUSES = ['executed', 'executing', 'proposed', 'skipped', 'blocked'] as const;
+export type CaseStatus = (typeof CASE_STATUSES)[number];
+
+/** The test plan: every case starts proposed, `case.status` events move it. */
+export function testCases(events: readonly DemoRunEvent[]): {
+  total: number;
+  counts: Record<CaseStatus, number>;
+} {
+  const byId = new Map<string, string>();
+  for (const e of events) {
+    if (e.kind === 'plan.cases' && Array.isArray(e.data.cases)) {
+      for (const c of e.data.cases as { id?: unknown }[]) {
+        const id = str(c.id);
+        if (id !== '' && !byId.has(id)) byId.set(id, 'proposed');
+      }
+    } else if (e.kind === 'case.status') byId.set(str(e.data.caseId), str(e.data.status));
+  }
+  const counts = { executed: 0, executing: 0, proposed: 0, skipped: 0, blocked: 0 };
+  for (const status of byId.values()) if (status in counts) counts[status as CaseStatus] += 1;
+  return { total: byId.size, counts };
+}
+
+/** The one line shown after a gated decision: the ledger event id and a shortened hash. */
+/** UUIDv7 ids start with their timestamp, so the random tail tells ledger events apart. */
+export function auditEventLabel(eventId: string): string {
+  return eventId.replace(/-/g, '').slice(-8);
+}
+
+export function auditLine(audit: { eventId: string; hash: string } | null): string {
+  if (audit === null) return 'Recorded in the audit ledger';
+  return `Recorded in the audit ledger · evt_${auditEventLabel(audit.eventId)} · sha256:${audit.hash.slice(0, 4)}...${audit.hash.slice(-4)}`;
 }

@@ -2,9 +2,11 @@
 // run start and control (pause, kill), Gate 2 decisions and finding reads. The hunt itself runs in the worker.
 import { randomBytes } from 'node:crypto';
 
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpException, HttpStatus, Logger } from '@nestjs/common';
 
 import { newId } from '@blackwing/ids';
+
+import { verifyChain, type AuditPayload, type AuditRef, type ChainState } from './audit.js';
 
 import type {
   AssetRow,
@@ -36,7 +38,9 @@ export const INTRUSIVENESS = ['passive', 'active_safe'] as const;
 const WELL_KNOWN_PATH = '/.well-known/blackwing-verification.txt';
 const VERIFY_TIMEOUT_MS = 5000;
 const RECENT_ITEMS = 10;
-const FINDING_LIST_LIMIT = 50;
+const FINDING_LIST_LIMIT = 200;
+const AUDIT_LIST_LIMIT = 200;
+const WEBHOOK_TIMEOUT_MS = 5000;
 const SHORT_ID_LENGTH = 8;
 const MS_PER_SECOND = 1000;
 const TOKEN_BYTES = 16;
@@ -77,6 +81,12 @@ function severityOf(value: unknown): string {
   return typeof level === 'string' ? level : 'info';
 }
 
+/** Gate 3 transitions: where a finding may come from for each decision. */
+const TRIAGE_FROM = {
+  release: ['suspected', 'confirmed'],
+  dismiss: ['suspected', 'confirmed', 'released'],
+} as const;
+
 const iso = (date: Date | null): string | null => date?.toISOString() ?? null;
 
 export function assetDto(row: AssetRow): Record<string, unknown> {
@@ -112,6 +122,7 @@ export function requestDto(row: RequestRow): Record<string, unknown> {
     status: row.status,
     requester: { id: row.requester_id, name: row.requester_name },
     approver: row.approver_id === null ? null : { id: row.approver_id, name: row.approver_name },
+    testAccounts: row.test_accounts.map((a) => ({ role: a.role, headerName: a.header_name })),
     decisionReason: row.decision_reason,
     decidedAt: iso(row.decided_at),
     createdAt: row.created_at.toISOString(),
@@ -146,6 +157,7 @@ export function findingSummaryDto(row: FindingRow): Record<string, unknown> {
     id: row.id,
     runId: row.run_id,
     assetId: row.asset_id,
+    assetName: row.asset_name,
     title: row.title,
     status: row.status,
     severity: severityOf(row.severity),
@@ -156,7 +168,7 @@ export function findingSummaryDto(row: FindingRow): Record<string, unknown> {
   };
 }
 
-export function findingDto(row: FindingRow): Record<string, unknown> {
+export function findingDto(row: FindingRow, audit: AuditRef | null = null): Record<string, unknown> {
   return {
     ...findingSummaryDto(row),
     class: row.class,
@@ -166,6 +178,17 @@ export function findingDto(row: FindingRow): Record<string, unknown> {
     evidence: row.evidence,
     replay: row.replay,
     reproCurl: row.repro_curl,
+    testCaseId: row.test_case_id,
+    location: row.location,
+    triage:
+      row.triaged_at === null
+        ? null
+        : { at: row.triaged_at.toISOString(), by: row.triaged_by_name, reason: row.triage_reason },
+    delivery:
+      row.delivery_status === null || row.delivered_at === null
+        ? null
+        : { status: row.delivery_status, detail: row.delivery_detail ?? '', at: row.delivered_at.toISOString() },
+    audit,
   };
 }
 
@@ -202,6 +225,8 @@ export function gate2Dto(row: Gate2Row, now: Date): Record<string, unknown> {
     status: row.status,
     deadlineAt: row.deadline_at.toISOString(),
     secondsLeft: row.status === 'pending' ? secondsLeft(row.deadline_at, now) : 0,
+    decidedBy: row.decided_by_name,
+    decisionReason: row.decision_reason,
     decidedAt: iso(row.decided_at),
     createdAt: row.created_at.toISOString(),
   };
@@ -226,14 +251,42 @@ export interface CreateRequestInput {
   readonly budgetSeconds: number;
   readonly costCapUsd: number;
   readonly excludedPaths: readonly string[];
+  readonly testAccounts: readonly { role: string; headerName: string; headerValue: string }[];
 }
 
+export interface WebhookOptions {
+  readonly webhookUrl: string | null;
+  readonly consoleOrigin: string;
+}
+
+const capitalise = (word: string): string => word.charAt(0).toUpperCase() + word.slice(1);
+
 export class DemoService {
+  private readonly logger = new Logger('DemoService');
+
   constructor(
     private readonly store: DemoStore,
     private readonly tenantId: string,
     private readonly fetchImpl: typeof fetch = fetch,
+    private readonly webhook: WebhookOptions = { webhookUrl: null, consoleOrigin: 'http://localhost:3000' },
   ) {}
+
+  private audit(
+    actor: DemoActor,
+    action: string,
+    targetType: string,
+    targetId: string,
+    payload: AuditPayload,
+  ): Promise<AuditRef> {
+    return this.store.appendAudit(this.tenantId, {
+      actorId: actor.id,
+      actorName: actor.name,
+      action,
+      targetType,
+      targetId,
+      payload,
+    });
+  }
 
   async assets(): Promise<Record<string, unknown>[]> {
     return (await this.store.listAssets(this.tenantId)).map((row) => assetDto(row));
@@ -251,6 +304,9 @@ export class DemoService {
 
   async createAsset(actor: DemoActor, input: CreateAssetInput): Promise<Record<string, unknown>> {
     requireRole(actor, ['appsec-engineer'], 'Only an appsec engineer can register an asset.');
+    const origin = new URL(input.baseUrl).origin;
+    const existing = (await this.store.listAssets(this.tenantId)).find((a) => new URL(a.base_url).origin === origin);
+    if (existing !== undefined) return assetDto(existing);
     const id = newId();
     const slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, SLUG_MAX);
     await this.store.insertAsset({
@@ -308,7 +364,7 @@ export class DemoService {
       this.store.listAssets(this.tenantId),
       this.store.listRequests(this.tenantId, RECENT_ITEMS),
       this.store.listRuns(this.tenantId, RECENT_ITEMS),
-      this.store.listFindings(this.tenantId, RECENT_ITEMS),
+      this.store.listFindings(this.tenantId, RECENT_ITEMS, actorHasRole(actor, 'appsec-engineer')),
       this.store.listPendingGate2(this.tenantId),
     ]);
     const now = new Date();
@@ -346,15 +402,26 @@ export class DemoService {
       budget_requests: input.budgetRequests,
       budget_seconds: input.budgetSeconds,
       cost_cap_usd: input.costCapUsd,
+      test_accounts: input.testAccounts.map((a) => ({
+        role: a.role,
+        header_name: a.headerName,
+        header_value: a.headerValue,
+      })),
     });
     return this.request(id);
   }
 
-  async request(id: string, viewerId?: string): Promise<Record<string, unknown>> {
+  /** `audit` is the event just appended by a decision; a plain read looks up the latest one. */
+  async request(id: string, viewerId?: string, audit?: AuditRef): Promise<Record<string, unknown>> {
     const row = await this.store.getRequest(this.tenantId, id);
     if (row === null) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such request.');
     const run = await this.store.findRunByRequest(this.tenantId, id);
-    return { ...requestDto(row), runId: run?.id ?? null, viewerIsRequester: viewerId === row.requester_id };
+    return {
+      ...requestDto(row),
+      runId: run?.id ?? null,
+      viewerIsRequester: viewerId === row.requester_id,
+      audit: audit ?? (await this.store.latestAudit(this.tenantId, 'request', id)),
+    };
   }
 
   /** Gate 1: a second user approves. The requester can never approve their own request (SoD). */
@@ -391,7 +458,8 @@ export class DemoService {
     if (!ok) {
       throw new DemoRefusal(HttpStatus.CONFLICT, 'request_not_pending', 'Gate 1 was decided concurrently.');
     }
-    return this.request(requestId);
+    const audit = await this.audit(actor, `gate1.${decision}`, 'request', requestId, { decision, reason });
+    return this.request(requestId, actor.id, audit);
   }
 
   async startRun(actor: DemoActor, requestId: string): Promise<Record<string, unknown>> {
@@ -426,6 +494,7 @@ export class DemoService {
         objective: row.objective,
         intrusiveness: row.intrusiveness,
         budget: { requests: row.budget_requests, seconds: row.budget_seconds, costUsd: Number(row.cost_cap_usd) },
+        testAccounts: row.test_accounts.map((a) => ({ role: a.role, headerName: a.header_name })),
         requesterId: row.requester_id,
         approverId: row.approver_id,
         decidedAt: iso(row.decided_at),
@@ -459,11 +528,12 @@ export class DemoService {
     return row;
   }
 
-  async run(runId: string, afterSeq: number): Promise<Record<string, unknown>> {
+  async run(actor: DemoActor, runId: string, afterSeq: number): Promise<Record<string, unknown>> {
     const row = await this.runRow(runId);
+    const analyst = actorHasRole(actor, 'appsec-engineer');
     const [events, findings, gate2, stats] = await Promise.all([
       this.store.listEvents(runId, afterSeq),
-      this.store.listFindingsForRun(this.tenantId, runId),
+      this.store.listFindingsForRun(this.tenantId, runId, analyst),
       this.store.listGate2ForRun(this.tenantId, runId),
       this.store.runStats(runId),
     ]);
@@ -471,7 +541,8 @@ export class DemoService {
     return {
       ...runDto(row),
       lastSeq: events.at(-1)?.seq ?? afterSeq,
-      events: events.map((e) => ({
+      // Suspected findings are for analysts only, so their events are too.
+      events: events.filter((e) => analyst || e.kind !== 'finding.suspected').map((e) => ({
         seq: e.seq,
         kind: e.kind,
         stage: e.stage,
@@ -511,7 +582,11 @@ export class DemoService {
   }
 
   /** Any tenant user may kill. A queued run is killed here; a running one is flagged and the worker halts it. */
-  async kill(actor: DemoActor, runId: string, confirm: string): Promise<{ killRequestedAt: string }> {
+  async kill(
+    actor: DemoActor,
+    runId: string,
+    confirm: string,
+  ): Promise<{ killRequestedAt: string; audit: AuditRef }> {
     const run = await this.runRow(runId);
     if (confirm.trim().toLowerCase() !== shortId(run.id).toLowerCase()) {
       throw new DemoRefusal(
@@ -528,7 +603,8 @@ export class DemoService {
         message: `Run killed by ${actor.name} before it started.`,
         data: { by: actor.id, haltMs: 0 },
       });
-      return { killRequestedAt: killedQueued.toISOString() };
+      const audit = await this.audit(actor, 'run.kill', 'run', runId, { confirm, queued: true });
+      return { killRequestedAt: killedQueued.toISOString(), audit };
     }
     const requestedAt = await this.store.requestKill(this.tenantId, runId, actor.id);
     if (requestedAt === null) {
@@ -540,14 +616,17 @@ export class DemoService {
       message: `Kill requested by ${actor.name}.`,
       data: { by: actor.id },
     });
-    return { killRequestedAt: requestedAt.toISOString() };
+    const audit = await this.audit(actor, 'run.kill', 'run', runId, { confirm, queued: false });
+    return { killRequestedAt: requestedAt.toISOString(), audit };
   }
 
-  async gate2(id: string): Promise<Record<string, unknown>> {
+  /** `audit` is the event just appended by a decision; a plain read looks up the latest one. */
+  async gate2(id: string, audit?: AuditRef): Promise<Record<string, unknown>> {
     const row = await this.gate2Row(id);
     const run = await this.runRow(row.run_id);
     return {
       ...gate2Dto(row, new Date()),
+      audit: audit ?? (await this.store.latestAudit(this.tenantId, 'gate2', id)),
       run: { id: run.id, shortId: shortId(run.id), state: run.state, assetName: run.asset_name, pins: run.pins },
     };
   }
@@ -559,7 +638,12 @@ export class DemoService {
   }
 
   /** No decision before the deadline means denied: the worker treats a late or missing decision as a refusal. */
-  async decideGate2(actor: DemoActor, id: string, decision: 'approve' | 'deny'): Promise<Record<string, unknown>> {
+  async decideGate2(
+    actor: DemoActor,
+    id: string,
+    decision: 'approve' | 'deny',
+    reason: string | null,
+  ): Promise<Record<string, unknown>> {
     requireRole(actor, ['asset-owner', 'appsec-engineer'], 'Only an asset owner or an appsec engineer decides Gate 2.');
     const row = await this.gate2Row(id);
     const run = await this.runRow(row.run_id);
@@ -567,36 +651,167 @@ export class DemoService {
       throw new DemoRefusal(HttpStatus.CONFLICT, 'gate2_closed', 'The run was killed; nothing can be approved.');
     }
     const status = decision === 'approve' ? 'approved' : 'denied';
-    if (!(await this.store.decideGate2(this.tenantId, id, status, actor.id))) {
+    if (!(await this.store.decideGate2(this.tenantId, id, status, actor.id, reason))) {
       throw new DemoRefusal(HttpStatus.CONFLICT, 'gate2_closed', 'The request is already decided or past its deadline.');
     }
-    return this.gate2(id);
+    const audit = await this.audit(actor, `gate2.${decision}`, 'gate2', id, {
+      decision,
+      reason,
+      method: row.method,
+      url: row.url,
+      runId: row.run_id,
+    });
+    return this.gate2(id, audit);
   }
 
-  async finding(id: string): Promise<FindingRow> {
+  /** A suspected finding is for analysts only: anyone else gets the same 404 as for a missing one. */
+  async finding(actor: DemoActor, id: string): Promise<FindingRow> {
     const row = await this.store.getFinding(this.tenantId, id);
-    if (row === null) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such finding.');
+    if (row === null || (row.status === 'suspected' && !actorHasRole(actor, 'appsec-engineer'))) {
+      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such finding.');
+    }
     return row;
   }
 
-  /** Context the report needs: the finding, its run, asset and request. */
-  async reportContext(findingId: string): Promise<{
+  async findingDetail(actor: DemoActor, id: string, audit?: AuditRef): Promise<Record<string, unknown>> {
+    const row = await this.finding(actor, id);
+    return findingDto(row, audit ?? (await this.store.latestAudit(this.tenantId, 'finding', id)));
+  }
+
+  /** Context the report needs: the finding, its run, asset and request. Only released findings are reported. */
+  async reportContext(actor: DemoActor, findingId: string): Promise<{
     finding: FindingRow;
     run: RunRow;
     asset: AssetRow;
     request: RequestRow;
   }> {
-    const finding = await this.finding(findingId);
-    const run = await this.runRow(finding.run_id);
-    const request = await this.store.getRequest(this.tenantId, run.request_id);
-    const asset = await this.store.getAsset(this.tenantId, finding.asset_id);
-    if (request === null || asset === null) {
-      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'The finding has no request or asset.');
+    const finding = await this.finding(actor, findingId);
+    if (finding.status !== 'released') {
+      throw new DemoRefusal(HttpStatus.CONFLICT, 'finding_not_released', 'Only released findings are reported.');
     }
-    return { finding, run, asset, request };
+    const run = await this.runRow(finding.run_id);
+    return { finding, run, ...(await this.runContext(run)) };
   }
 
-  async listFindings(): Promise<Record<string, unknown>[]> {
-    return (await this.store.listFindings(this.tenantId, FINDING_LIST_LIMIT)).map((row) => findingSummaryDto(row));
+  private async runContext(run: RunRow): Promise<{ asset: AssetRow; request: RequestRow }> {
+    const request = await this.store.getRequest(this.tenantId, run.request_id);
+    const asset = request === null ? null : await this.store.getAsset(this.tenantId, request.asset_id);
+    if (request === null || asset === null) {
+      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'The run has no request or asset.');
+    }
+    return { asset, request };
+  }
+
+  /** Context the run report needs: the run, its asset and request, and its released findings only. */
+  async runReportContext(runId: string): Promise<{
+    run: RunRow;
+    asset: AssetRow;
+    request: RequestRow;
+    findings: FindingRow[];
+  }> {
+    const run = await this.runRow(runId);
+    const findings = (await this.store.listFindingsForRun(this.tenantId, runId, false)).filter(
+      (f) => f.status === 'released',
+    );
+    return { run, ...(await this.runContext(run)), findings };
+  }
+
+  async listFindings(actor: DemoActor): Promise<Record<string, unknown>[]> {
+    const rows = await this.store.listFindings(this.tenantId, FINDING_LIST_LIMIT, actorHasRole(actor, 'appsec-engineer'));
+    return rows.map((row) => findingSummaryDto(row));
+  }
+
+  /** Gate 3: an AppSec engineer releases or dismisses a finding with a reason. A release is delivered to the webhook. */
+  async triage(
+    actor: DemoActor,
+    id: string,
+    decision: 'release' | 'dismiss',
+    reason: string,
+  ): Promise<Record<string, unknown>> {
+    requireRole(actor, ['appsec-engineer'], 'Only an AppSec engineer can release or dismiss a finding.');
+    const finding = await this.finding(actor, id);
+    const to = decision === 'release' ? 'released' : 'dismissed';
+    if (!(await this.store.triageFinding(this.tenantId, id, TRIAGE_FROM[decision], to, actor.id, reason))) {
+      throw new DemoRefusal(HttpStatus.CONFLICT, 'finding_not_triageable', `A ${finding.status} finding cannot be ${to}.`);
+    }
+    const audit = await this.audit(actor, `finding.${decision}`, 'finding', id, { decision, reason, runId: finding.run_id });
+    const severity = severityOf(finding.severity);
+    await this.store.appendEvent(finding.run_id, {
+      kind: `finding.${to}`,
+      stage: 'gate3',
+      message: `${capitalise(to)} by ${actor.name}: ${finding.title}`,
+      data: {
+        findingId: id,
+        title: finding.title,
+        severity,
+        ...(decision === 'release' ? { auto: false } : {}),
+        by: actor.id,
+        reason,
+      },
+    });
+    if (decision === 'release') await this.deliver(finding, actor.name);
+    return this.findingDetail(actor, id, audit);
+  }
+
+  /** POSTs the released finding to the optional webhook and records the result. A failure never fails the release. */
+  private async deliver(finding: FindingRow, releasedBy: string): Promise<void> {
+    const { webhookUrl, consoleOrigin } = this.webhook;
+    if (webhookUrl === null) return;
+    const url = `${consoleOrigin}/demo/findings/${finding.id}`;
+    const severity = severityOf(finding.severity);
+    const asset = finding.asset_name ?? '';
+    const body = {
+      text: `Blackwing released a ${capitalise(severity)} finding on ${asset}: ${finding.title}. ${url}`,
+      finding: {
+        id: finding.id,
+        title: finding.title,
+        severity,
+        cwe: finding.cwe_id,
+        owasp: finding.owasp_category,
+        asset,
+        url,
+        reproCurl: finding.repro_curl,
+        releasedBy,
+      },
+    };
+    let status: 'delivered' | 'failed';
+    let detail: string;
+    try {
+      const response = await this.fetchImpl(webhookUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+        redirect: 'manual',
+        signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+      });
+      status = response.ok ? 'delivered' : 'failed';
+      detail = `HTTP ${response.status}`;
+    } catch (error) {
+      status = 'failed';
+      detail = error instanceof Error ? error.name : 'Error';
+    }
+    if (status === 'failed') this.logger.warn({ event: 'demo.webhook.failed', reason: detail });
+    await this.store.recordDelivery(finding.id, status, detail);
+  }
+
+  /** The latest ledger events (newest first) and the verification of the whole chain. */
+  async auditLedger(): Promise<{ items: Record<string, unknown>[]; chain: ChainState }> {
+    const rows = await this.store.listAudit(this.tenantId);
+    const items = rows
+      .slice(-AUDIT_LIST_LIMIT)
+      .reverse()
+      .map((r) => ({
+        eventId: r.eventId,
+        seq: r.seq,
+        at: r.at.toISOString(),
+        actor: { id: r.actorId, name: r.actorName },
+        action: r.action,
+        targetType: r.targetType,
+        targetId: r.targetId,
+        payload: r.payload,
+        prevHash: r.prevHash,
+        hash: r.hash,
+      }));
+    return { items, chain: verifyChain(rows) };
   }
 }
