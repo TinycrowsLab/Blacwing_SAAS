@@ -36,6 +36,32 @@ function problemOf(status: number, body: unknown): ApiError {
   return new ApiError(status, code, detail);
 }
 
+/**
+ * What every mutation's server action returns (experience spec §10.4): no `?error=` redirects, the page keeps the input
+ * and shows `message` with one fix. `status` is the API's HTTP status (409 means someone else already decided).
+ */
+export type ActionResult<T> =
+  | { readonly ok: true; readonly data: T }
+  | { readonly ok: false; readonly code: string; readonly message: string; readonly status: number };
+
+const HTTP_BAD_GATEWAY = 502;
+
+/** Runs an API call for a server action and maps any failure to an ActionResult (never throws). */
+export async function toResult<T>(call: () => Promise<T>): Promise<ActionResult<T>> {
+  try {
+    return { ok: true, data: await call() };
+  } catch (error) {
+    if (error instanceof ApiError)
+      return { ok: false, code: error.code, message: error.message, status: error.status };
+    return {
+      ok: false,
+      code: 'unreachable',
+      message: "Couldn't reach Blackwing. Your answers are kept. Retry",
+      status: HTTP_BAD_GATEWAY,
+    };
+  }
+}
+
 /** Calls the API as the signed-in user. Throws ApiError with the registered code on refusal. */
 export async function callApi<T = unknown>(
   session: Viewer,

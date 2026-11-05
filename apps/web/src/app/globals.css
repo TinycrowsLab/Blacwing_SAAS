@@ -54,10 +54,173 @@
 @source '../';
 @source '../../../../packages/ui/src';
 
-/* Console canvas: the light page is #F7F7F8 under white cards (Blackwing Screens); dark values come from tokens.css. */
-:root:not(.dark) .bw-canvas {
-  --bg: #f7f7f8;
-  --surface2: #f1f1f3;
+/*
+ * Gold on white (experience spec §11). Both name families are set here, after the package tokens, so every console
+ * utility reads them: the design names (--bg, --gold-ink...) and the shadcn names packages/ui components use.
+ * --primary is gold-ink (AA as text, border and fill); the bright --gold is only ever a fill under --on-gold text.
+ */
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface2: #f7f5f0;
+  --sidebar: #faf9f6;
+  --code: #fbfaf7;
+  --border: #ece9e2;
+  --border2: #d9d4c9;
+  --input: #948d7f;
+  --text: #17150f;
+  --muted: #625d52;
+  --faint: #a39d90;
+  --gold-ink: #8a6310;
+  --gold: #e2b23a;
+  --gold-hi: #edc456;
+  --on-gold: #1f1704;
+  --gold-soft: #fbf4e2;
+  --gold-line: #ead7a4;
+  --slate: #3e5c76;
+  --slate-soft: #eaf0f5;
+  --ok: #1b7a3e;
+  --ok-soft: #e9f5ec;
+  --warn: #9a4d00;
+  --warn-soft: #fcf2e4;
+  --bad: #b42318;
+  --bad-soft: #fcedeb;
+  --kill: #b01a2d;
+  --on-kill: #ffffff;
+  --kill-soft: rgba(176, 26, 45, 0.1);
+  --crit-bg: #6e1520;
+  --crit-fg: #ffffff;
+  --high: #b42318;
+  --high-soft: #fcedeb;
+  --med: #a8450a;
+  --med-soft: #fdf1e7;
+  --low: #4a5568;
+  --low-soft: #eef0f3;
+  --sinfo: #4b5160;
+  --sinfo-soft: #f0f1f3;
+  --focus: rgba(226, 178, 58, 0.45);
+  --float-shadow: 0 8px 28px rgba(31, 23, 4, 0.06);
+  --pop-shadow: 0 30px 80px rgba(23, 21, 15, 0.28);
+
+  --primary: var(--gold-ink);
+  --primary-soft: var(--gold-soft);
+  --on-primary: #ffffff;
+  --background: #ffffff;
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --muted-foreground: var(--muted);
+  --ring: var(--focus);
+  --primary-foreground: #ffffff;
+  --accent: var(--gold-soft);
+  --accent-foreground: var(--gold-ink);
+  --secondary: var(--surface2);
+  --secondary-foreground: var(--text);
+  --destructive: var(--bad);
+  --destructive-foreground: #ffffff;
+  --success: var(--ok);
+  --success-soft: var(--ok-soft);
+  --warning: var(--warn);
+  --warning-soft: var(--warn-soft);
+  --danger: var(--bad);
+  --danger-soft: var(--bad-soft);
+  --kill-foreground: var(--on-kill);
+  --critical: var(--crit-bg);
+  --critical-foreground: var(--crit-fg);
+  --sev-high: var(--high);
+  --sev-high-soft: var(--high-soft);
+  --sev-medium: var(--med);
+  --sev-medium-soft: var(--med-soft);
+  --sev-low: var(--low);
+  --sev-low-soft: var(--low-soft);
+  --sev-info: var(--sinfo);
+  --sev-info-soft: var(--sinfo-soft);
+}
+
+.dark {
+  --bg: #121110;
+  --surface: #1a1917;
+  --surface2: #23211d;
+  --sidebar: #161513;
+  --code: #171614;
+  --border: #2e2b26;
+  --border2: #45413a;
+  --input: #6f695e;
+  --text: #f3f0e8;
+  --muted: #a9a396;
+  --faint: #6f6a60;
+  --gold-ink: #e9c46a;
+  --gold: #e2b23a;
+  --gold-hi: #f0c75a;
+  --on-gold: #1f1704;
+  --gold-soft: #2b2414;
+  --gold-line: #4f4122;
+  --slate: #8fb3d1;
+  --slate-soft: #1c2630;
+  --ok: #5cc98a;
+  --ok-soft: #14291c;
+  --warn: #f0a83a;
+  --warn-soft: #2e2210;
+  --bad: #f2776b;
+  --bad-soft: #351a18;
+  --kill: #c8243a;
+  --on-kill: #ffffff;
+  --kill-soft: rgba(200, 36, 58, 0.22);
+  --crit-bg: #4a0e16;
+  --crit-fg: #ffb4bd;
+  --high: #f2776b;
+  --high-soft: #351a18;
+  --med: #f59a5a;
+  --med-soft: #352312;
+  --low: #b4bdcb;
+  --low-soft: #252a33;
+  --sinfo: #a8aeba;
+  --sinfo-soft: #2a2c33;
+  --focus: rgba(226, 178, 58, 0.45);
+  --float-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+
+  /* In dark, gold-ink is light: text on it is dark. */
+  --on-primary: var(--on-gold);
+  --primary-foreground: var(--on-gold);
+  --background: var(--bg);
+  --destructive-foreground: var(--on-gold);
+}
+
+/* Utilities for the new names (bg-gold text-on-gold, text-gold-ink, bg-gold-soft, border-gold-line, bg-sidebar...). */
+@theme inline {
+  --color-gold: var(--gold);
+  --color-gold-hi: var(--gold-hi);
+  --color-gold-ink: var(--gold-ink);
+  --color-on-gold: var(--on-gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-gold-line: var(--gold-line);
+  --color-sidebar: var(--sidebar);
+  --color-input-strong: var(--input);
+  --color-faint: var(--faint);
+  --color-slate: var(--slate);
+  --color-slate-soft: var(--slate-soft);
+  --shadow-float: var(--float-shadow);
+  --shadow-pop: var(--pop-shadow);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Loading states fade in only after 300 ms, so fast navigations never flash a skeleton (bug 15). */
+@keyframes bw-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.bw-delayed {
+  animation: bw-appear 0s linear 300ms both;
 }
 
 @keyframes bwpulse {

@@ -48,6 +48,22 @@ const ICONS = {
   sun: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z M12 2v2 M12 20v2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M2 12h2 M20 12h2 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4',
   moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
   plusCircle: 'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20z M12 8v8 M8 12h8',
+  home: 'M3 11l9-8 9 8 M5 9.5V21h14V9.5 M10 21v-6h4v6',
+  help: 'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20z M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3 M12 17h.01',
+  menu: 'M4 6h16 M4 12h16 M4 18h16',
+  arrow: 'M5 12h14 M13 6l6 6-6 6',
+  right: 'M9 6l6 6-6 6',
+  hand: 'M18 11V6a2 2 0 0 0-4 0v5 M14 10V4a2 2 0 0 0-4 0v6 M10 10.5V6a2 2 0 0 0-4 0v8 M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-6-2.4L2.4 16a2 2 0 0 1 2.8-2.9L7 15',
+  user: 'M12 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8z M4 21a8 8 0 0 1 16 0',
+  team: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8z M22 21v-2a4 4 0 0 0-3-3.9 M16 3.1a4 4 0 0 1 0 7.8',
+  download: 'M12 3v12 M7 10l5 5 5-5 M4 21h16',
+  replay: 'M3 12a9 9 0 1 0 3-6.7 M3 4v5h5',
+  reply: 'M9 17l-5-5 5-5 M4 12h11a5 5 0 0 1 5 5v2',
+  file: 'M14 2H6v20h12V6z M14 2v4h4',
+  spark: 'M12 3v4 M12 17v4 M3 12h4 M17 12h4 M6 6l2.5 2.5 M15.5 15.5 18 18 M6 18l2.5-2.5 M15.5 8.5 18 6',
+  enter: 'M20 5v7a3 3 0 0 1-3 3H5 M9 11l-4 4 4 4',
+  repeat: 'M17 1l4 4-4 4 M3 11V9a4 4 0 0 1 4-4h14 M7 23l-3-4 3-4 M21 13v2a4 4 0 0 1-4 4H3',
+  more: 'M5 12h.01 M12 12h.01 M19 12h.01',
 } as const;
 
 export type IconName = keyof typeof ICONS;
@@ -96,7 +112,11 @@ export type Tone =
   | 'low'
   | 'info'
   | 'navy'
-  | 'neutral';
+  | 'neutral'
+  | 'gold'
+  | 'slate'
+  | 'you'
+  | 'claude';
 
 /** Foreground and background per tone, the same pairs the design's chip groups use. */
 const TONE: Record<Tone, { fg: string; bg: string }> = {
@@ -113,6 +133,10 @@ const TONE: Record<Tone, { fg: string; bg: string }> = {
   info: { fg: 'text-sinfo', bg: 'bg-sinfo-soft' },
   navy: { fg: 'text-on-primary', bg: 'bg-navy-bar' },
   neutral: { fg: 'text-text', bg: 'bg-surface-2' },
+  gold: { fg: 'text-gold-ink', bg: 'bg-gold-soft' },
+  slate: { fg: 'text-slate', bg: 'bg-slate-soft' },
+  you: { fg: 'text-gold-ink', bg: 'bg-gold-soft shadow-[inset_0_0_0_1px_var(--gold-line)]' },
+  claude: { fg: 'text-slate', bg: 'bg-slate-soft' },
 };
 
 /** Severity bars: the design draws 1 to 4 bars, filled up to the level. */
@@ -198,21 +222,21 @@ export function SeverityChip({ severity }: { readonly severity: string }) {
 export function StatusChip({ value }: { readonly value: string }) {
   const v = value.toLowerCase().replace(/_/g, ' ');
   const map: Record<string, { tone: Tone; icon?: IconName; label: string; pulse?: boolean }> = {
-    running: { tone: 'primary', icon: 'dot', label: 'Running', pulse: true },
+    running: { tone: 'neutral', icon: 'dot', label: 'Testing', pulse: true },
     queued: { tone: 'muted', icon: 'clock', label: 'Queued' },
-    'pending gate1': { tone: 'warn', icon: 'clock', label: 'Awaiting Gate 1' },
+    'pending gate1': { tone: 'gold', icon: 'clock', label: 'Awaiting your approval' },
     approved: { tone: 'ok', icon: 'check', label: 'Approved' },
     rejected: { tone: 'bad', icon: 'x', label: 'Rejected' },
     completed: { tone: 'ok', icon: 'check', label: 'Completed' },
     failed: { tone: 'bad', icon: 'x', label: 'Failed' },
     cancelled: { tone: 'muted', icon: 'minus', label: 'Cancelled' },
     paused: { tone: 'warn', icon: 'pause', label: 'Paused' },
-    killed: { tone: 'kill', icon: 'kill', label: 'Killed' },
-    not_confirmed: { tone: 'bad', icon: 'x', label: 'Not confirmed' },
-    'not confirmed': { tone: 'bad', icon: 'x', label: 'Not confirmed' },
-    confirmed: { tone: 'ok', icon: 'check', label: 'Confirmed' },
-    validating: { tone: 'primary', icon: 'clock', label: 'Validating' },
-    suspected: { tone: 'warn', icon: 'info', label: 'Suspected' },
+    killed: { tone: 'kill', icon: 'kill', label: 'Stopped' },
+    not_confirmed: { tone: 'bad', icon: 'x', label: 'Not proven' },
+    'not confirmed': { tone: 'bad', icon: 'x', label: 'Not proven' },
+    confirmed: { tone: 'gold', icon: 'check', label: 'Proven, awaiting your release' },
+    validating: { tone: 'slate', icon: 'clock', label: 'Proving' },
+    suspected: { tone: 'muted', icon: 'info', label: 'Kept back' },
     released: { tone: 'ok', icon: 'check', label: 'Released' },
     dismissed: { tone: 'muted', icon: 'minus', label: 'Dismissed' },
   };
@@ -246,28 +270,32 @@ export function gaugeTone(pct: number): 'primary' | 'warn' | 'bad' {
 }
 
 const BUTTON_BASE =
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap text-[13px] font-medium transition-[filter,background-color,border-color] duration-150 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus disabled:cursor-not-allowed disabled:shadow-none motion-reduce:transition-none';
+  'inline-flex select-none items-center justify-center gap-2 whitespace-nowrap border border-transparent text-[13.5px] font-medium no-underline transition-[filter,background-color,border-color,transform] duration-150 active:translate-y-px focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus focus-visible:border-gold-ink disabled:cursor-not-allowed disabled:shadow-none disabled:active:translate-y-0 motion-reduce:transition-none';
 
 /** Disabled buttons go grey; the kill button stays red and fades instead. */
 const DISABLED_GREY =
-  'disabled:border-border-strong disabled:bg-surface-2 disabled:text-muted-foreground';
+  'disabled:border-border disabled:bg-surface-2 disabled:text-muted-foreground';
 
+/**
+ * One primary per screen: `primary` is gold (dark label, inset gold-ink edge: bright gold alone is not a boundary).
+ * `deny` is ink, the safe heavy choice. `kill` is the one solid red, for Stop only.
+ */
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'deny' | 'kill' | 'danger-soft';
 
 const BUTTON: Record<ButtonVariant, string> = {
-  primary: `bg-primary text-on-primary hover:brightness-90 ${DISABLED_GREY}`,
-  secondary: `border border-border-strong bg-card text-foreground hover:bg-surface-2 ${DISABLED_GREY}`,
-  ghost: `bg-transparent text-foreground hover:bg-surface-2 ${DISABLED_GREY}`,
-  deny: `bg-text text-bg hover:brightness-90 ${DISABLED_GREY}`,
-  kill: 'bg-kill text-on-kill font-semibold shadow-[0_0_0_4px_var(--kill-soft)] hover:brightness-90 disabled:opacity-40',
-  'danger-soft': `border border-bad text-bad bg-transparent hover:bg-bad-soft ${DISABLED_GREY}`,
+  primary: `bg-gold text-on-gold font-semibold shadow-[inset_0_0_0_1px_rgba(138,99,16,.28)] hover:bg-gold-hi ${DISABLED_GREY}`,
+  secondary: `border-input-strong bg-card text-foreground hover:bg-surface-2 ${DISABLED_GREY}`,
+  ghost: `bg-transparent text-muted-foreground hover:bg-surface-2 hover:text-foreground ${DISABLED_GREY}`,
+  deny: `bg-text text-bg font-semibold hover:brightness-110 focus-visible:shadow-[0_0_0_2px_var(--bg),0_0_0_5px_var(--text)] ${DISABLED_GREY}`,
+  kill: 'bg-kill text-on-kill font-semibold hover:brightness-110 focus-visible:ring-kill-soft disabled:opacity-40',
+  'danger-soft': `border-bad bg-transparent text-bad hover:bg-bad-soft ${DISABLED_GREY}`,
 };
 
 /** Button classes, for use on `<button>` or `<Link>`. Disabled state is set with the `disabled` attribute. */
 export function buttonClass(variant: ButtonVariant = 'primary', extra = ''): string {
   const defaults = [
     /(^|\s)h-/.test(extra) ? '' : 'h-10',
-    /(^|\s)rounded-/.test(extra) ? '' : 'rounded-lg',
+    /(^|\s)rounded-/.test(extra) ? '' : 'rounded-[10px]',
     /(^|\s)px-/.test(extra) ? '' : 'px-4',
   ];
   return [BUTTON_BASE, BUTTON[variant], ...defaults, extra].join(' ');
@@ -325,7 +353,7 @@ export function Card({
       aria-labelledby={labelledBy}
       aria-label={label}
       style={style}
-      className={`overflow-hidden rounded-xl border border-border bg-card ${className}`}
+      className={`overflow-hidden rounded-[14px] border border-border bg-card ${className}`}
     >
       {children}
     </Tag>
@@ -399,9 +427,9 @@ export function AgentText({
   );
 }
 
-/** Field label, input and hint in the design's input grammar (42 px, 8 px radius, border-strong). */
+/** Text input grammar: 44 px, 10 px radius, the input boundary colour, gold focus. Use `aria-invalid` for errors. */
 export const INPUT_CLASS =
-  'h-[42px] w-full rounded-lg border border-border-strong bg-card px-3 text-[13.5px] text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus disabled:bg-surface-2 disabled:text-muted-foreground';
+  'h-11 w-full rounded-[10px] border border-input-strong bg-card px-3.5 text-[14px] text-foreground placeholder:text-muted-foreground focus-visible:border-gold-ink focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus aria-[invalid=true]:border-bad disabled:bg-surface-2 disabled:text-muted-foreground';
 
 export function PageHeader({
   crumbs,
@@ -457,16 +485,16 @@ export function filterPillClass(active: boolean): string {
 }
 
 const VERDICT_RING: Record<string, { tone: string; ring: string; label: string }> = {
-  confirmed: { tone: 'text-ok', ring: 'border-2 border-current', label: 'Confirmed' },
+  confirmed: { tone: 'text-ok', ring: 'border-2 border-current', label: 'Proven' },
   validating: {
-    tone: 'text-primary',
+    tone: 'text-slate',
     ring: 'border-2 border-current border-t-transparent motion-safe:animate-[bwspin_0.8s_linear_infinite]',
-    label: 'Validating',
+    label: 'Proving',
   },
   suspected: {
-    tone: 'text-warn',
+    tone: 'text-muted-foreground',
     ring: 'border-2 border-dashed border-current',
-    label: 'Suspected',
+    label: 'Kept back',
   },
   released: { tone: 'text-ok', ring: 'border-2 border-current', label: 'Released' },
   dismissed: { tone: 'text-muted-foreground', ring: 'border-2 border-current', label: 'Dismissed' },
@@ -567,4 +595,226 @@ export function ErrorBanner({
 
 export function queryText(value: string | string[] | undefined): string | undefined {
   return typeof value === 'string' ? value : undefined;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Experience primitives (server-safe). The interactive ones (PendingButton, CopyField, ReasonField, ChipInput,
+// Countdown) are in ./design-client, because this file has no hooks.
+
+/** Keyboard hint, e.g. the `N` on New audit or the `D` on Deny. */
+export function Kbd({ children, className = '' }: { readonly children: ReactNode; readonly className?: string }) {
+  return (
+    <kbd
+      className={`inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[5px] border border-current px-1 font-mono text-[10.5px] font-medium leading-none opacity-60 ${className}`}
+    >
+      {children}
+    </kbd>
+  );
+}
+
+export type Voice = 'claude' | 'blackwing' | 'validator' | 'you';
+
+const VOICE: Record<Voice, { label: string; className: string }> = {
+  claude: { label: 'Claude', className: 'bg-slate-soft text-slate' },
+  blackwing: { label: 'Blackwing', className: 'bg-surface-2 text-muted-foreground' },
+  validator: { label: 'Blackwing · no model', className: 'bg-ok-soft text-ok' },
+  you: { label: 'You', className: 'bg-gold-soft text-gold-ink shadow-[inset_0_0_0_1px_var(--gold-line)]' },
+};
+
+/**
+ * Who is speaking, never blurred (spec §1): Claude (slate, its own words, not verified), Blackwing (grey, templates over
+ * run events), the validator (green, replay, no model) and You (gold, your decisions). `children` overrides the label.
+ */
+export function VoiceTag({
+  voice,
+  children,
+  title,
+}: {
+  readonly voice: Voice;
+  readonly children?: ReactNode;
+  readonly title?: string;
+}) {
+  const v = VOICE[voice];
+  return (
+    <span
+      title={title ?? (voice === 'claude' ? "Claude's own words, not verified" : undefined)}
+      className={`inline-flex h-[18px] shrink-0 items-center rounded-full px-[7px] text-[10.5px] font-semibold ${v.className}`}
+    >
+      {children ?? v.label}
+    </span>
+  );
+}
+
+/**
+ * A whole-card choice: the `<label>` wraps the radio or checkbox, so a click anywhere selects it (bug: lost clicks).
+ * Selected cards are gold-soft with a gold-ink edge. `index` shows the number key (1 to 9) the page binds.
+ * `children` is shown under the card text only while the card is selected (e.g. the verification steps).
+ */
+export function OptionCard({
+  type = 'radio',
+  name,
+  value,
+  checked,
+  onChange,
+  title,
+  description,
+  badge,
+  index,
+  disabled = false,
+  children,
+}: {
+  readonly type?: 'radio' | 'checkbox';
+  readonly name: string;
+  readonly value: string;
+  readonly checked: boolean;
+  readonly onChange: (value: string, checked: boolean) => void;
+  readonly title: ReactNode;
+  readonly description?: ReactNode;
+  readonly badge?: ReactNode;
+  readonly index?: number;
+  readonly disabled?: boolean;
+  readonly children?: ReactNode;
+}) {
+  return (
+    <label
+      className={`group relative flex min-h-16 cursor-pointer gap-3 rounded-[14px] border p-4 transition-colors has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-focus ${checked ? 'border-gold-ink bg-gold-soft' : 'border-border bg-card hover:border-border-strong hover:bg-surface-2'} ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
+    >
+      <input
+        type={type}
+        name={name}
+        value={value}
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => {
+          onChange(value, e.target.checked);
+        }}
+        className="mt-0.5 size-[18px] shrink-0 accent-[var(--gold-ink)] focus-visible:outline-none"
+      />
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="text-[14.5px] font-semibold leading-5 text-foreground">{title}</span>
+          {badge}
+        </span>
+        {description === undefined ? null : (
+          <span className="text-[13px] leading-5 text-muted-foreground">{description}</span>
+        )}
+        {checked && children !== undefined ? <span className="mt-2 flex flex-col gap-2">{children}</span> : null}
+      </span>
+      {index === undefined ? null : <Kbd className="text-muted-foreground">{index}</Kbd>}
+    </label>
+  );
+}
+
+/** Every empty state is designed (spec §8): a title, one line of why, and at most one way forward. */
+export function EmptyState({
+  icon = 'info',
+  title,
+  body,
+  action,
+  className = '',
+}: {
+  readonly icon?: IconName;
+  readonly title: ReactNode;
+  readonly body?: ReactNode;
+  readonly action?: ReactNode;
+  readonly className?: string;
+}) {
+  return (
+    <div
+      className={`flex flex-col items-start gap-3 rounded-[14px] border border-dashed border-border-strong bg-card px-5 py-6 ${className}`}
+    >
+      <span className="flex size-9 items-center justify-center rounded-[10px] bg-gold-soft text-gold-ink">
+        <Icon name={icon} size={18} />
+      </span>
+      <div className="flex flex-col gap-1">
+        <p className="m-0 text-[14.5px] font-semibold text-foreground">{title}</p>
+        {body === undefined ? null : <p className="m-0 max-w-prose text-[13px] leading-5 text-muted-foreground">{body}</p>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+/**
+ * A decision, collapsed (spec §6): "Approved by Jatin, 14:02: "Our lab"" then "Recorded in the ledger · 3f2a9c".
+ * `hash` is the ledger event hash (shown short).
+ */
+export function Receipt({
+  tone = 'ok',
+  title,
+  detail,
+  hash,
+  className = '',
+}: {
+  readonly tone?: 'ok' | 'bad' | 'muted' | 'gold';
+  readonly title: ReactNode;
+  readonly detail?: ReactNode;
+  readonly hash?: string | null;
+  readonly className?: string;
+}) {
+  const t = {
+    ok: { icon: 'check' as const, mark: 'bg-ok text-white', box: 'border-border bg-card' },
+    bad: { icon: 'x' as const, mark: 'bg-text text-bg', box: 'border-border bg-card' },
+    muted: { icon: 'minus' as const, mark: 'bg-surface-2 text-muted-foreground', box: 'border-border bg-card' },
+    gold: { icon: 'check' as const, mark: 'bg-gold text-on-gold', box: 'border-gold-line bg-gold-soft' },
+  }[tone];
+  return (
+    <div role="status" className={`flex items-start gap-3 rounded-[14px] border px-4 py-3 ${t.box} ${className}`}>
+      <span className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full ${t.mark}`}>
+        <Icon name={t.icon} size={12} />
+      </span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="text-[13.5px] font-medium leading-5 text-foreground">{title}</span>
+        {detail === undefined ? null : <span className="text-[12.5px] leading-5 text-muted-foreground">{detail}</span>}
+        <span className="text-[11.5px] text-muted-foreground">
+          Recorded in the ledger
+          {hash === undefined || hash === null ? null : (
+            <>
+              {' · '}
+              <span className="font-mono">{hash.slice(0, 8)}</span>
+            </>
+          )}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/** An inline line under a field: what we understood (`ok`), what to fix (`bad`) or a neutral note. */
+export function InlineMessage({
+  tone = 'muted',
+  children,
+  id,
+}: {
+  readonly tone?: 'ok' | 'bad' | 'muted' | 'gold';
+  readonly children: ReactNode;
+  readonly id?: string;
+}) {
+  const t = {
+    ok: { icon: 'check' as const, cls: 'text-ok' },
+    bad: { icon: 'warn' as const, cls: 'text-bad' },
+    muted: { icon: 'info' as const, cls: 'text-muted-foreground' },
+    gold: { icon: 'info' as const, cls: 'text-gold-ink' },
+  }[tone];
+  return (
+    <p
+      id={id}
+      role={tone === 'bad' ? 'alert' : undefined}
+      className={`m-0 flex items-start gap-2 text-[12.5px] leading-[19px] ${t.cls}`}
+    >
+      <Icon name={t.icon} size={14} className="mt-[2px]" />
+      <span className={tone === 'bad' ? '' : 'text-muted-foreground [&_b]:font-medium [&_b]:text-foreground'}>
+        {children}
+      </span>
+    </p>
+  );
+}
+
+/** A placeholder block for loading states. It fades in after 300 ms, so quick loads never flash it. */
+export function Skeleton({ className = '' }: { readonly className?: string }) {
+  return (
+    <div aria-hidden="true" className={`bw-delayed ${className}`}>
+      <div className="size-full rounded-[10px] bg-surface-2 motion-safe:animate-[bwpulse_1.4s_ease-in-out_infinite]" />
+    </div>
+  );
 }

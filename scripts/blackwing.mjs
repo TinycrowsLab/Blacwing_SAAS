@@ -3,18 +3,23 @@
 //
 //   node scripts/blackwing.mjs            # start everything (idempotent)
 //   node scripts/blackwing.mjs status     # show what is running
-//   node scripts/blackwing.mjs smoke      # run the assessment flow end to end against the live stack (exit 1 on failure)
+//   node scripts/blackwing.mjs smoke      # run the assessment flow end to end on its own database (exit 1 on failure)
 //   node scripts/blackwing.mjs stop       # stop the api, worker, hunt engine and web started by this script
 //   node scripts/blackwing.mjs lab        # only the Juice Shop lab container
 //
 // Steps, in order (each one is safe to re-run):
 //   1. dependency stack (`pnpm dev:deps` when Postgres is not running)
 //   2. the Juice Shop lab when Docker is available; skipped otherwise
-//   3. database `blackwing_demo` (the shared dev database is migrated by other worktrees)
-//   4. migrations, then the seed (`pnpm db:seed`: the `acme` tenant and its directory users)
+//   3. the product database (BW_DB_NAME, default `blackwing_app`): a clean database of its own. The shared dev database
+//      `blackwing` (migrated and seeded by other worktrees) and the older `blackwing_demo` are never touched.
+//   4. migrations only (no seed), then one workspace (tenant) with an empty name when the database has none: the first
+//      administrator names it on /welcome after signing in with Google
 //   5. API (127.0.0.1:13400, BW_DEMO_MODE=1 mounts the console routes), worker, hunt engine, then the web console as a
-//      production build (`next build`, then `next start` on 127.0.0.1:3000). Once the API is healthy the lab is
-//      registered and verified as an asset.
+//      production build (`next build`, then `next start` on 127.0.0.1:3000). Nothing is registered: people add their
+//      own targets in the console, the local lab included.
+//
+// `smoke` runs on its own database `blackwing_smoke` (migrated and seeded: the seeded personas live only there), with a
+// private API on 13401 and hunt engine, so the product database never sees smoke rows.
 //
 // Configuration: the repository `.env` (written by `pnpm dev:deps`) plus `.env.demo`, which this script completes on
 // first run (gitignored: AUTH_SECRET and the internal API token are generated here; the Google client AUTH_GOOGLE_ID /
@@ -51,7 +56,14 @@ const LAB_CONTAINER = 'bw-demo-lab';
 const LAB_IMAGE = process.env.DEMO_LAB_IMAGE ?? 'bkimminich/juice-shop';
 const LAB_PORT = Number(process.env.DEMO_LAB_PORT ?? 3001);
 const LAB_CONTAINER_PORT = Number(process.env.DEMO_LAB_CONTAINER_PORT ?? 3000);
-const DB_NAME = 'blackwing_demo';
+// Not `blackwing`: that is the shared dev database, seeded by other worktrees. Not `blackwing_demo`: earlier test data.
+const DB_NAME = process.env.BW_DB_NAME ?? 'blackwing_app';
+const SMOKE_DB_NAME = 'blackwing_smoke';
+const SMOKE_API_PORT = 13401;
+const SMOKE_WORKER_HEALTH_PORT = 13801;
+// Same variable and default as the API and the hunt engine; passed to both so the console shows the real deadline.
+const GATE2_TIMEOUT_S = process.env.BW_GATE2_TIMEOUT_S ?? '300';
+const STACK_FILE = path.join(RUN_DIR, 'stack.json');
 const WEB_PORT = Number(process.env.DEMO_WEB_PORT ?? 3000);
 // The console's public origin; Google must allow `<origin>/api/auth/callback/google` as a redirect URI.
 const CONSOLE_ORIGIN = (process.env.DEMO_PUBLIC_ORIGIN ?? `http://localhost:${WEB_PORT}`).replace(
@@ -61,7 +73,7 @@ const CONSOLE_ORIGIN = (process.env.DEMO_PUBLIC_ORIGIN ?? `http://localhost:${WE
 const API_PORT = Number(process.env.DEMO_API_PORT ?? 13400);
 const WORKER_HEALTH_PORT = 13800;
 const API_ORIGIN = `http://127.0.0.1:${API_PORT}`;
-// Seeded directory users of the `acme` tenant, used by `up` and `smoke` on the internal API hop only.
+// Seeded directory users of the seed tenant, used by `smoke` only (they exist only in the smoke database).
 const SEED_USERS = {
   requester: 'appsec@acme.test',
   approver: 'owner@acme.test',
@@ -137,9 +149,9 @@ function ensureEnvFile() {
 }
 
 /** The environment every process gets: .env, then .env.demo, then the database, ports and sign-in settings. */
-function stackEnv(local) {
+function stackEnv(local, dbName = DB_NAME, apiPort = API_PORT, workerHealthPort = WORKER_HEALTH_PORT) {
   const base = parseEnvFile(path.join(ROOT, '.env'));
-  const dbUrl = (url) => (url ?? '').replace(/\/blackwing(\?|$)/, `/${DB_NAME}$1`);
+  const dbUrl = (url) => (url ?? '').replace(/\/blackwing(\?|$)/, `/${dbName}$1`);
   return {
     ...process.env,
     ...base,
@@ -147,17 +159,18 @@ function stackEnv(local) {
     NODE_ENV: 'development',
     DATABASE_URL: dbUrl(base.DATABASE_URL),
     MIGRATION_DATABASE_URL: dbUrl(base.MIGRATION_DATABASE_URL),
-    PGDATABASE: DB_NAME,
-    API_PORT: String(API_PORT),
-    WORKER_HEALTH_PORT: String(WORKER_HEALTH_PORT),
+    PGDATABASE: dbName,
+    API_PORT: String(apiPort),
+    WORKER_HEALTH_PORT: String(workerHealthPort),
     WEB_ORIGIN: CONSOLE_ORIGIN,
     BW_CONSOLE_ORIGIN: CONSOLE_ORIGIN,
     // dev lets the hunt engine use the host's Claude login when no ANTHROPIC_API_KEY is set (local runs only).
     BW_ENV: process.env.BW_ENV ?? base.BW_ENV ?? 'dev',
     // The console routes are mounted in the API only with BW_DEMO_MODE=1.
     BW_DEMO_MODE: '1',
-    BW_DEMO_API_ORIGIN: API_ORIGIN,
+    BW_DEMO_API_ORIGIN: `http://127.0.0.1:${apiPort}`,
     BW_DEMO_TENANT_ID: local.BW_DEMO_TENANT_ID ?? '',
+    BW_GATE2_TIMEOUT_S: GATE2_TIMEOUT_S,
     // Auth.js (web): Google sign-in, JWT session cookie, callback at <AUTH_URL>/api/auth/callback/google.
     AUTH_URL: CONSOLE_ORIGIN,
     AUTH_TRUST_HOST: 'true',
@@ -249,36 +262,63 @@ function psqlSuper(sql, env, database = 'blackwing') {
   );
 }
 
-function stepDatabase(env) {
-  const exists = psqlSuper(`select 1 from pg_database where datname='${DB_NAME}'`, env);
+function stepDatabase(env, dbName) {
+  if (!/^[a-z_][a-z0-9_]*$/.test(dbName)) fail(`invalid database name ${dbName}`);
+  const exists = psqlSuper(`select 1 from pg_database where datname='${dbName}'`, env);
   if (exists.status !== 0) fail('cannot reach postgres to create the database');
   if (exists.stdout.trim() === '1') {
-    log(`database ${DB_NAME} exists`);
-    return;
+    log(`database ${dbName} exists`);
+  } else {
+    const create = psqlSuper(
+      `create database ${dbName} owner ${env.BW_DEV_POSTGRES_MIGRATOR_USER}`,
+      env,
+    );
+    if (create.status !== 0) fail(`could not create database ${dbName}: ${create.stderr}`);
+    log(`created database ${dbName}`);
   }
-  const create = psqlSuper(
-    `create database ${DB_NAME} owner ${env.BW_DEV_POSTGRES_MIGRATOR_USER}`,
+  // The migrations need these, and only a superuser may create them (infra/compose/postgres/init does it for `blackwing`).
+  const ext = psqlSuper(
+    'create extension if not exists vector; create extension if not exists pgcrypto;',
     env,
+    dbName,
   );
-  if (create.status !== 0) fail(`could not create database ${DB_NAME}: ${create.stderr}`);
-  log(`created database ${DB_NAME}`);
+  if (ext.status !== 0) fail(`could not create the extensions in ${dbName}: ${ext.stderr}`);
 }
 
-/** Returns the tenant id (the seeded `acme` tenant), or '' when not seeded yet. */
-function tenantId(env) {
-  const r = psqlSuper("select id from tenants where slug = 'acme'", env, DB_NAME);
+/** The workspace the console runs in: the only active tenant (the oldest, should there ever be more). '' when none. */
+function tenantId(env, dbName) {
+  const r = psqlSuper(
+    "select id from tenants where status = 'active' order by created_at limit 1",
+    env,
+    dbName,
+  );
   return r.status === 0 ? r.stdout.trim() : '';
 }
 
-function stepMigrateAndSeed(env) {
-  log('running migrations');
+function stepMigrate(env) {
+  log(`running migrations on ${env.PGDATABASE}`);
   if (
     run(PNPM, ['--filter', '@blackwing/db', 'run', 'db:migrate'], { env, heavy: true }).status !== 0
   )
     fail('migrations failed; see the output above');
-  log('seeding the acme tenant');
-  if (run(PNPM, ['--filter', '@blackwing/db', 'run', 'db:seed'], { env, heavy: true }).status !== 0)
-    log('WARNING: db:seed exited non-zero; see the output above');
+}
+
+/**
+ * A fresh product database gets one workspace with an empty name and no users: the first administrator's Google sign-in
+ * creates their user and membership (API), and /welcome names the workspace. Superuser insert (tenants force RLS).
+ */
+function stepBootstrapTenant(env) {
+  const count = psqlSuper('select count(*) from tenants', env, DB_NAME);
+  if (count.status !== 0) fail(`cannot read tenants in ${DB_NAME}: ${count.stderr}`);
+  if (Number(count.stdout.trim()) > 0) return;
+  const slug = `ws-${randomBytes(3).toString('hex')}`;
+  const insert = psqlSuper(
+    `insert into tenants (slug, name, region) values ('${slug}', '', 'local')`,
+    env,
+    DB_NAME,
+  );
+  if (insert.status !== 0) fail(`could not create the workspace: ${insert.stderr}`);
+  log('created the workspace (it is named on /welcome at the first sign-in)');
 }
 
 function loadPids() {
@@ -328,6 +368,15 @@ function buildWeb(env) {
 
 function stepServices(env) {
   const pids = loadPids();
+  // A running API keeps the database it was started with; say so when that is not this one.
+  const stack = existsSync(STACK_FILE) ? JSON.parse(readFileSync(STACK_FILE, 'utf8')) : {};
+  if (pids.api && alive(pids.api) && stack.db !== DB_NAME)
+    log(
+      `WARNING: the running API uses database ${stack.db ?? '(unknown)'}, not ${DB_NAME}. ` +
+        'Restart it to switch: node scripts/blackwing.mjs stop && node scripts/blackwing.mjs',
+    );
+  else if (!(pids.api && alive(pids.api)))
+    writeFileSync(STACK_FILE, JSON.stringify({ db: DB_NAME }, null, 2));
   const specs = [
     ['api', 'apps/api', ['tsx', `--env-file=${path.join(ROOT, '.env')}`, 'src/main.ts']],
     ['worker', 'apps/worker', ['tsx', `--env-file=${path.join(ROOT, '.env')}`, 'src/main.ts']],
@@ -371,7 +420,7 @@ function waitFor(label, url, timeoutMs) {
   return false;
 }
 
-function printSummary(env, labRegistered) {
+function printSummary(env, labUp) {
   const admins = (env.BW_ADMIN_EMAILS ?? '').split(',').filter((e) => e.trim() !== '');
   process.stdout.write(`
 Blackwing is up.
@@ -380,20 +429,21 @@ Blackwing is up.
   Sign in        Continue with Google as ${admins.length === 0 ? '(set BW_ADMIN_EMAILS in .env.demo)' : admins.join(', ')}
   Google client  redirect URI ${CONSOLE_ORIGIN}/api/auth/callback/google
   API            ${API_ORIGIN}/health/live
-  Lab            ${labRegistered ? `http://127.0.0.1:${LAB_PORT} (registered as Juice Shop lab)` : 'not running (node scripts/blackwing.mjs lab starts it)'}
-  Check it       DEMO_SMOKE_TARGET=http://127.0.0.1:${LAB_PORT} node scripts/blackwing.mjs smoke
+  Database       ${DB_NAME}
+  Local test target  ${labUp ? `http://127.0.0.1:${LAB_PORT} (add it in the app like any site)` : 'not running (node scripts/blackwing.mjs lab starts it)'}
+  Check it       DEMO_SMOKE_TARGET=http://127.0.0.1:${LAB_PORT} node scripts/blackwing.mjs smoke   (own database ${SMOKE_DB_NAME})
 
 Logs: ${LOG_DIR}   Stop: pnpm stop:local
 `);
 }
 
 /** Calls the API's console routes with the internal token and a seeded identity (what the web sends after sign-in). */
-async function apiCall(token, user, method, route, body, roles) {
+async function apiCall(origin, token, user, method, route, body, roles) {
   const headers = { accept: 'application/json', 'x-bw-demo-token': token };
   if (user !== undefined) headers['x-bw-demo-user'] = user;
   if (roles !== undefined) headers['x-bw-demo-roles'] = roles;
   if (body !== undefined) headers['content-type'] = 'application/json';
-  const res = await fetch(`${API_ORIGIN}/v1/demo${route}`, {
+  const res = await fetch(`${origin}/v1/demo${route}`, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -409,45 +459,6 @@ async function apiCall(token, user, method, route, body, roles) {
   return { status: res.status, json, text };
 }
 
-/** Registers the lab as an asset and has the owner verify it. Idempotent (the API reuses an asset for the same origin). */
-async function registerLab(local) {
-  const token = local.BW_DEMO_INTERNAL_TOKEN ?? '';
-  try {
-    const baseUrl = `http://127.0.0.1:${LAB_PORT}`;
-    const created = await apiCall(
-      token,
-      SEED_USERS.requester,
-      'POST',
-      '/assets',
-      { name: 'Juice Shop lab', baseUrl },
-      'appsec-engineer',
-    );
-    if (created.status !== 200 && created.status !== 201)
-      throw new Error(`register HTTP ${created.status}`);
-    if (created.json.ownership?.status !== 'verified') {
-      const verified = await apiCall(
-        token,
-        SEED_USERS.approver,
-        'POST',
-        `/assets/${created.json.id}/verify`,
-        {
-          method: 'owner_attestation',
-          statement: 'Local lab (OWASP Juice Shop) started by scripts/blackwing.mjs.',
-        },
-        'asset-owner',
-      );
-      if (verified.status !== 200) throw new Error(`verify HTTP ${verified.status}`);
-    }
-    log('lab registered and verified as an asset: Juice Shop lab');
-    return true;
-  } catch (error) {
-    log(
-      `WARNING: could not register the lab as an asset (${error instanceof Error ? error.message : String(error)})`,
-    );
-    return false;
-  }
-}
-
 const smokeRequest = (assetId) => ({
   assetId,
   objective: 'Smoke test: short black-box web assessment (OWASP Top 10 indicators).',
@@ -457,15 +468,67 @@ const smokeRequest = (assetId) => ({
   costCapUsd: 2,
 });
 
+/** Stops a process group started by startService (the pnpm wrapper and its children). */
+function stopGroup(pid) {
+  try {
+    process.kill(-pid, 'SIGTERM');
+  } catch {
+    if (alive(pid)) process.kill(pid, 'SIGTERM');
+  }
+}
+
 /**
- * `smoke`: checks the web sign-in wiring, then runs the assessment flow end to end on the internal API hop with two
- * seeded identities (separation of duties), and exits 1 on any failure.
+ * The smoke stack: database `blackwing_smoke` (created, migrated and seeded), a private API on 13401 and a hunt engine
+ * against it. Returns a function that stops both. The product database and the product services are never touched.
+ * Only the hunt engine is started: the Temporal worker is not part of this flow and would share the product's task queue.
+ */
+function startSmokeStack(local) {
+  const base = stackEnv(local, SMOKE_DB_NAME, SMOKE_API_PORT, SMOKE_WORKER_HEALTH_PORT);
+  if (base.BW_DEV_POSTGRES_SUPERUSER === undefined) fail('.env is missing; run pnpm dev:deps first');
+  stepDatabase(base, SMOKE_DB_NAME);
+  stepMigrate(base);
+  log(`seeding ${SMOKE_DB_NAME} (the smoke personas live only there)`);
+  if (run(PNPM, ['--filter', '@blackwing/db', 'run', 'db:seed'], { env: base, heavy: true }).status !== 0)
+    fail('db:seed failed on the smoke database; see the output above');
+  // The seed's tenant is the one the seeded requester belongs to (superuser read: memberships force RLS).
+  const tenant = psqlSuper(
+    `select m.tenant_id from memberships m join users u on u.id = m.user_id where lower(u.email) = '${SEED_USERS.requester}' limit 1`,
+    base,
+    SMOKE_DB_NAME,
+  ).stdout.trim();
+  if (tenant === '') fail(`the seeded tenant is not in ${SMOKE_DB_NAME}`);
+  const env = stackEnv(
+    { ...local, BW_DEMO_TENANT_ID: tenant },
+    SMOKE_DB_NAME,
+    SMOKE_API_PORT,
+    SMOKE_WORKER_HEALTH_PORT,
+  );
+  const pids = [
+    startService('smoke-api', 'apps/api', ['tsx', `--env-file=${path.join(ROOT, '.env')}`, 'src/main.ts'], env),
+    startService('smoke-runner', 'apps/worker', ['tsx', 'src/demo/main.ts'], env),
+  ];
+  const stopAll = () => {
+    for (const pid of pids) stopGroup(pid);
+    log('stopped the smoke API and hunt engine');
+  };
+  if (!waitFor('smoke API', `http://127.0.0.1:${SMOKE_API_PORT}/health/live`, 90_000)) {
+    stopAll();
+    fail(`the smoke API did not start; see ${path.join(LOG_DIR, 'smoke-api.log')}`);
+  }
+  return stopAll;
+}
+
+/**
+ * `smoke`: checks the web sign-in wiring (read-only, on the running console), then runs the assessment flow end to end on
+ * the smoke stack with two seeded identities (separation of duties), and exits 1 on any failure.
  */
 async function smoke() {
-  const token = parseEnvFile(ENV_FILE).BW_DEMO_INTERNAL_TOKEN ?? '';
+  const local = parseEnvFile(ENV_FILE);
+  const token = local.BW_DEMO_INTERNAL_TOKEN ?? '';
   if (token === '') fail('no internal token in .env.demo; run node scripts/blackwing.mjs first');
+  const smokeOrigin = `http://127.0.0.1:${SMOKE_API_PORT}`;
   const api = (user, method, route, body, roles) =>
-    apiCall(token, user, method, route, body, roles);
+    apiCall(smokeOrigin, token, user, method, route, body, roles);
   const requester = { user: SEED_USERS.requester, roles: 'appsec-engineer' };
   const approver = { user: SEED_USERS.approver, roles: 'asset-owner' };
   const web = `http://127.0.0.1:${WEB_PORT}`;
@@ -490,9 +553,24 @@ async function smoke() {
   const target = process.env.DEMO_SMOKE_TARGET ?? '';
   if (target === '')
     fail('set DEMO_SMOKE_TARGET to an authorised target URL (e.g. the lab: http://127.0.0.1:3001)');
+  const stopSmokeStack = startSmokeStack(local);
+  try {
+    await smokeChecks({ api, check, expect, ctx, target, web, smokeOrigin, requester, approver });
+  } finally {
+    stopSmokeStack();
+  }
+  const failed = results.filter((r) => !r.ok);
+  log(`${results.length - failed.length}/${results.length} checks passed`);
+  if (failed.length > 0) {
+    log(`FAILED: ${failed.map((f) => f.name).join('; ')}`);
+    process.exit(1);
+  }
+  log(`console: ${CONSOLE_ORIGIN} (sign in with Google)`);
+}
 
+async function smokeChecks({ api, check, expect, ctx, target, web, smokeOrigin, requester, approver }) {
   await check('API answers /health/live', async () => {
-    const r = await fetch(`${API_ORIGIN}/health/live`);
+    const r = await fetch(`${smokeOrigin}/health/live`);
     expect(r.status === 200, `HTTP ${r.status}`);
   });
   await check('web: / redirects to /login when signed out', async () => {
@@ -518,7 +596,7 @@ async function smoke() {
     );
   });
   await check('API refuses a call without the internal token', async () => {
-    const r = await fetch(`${API_ORIGIN}/v1/demo/dashboard`);
+    const r = await fetch(`${smokeOrigin}/v1/demo/dashboard`);
     expect(r.status === 401, `HTTP ${r.status}`);
   });
   await check('requester registers the target', async () => {
@@ -531,7 +609,7 @@ async function smoke() {
     );
     expect(r.status === 201 || r.status === 200, `HTTP ${r.status} ${r.json.code ?? ''}`);
     ctx.assetId = r.json.id;
-    // Registering an origin that is already an asset (the lab registered by `up`) returns that asset.
+    // Registering an origin that is already an asset (an earlier smoke run) returns that asset.
     ctx.alreadyVerified = r.json.ownership?.status === 'verified';
     return ctx.alreadyVerified ? 'already registered and verified' : '';
   });
@@ -623,14 +701,6 @@ async function smoke() {
     expect(agents.size >= 2, `agents seen: ${[...agents].join(',')}`);
     return `${runState.stats?.httpSent ?? 0} requests, ${runState.findings?.length ?? 0} findings, $${runState.costUsd}`;
   });
-
-  const failed = results.filter((r) => !r.ok);
-  log(`${results.length - failed.length}/${results.length} checks passed`);
-  if (failed.length > 0) {
-    log(`FAILED: ${failed.map((f) => f.name).join('; ')}`);
-    process.exit(1);
-  }
-  log(`console: ${CONSOLE_ORIGIN} (sign in with Google)`);
 }
 
 function status() {
@@ -656,6 +726,7 @@ function stop() {
     log(`stopped ${name} (pid ${pid})`);
   }
   if (existsSync(PID_FILE)) unlinkSync(PID_FILE);
+  if (existsSync(STACK_FILE)) unlinkSync(STACK_FILE);
 }
 
 async function main() {
@@ -674,21 +745,18 @@ async function main() {
   if (baseEnv.BW_DEV_POSTGRES_SUPERUSER === undefined)
     fail('.env is missing; run pnpm dev:deps first');
   stepDeps();
-  stepDatabase(baseEnv);
-  stepMigrateAndSeed(baseEnv);
+  stepDatabase(baseEnv, DB_NAME);
+  stepMigrate(baseEnv);
+  stepBootstrapTenant(baseEnv);
   const labUp = stepLab();
-  // The tenant id is known only after the seed; the API and the hunt engine need it.
-  const tenant = tenantId(baseEnv);
-  if (tenant === '') fail(`the acme tenant is not in ${DB_NAME}; see the seed output above`);
+  // The API and the hunt engine run in the database's only workspace.
+  const tenant = tenantId(baseEnv, DB_NAME);
+  if (tenant === '') fail(`no active workspace in ${DB_NAME}`);
   const env = stackEnv({ ...local, BW_DEMO_TENANT_ID: tenant });
   stepServices(env);
-  const apiUp = waitFor('API', `${API_ORIGIN}/health/live`, 60_000);
-  let labRegistered = false;
-  if (labUp && apiUp && waitFor('lab', `http://127.0.0.1:${LAB_PORT}`, 120_000)) {
-    labRegistered = await registerLab(local);
-  }
+  waitFor('API', `${API_ORIGIN}/health/live`, 60_000);
   waitFor('web', `http://127.0.0.1:${WEB_PORT}/login`, 120_000);
-  printSummary(env, labRegistered);
+  printSummary(env, labUp);
 }
 
 await main();
