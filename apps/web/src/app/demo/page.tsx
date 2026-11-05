@@ -1,4 +1,4 @@
-// DEMO-STORY dashboard: the starting point of the story. Shows what is pending and the next click.
+// Dashboard: what is running, what waits for a human, and the latest confirmed findings.
 import Link from 'next/link';
 
 import { demoApi } from './_lib/demo-api';
@@ -6,23 +6,30 @@ import { dashboardSchema } from './_lib/schemas';
 import {
   Card,
   CardHeader,
-  DataTable,
+  Chip,
   Icon,
   LinkButton,
   PageHeader,
+  SeverityChip,
   StatusChip,
 } from '../../components/demo/design';
-import { ContextPanel } from '../../components/demo/shell';
+import { pathOf, shortId } from '../../components/demo/run-model';
 import { getSession } from '../../lib/session';
 
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
 
+const EMPTY = 'p-4 text-[13px] text-muted-foreground';
+
 export default async function DemoDashboard(): Promise<ReactNode> {
   const session = await getSession();
   if (session === null) return null;
   const data = dashboardSchema.parse(await demoApi(session, '/dashboard'));
+  const active = data.runs.filter(
+    (r) => r.state === 'running' || r.state === 'paused' || r.state === 'queued',
+  );
+  const gate1 = data.requests.filter((r) => r.status === 'pending_gate1');
   const stats = [
     { label: 'Assets', value: data.counts.assets, icon: 'assets' as const },
     {
@@ -51,10 +58,6 @@ export default async function DemoDashboard(): Promise<ReactNode> {
           </LinkButton>
         }
       />
-      <p className="max-w-3xl text-[13.5px] leading-6 text-muted-foreground">
-        Story: register the lab asset, request an assessment, get a second approval, run it, read
-        the confirmed finding and download the report.
-      </p>
 
       <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {stats.map((s) => (
@@ -68,87 +71,103 @@ export default async function DemoDashboard(): Promise<ReactNode> {
         ))}
       </dl>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_260px]">
-        <div className="flex min-w-0 flex-col gap-6">
-          <Card aria-labelledby="requests-h">
-            <CardHeader id="requests-h" title="Assessment requests" meta="Newest first" />
-            {data.requests.length === 0 ? (
-              <p className="p-4 text-[13px] text-muted-foreground">
-                No requests yet. Start with{' '}
-                <Link className="text-primary underline" href="/demo/assets">
-                  Assets
-                </Link>
-                .
-              </p>
-            ) : (
-              <DataTable
-                label="Assessment requests"
-                head={['Request', 'Intrusiveness', 'Status', 'Requested by']}
-              >
-                {data.requests.map((r) => (
-                  <tr key={r.id} className="h-12 hover:bg-primary-soft/40">
-                    <td className="px-4">
-                      <Link
-                        className="font-mono text-[12.5px] text-primary hover:underline"
-                        href={`/demo/requests/${r.id}`}
-                      >
-                        {r.testCaseId}
-                      </Link>
-                    </td>
-                    <td className="px-4 font-mono text-xs text-muted-foreground">
-                      {r.intrusiveness}
-                    </td>
-                    <td className="px-4">
-                      <StatusChip value={r.status} />
-                    </td>
-                    <td className="px-4 text-muted-foreground">{r.requester.name ?? 'unknown'}</td>
-                  </tr>
-                ))}
-              </DataTable>
-            )}
-          </Card>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card aria-labelledby="running-h">
+          <CardHeader id="running-h" title="Running" meta="Live runs" />
+          {active.length === 0 ? (
+            <p className={EMPTY}>
+              Nothing is running. Register a target in{' '}
+              <Link className="text-primary underline" href="/demo/assets">
+                Assets
+              </Link>
+              , then request an assessment.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {active.map((r) => (
+                <li key={r.id} className="flex items-center gap-3 px-4 py-3">
+                  <Link
+                    className="text-[13.5px] font-medium text-primary hover:underline"
+                    href={`/demo/runs/${r.id}`}
+                  >
+                    {r.assetName ?? 'Assessment'}
+                  </Link>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    run_{shortId(r.id)}
+                  </span>
+                  <span className="ml-auto">
+                    <StatusChip value={r.state} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
 
-          <Card aria-labelledby="findings-h">
-            <CardHeader
-              id="findings-h"
-              title="Confirmed findings"
-              meta="Released only after Gate 3"
-            />
-            {data.findings.length === 0 ? (
-              <p className="p-4 text-[13px] text-muted-foreground">None yet.</p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {data.findings.map((f) => (
-                  <li key={f.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                    <Link
-                      className="text-[13.5px] font-medium text-primary hover:underline"
-                      href={`/demo/findings/${f.id}`}
-                    >
-                      {f.title}
-                    </Link>
-                    <StatusChip value="confirmed" />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </div>
-        <ContextPanel
-          sections={[
-            {
-              title: 'Next click',
-              body:
-                data.counts.requestsPendingGate1 > 0
-                  ? 'A request is waiting for Gate 1. A second person has to approve it.'
-                  : 'Pick an asset and request an assessment. Nothing runs until Gate 1 approves it.',
-            },
-            {
-              title: 'No answer means no',
-              body: 'A request without a decision does not run. Destructive tests are never allowed.',
-            },
-          ]}
-        />
+        <Card aria-labelledby="waiting">
+          <CardHeader id="waiting" title="Waiting on you" meta="No decision means deny" />
+          {gate1.length === 0 && data.pendingGate2.length === 0 ? (
+            <p className={EMPTY}>No approvals are waiting.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {data.pendingGate2.map((g) => (
+                <li key={g.id} className="flex items-center gap-3 px-4 py-3">
+                  <Chip tone="warn" bordered>
+                    Gate 2
+                  </Chip>
+                  <Link
+                    className="min-w-0 truncate font-mono text-[13px] text-primary hover:underline"
+                    href={`/demo/approvals/gate2/${g.id}`}
+                  >
+                    {g.method} {pathOf(g.url)}
+                  </Link>
+                  <span className="ml-auto text-xs text-muted-foreground">{g.agent}</span>
+                </li>
+              ))}
+              {gate1.map((r) => (
+                <li key={r.id} className="flex items-center gap-3 px-4 py-3">
+                  <Chip tone="warn" bordered>
+                    Gate 1
+                  </Chip>
+                  <Link
+                    className="min-w-0 truncate text-[13.5px] text-primary hover:underline"
+                    href={`/demo/requests/${r.id}`}
+                  >
+                    {r.assetName ?? r.assetId}: {r.objective}
+                  </Link>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {r.requester.name ?? 'unknown'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
       </div>
+
+      <Card aria-labelledby="findings">
+        <CardHeader id="findings" title="Recent findings" meta="Confirmed by the validator" />
+        {data.findings.length === 0 ? (
+          <p className={EMPTY}>None yet.</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {data.findings.map((f) => (
+              <li key={f.id} className="flex items-center gap-3 px-4 py-3">
+                <SeverityChip severity={f.severity} />
+                <Link
+                  className="min-w-0 text-[13.5px] font-medium text-primary hover:underline"
+                  href={`/demo/findings/${f.id}`}
+                >
+                  {f.title}
+                </Link>
+                <span className="ml-auto">
+                  <StatusChip value={f.status} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
     </div>
   );
 }

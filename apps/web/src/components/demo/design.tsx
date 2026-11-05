@@ -200,6 +200,10 @@ export function StatusChip({ value }: { readonly value: string }) {
     completed: { tone: 'ok', icon: 'check', label: 'Completed' },
     failed: { tone: 'bad', icon: 'x', label: 'Failed' },
     cancelled: { tone: 'muted', icon: 'minus', label: 'Cancelled' },
+    paused: { tone: 'warn', icon: 'pause', label: 'Paused' },
+    killed: { tone: 'kill', icon: 'kill', label: 'Killed' },
+    not_confirmed: { tone: 'bad', icon: 'x', label: 'Not confirmed' },
+    'not confirmed': { tone: 'bad', icon: 'x', label: 'Not confirmed' },
     confirmed: { tone: 'ok', icon: 'check', label: 'Confirmed' },
     validating: { tone: 'primary', icon: 'clock', label: 'Validating' },
     suspected: { tone: 'warn', icon: 'info', label: 'Suspected' },
@@ -406,4 +410,30 @@ export function PageHeader({
       {actions ? <div className="flex flex-wrap items-center gap-2.5">{actions}</div> : null}
     </div>
   );
+}
+
+/** A refusal from the demo API, passed back on the page as ?error=<code>&message=<detail>. */
+export function ErrorBanner({
+  error,
+  message,
+}: {
+  readonly error?: string | undefined;
+  readonly message?: string | undefined;
+}) {
+  if (error === undefined) return null;
+  return (
+    <p
+      role="alert"
+      className="flex items-start gap-2.5 rounded-xl border border-bad bg-bad-soft p-4 text-[13.5px] text-bad"
+    >
+      <Icon name="x" size={18} />
+      <span>
+        <strong className="font-semibold">{error}</strong>: {message ?? 'The action was refused.'}
+      </span>
+    </p>
+  );
+}
+
+export function queryText(value: string | string[] | undefined): string | undefined {
+  return typeof value === 'string' ? value : undefined;
 }

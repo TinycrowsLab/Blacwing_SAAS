@@ -1,14 +1,16 @@
-// DEMO-STORY: create an assessment request (scope, intrusiveness class, budget). Submitting goes to Gate 1.
+// New assessment: a verified target, an objective, and budgets. Submitting goes to Gate 1.
 import { z } from 'zod';
 
 import {
   Card,
   CardHeader,
-  Icon,
+  Chip,
+  ErrorBanner,
   INPUT_CLASS,
+  Icon,
   PageHeader,
   buttonClass,
-  Chip,
+  queryText,
 } from '../../../../components/demo/design';
 import { ContextPanel } from '../../../../components/demo/shell';
 import { getSession } from '../../../../lib/session';
@@ -23,6 +25,11 @@ export const dynamic = 'force-dynamic';
 const listSchema = z.object({ items: z.array(assetSchema) });
 
 const LABEL = 'flex flex-col gap-1.5 text-[12.5px] font-medium text-foreground';
+const HINT = 'text-xs font-normal text-muted-foreground';
+const RADIO =
+  'flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3.5 text-[13px] has-[:checked]:border-primary has-[:checked]:bg-primary-soft';
+const DEFAULT_OBJECTIVE =
+  'Black-box web assessment: OWASP Top 10 and API security. Map the attack surface, then look for injection, broken access control, authentication weaknesses, security misconfiguration and sensitive data exposure. Prove every finding with a benign probe and a negative control.';
 
 export default async function NewRequestPage({
   searchParams,
@@ -32,10 +39,8 @@ export default async function NewRequestPage({
   const session = await getSession();
   if (session === null) return null;
   const params = await searchParams;
-  const preselected = typeof params.assetId === 'string' ? params.assetId : undefined;
-  const error = typeof params.error === 'string' ? params.error : undefined;
-  const message = typeof params.message === 'string' ? params.message : undefined;
   const { items } = listSchema.parse(await demoApi(session, '/assets'));
+  const verified = items.filter((a) => a.ownership.status === 'verified');
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
@@ -47,80 +52,66 @@ export default async function NewRequestPage({
           </Chip>
         }
       />
-      {error === undefined ? null : (
-        <p
-          role="alert"
-          className="flex items-start gap-2.5 rounded-xl border border-bad bg-bad-soft p-4 text-[13.5px] text-bad"
-        >
-          <Icon name="x" size={18} />
-          <span>
-            <strong className="font-semibold">{error}</strong>:{' '}
-            {message ?? 'The request was refused.'}
-          </span>
-        </p>
-      )}
+      <ErrorBanner error={queryText(params.error)} message={queryText(params.message)} />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
         <form action={createRequestAction} className="flex max-w-3xl flex-col gap-5">
           <Card>
-            <CardHeader title="Target and test case" meta="The case is pinned to the lab target" />
-            <div className="grid gap-4 p-4 md:grid-cols-2">
+            <CardHeader title="Target and objective" meta="Only verified assets" />
+            <div className="flex flex-col gap-4 p-4">
               <label className={LABEL}>
                 Asset
-                <select name="assetId" defaultValue={preselected} required className={INPUT_CLASS}>
-                  {items.map((a) => (
+                <select
+                  name="assetId"
+                  defaultValue={queryText(params.assetId)}
+                  required
+                  className={INPUT_CLASS}
+                >
+                  {verified.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.name} ({a.ownership.status})
+                      {a.name} ({a.baseUrl})
                     </option>
                   ))}
                 </select>
+                {verified.length === 0 ? (
+                  <span className="text-xs font-normal text-bad">
+                    No verified asset. Verify one in Assets first.
+                  </span>
+                ) : null}
               </label>
               <label className={LABEL}>
-                Test case
-                <select
-                  name="testCaseId"
-                  defaultValue="webapi.injection.sql"
-                  className={INPUT_CLASS}
-                >
-                  <option value="webapi.injection.sql">
-                    SQL injection in product search (WSTG-INPV-05, CWE-89)
-                  </option>
-                </select>
-              </label>
-              <label className={LABEL}>
-                Scope host
-                <input
-                  name="scopeHost"
-                  defaultValue="127.0.0.1"
+                Objective
+                <textarea
+                  name="objective"
                   required
-                  className={`${INPUT_CLASS} font-mono`}
+                  maxLength={2000}
+                  rows={5}
+                  defaultValue={DEFAULT_OBJECTIVE}
+                  className={`${INPUT_CLASS} h-auto py-2.5 leading-5`}
                 />
-                <span className="text-xs font-normal text-muted-foreground">
-                  Hostname or wildcard.
+                <span className={HINT}>
+                  What the agents should look for. Scope is set by the asset, not by this text.
                 </span>
               </label>
               <label className={LABEL}>
-                Scope path prefix
-                <input
-                  name="scopePath"
-                  defaultValue="/rest/products/search"
-                  required
-                  className={`${INPUT_CLASS} font-mono`}
+                Extra excluded paths
+                <textarea
+                  name="excludedPaths"
+                  rows={2}
+                  placeholder="/logout"
+                  className={`${INPUT_CLASS} h-auto py-2 font-mono`}
                 />
-                <span className="text-xs font-normal text-muted-foreground">
-                  Matches the endpoints in the test case.
+                <span className={HINT}>
+                  Added to the asset&apos;s excluded paths for this assessment. One per line.
                 </span>
               </label>
             </div>
           </Card>
 
           <Card>
-            <CardHeader
-              title="Intrusiveness class"
-              meta="Pick the most passive class that can prove the case"
-            />
+            <CardHeader title="Intrusiveness" meta="The ceiling for the whole run" />
             <fieldset className="grid gap-3 p-4 md:grid-cols-2">
-              <legend className="sr-only">Intrusiveness class</legend>
-              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3.5 text-[13px] has-[:checked]:border-primary has-[:checked]:bg-primary-soft">
+              <legend className="sr-only">Intrusiveness</legend>
+              <label className={RADIO}>
                 <input
                   type="radio"
                   name="intrusiveness"
@@ -130,11 +121,11 @@ export default async function NewRequestPage({
                 <span className="flex flex-col gap-0.5">
                   <span className="font-semibold">Passive</span>
                   <span className="text-muted-foreground">
-                    No crafted traffic. Refused for this case.
+                    Read-only observation of ordinary responses.
                   </span>
                 </span>
               </label>
-              <label className="flex cursor-pointer items-start gap-3 rounded-xl border-[1.5px] border-primary bg-primary-soft p-3.5 text-[13px]">
+              <label className={RADIO}>
                 <input
                   type="radio"
                   name="intrusiveness"
@@ -143,62 +134,63 @@ export default async function NewRequestPage({
                   className="mt-1 accent-[var(--primary)]"
                 />
                 <span className="flex flex-col gap-0.5">
-                  <span className="flex items-center gap-2 font-semibold">
-                    Active-safe{' '}
-                    <Chip tone="primary" pill>
-                      Selected
-                    </Chip>
-                  </span>
+                  <span className="font-semibold">Active-safe</span>
                   <span className="text-muted-foreground">
-                    Crafted requests that should not change state.
+                    Crafted GET, HEAD and OPTIONS requests that should not change state.
                   </span>
                 </span>
               </label>
-              <div className="flex items-start gap-3 rounded-xl border border-border p-3.5 text-[13px] opacity-60">
-                <span
-                  className="mt-1 size-4 rounded-full border-[1.5px] border-border-strong"
-                  aria-hidden="true"
-                />
+              <div className="flex items-start gap-3 rounded-xl border border-dashed border-border-strong bg-surface-2 p-3.5 text-[13px] text-muted-foreground md:col-span-2">
+                <Icon name="warn" size={16} className="mt-0.5" />
                 <span className="flex flex-col gap-0.5">
-                  <span className="font-semibold">State-changing</span>
-                  <span className="text-muted-foreground">
-                    Needs Gate 1 and a reversal journal. Refused by policy in this demo.
+                  <span className="font-semibold text-foreground">
+                    State-changing requests need Gate 2
                   </span>
-                </span>
-              </div>
-              <div className="flex items-start gap-3 rounded-xl border border-dashed border-border-strong bg-surface-2 p-3.5 text-[13px] text-muted-foreground">
-                <Icon name="lock" size={16} className="mt-0.5" />
-                <span className="flex flex-col gap-0.5">
-                  <span className="font-semibold">Destructive</span>
-                  <span>Never allowed in Blackwing. This cannot be changed by any role.</span>
+                  <span>
+                    POST, PUT and PATCH are never sent on their own. A human decides each one during
+                    the run, and no decision means denied. DELETE is never allowed.
+                  </span>
                 </span>
               </div>
             </fieldset>
           </Card>
 
           <Card>
-            <CardHeader title="Budget" />
-            <div className="grid gap-4 p-4 md:grid-cols-2">
+            <CardHeader title="Budgets" />
+            <div className="grid gap-4 p-4 md:grid-cols-3">
               <label className={LABEL}>
-                Requests (max 20)
+                Requests (10 to 5000)
                 <input
                   name="budgetRequests"
                   type="number"
-                  min={1}
-                  max={20}
-                  defaultValue={8}
+                  min={10}
+                  max={5000}
+                  defaultValue={300}
                   required
                   className={INPUT_CLASS}
                 />
               </label>
               <label className={LABEL}>
-                Seconds (60 to 900)
+                Minutes (1 to 120)
                 <input
-                  name="budgetSeconds"
+                  name="budgetMinutes"
                   type="number"
-                  min={60}
-                  max={900}
-                  defaultValue={300}
+                  min={1}
+                  max={120}
+                  defaultValue={20}
+                  required
+                  className={INPUT_CLASS}
+                />
+              </label>
+              <label className={LABEL}>
+                Model cost cap, USD (0.5 to 100)
+                <input
+                  name="costCapUsd"
+                  type="number"
+                  min={0.5}
+                  max={100}
+                  step={0.5}
+                  defaultValue={5}
                   required
                   className={INPUT_CLASS}
                 />
@@ -207,27 +199,28 @@ export default async function NewRequestPage({
           </Card>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button type="submit" className={buttonClass('primary', 'h-11 px-5')}>
+            <button
+              type="submit"
+              disabled={verified.length === 0}
+              className={buttonClass('primary', 'h-11 px-5')}
+            >
               Submit to Gate 1
             </button>
             <span className="text-xs text-muted-foreground">Recorded in the audit ledger</span>
           </div>
         </form>
-
-        <div className="flex flex-col gap-4">
-          <ContextPanel
-            sections={[
-              {
-                title: 'What happens next',
-                body: 'The request waits for Gate 1. A second person must approve it. The requester cannot approve their own request.',
-              },
-              {
-                title: 'Refused by policy',
-                body: 'State-changing and destructive classes are never offered in this case. Passive is refused because the case needs a crafted probe.',
-              },
-            ]}
-          />
-        </div>
+        <ContextPanel
+          sections={[
+            {
+              title: 'What happens next',
+              body: 'The request waits for Gate 1. A second person must approve it. The requester cannot approve their own request.',
+            },
+            {
+              title: 'Limits are enforced',
+              body: 'Scope, method class and budgets are checked by the runner before each request, not by the agents.',
+            },
+          ]}
+        />
       </div>
     </div>
   );

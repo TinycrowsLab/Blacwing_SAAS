@@ -19,7 +19,8 @@ export async function GET(
     const body = await demoApi(session, `/runs/${encodeURIComponent(id)}?afterSeq=${afterSeq}`);
     return Response.json(body, { headers: { 'cache-control': 'no-store' } });
   } catch (error) {
-    if (error instanceof DemoApiError) return Response.json({ code: error.code, message: error.message }, { status: error.status });
+    if (error instanceof DemoApiError)
+      return Response.json({ code: error.code, message: error.message }, { status: error.status });
     return Response.json({ code: 'demo_error' }, { status: 500 });
   }
 }

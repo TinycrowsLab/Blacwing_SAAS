@@ -8,6 +8,7 @@ import { ModeToggle } from '@blackwing/ui';
 
 import { DemoRail } from './demo-rail';
 import { Icon, LinkButton } from './design';
+import { KillButton } from './kill-dialog';
 import { SignOutButton } from './sign-out-button';
 
 import type { ReactNode } from 'react';
@@ -15,6 +16,11 @@ import type { ReactNode } from 'react';
 export interface DemoShellProps {
   readonly name: string;
   readonly roles: readonly string[];
+  /** Gate 2 requests waiting for a decision, and the first one's page. */
+  readonly pendingGate2: number;
+  readonly firstGate2Id: string | null;
+  /** The most recent running run, the target of the top bar Kill button. */
+  readonly runningRun: { readonly id: string; readonly assetName: string } | null;
   readonly children: ReactNode;
 }
 
@@ -40,19 +46,24 @@ export function BrandMark({ size = 26 }: { readonly size?: number }) {
   );
 }
 
-export function DemoShell({ name, roles, children }: DemoShellProps) {
+export function DemoShell({
+  name,
+  roles,
+  pendingGate2,
+  firstGate2Id,
+  runningRun,
+  children,
+}: DemoShellProps) {
   return (
     <div className="min-h-screen bg-bg text-text">
-      <div className="border-b border-border bg-warn-soft px-4 py-1 text-center text-xs font-medium text-warn">
-        Demo mode. Lab target only (local Juice Shop). Localhost development build, not production.
-      </div>
       <header className="flex h-14 items-center gap-4 border-b border-border bg-surface px-5">
         <Link href="/demo" className="flex items-center gap-2.5 text-foreground no-underline">
           <BrandMark />
           <span className="text-base font-semibold">Blackwing</span>
         </Link>
-        <span className="inline-flex h-8 items-center gap-2 rounded-full bg-surface-2 px-3 text-[13px] font-medium">
+        <span className="hidden h-8 items-center gap-2 rounded-full bg-surface-2 px-3 text-[13px] font-medium sm:inline-flex">
           Acme Corp
+          <Icon name="chevron" size={13} />
         </span>
         <span className="relative hidden h-9 max-w-[460px] flex-1 items-center gap-2.5 rounded-[10px] bg-surface-2 px-3 text-[13px] text-muted-foreground md:inline-flex">
           <Icon name="search" size={15} />
@@ -62,8 +73,21 @@ export function DemoShell({ name, roles, children }: DemoShellProps) {
           </kbd>
         </span>
         <div className="flex-1" />
-        <Chip>Demo, lab target</Chip>
         <ModeToggle />
+        <Link
+          href={firstGate2Id === null ? '/demo' : `/demo/approvals/gate2/${firstGate2Id}`}
+          title={`${pendingGate2} Gate 2 decisions waiting`}
+          className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-surface-2"
+        >
+          <Icon name="bell" size={19} />
+          {pendingGate2 > 0 ? (
+            <span className="absolute right-0.5 top-0.5 flex size-4 items-center justify-center rounded-full bg-warn text-[10px] font-semibold text-bg">
+              {pendingGate2}
+            </span>
+          ) : null}
+          <span className="sr-only">{pendingGate2} Gate 2 decisions waiting</span>
+        </Link>
+        <KillButton run={runningRun} />
         <span
           className="flex items-center gap-2.5"
           data-testid="demo-user"
@@ -79,9 +103,9 @@ export function DemoShell({ name, roles, children }: DemoShellProps) {
         </span>
         <SignOutButton />
       </header>
-      <div className="grid min-h-[calc(100vh-5.5rem)] grid-cols-[64px_minmax(0,1fr)]">
+      <div className="grid min-h-[calc(100vh-3.5rem)] grid-cols-[64px_minmax(0,1fr)]">
         <DemoRail />
-        <main className="min-w-0 space-y-6 px-7 py-6">{children}</main>
+        <main className="min-w-0 space-y-6 px-4 py-6 sm:px-7">{children}</main>
       </div>
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-7 py-3 text-xs text-muted-foreground">
         <span>Blackwing demo. Agent output is labelled not verified.</span>
@@ -90,14 +114,6 @@ export function DemoShell({ name, roles, children }: DemoShellProps) {
         </LinkButton>
       </footer>
     </div>
-  );
-}
-
-function Chip({ children }: { readonly children: ReactNode }) {
-  return (
-    <span className="hidden h-7 items-center rounded-md bg-surface-2 px-2.5 text-xs font-medium text-muted-foreground md:inline-flex">
-      {children}
-    </span>
   );
 }
 

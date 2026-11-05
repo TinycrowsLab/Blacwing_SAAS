@@ -15,8 +15,6 @@ const demoEnvSchema = z
     /** Tenant the demo story runs in (the seeded `acme` tenant). */
     BW_DEMO_TENANT_ID: z.string().min(1).optional(),
     DATABASE_URL: z.string().min(1).optional(),
-    /** The lab target (Juice Shop) as the runner reaches it. Set by scripts/demo.mjs. */
-    BW_TARGET_JUICE_SHOP_URL: z.url().default('http://127.0.0.1:3001'),
   })
   .superRefine((env, ctx) => {
     if (env.BW_DEMO_MODE !== '1') return;
@@ -32,7 +30,6 @@ export interface DemoConfig {
   readonly internalToken: string;
   readonly tenantId: string;
   readonly databaseUrl: string;
-  readonly targetBaseUrl: string;
 }
 
 /** Reads the demo variables. Disabled (and inert) unless BW_DEMO_MODE=1. */
@@ -43,6 +40,5 @@ export function loadDemoConfig(source?: EnvSource): DemoConfig {
     internalToken: env.BW_DEMO_INTERNAL_TOKEN ?? '',
     tenantId: env.BW_DEMO_TENANT_ID ?? '',
     databaseUrl: env.DATABASE_URL ?? '',
-    targetBaseUrl: env.BW_TARGET_JUICE_SHOP_URL,
   };
 }

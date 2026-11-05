@@ -9,7 +9,7 @@ import { Icon, type IconName } from './design';
 interface RailItem {
   readonly label: string;
   readonly icon: IconName;
-  readonly href?: string;
+  readonly href: string;
   readonly match: (path: string) => boolean;
 }
 
@@ -27,7 +27,18 @@ const RAIL: readonly RailItem[] = [
     href: '/demo/requests/new',
     match: (p) => p.startsWith('/demo/requests') || p.startsWith('/demo/runs'),
   },
-  { label: 'Findings', icon: 'findings', match: (p) => p.startsWith('/demo/findings') },
+  {
+    label: 'Approvals',
+    icon: 'approvals',
+    href: '/demo#waiting',
+    match: (p) => p.startsWith('/demo/approvals'),
+  },
+  {
+    label: 'Findings',
+    icon: 'findings',
+    href: '/demo#findings',
+    match: (p) => p.startsWith('/demo/findings'),
+  },
   {
     label: 'About the demo',
     icon: 'info',
@@ -46,18 +57,6 @@ export function DemoRail() {
       {RAIL.map((item) => {
         const isActive = item.match(path);
         const base = 'flex size-10 items-center justify-center rounded-[10px]';
-        if (item.href === undefined) {
-          return (
-            <span
-              key={item.label}
-              title={`${item.label} (not in the demo story)`}
-              className={`${base} text-muted-foreground opacity-40`}
-            >
-              <Icon name={item.icon} size={19} />
-              <span className="sr-only">{item.label}, not part of the demo</span>
-            </span>
-          );
-        }
         return (
           <Link
             key={item.label}

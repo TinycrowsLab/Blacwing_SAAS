@@ -1,4 +1,4 @@
-// DEMO-STORY request detail with the Gate 1 decision. The requester cannot approve their own request (separation
+// Request detail with the Gate 1 decision. The requester cannot approve their own request (separation
 // of duties, refused by the API). The story signs out and signs in as the asset owner for the second approval.
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -26,6 +26,7 @@ import type { ReactNode } from 'react';
 export const dynamic = 'force-dynamic';
 
 const HTTP_NOT_FOUND = 404;
+const SECONDS_PER_MINUTE = 60;
 
 function intrusivenessChip(value: string): ReactNode {
   const v = value.toLowerCase();
@@ -89,7 +90,7 @@ export default async function DemoRequestPage({
     <div className="flex flex-col gap-5">
       <PageHeader
         crumbs={[{ label: 'Approvals', href: '/demo' }, { label: 'Gate 1' }, { label: request.id }]}
-        title={request.testCaseId}
+        title={request.assetName ?? 'Assessment request'}
         chips={<StatusChip value={request.status} />}
       />
 
@@ -122,25 +123,28 @@ export default async function DemoRequestPage({
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
         <div className="flex min-w-0 flex-col gap-4">
           <Card aria-labelledby="scope-h">
-            <CardHeader id="scope-h" title="Scope and budget" />
-            <div className="grid gap-3 p-4 md:grid-cols-3">
+            <CardHeader id="scope-h" title="Objective and budget" />
+            <div className="grid gap-3 p-4 md:grid-cols-2">
               <Fact label="Intrusiveness">{intrusivenessChip(request.intrusiveness)}</Fact>
-              <Fact label="Environment">
-                <span className="inline-flex h-6 items-center rounded-md border border-bad px-2.5 font-medium text-bad">
-                  Lab target
-                </span>
-              </Fact>
               <Fact label="Budget">
                 <span className="font-mono">{request.budget.requests}</span> requests,{' '}
-                <span className="font-mono">{request.budget.seconds}</span> s
+                <span className="font-mono">
+                  {Math.round(request.budget.seconds / SECONDS_PER_MINUTE)}
+                </span>{' '}
+                min
+                {request.budget.costUsd === null ? '' : `, $${request.budget.costUsd} cap`}
               </Fact>
             </div>
             <div className="border-t border-border px-4 py-3">
-              <span className="text-xs text-muted-foreground">Scope</span>
-              <div className="mt-1 font-mono text-[13px]">
-                GET {String(request.scope.host)}
-                {String(request.scope.pathPrefix)}
-              </div>
+              <span className="text-xs text-muted-foreground">Objective</span>
+              <p className="m-0 mt-1 whitespace-pre-wrap text-[13px] leading-5">
+                {request.objective}
+              </p>
+              {request.excludedPaths.length === 0 ? null : (
+                <p className="m-0 mt-2 font-mono text-xs text-muted-foreground">
+                  Excluded: {request.excludedPaths.join(', ')}
+                </p>
+              )}
             </div>
           </Card>
 
@@ -222,8 +226,8 @@ export default async function DemoRequestPage({
               <CardHeader id="start-h" title="Start the run" />
               <div className="flex flex-col gap-4 p-4">
                 <p className="text-[13.5px] leading-6 text-muted-foreground">
-                  Gate 1 is approved. The run pins the test case, the oracle, the runner version and
-                  the lab target, then probes the target live.
+                  Gate 1 is approved. The run pins the scope, the authorisation and the runner
+                  version, then the agent team hunts inside that scope.
                 </p>
                 <form action={startRunAction}>
                   <input type="hidden" name="requestId" value={request.id} />

@@ -1,10 +1,7 @@
-/* CVSS v4 bands are FIRST's published ranges (9, 7, 4), not tunable values. */
-/* eslint-disable @typescript-eslint/no-magic-numbers -- CVSS v4 severity bands, see FIRST's specification */
-// DEMO-STORY finding detail: the confirmed finding, its evidence (request and response), the oracle, the replay
-// results, a copyable repro and the report download.
+// Finding detail: severity, classification, the oracle, probe against negative control, the replays, a repro and the
+// report download. Agent-written text is labelled not verified.
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { z } from 'zod';
 
 import {
   AgentText,
@@ -12,7 +9,6 @@ import {
   CardHeader,
   Chip,
   DataTable,
-  Icon,
   IdChip,
   LinkButton,
   PageHeader,
@@ -22,33 +18,43 @@ import {
 import { ContextPanel } from '../../../../components/demo/shell';
 import { getSession } from '../../../../lib/session';
 import { DemoApiError, demoApi } from '../../_lib/demo-api';
-import { findingSchema } from '../../_lib/schemas';
+import { type DemoFinding, findingSchema } from '../../_lib/schemas';
 
 import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
 
-/** Text from an untyped JSON field, or empty. */
-const text = (value: unknown): string => (typeof value === 'string' ? value : '');
-
 const HTTP_NOT_FOUND = 404;
 
-const probeSchema = z.object({
-  recorded: z.boolean().optional(),
-  probe: z.object({
-    request: z.object({ url: z.string() }).optional(),
-    response: z.object({ status: z.number(), bodyExcerpt: z.string().optional() }).optional(),
-  }),
-  negativeControl: z.object({
-    request: z.object({ url: z.string() }).optional(),
-    response: z.object({ status: z.number() }).optional(),
-  }),
-});
+type Exchange = DemoFinding['evidence']['probe'];
 
-const replaySchema = z.object({
-  replays: z.array(z.object({ n: z.number(), status: z.number(), matched: z.boolean() })),
-  negativeControl: z.object({ status: z.number(), matched: z.boolean() }),
-});
+function ExchangeCard({
+  title,
+  exchange,
+  note,
+}: {
+  readonly title: string;
+  readonly exchange: Exchange;
+  readonly note: string;
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-border p-3.5 text-[13px]">
+      <span className="text-xs font-medium text-muted-foreground">{title}</span>
+      <span className="break-all font-mono text-[12.5px]">
+        {exchange.request === undefined
+          ? 'n/a'
+          : `${exchange.request.method} ${exchange.request.url}`}
+      </span>
+      <span>HTTP {exchange.response?.status ?? 'n/a'}</span>
+      <span className="text-xs text-muted-foreground">{note}</span>
+      <AgentText label="Target response, not verified">
+        <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all text-[12px]">
+          {exchange.response?.bodyExcerpt ?? '(no body excerpt)'}
+        </pre>
+      </AgentText>
+    </div>
+  );
+}
 
 export default async function DemoFindingPage({
   params,
@@ -58,34 +64,19 @@ export default async function DemoFindingPage({
   const session = await getSession();
   if (session === null) return null;
   const { id } = await params;
-  let finding;
+  let finding: DemoFinding;
   try {
     finding = findingSchema.parse(await demoApi(session, `/findings/${encodeURIComponent(id)}`));
   } catch (caught) {
     if (caught instanceof DemoApiError && caught.status === HTTP_NOT_FOUND) notFound();
     throw caught;
   }
-  const evidence = probeSchema.parse(finding.evidence);
-  const replay = replaySchema.parse(finding.replay);
   const base = `/demo/api/findings/${encodeURIComponent(id)}/report`;
-  const score = finding.severity.cvssV4Score;
-  const severity =
-    score >= 9
-      ? 'critical'
-      : score >= 7
-        ? 'high'
-        : score >= 4
-          ? 'medium'
-          : score > 0
-            ? 'low'
-            : 'info';
-  const oracleSignature = text(
-    (finding.oracle.params as { signature?: unknown } | undefined)?.signature,
-  );
+  const { probe, control, replays } = finding.evidence;
   return (
     <article className="flex flex-col gap-6">
       <PageHeader
-        crumbs={[{ label: 'Findings', href: '/demo' }, { label: finding.id }]}
+        crumbs={[{ label: 'Findings', href: '/demo#findings' }, { label: finding.id }]}
         title={finding.title}
         chips={<StatusChip value={finding.status} />}
         actions={
@@ -101,44 +92,50 @@ export default async function DemoFindingPage({
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <SeverityChip severity={severity} />
-        <Chip tone="neutral" bordered>
-          {finding.cwe}
-        </Chip>
-        <Chip tone="neutral" bordered>
-          {finding.owasp}
-        </Chip>
-        <span className="text-[12.5px] text-muted-foreground">
-          CVSS v4.0 {score} (demo-assigned, not calculated)
-        </span>
-        <Link
-          className="ml-auto text-[13px] text-primary hover:underline"
-          href={`/demo/runs/${finding.runId}`}
-        >
-          Back to the run
-        </Link>
+        <SeverityChip severity={finding.severity} />
+        {finding.cwe === null ? null : (
+          <Chip tone="neutral" bordered>
+            {finding.cwe}
+          </Chip>
+        )}
+        {finding.owasp === null ? null : (
+          <Chip tone="neutral" bordered>
+            {finding.owasp}
+          </Chip>
+        )}
+        {finding.agent === null ? null : (
+          <span className="text-[12.5px] text-muted-foreground">Found by {finding.agent}</span>
+        )}
+        {finding.runId === undefined ? null : (
+          <Link
+            className="ml-auto text-[13px] text-primary hover:underline"
+            href={`/demo/runs/${finding.runId}`}
+          >
+            Back to the run
+          </Link>
+        )}
       </div>
-
-      {evidence.recorded === true ? (
-        <p className="flex items-start gap-2.5 rounded-xl border border-warn bg-warn-soft p-4 text-[13.5px] text-warn">
-          <Icon name="info" size={18} />
-          Recorded fallback: this finding comes from an earlier run of the same lab image, seeded so
-          the story always has a complete finding to show.
-        </p>
-      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
         <div className="flex min-w-0 flex-col gap-6">
+          {finding.description === null ? null : (
+            <AgentText label="Description by the agent, not verified">
+              <p className="m-0 whitespace-pre-wrap font-sans text-[13.5px] leading-6">
+                {finding.description}
+              </p>
+            </AgentText>
+          )}
+
           <Card aria-labelledby="replay-h">
             <CardHeader id="replay-h" title="Confirmed by deterministic replay" />
             <p className="px-4 pt-3 text-[13px] leading-6 text-muted-foreground">
-              Oracle <IdChip>{text(finding.oracle.id)}</IdChip> (error signature{' '}
-              <IdChip>{oracleSignature}</IdChip>) matched on every replay, and did not match on the
-              negative control.
+              Oracle <IdChip>{finding.oracle.type ?? 'unknown'}</IdChip>{' '}
+              <IdChip>{finding.oracle.value ?? ''}</IdChip> matched on every replay and did not
+              match on the negative control.
             </p>
             <div className="p-4">
               <DataTable label="Replays" head={['Replay', 'HTTP status', 'Oracle matched']}>
-                {replay.replays.map((r) => (
+                {replays.map((r) => (
                   <tr key={r.n} className="h-10">
                     <td className="px-4">Replay {r.n}</td>
                     <td className="px-4 font-mono">{r.status}</td>
@@ -149,45 +146,19 @@ export default async function DemoFindingPage({
                     </td>
                   </tr>
                 ))}
-                <tr className="h-10">
-                  <td className="px-4">Negative control</td>
-                  <td className="px-4 font-mono">{replay.negativeControl.status}</td>
-                  <td className="px-4">
-                    <Chip
-                      tone={replay.negativeControl.matched ? 'bad' : 'ok'}
-                      icon={replay.negativeControl.matched ? 'x' : 'check'}
-                      pill
-                    >
-                      {replay.negativeControl.matched ? 'Yes (unexpected)' : 'No (expected)'}
-                    </Chip>
-                  </td>
-                </tr>
               </DataTable>
             </div>
           </Card>
 
           <Card aria-labelledby="evidence-h">
-            <CardHeader id="evidence-h" title="Evidence" />
-            <div className="flex flex-col gap-4 p-4 text-[13px]">
-              <p>
-                Probe{' '}
-                <span className="break-all font-mono text-[12.5px]">
-                  {evidence.probe.request?.url ?? 'n/a'}
-                </span>
-                , HTTP {evidence.probe.response?.status ?? 'n/a'}
-              </p>
-              <AgentText label="Target response, not verified">
-                <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all text-[12px]">
-                  {evidence.probe.response?.bodyExcerpt ?? '(no body excerpt)'}
-                </pre>
-              </AgentText>
-              <p>
-                Negative control{' '}
-                <span className="break-all font-mono text-[12.5px]">
-                  {evidence.negativeControl.request?.url ?? 'n/a'}
-                </span>
-                , HTTP {evidence.negativeControl.response?.status ?? 'n/a'}
-              </p>
+            <CardHeader id="evidence-h" title="Probe and negative control" />
+            <div className="grid gap-4 p-4 lg:grid-cols-2">
+              <ExchangeCard title="Probe" exchange={probe} note="The oracle matches here." />
+              <ExchangeCard
+                title="Negative control"
+                exchange={control}
+                note="The oracle must not match here."
+              />
             </div>
           </Card>
 
@@ -197,11 +168,7 @@ export default async function DemoFindingPage({
               title="Repro"
               meta="The probe is benign. No data is extracted."
             />
-            <div className="flex flex-col gap-3 p-4">
-              <p className="text-[13px] text-muted-foreground">
-                One quote breaks the SQL syntax on the lab target, which shows the same error
-                signature.
-              </p>
+            <div className="p-4">
               <pre className="overflow-auto rounded-lg border border-border bg-code p-3 font-mono text-[12px] text-foreground">
                 <code>{finding.reproCurl}</code>
               </pre>
@@ -212,12 +179,8 @@ export default async function DemoFindingPage({
         <ContextPanel
           sections={[
             {
-              title: 'Location',
-              body: `${text(finding.location.method)} ${text(finding.location.urlTemplate)}, parameter ${text(finding.location.parameter)}.`,
-            },
-            {
               title: 'Severity',
-              body: 'The CVSS v4.0 score is fixed for the story and is not computed. Severity bars: critical has four, low has one.',
+              body: 'Proposed by the agent and not computed. The severity bars show four levels for critical down to one for low.',
             },
             {
               title: 'Release',

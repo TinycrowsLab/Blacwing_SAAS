@@ -19,7 +19,10 @@ export async function GET(
   const { id } = await params;
   const format = new URL(request.url).searchParams.get('format') === 'md' ? 'md' : 'html';
   try {
-    const report = await demoApi<RenderedReport>(session, `/findings/${encodeURIComponent(id)}/report?format=${format}`);
+    const report = await demoApi<RenderedReport>(
+      session,
+      `/findings/${encodeURIComponent(id)}/report?format=${format}`,
+    );
     return new Response(report.body, {
       headers: {
         'content-type': report.contentType,

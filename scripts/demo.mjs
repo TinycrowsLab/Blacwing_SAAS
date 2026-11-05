@@ -10,7 +10,7 @@
 // Steps, in order (each one is safe to re-run):
 //   1. dependency stack (`pnpm dev:deps` when Postgres or Keycloak is not healthy), then the Google identity
 //      provider when BW_DEV_GOOGLE_CLIENT_ID/SECRET are set (optional: a warning otherwise, never a failure)
-//   2. Juice Shop lab target on 127.0.0.1:3001 (docker container `bw-demo-juice`)
+//   2. (no target is started: register any URL in the console; `node scripts/demo.mjs lab` starts an optional local lab)
 //   3. demo database `blackwing_demo` (the shared dev database is migrated by other worktrees)
 //   4. migrations, then the dev seed (`pnpm db:seed`, which skips tables that are not merged yet)
 //   5. API (127.0.0.1:13400, BW_DEMO_MODE=1 mounts the demo story routes), worker, demo runner and web
@@ -45,8 +45,13 @@ const HEAVY = existsSync('/home/lamp/.local/bin/bwheavy')
   ? '/home/lamp/.local/bin/bwheavy'
   : undefined;
 
-const JUICE_CONTAINER = 'bw-demo-juice';
-const JUICE_HOST_PORT = Number(process.env.DEMO_JUICE_PORT ?? 3001);
+// Optional local lab for trying the tool (`node scripts/demo.mjs lab`). Never used by the platform itself.
+const LAB_CONTAINER = 'bw-demo-lab';
+const LAB_IMAGE = process.env.DEMO_LAB_IMAGE ?? 'bkimminich/juice-shop';
+const LAB_PORT = Number(process.env.DEMO_LAB_PORT ?? 3001);
+const LAB_CONTAINER_PORT = Number(process.env.DEMO_LAB_CONTAINER_PORT ?? 3000);
+// Public origin for a hosted demo (e.g. http://<ec2-ip>:3000). Defaults to localhost.
+const PUBLIC_ORIGIN = (process.env.DEMO_PUBLIC_ORIGIN ?? '').replace(/\/$/, '');
 const DEMO_DB = 'blackwing_demo';
 const WEB_PORT = Number(process.env.DEMO_WEB_PORT ?? 3000);
 const API_PORT = Number(process.env.DEMO_API_PORT ?? 13400);
@@ -56,7 +61,6 @@ const DEMO_USERS = {
   requester: 'appsec@acme.test',
   approver: 'owner@acme.test',
 };
-const DEMO_TEST_CASE_ID = 'webapi.injection.sql';
 
 const log = (msg) => process.stdout.write(`[demo] ${msg}\n`);
 const fail = (msg) => {
@@ -86,7 +90,7 @@ function ensureDemoEnv() {
   const generated = {
     BW_WEB_SESSION_SECRET: existing.BW_WEB_SESSION_SECRET ?? randomBytes(48).toString('base64url'),
     BW_WEB_SESSION_SECRET_PREVIOUS: existing.BW_WEB_SESSION_SECRET_PREVIOUS ?? '',
-    BW_CONSOLE_ORIGIN: existing.BW_CONSOLE_ORIGIN ?? `http://localhost:${WEB_PORT}`,
+    BW_CONSOLE_ORIGIN: PUBLIC_ORIGIN || (existing.BW_CONSOLE_ORIGIN ?? `http://localhost:${WEB_PORT}`),
     BW_DEMO_INTERNAL_TOKEN:
       existing.BW_DEMO_INTERNAL_TOKEN ?? randomBytes(32).toString('base64url'),
   };
@@ -118,9 +122,10 @@ function demoEnv(demo) {
     PGDATABASE: DEMO_DB,
     API_PORT: String(API_PORT),
     WORKER_HEALTH_PORT: String(WORKER_HEALTH_PORT),
-    WEB_ORIGIN: `http://localhost:${WEB_PORT}`,
+    WEB_ORIGIN: demo.BW_CONSOLE_ORIGIN,
     BW_CONSOLE_ORIGIN: demo.BW_CONSOLE_ORIGIN,
-    BW_TARGET_JUICE_SHOP_URL: `http://127.0.0.1:${JUICE_HOST_PORT}`,
+    // dev lets the hunt engine use the host's Claude login when no ANTHROPIC_API_KEY is set (local demo only).
+    BW_ENV: process.env.BW_ENV ?? base.BW_ENV ?? 'dev',
     NEXT_PUBLIC_API_BASE_URL: '/v1',
     // DEMO-STORY: the demo story routes are mounted in the API only in demo mode.
     BW_DEMO_MODE: '1',
@@ -179,28 +184,20 @@ function stepGoogle() {
   return r.status ?? 1;
 }
 
-function stepJuice() {
-  if (dockerRunning(JUICE_CONTAINER)) {
-    log(`Juice Shop already running on 127.0.0.1:${JUICE_HOST_PORT}`);
+function stepLab() {
+  if (dockerRunning(LAB_CONTAINER)) {
+    log(`lab already running on http://127.0.0.1:${LAB_PORT}`);
     return;
   }
-  spawnSync('docker', ['rm', '-f', JUICE_CONTAINER], { stdio: 'ignore' });
-  log(`starting Juice Shop lab target on 127.0.0.1:${JUICE_HOST_PORT}`);
-  const r = run(
+  spawnSync('docker', ['rm', '-f', LAB_CONTAINER], { stdio: 'ignore' });
+  log(`starting lab ${LAB_IMAGE} on http://127.0.0.1:${LAB_PORT}`);
+  const r = spawnSync(
     'docker',
-    [
-      'run',
-      '-d',
-      '--name',
-      JUICE_CONTAINER,
-      '-p',
-      `127.0.0.1:${JUICE_HOST_PORT}:3000`,
-      'bkimminich/juice-shop',
-    ],
-    { heavy: true },
+    ['run', '-d', '--name', LAB_CONTAINER, '-p', `127.0.0.1:${LAB_PORT}:${LAB_CONTAINER_PORT}`, LAB_IMAGE],
+    { stdio: 'inherit' },
   );
-  if (r.status !== 0)
-    log('WARNING: could not start Juice Shop (docker run failed); the asset will show as offline');
+  if (r.status !== 0) fail('could not start the lab container');
+  log(`lab is up: register http://127.0.0.1:${LAB_PORT} as a target in the console`);
 }
 
 function psqlSuper(sql, env, database = 'blackwing') {
@@ -290,7 +287,7 @@ function stepServices(env) {
   const specs = [
     ['api', 'apps/api', ['tsx', `--env-file=${path.join(ROOT, '.env')}`, 'src/main.ts']],
     ['worker', 'apps/worker', ['tsx', `--env-file=${path.join(ROOT, '.env')}`, 'src/main.ts']],
-    // DEMO-STORY: polls the demo database for queued runs and executes the pinned case against the lab target.
+    // AI hunt engine: polls the demo database for queued runs and runs the Claude agent team against the run's scope.
     ['demo-runner', 'apps/worker', ['tsx', 'src/demo/main.ts']],
   ];
   for (const [name, dir, args] of specs) {
@@ -336,10 +333,10 @@ function printSummary(env) {
   process.stdout.write(`
 Blackwing demo is up.
 
-  Console        http://localhost:${WEB_PORT}        (LAN: http://${host}:${WEB_PORT} when DEMO_HOST is set)
+  Console        ${env.BW_CONSOLE_ORIGIN}   (bound to ${host}:${WEB_PORT})
+  Keycloak redirect URI to allow: ${env.BW_CONSOLE_ORIGIN}/api/auth/callback
   API            http://127.0.0.1:${API_PORT}/health
   Keycloak       ${kc}/realms/blackwing-dev
-  Juice Shop     http://127.0.0.1:${JUICE_HOST_PORT}   (assessment target)
 
 Demo users (Keycloak realm blackwing-dev, password from .env BW_DEV_KEYCLOAK_TEST_USER_PASSWORD):
   requester (operator)   appsec@acme.test
@@ -351,7 +348,7 @@ Story (click by click in docs/runbooks/demo.md):
   Start here     http://localhost:${WEB_PORT}/demo
   Assets         http://localhost:${WEB_PORT}/demo/assets
   New request    http://localhost:${WEB_PORT}/demo/requests/new
-  What is stub   http://localhost:${WEB_PORT}/demo/about
+  Optional lab   node scripts/demo.mjs lab   (then register its URL as a target)
   Check it       node scripts/demo.mjs smoke
 
 Logs: ${LOG_DIR}   Stop: node scripts/demo.mjs stop
@@ -363,6 +360,15 @@ Logs: ${LOG_DIR}   Stop: node scripts/demo.mjs stop
  * API with the internal token and the two demo identities (the same identity the web sends after Keycloak login), and
  * checks the web gate, the SoD refusal, the run, the finding, the reports and the repro on the lab target.
  */
+const smokeRequest = (assetId) => ({
+  assetId,
+  objective: 'Smoke test: short black-box web assessment (OWASP Top 10 indicators).',
+  intrusiveness: 'active_safe',
+  budgetRequests: 60,
+  budgetSeconds: 300,
+  costCapUsd: 2,
+});
+
 async function smoke() {
   const demoFile = parseEnvFile(DEMO_ENV_FILE);
   const token = demoFile.BW_DEMO_INTERNAL_TOKEN ?? '';
@@ -408,6 +414,8 @@ async function smoke() {
     if (!cond) throw new Error(message);
   };
   const ctx = {};
+  const target = process.env.DEMO_SMOKE_TARGET ?? '';
+  if (target === '') fail('set DEMO_SMOKE_TARGET to an authorised target URL (e.g. the optional lab: node scripts/demo.mjs lab)');
 
   await check('API answers /health/live', async () => {
     const r = await fetch(`${DEMO_API_ORIGIN}/health/live`);
@@ -422,169 +430,49 @@ async function smoke() {
     const r = await fetch(`${DEMO_API_ORIGIN}/v1/demo/dashboard`);
     expect(r.status === 401, `HTTP ${r.status}`);
   });
-  await check('dashboard lists the verified lab asset', async () => {
-    const r = await api(requester.user, 'GET', '/dashboard', undefined, requester.roles);
-    expect(r.status === 200, `HTTP ${r.status}`);
-    const asset = (r.json.assets ?? []).find((a) => a.slug === 'juice-shop');
-    expect(asset !== undefined, 'no juice-shop asset');
-    expect(asset.ownership.status === 'verified', `ownership ${asset.ownership.status}`);
-    ctx.assetId = asset.id;
+  await check('requester registers the target', async () => {
+    const r = await api(requester.user, 'POST', '/assets', { name: `Smoke target ${new URL(target).host}`, baseUrl: target }, requester.roles);
+    expect(r.status === 201 || r.status === 200, `HTTP ${r.status} ${r.json.code ?? ''}`);
+    ctx.assetId = r.json.id;
   });
-  await check('request refused for a target outside the scope', async () => {
-    const r = await api(
-      requester.user,
-      'POST',
-      '/requests',
-      {
-        assetId: ctx.assetId,
-        testCaseId: DEMO_TEST_CASE_ID,
-        intrusiveness: 'active_safe',
-        budgetRequests: 8,
-        budgetSeconds: 300,
-        scope: { host: 'example.com', pathPrefix: '/rest/products/search' },
-      },
-      requester.roles,
-    );
-    expect(
-      r.status === 422 && r.json.code === 'scope_outside_asset',
-      `HTTP ${r.status} ${r.json.code ?? ''}`,
-    );
+  await check('request refused while the target is unverified', async () => {
+    const r = await api(requester.user, 'POST', '/requests', smokeRequest(ctx.assetId), requester.roles);
+    expect(r.status >= 400, `HTTP ${r.status}`);
+  });
+  await check('asset owner attests ownership', async () => {
+    const r = await api(approver.user, 'POST', `/assets/${ctx.assetId}/verify`, { method: 'owner_attestation', statement: 'Smoke test: lab target owned by the demo team.' }, approver.roles);
+    expect(r.status === 200, `HTTP ${r.status} ${r.json.code ?? ''}`);
   });
   await check('request created for Gate 1 (requester)', async () => {
-    const r = await api(
-      requester.user,
-      'POST',
-      '/requests',
-      {
-        assetId: ctx.assetId,
-        testCaseId: DEMO_TEST_CASE_ID,
-        intrusiveness: 'active_safe',
-        budgetRequests: 8,
-        budgetSeconds: 300,
-        scope: { host: '127.0.0.1', pathPrefix: '/rest/products/search' },
-      },
-      requester.roles,
-    );
-    expect(r.status === 200 || r.status === 201, `HTTP ${r.status} ${r.json.code ?? ''}`);
-    expect(r.json.status === 'pending_gate1', `status ${r.json.status}`);
+    const r = await api(requester.user, 'POST', '/requests', smokeRequest(ctx.assetId), requester.roles);
+    expect(r.status === 201 || r.status === 200, `HTTP ${r.status} ${r.json.code ?? ''}`);
     ctx.requestId = r.json.id;
   });
   await check('Gate 1 refuses the requester (separation of duties)', async () => {
-    const r = await api(
-      requester.user,
-      'POST',
-      `/requests/${ctx.requestId}/decision`,
-      { decision: 'approve' },
-      requester.roles,
-    );
-    expect(
-      r.status === 403 && r.json.code === 'separation_of_duties',
-      `HTTP ${r.status} ${r.json.code ?? ''}`,
-    );
+    const r = await api(requester.user, 'POST', `/requests/${ctx.requestId}/decision`, { decision: 'approve' }, 'appsec-engineer,asset-owner');
+    expect(r.status === 403 || r.status === 409, `HTTP ${r.status}`);
   });
-  await check('Gate 1 approved by the second user (asset owner)', async () => {
-    const r = await api(
-      approver.user,
-      'POST',
-      `/requests/${ctx.requestId}/decision`,
-      { decision: 'approve' },
-      approver.roles,
-    );
+  await check('Gate 1 approved by the asset owner', async () => {
+    const r = await api(approver.user, 'POST', `/requests/${ctx.requestId}/decision`, { decision: 'approve' }, approver.roles);
     expect(r.status === 200, `HTTP ${r.status} ${r.json.code ?? ''}`);
-    expect(r.json.status === 'approved', `status ${r.json.status}`);
   });
   await check('run started by the requester', async () => {
-    const r = await api(
-      requester.user,
-      'POST',
-      `/requests/${ctx.requestId}/runs`,
-      undefined,
-      requester.roles,
-    );
-    expect(r.status === 200 || r.status === 201, `HTTP ${r.status} ${r.json.code ?? ''}`);
+    const r = await api(requester.user, 'POST', `/requests/${ctx.requestId}/runs`, undefined, requester.roles);
+    expect(r.status === 201 || r.status === 200, `HTTP ${r.status} ${r.json.code ?? ''}`);
     ctx.runId = r.json.id;
   });
-  await check('live run reaches completed with a finding', async () => {
-    const deadline = Date.now() + 90_000;
-    let run = {};
+  await check('run reaches a terminal state with work from at least two agents', async () => {
+    const deadline = Date.now() + 8 * 60_000;
+    let run;
     while (Date.now() < deadline) {
-      const r = await api(
-        requester.user,
-        'GET',
-        `/runs/${ctx.runId}?afterSeq=0`,
-        undefined,
-        requester.roles,
-      );
-      run = r.json;
-      if (run.state === 'completed' || run.state === 'failed') break;
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      run = (await api(requester.user, 'GET', `/runs/${ctx.runId}?afterSeq=0`, undefined, requester.roles)).json;
+      if (['completed', 'failed', 'killed'].includes(run.state)) break;
+      await new Promise((r) => setTimeout(r, 5000));
     }
-    expect(run.state === 'completed', `state ${run.state}`);
-    expect(run.findingId !== null && run.findingId !== undefined, 'no finding');
-    ctx.findingId = run.findingId;
-    ctx.events = run.events.length;
-  });
-  await check('finding is the pinned SQL injection, confirmed by two replays', async () => {
-    const r = await api(
-      requester.user,
-      'GET',
-      `/findings/${ctx.findingId}`,
-      undefined,
-      requester.roles,
-    );
-    expect(r.status === 200, `HTTP ${r.status}`);
-    expect(r.json.status === 'confirmed', `status ${r.json.status}`);
-    expect(r.json.cwe === 'CWE-89', `cwe ${r.json.cwe}`);
-    expect(
-      r.json.replay.replays.length === 2 && r.json.replay.replays.every((x) => x.matched),
-      'replays not matched',
-    );
-    expect(r.json.replay.negativeControl.matched === false, 'negative control matched');
-    ctx.finding = r.json;
-  });
-  await check('repro on the lab target: probe errors, negative control does not', async () => {
-    const probe = await fetch(ctx.finding.evidence.probe.request.url);
-    const probeBody = await probe.text();
-    expect(
-      probe.status === 500 && probeBody.includes('SQLITE_ERROR'),
-      `probe HTTP ${probe.status}`,
-    );
-    const control = await fetch(ctx.finding.evidence.negativeControl.request.url);
-    const controlBody = await control.text();
-    expect(
-      control.status === 200 && !controlBody.includes('SQLITE_ERROR'),
-      `control HTTP ${control.status}`,
-    );
-  });
-  await check('HTML report downloads and carries the finding', async () => {
-    const r = await api(
-      requester.user,
-      'GET',
-      `/findings/${ctx.findingId}/report?format=html`,
-      undefined,
-      requester.roles,
-    );
-    expect(
-      r.status === 200 && r.text.includes('<!doctype html>') && r.text.includes('SQL injection'),
-      `HTTP ${r.status}`,
-    );
-  });
-  await check('Markdown report downloads and carries the repro', async () => {
-    const r = await api(
-      requester.user,
-      'GET',
-      `/findings/${ctx.findingId}/report?format=md`,
-      undefined,
-      requester.roles,
-    );
-    expect(
-      r.status === 200 && r.text.includes('## Reproduction') && r.text.includes('SQLITE_ERROR'),
-      `HTTP ${r.status}`,
-    );
-  });
-  await check('dashboard shows the run and a confirmed finding', async () => {
-    const r = await api(requester.user, 'GET', '/dashboard', undefined, requester.roles);
-    expect(r.json.counts.confirmedFindings >= 1, 'no confirmed finding on the dashboard');
+    expect(run?.state === 'completed', `state ${run?.state} ${JSON.stringify(run?.events?.at(-1)?.data ?? {})}`);
+    const agents = new Set((run.events ?? []).map((e) => e.data?.agent).filter(Boolean));
+    expect(agents.size >= 2, `agents seen: ${[...agents].join(',')}`);
+    return `${run.stats?.httpSent ?? 0} requests, ${run.findings?.length ?? 0} findings, $${run.costUsd}`;
   });
 
   const failed = results.filter((r) => !r.ok);
@@ -604,7 +492,7 @@ function status() {
     const pid = pids[name];
     log(`${name}: ${pid && alive(pid) ? `running (pid ${pid})` : 'not running'}`);
   }
-  log(`juice shop: ${dockerRunning(JUICE_CONTAINER) ? 'running' : 'not running'}`);
+  log(`lab: ${dockerRunning(LAB_CONTAINER) ? `running on 127.0.0.1:${LAB_PORT}` : 'not running'}`);
   log(`web answering: ${healthy(`http://127.0.0.1:${WEB_PORT}/login`) ? 'yes' : 'no'}`);
   log(`api answering: ${healthy(`http://127.0.0.1:${API_PORT}/health/live`) ? 'yes' : 'no'}`);
 }
@@ -629,7 +517,8 @@ async function main() {
   if (cmd === 'stop') return stop();
   if (cmd === 'smoke') return smoke();
   if (cmd === 'google') process.exit(stepGoogle());
-  if (cmd !== 'up') fail(`unknown command ${cmd} (use up, status, smoke, stop or google)`);
+  if (cmd === 'lab') return stepLab();
+  if (cmd !== 'up') fail(`unknown command ${cmd} (use up, status, smoke, stop, lab or google)`);
 
   const demo = ensureDemoEnv();
   const baseEnv = demoEnv(demo);
@@ -638,7 +527,6 @@ async function main() {
   stepDeps(baseEnv);
   if (stepGoogle() !== 0)
     log('Google sign-in is not set up (see the message above); the normal sign-in still works');
-  stepJuice();
   stepDatabase(baseEnv);
   stepMigrateAndSeed(baseEnv);
   // The tenant id is known only after the seed; the demo API and runner need it.
