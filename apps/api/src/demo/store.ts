@@ -219,11 +219,11 @@ export class DemoStore {
   }
 
   /**
-   * DEMO-STORY first login of a Google user: creates the user (keyed by the Keycloak subject) and its membership in
-   * the demo tenant, in one transaction under the tenant's RLS context. Returns null when the e-mail is already
-   * taken by another subject or the existing user is not active.
+   * First sign-in of an administrator: creates the user (keyed by the identity provider's subject) and its membership
+   * in the tenant, in one transaction under the tenant's RLS context. Returns null when the e-mail is already taken
+   * by another subject or the existing user is not active.
    */
-  async provisionGoogleUser(
+  async provisionUser(
     tenantId: string,
     input: {
       readonly sub: string;

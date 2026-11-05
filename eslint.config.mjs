@@ -80,6 +80,8 @@ export const IGNORES = [
   '**/storybook-static/**',
   '**/coverage/**',
   '**/.next/**',
+  // Written by next dev/build (gitignored).
+  '**/next-env.d.ts',
   '**/.turbo/**',
   '**/generated/**',
   '**/__generated__/**',

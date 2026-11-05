@@ -31,24 +31,6 @@
       "path": "e2e"
     },
     {
-      "path": "../../packages/config"
-    },
-    {
-      "path": "../../packages/contracts"
-    },
-    {
-      "path": "../../packages/crypto"
-    },
-    {
-      "path": "../../packages/domain"
-    },
-    {
-      "path": "../../packages/logger"
-    },
-    {
-      "path": "../../packages/telemetry"
-    },
-    {
       "path": "../../packages/testing"
     },
     {

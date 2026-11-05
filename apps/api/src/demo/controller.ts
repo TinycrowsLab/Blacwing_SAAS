@@ -17,7 +17,6 @@ import {
 import { z } from 'zod';
 
 import { DemoRefusalFilter } from './filter.js';
-import { isGoogleDemoSignIn } from './google-signin.js';
 import {
   REPORT_FORMATS,
   RUN_REPORT_FORMATS,
@@ -167,14 +166,14 @@ export class DemoController {
     @Inject(DEMO_SERVICE) private readonly service: DemoService,
   ) {}
 
-  /** Resolves the acting user from the internal hop: token, then the Keycloak-verified e-mail. */
+  /** Resolves the acting user from the internal hop: token, then the e-mail Google verified for the web session. */
   private async actor(headers: RequestHeaders): Promise<DemoActor> {
     const token = headers['x-bw-demo-token'];
     if (!tokenMatches(typeof token === 'string' ? token : undefined, this.config.internalToken)) {
       throw new DemoRefusal(
         HttpStatus.UNAUTHORIZED,
         'demo_token_invalid',
-        'The demo internal token is missing or wrong.',
+        'The internal token is missing or wrong.',
       );
     }
     const email = headers['x-bw-demo-user'];
@@ -182,32 +181,32 @@ export class DemoController {
       throw new DemoRefusal(
         HttpStatus.UNAUTHORIZED,
         'demo_user_missing',
-        'No demo user was presented.',
+        'No user was presented.',
       );
     }
     const rolesHeader = headers['x-bw-demo-roles'];
     const roles =
       typeof rolesHeader === 'string' && rolesHeader !== '' ? rolesHeader.split(',') : [];
+    const admin = this.config.adminEmails.includes(email.toLowerCase());
     let user = await this.store.findActiveUserByEmail(email);
-    // DEMO MODE ONLY: a first-time Google sign-in (marker role from the Google IdP mappers) gets its user and a
-    // membership in the demo tenant. Every other unknown user is still refused.
+    // An administrator's first sign-in creates the directory user and the tenant membership (every role). The web
+    // admits only administrators, and every other unknown user is refused here.
     const sub = headers['x-bw-demo-sub'];
-    const subject = typeof sub === 'string' ? sub : undefined;
-    if (user === null && isGoogleDemoSignIn({ roles, sub: subject, email })) {
-      user = await this.store.provisionGoogleUser(this.config.tenantId, {
-        sub: subject ?? '',
+    if (user === null && admin && typeof sub === 'string' && sub !== '') {
+      user = await this.store.provisionUser(this.config.tenantId, {
+        sub,
         email,
         name: typeof headers['x-bw-demo-name'] === 'string' ? headers['x-bw-demo-name'] : null,
-        roles,
+        roles: ALL_ROLES,
       });
     }
     if (user === null)
       throw new DemoRefusal(
         HttpStatus.UNAUTHORIZED,
         'demo_user_unknown',
-        'The user is not active in the demo tenant.',
+        'The user is not active in the tenant.',
       );
-    if (this.config.adminEmail !== '' && user.email.toLowerCase() === this.config.adminEmail) {
+    if (admin) {
       return { id: user.id, email: user.email, name: user.name, roles: [...ALL_ROLES], admin: true };
     }
     return { id: user.id, email: user.email, name: user.name, roles };

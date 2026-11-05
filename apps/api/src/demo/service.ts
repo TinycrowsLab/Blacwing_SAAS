@@ -18,13 +18,13 @@ import type {
   RunRow,
 } from './store.js';
 
-/** Identity forwarded by the demo web server from the Keycloak session (internal hop only). */
+/** Identity forwarded by the web server from the signed-in Google session (internal hop only). */
 export interface DemoActor {
   readonly id: string;
   readonly email: string;
   readonly name: string;
   readonly roles: readonly string[];
-  /** The demo admin (BW_DEMO_LOGIN_EMAIL): holds every role and may approve its own requests. */
+  /** An administrator (BW_ADMIN_EMAILS): holds every role and may approve its own requests. */
   readonly admin?: boolean;
 }
 
@@ -582,7 +582,7 @@ export class DemoService {
       authorisation: {
         saId: `SA-${row.id.slice(0, SHORT_ID_LENGTH).toUpperCase()}`,
         signedBy: row.approver_name,
-        keyId: 'bw-demo-key',
+        keyId: 'bw-sa-key',
       },
       runner: { name: 'ai-hunt', version: '1' },
     };
@@ -911,7 +911,7 @@ export class DemoService {
   private async deliver(finding: FindingRow, releasedBy: string): Promise<void> {
     const { webhookUrl, consoleOrigin } = this.webhook;
     if (webhookUrl === null) return;
-    const url = `${consoleOrigin}/demo/findings/${finding.id}`;
+    const url = `${consoleOrigin}/findings/${finding.id}`;
     const severity = severityOf(finding.severity);
     const asset = finding.asset_name ?? '';
     const body = {

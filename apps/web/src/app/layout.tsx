@@ -6,12 +6,13 @@ import type { ReactNode } from 'react';
 
 export const metadata: Metadata = {
   title: { default: 'Blackwing', template: '%s | Blackwing' },
-  description: 'Blackwing web console',
+  description: 'Authorised, human-gated autonomous security assessments.',
+  icons: { icon: '/brand/crow-shield.png', apple: '/brand/crow-shield.png' },
 };
 
 export default function RootLayout({ children }: { readonly children: ReactNode }): ReactNode {
   return (
-    // suppressHydrationWarning: next-themes sets the theme class before hydration (CONSOLE-003).
+    // suppressHydrationWarning: next-themes sets the theme class before hydration.
     <html lang="en" suppressHydrationWarning>
       <body>
         <Providers>{children}</Providers>

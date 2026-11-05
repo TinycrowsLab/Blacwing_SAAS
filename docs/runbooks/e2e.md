@@ -41,7 +41,7 @@ credentials redacted.
   trace recorded on that first retry.
 - `specs/flows/*.e2e.ts`: user flows (today: password sign-in and sign-out of a seeded Keycloak user in
   realm `blackwing-dev`, a refused wrong password, and the console BFF sign-in in `auth-bff.e2e.ts`, which drives
-  `http://localhost:3000`, the origin the dev realm registers; see [console sign-in](web-bff-auth.md)). No retries; a trace, video and screenshot are kept
+  `http://localhost:3000`, the origin the dev realm registers; see [console sign-in](web-sign-in.md)). No retries; a trace, video and screenshot are kept
   for every failure.
 - Every URL the suite drives must be a loopback address (`apps/web/e2e/support/env.ts`); anything else
   fails before a browser starts. Tests run with `TZ=UTC` and the browser clock in UTC.

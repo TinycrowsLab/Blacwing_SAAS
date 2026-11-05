@@ -16,7 +16,7 @@ export interface ReleasedFinding {
 export async function deliverRelease(ctx: HuntContext, finding: ReleasedFinding): Promise<void> {
   const url = ctx.deps.webhookUrl;
   if (url === null) return;
-  const link = `${ctx.deps.consoleOrigin}/demo/findings/${finding.id}`;
+  const link = `${ctx.deps.consoleOrigin}/findings/${finding.id}`;
   const severity = finding.severity.charAt(0).toUpperCase() + finding.severity.slice(1);
   const body = {
     text: `Blackwing released a ${severity} finding on ${ctx.run.assetName}: ${finding.title}. ${link}`,
