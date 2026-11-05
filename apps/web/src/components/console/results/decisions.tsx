@@ -1,0 +1,70 @@
+// "Your decisions" (experience spec §7): every human decision on this audit with its reason and time, and the ledger's
+// chain state. Rows come from `decisions()` (model.ts); nothing here is invented.
+import Link from 'next/link';
+
+import { Icon } from '../design';
+import { LocalTime } from './local-time';
+
+import type { DecisionRow, Ledger } from './model';
+
+export function YourDecisions({
+  rows,
+  chain,
+}: {
+  readonly rows: readonly DecisionRow[];
+  readonly chain: Ledger['chain'] | null;
+}) {
+  return (
+    <section aria-labelledby="decisions-h" className="flex flex-col gap-1">
+      <h2 id="decisions-h" className="m-0 mb-1 text-[17px] font-semibold text-foreground">
+        Your decisions
+      </h2>
+      {rows.length === 0 ? (
+        <p className="m-0 py-2 text-[13px] text-muted-foreground">No decisions were needed on this audit yet.</p>
+      ) : (
+        <ol className="m-0 list-none p-0">
+          {rows.map((r) => (
+            <li
+              key={r.key}
+              className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-0.5 border-b border-border py-2.5 text-[13.5px] leading-[21px] sm:grid-cols-[96px_minmax(0,1fr)_auto]"
+            >
+              <span className="col-span-2 text-[12px] text-muted-foreground sm:col-span-1 sm:text-[12.5px]">{r.group}</span>
+              <span className="min-w-0 break-words text-foreground">
+                {r.verb}
+                {r.subject === null ? null : r.subject.mono ? (
+                  <>
+                    {' '}
+                    <span className="break-all font-mono text-[12px]">{r.subject.text}</span>
+                  </>
+                ) : (
+                  <> &ldquo;{r.subject.text}&rdquo;</>
+                )}
+                {r.detail === null || r.detail === '' ? null : <span className="text-muted-foreground"> {r.detail}</span>}
+                {r.reason === null || r.reason === '' ? null : (
+                  <span className="text-muted-foreground"> &ldquo;{r.reason}&rdquo;</span>
+                )}
+                {r.who === null ? null : <span className="text-muted-foreground"> · {r.who}</span>}
+              </span>
+              {r.at === null ? <span /> : <LocalTime iso={r.at} className="font-mono text-[12px] text-muted-foreground" />}
+            </li>
+          ))}
+        </ol>
+      )}
+      <p className="m-0 mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-5 text-muted-foreground">
+        <Icon name="ledger" size={13} className="mt-[3px] shrink-0" />
+        {chain === null ? (
+          <span>Each decision is recorded in the ledger. We couldn&rsquo;t check the chain just now.</span>
+        ) : chain.verified ? (
+          <span>
+            Each decision is recorded in the ledger. Chain verified, {chain.count.toLocaleString()}{' '}
+            {chain.count === 1 ? 'event' : 'events'}.
+          </span>
+        ) : (
+          <Link href="/ledger#verify" className="font-medium text-bad underline-offset-2 hover:underline">
+            Chain check failed at #{chain.brokenAtSeq}. Open the ledger
+          </Link>
+        )}
+      </p>
+    </section>
+  );
+}

@@ -1,0 +1,356 @@
+'use client';
+
+// The issue list of the results page (experience spec §7): the first issue is open, the rest expand in place (fetched
+// once through /api/findings/[id] and cached). Gate 3 sits on each open issue; "Release all proven" sends one request
+// per finding with the shared reason, so the ledger records one event each. R releases the open issue.
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+
+import { buttonClass, Icon, InlineMessage, SeverityChip, Skeleton } from '../design';
+import { PendingButton, ReasonField } from '../design-client';
+import { IssueBody } from './issue-body';
+import { LocalTime } from './local-time';
+import { findingDetailSchema, type FindingDetail, type FindingSummary } from './model';
+import { announceChange, CopyButton, PROVEN_REASON, TriageControls, useReleaseKey } from './triage';
+import { triageFindingAction } from '../../../app/(console)/findings/actions';
+import { reasonEnough } from '../../../lib/normalize';
+
+const HTTP_CONFLICT = 409;
+
+/** "Awaiting your release", "Released by you, 14:41", "Released automatically", "Dismissed", "Kept back". */
+export function IssueStatus({
+  status,
+  triage,
+  viewerName,
+}: {
+  readonly status: string;
+  readonly triage: FindingDetail['triage'] | undefined;
+  readonly viewerName: string;
+}) {
+  if (status === 'confirmed')
+    return <span className="text-[12.5px] font-medium text-gold-ink">Awaiting your release</span>;
+  if (status === 'released') {
+    const by = triage?.by ?? null;
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-ok">
+        <span aria-hidden="true" className="size-2.5 rounded-full border-2 border-current" />
+        {triage === undefined ? (
+          'Released'
+        ) : by === null ? (
+          'Released automatically'
+        ) : (
+          <>
+            Released by {by === viewerName ? 'you' : by}
+            {triage === null ? null : (
+              <>
+                , <LocalTime iso={triage.at} />
+              </>
+            )}
+          </>
+        )}
+      </span>
+    );
+  }
+  if (status === 'dismissed') return <span className="text-[12.5px] font-medium text-muted-foreground">Dismissed</span>;
+  return <span className="text-[12.5px] font-medium text-muted-foreground">Kept back</span>;
+}
+
+type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; finding: FindingDetail };
+
+function useDetails(initial: readonly FindingDetail[]) {
+  const [details, setDetails] = useState<Record<string, Load>>(() =>
+    Object.fromEntries(initial.map((f) => [f.id, { state: 'ready', finding: f } as const])),
+  );
+  const load = (id: string): void => {
+    const current = details[id];
+    if (current !== undefined && current.state !== 'error') return;
+    setDetails((d) => ({ ...d, [id]: { state: 'loading' } }));
+    fetch(`/api/findings/${encodeURIComponent(id)}`, { cache: 'no-store' })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        const finding = findingDetailSchema.parse(await r.json());
+        setDetails((d) => ({ ...d, [id]: { state: 'ready', finding } }));
+      })
+      .catch(() => {
+        setDetails((d) => ({ ...d, [id]: { state: 'error' } }));
+      });
+  };
+  const put = (finding: FindingDetail): void => {
+    setDetails((d) => ({ ...d, [finding.id]: { state: 'ready', finding } }));
+  };
+  const drop = (id: string): void => {
+    setDetails((d) => Object.fromEntries(Object.entries(d).filter(([k]) => k !== id)));
+  };
+  return { details, load, put, drop };
+}
+
+export function IssueList({
+  items,
+  initial,
+  viewerName,
+  openFirst = true,
+  shortcuts = false,
+  dashed = false,
+}: {
+  readonly items: readonly FindingSummary[];
+  readonly initial: readonly FindingDetail[];
+  readonly viewerName: string;
+  readonly openFirst?: boolean;
+  /** Bind R to the open issue's release (one list per page). */
+  readonly shortcuts?: boolean;
+  readonly dashed?: boolean;
+}) {
+  const { details, load, put, drop } = useDetails(initial);
+  const [open, setOpen] = useState<ReadonlySet<string>>(
+    () => new Set(openFirst && items[0] !== undefined ? [items[0].id] : []),
+  );
+  const release = useReleaseKey(shortcuts);
+
+  // After a refresh the server's list wins: a status that changed elsewhere (another tab, Release all) reloads the issue.
+  const seen = useRef(new Map(items.map((s) => [s.id, s.status])));
+  useEffect(() => {
+    for (const s of items) {
+      const before = seen.current.get(s.id);
+      seen.current.set(s.id, s.status);
+      const d = details[s.id];
+      if (before !== undefined && before !== s.status && d?.state === 'ready' && d.finding.status !== s.status) drop(s.id);
+    }
+    for (const id of open) if (details[id] === undefined) load(id);
+  });
+
+  const toggle = (id: string): void => {
+    const next = new Set(open);
+    if (next.has(id)) next.delete(id);
+    else {
+      next.add(id);
+      load(id);
+    }
+    setOpen(next);
+  };
+  const firstOpen = items.find((s) => open.has(s.id))?.id;
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      {items.map((s) => {
+        const isOpen = open.has(s.id);
+        const d = details[s.id];
+        const finding = d?.state === 'ready' ? d.finding : null;
+        const status = finding?.status ?? s.status;
+        const bodyId = `issue-${s.id}`;
+        return (
+          <article
+            key={s.id}
+            className={`min-w-0 rounded-2xl border bg-card transition-shadow ${dashed ? 'border-dashed border-border-strong' : 'border-border'} ${isOpen ? 'shadow-[0_8px_28px_rgba(31,23,4,.06)]' : ''}`}
+          >
+            <h3 className="m-0">
+              <button
+                type="button"
+                aria-expanded={isOpen}
+                aria-controls={bodyId}
+                onClick={() => {
+                  toggle(s.id);
+                }}
+                className="flex min-h-[52px] w-full flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus sm:px-5"
+              >
+                <SeverityChip severity={s.severity} />
+                <span className="min-w-0 flex-1 basis-48 text-[15px] font-semibold leading-[22px] text-foreground">
+                  {s.title}
+                </span>
+                <span className="ml-auto flex items-center gap-2">
+                  <IssueStatus status={status} triage={finding?.triage} viewerName={viewerName} />
+                  <Icon
+                    name="chevron"
+                    size={16}
+                    className={`text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                  />
+                </span>
+              </button>
+            </h3>
+            {isOpen ? (
+              <div id={bodyId} className="border-t border-border px-4 pb-4 pt-3.5 sm:px-5">
+                {d === undefined || d.state === 'loading' ? (
+                  <div className="flex flex-col gap-2" aria-busy="true">
+                    <span className="sr-only">Loading the proof…</span>
+                    <Skeleton className="h-16" />
+                    <Skeleton className="h-24" />
+                  </div>
+                ) : d.state === 'error' ? (
+                  <InlineMessage tone="bad">
+                    We couldn&rsquo;t load this issue.{' '}
+                    <button
+                      type="button"
+                      className="font-medium underline"
+                      onClick={() => {
+                        load(s.id);
+                      }}
+                    >
+                      Retry
+                    </button>
+                  </InlineMessage>
+                ) : (
+                  <IssueBody finding={d.finding}>
+                    <div className="border-t border-border pt-3.5">
+                      <TriageControls
+                        finding={d.finding}
+                        onDone={(updated) => {
+                          if (updated === null) drop(s.id);
+                          else put(updated);
+                        }}
+                        {...(shortcuts && s.id === firstOpen
+                          ? {
+                              bindRelease: (fn: (() => void) | null) => {
+                                release.current = fn;
+                              },
+                            }
+                          : {})}
+                        trailing={
+                          <>
+                            {d.finding.reproCurl === '' ? null : <CopyButton text={d.finding.reproCurl} label="Copy as curl" />}
+                            <Link href={`/findings/${s.id}`} className={buttonClass('ghost', 'h-9 px-3 text-[13px]')}>
+                              <Icon name="file" size={14} />
+                              Full evidence
+                            </Link>
+                          </>
+                        }
+                      />
+                    </div>
+                  </IssueBody>
+                )}
+              </div>
+            ) : null}
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+/** "Release all proven": one triage call per awaiting finding with the shared reason (one ledger event each). */
+export function ReleaseAll({ ids }: { readonly ids: readonly string[] }) {
+  const router = useRouter();
+  const [asking, setAsking] = useState(false);
+  const [reason, setReason] = useState(PROVEN_REASON);
+  const [progress, setProgress] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  if (ids.length < 2) return null;
+
+  async function releaseAll(): Promise<void> {
+    setError(null);
+    let failed = 0;
+    for (const [i, id] of ids.entries()) {
+      setProgress(`Releasing ${i + 1} of ${ids.length}…`);
+      const result = await triageFindingAction(id, 'release', reason);
+      if (!result.ok && result.status !== HTTP_CONFLICT) failed += 1;
+    }
+    setProgress(null);
+    if (failed > 0) setError(`${failed} of ${ids.length} could not be released. The others are released; try again.`);
+    else setAsking(false);
+    announceChange(router);
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-gold-line bg-gold-soft px-4 py-3 sm:px-5">
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="m-0 min-w-0 flex-1 basis-56 text-[13.5px] leading-5 text-foreground">
+          <b className="font-semibold">{ids.length} proven issues wait for your release.</b>{' '}
+          <span className="text-muted-foreground">Release them together with one reason, or one at a time below.</span>
+        </p>
+        {asking ? null : (
+          <button
+            type="button"
+            className={buttonClass('secondary', 'h-10')}
+            onClick={() => {
+              setAsking(true);
+            }}
+          >
+            <Icon name="check" size={15} />
+            Release all proven
+          </button>
+        )}
+      </div>
+      {asking ? (
+        <div className="flex flex-col gap-3">
+          <ReasonField
+            label={`Why release all ${ids.length} to the report?`}
+            value={reason}
+            onChange={setReason}
+            autoFocus
+            rows={2}
+            footnote="Kept on the ledger with your name, once per issue"
+            onSubmit={() => {
+              void releaseAll();
+            }}
+          />
+          {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
+          <div className="flex flex-wrap items-center gap-2">
+            <PendingButton
+              pendingLabel={progress ?? 'Releasing…'}
+              disabled={!reasonEnough(reason)}
+              onAction={releaseAll}
+            >
+              Release {ids.length} issues
+            </PendingButton>
+            <button
+              type="button"
+              className={buttonClass('ghost')}
+              onClick={() => {
+                setAsking(false);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** The dashed "Kept back" row (shown only when something was suspected): Review expands the unproven issues. */
+export function KeptBack({
+  items,
+  viewerName,
+}: {
+  readonly items: readonly FindingSummary[];
+  readonly viewerName: string;
+}) {
+  const [open, setOpen] = useState(false);
+  if (items.length === 0) return null;
+  const waiting = items.filter((f) => f.status === 'suspected').length;
+  const text =
+    waiting > 0 ? (
+      <>
+        <b className="font-semibold text-foreground">
+          {waiting} more {waiting === 1 ? 'was' : 'were'} suspected but not proven.
+        </b>{' '}
+        They stay off the report unless you review them and release with a reason.
+      </>
+    ) : (
+      <>
+        <b className="font-semibold text-foreground">
+          You reviewed the {items.length === 1 ? 'issue' : `${items.length} issues`} that {items.length === 1 ? 'was' : 'were'} kept back.
+        </b>{' '}
+        Your decisions are listed below.
+      </>
+    );
+  return (
+    <div className="flex flex-col gap-2.5">
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-dashed border-border-strong px-4 py-3 sm:px-5">
+        <Icon name="eye" size={16} className="text-muted-foreground" />
+        <p className="m-0 min-w-0 flex-1 basis-56 text-[13px] leading-5 text-muted-foreground">{text}</p>
+        <button
+          type="button"
+          aria-expanded={open}
+          className={buttonClass('ghost', 'h-9 px-3 text-[13px]')}
+          onClick={() => {
+            setOpen(!open);
+          }}
+        >
+          {open ? 'Hide' : 'Review'}
+        </button>
+      </div>
+      {open ? <IssueList items={items} initial={[]} viewerName={viewerName} dashed /> : null}
+    </div>
+  );
+}

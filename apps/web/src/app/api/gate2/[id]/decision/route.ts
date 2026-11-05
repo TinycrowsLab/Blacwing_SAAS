@@ -12,7 +12,10 @@ const MAX_REASON = 500;
 const HTTP_CONFLICT = 409;
 const HTTP_BAD_GATEWAY = 502;
 const bodySchema = z
-  .object({ decision: z.enum(['approve', 'deny']), reason: z.string().trim().max(MAX_REASON).optional() })
+  .object({
+    decision: z.enum(['approve', 'deny']),
+    reason: z.string().trim().max(MAX_REASON).optional(),
+  })
   .strict();
 const closedSchema = z.object({ status: z.string() }).loose();
 
@@ -29,18 +32,27 @@ export async function POST(
   if (!body.success) return Response.json({ code: 'invalid_body' }, { status: 400 });
   const path = `/gate2/${encodeURIComponent(id)}`;
   try {
-    return Response.json(await callApi(session, `${path}/decision`, { method: 'POST', body: body.data }), {
-      headers: noStore,
-    });
+    return Response.json(
+      await callApi(session, `${path}/decision`, { method: 'POST', body: body.data }),
+      {
+        headers: noStore,
+      },
+    );
   } catch (error) {
     if (!(error instanceof ApiError))
-      return Response.json({ code: 'request_failed' }, { status: HTTP_BAD_GATEWAY, headers: noStore });
+      return Response.json(
+        { code: 'request_failed' },
+        { status: HTTP_BAD_GATEWAY, headers: noStore },
+      );
     if (error.status === HTTP_CONFLICT) {
       const current = await callApi(session, path).catch(() => null);
       const closed = closedSchema.safeParse(current);
       if (closed.success && closed.data.status !== 'pending')
         return Response.json({ ...closed.data, alreadyDecided: true }, { headers: noStore });
     }
-    return Response.json({ code: error.code, message: error.message }, { status: error.status, headers: noStore });
+    return Response.json(
+      { code: error.code, message: error.message },
+      { status: error.status, headers: noStore },
+    );
   }
 }

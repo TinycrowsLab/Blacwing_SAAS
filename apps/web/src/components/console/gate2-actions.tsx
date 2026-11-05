@@ -5,6 +5,7 @@
 // reveals the reason field, and Allow enables at 8 non-space characters (Ctrl/Cmd+Enter submits). Decisions wait for
 // the server, because they must be true. A 409 from another tab or person comes back as the decided request, so the
 // card shows the receipt instead of an error.
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
@@ -18,7 +19,7 @@ import { gate2DetailSchema } from '../../lib/schemas';
 
 export type Gate2Detail = z.infer<typeof gate2DetailSchema>;
 
-export const FOOTNOTE =
+const FOOTNOTE =
   'Allowing lets this method, path and role through until the run ends. No answer means denied. Other agents keep working.';
 
 const answerSchema = gate2DetailSchema.extend({ alreadyDecided: z.boolean().optional() });
@@ -26,12 +27,19 @@ const problemSchema = z.object({ message: z.string().optional() }).loose();
 
 type Decision = { ok: true; gate2: Gate2Detail } | { ok: false; message: string | null };
 
-async function postDecision(id: string, decision: 'approve' | 'deny', reason: string): Promise<Decision> {
+async function postDecision(
+  id: string,
+  decision: 'approve' | 'deny',
+  reason: string,
+): Promise<Decision> {
   try {
     const res = await fetch(`/api/gate2/${encodeURIComponent(id)}/decision`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ decision, ...(reason.trim() === '' ? {} : { reason: reason.trim() }) }),
+      body: JSON.stringify({
+        decision,
+        ...(reason.trim() === '' ? {} : { reason: reason.trim() }),
+      }),
     });
     const json: unknown = await res.json().catch(() => null);
     if (res.ok) {
@@ -39,7 +47,10 @@ async function postDecision(id: string, decision: 'approve' | 'deny', reason: st
       if (parsed.success) return { ok: true, gate2: parsed.data };
     }
     const problem = problemSchema.safeParse(json);
-    return { ok: false, message: res.status >= 500 || !problem.success ? null : (problem.data.message ?? null) };
+    return {
+      ok: false,
+      message: res.status >= 500 || !problem.success ? null : (problem.data.message ?? null),
+    };
   } catch {
     return { ok: false, message: null };
   }
@@ -48,12 +59,15 @@ async function postDecision(id: string, decision: 'approve' | 'deny', reason: st
 /** Only the first open decision card on the page (in document order, and visible) answers the D and A keys. */
 function ownsKeys(root: HTMLElement | null): boolean {
   if (root === null || root.getClientRects().length === 0) return false;
-  const first = [...document.querySelectorAll<HTMLElement>('[data-gate2-open]')].find((el) => el.getClientRects().length > 0);
+  const first = [...document.querySelectorAll<HTMLElement>('[data-gate2-open]')].find(
+    (el) => el.getClientRects().length > 0,
+  );
   return first === root;
 }
 
 const typing = (target: EventTarget | null): boolean =>
-  target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
+  target instanceof HTMLElement &&
+  (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
 
 /**
  * The decision buttons. `layout="column"` is the card's right column; `"sheet"` is the phone's sticky footer
@@ -85,23 +99,26 @@ export function Gate2Actions({
   const clock = useCountdown(deadlineAt, createdAt);
   const enough = reasonEnough(reason);
 
-  const decide = async (decision: 'approve' | 'deny'): Promise<void> => {
+  // Returns false on failure so the PendingButton (stayPending) re-arms; on success the card swaps to its receipt.
+  const decide = async (decision: 'approve' | 'deny'): Promise<boolean> => {
     setFailed(false);
     const result = await postDecision(gate2Id, decision, decision === 'approve' ? reason : '');
     if (!result.ok) {
       setFailed(result.message);
-      return;
+      return false;
     }
     onDecided(result.gate2);
     window.dispatchEvent(new Event('bw:refresh'));
     router.refresh();
+    return true;
   };
 
   useEffect(() => {
     const deny = denyWrap.current?.querySelector('button');
     if (deny === undefined || deny === null) return;
     const active = document.activeElement;
-    if (focusDeny === 'always' || active === null || active === document.body) deny.focus({ preventScroll: true });
+    if (focusDeny === 'always' || active === null || active === document.body)
+      deny.focus({ preventScroll: true });
   }, [focusDeny]);
 
   useEffect(() => {
@@ -127,8 +144,10 @@ export function Gate2Actions({
   const error =
     failed === false ? null : (
       <InlineMessage tone="bad">
-        {failed === null ? "Couldn't record your decision." : `Couldn't record your decision: ${failed}`} It&apos;s still
-        open{left === null ? '' : `, with ${left} left`}. Retry
+        {failed === null
+          ? "Couldn't record your decision."
+          : `Couldn't record your decision: ${failed}`}{' '}
+        It&apos;s still open{left === null ? '' : `, with ${left} left`}. Retry
       </InlineMessage>
     );
 
@@ -162,6 +181,7 @@ export function Gate2Actions({
         <PendingButton
           variant="deny"
           pendingLabel="Denying…"
+          stayPending
           onAction={() => decide('deny')}
           className={
             sheet
@@ -177,13 +197,14 @@ export function Gate2Actions({
         </PendingButton>
       </div>
       {allowing ? (
-        <div className={`flex gap-2 ${sheet ? 'flex-col' : 'flex-col'}`}>
+        <div className="flex flex-col gap-2">
           <div ref={allowWrap} className="contents">
             <PendingButton
               variant="primary"
               pendingLabel="Allowing…"
               disabled={!enough}
               title={enough ? undefined : 'Write a reason of at least 8 characters first'}
+              stayPending
               onAction={() => decide('approve')}
               className={sheet ? 'h-12 w-full rounded-[14px] text-[14px]' : 'h-11 w-full'}
             >
@@ -208,7 +229,8 @@ export function Gate2Actions({
           }}
           className={buttonClass(
             'secondary',
-            sheet ? 'h-12 w-full rounded-[14px] text-[14px]' : 'h-11 w-full justify-between',
+            // border-input-strong!: the base's border-transparent comes later in the built CSS and would win.
+            `border-input-strong! ${sheet ? 'h-12 w-full rounded-[14px] text-[14px]' : 'h-11 w-full'}`,
           )}
         >
           {sheet ? 'Allow for this run, with a reason' : 'Allow for this run…'}
@@ -220,7 +242,9 @@ export function Gate2Actions({
         </button>
       )}
       {error}
-      <p className={`m-0 text-[11px] leading-4 text-muted-foreground ${sheet ? 'text-center text-[11.5px]' : ''}`}>
+      <p
+        className={`m-0 text-[11px] leading-4 text-muted-foreground ${sheet ? 'text-center text-[11.5px]' : ''}`}
+      >
         {FOOTNOTE}
       </p>
     </div>
@@ -240,23 +264,28 @@ export function useGate2Clock(
   const total =
     createdAt === undefined
       ? live
-      : Math.max(1, Math.round((new Date(deadlineAt).getTime() - new Date(createdAt).getTime()) / 1000));
+      : Math.max(
+          1,
+          Math.round((new Date(deadlineAt).getTime() - new Date(createdAt).getTime()) / 1000),
+        );
   const left = pending && !mounted ? initialLeft : live;
   return { left, total: Math.max(total, left, 1) };
 }
 
-/**
- * shortcut: the old transcript's buttons, kept only until the live view renders Gate2Card (group B); delete then.
- */
-export function Gate2Buttons({ gate2Id, open }: { readonly gate2Id: string; readonly open: boolean }) {
-  const router = useRouter();
-  if (!open) return null;
-  return (
-    <a href={`/decisions/gate2/${encodeURIComponent(gate2Id)}`} onClick={(e) => {
-      e.preventDefault();
-      router.push(`/decisions/gate2/${encodeURIComponent(gate2Id)}`);
-    }} className={buttonClass('primary', 'h-10')}>
+/** shortcut: the old transcript's entry point, kept only until the live view renders Gate2Card (group B); delete then. */
+export function Gate2Buttons({
+  gate2Id,
+  open,
+}: {
+  readonly gate2Id: string;
+  readonly open: boolean;
+}) {
+  return open ? (
+    <Link
+      href={`/decisions/gate2/${encodeURIComponent(gate2Id)}`}
+      className={buttonClass('primary', 'h-10')}
+    >
       Decide
-    </a>
-  );
+    </Link>
+  ) : null;
 }

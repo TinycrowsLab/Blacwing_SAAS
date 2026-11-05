@@ -1,44 +1,42 @@
 'use server';
 
-// Console server actions. Each one runs as the signed-in administrator and calls the API.
-// A refusal (separation of duties, budget, scope...) comes back as ?error=<code>&message=<detail> on the page.
-import { redirect } from 'next/navigation';
-
-import { ApiError, callApi } from '../../../lib/api';
+// Gate 3 (experience spec §6.3): release or dismiss a finding with a reason, as the signed-in administrator. Returns an
+// ActionResult (no `?error=` redirects): the page keeps the reason and shows one fix. The API records one ledger event
+// per call and delivers a release to the webhook.
+import { type FindingDetail, findingDetailSchema } from '../../../components/console/results/model';
+import { callApi, toResult, type ActionResult } from '../../../lib/api';
 import { getViewer } from '../../../lib/auth';
+import { REASON_MIN, reasonChars } from '../../../lib/normalize';
 
-const enc = encodeURIComponent;
+const HTTP_UNAUTHORIZED = 401;
+const HTTP_UNPROCESSABLE = 422;
+const REASON_MAX = 500;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function refuse(path: string, error: unknown): never {
-  const code = error instanceof ApiError ? error.code : 'request_failed';
-  const message =
-    error instanceof ApiError ? error.message : 'The API could not complete the action.';
-  const sep = path.includes('?') ? '&' : '?';
-  redirect(`${path}${sep}error=${enc(code)}&message=${enc(message)}`);
-}
-
-function text(form: FormData, key: string): string {
-  const value = form.get(key);
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-async function requireSession() {
+export async function triageFindingAction(
+  findingId: string,
+  decision: 'release' | 'dismiss',
+  reason: string,
+): Promise<ActionResult<FindingDetail>> {
   const session = await getViewer();
-  if (session === null) redirect('/login');
-  return session;
-}
-
-export async function triageFindingAction(form: FormData): Promise<void> {
-  const session = await requireSession();
-  const id = text(form, 'findingId');
-  const decision = text(form, 'decision') === 'dismiss' ? 'dismiss' : 'release';
-  try {
-    await callApi(session, `/findings/${enc(id)}/triage`, {
-      method: 'POST',
-      body: { decision, reason: text(form, 'reason') },
-    });
-  } catch (error) {
-    refuse(`/findings/${enc(id)}`, error);
-  }
-  redirect(`/findings/${enc(id)}`);
+  if (session === null)
+    return { ok: false, code: 'unauthenticated', message: 'Your session ended. Sign in again.', status: HTTP_UNAUTHORIZED };
+  const text = reason.trim();
+  if (!UUID.test(findingId))
+    return { ok: false, code: 'not_found', message: 'That finding does not exist.', status: HTTP_UNPROCESSABLE };
+  if (reasonChars(text) < REASON_MIN || text.length > REASON_MAX)
+    return {
+      ok: false,
+      code: 'invalid_reason',
+      message: `Give a reason of ${REASON_MIN} to ${REASON_MAX} characters. It is kept on the ledger.`,
+      status: HTTP_UNPROCESSABLE,
+    };
+  return toResult(async () =>
+    findingDetailSchema.parse(
+      await callApi(session, `/findings/${encodeURIComponent(findingId)}/triage`, {
+        method: 'POST',
+        body: { decision: decision === 'dismiss' ? 'dismiss' : 'release', reason: text },
+      }),
+    ),
+  );
 }

@@ -1,4 +1,4 @@
-// Live run (design 1a flight deck, 1b transcript). The first render is server-side; the client polls the run route.
+// Watch Claude work (experience spec §5). The first render is server-side; the client polls the run route.
 import { notFound } from 'next/navigation';
 
 import { RunView } from '../../../../components/console/run-view';
@@ -24,7 +24,7 @@ export default async function RunPage({
     const run = runSchema.parse(
       await callApi(session, `/runs/${encodeURIComponent(id)}?afterSeq=0`),
     );
-    return <RunView initial={run} />;
+    return <RunView initial={run} viewerName={session.user.name} />;
   } catch (caught) {
     if (caught instanceof ApiError && caught.status === HTTP_NOT_FOUND) notFound();
     throw caught;

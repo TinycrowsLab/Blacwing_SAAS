@@ -2,67 +2,311 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers -- design pixel and timing values, see design/README.md */
 'use client';
 
-// Flight deck pieces (design 1a): gauges, agent lanes on a 2 minute time axis, activity table, and the right-hand
-// progress and candidate panels. All data arrives through props; the polling lives in run-view.tsx.
+// The run's expert views and its right-hand panel (experience spec §5.2 items 4 and 6). The Flight deck tab keeps the
+// agent lanes on a 2 minute axis and the raw activity; the Test plan and Requests tabs list what the runner recorded.
+// The panel shows the limits you approved, the test plan and what was found so far. All data arrives through props.
 import Link from 'next/link';
 import { useState } from 'react';
 
-import {
-  Card,
-  CardHeader,
-  KindTag,
-  LinkButton,
-  SeverityChip,
-  VerdictMark,
-  filterPillClass,
-  gaugeTone,
-} from './design';
+import { Card, KindTag, SeverityChip, VerdictMark, filterPillClass, gaugeTone } from './design';
 import { Markdown, stripMarkdown } from './markdown';
 import {
   type Activity,
   type AgentLane,
   type Candidate,
-  type CaseStatus,
+  type Exchange,
   type MarkShape,
-  CASE_STATUSES,
+  type TestCase,
   LANE_WINDOW_S,
+  VALIDATOR_REPLAYS,
   clock,
+  pathOf,
 } from './run-model';
+import { agentName } from '../../lib/agents';
 
-export const GAUGE_TONE = {
-  primary: { text: 'text-primary', bar: 'bg-primary' },
+const GAUGE_TONE = {
+  primary: { text: 'text-foreground', bar: 'bg-gold' },
   warn: { text: 'text-warn', bar: 'bg-warn' },
   bad: { text: 'text-bad', bar: 'bg-bad' },
 } as const;
 
-export function Gauge({
-  label,
-  cap,
-  value,
-  pct,
-}: {
-  readonly label: string;
-  readonly cap: string;
-  readonly value: string;
-  readonly pct: number;
-}) {
-  const clamped = Math.min(100, Math.max(0, pct));
+/** One limit as "{x} of {cap}": gold, amber from 80 %, red at 100 % (the runner stops at the first limit reached). */
+function Limit({ label, value, cap, pct }: { readonly label: string; readonly value: string; readonly cap: string; readonly pct: number }) {
   const tone = GAUGE_TONE[gaugeTone(pct)];
   return (
-    <Card className="flex flex-col gap-2.5 p-4" as="div">
-      <div className="flex items-baseline justify-between">
-        <span className="text-xs text-muted-foreground">{label}</span>
-        <span className="text-[11.5px] text-muted-foreground">{cap}</span>
+    <div className="mb-2.5">
+      <div className="mb-1 flex items-baseline text-[12px] text-muted-foreground">
+        {label}
+        <b className={`ml-auto mr-1 font-semibold tabular-nums ${tone.text}`}>{value}</b>
+        of {cap}
       </div>
-      <span className={`text-[22px] font-semibold leading-7 tabular-nums ${tone.text}`}>
-        {value}
-      </span>
-      <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+      <div className="h-[5px] overflow-hidden rounded-full bg-surface-2">
         <div
           className={`h-full rounded-full ${tone.bar} transition-[width] duration-700 motion-reduce:transition-none`}
-          style={{ width: `${clamped}%` }}
+          style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
         />
       </div>
+    </div>
+  );
+}
+
+const minutes = (s: number): string => (s < 60 ? `${Math.floor(s)}s` : `${Math.floor(s / 60)}m`);
+const money = (n: number): string => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+
+export function LimitsPanel({
+  elapsedS,
+  budget,
+  requestsUsed,
+  costUsd,
+}: {
+  readonly elapsedS: number;
+  readonly budget: { readonly seconds: number; readonly requests: number; readonly costUsd: number };
+  readonly requestsUsed: number;
+  readonly costUsd: number;
+}) {
+  return (
+    <section aria-labelledby="limits-h">
+      <h2 id="limits-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
+        Limits you approved
+        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">stops at the first</span>
+      </h2>
+      <Limit label="Time" value={minutes(elapsedS)} cap={minutes(budget.seconds)} pct={(elapsedS / Math.max(1, budget.seconds)) * 100} />
+      <Limit
+        label="Requests"
+        value={requestsUsed.toLocaleString('en-US')}
+        cap={budget.requests.toLocaleString('en-US')}
+        pct={(requestsUsed / Math.max(1, budget.requests)) * 100}
+      />
+      <Limit label="Model spend" value={money(costUsd)} cap={money(budget.costUsd)} pct={(costUsd / Math.max(0.01, budget.costUsd)) * 100} />
+    </section>
+  );
+}
+
+const PLAN_PARTS = [
+  { key: 'done', label: 'Done', colour: 'var(--text)' },
+  { key: 'running', label: 'Running', colour: 'var(--slate)' },
+  { key: 'waiting', label: 'Waiting on you', colour: 'var(--gold)' },
+  { key: 'queued', label: 'Queued', colour: 'var(--border2)' },
+  { key: 'skipped', label: 'Skipped', colour: 'var(--faint)' },
+  { key: 'blocked', label: 'Blocked', colour: 'var(--warn)' },
+] as const;
+type PlanPart = (typeof PLAN_PARTS)[number]['key'];
+
+/** A case is "waiting on you" while it runs and its agent has a Gate 2 request open. */
+function planPart(c: TestCase, waiting: ReadonlySet<string>): PlanPart {
+  switch (c.status) {
+    case 'executed':
+      return 'done';
+    case 'executing':
+      return waiting.has(c.agent) ? 'waiting' : 'running';
+    case 'skipped':
+      return 'skipped';
+    case 'blocked':
+      return 'blocked';
+    default:
+      return 'queued';
+  }
+}
+
+export function PlanPanel({ cases, waiting }: { readonly cases: readonly TestCase[]; readonly waiting: ReadonlySet<string> }) {
+  const counts = new Map<PlanPart, number>();
+  for (const c of cases) counts.set(planPart(c, waiting), (counts.get(planPart(c, waiting)) ?? 0) + 1);
+  const parts = PLAN_PARTS.filter((p) => (counts.get(p.key) ?? 0) > 0 || p.key === 'done' || p.key === 'queued');
+  return (
+    <section aria-labelledby="plan-h">
+      <h2 id="plan-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
+        Test plan
+        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">
+          {cases.length === 0 ? 'not recorded yet' : `${cases.length} ${cases.length === 1 ? 'case' : 'cases'}`}
+        </span>
+      </h2>
+      {cases.length === 0 ? (
+        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">The planner records the test plan after recon maps the site.</p>
+      ) : (
+        <>
+          <div className="flex h-2 gap-0.5 overflow-hidden rounded-[4px]" aria-hidden="true">
+            {PLAN_PARTS.map((p) =>
+              (counts.get(p.key) ?? 0) === 0 ? null : (
+                <b key={p.key} className="block h-full" style={{ width: `${((counts.get(p.key) ?? 0) / cases.length) * 100}%`, background: p.colour }} />
+              ),
+            )}
+          </div>
+          <dl className="m-0 mt-2 grid grid-cols-2 gap-x-3 gap-y-[3px] text-[11.5px] text-muted-foreground">
+            {parts.map((p) => (
+              <div key={p.key} className="flex items-center gap-1.5">
+                <i aria-hidden="true" className="inline-block size-2 rounded-[2px]" style={{ background: p.colour }} />
+                <dt>{p.label}</dt>
+                <dd className="m-0 ml-auto font-semibold text-foreground tabular-nums">{counts.get(p.key) ?? 0}</dd>
+              </div>
+            ))}
+          </dl>
+        </>
+      )}
+    </section>
+  );
+}
+
+function Verdict({ c }: { readonly c: Candidate }) {
+  if (c.status === 'validating')
+    return (
+      <span className="ml-auto inline-flex items-center gap-1.5 text-[11px] font-medium text-slate">
+        <span aria-hidden="true" className="size-2.5 rounded-full border-2 border-current border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]" />
+        Proving, {Math.min(c.replays, VALIDATOR_REPLAYS)} of {VALIDATOR_REPLAYS}
+      </span>
+    );
+  const verdict = c.status === 'released' ? 'released' : c.status === 'not_confirmed' ? 'suspected' : c.status;
+  return (
+    <span className="ml-auto">
+      <VerdictMark verdict={verdict} />
+    </span>
+  );
+}
+
+export function FoundPanel({ items }: { readonly items: readonly Candidate[] }) {
+  return (
+    <section aria-labelledby="found-h">
+      <h2 id="found-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
+        Found so far
+        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">private until you release</span>
+      </h2>
+      {items.length === 0 ? (
+        <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">
+          Nothing yet. Every suspected issue is replayed by the validator before it counts.
+        </p>
+      ) : (
+        <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+          {items.map((c) => (
+            <li key={c.candidateId} className="rounded-[10px] border border-border px-2.5 py-2 text-[12.5px] leading-[18px]">
+              <div className="mb-[3px] flex items-center gap-1.5 text-[11px]">
+                <SeverityChip severity={c.severity} />
+                <Verdict c={c} />
+              </div>
+              {c.findingId === null ? (
+                <span>{c.title}</span>
+              ) : (
+                <Link href={`/findings/${c.findingId}`} className="text-foreground no-underline hover:underline">
+                  {c.title}
+                </Link>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+const CASE_WORD: Readonly<Record<string, { label: string; cls: string }>> = {
+  executed: { label: 'Done', cls: 'bg-surface-2 text-foreground' },
+  executing: { label: 'Running', cls: 'bg-slate-soft text-slate' },
+  proposed: { label: 'Queued', cls: 'bg-surface-2 text-muted-foreground' },
+  skipped: { label: 'Skipped', cls: 'bg-surface-2 text-muted-foreground' },
+  blocked: { label: 'Blocked', cls: 'bg-warn-soft text-warn' },
+};
+
+/** The Test plan tab: every case the planner recorded, who it went to and where it stands. */
+export function TestPlanTab({ cases, waiting }: { readonly cases: readonly TestCase[]; readonly waiting: ReadonlySet<string> }) {
+  if (cases.length === 0)
+    return (
+      <p className="m-0 rounded-[14px] border border-dashed border-border-strong px-5 py-6 text-[13px] text-muted-foreground">
+        No test plan yet. The planner records it once recon has mapped the site.
+      </p>
+    );
+  return (
+    <Card as="section" aria-label="Test plan">
+      <ol className="m-0 list-none divide-y divide-border p-0">
+        {cases.map((c) => {
+          const part = planPart(c, waiting);
+          const word = part === 'waiting' ? { label: 'Waiting on you', cls: 'bg-gold-soft text-gold-ink' } : (CASE_WORD[c.status] ?? CASE_WORD.proposed);
+          return (
+            <li key={c.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-4 py-2.5 text-[13px]">
+              <span className="min-w-0">
+                <span className="font-medium">{c.title === '' ? c.id : c.title}</span>
+                <span className="block truncate text-[11.5px] text-muted-foreground">
+                  <span className="font-mono">{c.id}</span>
+                  {c.agent === '' ? '' : ` · ${agentName(c.agent)}`}
+                  {c.target === '' ? '' : ` · ${c.target}`}
+                  {c.note === '' ? '' : ` · ${c.note}`}
+                </span>
+              </span>
+              <span className={`inline-flex h-[22px] items-center rounded-md px-2 text-[11.5px] font-medium ${word?.cls ?? ''}`}>{word?.label}</span>
+            </li>
+          );
+        })}
+      </ol>
+    </Card>
+  );
+}
+
+const OUTCOME_CLS: Readonly<Record<string, string>> = {
+  sent: '',
+  blocked: 'text-warn',
+  denied: 'text-warn',
+  error: 'text-bad',
+};
+
+/** The Requests tab: every request the runner recorded, newest last; a row opens the request and response. */
+export function RequestsTab({
+  items,
+  state,
+  onOpen,
+  onRetry,
+}: {
+  readonly items: readonly Exchange[];
+  readonly state: 'idle' | 'loading' | 'ready' | 'error';
+  readonly onOpen: (id: string) => void;
+  readonly onRetry: () => void;
+}) {
+  if (state === 'error' && items.length === 0)
+    return (
+      <p role="alert" className="m-0 text-[13px] text-bad">
+        Couldn&apos;t load the requests.{' '}
+        <button type="button" onClick={onRetry} className="font-medium underline">
+          Retry
+        </button>
+      </p>
+    );
+  if (items.length === 0)
+    return (
+      <p className="m-0 rounded-[14px] border border-dashed border-border-strong px-5 py-6 text-[13px] text-muted-foreground">
+        {state === 'ready' ? 'No request has been sent yet.' : 'Loading the recorded requests…'}
+      </p>
+    );
+  return (
+    <Card as="section" aria-label="Requests">
+      <div className="flex items-center justify-between border-b border-border px-4 py-2.5 text-[12px] text-muted-foreground">
+        <span>
+          {items.length.toLocaleString('en-US')} recorded {items.length === 1 ? 'request' : 'requests'}
+        </span>
+        <span>Bodies are excerpts. Credentials are redacted.</span>
+      </div>
+      <ol className="m-0 list-none divide-y divide-border p-0">
+        {items.map((x) => (
+          <li key={x.id}>
+            <button
+              type="button"
+              onClick={() => {
+                onOpen(x.id);
+              }}
+              className="grid w-full grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-2 text-left text-[12.5px] hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus md:grid-cols-[72px_170px_minmax(0,1fr)_auto_64px]"
+            >
+              <time dateTime={x.at} className="font-mono text-[11px] text-muted-foreground">
+                {clock(x.at)}
+              </time>
+              <span className="hidden truncate md:inline">{agentName(x.agent)}</span>
+              <span className="min-w-0 truncate font-mono text-[12px]">
+                <span className="font-medium text-slate">{x.method}</span> {pathOf(x.url)}
+              </span>
+              <span className={`text-[11.5px] font-medium ${OUTCOME_CLS[x.outcome] ?? ''}`}>
+                {x.outcome === 'sent' ? x.status : x.outcome === 'blocked' ? 'Blocked' : x.outcome === 'denied' ? 'Denied' : 'Failed'}
+              </span>
+              <span className="hidden text-right text-[11px] text-muted-foreground md:inline">
+                {x.durationMs === null ? '' : `${x.durationMs} ms`}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ol>
     </Card>
   );
 }
@@ -72,7 +316,7 @@ const LANE_H = 56;
 function MarkShapeSvg({ shape }: { readonly shape: MarkShape }) {
   switch (shape) {
     case 'circle':
-      return <circle r="3" style={{ fill: 'var(--primary)' }} />;
+      return <circle r="3" style={{ fill: 'var(--slate)' }} />;
     case 'square':
       return <rect x="-3.5" y="-3.5" width="7" height="7" rx="1" style={{ fill: 'var(--text)' }} />;
     case 'ring':
@@ -86,7 +330,7 @@ function MarkShapeSvg({ shape }: { readonly shape: MarkShape }) {
           height="8"
           rx="1"
           transform="rotate(45)"
-          style={{ fill: 'var(--high)' }}
+          style={{ fill: 'var(--gold)' }}
         />
       );
   }
@@ -106,7 +350,8 @@ function Legend({ shape, label }: { readonly shape: MarkShape; readonly label: s
 /** Deterministic vertical spread so marks in the same second do not sit on top of each other. */
 const markY = (seq: number): number => 10 + ((seq * 17) % 36);
 
-export function AgentTeam({
+/** Flight deck lanes: one row per agent of the manifest, its marks over the last 2 minutes. */
+function AgentLanes({
   lanes,
   nowMs,
   running,
@@ -121,13 +366,13 @@ export function AgentTeam({
   const from = nowMs - LANE_WINDOW_S * 1000;
   const pct = (t: number): number => ((t - from) / (LANE_WINDOW_S * 1000)) * 100;
   return (
-    <Card aria-label="Agent team" as="div">
+    <Card aria-label="Agent lanes" as="div">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <h2 className="text-sm font-semibold">Agent team</h2>
+        <h2 className="text-sm font-semibold">Agent lanes</h2>
         <span className="flex flex-wrap gap-4 text-xs text-muted-foreground">
           <Legend shape="circle" label="HTTP request" />
           <Legend shape="square" label="Tool call" />
-          <Legend shape="ring" label="Blocked by policy" />
+          <Legend shape="ring" label="Blocked by scope" />
           <Legend shape="diamond" label="Candidate finding" />
           <span>Last 2 minutes</span>
         </span>
@@ -144,22 +389,21 @@ export function AgentTeam({
               <span className="flex items-center gap-2">
                 <span
                   aria-hidden="true"
-                  className={`size-2 shrink-0 rounded-full ${paused ? 'bg-warn' : running ? 'bg-primary motion-safe:animate-[bwpulse_1.6s_ease-in-out_infinite]' : 'bg-muted-foreground'}`}
+                  className={`size-2 shrink-0 rounded-full ${paused ? 'bg-gold' : running ? 'bg-slate motion-safe:animate-[bwpulse_1.6s_ease-in-out_infinite]' : 'bg-muted-foreground'}`}
                 />
-                <span className="whitespace-nowrap font-mono text-[13px] font-medium">
-                  {lane.name}
-                </span>
+                <span className="whitespace-nowrap text-[13px] font-medium">{agentName(lane.name)}</span>
+                <span className="hidden truncate font-mono text-[11px] text-muted-foreground xl:inline">{lane.name}</span>
                 <span className="ml-auto hidden whitespace-nowrap text-[11.5px] tabular-nums text-muted-foreground lg:inline">
                   {lane.deterministic
-                    ? 'deterministic'
+                    ? 'replay, no model'
                     : `${lane.turns} turns, $${lane.costUsd.toFixed(2)}`}
                 </span>
               </span>
               <span
                 title={stripMarkdown(lane.task)}
-                className={`truncate text-[12.5px] ${paused ? 'text-warn' : 'text-muted-foreground'}`}
+                className={`truncate text-[12.5px] ${paused ? 'text-gold-ink' : 'text-muted-foreground'}`}
               >
-                {paused ? 'Paused. ' : ''}
+                {paused ? 'Waiting. ' : ''}
                 {lane.task === '' ? 'Waiting' : stripMarkdown(lane.task)}
               </span>
             </div>
@@ -167,7 +411,7 @@ export function AgentTeam({
               width="100%"
               height={LANE_H}
               role="img"
-              aria-label={`${lane.name} activity, last 2 minutes`}
+              aria-label={`${agentName(lane.name)} activity, last 2 minutes`}
               className="block bg-surface"
             >
               <defs>
@@ -178,7 +422,7 @@ export function AgentTeam({
                   patternUnits="userSpaceOnUse"
                   patternTransform="rotate(45)"
                 >
-                  <rect width="6" height="12" style={{ fill: 'var(--warn-soft)' }} />
+                  <rect width="6" height="12" style={{ fill: 'var(--gold-soft)' }} />
                 </pattern>
               </defs>
               {paused ? (
@@ -196,7 +440,7 @@ export function AgentTeam({
                   y="4"
                   width="2"
                   height={LANE_H - 8}
-                  style={{ fill: 'var(--warn)' }}
+                  style={{ fill: 'var(--gold-ink)' }}
                 />
               ) : null}
               {lane.marks
@@ -213,7 +457,7 @@ export function AgentTeam({
                 y1="0"
                 y2={LANE_H}
                 strokeWidth="2"
-                style={{ stroke: 'var(--primary)' }}
+                style={{ stroke: 'var(--gold-ink)' }}
               />
             </svg>
           </div>
@@ -226,21 +470,21 @@ export function AgentTeam({
           <span>90 s</span>
           <span>60 s</span>
           <span>30 s</span>
-          <span className="font-medium text-primary">Now</span>
+          <span className="font-medium text-gold-ink">Now</span>
         </span>
       </div>
     </Card>
   );
 }
 
-const FILTERS = ['All agents', 'HTTP', 'Policy', 'Errors only'] as const;
+const FILTERS = ['Everything', 'Requests', 'Blocked and decisions', 'Errors only'] as const;
 type Filter = (typeof FILTERS)[number];
 
 const KIND_TAG: Record<Activity['kind'], { kind: string; label: string }> = {
   HTTP: { kind: 'http', label: 'HTTP' },
   Tool: { kind: 'tool', label: 'Tool' },
   Policy: { kind: 'blocked', label: 'Blocked' },
-  'Gate 2': { kind: 'gate2', label: 'Gate 2' },
+  'Gate 2': { kind: 'gate2', label: 'Decision' },
   Finding: { kind: 'finding', label: 'Finding' },
   Validator: { kind: 'tool', label: 'Validator' },
   Agent: { kind: 'http', label: 'Agent' },
@@ -248,14 +492,14 @@ const KIND_TAG: Record<Activity['kind'], { kind: string; label: string }> = {
 };
 
 function passes(filter: Filter, row: Activity): boolean {
-  if (filter === 'HTTP') return row.kind === 'HTTP';
-  if (filter === 'Policy') return row.kind === 'Policy' || row.kind === 'Gate 2';
+  if (filter === 'Requests') return row.kind === 'HTTP';
+  if (filter === 'Blocked and decisions') return row.kind === 'Policy' || row.kind === 'Gate 2';
   if (filter === 'Errors only') return row.isError;
   return true;
 }
 
-export function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) {
-  const [filter, setFilter] = useState<Filter>('All agents');
+function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) {
+  const [filter, setFilter] = useState<Filter>('Everything');
   const shown = rows
     .filter((r) => passes(filter, r))
     .slice(-100)
@@ -294,7 +538,7 @@ export function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) 
               <time dateTime={r.at} className="font-mono text-[11.5px] text-muted-foreground">
                 {clock(r.at)}
               </time>
-              <span className="truncate font-mono text-xs font-medium">{r.agent}</span>
+              <span className="truncate text-xs font-medium">{agentName(r.agent)}</span>
               <span className="col-start-2 flex min-w-0 items-center gap-2 md:col-start-auto">
                 <KindTag kind={KIND_TAG[r.kind].kind}>{KIND_TAG[r.kind].label}</KindTag>
                 <span title={stripMarkdown(r.text)} className="truncate">
@@ -312,12 +556,12 @@ export function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) 
   );
 }
 
-export function SummaryCard({ text }: { readonly text: string }) {
+function SummaryCard({ text }: { readonly text: string }) {
   const [open, setOpen] = useState(false);
   return (
     <Card as="section" aria-labelledby="summary-h" className="p-4">
       <h2 id="summary-h" className="mb-2 text-sm font-semibold">
-        Orchestrator summary (not verified)
+        The planner&apos;s summary <span className="font-normal text-muted-foreground">· Claude, not verified</span>
       </h2>
       <div className={open ? '' : 'max-h-36 overflow-hidden'}>
         <Markdown text={text} className="text-[13.5px] leading-6" />
@@ -328,7 +572,7 @@ export function SummaryCard({ text }: { readonly text: string }) {
         onClick={() => {
           setOpen(!open);
         }}
-        className="mt-2 text-[13px] font-medium text-primary hover:underline"
+        className="mt-2 text-[13px] font-medium text-gold-ink hover:underline"
       >
         {open ? 'Show less' : 'Show all'}
       </button>
@@ -336,246 +580,28 @@ export function SummaryCard({ text }: { readonly text: string }) {
   );
 }
 
-const CASE_COLOUR: Record<CaseStatus, string> = {
-  executed: 'var(--primary)',
-  executing: '#4f8db8',
-  proposed: 'var(--border2)',
-  skipped: 'var(--muted)',
-  blocked: 'var(--warn)',
-};
 
-interface Plan {
-  readonly total: number;
-  readonly counts: Record<CaseStatus, number>;
-}
-
-const DONUT_R = 74;
-const DONUT_C = 2 * Math.PI * DONUT_R;
-
-/** Transcript variant: a donut of the plan states, the centre shows how many are executed. */
-function PlanDonut({ plan }: { readonly plan: Plan }) {
-  let offset = 0;
-  return (
-    <svg
-      viewBox="0 0 180 180"
-      className="size-[180px] shrink-0"
-      role="img"
-      aria-label="Test case states"
-    >
-      <circle
-        cx="90"
-        cy="90"
-        r={DONUT_R}
-        fill="none"
-        strokeWidth="14"
-        style={{ stroke: 'var(--surface2)' }}
-      />
-      {CASE_STATUSES.map((k) => {
-        const len = (plan.counts[k] / plan.total) * DONUT_C;
-        const dash = (
-          <circle
-            key={k}
-            cx="90"
-            cy="90"
-            r={DONUT_R}
-            fill="none"
-            strokeWidth="14"
-            strokeDasharray={`${len} ${DONUT_C - len}`}
-            strokeDashoffset={-offset}
-            transform="rotate(-90 90 90)"
-            style={{ stroke: CASE_COLOUR[k] }}
-          />
-        );
-        offset += len;
-        return plan.counts[k] === 0 ? null : dash;
-      })}
-      <text x="90" y="92" textAnchor="middle" className="fill-text text-[30px] font-semibold">
-        {plan.counts.executed}
-      </text>
-      <text x="90" y="112" textAnchor="middle" className="fill-muted-foreground text-xs">
-        {`of ${plan.total} executed`}
-      </text>
-    </svg>
-  );
-}
-
-function CaseLegend({ plan }: { readonly plan: Plan }) {
-  return (
-    <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
-      {CASE_STATUSES.map((k) => (
-        <div key={k} className="flex items-center gap-2">
-          <span
-            className="size-2 rounded-[2px]"
-            style={{ background: CASE_COLOUR[k] }}
-            aria-hidden="true"
-          />
-          <dt className="text-muted-foreground">{k.charAt(0).toUpperCase() + k.slice(1)}</dt>
-          <dd className="ml-auto font-semibold tabular-nums">{plan.counts[k]}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-/** Design 1a "Test cases, N in plan": a stacked bar (1b: a donut) and a legend with the status counts. */
-export function TestCasesCard({
-  plan,
-  variant = 'bar',
-}: {
-  readonly plan: Plan;
-  readonly variant?: 'bar' | 'donut';
-}) {
-  if (variant === 'donut' && plan.total > 0)
-    return (
-      <section
-        aria-label="Test cases"
-        className="flex flex-col items-center gap-3.5 rounded-xl border border-border bg-card p-4"
-      >
-        <PlanDonut plan={plan} />
-        <CaseLegend plan={plan} />
-      </section>
-    );
-  return (
-    <Card aria-labelledby="cases-h" as="section">
-      <CardHeader id="cases-h" title="Test cases" meta={`${plan.total} in plan`} />
-      {plan.total === 0 ? (
-        <p className="px-4 py-5 text-[13px] text-muted-foreground">
-          No test plan yet. The orchestrator records it after recon.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-3.5 p-4">
-          <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-[5px]" aria-hidden="true">
-            {CASE_STATUSES.filter((k) => plan.counts[k] > 0).map((k) => (
-              <div
-                key={k}
-                style={{
-                  width: `${(plan.counts[k] / plan.total) * 100}%`,
-                  background: CASE_COLOUR[k],
-                }}
-              />
-            ))}
-          </div>
-          <CaseLegend plan={plan} />
-        </div>
-      )}
-    </Card>
-  );
-}
-
-/** Run report downloads, shown once the run is over. Only released findings are in them. */
-export function ReportCard({ runId }: { readonly runId: string }) {
-  const base = `/api/runs/${encodeURIComponent(runId)}/report`;
-  return (
-    <Card aria-labelledby="report-h" as="section">
-      <CardHeader id="report-h" title="Report" meta="Released findings only" />
-      <div className="flex flex-wrap gap-2 p-4">
-        <LinkButton href={`${base}?format=html`} icon="reports">
-          Download report (HTML)
-        </LinkButton>
-        <LinkButton href={`${base}?format=md`}>Markdown</LinkButton>
-        <LinkButton href={`${base}?format=json`}>JSON</LinkButton>
-        <LinkButton href={`${base}?format=sarif`}>SARIF</LinkButton>
-      </div>
-    </Card>
-  );
-}
-
-export function ProgressCard({
-  stats,
-}: {
-  readonly stats: {
-    readonly httpSent: number;
-    readonly blocked: number;
-    readonly candidates: number;
-    readonly confirmed: number;
-  };
-}) {
-  const parts = [
-    { label: 'HTTP sent', n: stats.httpSent, bar: 'bg-primary' },
-    { label: 'Blocked', n: stats.blocked, bar: 'bg-warn' },
-    { label: 'Candidates', n: stats.candidates, bar: 'bg-med' },
-    { label: 'Confirmed', n: stats.confirmed, bar: 'bg-ok' },
-  ];
-  const total = Math.max(
-    1,
-    parts.reduce((sum, p) => sum + p.n, 0),
-  );
-  return (
-    <Card aria-labelledby="progress-h" as="section">
-      <CardHeader id="progress-h" title="Progress" />
-      <div className="flex flex-col gap-3 p-4">
-        <div className="flex h-2 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
-          {parts.map((p) => (
-            <div key={p.label} className={p.bar} style={{ width: `${(p.n / total) * 100}%` }} />
-          ))}
-        </div>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
-          {parts.map((p) => (
-            <div key={p.label} className="flex items-center gap-2">
-              <span className={`size-2 rounded-[2px] ${p.bar}`} aria-hidden="true" />
-              <dt className="text-muted-foreground">{p.label}</dt>
-              <dd className="ml-auto font-semibold tabular-nums">{p.n}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-    </Card>
-  );
-}
-
-export function CandidateList({
-  items,
+/** The Flight deck tab: the lanes, the raw activity and, once written, the planner's summary. */
+export function FlightDeck({
+  lanes,
+  rows,
+  nowMs,
   running,
-  compact = false,
+  pausedFrom,
+  summary,
 }: {
-  readonly items: readonly Candidate[];
+  readonly lanes: readonly AgentLane[];
+  readonly rows: readonly Activity[];
+  readonly nowMs: number;
   readonly running: boolean;
-  readonly compact?: boolean;
+  readonly pausedFrom: (agent: string) => number | null;
+  readonly summary: string | null;
 }) {
   return (
-    <Card aria-labelledby="cand-h" as="section">
-      <CardHeader
-        id="cand-h"
-        title={<span className="whitespace-nowrap">Candidate findings</span>}
-        meta={compact ? undefined : 'Released only after Gate 3'}
-      />
-      {items.length === 0 ? (
-        <p className="px-4 py-5 text-[13px] text-muted-foreground">
-          {running
-            ? 'None yet. The validator replays every candidate before it is confirmed.'
-            : 'No candidate was submitted in this run.'}
-        </p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {items.map((c) => (
-            <li key={c.candidateId} className="flex flex-col gap-1.5 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <SeverityChip severity={c.severity} />
-                <span className="ml-auto inline-flex items-center gap-2">
-                  <VerdictMark
-                    verdict={c.status === 'released' ? 'confirmed' : c.status.replace('_', ' ')}
-                  />
-                  {c.status === 'validating' ? (
-                    <span className="text-[11.5px] font-medium text-primary">
-                      replay {c.replays} of 3
-                    </span>
-                  ) : null}
-                </span>
-              </div>
-              {c.findingId === null ? (
-                <span className="text-[12.5px] font-medium leading-5">{c.title}</span>
-              ) : (
-                <Link
-                  href={`/findings/${c.findingId}`}
-                  className="text-[12.5px] font-medium leading-5 text-text hover:underline"
-                >
-                  {c.title}
-                </Link>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
+    <div className="flex flex-col gap-3">
+      {lanes.length === 0 ? null : <AgentLanes lanes={lanes} nowMs={nowMs} running={running} pausedFrom={pausedFrom} />}
+      <ActivityTable rows={rows} />
+      {summary === null ? null : <SummaryCard text={summary} />}
+    </div>
   );
 }

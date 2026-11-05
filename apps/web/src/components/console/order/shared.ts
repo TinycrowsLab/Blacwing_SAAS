@@ -1,0 +1,100 @@
+// Small pure pieces the order, the plan and Targets share (experience spec §3.3, §3.4, §10.4).
+import type { Asset } from '../../../lib/schemas';
+
+/** True while typing in a field: single-key shortcuts (numbers, N) must not fire then. */
+export const typing = (target: EventTarget | null): boolean =>
+  target instanceof HTMLElement &&
+  (target.isContentEditable ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    (target instanceof HTMLInputElement && !['radio', 'checkbox', 'button', 'submit'].includes(target.type)));
+
+/** Every mutation tells the sidebar to refresh at once. */
+export const refreshSidebar = (): void => {
+  window.dispatchEvent(new Event('bw:refresh'));
+};
+
+/** What Claude looks for (Q3). `phrase` composes the objective and must start lower-case (it is read mid-sentence). */
+export const FOCUS_CHIPS = [
+  { key: 'access', label: 'Who can see whose data', hint: 'access control, IDOR', phrase: 'broken access control' },
+  { key: 'login', label: 'Login and sessions', hint: 'sign-in, tokens, session handling', phrase: 'weak login and session handling' },
+  { key: 'injection', label: 'Injection', hint: 'SQL, NoSQL, templates', phrase: 'injection flaws' },
+  { key: 'apis', label: 'APIs', hint: 'endpoints, methods, data exposure', phrase: 'weak spots in the APIs' },
+  {
+    key: 'misconfig',
+    label: 'Misconfiguration and exposed files',
+    hint: 'headers, debug pages, backups',
+    phrase: 'misconfiguration and exposed files',
+  },
+  { key: 'broad', label: 'A broad OWASP Top 10 sweep', hint: 'a bit of everything', phrase: 'the OWASP Top 10' },
+] as const;
+export type FocusKey = (typeof FOCUS_CHIPS)[number]['key'];
+export const BROAD: FocusKey = 'broad';
+
+const list = (items: readonly string[]): string =>
+  new Intl.ListFormat('en-US', { style: 'long', type: 'conjunction' }).format(items);
+
+/** "Look for {phrases}. {free text}" (spec §3.3). Nothing picked means the broad sweep. */
+export function composeObjective(keys: readonly FocusKey[], text: string): string {
+  const picked = FOCUS_CHIPS.filter((c) => keys.includes(c.key));
+  const phrases = (picked.length === 0 ? FOCUS_CHIPS.filter((c) => c.key === BROAD) : picked).map((c) => c.phrase);
+  const extra = text.trim();
+  return `Look for ${list(phrases)}.${extra === '' ? '' : ` ${extra}`}`;
+}
+
+/** The chips and free text back from an objective composed above (anything else is free text). */
+export function readObjective(objective: string): { keys: FocusKey[]; text: string } {
+  const m = /^Look for (.+?)\.(?:\s+([\s\S]*))?$/.exec(objective.trim());
+  if (m === null) return { keys: [], text: objective.trim() };
+  const head = m[1] ?? '';
+  const keys = FOCUS_CHIPS.filter((c) => head.includes(c.phrase)).map((c) => c.key);
+  return keys.length === 0 ? { keys: [], text: objective.trim() } : { keys, text: (m[2] ?? '').trim() };
+}
+
+/** Picking a chip: a specific one drops the broad sweep; clearing them all brings it back. */
+export function toggleFocus(keys: readonly FocusKey[], key: FocusKey, on: boolean): FocusKey[] {
+  if (key === BROAD) return on ? [BROAD] : keys.filter((k) => k !== BROAD);
+  const next = on ? [...keys.filter((k) => k !== BROAD && k !== key), key] : keys.filter((k) => k !== key);
+  return next.length === 0 ? [BROAD] : next;
+}
+
+const STAGING = /(^|[.-])(staging|stage|dev|test|qa|uat|lab|local)([.-]|$)/i;
+const PRIVATE_HOST =
+  /^(localhost|[^.]+\.local|127(\.\d{1,3}){3}|10(\.\d{1,3}){3}|192\.168(\.\d{1,3}){2}|172\.(1[6-9]|2\d|3[01])(\.\d{1,3}){2}|\[::1\])(:\d+)?$/i;
+
+export type Care = 'passive' | 'active_safe';
+
+/** Q4's recommendation from the host: gentle probing suits staging, local and lab hosts; a live site gets look-only. */
+export const recommendedCare = (host: string): Care =>
+  PRIVATE_HOST.test(host) || STAGING.test(host.replace(/:\d+$/, '')) ? 'active_safe' : 'passive';
+
+export const CARE = {
+  passive: { label: "Look, don't touch", line: 'Reads only: GET, HEAD and OPTIONS.', badge: 'Suits a live site' },
+  active_safe: {
+    label: 'Probe gently',
+    line: 'Crafted read requests that should not change data.',
+    badge: 'Suits a staging or local site',
+  },
+} as const;
+
+/** "6 Nov 2026" in the reader's locale. */
+export const dayLabel = (iso: string): string =>
+  new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
+
+export const isVerified = (a: Pick<Asset, 'ownership'>): boolean => a.ownership.status === 'verified';
+
+/** The site's origin from what the API stored. */
+export const originOf = (a: Pick<Asset, 'baseUrl'>): string => {
+  try {
+    return new URL(a.baseUrl).origin;
+  } catch {
+    return a.baseUrl;
+  }
+};
+
+const MORNING_UNTIL = 12;
+const AFTERNOON_UNTIL = 18;
+
+/** Home's greeting by the hour (the reader's own clock on the client). */
+export const greetingFor = (hour: number): string =>
+  hour < MORNING_UNTIL ? 'Good morning' : hour < AFTERNOON_UNTIL ? 'Good afternoon' : 'Good evening';
