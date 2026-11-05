@@ -8,12 +8,12 @@ export const metadata: Metadata = { title: 'Sign in' };
 
 export default function LoginLayout({ children }: { readonly children: ReactNode }): ReactNode {
   return (
-    <div className="bw-canvas flex min-h-screen flex-col bg-bg text-text">
+    <div className="flex min-h-dvh flex-col bg-bg text-text">
       <div className="flex justify-end px-5 pt-4">
         <ThemeToggle />
       </div>
       <main className="flex flex-1 items-center justify-center px-4 pb-12">
-        <div className="flex w-full max-w-[420px] flex-col gap-6 rounded-2xl border border-border bg-surface p-8">
+        <div className="flex w-full max-w-[420px] flex-col gap-6 rounded-[18px] border border-border bg-surface p-8 shadow-float">
           {children}
         </div>
       </main>

@@ -1,62 +1,122 @@
-/* Presentational values (ring radii, poll interval) come from design/ and are not domain constants. */
 /* eslint-disable @typescript-eslint/no-magic-numbers -- design pixel and timing values, see design/README.md */
 'use client';
 
-// Kill dialog (design 3a): blast radius as nested rings, typed confirmation of the run's short id, then the measured
-// halt. Only the run scope is live in the POC; asset, organisation and global are drawn disabled.
+// Stop testing (experience spec §6.4): one solid-red component everywhere (run header, sidebar pill, mobile top bar),
+// rendered only while a run can be stopped. One confirmation, no typing: the client sends the run's short id itself
+// (the API's "you know which run" guard). Then the halt, step by step, from the run's real state.
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { z } from 'zod';
 
-import { buttonClass, Icon } from './design';
+import { buttonClass, Icon, Kbd } from './design';
 import { Modal } from './modal';
-import { auditLine, killConfirmed, shortId } from './run-model';
+import { shortId } from './run-model';
 import { auditRefSchema } from '../../lib/schemas';
 
 const POLL_MS = 500;
 const NO_EVENTS = 1_000_000;
 
-type Phase = 'form' | 'halting' | 'halted';
+export interface StoppableRun {
+  readonly id: string;
+  /** The target's name (its host): the dialog asks "Stop testing {assetName}?". */
+  readonly assetName: string;
+}
 
-const SCOPES = [
-  { label: 'This run', live: true },
-  { label: 'This asset', live: false },
-  { label: 'Entire organisation', live: false },
-] as const;
+const haltSchema = z.object({
+  state: z.string(),
+  haltMs: z.number().nullable().default(null),
+  gate2: z.array(z.object({ status: z.string() })).default([]),
+});
 
-const HALT_SCALE_MS = 10_000;
-const STEPS = [
-  { label: 'Agent aborted', target: 'First step', tick: null },
-  { label: 'Pending Gate 2 denied', target: 'After the agent', tick: null },
-  { label: 'Target egress blocked', target: 'Target under 2 s', tick: 20 },
-] as const;
-
+/** Opens the Stop dialog for `run`. Renders nothing visible while `run` is null (not queued, running or paused). */
 export function KillButton({
   run,
+  variant = 'header',
+  label,
   className,
+  shortcut = false,
+  hideTrigger = false,
 }: {
-  readonly run: { readonly id: string; readonly assetName: string } | null;
+  readonly run: StoppableRun | null;
+  /** `header`: the run page button; `pill`: the sidebar "1 audit running · Stop"; `icon`: the 44 px mobile button. */
+  readonly variant?: 'header' | 'pill' | 'icon';
+  /** The pill's text, e.g. "1 audit running". */
+  readonly label?: string;
   readonly className?: string;
+  /** Ctrl+Shift+. opens the dialog (bind it once per page: the sidebar does). */
+  readonly shortcut?: boolean;
+  /** Keep the dialog and the shortcut, without a visible trigger (the sidebar on the run's own page). */
+  readonly hideTrigger?: boolean;
 }) {
   // The run the dialog was opened for: it stays mounted after the halt, when `run` becomes null.
-  const [target, setTarget] = useState(run);
+  const [target, setTarget] = useState<StoppableRun | null>(run);
   const [open, setOpen] = useState(false);
+  const openFor = (r: StoppableRun): void => {
+    setTarget(r);
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!shortcut || run === null) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'Period') {
+        e.preventDefault();
+        openFor(run);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [shortcut, run]);
+
+  let trigger = null;
+  if (run !== null && !hideTrigger) {
+    const onClick = (): void => {
+      openFor(run);
+    };
+    if (variant === 'pill')
+      trigger = (
+        <button
+          type="button"
+          onClick={onClick}
+          className={buttonClass('kill', `h-9 w-full justify-between rounded-full px-3.5 text-[12.5px] ${className ?? ''}`)}
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-on-kill motion-safe:animate-[bwpulse_1.4s_ease-in-out_infinite]" />
+            <span className="truncate">{label ?? 'Audit running'}</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Icon name="kill" size={14} />
+            Stop
+          </span>
+        </button>
+      );
+    else if (variant === 'icon')
+      trigger = (
+        <button
+          type="button"
+          onClick={onClick}
+          title="Stop testing"
+          className={buttonClass('kill', `size-11 rounded-[10px] px-0 ${className ?? ''}`)}
+        >
+          <Icon name="kill" size={20} />
+          <span className="sr-only">Stop testing</span>
+        </button>
+      );
+    else
+      trigger = (
+        <button type="button" onClick={onClick} className={buttonClass('kill', className ?? 'h-10 px-4')}>
+          <Icon name="kill" size={16} />
+          Stop testing
+        </button>
+      );
+  }
+
   return (
     <>
-      <button
-        type="button"
-        disabled={run === null}
-        onClick={() => {
-          setTarget(run);
-          setOpen(true);
-        }}
-        className={buttonClass('kill', className ?? 'h-9 px-4')}
-      >
-        <Icon name="kill" size={16} />
-        <span className={className === undefined ? 'hidden sm:inline' : undefined}>
-          {className === undefined ? 'Kill' : 'Kill run'}
-        </span>
-      </button>
+      {trigger}
       {target === null ? null : (
         <KillDialog
           key={target.id}
@@ -71,53 +131,73 @@ export function KillButton({
   );
 }
 
+type Phase = 'confirm' | 'stopping' | 'halted';
+
 function KillDialog({
   run,
   open,
   onClose,
 }: {
-  readonly run: { readonly id: string; readonly assetName: string };
+  readonly run: StoppableRun;
   readonly open: boolean;
   readonly onClose: () => void;
 }) {
   const router = useRouter();
-  const [typed, setTyped] = useState('');
-  const [phase, setPhase] = useState<Phase>('form');
+  const [phase, setPhase] = useState<Phase>('confirm');
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [haltMs, setHaltMs] = useState<number | null>(null);
+  const [requestedAt, setRequestedAt] = useState<string | null>(null);
+  const [halt, setHalt] = useState<z.infer<typeof haltSchema> | null>(null);
   const [audit, setAudit] = useState<{ eventId: string; hash: string } | null>(null);
-  const expected = run.id.slice(0, 8);
 
-  async function stop() {
+  async function stop(): Promise<void> {
+    if (busy) return;
+    setBusy(true);
     setError(null);
-    const res = await fetch(`/api/runs/${encodeURIComponent(run.id)}/kill`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ scope: 'run', confirm: typed.trim() }),
-    });
-    if (!res.ok) {
-      const problem = (await res.json().catch(() => ({}))) as { message?: unknown };
-      setError(typeof problem.message === 'string' ? problem.message : 'Kill was refused.');
-      return;
+    try {
+      const res = await fetch(`/api/runs/${encodeURIComponent(run.id)}/kill`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ scope: 'run', confirm: shortId(run.id) }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        message?: unknown;
+        code?: unknown;
+        killRequestedAt?: unknown;
+        audit?: unknown;
+      };
+      if (!res.ok) {
+        setError(
+          body.code === 'run_not_running'
+            ? 'This audit has already finished. Nothing is running.'
+            : typeof body.message === 'string'
+              ? body.message
+              : "Couldn't reach Blackwing. Nothing was stopped. Try again.",
+        );
+        return;
+      }
+      setRequestedAt(typeof body.killRequestedAt === 'string' ? body.killRequestedAt : new Date().toISOString());
+      setAudit(auditRefSchema.parse(body.audit ?? null));
+      setPhase('stopping');
+    } catch {
+      setError("Couldn't reach Blackwing. Nothing was stopped. Try again.");
+    } finally {
+      setBusy(false);
     }
-    const answer = auditRefSchema.parse(((await res.json()) as { audit?: unknown }).audit ?? null);
-    setAudit(answer);
-    setPhase('halting');
   }
 
   useEffect(() => {
-    if (phase !== 'halting') return;
+    if (phase !== 'stopping') return;
     const timer = window.setInterval(() => {
       void (async () => {
-        const res = await fetch(
-          `/api/runs/${encodeURIComponent(run.id)}?afterSeq=${NO_EVENTS}`,
-          { cache: 'no-store' },
-        );
+        const res = await fetch(`/api/runs/${encodeURIComponent(run.id)}?afterSeq=${NO_EVENTS}`, { cache: 'no-store' });
         if (!res.ok) return;
-        const body = (await res.json()) as { state?: unknown; haltMs?: unknown };
-        if (body.state === 'killed') {
-          setHaltMs(typeof body.haltMs === 'number' ? body.haltMs : null);
+        const parsed = haltSchema.safeParse(await res.json());
+        if (!parsed.success) return;
+        setHalt(parsed.data);
+        if (['killed', 'completed', 'failed'].includes(parsed.data.state)) {
           setPhase('halted');
+          window.dispatchEvent(new Event('bw:refresh'));
           router.refresh();
         }
       })();
@@ -127,224 +207,120 @@ function KillDialog({
     };
   }, [phase, run.id, router]);
 
+  // The halt view replaces the Stop button: move focus to Close so the keyboard is never lost.
+  useEffect(() => {
+    if (phase === 'halted') document.querySelector<HTMLElement>('dialog[open] [data-autofocus]')?.focus();
+  }, [phase]);
+
+  const time = (iso: string | null): string =>
+    iso === null ? '' : new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(new Date(iso));
+  const halted = phase === 'halted';
+  const steps = [
+    { label: 'Stop requested', detail: time(requestedAt), done: requestedAt !== null },
+    { label: 'Agents halted', detail: halted ? 'No new request is sent' : 'Waiting for the runner…', done: halted },
+    {
+      label: 'Pending decisions denied',
+      detail: halt === null ? '' : `${halt.gate2.filter((g) => g.status !== 'pending').length} of ${halt.gate2.length} closed`,
+      done: halted && (halt?.gate2.every((g) => g.status !== 'pending') ?? true),
+    },
+    {
+      label: halt?.haltMs === null || halt?.haltMs === undefined ? 'Halt measured' : `Halt measured in ${halt.haltMs.toLocaleString()} ms`,
+      detail: '',
+      done: halted && halt?.haltMs !== null,
+    },
+  ];
+
   return (
-    <Modal open={open} onClose={onClose} label="Stop testing" className="max-w-[840px]">
-      <div className="grid md:grid-cols-[320px_minmax(0,1fr)]">
-        <div className="hidden items-center justify-center bg-surface-2 p-6 md:flex">
-          <svg
-            viewBox="0 0 270 270"
-            className="w-full max-w-[270px]"
-            role="img"
-            aria-label="Blast radius: organisation, asset, run"
-          >
-            <circle
-              cx="135"
-              cy="135"
-              r="122"
-              style={{ fill: 'var(--surface)', stroke: 'var(--border2)' }}
-            />
-            <circle
-              cx="135"
-              cy="135"
-              r="84"
-              style={{ fill: 'var(--surface)', stroke: 'var(--border2)' }}
-            />
-            <circle
-              cx="135"
-              cy="135"
-              r="44"
-              style={{ fill: 'rgba(176, 26, 45, 0.16)', stroke: 'var(--kill)', strokeWidth: 2.5 }}
-            />
-            {[
-              { y: 34, t: 'Organisation, all runs', c: 'var(--muted)' },
-              { y: 72, t: run.assetName, c: 'var(--muted)' },
-              { y: 139, t: 'This run', c: 'var(--kill)' },
-            ].map((l) => (
-              <text
-                key={l.t}
-                x="135"
-                y={l.y}
-                textAnchor="middle"
-                className="text-[11.5px] font-medium"
-                style={{ fill: l.c }}
-              >
-                {l.t}
-              </text>
-            ))}
-          </svg>
-        </div>
-        <div className="flex flex-col gap-4 p-7">
-          <h2 className="flex items-center gap-2.5 text-[22px] font-semibold leading-[30px]">
-            <Icon name="kill" size={22} className="text-kill" />
-            Stop testing
+    <Modal open={open} onClose={onClose} label={`Stop testing ${run.assetName}`} className="max-w-[520px]">
+      <div className="flex flex-col gap-5 p-6 sm:p-7">
+        <div className="flex items-start gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-kill-soft text-kill">
+            <Icon name="kill" size={20} />
+          </span>
+          <h2 className="m-0 min-w-0 break-words text-[20px] font-semibold leading-7">
+            {phase === 'confirm' ? `Stop testing ${run.assetName}?` : halted ? 'Testing stopped' : 'Stopping…'}
           </h2>
-          {phase === 'form' ? (
-            <>
-              <fieldset className="flex flex-col gap-2">
-                <legend className="sr-only">Blast radius</legend>
-                {SCOPES.map((s) => (
-                  <label
-                    key={s.label}
-                    className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-[13px] ${s.live ? 'border-[1.5px] border-kill bg-[rgba(176,26,45,0.06)]' : 'border border-border'}`}
-                  >
-                    <input
-                      type="radio"
-                      name="scope"
-                      checked={s.live}
-                      disabled={!s.live}
-                      readOnly
-                      className="size-[18px] shrink-0 accent-[var(--kill)]"
-                    />
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="text-[13.5px] font-semibold">{s.label}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {s.live
-                          ? `${run.assetName}, run_${shortId(run.id)}`
-                          : 'Not available in the POC'}
-                      </span>
-                    </span>
-                    {s.live ? (
-                      <span className="text-xs font-medium text-muted-foreground">1 run</span>
-                    ) : null}
-                  </label>
-                ))}
-              </fieldset>
-              <p className="text-[13px] leading-[21px] text-muted-foreground">
-                The agent is aborted at once, pending Gate 2 requests are denied and no further
-                request reaches the target.
-              </p>
-              <label className="flex flex-col gap-2 text-[13px] font-medium">
-                <span>
-                  Type{' '}
-                  <code className="rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-xs">
-                    {expected}
-                  </code>{' '}
-                  to confirm
-                </span>
-                <input
-                  value={typed}
-                  onChange={(e) => {
-                    setTyped(e.target.value);
-                  }}
-                  placeholder={expected}
-                  autoComplete="off"
-                  className={`h-11 w-full rounded-[10px] bg-card px-3 font-mono text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none ${killConfirmed(typed, run.id) ? 'border-[1.5px] border-kill' : 'border border-border-strong'}`}
-                />
-              </label>
-              {error === null ? null : (
-                <p role="alert" className="text-[12.5px] text-bad">
-                  {error}
-                </p>
-              )}
-              <div className="flex items-center justify-end gap-2.5">
-                <span className="mr-auto text-xs text-muted-foreground">
-                  Recorded in the audit ledger
-                </span>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className={buttonClass('secondary', 'h-11 rounded-[10px]')}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={!killConfirmed(typed, run.id)}
-                  onClick={() => void stop()}
-                  className={buttonClass(
-                    'kill',
-                    'h-11 rounded-[10px] px-[22px] text-sm font-semibold',
-                  )}
-                >
-                  Stop now
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-end justify-between gap-4">
-                <div className="flex flex-col">
-                  <span className="text-[13px] font-medium text-muted-foreground">This run</span>
-                  <span className="text-2xl font-semibold">
-                    {phase === 'halted' ? 'All testing stopped' : 'Stopping now'}
-                  </span>
-                </div>
-                {phase === 'halted' ? (
-                  <div className="flex flex-col items-end">
-                    <span className="text-xs text-muted-foreground">Total halt time</span>
-                    <span className="text-[52px] font-semibold leading-[58px] tabular-nums text-ok">
-                      {haltMs === null ? 'not recorded' : `${(haltMs / 1000).toFixed(2)}s`}
-                    </span>
-                  </div>
-                ) : null}
-              </div>
-              <ul className="flex flex-col gap-3.5" aria-live="polite">
-                {STEPS.map((step) => (
-                  <li
-                    key={step.label}
-                    className="grid grid-cols-[28px_minmax(0,1fr)] items-center gap-x-3 gap-y-2 md:grid-cols-[28px_230px_minmax(0,1fr)]"
-                  >
-                    <span
-                      className={`flex size-7 shrink-0 items-center justify-center rounded-full ${phase === 'halted' ? 'bg-ok text-on-primary' : 'border-[1.5px] border-border-strong'}`}
-                    >
-                      {phase === 'halted' ? (
-                        <Icon name="check" size={16} />
-                      ) : (
-                        <span className="size-4 rounded-full border-2 border-border-strong border-t-primary motion-safe:animate-[bwspin_0.8s_linear_infinite]" />
-                      )}
-                    </span>
-                    <span className="flex flex-col">
-                      <span className="text-sm font-semibold">{step.label}</span>
-                      <span className="text-xs text-muted-foreground">{step.target}</span>
-                    </span>
-                    <span className="relative col-start-2 h-2.5 rounded-full bg-surface-2 md:col-start-auto">
-                      <span
-                        className={`absolute inset-y-0 left-0 rounded-full ${phase === 'halted' ? 'bg-ok' : 'bg-primary'}`}
-                        style={{
-                          width:
-                            phase === 'halted'
-                              ? `${Math.min(100, ((haltMs ?? HALT_SCALE_MS) / HALT_SCALE_MS) * 100)}%`
-                              : '8%',
-                        }}
-                      />
-                      {step.tick === null ? null : (
-                        <span
-                          className="absolute -inset-y-0.5 w-0.5 bg-border-strong"
-                          style={{ left: `${step.tick}%` }}
-                          aria-hidden="true"
-                        />
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="flex items-center gap-3 border-t border-border pt-4">
-                <span className="mr-auto font-mono text-xs text-muted-foreground">
-                  {phase === 'halted'
-                    ? `run.killed  run_${shortId(run.id)}  ${auditLine(audit)}`
-                    : 'Waiting for the worker to confirm the halt. Recording to audit ledger'}
-                </span>
-                {phase === 'halted' ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className={buttonClass('secondary', 'h-11 rounded-[10px]')}
-                    >
-                      Close
-                    </button>
-                    <Link
-                      href="/audit"
-                      className={buttonClass('primary', 'h-11 rounded-[10px]')}
-                    >
-                      View audit event
-                    </Link>
-                  </>
-                ) : null}
-              </div>
-            </>
-          )}
         </div>
+        {phase === 'confirm' ? (
+          <>
+            <ul className="m-0 flex list-none flex-col gap-2 p-0 text-[13.5px] leading-[21px] text-muted-foreground">
+              <li>Every agent halts now. Requests already on the wire may finish; nothing new is sent.</li>
+              <li>Pending decisions are denied.</li>
+              <li>Findings so far are kept.</li>
+            </ul>
+            <div className="flex items-center gap-3 rounded-xl border-[1.5px] border-kill bg-kill-soft px-3.5 py-3">
+              <Icon name="check" size={16} className="text-kill" />
+              <span className="flex min-w-0 flex-col">
+                <span className="text-[13.5px] font-semibold">This audit</span>
+                <span className="truncate text-xs text-muted-foreground">{run.assetName}</span>
+              </span>
+            </div>
+            {error === null ? null : (
+              <p role="alert" className="m-0 text-[13px] text-bad">
+                {error}
+              </p>
+            )}
+            <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-end">
+              <span className="text-xs text-muted-foreground sm:mr-auto">Recorded in the ledger</span>
+              <button type="button" onClick={onClose} className={buttonClass('secondary', 'h-11 px-5')}>
+                Keep running
+              </button>
+              <button
+                type="button"
+                data-autofocus
+                disabled={busy}
+                onClick={() => void stop()}
+                className={buttonClass('kill', 'h-11 px-5 text-[14px]')}
+              >
+                {busy ? (
+                  <span aria-hidden="true" className="size-3.5 rounded-full border-2 border-current border-t-transparent motion-safe:animate-[bwspin_0.8s_linear_infinite]" />
+                ) : (
+                  <Icon name="kill" size={16} />
+                )}
+                {busy ? 'Stopping…' : 'Stop testing'}
+                <Kbd>Enter</Kbd>
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <ol className="m-0 flex list-none flex-col gap-3 p-0" aria-live="polite">
+              {steps.map((s) => (
+                <li key={s.label} className="flex items-center gap-3">
+                  <span
+                    className={`flex size-6 shrink-0 items-center justify-center rounded-full ${s.done ? 'bg-ok text-white' : 'border-[1.5px] border-border-strong'}`}
+                  >
+                    {s.done ? (
+                      <Icon name="check" size={13} />
+                    ) : (
+                      <span className="size-3 rounded-full border-2 border-border-strong border-t-gold-ink motion-safe:animate-[bwspin_0.8s_linear_infinite]" />
+                    )}
+                  </span>
+                  <span className="flex min-w-0 flex-col">
+                    <span className="text-[13.5px] font-medium">{s.label}</span>
+                    {s.detail === '' ? null : <span className="text-xs text-muted-foreground">{s.detail}</span>}
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
+              <span className="mr-auto text-xs text-muted-foreground">
+                Recorded in the ledger
+                {audit === null ? null : <span className="font-mono"> · {audit.hash.slice(0, 8)}</span>}
+              </span>
+              {halted ? (
+                <>
+                  <Link href="/ledger" onClick={onClose} className={buttonClass('ghost', 'h-10')}>
+                    See the ledger
+                  </Link>
+                  <button type="button" data-autofocus onClick={onClose} className={buttonClass('secondary', 'h-10')}>
+                    Close
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </>
+        )}
       </div>
     </Modal>
   );

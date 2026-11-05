@@ -20,7 +20,7 @@ import { ContextPanel } from '../../../components/console/shell';
 import { callApi } from '../../../lib/api';
 import { getViewer } from '../../../lib/auth';
 import { type Asset, assetSchema } from '../../../lib/schemas';
-import { createAssetAction, verifyAssetAction } from '../actions';
+import { createAssetAction, verifyAssetAction } from '../audits/actions';
 
 import type { ReactNode } from 'react';
 

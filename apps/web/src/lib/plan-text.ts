@@ -4,7 +4,10 @@
 export type PlanField = 'host' | 'objective' | 'intrusiveness' | 'paths' | 'accounts' | 'limits' | 'release';
 
 /** A run of the paragraph; a `field` segment is a value the person can click to change. */
-export type PlanSegment = { readonly text: string; readonly field?: PlanField };
+export interface PlanSegment {
+  readonly text: string;
+  readonly field?: PlanField;
+}
 
 export interface PlanInput {
   readonly host: string;
@@ -97,11 +100,11 @@ export function decisionTitle(method: string, url: string): string {
   }
   const word = path
     .split('/')
-    .filter((s) => s !== '' && !ID_SEGMENT.test(s))
-    .at(-1)
+    .findLast((s) => s !== '' && !ID_SEGMENT.test(s))
     ?.replace(/[^a-z0-9]+/gi, ' ')
     .trim()
     .toLowerCase();
   const noun = word === undefined || word === '' ? method.toUpperCase() : word;
-  return `Allow ${/^[aeiou]/i.test(noun) ? 'an' : 'a'} ${noun} request?`;
+  // "an" before a vowel sound: "an order", "an upload", but "a users", "a unit".
+  return `Allow ${/^([aeio]|u(?!s|ni|r))/i.test(noun) ? 'an' : 'a'} ${noun} request?`;
 }

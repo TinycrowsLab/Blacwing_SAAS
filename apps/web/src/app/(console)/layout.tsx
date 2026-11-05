@@ -1,11 +1,12 @@
 // Console layout: every page needs a signed-in administrator (the middleware sends everyone else to /login first).
-// The shell (top bar, icon rail, footer) wraps every page.
+// A workspace without a name goes to /welcome first. The sidebar is seeded here and keeps itself fresh; nothing else
+// blocks the page. If the API is down the shell still renders and each page reports its own error.
 import { redirect } from 'next/navigation';
 
 import { Shell } from '../../components/console/shell';
 import { callApi } from '../../lib/api';
 import { getViewer } from '../../lib/auth';
-import { dashboardSchema } from '../../lib/schemas';
+import { dashboardSchema, toSidebar, workspaceSchema } from '../../lib/schemas';
 
 import type { ReactNode } from 'react';
 
@@ -18,23 +19,21 @@ export default async function ConsoleLayout({
 }): Promise<ReactNode> {
   const session = await getViewer();
   if (session === null) redirect('/login');
-  // The chrome (bell count, Kill target) is best effort: if the API is down the page itself reports the error.
-  const dashboard = await callApi(session, '/dashboard')
-    .then((body) => dashboardSchema.parse(body))
-    .catch(() => null);
-  const running = dashboard?.runs.find((r) => r.state === 'running' || r.state === 'paused');
-  const pending = dashboard?.pendingGate2 ?? [];
+  const [workspace, dashboard] = await Promise.all([
+    callApi(session, '/workspace')
+      .then((body) => workspaceSchema.parse(body))
+      .catch(() => null),
+    callApi(session, '/dashboard')
+      .then((body) => dashboardSchema.parse(body))
+      .catch(() => null),
+  ]);
+  if (workspace !== null && workspace.name === null) redirect('/welcome');
+  const { name, email, image } = session.user;
   return (
     <Shell
-      name={session.user.name}
-      roles={session.roles}
-      pendingGate2={pending.length}
-      firstGate2Id={pending[0]?.id ?? null}
-      runningRun={
-        running === undefined
-          ? null
-          : { id: running.id, assetName: running.assetName ?? 'Assessment' }
-      }
+      viewer={{ name, email, image }}
+      workspaceName={workspace?.name ?? dashboard?.tenant?.name ?? null}
+      sidebar={dashboard === null ? null : toSidebar(dashboard)}
     >
       {children}
     </Shell>

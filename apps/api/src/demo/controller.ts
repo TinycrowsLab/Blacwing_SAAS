@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import { z } from 'zod';
 
+import { BUDGET_LIMITS, type DemoConfig } from './config.js';
 import { DemoRefusalFilter } from './filter.js';
 import {
   REPORT_FORMATS,
@@ -36,7 +37,6 @@ import { DEMO_CONFIG, DEMO_SERVICE, DEMO_STORE } from './tokens.js';
 import { PublicRoute } from '../tenant/public-route.js';
 import { createZodDto, ZodBody, ZodQuery } from '../validation/index.js';
 
-import { BUDGET_LIMITS, type DemoConfig } from './config.js';
 import type { DemoStore } from './store.js';
 
 const LIMITS = {

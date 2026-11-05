@@ -33,7 +33,7 @@ describe('no literals in the console', () => {
   });
 
   it('the scanner sees through comments only', () => {
-    expect(withoutComments("const a = 'x'; // demo")).toBe("const a = 'x';");
+    expect(withoutComments("const a = 'x'; // demo").trim()).toBe("const a = 'x';");
     expect(withoutComments("fetch('http://demo.test')")).toContain('demo');
   });
 });

@@ -4,8 +4,8 @@
 // A refusal (separation of duties, budget, scope...) comes back as ?error=<code>&message=<detail> on the page.
 import { redirect } from 'next/navigation';
 
-import { ApiError, callApi } from '../../lib/api';
-import { getViewer } from '../../lib/auth';
+import { ApiError, callApi } from '../../../lib/api';
+import { getViewer } from '../../../lib/auth';
 
 const enc = encodeURIComponent;
 const SECONDS_PER_MINUTE = 60;
@@ -126,19 +126,4 @@ export async function startRunAction(form: FormData): Promise<void> {
     refuse(`/requests/${enc(id)}`, error);
   }
   redirect(`/runs/${run.id}`);
-}
-
-export async function triageFindingAction(form: FormData): Promise<void> {
-  const session = await requireSession();
-  const id = text(form, 'findingId');
-  const decision = text(form, 'decision') === 'dismiss' ? 'dismiss' : 'release';
-  try {
-    await callApi(session, `/findings/${enc(id)}/triage`, {
-      method: 'POST',
-      body: { decision, reason: text(form, 'reason') },
-    });
-  } catch (error) {
-    refuse(`/findings/${enc(id)}`, error);
-  }
-  redirect(`/findings/${enc(id)}`);
 }

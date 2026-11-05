@@ -23,6 +23,10 @@ const toolResultSchema = z.object({
     .optional(),
 });
 
+/** The structured result of a tool call: an Agent call launched in the background reports `async_launched`. */
+const toolUseResultSchema = z.object({ status: z.string() }).loose();
+const BACKGROUND_LAUNCH = /^(async|remote)_launched$/;
+
 function resultText(content: z.infer<typeof toolResultSchema>['content']): string {
   if (content === undefined) return '';
   if (typeof content === 'string') return content;
@@ -36,6 +40,9 @@ export class MessageRouter {
   private readonly laneByToolUse = new Map<string, string>();
   /** `Agent` tool_use id -> the lane that delegated (the reply goes back to it). */
   private readonly parentByToolUse = new Map<string, string>();
+  /** The latest text of each lane: a background subagent's report is its last message when its task completes. */
+  private readonly lastTextByLane = new Map<string, string>();
+  private readonly replied = new Set<string>();
   private readonly lanes = new Map<string, { turns: number; tokens: number }>();
   private totalCostUsd = 0;
 
@@ -61,34 +68,57 @@ export class MessageRouter {
     return all === 0 ? 0 : Math.round((this.totalCostUsd * own * COST_DECIMALS) / all) / COST_DECIMALS;
   }
 
-  /** A delegation's tool_result is the subagent's report back to the lane that delegated. */
-  private async handleReplies(content: unknown): Promise<void> {
+  private async reply(toolUseId: string, text: string, isError: boolean, status: string): Promise<void> {
+    const subagent = this.laneByToolUse.get(toolUseId);
+    if (subagent === undefined || this.replied.has(toolUseId)) return;
+    this.replied.add(toolUseId);
+    const to = this.parentByToolUse.get(toolUseId) ?? ORCHESTRATOR;
+    await this.log.emit('agent.reply', subagent, `${subagent} reports back to ${to}`, {
+      agent: subagent,
+      to,
+      toolUseId,
+      text: text.slice(0, REPLY_MAX_CHARS),
+      isError,
+      status,
+    });
+  }
+
+  /**
+   * A delegation's tool_result is the subagent's report back to the lane that delegated, unless the SDK ran the
+   * subagent in the background: then the tool_result is only a launch receipt and the report arrives with the task's
+   * `task_notification` (see handle).
+   */
+  private async handleReplies(content: unknown, toolUseResult: unknown): Promise<void> {
     if (!Array.isArray(content)) return;
+    const structured = toolUseResultSchema.safeParse(toolUseResult);
+    if (structured.success && BACKGROUND_LAUNCH.test(structured.data.status)) return;
     for (const raw of content) {
       const block = toolResultSchema.safeParse(raw);
       if (!block.success) continue;
-      const subagent = this.laneByToolUse.get(block.data.tool_use_id);
-      if (subagent === undefined) continue;
-      const to = this.parentByToolUse.get(block.data.tool_use_id) ?? ORCHESTRATOR;
-      await this.log.emit('agent.reply', subagent, `${subagent} reports back to ${to}`, {
-        agent: subagent,
-        to,
-        toolUseId: block.data.tool_use_id,
-        text: resultText(block.data.content).slice(0, REPLY_MAX_CHARS),
-        isError: block.data.is_error === true,
-      });
+      const isError = block.data.is_error === true;
+      await this.reply(block.data.tool_use_id, resultText(block.data.content), isError, isError ? 'failed' : 'completed');
     }
   }
 
   async handle(message: SDKMessage): Promise<void> {
     if (message.type === 'user') {
-      await this.handleReplies(message.message.content);
+      await this.handleReplies(message.message.content, message.tool_use_result);
+      return;
+    }
+    if (message.type === 'system' && message.subtype === 'task_notification') {
+      const id = message.tool_use_id;
+      const lane = id === undefined ? undefined : this.laneByToolUse.get(id);
+      if (id !== undefined && lane !== undefined) {
+        // The subagent's own last words are its report; the SDK's summary stands in when it wrote none.
+        await this.reply(id, this.lastTextByLane.get(lane) ?? message.summary, message.status !== 'completed', message.status);
+      }
       return;
     }
     if (message.type !== 'assistant') return;
     const agent = this.laneOf(message.parent_tool_use_id);
     for (const block of message.message.content) {
       if (block.type === 'text' && block.text.trim() !== '') {
+        this.lastTextByLane.set(agent, block.text);
         await this.log.emit('agent.message', agent, `${agent}: ${block.text.slice(0, MESSAGE_PREVIEW_CHARS)}`, { agent, text: block.text });
       } else if (block.type === 'tool_use' && block.name !== HTTP_TOOL) {
         const record = inputRecord.parse(block.input);

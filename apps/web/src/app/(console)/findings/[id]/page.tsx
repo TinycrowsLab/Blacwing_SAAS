@@ -24,7 +24,7 @@ import { ContextPanel } from '../../../../components/console/shell';
 import { ApiError, callApi } from '../../../../lib/api';
 import { getViewer } from '../../../../lib/auth';
 import { type Finding, findingSchema } from '../../../../lib/schemas';
-import { triageFindingAction } from '../../actions';
+import { triageFindingAction } from '../actions';
 
 import type { ReactNode } from 'react';
 

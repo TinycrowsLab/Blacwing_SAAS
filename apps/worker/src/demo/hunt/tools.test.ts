@@ -33,7 +33,7 @@ function setup(releaseProven: HuntRun['releaseProven']) {
     signal: new AbortController().signal,
     deps: {
       fetch: (input) => {
-        posted.push(String(input));
+        posted.push(input instanceof Request ? input.url : input instanceof URL ? input.href : input);
         return Promise.resolve(new Response('ok'));
       },
       sleep: () => Promise.resolve(),

@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 
 import { NoAccess } from './no-access';
-import { Icon } from '../../components/console/design';
+import { buttonClass, Icon } from '../../components/console/design';
 import { auth, isAdmin } from '../../lib/auth';
 import { signInWithGoogle } from '../../lib/auth-actions';
 
@@ -44,7 +44,13 @@ export default async function LoginPage({
   const email = session?.user?.email;
   if (isAdmin(email)) redirect('/');
   if (error === 'AccessDenied' || typeof email === 'string') return <NoAccess email={email} />;
-  const failed = typeof error === 'string';
+  // Auth.js codes: a Google sign-in the person backed out of comes back as an OAuth callback error.
+  const failure =
+    typeof error !== 'string'
+      ? null
+      : ['OAuthCallbackError', 'OAuthSignin', 'Callback', 'access_denied'].includes(error)
+        ? 'Google sign-in was cancelled. Try again.'
+        : "Google sign-in didn't finish. Try again.";
   return (
     <>
       <div className="flex flex-col items-start gap-4">
@@ -56,21 +62,19 @@ export default async function LoginPage({
           className="object-contain"
         />
         <div className="flex flex-col gap-1.5">
-          <h1 className="text-[24px] font-semibold leading-8 text-foreground">
-            Sign in to Blackwing
-          </h1>
-          <p className="text-[13.5px] leading-6 text-muted-foreground">
-            Authorised, human-gated security assessments. Sign in with your Google account.
+          <h1 className="text-[26px] font-semibold leading-8 tracking-[-0.01em] text-foreground">Blackwing</h1>
+          <p className="text-[14px] leading-6 text-muted-foreground">
+            AI penetration testing you approve at every step.
           </p>
         </div>
       </div>
-      {failed ? (
+      {failure !== null ? (
         <p
           role="alert"
           className="flex items-start gap-2 rounded-[10px] border border-bad bg-bad-soft px-3 py-2.5 text-[13px] text-bad"
         >
           <Icon name="warn" size={16} className="mt-0.5 shrink-0" />
-          Google sign-in did not complete. Try again.
+          {failure}
         </p>
       ) : null}
       <form action={signInWithGoogle}>
@@ -81,14 +85,16 @@ export default async function LoginPage({
         />
         <button
           type="submit"
-          className="inline-flex h-11 w-full items-center justify-center gap-3 rounded-[10px] border border-border-strong bg-surface px-4 text-[14px] font-medium text-foreground hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+          className={buttonClass('primary', 'h-12 w-full gap-3 rounded-xl text-[14.5px]')}
         >
-          <GoogleMark />
+          <span className="flex size-7 items-center justify-center rounded-full bg-white">
+            <GoogleMark />
+          </span>
           Continue with Google
         </button>
       </form>
       <p className="text-[12px] leading-5 text-muted-foreground">
-        Every sign-in and every gated decision is recorded in the audit ledger.
+        Only people your administrator added can sign in. Every sign-in and decision is recorded on the ledger.
       </p>
     </>
   );

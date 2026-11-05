@@ -11,8 +11,8 @@ function assistant(parent: string | null, content: unknown[], tokens = 10): SDKM
   return { type: 'assistant', parent_tool_use_id: parent, message: { content, usage: { input_tokens: tokens, output_tokens: 0 } } } as unknown as SDKMessage;
 }
 
-function user(content: unknown[]): SDKMessage {
-  return { type: 'user', parent_tool_use_id: null, message: { role: 'user', content } } as unknown as SDKMessage;
+function user(content: unknown[], toolUseResult?: unknown): SDKMessage {
+  return { type: 'user', parent_tool_use_id: null, message: { role: 'user', content }, tool_use_result: toolUseResult } as unknown as SDKMessage;
 }
 
 describe('MessageRouter', () => {
@@ -49,20 +49,43 @@ describe('MessageRouter', () => {
     await router.handle(assistant(null, [{ type: 'tool_use', id: 'tu9', name: 'Agent', input: { subagent_type: 'recon', description: 'map it', prompt } }]));
     await router.handle(user([{ type: 'tool_result', tool_use_id: 'tu9', content: [{ type: 'text', text: 'Found 12 endpoints.' }, { type: 'text', text: 'Login at /rest/user/login.' }] }]));
     await router.handle(user([{ type: 'tool_result', tool_use_id: 'unknown', content: 'not a delegation' }, { type: 'text', text: 'plain user text' }]));
-    await router.handle(user([{ type: 'tool_result', tool_use_id: 'tu9', is_error: true, content: 'y'.repeat(5000) }]));
+    await router.handle(assistant(null, [{ type: 'tool_use', id: 'tu10', name: 'Agent', input: { subagent_type: 'authz-specialist', description: 'authz' } }]));
+    await router.handle(user([{ type: 'tool_result', tool_use_id: 'tu10', is_error: true, content: 'y'.repeat(5000) }]));
 
     const delegation = store.events.find((e) => e.kind === 'agent.tool');
     expect((delegation?.data.input as { prompt: string }).prompt).toHaveLength(2000);
     expect((delegation?.data.input as { prompt: string }).prompt.startsWith('Map the target.')).toBe(true);
     const replies = store.events.filter((e) => e.kind === 'agent.reply');
     expect(replies).toHaveLength(2);
+    expect(replies[1]?.data).toMatchObject({ agent: 'authz-specialist', isError: true, status: 'failed' });
+    expect((replies[1]?.data.text as string).length).toBe(4000);
     expect(replies[0]).toMatchObject({
       stage: 'recon',
       message: 'recon reports back to orchestrator',
       data: { agent: 'recon', to: 'orchestrator', toolUseId: 'tu9', text: 'Found 12 endpoints.\nLogin at /rest/user/login.', isError: false },
     });
-    expect(replies[1]?.data).toMatchObject({ isError: true });
-    expect((replies[1]?.data.text as string).length).toBe(4000);
+  });
+
+  it('a background subagent replies when its task completes, with its own last words, not the launch receipt', async () => {
+    const store = new FakeStore();
+    const router = new MessageRouter(new EventLog(store, 'r', { warn: () => undefined, error: () => undefined }));
+    await router.handle(assistant(null, [{ type: 'tool_use', id: 'tu5', name: 'Agent', input: { subagent_type: 'recon', description: 'map', prompt: 'Map it.' } }]));
+    await router.handle(user([{ type: 'tool_result', tool_use_id: 'tu5', content: 'Async agent launched successfully. agentId: a1' }], { status: 'async_launched', agentId: 'a1' }));
+    expect(store.events.filter((e) => e.kind === 'agent.reply')).toEqual([]);
+    await router.handle(assistant('tu5', [{ type: 'text', text: 'Recon is done: 12 endpoints, login at /rest/user/login.' }]));
+    await router.handle({ type: 'system', subtype: 'task_notification', task_id: 't', tool_use_id: 'tu5', status: 'completed', output_file: '/x', summary: 'Recon finished', uuid: 'u', session_id: 's' } as unknown as SDKMessage);
+    await router.handle({ type: 'system', subtype: 'task_notification', task_id: 't', tool_use_id: 'tu5', status: 'completed', output_file: '/x', summary: 'again', uuid: 'u2', session_id: 's' } as unknown as SDKMessage);
+    const replies = store.events.filter((e) => e.kind === 'agent.reply');
+    expect(replies).toHaveLength(1);
+    expect(replies[0]?.data).toMatchObject({ agent: 'recon', to: 'orchestrator', toolUseId: 'tu5', text: 'Recon is done: 12 endpoints, login at /rest/user/login.', isError: false, status: 'completed' });
+  });
+
+  it('a failed background task replies with the SDK summary when the subagent wrote nothing', async () => {
+    const store = new FakeStore();
+    const router = new MessageRouter(new EventLog(store, 'r', { warn: () => undefined, error: () => undefined }));
+    await router.handle(assistant(null, [{ type: 'tool_use', id: 'tu6', name: 'Agent', input: { subagent_type: 'authz-specialist', description: 'authz' } }]));
+    await router.handle({ type: 'system', subtype: 'task_notification', task_id: 't', tool_use_id: 'tu6', status: 'failed', output_file: '/x', summary: 'Stopped: budget', uuid: 'u', session_id: 's' } as unknown as SDKMessage);
+    expect(store.events.find((e) => e.kind === 'agent.reply')?.data).toMatchObject({ agent: 'authz-specialist', text: 'Stopped: budget', isError: true, status: 'failed' });
   });
 
   it('ignores non-assistant messages', async () => {

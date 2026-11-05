@@ -16,7 +16,7 @@ import { ContextPanel } from '../../../../components/console/shell';
 import { callApi } from '../../../../lib/api';
 import { getViewer } from '../../../../lib/auth';
 import { assetSchema } from '../../../../lib/schemas';
-import { createRequestAction } from '../../actions';
+import { createRequestAction } from '../../audits/actions';
 
 import type { ReactNode } from 'react';
 

@@ -33,7 +33,7 @@ const IPV4 = /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
 const IPV6 = /^\[[0-9a-f:.]+\]$/i;
 const LABEL = /^(?!-)[a-z0-9-]{1,63}(?<!-)$/;
 const SCHEME = /^([a-z][a-z0-9+.-]*):\/\//i;
-const WRAP_START = /^[<"'`(\[]+/;
+const WRAP_START = /^[<"'`([]+/;
 const WRAP_END = /[>"'`)\].,;]+$/;
 const WRAP_END_IPV6 = /[>"'`).,;]+$/;
 
@@ -83,7 +83,7 @@ export function normalizeTarget(raw: string): TargetResult {
   const pathSetAside = rest === '/' ? undefined : rest;
   if (pathSetAside !== undefined) notes.push({ text: 'Set aside ', code: pathSetAside });
   // URL punycodes an IDN host; people read the Unicode form they typed.
-  const displayHost = /[^\x00-\x7F]/.test(typedHost) ? typedHost.toLowerCase().replace(/:(80|443)$/, '') : url.host;
+  const displayHost = /[^\p{ASCII}]/u.test(typedHost) ? typedHost.toLowerCase().replace(/:(80|443)$/, '') : url.host;
   return {
     ok: true,
     origin: url.origin,

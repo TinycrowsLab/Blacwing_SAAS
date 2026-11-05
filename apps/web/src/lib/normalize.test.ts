@@ -18,7 +18,7 @@ import {
 
 const target = (raw: string) => {
   const r = normalizeTarget(raw);
-  return r.ok ? { origin: r.origin, display: r.display, notes: r.notes.map(noteText) } : { error: r.message };
+  return r.ok ? { origin: r.origin, display: r.display, notes: r.notes.map((n) => noteText(n)) } : { error: r.message };
 };
 
 describe('normalizeTarget (§10.1 table)', () => {

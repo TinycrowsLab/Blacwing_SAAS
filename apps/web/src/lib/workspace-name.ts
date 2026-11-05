@@ -16,6 +16,8 @@ const CONSUMER_DOMAINS = new Set([
 // shortcut: a two-part public suffix is recognised by shape (co.uk, com.au, ac.in...), not the full Public Suffix List;
 // upgrade to the PSL if a customer's domain is named wrongly.
 const SECOND_LEVEL = /^(co|com|ac|edu|gov|org|net|ltd|plc)\.[a-z]{2}$/;
+/** Labels a two-part suffix needs before the registrable one is found (`x.example.co.uk`). */
+const MIN_LABELS_FOR_TWO_PART = 3;
 
 export const WORKSPACE_NAME_MIN = 2;
 export const WORKSPACE_NAME_MAX = 60;
@@ -30,8 +32,10 @@ const titleCase = (label: string): string =>
 /** The registrable label of a domain: `mail.tinycrows.co.uk` gives `tinycrows`. */
 export function registrableLabel(domain: string): string {
   const labels = domain.toLowerCase().split('.').filter((l) => l !== '');
-  const suffixParts = labels.length >= 3 && SECOND_LEVEL.test(labels.slice(-2).join('.')) ? 2 : 1;
-  return labels.at(-(suffixParts + 1)) ?? labels[0] ?? '';
+  const twoPart =
+    labels.length >= MIN_LABELS_FOR_TWO_PART && SECOND_LEVEL.test(labels.slice(1 - MIN_LABELS_FOR_TWO_PART).join('.'));
+  // The label before the suffix: second to last, or third to last under a two-part suffix.
+  return labels.at(twoPart ? -MIN_LABELS_FOR_TWO_PART : 1 - MIN_LABELS_FOR_TWO_PART) ?? labels[0] ?? '';
 }
 
 export interface ProposedName {
@@ -51,7 +55,9 @@ export function proposeWorkspaceName(input: {
     const name = titleCase(registrableLabel(domain));
     if (name.length >= WORKSPACE_NAME_MIN) return { name: name.slice(0, WORKSPACE_NAME_MAX), domain };
   }
-  const given = input.givenName?.trim() || titleCase(input.email.split('@')[0] ?? '') || 'My';
+  const fromClaim = input.givenName?.trim() ?? '';
+  const fromEmail = titleCase(input.email.split('@')[0] ?? '');
+  const given = fromClaim !== '' ? fromClaim : fromEmail !== '' ? fromEmail : 'My';
   return { name: `${given}'s workspace`.slice(0, WORKSPACE_NAME_MAX), domain: null };
 }
 

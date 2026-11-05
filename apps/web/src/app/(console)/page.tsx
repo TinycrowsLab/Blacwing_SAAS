@@ -48,10 +48,7 @@ export default async function DashboardPage(): Promise<ReactNode> {
     <div className="flex flex-col gap-3">
       <PageHeader
         crumbs={[{ label: 'Dashboard' }]}
-        title="Acme Corp"
-        chips={
-          <span className="text-[13px] text-muted-foreground">Signed in as {data.actor.name}</span>
-        }
+        title={data.tenant?.name ?? 'Home'}
         actions={
           <LinkButton href="/requests/new" variant="primary" icon="plusCircle">
             New assessment

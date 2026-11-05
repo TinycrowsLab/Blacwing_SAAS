@@ -1,122 +1,37 @@
-/* Presentational values (pixel sizes, opacity steps, poll and tick intervals) come from design/ and are not domain constants. */
+// Console shell (experience spec §2): a Claude-app layout, the 264 px sidebar and one main column; under 768 px a 52 px
+// top bar with the menu sheet. No search, no bell, no workspace switcher: every control works or is not rendered.
+import { ConsoleSidebar, type SidebarViewer } from './sidebar';
 
-// Console shell: the layout grammar of Blackwing Screens (top bar 56 px, 64 px icon rail, breadcrumb header, status
-// chips, authorisation strip, right-hand context panel). Every console page renders inside it.
-import Link from 'next/link';
-
-import { Icon } from './design';
-import { KillButton } from './kill-dialog';
-import { Rail } from './rail';
-import { SignOutButton } from './sign-out-button';
-import { ThemeToggle } from './theme-toggle';
-
+import type { SidebarData } from '../../lib/schemas';
 import type { ReactNode } from 'react';
 
 export interface ShellProps {
-  readonly name: string;
-  readonly roles: readonly string[];
-  /** Gate 2 requests waiting for a decision, and the first one's page. */
-  readonly pendingGate2: number;
-  readonly firstGate2Id: string | null;
-  /** The most recent running run, the target of the top bar Kill button. */
-  readonly runningRun: { readonly id: string; readonly assetName: string } | null;
+  readonly viewer: SidebarViewer;
+  /** Null until named on /welcome (or when the API did not answer). */
+  readonly workspaceName: string | null;
+  /** The sidebar's first data, from the layout; null when the API did not answer (the sidebar says so and retries). */
+  readonly sidebar: SidebarData | null;
   readonly children: ReactNode;
 }
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p.charAt(0).toUpperCase())
-    .join('');
-}
-
-/** The crow-shield mark and the wordmark. The shield is the product mark; the tinycrows lockup is in the footer. */
-function BrandMark({ size = 26 }: { readonly size?: number }) {
+export function Shell({ viewer, workspaceName, sidebar, children }: ShellProps) {
   return (
-    <img
-      src="/brand/crow-shield.png"
-      alt=""
-      width={size}
-      height={size}
-      className="object-contain"
-    />
-  );
-}
-
-export function Shell({
-  name,
-  roles,
-  pendingGate2,
-  firstGate2Id,
-  runningRun,
-  children,
-}: ShellProps) {
-  return (
-    <div className="bw-canvas min-h-screen bg-bg text-text">
-      <header className="flex h-14 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-4 sm:px-5">
-        <Link href="/" className="flex items-center gap-2.5 text-foreground no-underline">
-          <BrandMark />
-          <span className="text-base font-semibold">Blackwing</span>
-        </Link>
-        <span className="hidden h-8 items-center gap-2 rounded-full bg-surface-2 px-3 text-[13px] font-medium sm:inline-flex">
-          Acme Corp
-          <Icon name="chevron" size={13} />
-        </span>
-        <span className="relative hidden h-9 max-w-[460px] flex-1 items-center gap-2.5 rounded-[10px] bg-surface-2 px-3 text-[13px] text-muted-foreground md:inline-flex">
-          <Icon name="search" size={15} />
-          <span className="flex-1">Search assets, runs, findings</span>
-          <kbd className="rounded-[5px] border border-border-strong px-1.5 py-px text-[11px] font-medium">
-            Ctrl K
-          </kbd>
-        </span>
-        <div className="flex-1" />
-        <ThemeToggle />
-        <Link
-          href={firstGate2Id === null ? '/' : `/approvals/gate2/${firstGate2Id}`}
-          title={`${pendingGate2} Gate 2 decisions waiting`}
-          className="relative flex size-9 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-surface-2"
-        >
-          <Icon name="bell" size={19} />
-          {pendingGate2 > 0 ? (
-            <span className="absolute right-0.5 top-0.5 flex size-4 items-center justify-center rounded-full bg-warn text-[10px] font-semibold text-white">
-              {pendingGate2}
-            </span>
-          ) : null}
-          <span className="sr-only">{pendingGate2} Gate 2 decisions waiting</span>
-        </Link>
-        <KillButton run={runningRun} />
-        <span
-          className="flex items-center gap-2.5"
-          data-testid="console-user"
-          title={`${name}: ${roles.join(', ') || 'no roles'}`}
-        >
-          <span
-            aria-hidden="true"
-            className="flex size-[34px] items-center justify-center rounded-full bg-primary text-xs font-semibold text-on-primary"
-          >
-            {initials(name)}
-          </span>
-          <span className="sr-only">{name}</span>
-        </span>
-        <SignOutButton />
-      </header>
-      <div className="grid min-h-[calc(100vh-3.5rem)] grid-cols-1 md:grid-cols-[64px_minmax(0,1fr)]">
-        <Rail pendingGate2={pendingGate2} />
-        <main className="min-w-0 space-y-3 px-4 py-5 sm:px-7">{children}</main>
-      </div>
-      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-7 py-3 text-[11.5px] text-muted-foreground">
-        <span>Blackwing. Agent output is labelled not verified.</span>
-        <Link href="/about" className="text-muted-foreground underline hover:text-foreground">
-          About Blackwing
-        </Link>
-      </footer>
+    <div className="min-h-dvh bg-bg text-text md:grid md:grid-cols-[264px_minmax(0,1fr)]">
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-lg bg-gold px-3 py-2 text-on-gold focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
+      >
+        Skip to content
+      </a>
+      <ConsoleSidebar initial={sidebar} workspaceName={workspaceName} viewer={viewer} />
+      <main id="main" className="min-w-0 space-y-3 px-4 py-5 sm:px-6 md:px-8 md:py-7">
+        {children}
+      </main>
     </div>
   );
 }
 
-/** Right-hand context panel (design 1b): what the screen is for, who sees it, what is audited. */
+/** Right-hand context panel: what the screen is for, who sees it, what is audited. */
 export function ContextPanel({
   sections,
 }: {

@@ -20,7 +20,7 @@ import { ContextPanel } from '../../../../components/console/shell';
 import { ApiError, callApi } from '../../../../lib/api';
 import { getViewer } from '../../../../lib/auth';
 import { type AssessmentRequest, requestSchema } from '../../../../lib/schemas';
-import { decideRequestAction, startRunAction } from '../../actions';
+import { decideRequestAction, startRunAction } from '../../audits/actions';
 
 import type { ReactNode } from 'react';
 
