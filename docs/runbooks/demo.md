@@ -66,6 +66,20 @@ Open `http://localhost:3000/demo` (the bare origin redirects there), which redir
 The password is `BW_DEV_KEYCLOAK_TEST_USER_PASSWORD` in the repository `.env`. Print it locally with
 `grep BW_DEV_KEYCLOAK_TEST_USER_PASSWORD .env`. Do not paste it into chat or tickets.
 
+### Presenter login (optional)
+
+A named login for the person giving the demo, with both the AppSec engineer and asset owner groups. Set it in the
+gitignored `.env.demo`:
+
+```
+BW_DEMO_LOGIN_EMAIL=<presenter e-mail>
+BW_DEMO_LOGIN_PASSWORD=<password>
+```
+
+`node scripts/demo.mjs up` creates or updates it in Keycloak and the demo directory. `node scripts/demo.mjs login`
+does only that step, without a restart. Separation of duties still applies: the presenter cannot approve their own
+Gate 1 or Gate 2 request, so approvals use a second account, such as `owner@acme.test`.
+
 ## Sign in with Google (optional)
 
 Google is brokered by Keycloak only. The app never talks to Google. The `google` identity provider lives in the

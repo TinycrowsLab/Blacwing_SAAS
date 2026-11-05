@@ -6,6 +6,7 @@
 //   node scripts/demo.mjs smoke      # run the story end to end against the live stack (exit 1 on any failure)
 //   node scripts/demo.mjs stop       # stop api, worker, demo runner and web started by this script
 //   node scripts/demo.mjs google     # only the Google identity provider in Keycloak (scripts/keycloak-google-idp.mjs)
+//   node scripts/demo.mjs login      # only the presenter login from .env.demo (BW_DEMO_LOGIN_EMAIL / BW_DEMO_LOGIN_PASSWORD)
 //
 // Steps, in order (each one is safe to re-run):
 //   1. dependency stack (`pnpm dev:deps` when Postgres or Keycloak is not healthy), then the Google identity
@@ -33,6 +34,8 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { demoLoginEmail, demoLoginSql, syncDemoLogin } from './keycloak-demo-login.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RUN_DIR = path.join(ROOT, '.demo');
@@ -96,7 +99,7 @@ function ensureDemoEnv() {
   };
   const changed = Object.keys(generated).some((k) => existing[k] !== generated[k]);
   if (!changed) return { ...existing, ...generated };
-  const body = Object.entries(generated)
+  const body = Object.entries({ ...existing, ...generated })
     .map(([k, v]) => `${k}=${v}`)
     .join('\n');
   writeFileSync(
@@ -182,6 +185,34 @@ function stepGoogle() {
     stdio: 'inherit',
   });
   return r.status ?? 1;
+}
+
+/**
+ * Upserts the presenter login from .env.demo (BW_DEMO_LOGIN_EMAIL / BW_DEMO_LOGIN_PASSWORD) in Keycloak and the
+ * demo directory. Returns the email, or '' when unset or on failure (a warning: the test users still work).
+ * @param {Record<string, string | undefined>} env
+ * @returns {Promise<string>}
+ */
+async function stepDemoLogin(env) {
+  let email = '';
+  try {
+    email = demoLoginEmail(env);
+    if (email === '') return '';
+    const { sub, created } = await syncDemoLogin({
+      base: `http://127.0.0.1:${env.BW_DEV_KEYCLOAK_PORT ?? 18080}`,
+      adminUser: env.BW_DEV_KEYCLOAK_ADMIN_USER ?? '',
+      adminPassword: env.BW_DEV_KEYCLOAK_ADMIN_PASSWORD ?? '',
+      email,
+      password: env.BW_DEMO_LOGIN_PASSWORD ?? '',
+    });
+    const r = psqlSuper(demoLoginSql(sub, email), env, DEMO_DB);
+    if (r.status !== 0 || r.stdout.trim() === '') throw new Error('writing the directory user failed');
+    log(`demo login ${email} ${created ? 'created' : 'updated'} (AppSec engineer and asset owner)`);
+    return email;
+  } catch (error) {
+    log(`WARNING: demo login not set up: ${error instanceof Error ? error.message : 'unknown error'}`);
+    return '';
+  }
 }
 
 /** Starts the Juice Shop lab. Returns false (never exits) when Docker or the container is not available. */
@@ -334,7 +365,7 @@ function waitFor(label, url, timeoutMs) {
   return false;
 }
 
-function printSummary(env, labRegistered) {
+function printSummary(env, labRegistered, demoLogin) {
   const host = env.DEMO_HOST ?? '127.0.0.1';
   const kc = `http://localhost:${env.BW_DEV_KEYCLOAK_PORT ?? 18080}`;
   const pw =
@@ -352,7 +383,7 @@ Demo users (Keycloak realm blackwing-dev, password from .env BW_DEV_KEYCLOAK_TES
   approver               owner@acme.test
   viewer                 auditor@acme.test
   password               ${pw.startsWith('(') ? pw : '<BW_DEV_KEYCLOAK_TEST_USER_PASSWORD from .env>'}
-
+${demoLogin === '' ? '' : `  presenter              ${demoLogin} (AppSec + asset owner; password BW_DEMO_LOGIN_PASSWORD in .env.demo)\n`}
 Story (click by click in docs/runbooks/demo.md):
   Start here     http://localhost:${WEB_PORT}/demo
   Assets         http://localhost:${WEB_PORT}/demo/assets
@@ -562,11 +593,15 @@ async function main() {
   if (cmd === 'stop') return stop();
   if (cmd === 'smoke') return smoke();
   if (cmd === 'google') process.exit(stepGoogle());
+  if (cmd === 'login') {
+    const demo = ensureDemoEnv();
+    process.exit((await stepDemoLogin(demoEnv(demo))) === '' ? 1 : 0);
+  }
   if (cmd === 'lab') {
     if (!stepLab()) process.exit(1);
     return;
   }
-  if (cmd !== 'up') fail(`unknown command ${cmd} (use up, status, smoke, stop, lab or google)`);
+  if (cmd !== 'up') fail(`unknown command ${cmd} (use up, status, smoke, stop, lab, google or login)`);
 
   const demo = ensureDemoEnv();
   const baseEnv = demoEnv(demo);
@@ -577,6 +612,7 @@ async function main() {
     log('Google sign-in is not set up (see the message above); the normal sign-in still works');
   stepDatabase(baseEnv);
   stepMigrateAndSeed(baseEnv);
+  const demoLogin = await stepDemoLogin(baseEnv);
   const labUp = stepLab();
   // The tenant id is known only after the seed; the demo API and runner need it.
   const tenantId = demoTenantId(baseEnv);
@@ -590,7 +626,7 @@ async function main() {
     labRegistered = await registerLab(demo);
   }
   waitFor('web', `http://127.0.0.1:${WEB_PORT}/login`, 120_000);
-  printSummary(env, labRegistered);
+  printSummary(env, labRegistered, demoLogin);
 }
 
 await main();
