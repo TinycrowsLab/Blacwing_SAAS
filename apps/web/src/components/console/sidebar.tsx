@@ -234,6 +234,7 @@ function UserMenu({ viewer }: { readonly viewer: SidebarViewer }) {
         <DropdownMenuLabel className="truncate font-normal">{viewer.email}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
+          className="gap-2.5"
           onSelect={() => {
             router.push('/settings');
           }}
@@ -241,11 +242,12 @@ function UserMenu({ viewer }: { readonly viewer: SidebarViewer }) {
           <Icon name="settings" size={15} />
           Workspace settings
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={toggleTheme}>
+        <DropdownMenuItem className="gap-2.5" onSelect={toggleTheme}>
           <Icon name={dark ? 'sun' : 'moon'} size={15} />
           {dark ? 'Light theme' : 'Dark theme'}
         </DropdownMenuItem>
         <DropdownMenuItem
+          className="gap-2.5"
           onSelect={() => {
             router.push('/help');
           }}
@@ -256,6 +258,7 @@ function UserMenu({ viewer }: { readonly viewer: SidebarViewer }) {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
+          className="gap-2.5"
           onSelect={() => {
             void signOutAction();
           }}
@@ -355,10 +358,11 @@ function SidebarBody({
           );
         })}
       </nav>
-      {newest === undefined || inSheet ? null : (
-        <div className="mt-3">
+      {inSheet ? null : (
+        // Stays mounted when the run ends, so the open dialog can show the halt it measured.
+        <div className={newest === undefined ? 'contents' : 'mt-3'}>
           <KillButton
-            run={{ id: newest.id, assetName: newest.assetName ?? 'this audit' }}
+            run={newest === undefined ? null : { id: newest.id, assetName: newest.assetName ?? 'this audit' }}
             variant="pill"
             label={`${live.length} ${live.length === 1 ? 'audit' : 'audits'} running`}
             shortcut

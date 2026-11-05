@@ -220,7 +220,12 @@ function KillDialog({
     { label: 'Agents halted', detail: halted ? 'No new request is sent' : 'Waiting for the runner…', done: halted },
     {
       label: 'Pending decisions denied',
-      detail: halt === null ? '' : `${halt.gate2.filter((g) => g.status !== 'pending').length} of ${halt.gate2.length} closed`,
+      detail:
+        halt === null
+          ? ''
+          : halt.gate2.length === 0
+            ? 'None were waiting'
+            : `${halt.gate2.filter((g) => g.status !== 'pending').length} of ${halt.gate2.length} closed`,
       done: halted && (halt?.gate2.every((g) => g.status !== 'pending') ?? true),
     },
     {

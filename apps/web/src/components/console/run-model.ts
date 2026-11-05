@@ -2,16 +2,12 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers -- design pixel and timing values, see design/README.md */
 // Pure functions that turn the run DTO and its events (docs/poc/AI_HUNT_POC.md section 2) into what the run screens
 // draw. No React here, so the rules (kill confirmation, countdown, lane marks) are unit tested.
-import type { RunEvent } from '../../lib/schemas';
+import { agentName } from '../../lib/agents';
+import { hostLine } from '../../lib/host-lines';
+
+import type { Gate2, RunEvent } from '../../lib/schemas';
 
 export const TERMINAL_STATES: ReadonlySet<string> = new Set(['completed', 'failed', 'killed']);
-const DEFAULT_AGENTS = [
-  'orchestrator',
-  'recon',
-  'web-api-specialist',
-  'authz-specialist',
-  'validator',
-] as const;
 export const LANE_WINDOW_S = 120;
 
 /** The kill confirmation is the first 8 characters of the run id (the API enforces the same rule). */
@@ -278,14 +274,17 @@ export interface AgentLane {
   }[];
 }
 
-/** Lanes are the agents named by `run.started` (or the default team), with the latest turn totals and message. */
-export function agentLanes(events: readonly RunEvent[]): AgentLane[] {
+/** The agents named by the `run.started` manifest, in its order. Empty until the run starts: nothing is guessed. */
+export function manifest(events: readonly RunEvent[]): string[] {
   const started = events.find((e) => e.kind === 'run.started');
-  const named = Array.isArray(started?.data.agents)
-    ? (started.data.agents as unknown[]).map((a) => str(a))
+  return Array.isArray(started?.data.agents)
+    ? (started.data.agents as unknown[]).map((a) => str(a)).filter((a) => a !== '')
     : [];
-  const names = named.length > 0 ? named : [...DEFAULT_AGENTS];
-  return names.map((name) => {
+}
+
+/** Lanes are the agents named by `run.started`, with the latest turn totals and message. */
+export function agentLanes(events: readonly RunEvent[]): AgentLane[] {
+  return manifest(events).map((name) => {
     const mine = events.filter((e) => (str(e.data.agent) || e.stage) === name);
     const turn = mine.findLast((e) => e.kind === 'agent.turn');
     const message = mine.findLast((e) => e.kind === 'agent.message');
@@ -364,23 +363,43 @@ export function candidates(events: readonly RunEvent[]): Candidate[] {
 export const CASE_STATUSES = ['executed', 'executing', 'proposed', 'skipped', 'blocked'] as const;
 export type CaseStatus = (typeof CASE_STATUSES)[number];
 
-/** The test plan: every case starts proposed, `case.status` events move it. */
+export interface TestCase {
+  readonly id: string;
+  readonly title: string;
+  /** The agent the planner gave it to. */
+  readonly agent: string;
+  readonly target: string;
+  readonly status: string;
+  readonly note: string;
+}
+
+/** The test plan as recorded: every case starts proposed, `case.status` events move it. */
+export function caseList(events: readonly RunEvent[]): TestCase[] {
+  const byId = new Map<string, TestCase>();
+  for (const e of events) {
+    if (e.kind === 'plan.cases' && Array.isArray(e.data.cases)) {
+      for (const c of e.data.cases as Record<string, unknown>[]) {
+        const id = str(c.id);
+        if (id !== '' && !byId.has(id))
+          byId.set(id, { id, title: str(c.title), agent: str(c.agent), target: str(c.target), status: 'proposed', note: '' });
+      }
+    } else if (e.kind === 'case.status') {
+      const id = str(e.data.caseId);
+      const prev = byId.get(id) ?? { id, title: '', agent: '', target: '', status: 'proposed', note: '' };
+      byId.set(id, { ...prev, status: str(e.data.status), note: str(e.data.note) || prev.note });
+    }
+  }
+  return [...byId.values()];
+}
+
 export function testCases(events: readonly RunEvent[]): {
   total: number;
   counts: Record<CaseStatus, number>;
 } {
-  const byId = new Map<string, string>();
-  for (const e of events) {
-    if (e.kind === 'plan.cases' && Array.isArray(e.data.cases)) {
-      for (const c of e.data.cases as { id?: unknown }[]) {
-        const id = str(c.id);
-        if (id !== '' && !byId.has(id)) byId.set(id, 'proposed');
-      }
-    } else if (e.kind === 'case.status') byId.set(str(e.data.caseId), str(e.data.status));
-  }
+  const list = caseList(events);
   const counts = { executed: 0, executing: 0, proposed: 0, skipped: 0, blocked: 0 };
-  for (const status of byId.values()) if (status in counts) counts[status as CaseStatus] += 1;
-  return { total: byId.size, counts };
+  for (const c of list) if (c.status in counts) counts[c.status as CaseStatus] += 1;
+  return { total: list.length, counts };
 }
 
 /** The one line shown after a gated decision: the ledger event id and a shortened hash. */
