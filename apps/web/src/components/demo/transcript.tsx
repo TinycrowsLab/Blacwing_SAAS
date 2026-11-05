@@ -5,6 +5,7 @@
 // HTTP requests are inline chips, and a Gate 2 request appears where the agent asked, with the decision buttons.
 import { Card, Icon } from './design';
 import { Gate2Buttons, useGate2Clock } from './gate2-actions';
+import { Markdown } from './markdown';
 import { clock, describe, mmss, pathOf } from './run-model';
 
 import type { DemoGate2, DemoRunEvent } from '../../app/demo/_lib/schemas';
@@ -113,9 +114,10 @@ export function Transcript({
                   not verified
                 </span>
               </div>
-              <p className="m-0 whitespace-pre-wrap pl-[34px] text-[14px] leading-6">
-                {str(e.data.text)}
-              </p>
+              <Markdown
+                text={str(e.data.text)}
+                className="pl-[34px] text-[14px] leading-6"
+              />
             </div>
           );
         }

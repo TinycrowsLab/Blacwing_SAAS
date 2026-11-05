@@ -198,6 +198,8 @@ export interface AgentLane {
   readonly turns: number;
   readonly costUsd: number;
   readonly task: string;
+  /** The validator is code, not a model: no turns or cost. */
+  readonly deterministic: boolean;
   readonly marks: readonly {
     readonly seq: number;
     readonly at: number;
@@ -223,11 +225,16 @@ export function agentLanes(events: readonly DemoRunEvent[]): AgentLane[] {
         ? [{ seq: e.seq, at: new Date(e.at).getTime(), shape: row.mark, title: row.text }]
         : [];
     });
+    const deterministic = name === 'validator';
+    const latest = deterministic
+      ? events.findLast((e) => describe(e)?.agent === name)
+      : undefined;
     return {
       name,
       turns: num(turn?.data.turns),
       costUsd: num(turn?.data.costUsd),
-      task: str(message?.data.text),
+      task: deterministic ? ((latest && describe(latest)?.text) ?? '') : str(message?.data.text),
+      deterministic,
       marks,
     };
   });

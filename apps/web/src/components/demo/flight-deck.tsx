@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { Card, CardHeader, Chip, SeverityChip, StatusChip, type Tone } from './design';
+import { Markdown, stripMarkdown } from './markdown';
 import {
   type Activity,
   type AgentLane,
@@ -118,7 +119,7 @@ export function AgentTeam({
         return (
           <div
             key={lane.name}
-            className="grid grid-cols-[160px_minmax(0,1fr)] border-b border-border sm:grid-cols-[230px_minmax(0,1fr)]"
+            className="grid grid-cols-[200px_minmax(0,1fr)] border-b border-border lg:grid-cols-[280px_minmax(0,1fr)]"
           >
             <div className="flex min-w-0 flex-col gap-0.5 border-r border-border px-4 py-2.5">
               <span className="flex items-center gap-2">
@@ -126,16 +127,21 @@ export function AgentTeam({
                   aria-hidden="true"
                   className={`size-2 shrink-0 rounded-full ${paused ? 'bg-warn' : running ? 'bg-primary motion-safe:animate-pulse' : 'bg-muted-foreground'}`}
                 />
-                <span className="truncate font-mono text-[13px] font-medium">{lane.name}</span>
-                <span className="ml-auto hidden whitespace-nowrap text-[11.5px] tabular-nums text-muted-foreground sm:inline">
-                  {lane.turns} turns, ${lane.costUsd.toFixed(2)}
+                <span className="whitespace-nowrap font-mono text-[13px] font-medium">
+                  {lane.name}
+                </span>
+                <span className="ml-auto hidden whitespace-nowrap text-[11.5px] tabular-nums text-muted-foreground lg:inline">
+                  {lane.deterministic
+                    ? 'deterministic'
+                    : `${lane.turns} turns, $${lane.costUsd.toFixed(2)}`}
                 </span>
               </span>
               <span
+                title={stripMarkdown(lane.task)}
                 className={`truncate text-[12.5px] ${paused ? 'text-warn' : 'text-muted-foreground'}`}
               >
                 {paused ? 'Paused. ' : ''}
-                {lane.task === '' ? 'Waiting' : lane.task}
+                {lane.task === '' ? 'Waiting' : stripMarkdown(lane.task)}
               </span>
             </div>
             <svg
@@ -178,7 +184,7 @@ export function AgentTeam({
           </div>
         );
       })}
-      <div className="grid grid-cols-[160px_minmax(0,1fr)] py-1.5 text-[11px] text-muted-foreground sm:grid-cols-[230px_minmax(0,1fr)]">
+      <div className="grid grid-cols-[200px_minmax(0,1fr)] py-1.5 text-[11px] text-muted-foreground lg:grid-cols-[280px_minmax(0,1fr)]">
         <span />
         <span className="flex justify-between pr-2">
           <span>2 min ago</span>
@@ -211,6 +217,23 @@ function passes(filter: Filter, row: Activity): boolean {
   if (filter === 'Policy') return row.kind === 'Policy' || row.kind === 'Gate 2';
   if (filter === 'Errors only') return row.isError;
   return true;
+}
+
+function ClampText({ text }: { readonly text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <button
+      type="button"
+      aria-expanded={open}
+      title={open ? undefined : text}
+      onClick={() => {
+        setOpen(!open);
+      }}
+      className={`col-start-2 min-w-0 break-words text-left leading-5 md:col-start-auto ${open ? '' : 'line-clamp-2'}`}
+    >
+      {text}
+    </button>
+  );
 }
 
 export function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) {
@@ -260,9 +283,7 @@ export function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) 
               <span className="col-start-2 md:col-start-auto">
                 <Chip tone={KIND_TONE[r.kind]}>{r.kind}</Chip>
               </span>
-              <span className="col-start-2 min-w-0 break-words leading-5 md:col-start-auto">
-                {r.text}
-              </span>
+              <ClampText text={stripMarkdown(r.text)} />
               <span className="col-start-2 font-mono text-[11.5px] text-muted-foreground md:col-start-auto">
                 {r.meta}
               </span>
@@ -270,6 +291,30 @@ export function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) 
           ))}
         </ol>
       )}
+    </Card>
+  );
+}
+
+export function SummaryCard({ text }: { readonly text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Card as="section" aria-labelledby="summary-h" className="p-4">
+      <h2 id="summary-h" className="mb-2 text-sm font-semibold">
+        Orchestrator summary (not verified)
+      </h2>
+      <div className={open ? '' : 'max-h-36 overflow-hidden'}>
+        <Markdown text={text} className="text-[13.5px] leading-6" />
+      </div>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen(!open);
+        }}
+        className="mt-2 text-[13px] font-medium text-primary hover:underline"
+      >
+        {open ? 'Show less' : 'Show all'}
+      </button>
     </Card>
   );
 }

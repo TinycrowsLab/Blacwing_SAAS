@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Card, Chip, Icon, PageHeader, StatusChip, buttonClass } from './design';
-import { ActivityTable, AgentTeam, CandidateList, Gauge, ProgressCard } from './flight-deck';
+import { ActivityTable, AgentTeam, CandidateList, Gauge, ProgressCard, SummaryCard } from './flight-deck';
 import { useGate2Clock } from './gate2-actions';
 import { KillButton } from './kill-dialog';
 import { Modal } from './modal';
@@ -273,14 +273,6 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
           {run.haltMs === null ? 'not recorded' : `${run.haltMs} ms`}.
         </p>
       ) : null}
-      {run.summary === null ? null : (
-        <Card as="div" className="p-4 text-[13.5px] leading-6">
-          <span className="mb-1 block text-xs text-muted-foreground">
-            Orchestrator summary (not verified)
-          </span>
-          <p className="m-0 whitespace-pre-wrap">{run.summary}</p>
-        </Card>
-      )}
       <AuthStrip run={run} nowMs={nowMs} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -335,6 +327,7 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
             <ActivityTable rows={rows} />
             {side}
           </div>
+          {run.summary === null ? null : <SummaryCard text={run.summary} />}
         </>
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">

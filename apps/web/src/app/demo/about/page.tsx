@@ -25,12 +25,12 @@ const ROWS: readonly [string, string, string][] = [
   [
     'Agent team',
     'Real, direct model access',
-    'Claude agents plan and probe. They have no shell or file tools. Their text is not verified.',
+    'A Claude agent team plans and probes. Model calls go direct, not through the model gateway. Agents have no shell or file tools. Their text is not verified.',
   ],
   [
     'Sandbox, egress gateway, Temporal',
     'Demo stub',
-    'No sandbox and no egress gateway. The runner sends target requests from the worker process.',
+    'No sandbox and no egress gateway yet. The runner sends target requests from the worker process.',
   ],
   [
     'Validation',

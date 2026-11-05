@@ -123,6 +123,21 @@
           "name": "tenant",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-usermodel-attribute-mapper"
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "false",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "false"
+          }
         }
       ],
       "publicClient": false,

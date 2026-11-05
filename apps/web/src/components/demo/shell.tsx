@@ -110,7 +110,7 @@ export function DemoShell({
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-7 py-3 text-xs text-muted-foreground">
         <span>Blackwing demo. Agent output is labelled not verified.</span>
         <LinkButton href="/demo/about" variant="ghost">
-          What is real, what is stubbed
+          What is real, what is a stub
         </LinkButton>
       </footer>
     </div>
