@@ -16,7 +16,7 @@ export function Providers({ children }: { readonly children: ReactNode }): React
   );
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
+      <ThemeProvider defaultTheme="light" enableSystem={false}>
         {children}
         <Toaster config={TOAST_CONFIG} />
       </ThemeProvider>

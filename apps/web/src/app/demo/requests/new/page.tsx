@@ -27,7 +27,9 @@ const listSchema = z.object({ items: z.array(assetSchema) });
 const LABEL = 'flex flex-col gap-1.5 text-[12.5px] font-medium text-foreground';
 const HINT = 'text-xs font-normal text-muted-foreground';
 const RADIO =
-  'flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3.5 text-[13px] has-[:checked]:border-primary has-[:checked]:bg-primary-soft';
+  'flex cursor-pointer items-start gap-3 rounded-xl border-[1.5px] border-border p-3.5 text-[13px] has-[:checked]:border-primary has-[:checked]:bg-primary-soft';
+const RADIO_DOT =
+  'mt-0.5 size-[18px] shrink-0 cursor-pointer appearance-none rounded-full border-[1.5px] border-border-strong bg-card checked:border-[5px] checked:border-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus';
 const DEFAULT_OBJECTIVE =
   'Black-box web assessment: OWASP Top 10 and API security. Map the attack surface, then look for injection, broken access control, authentication weaknesses, security misconfiguration and sensitive data exposure. Prove every finding with a benign probe and a negative control.';
 
@@ -42,7 +44,7 @@ export default async function NewRequestPage({
   const { items } = listSchema.parse(await demoApi(session, '/assets'));
   const verified = items.filter((a) => a.ownership.status === 'verified');
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3">
       <PageHeader
         crumbs={[{ label: 'Assessments', href: '/demo' }, { label: 'New request' }]}
         title="New assessment request"
@@ -53,8 +55,8 @@ export default async function NewRequestPage({
         }
       />
       <ErrorBanner error={queryText(params.error)} message={queryText(params.message)} />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
-        <form action={createRequestAction} className="flex max-w-3xl flex-col gap-5">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,768px)_280px]">
+        <form action={createRequestAction} className="flex flex-col gap-3">
           <Card>
             <CardHeader title="Target and objective" meta="Only verified assets" />
             <div className="flex flex-col gap-4 p-4">
@@ -112,12 +114,7 @@ export default async function NewRequestPage({
             <fieldset className="grid gap-3 p-4 md:grid-cols-2">
               <legend className="sr-only">Intrusiveness</legend>
               <label className={RADIO}>
-                <input
-                  type="radio"
-                  name="intrusiveness"
-                  value="passive"
-                  className="mt-1 accent-[var(--primary)]"
-                />
+                <input type="radio" name="intrusiveness" value="passive" className={RADIO_DOT} />
                 <span className="flex flex-col gap-0.5">
                   <span className="font-semibold">Passive</span>
                   <span className="text-muted-foreground">
@@ -131,7 +128,7 @@ export default async function NewRequestPage({
                   name="intrusiveness"
                   value="active_safe"
                   defaultChecked
-                  className="mt-1 accent-[var(--primary)]"
+                  className={RADIO_DOT}
                 />
                 <span className="flex flex-col gap-0.5">
                   <span className="font-semibold">Active-safe</span>
@@ -248,7 +245,7 @@ export default async function NewRequestPage({
             <button
               type="submit"
               disabled={verified.length === 0}
-              className={buttonClass('primary', 'h-11 px-5')}
+              className={buttonClass('primary', 'h-10 px-4')}
             >
               Submit to Gate 1
             </button>

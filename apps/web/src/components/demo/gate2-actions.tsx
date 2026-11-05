@@ -41,13 +41,14 @@ export function Gate2Buttons({
 }: {
   readonly gate2Id: string;
   readonly open: boolean;
-  readonly size?: 'md' | 'lg';
+  readonly size?: 'md' | 'lg' | 'sheet';
   readonly onDecided?: () => void;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reason, setReason] = useState('');
+  const [asking, setAsking] = useState(false);
 
   async function decide(decision: 'approve' | 'deny') {
     setBusy(true);
@@ -76,39 +77,81 @@ export function Gate2Buttons({
     }
   }
 
-  const h = size === 'lg' ? 'h-12 px-8 text-[14.5px] font-semibold' : 'h-10';
+  const sheet = size === 'sheet';
+  const canApprove = open && !busy && reason.trim().length >= MIN_REASON;
+  const reasonInput = (
+    <label className="flex flex-col gap-1.5 text-[12.5px] font-medium">
+      <span>
+        Reason <span className="font-normal text-muted-foreground">(required to approve)</span>
+      </span>
+      <input
+        value={reason}
+        onChange={(e) => {
+          setReason(e.target.value);
+        }}
+        maxLength={500}
+        disabled={!open || busy}
+        placeholder="Why it is safe to allow this once"
+        className={INPUT_CLASS}
+      />
+    </label>
+  );
+  const errorNote =
+    error === null ? null : (
+      <p role="alert" className="text-[12.5px] text-bad">
+        {error}
+      </p>
+    );
+  if (sheet) {
+    return (
+      <div className="flex flex-col gap-2.5">
+        {asking ? reasonInput : null}
+        <button
+          type="button"
+          disabled={!open || busy}
+          onClick={() => void decide('deny')}
+          className={buttonClass('deny', 'h-14 w-full rounded-[14px] text-base font-semibold')}
+        >
+          Deny
+        </button>
+        <button
+          type="button"
+          disabled={asking ? !canApprove : !open || busy}
+          onClick={() => {
+            if (asking) void decide('approve');
+            else setAsking(true);
+          }}
+          className={buttonClass('secondary', 'h-12 w-full rounded-[14px] text-sm')}
+        >
+          {asking ? 'Approve once' : 'Approve once, with reason'}
+        </button>
+        {errorNote}
+        <span className="text-center text-[11.5px] text-muted-foreground">
+          Recorded in the audit ledger
+        </span>
+      </div>
+    );
+  }
+  const h = size === 'lg' ? 'h-12 rounded-[10px] px-8 text-[14.5px] font-semibold' : 'h-10';
+  const approveH = size === 'lg' ? 'h-12 rounded-[10px] px-[22px] text-sm' : 'h-10';
   return (
     <div className="flex flex-col gap-3">
-      <label className="flex flex-col gap-1.5 text-[12.5px] font-medium">
-        <span>
-          Reason <span className="font-normal text-muted-foreground">(required to approve)</span>
-        </span>
-        <input
-          value={reason}
-          onChange={(e) => {
-            setReason(e.target.value);
-          }}
-          maxLength={500}
-          disabled={!open || busy}
-          placeholder="Why it is safe to allow this once"
-          className={INPUT_CLASS}
-        />
-      </label>
+      {reasonInput}
       <div className="flex flex-wrap items-center gap-2.5">
         <button
           type="button"
           disabled={!open || busy}
           onClick={() => void decide('deny')}
-          className={buttonClass('deny', h)}
+          className={`${buttonClass('deny', h)} ${size === 'lg' ? 'shadow-[0_0_0_2px_var(--bg),0_0_0_4px_var(--text)] disabled:shadow-none' : ''}`}
         >
           <Icon name="x" size={15} />
           Deny
         </button>
         <button
           type="button"
-          disabled={!open || busy || reason.trim().length < MIN_REASON}
+          disabled={!canApprove}
           onClick={() => void decide('approve')}
-          className={buttonClass('secondary', h)}
+          className={buttonClass('secondary', approveH)}
         >
           Approve once
         </button>
@@ -116,11 +159,7 @@ export function Gate2Buttons({
           Recorded in the audit ledger
         </span>
       </div>
-      {error === null ? null : (
-        <p role="alert" className="text-[12.5px] text-bad">
-          {error}
-        </p>
-      )}
+      {errorNote}
     </div>
   );
 }

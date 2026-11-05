@@ -8,8 +8,9 @@ import {
   Chip,
   DataTable,
   PageHeader,
+  filterPillClass,
   SeverityChip,
-  StatusChip,
+  VerdictMark,
   queryText,
 } from '../../../components/demo/design';
 import { getSession } from '../../../lib/session';
@@ -54,7 +55,7 @@ function FilterGroup({
           key={v ?? 'all'}
           href={href(v)}
           aria-current={active === v ? 'true' : undefined}
-          className={`inline-flex h-8 items-center rounded-full px-3 text-xs font-medium ${active === v ? 'bg-text text-bg' : 'bg-surface-2 text-foreground hover:brightness-95'}`}
+          className={filterPillClass(active === v)}
         >
           {v === undefined ? 'All' : cap(v)}
         </Link>
@@ -80,7 +81,7 @@ export default async function DemoFindingsPage({
       (status === undefined || f.status === status),
   );
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3">
       <PageHeader
         crumbs={[{ label: 'Findings' }]}
         title="Findings"
@@ -105,7 +106,7 @@ export default async function DemoFindingsPage({
       <Card>
         <DataTable
           label="Findings"
-          head={['Severity', 'Finding', 'Status', 'CWE', 'Asset', 'Agent', 'Found']}
+          head={['Severity', 'Finding', 'Status', 'Asset', 'Found by', 'Age']}
         >
           {shown.map((f) => (
             <tr key={f.id} className="hover:bg-primary-soft/40">
@@ -113,13 +114,16 @@ export default async function DemoFindingsPage({
                 <SeverityChip severity={f.severity} />
               </td>
               <td className="px-4 py-3 font-medium">
-                <Link className="text-primary hover:underline" href={`/demo/findings/${f.id}`}>
+                <Link
+                  className="hover:text-primary hover:underline"
+                  href={`/demo/findings/${f.id}`}
+                >
                   {f.title}
                 </Link>
               </td>
               <td className="px-4 py-3">
                 <span className="flex flex-wrap items-center gap-1.5">
-                  <StatusChip value={f.status} />
+                  <VerdictMark verdict={f.status} />
                   {f.status === 'suspected' ? (
                     <Chip tone="muted" icon="lock">
                       Analyst only
@@ -127,10 +131,11 @@ export default async function DemoFindingsPage({
                   ) : null}
                 </span>
               </td>
-              <td className="px-4 py-3 font-mono text-xs">{f.cwe ?? ''}</td>
               <td className="px-4 py-3">{f.assetName ?? ''}</td>
-              <td className="px-4 py-3 font-mono text-xs">{f.agent ?? ''}</td>
-              <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
+              <td className="whitespace-nowrap px-4 py-3 font-mono text-xs font-medium">
+                {f.agent ?? ''}
+              </td>
+              <td className="whitespace-nowrap px-4 py-3 font-mono text-[11.5px] text-muted-foreground">
                 {f.createdAt === undefined ? '' : f.createdAt.slice(0, 16).replace('T', ' ')}
               </td>
             </tr>

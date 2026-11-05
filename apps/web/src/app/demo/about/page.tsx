@@ -3,8 +3,6 @@ import { Card, DataTable, PageHeader, Chip } from '../../../components/demo/desi
 
 import type { ReactNode } from 'react';
 
-export const dynamic = 'force-static';
-
 const ROWS: readonly [string, string, string][] = [
   ['Login and roles', 'Real', 'Keycloak OIDC, BFF session cookie, roles from the realm.'],
   [
@@ -66,7 +64,7 @@ const ROWS: readonly [string, string, string][] = [
 
 export default function DemoAboutPage(): ReactNode {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex max-w-[820px] flex-col gap-3">
       <PageHeader
         crumbs={[{ label: 'About the demo' }]}
         title="What is real and what is a demo stub"

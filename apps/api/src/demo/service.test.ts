@@ -3,9 +3,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { gate2DecisionSchema } from './controller.js';
-import { DemoRefusal, DemoService, actorHasRole, originsOf, secondsLeft, shortId } from './service.js';
+import { ALL_ROLES, DemoRefusal, DemoService, actorHasRole, originsOf, secondsLeft, shortId } from './service.js';
 
-import type { AssetRow, DemoStore, FindingRow } from './store.js';
+import type { AssetRow, DemoStore, FindingRow, RequestRow } from './store.js';
 
 describe('actorHasRole', () => {
   it('accepts the Keycloak dash form and the seed underscore form', () => {
@@ -228,5 +228,77 @@ describe('run events', () => {
     expect((await view(['asset-owner'])).events.map((e) => e.kind)).toEqual(['http.sent']);
     expect((await view(['asset-owner'])).lastSeq).toBe(2);
     expect((await view(['appsec-engineer'])).events.map((e) => e.kind)).toEqual(['http.sent', 'finding.suspected']);
+  });
+});
+
+describe('demo admin self-approval', () => {
+  const requester = { id: 'u1', email: 'a@acme.test', name: 'A', roles: ['appsec-engineer', 'asset-owner'] };
+  const admin = { ...requester, roles: [...ALL_ROLES], admin: true };
+  const requestRow = (status: string) =>
+    ({
+      id: 'q1',
+      asset_id: 'a1',
+      status,
+      requester_id: 'u1',
+      approver_id: null,
+      scope: {},
+      test_accounts: [],
+      budget_requests: 1,
+      budget_seconds: 1,
+      cost_cap_usd: '1',
+      created_at: new Date(),
+    }) as unknown as RequestRow;
+
+  const adminOverride: unknown = expect.objectContaining({ selfApproved: true, override: 'admin' });
+
+  function service(extra: Record<string, unknown> = {}) {
+    const store = {
+      getRequest: vi.fn().mockResolvedValue(requestRow('pending_gate1')),
+      decideRequest: vi.fn().mockResolvedValue(true),
+      findRunByRequest: vi.fn().mockResolvedValue(null),
+      appendAudit: vi.fn().mockResolvedValue({ eventId: 'e1', hash: 'h1' }),
+      ...extra,
+    };
+    return { store, service: new DemoService(store as unknown as DemoStore, 't1') };
+  }
+
+  it('lets the admin approve its own Gate 1 request and marks it in the audit payload', async () => {
+    const { store, service: s } = service();
+    await s.decideGate1(admin, 'q1', 'approve', null);
+    expect(store.decideRequest).toHaveBeenCalled();
+    expect(store.appendAudit).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ payload: adminOverride }),
+    );
+  });
+
+  it('still refuses a non-admin requester at Gate 1', async () => {
+    const { store, service: s } = service();
+    await expect(s.decideGate1(requester, 'q1', 'approve', null)).rejects.toMatchObject({
+      response: { code: 'separation_of_duties' },
+    });
+    expect(store.decideRequest).not.toHaveBeenCalled();
+  });
+
+  it('lets the admin approve its own Gate 2 request and marks it in the audit payload', async () => {
+    const gate2 = {
+      id: 'g1',
+      run_id: 'r1',
+      method: 'POST',
+      url: 'https://app.example.com/x',
+      status: 'pending',
+      created_at: new Date(),
+      deadline_at: new Date(Date.now() + 60_000),
+    };
+    const { store, service: s } = service({
+      getGate2: vi.fn().mockResolvedValue(gate2),
+      getRun: vi.fn().mockResolvedValue({ id: 'r1', request_id: 'q1', state: 'running', pins: {} }),
+      decideGate2: vi.fn().mockResolvedValue(true),
+    });
+    await s.decideGate2(admin, 'g1', 'approve', 'safe, read-only probe');
+    expect(store.appendAudit).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ payload: adminOverride }),
+    );
   });
 });

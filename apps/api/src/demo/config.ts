@@ -15,6 +15,8 @@ const demoEnvSchema = z
     /** Tenant the demo story runs in (the seeded `acme` tenant). */
     BW_DEMO_TENANT_ID: z.string().min(1).optional(),
     DATABASE_URL: z.string().min(1).optional(),
+    /** The demo admin's e-mail (the presenter login): holds every role and may approve its own requests. */
+    BW_DEMO_LOGIN_EMAIL: z.string().trim().toLowerCase().optional(),
     /** Optional Slack-compatible webhook: each released finding is POSTed there. Unset means no delivery. */
     BW_DEMO_WEBHOOK_URL: z.url({ protocol: /^https?$/ }).optional(),
     /** Console origin used for the finding links in the webhook message. */
@@ -34,6 +36,7 @@ export interface DemoConfig {
   readonly internalToken: string;
   readonly tenantId: string;
   readonly databaseUrl: string;
+  readonly adminEmail: string;
   readonly webhookUrl: string | null;
   readonly consoleOrigin: string;
 }
@@ -46,6 +49,7 @@ export function loadDemoConfig(source?: EnvSource): DemoConfig {
     internalToken: env.BW_DEMO_INTERNAL_TOKEN ?? '',
     tenantId: env.BW_DEMO_TENANT_ID ?? '',
     databaseUrl: env.DATABASE_URL ?? '',
+    adminEmail: env.BW_DEMO_LOGIN_EMAIL ?? '',
     webhookUrl: env.BW_DEMO_WEBHOOK_URL ?? null,
     consoleOrigin: env.BW_CONSOLE_ORIGIN,
   };

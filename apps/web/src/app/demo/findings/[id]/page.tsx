@@ -15,7 +15,7 @@ import {
   LinkButton,
   PageHeader,
   SeverityChip,
-  StatusChip,
+  VerdictMark,
   buttonClass,
   queryText,
 } from '../../../../components/demo/design';
@@ -106,11 +106,14 @@ export default async function DemoFindingPage({
   const unproven = finding.evidence.reason !== undefined;
   const released = finding.status === 'released';
   return (
-    <article className="flex flex-col gap-6">
+    <article className="flex flex-col gap-3">
       <PageHeader
-        crumbs={[{ label: 'Findings', href: '/demo/findings' }, { label: finding.id }]}
+        crumbs={[
+          { label: 'Findings', href: '/demo/findings' },
+          { label: finding.id, mono: true },
+        ]}
         title={finding.title}
-        chips={<StatusChip value={finding.status} />}
+        chips={<VerdictMark verdict={finding.status} />}
         actions={
           released ? (
             <>
@@ -128,18 +131,12 @@ export default async function DemoFindingPage({
 
       <div className="flex flex-wrap items-center gap-2">
         <SeverityChip severity={finding.severity} />
-        {finding.cwe === null ? null : (
-          <Chip tone="neutral" bordered>
-            {finding.cwe}
-          </Chip>
-        )}
-        {finding.owasp === null ? null : (
-          <Chip tone="neutral" bordered>
-            {finding.owasp}
-          </Chip>
-        )}
+        {finding.cwe === null ? null : <Chip tone="neutral">{finding.cwe}</Chip>}
+        {finding.owasp === null ? null : <Chip tone="neutral">{finding.owasp}</Chip>}
         {finding.agent === null ? null : (
-          <span className="text-[12.5px] text-muted-foreground">Found by {finding.agent}</span>
+          <span className="text-[12.5px] text-muted-foreground">
+            Found by <span className="font-mono font-medium text-foreground">{finding.agent}</span>
+          </span>
         )}
         {finding.runId === undefined ? null : (
           <Link
@@ -151,8 +148,8 @@ export default async function DemoFindingPage({
         )}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="flex min-w-0 flex-col gap-6">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_240px]">
+        <div className="flex min-w-0 flex-col gap-3">
           {finding.description === null ? null : (
             <AgentText label="Description by the agent, not verified">
               <p className="m-0 whitespace-pre-wrap font-sans text-[13.5px] leading-6">

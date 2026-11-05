@@ -53,3 +53,36 @@
 
 @source '../';
 @source '../../../../packages/ui/src';
+
+/* Demo canvas: the light page is #F7F7F8 under white cards (Blackwing Screens); dark values come from tokens.css. */
+:root:not(.dark) .demo-canvas {
+  --bg: #f7f7f8;
+  --surface2: #f1f1f3;
+}
+
+@keyframes bwpulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes bwping {
+  from {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+
+@keyframes bwspin {
+  to {
+    transform: rotate(360deg);
+  }
+}

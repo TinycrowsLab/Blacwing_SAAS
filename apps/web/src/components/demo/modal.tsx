@@ -28,7 +28,7 @@ export function Modal({
       ref={ref}
       aria-label={label}
       onClose={onClose}
-      className={`m-auto w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/50 ${className}`}
+      className={`m-auto w-[calc(100vw-32px)] overflow-hidden rounded-[20px] border border-border bg-card p-0 text-foreground shadow-[0_30px_80px_rgba(0,0,0,0.35)] backdrop:bg-[rgba(22,23,29,0.55)] ${className}`}
     >
       {open ? children : null}
     </dialog>

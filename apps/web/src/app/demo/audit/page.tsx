@@ -15,7 +15,7 @@ export default async function DemoAuditPage(): Promise<ReactNode> {
   if (session === null) return null;
   const { items, chain } = auditListSchema.parse(await demoApi(session, '/audit'));
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3">
       <PageHeader
         crumbs={[{ label: 'Audit ledger' }]}
         title="Audit ledger"
@@ -42,17 +42,30 @@ export default async function DemoAuditPage(): Promise<ReactNode> {
         >
           {items.map((e) => (
             <tr key={e.eventId}>
-              <td className="px-4 py-3 font-mono text-xs">{e.seq}</td>
+              <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{e.seq}</td>
               <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">
                 {e.at.slice(0, 10)} {clock(e.at)}
               </td>
               <td className="px-4 py-3">{e.actor.name}</td>
-              <td className="px-4 py-3 font-mono text-xs">{e.action}</td>
+              <td className="px-4 py-3">
+                <span className="rounded-md bg-surface-2 px-2 py-0.5 font-mono text-xs">
+                  {e.action}
+                </span>
+                {e.payload.selfApproved ? (
+                  <span className="ml-2">
+                    <Chip tone="warn" pill>
+                      Self-approved by admin
+                    </Chip>
+                  </span>
+                ) : null}
+              </td>
               <td className="px-4 py-3 font-mono text-xs">
                 {e.targetType} {e.targetId.slice(0, 8)}
               </td>
-              <td className="px-4 py-3 font-mono text-xs">evt_{auditEventLabel(e.eventId)}</td>
-              <td className="px-4 py-3 font-mono text-xs">
+              <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                evt_{auditEventLabel(e.eventId)}
+              </td>
+              <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                 sha256:{e.hash.slice(0, 4)}...{e.hash.slice(-4)}
               </td>
             </tr>

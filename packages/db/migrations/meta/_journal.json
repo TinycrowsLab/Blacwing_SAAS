@@ -379,6 +379,13 @@
       "when": 1793880000000,
       "tag": "20261105120000_demo_gaps",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1793901600000,
+      "tag": "20261105180000_demo_admin_self_approval",
+      "breakpoints": true
     }
   ]
 }

@@ -4,12 +4,11 @@
 // authorisation strip, right-hand context panel). Demo chrome only; every demo page renders inside it.
 import Link from 'next/link';
 
-import { ModeToggle } from '@blackwing/ui';
-
 import { DemoRail } from './demo-rail';
-import { Icon, LinkButton } from './design';
+import { Icon } from './design';
 import { KillButton } from './kill-dialog';
 import { SignOutButton } from './sign-out-button';
+import { ThemeToggle } from './theme-toggle';
 
 import type { ReactNode } from 'react';
 
@@ -55,7 +54,7 @@ export function DemoShell({
   children,
 }: DemoShellProps) {
   return (
-    <div className="min-h-screen bg-bg text-text">
+    <div className="demo-canvas min-h-screen bg-bg text-text">
       <header className="flex h-14 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-4 sm:px-5">
         <Link href="/demo" className="flex items-center gap-2.5 text-foreground no-underline">
           <BrandMark />
@@ -73,15 +72,15 @@ export function DemoShell({
           </kbd>
         </span>
         <div className="flex-1" />
-        <ModeToggle />
+        <ThemeToggle />
         <Link
           href={firstGate2Id === null ? '/demo' : `/demo/approvals/gate2/${firstGate2Id}`}
           title={`${pendingGate2} Gate 2 decisions waiting`}
-          className="relative flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-surface-2"
+          className="relative flex size-9 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-surface-2"
         >
           <Icon name="bell" size={19} />
           {pendingGate2 > 0 ? (
-            <span className="absolute right-0.5 top-0.5 flex size-4 items-center justify-center rounded-full bg-warn text-[10px] font-semibold text-bg">
+            <span className="absolute right-0.5 top-0.5 flex size-4 items-center justify-center rounded-full bg-warn text-[10px] font-semibold text-white">
               {pendingGate2}
             </span>
           ) : null}
@@ -91,27 +90,27 @@ export function DemoShell({
         <span
           className="flex items-center gap-2.5"
           data-testid="demo-user"
-          title={roles.join(', ') || 'no roles'}
+          title={`${name}: ${roles.join(', ') || 'no roles'}`}
         >
           <span
             aria-hidden="true"
-            className="flex size-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-on-primary"
+            className="flex size-[34px] items-center justify-center rounded-full bg-primary text-xs font-semibold text-on-primary"
           >
             {initials(name)}
           </span>
-          <span className="hidden text-[13px] font-medium lg:inline">{name}</span>
+          <span className="sr-only">{name}</span>
         </span>
         <SignOutButton />
       </header>
-      <div className="grid min-h-[calc(100vh-3.5rem)] grid-cols-[64px_minmax(0,1fr)]">
-        <DemoRail />
-        <main className="min-w-0 space-y-6 px-4 py-6 sm:px-7">{children}</main>
+      <div className="grid min-h-[calc(100vh-3.5rem)] grid-cols-1 md:grid-cols-[64px_minmax(0,1fr)]">
+        <DemoRail pendingGate2={pendingGate2} />
+        <main className="min-w-0 space-y-3 px-4 py-5 sm:px-7">{children}</main>
       </div>
-      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-7 py-3 text-xs text-muted-foreground">
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-7 py-3 text-[11.5px] text-muted-foreground">
         <span>Blackwing demo. Agent output is labelled not verified.</span>
-        <LinkButton href="/demo/about" variant="ghost">
+        <Link href="/demo/about" className="text-muted-foreground underline hover:text-foreground">
           What is real, what is a stub
-        </LinkButton>
+        </Link>
       </footer>
     </div>
   );
@@ -126,7 +125,7 @@ export function ContextPanel({
   return (
     <aside
       aria-label="Context"
-      className="flex w-full flex-col gap-4 text-[12.5px] leading-5 text-muted-foreground xl:w-[260px]"
+      className="flex w-full flex-col gap-4 text-[12.5px] leading-5 text-muted-foreground xl:w-[240px]"
     >
       {sections.map((s) => (
         <div key={s.title} className="flex flex-col gap-1">

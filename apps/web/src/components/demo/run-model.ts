@@ -28,6 +28,14 @@ export function mmss(totalSeconds: number): string {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
 
+/** Elapsed time as the design shows it: `1h 12m 04s`, or `12m 04s` under an hour. */
+export function hms(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = String(Math.floor((s % 3600) / 60)).padStart(h > 0 ? 2 : 1, '0');
+  return `${h > 0 ? `${h}h ` : ''}${m}m ${String(s % 60).padStart(2, '0')}s`;
+}
+
 /** Seconds until a Gate 2 deadline. Zero means the decision window is over: no decision is a denial. */
 export function secondsLeft(deadlineAt: string, nowMs: number): number {
   return Math.max(0, Math.ceil((new Date(deadlineAt).getTime() - nowMs) / 1000));

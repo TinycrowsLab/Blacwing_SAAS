@@ -1,13 +1,25 @@
 // Demo only: a named presenter login (BW_DEMO_LOGIN_EMAIL / BW_DEMO_LOGIN_PASSWORD from the gitignored
-// .env.demo) in the Keycloak dev realm, with the AppSec engineer and asset owner groups. `node scripts/demo.mjs up`
+// .env.demo) in the Keycloak dev realm: the demo admin, in every tenant role group. `node scripts/demo.mjs up`
 // calls syncDemoLogin and then adds the matching user and membership to the demo database.
 // Nothing here prints the password or a token.
 
 import { REALM } from './keycloak-google-idp.mjs';
 
-export const DEMO_LOGIN_GROUPS = Object.freeze(['/acme/appsec-engineers', '/acme/asset-owners']);
+export const DEMO_LOGIN_GROUPS = Object.freeze([
+  '/acme/appsec-engineers',
+  '/acme/asset-owners',
+  '/acme/developers',
+  '/acme/org-admins',
+  '/acme/auditors',
+]);
 /** `memberships.roles[]` for the same login (the API reads roles from the token; this keeps the directory honest). */
-export const DEMO_LOGIN_ROLES = Object.freeze(['appsec_engineer', 'asset_owner']);
+export const DEMO_LOGIN_ROLES = Object.freeze([
+  'appsec_engineer',
+  'asset_owner',
+  'developer',
+  'org_admin',
+  'auditor',
+]);
 const EMAIL = /^[^\s@'"\\]+@[^\s@'"\\]+\.[^\s@'"\\]+$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -24,7 +36,7 @@ export function demoLoginEmail(env) {
 }
 
 /**
- * Creates or updates the login: enabled, verified e-mail, tenant `acme`, both groups, and the password.
+ * Creates or updates the login: enabled, verified e-mail, tenant `acme`, every role group, and the password.
  * @param {{ base: string, adminUser: string, adminPassword: string, email: string, password: string,
  *   name?: string, fetchFn?: typeof fetch }} input
  * @returns {Promise<{ sub: string, created: boolean }>}

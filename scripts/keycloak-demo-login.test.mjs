@@ -27,7 +27,7 @@ function fakeKeycloak(/** @type {{ exists?: boolean }} */ seed = {}) {
       return Promise.resolve(json(201));
     }
     if (p.includes('/group-by-path/'))
-      return Promise.resolve(json(200, { id: p.endsWith('owners') ? 'g-own' : 'g-sec' }));
+      return Promise.resolve(json(200, { id: p.endsWith('owners') ? 'g-own' : p.endsWith('engineers') ? 'g-sec' : `g-${p.split('/').pop()}` }));
     return Promise.resolve(json(204));
   };
   return { fetchFn: /** @type {typeof fetch} */ (/** @type {unknown} */ (fetchFn)), calls, bodies };
@@ -59,7 +59,7 @@ describe('demoLoginEmail', () => {
 });
 
 describe('syncDemoLogin', () => {
-  it('creates the user, sets the password and joins both groups', async () => {
+  it('creates the user, sets the password and joins every role group', async () => {
     const kc = fakeKeycloak();
     const r = await syncDemoLogin(input(kc.fetchFn));
     assert.deepEqual(r, { sub: SUB, created: true });
@@ -67,6 +67,9 @@ describe('syncDemoLogin', () => {
     assert.ok(kc.calls.includes(`PUT /admin/realms/blackwing-dev/users/${SUB}/reset-password`));
     assert.ok(kc.calls.includes(`PUT /admin/realms/blackwing-dev/users/${SUB}/groups/g-sec`));
     assert.ok(kc.calls.includes(`PUT /admin/realms/blackwing-dev/users/${SUB}/groups/g-own`));
+    for (const name of ['developers', 'org-admins', 'auditors'])
+      assert.ok(kc.calls.includes(`GET /admin/realms/blackwing-dev/group-by-path/acme/${name}`));
+    assert.equal(kc.calls.filter((c) => c.includes('/groups/g-')).length, 5);
     assert.ok(kc.bodies.some((b) => JSON.stringify(b).includes('"tenant":["acme"]')));
   });
   it('updates an existing user instead of creating a second one', async () => {
@@ -88,10 +91,10 @@ describe('syncDemoLogin', () => {
 });
 
 describe('demoLoginSql', () => {
-  it('upserts the user and the acme membership with both roles', () => {
+  it('upserts the user and the acme membership with every role', () => {
     const sql = demoLoginSql(SUB, 'demo@tinycrows.com');
     assert.match(sql, /ON CONFLICT \(keycloak_sub\)/);
-    assert.match(sql, /ARRAY\['appsec_engineer','asset_owner'\]/);
+    assert.match(sql, /ARRAY\['appsec_engineer','asset_owner','developer','org_admin','auditor'\]/);
     assert.match(sql, /t\.slug = 'acme'/);
     assert.ok(sql.indexOf('UPDATE users SET keycloak_sub') < sql.indexOf('INSERT INTO users'));
   });

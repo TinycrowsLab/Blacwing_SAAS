@@ -25,7 +25,7 @@ import {
   renderRunReport,
   type ReportFormat,
 } from './report.js';
-import { DemoRefusal, INTRUSIVENESS, type DemoActor, type DemoService } from './service.js';
+import { ALL_ROLES, DemoRefusal, INTRUSIVENESS, type DemoActor, type DemoService } from './service.js';
 import { DEMO_CONFIG, DEMO_SERVICE, DEMO_STORE } from './tokens.js';
 import { PublicRoute } from '../tenant/public-route.js';
 import { createZodDto, ZodBody, ZodQuery } from '../validation/index.js';
@@ -207,6 +207,9 @@ export class DemoController {
         'demo_user_unknown',
         'The user is not active in the demo tenant.',
       );
+    if (this.config.adminEmail !== '' && user.email.toLowerCase() === this.config.adminEmail) {
+      return { id: user.id, email: user.email, name: user.name, roles: [...ALL_ROLES], admin: true };
+    }
     return { id: user.id, email: user.email, name: user.name, roles };
   }
 
@@ -253,7 +256,7 @@ export class DemoController {
   @Get('requests/:id')
   async request(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
     const actor = await this.actor(headers);
-    return this.service.request(uuid(id, 'request'), actor.id);
+    return this.service.request(uuid(id, 'request'), actor);
   }
 
   @Post('requests/:id/decision')

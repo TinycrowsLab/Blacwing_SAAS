@@ -7,11 +7,12 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Card, Chip, Icon, PageHeader, StatusChip, buttonClass } from './design';
+import { Banner, Card, Chip, Icon, PageHeader, StatusChip, buttonClass, gaugeTone } from './design';
 import {
   ActivityTable,
   AgentTeam,
   CandidateList,
+  GAUGE_TONE,
   Gauge,
   ProgressCard,
   ReportCard,
@@ -26,6 +27,7 @@ import {
   agentLanes,
   candidates,
   describe,
+  hms,
   mmss,
   pathOf,
   shortId,
@@ -44,26 +46,34 @@ import {
 const POLL_MS = 1500;
 type Tab = 'deck' | 'transcript';
 
-function Gate2Banner({ gate2 }: { readonly gate2: DemoGate2 }) {
+function Gate2Banner({
+  gate2,
+  saId,
+}: {
+  readonly gate2: DemoGate2;
+  readonly saId: string | undefined;
+}) {
   const { left } = useGate2Clock(gate2.deadlineAt, gate2.createdAt, true, gate2.secondsLeft);
   return (
-    <div
-      role="status"
-      className="flex flex-wrap items-center gap-3.5 rounded-xl border border-warn bg-warn-soft px-4 py-3"
-    >
-      <span className="relative flex size-2.5 shrink-0" aria-hidden="true">
-        <span className="absolute inset-0 rounded-full bg-warn motion-safe:animate-ping" />
-        <span className="absolute inset-0 rounded-full bg-warn" />
-      </span>
-      <span className="min-w-0 flex-1 text-[13.5px]">
+    <div role="status">
+      <Banner
+        tone="warn"
+        ping
+        actions={
+          <Link
+            href={`/demo/approvals/gate2/${gate2.id}`}
+            className={buttonClass('deny', 'h-[34px] px-3.5')}
+          >
+            Review
+          </Link>
+        }
+      >
         <strong className="font-semibold">
           {gate2.agent} wants to send {gate2.method} {pathOf(gate2.url)}.
         </strong>{' '}
-        If no one decides, it is denied in <strong className="tabular-nums">{mmss(left)}</strong>.
-      </span>
-      <Link href={`/demo/approvals/gate2/${gate2.id}`} className={buttonClass('deny', 'h-9')}>
-        Review
-      </Link>
+        {saId === undefined ? '' : `That path is excluded in ${saId}. `}If no one decides, it is
+        denied in <strong className="tabular-nums">{mmss(left)}</strong>.
+      </Banner>
     </div>
   );
 }
@@ -87,7 +97,7 @@ function AuthStrip({ run, nowMs }: { readonly run: DemoRun; readonly nowMs: numb
     },
   ];
   return (
-    <div className="flex flex-wrap rounded-xl border border-border bg-card">
+    <div className="flex flex-wrap overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex min-w-[240px] items-center gap-3 border-b border-border px-4 py-3 md:border-b-0 md:border-r">
         <Icon name="shield" size={20} className="text-ok" />
         <span className="flex flex-col">
@@ -195,8 +205,9 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
   const costPct = (run.costUsd / Math.max(0.01, run.budget.costUsd)) * 100;
   const durationPct = (elapsed / Math.max(1, run.budget.seconds)) * 100;
   const side = (
-    <div className="flex flex-col gap-4">
-      <TestCasesCard plan={plan} />
+    <div className="flex flex-col gap-3">
+      <TestCasesCard plan={plan} variant={tab === 'deck' ? 'bar' : 'donut'} />
+      <CandidateList items={cands} running={running} compact={tab !== 'deck'} />
       <ProgressCard
         stats={{
           httpSent: run.stats.httpSent,
@@ -206,19 +217,21 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
             .length,
         }}
       />
-      <CandidateList items={cands} running={running} />
       {running ? null : <ReportCard runId={run.id} />}
     </div>
   );
 
   return (
-    <section aria-label="Live run" className="flex flex-col gap-5">
+    <section aria-label="Live run" className="flex flex-col gap-3">
       <PageHeader
-        crumbs={[{ label: 'Assessments', href: '/demo' }, { label: `run_${shortId(run.id)}` }]}
+        crumbs={[
+          { label: 'Assessments', href: '/demo' },
+          { label: `run_${shortId(run.id)}`, mono: true },
+        ]}
         title={assetName}
         chips={
           <>
-            <Chip tone="muted" bordered>
+            <Chip tone="muted" pill>
               {(run.pins.request?.testAccounts?.length ?? 0) > 0 ? 'Grey box' : 'Black box'}
             </Chip>
             <StatusChip value={state} />
@@ -289,45 +302,23 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
         </p>
       ) : null}
       {pending.map((g) => (
-        <Gate2Banner key={g.id} gate2={g} />
+        <Gate2Banner key={g.id} gate2={g} saId={run.pins.authorisation?.saId} />
       ))}
       {run.state === 'killed' ? (
-        <p role="status" className="rounded-xl border border-kill bg-card px-4 py-3 text-[13.5px]">
-          <strong className="font-semibold text-kill">Run killed.</strong> Measured halt time{' '}
-          {run.haltMs === null ? 'not recorded' : `${run.haltMs} ms`}.
-        </p>
+        <div role="status">
+          <Banner tone="kill">
+            <strong className="font-semibold text-kill">Run killed.</strong> Measured halt time{' '}
+            {run.haltMs === null ? 'not recorded' : `${run.haltMs} ms`}.
+          </Banner>
+        </div>
       ) : null}
       <AuthStrip run={run} nowMs={nowMs} />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Card as="div" className="flex flex-col gap-0.5 p-4">
-          <span className="text-xs text-muted-foreground">Elapsed</span>
-          <span className="text-[30px] font-semibold leading-9 tabular-nums">{mmss(elapsed)}</span>
-          <span className="font-mono text-[11.5px] text-muted-foreground">
-            {new Date(end).toISOString().slice(11, 19)} UTC
-          </span>
-        </Card>
-        <Gauge
-          label="Model cost"
-          cap={`cap $${run.budget.costUsd.toFixed(2)}`}
-          value={`$${run.costUsd.toFixed(2)}`}
-          pct={costPct}
-        />
-        <Gauge
-          label="Requests"
-          cap={`budget ${run.budget.requests}`}
-          value={String(run.requestsUsed)}
-          pct={requestsPct}
-        />
-        <Gauge
-          label="Duration"
-          cap={`max ${Math.round(run.budget.seconds / 60)} min`}
-          value={`${Math.round(durationPct)}%`}
-          pct={durationPct}
-        />
-      </div>
-
-      <div role="tablist" aria-label="Run view" className="flex gap-2">
+      <div
+        role="tablist"
+        aria-label="Run view"
+        className="flex gap-0.5 self-end rounded-[10px] bg-surface-2 p-0.5"
+      >
         {(['deck', 'transcript'] as const).map((t) => (
           <button
             key={t}
@@ -337,7 +328,7 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
             onClick={() => {
               setTab(t);
             }}
-            className={`h-9 rounded-full px-4 text-[13px] font-medium ${tab === t ? 'bg-primary-soft text-primary' : 'text-muted-foreground hover:bg-surface-2'}`}
+            className={`h-7 rounded-lg border px-3.5 text-[12.5px] font-medium ${tab === t ? 'border-border bg-surface text-text' : 'border-transparent text-muted-foreground hover:text-text'}`}
           >
             {t === 'deck' ? 'Flight deck' : 'Transcript'}
           </button>
@@ -346,23 +337,52 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
 
       {tab === 'deck' ? (
         <>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-[220px_repeat(3,minmax(0,1fr))]">
+            <Card as="div" className="flex flex-col gap-0.5 p-4">
+              <span className="text-xs text-muted-foreground">Elapsed</span>
+              <span className="text-[30px] font-semibold leading-9 tabular-nums">
+                {hms(elapsed)}
+              </span>
+              <span className="font-mono text-[11.5px] text-muted-foreground">
+                {new Date(end).toISOString().slice(11, 19)} UTC
+              </span>
+            </Card>
+            <Gauge
+              label="Model cost"
+              cap={`cap $${run.budget.costUsd.toFixed(2)}`}
+              value={`$${run.costUsd.toFixed(2)}`}
+              pct={costPct}
+            />
+            <Gauge
+              label="Requests"
+              cap={`budget ${run.budget.requests}`}
+              value={String(run.requestsUsed)}
+              pct={requestsPct}
+            />
+            <Gauge
+              label="Duration"
+              cap={`max ${Math.round(run.budget.seconds / 60)} min`}
+              value={`${Math.round(durationPct)}%`}
+              pct={durationPct}
+            />
+          </div>
           <AgentTeam lanes={lanes} nowMs={end} running={running} pausedFrom={pausedFrom} />
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_400px]">
             <ActivityTable rows={rows} />
             {side}
           </div>
           {run.summary === null ? null : <SummaryCard text={run.summary} />}
         </>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="flex min-w-0 flex-col gap-4">
             <Transcript events={events} gate2={run.gate2} />
-            <div className="sticky bottom-3 flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-card px-4 py-3 shadow-lg">
+            <div className="sticky bottom-6 mx-auto flex w-full max-w-[720px] flex-nowrap items-center gap-4 rounded-[18px] border border-border bg-card px-3.5 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
               <button
                 type="button"
                 disabled={!running}
                 onClick={() => void control(run.paused ? 'resume' : 'pause')}
-                className={buttonClass('ghost', 'bg-surface-2')}
+                className={buttonClass('ghost', 'h-[38px] rounded-[10px] bg-surface-2')}
               >
                 <Icon name="pause" size={14} />
                 {run.paused ? 'Resume' : 'Pause'}
@@ -372,20 +392,20 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
                 { l: 'Requests', v: String(run.requestsUsed), p: requestsPct },
                 { l: 'Duration', v: `${Math.round(durationPct)}%`, p: durationPct },
               ].map((m) => (
-                <div key={m.l} className="flex min-w-[110px] flex-1 flex-col gap-1">
+                <div key={m.l} className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="flex justify-between text-xs text-muted-foreground">
                     {m.l}
-                    <span className="font-medium text-primary">{m.v}</span>
+                    <span className={`font-medium ${GAUGE_TONE[gaugeTone(m.p)].text}`}>{m.v}</span>
                   </span>
                   <span className="h-1 overflow-hidden rounded-full bg-surface-2">
                     <span
-                      className="block h-full bg-primary"
+                      className={`block h-full ${GAUGE_TONE[gaugeTone(m.p)].bar}`}
                       style={{ width: `${Math.min(100, m.p)}%` }}
                     />
                   </span>
                 </div>
               ))}
-              <span className="text-xs text-muted-foreground">
+              <span className="max-w-[130px] shrink-0 text-xs text-muted-foreground">
                 Controls only. No free-text steering.
               </span>
             </div>

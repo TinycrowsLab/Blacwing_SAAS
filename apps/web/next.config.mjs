@@ -16,6 +16,7 @@ if (process.env.NODE_ENV === 'development' && existsSync(rootEnv)) process.loadE
 const config = {
   reactStrictMode: true,
   poweredByHeader: false,
+  devIndicators: false,
   transpilePackages: [
     '@blackwing/ui',
     '@blackwing/config',

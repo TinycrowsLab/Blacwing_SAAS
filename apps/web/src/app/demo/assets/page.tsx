@@ -4,6 +4,7 @@ import { z } from 'zod';
 import {
   Card,
   CardHeader,
+  Chip,
   DataTable,
   ErrorBanner,
   INPUT_CLASS,
@@ -98,7 +99,7 @@ export default async function DemoAssetsPage({
   const canRegister = session.roles.includes('appsec-engineer');
   const isOwner = session.roles.includes('asset-owner');
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3">
       <PageHeader
         crumbs={[{ label: 'Assets' }]}
         title="Assets"
@@ -107,8 +108,8 @@ export default async function DemoAssetsPage({
         }
       />
       <ErrorBanner error={queryText(query.error)} message={queryText(query.message)} />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="flex min-w-0 flex-col gap-4">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="flex min-w-0 flex-col gap-3">
           <Card>
             <DataTable label="Assets" head={['Asset', 'Allowed origins', 'Ownership', '']}>
               {items.map((asset) => (
@@ -136,7 +137,13 @@ export default async function DemoAssetsPage({
                   </td>
                   <td className="px-4 py-3">
                     <span className="flex flex-col gap-1">
-                      <StatusChip value={asset.ownership.status} />
+                      {asset.ownership.status === 'verified' ? (
+                        <Chip tone="ok" icon="check" pill>
+                          Verified
+                        </Chip>
+                      ) : (
+                        <StatusChip value={asset.ownership.status} />
+                      )}
                       {asset.ownership.method === null ? null : (
                         <span className="text-[11.5px] text-muted-foreground">
                           {asset.ownership.method.replace(/_/g, ' ')}
@@ -150,6 +157,7 @@ export default async function DemoAssetsPage({
                         href={`/demo/requests/new?assetId=${encodeURIComponent(asset.id)}`}
                         variant="secondary"
                         icon="assessments"
+                        className="!h-9"
                       >
                         Request assessment
                       </LinkButton>
@@ -174,7 +182,7 @@ export default async function DemoAssetsPage({
               <VerifyPanel key={a.id} asset={a} isOwner={isOwner} />
             ))}
         </div>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <Card aria-labelledby="register-h">
             <CardHeader id="register-h" title="Register target" meta="AppSec engineer" />
             <form action={createAssetAction} className="flex flex-col gap-4 p-4">

@@ -7,6 +7,7 @@ import {
   describe,
   killConfirmed,
   mergeEvents,
+  hms,
   mmss,
   secondsLeft,
   testCases,
@@ -50,6 +51,8 @@ suite('gate 2 countdown', () => {
   it('formats mm:ss', () => {
     expect(mmss(398)).toBe('06:38');
     expect(mmss(-4)).toBe('00:00');
+    expect(hms(4324)).toBe('1h 12m 04s');
+    expect(hms(724)).toBe('12m 04s');
   });
 });
 
@@ -184,9 +187,9 @@ suite('gate 3 and test plan', () => {
   });
   it('words the audit line', () => {
     expect(auditLine(null)).toBe('Recorded in the audit ledger');
-    expect(auditLine({ eventId: '0194ab12-3456-7abc-8def-0123456789ab', hash: 'abcd1234'.repeat(8) })).toBe(
-      'Recorded in the audit ledger · evt_456789ab · sha256:abcd...1234',
-    );
+    expect(
+      auditLine({ eventId: '0194ab12-3456-7abc-8def-0123456789ab', hash: 'abcd1234'.repeat(8) }),
+    ).toBe('Recorded in the audit ledger · evt_456789ab · sha256:abcd...1234');
   });
 });
 

@@ -135,6 +135,8 @@ function demoEnv(demo) {
     BW_DEMO_INTERNAL_TOKEN: demo.BW_DEMO_INTERNAL_TOKEN,
     BW_DEMO_API_ORIGIN: DEMO_API_ORIGIN,
     BW_DEMO_TENANT_ID: demo.BW_DEMO_TENANT_ID ?? '',
+    // The presenter login is the demo admin: every role, may approve its own requests.
+    BW_DEMO_LOGIN_EMAIL: demo.BW_DEMO_LOGIN_EMAIL ?? '',
   };
 }
 
@@ -207,7 +209,7 @@ async function stepDemoLogin(env) {
     });
     const r = psqlSuper(demoLoginSql(sub, email), env, DEMO_DB);
     if (r.status !== 0 || r.stdout.trim() === '') throw new Error('writing the directory user failed');
-    log(`demo login ${email} ${created ? 'created' : 'updated'} (AppSec engineer and asset owner)`);
+    log(`demo login ${email} ${created ? 'created' : 'updated'} (admin, every role)`);
     return email;
   } catch (error) {
     log(`WARNING: demo login not set up: ${error instanceof Error ? error.message : 'unknown error'}`);
@@ -383,7 +385,7 @@ Demo users (Keycloak realm blackwing-dev, password from .env BW_DEV_KEYCLOAK_TES
   approver               owner@acme.test
   viewer                 auditor@acme.test
   password               ${pw.startsWith('(') ? pw : '<BW_DEV_KEYCLOAK_TEST_USER_PASSWORD from .env>'}
-${demoLogin === '' ? '' : `  presenter              ${demoLogin} (AppSec + asset owner; password BW_DEMO_LOGIN_PASSWORD in .env.demo)\n`}
+${demoLogin === '' ? '' : `  presenter              ${demoLogin} (admin, every role; password BW_DEMO_LOGIN_PASSWORD in .env.demo)\n`}
 Story (click by click in docs/runbooks/demo.md):
   Start here     http://localhost:${WEB_PORT}/demo
   Assets         http://localhost:${WEB_PORT}/demo/assets

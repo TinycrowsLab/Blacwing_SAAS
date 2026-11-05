@@ -8,27 +8,26 @@ export const THEME_STORAGE_KEY = 'bw-theme';
 
 export type ThemeProviderProps = Omit<
   React.ComponentProps<typeof NextThemesProvider>,
-  | 'attribute'
-  | 'defaultTheme'
-  | 'enableSystem'
-  | 'disableTransitionOnChange'
-  | 'storageKey'
-  | 'themes'
+  'attribute' | 'disableTransitionOnChange' | 'storageKey' | 'themes'
 >;
 
 /**
- * Class-strategy theming: sets `.dark` on `<html>` (tokens.css), defaults to the OS preference and
+ * Class-strategy theming: sets `.dark` on `<html>` (tokens.css), defaults to the OS preference (apps may override `defaultTheme` and `enableSystem`) and
  * persists to `bw-theme`. next-themes injects the pre-hydration script (no flash) and falls back to
  * `system` when localStorage is blocked or full. Mount once in apps/web `providers.tsx`; put
  * `suppressHydrationWarning` on `<html>`.
  */
-export function ThemeProvider(props: ThemeProviderProps): React.JSX.Element {
+export function ThemeProvider({
+  defaultTheme = 'system',
+  enableSystem = true,
+  ...props
+}: ThemeProviderProps): React.JSX.Element {
   return (
     <NextThemesProvider
       {...props}
       attribute="class"
-      defaultTheme="system"
-      enableSystem
+      defaultTheme={defaultTheme}
+      enableSystem={enableSystem}
       disableTransitionOnChange
       storageKey={THEME_STORAGE_KEY}
       themes={['light', 'dark']}

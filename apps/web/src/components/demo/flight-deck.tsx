@@ -7,7 +7,16 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { Card, CardHeader, Chip, LinkButton, SeverityChip, StatusChip, type Tone } from './design';
+import {
+  Card,
+  CardHeader,
+  KindTag,
+  LinkButton,
+  SeverityChip,
+  VerdictMark,
+  filterPillClass,
+  gaugeTone,
+} from './design';
 import { Markdown, stripMarkdown } from './markdown';
 import {
   type Activity,
@@ -19,6 +28,12 @@ import {
   LANE_WINDOW_S,
   clock,
 } from './run-model';
+
+export const GAUGE_TONE = {
+  primary: { text: 'text-primary', bar: 'bg-primary' },
+  warn: { text: 'text-warn', bar: 'bg-warn' },
+  bad: { text: 'text-bad', bar: 'bg-bad' },
+} as const;
 
 export function Gauge({
   label,
@@ -32,17 +47,19 @@ export function Gauge({
   readonly pct: number;
 }) {
   const clamped = Math.min(100, Math.max(0, pct));
-  const tone = clamped >= 100 ? 'bg-bad' : clamped >= 80 ? 'bg-warn' : 'bg-primary';
+  const tone = GAUGE_TONE[gaugeTone(pct)];
   return (
     <Card className="flex flex-col gap-2.5 p-4" as="div">
       <div className="flex items-baseline justify-between">
         <span className="text-xs text-muted-foreground">{label}</span>
         <span className="text-[11.5px] text-muted-foreground">{cap}</span>
       </div>
-      <span className="text-[22px] font-semibold leading-7 tabular-nums">{value}</span>
+      <span className={`text-[22px] font-semibold leading-7 tabular-nums ${tone.text}`}>
+        {value}
+      </span>
       <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
         <div
-          className={`h-full rounded-full ${tone} transition-[width] duration-700 motion-reduce:transition-none`}
+          className={`h-full rounded-full ${tone.bar} transition-[width] duration-700 motion-reduce:transition-none`}
           style={{ width: `${clamped}%` }}
         />
       </div>
@@ -121,13 +138,13 @@ export function AgentTeam({
         return (
           <div
             key={lane.name}
-            className="grid grid-cols-[200px_minmax(0,1fr)] border-b border-border lg:grid-cols-[280px_minmax(0,1fr)]"
+            className="grid grid-cols-[200px_minmax(0,1fr)] border-b border-border lg:grid-cols-[300px_minmax(0,1fr)]"
           >
             <div className="flex min-w-0 flex-col gap-0.5 border-r border-border px-4 py-2.5">
               <span className="flex items-center gap-2">
                 <span
                   aria-hidden="true"
-                  className={`size-2 shrink-0 rounded-full ${paused ? 'bg-warn' : running ? 'bg-primary motion-safe:animate-pulse' : 'bg-muted-foreground'}`}
+                  className={`size-2 shrink-0 rounded-full ${paused ? 'bg-warn' : running ? 'bg-primary motion-safe:animate-[bwpulse_1.6s_ease-in-out_infinite]' : 'bg-muted-foreground'}`}
                 />
                 <span className="whitespace-nowrap font-mono text-[13px] font-medium">
                   {lane.name}
@@ -156,12 +173,12 @@ export function AgentTeam({
               <defs>
                 <pattern
                   id={`hatch-${lane.name}`}
-                  width="8"
-                  height="8"
+                  width="12"
+                  height="12"
                   patternUnits="userSpaceOnUse"
                   patternTransform="rotate(45)"
                 >
-                  <rect width="4" height="8" style={{ fill: 'var(--warn-soft)' }} />
+                  <rect width="6" height="12" style={{ fill: 'var(--warn-soft)' }} />
                 </pattern>
               </defs>
               {paused ? (
@@ -170,8 +187,16 @@ export function AgentTeam({
                   y="4"
                   width={`${Math.max(0, 100 - Math.max(0, pct(since)))}%`}
                   height={LANE_H - 8}
-                  rx="4"
-                  style={{ fill: `url(#hatch-${lane.name})`, stroke: 'var(--warn)' }}
+                  style={{ fill: `url(#hatch-${lane.name})` }}
+                />
+              ) : null}
+              {paused ? (
+                <rect
+                  x={`${Math.max(0, pct(since))}%`}
+                  y="4"
+                  width="2"
+                  height={LANE_H - 8}
+                  style={{ fill: 'var(--warn)' }}
                 />
               ) : null}
               {lane.marks
@@ -182,11 +207,19 @@ export function AgentTeam({
                     <MarkShapeSvg shape={m.shape} />
                   </svg>
                 ))}
+              <line
+                x1="100%"
+                x2="100%"
+                y1="0"
+                y2={LANE_H}
+                strokeWidth="2"
+                style={{ stroke: 'var(--primary)' }}
+              />
             </svg>
           </div>
         );
       })}
-      <div className="grid grid-cols-[200px_minmax(0,1fr)] py-1.5 text-[11px] text-muted-foreground lg:grid-cols-[280px_minmax(0,1fr)]">
+      <div className="grid grid-cols-[200px_minmax(0,1fr)] py-1.5 text-[11px] text-muted-foreground lg:grid-cols-[300px_minmax(0,1fr)]">
         <span />
         <span className="flex justify-between pr-2">
           <span>2 min ago</span>
@@ -203,15 +236,15 @@ export function AgentTeam({
 const FILTERS = ['All agents', 'HTTP', 'Policy', 'Errors only'] as const;
 type Filter = (typeof FILTERS)[number];
 
-const KIND_TONE: Record<Activity['kind'], Tone> = {
-  HTTP: 'muted',
-  Tool: 'primary',
-  Policy: 'warn',
-  'Gate 2': 'warn',
-  Finding: 'high',
-  Validator: 'primary',
-  Agent: 'muted',
-  Run: 'muted',
+const KIND_TAG: Record<Activity['kind'], { kind: string; label: string }> = {
+  HTTP: { kind: 'http', label: 'HTTP' },
+  Tool: { kind: 'tool', label: 'Tool' },
+  Policy: { kind: 'blocked', label: 'Blocked' },
+  'Gate 2': { kind: 'gate2', label: 'Gate 2' },
+  Finding: { kind: 'finding', label: 'Finding' },
+  Validator: { kind: 'tool', label: 'Validator' },
+  Agent: { kind: 'http', label: 'Agent' },
+  Run: { kind: 'http', label: 'Run' },
 };
 
 function passes(filter: Filter, row: Activity): boolean {
@@ -221,23 +254,6 @@ function passes(filter: Filter, row: Activity): boolean {
   return true;
 }
 
-function ClampText({ text }: { readonly text: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <button
-      type="button"
-      aria-expanded={open}
-      title={open ? undefined : text}
-      onClick={() => {
-        setOpen(!open);
-      }}
-      className={`col-start-2 min-w-0 break-words text-left leading-5 md:col-start-auto ${open ? '' : 'line-clamp-2'}`}
-    >
-      {text}
-    </button>
-  );
-}
-
 export function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) {
   const [filter, setFilter] = useState<Filter>('All agents');
   const shown = rows
@@ -245,7 +261,7 @@ export function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) 
     .slice(-100)
     .reverse();
   return (
-    <Card aria-labelledby="activity-h" as="section">
+    <Card aria-labelledby="activity-h" as="section" className="self-start">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
         <h2 id="activity-h" className="text-sm font-semibold">
           Activity
@@ -259,7 +275,7 @@ export function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) 
               onClick={() => {
                 setFilter(f);
               }}
-              className={`h-8 rounded-full px-3 text-xs font-medium ${filter === f ? 'bg-text text-bg' : 'bg-surface-2 text-foreground hover:brightness-95'}`}
+              className={filterPillClass(filter === f)}
             >
               {f}
             </button>
@@ -273,19 +289,18 @@ export function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) 
           {shown.map((r) => (
             <li
               key={r.seq}
-              className="grid grid-cols-[64px_minmax(0,1fr)] items-start gap-x-3 gap-y-1 px-4 py-2.5 text-[13px] md:grid-cols-[64px_170px_70px_minmax(0,1fr)_auto]"
+              className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-x-3 gap-y-1 px-4 py-[9px] text-[13px] md:grid-cols-[82px_150px_minmax(0,1fr)_auto]"
             >
-              <time
-                dateTime={r.at}
-                className="pt-0.5 font-mono text-[11.5px] text-muted-foreground"
-              >
+              <time dateTime={r.at} className="font-mono text-[11.5px] text-muted-foreground">
                 {clock(r.at)}
               </time>
-              <span className="truncate pt-0.5 font-mono text-xs font-medium">{r.agent}</span>
-              <span className="col-start-2 md:col-start-auto">
-                <Chip tone={KIND_TONE[r.kind]}>{r.kind}</Chip>
+              <span className="truncate font-mono text-xs font-medium">{r.agent}</span>
+              <span className="col-start-2 flex min-w-0 items-center gap-2 md:col-start-auto">
+                <KindTag kind={KIND_TAG[r.kind].kind}>{KIND_TAG[r.kind].label}</KindTag>
+                <span title={stripMarkdown(r.text)} className="truncate">
+                  {stripMarkdown(r.text)}
+                </span>
               </span>
-              <ClampText text={stripMarkdown(r.text)} />
               <span className="col-start-2 font-mono text-[11.5px] text-muted-foreground md:col-start-auto">
                 {r.meta}
               </span>
@@ -321,20 +336,105 @@ export function SummaryCard({ text }: { readonly text: string }) {
   );
 }
 
-const CASE_BAR: Record<CaseStatus, string> = {
-  executed: 'bg-primary',
-  executing: 'bg-primary/60',
-  proposed: 'bg-border-strong',
-  skipped: 'bg-muted-foreground',
-  blocked: 'bg-warn',
+const CASE_COLOUR: Record<CaseStatus, string> = {
+  executed: 'var(--primary)',
+  executing: '#4f8db8',
+  proposed: 'var(--border2)',
+  skipped: 'var(--muted)',
+  blocked: 'var(--warn)',
 };
 
-/** Design 1a "Test cases, N in plan": a stacked bar and a legend with the status counts. */
+interface Plan {
+  readonly total: number;
+  readonly counts: Record<CaseStatus, number>;
+}
+
+const DONUT_R = 74;
+const DONUT_C = 2 * Math.PI * DONUT_R;
+
+/** Transcript variant: a donut of the plan states, the centre shows how many are executed. */
+function PlanDonut({ plan }: { readonly plan: Plan }) {
+  let offset = 0;
+  return (
+    <svg
+      viewBox="0 0 180 180"
+      className="size-[180px] shrink-0"
+      role="img"
+      aria-label="Test case states"
+    >
+      <circle
+        cx="90"
+        cy="90"
+        r={DONUT_R}
+        fill="none"
+        strokeWidth="14"
+        style={{ stroke: 'var(--surface2)' }}
+      />
+      {CASE_STATUSES.map((k) => {
+        const len = (plan.counts[k] / plan.total) * DONUT_C;
+        const dash = (
+          <circle
+            key={k}
+            cx="90"
+            cy="90"
+            r={DONUT_R}
+            fill="none"
+            strokeWidth="14"
+            strokeDasharray={`${len} ${DONUT_C - len}`}
+            strokeDashoffset={-offset}
+            transform="rotate(-90 90 90)"
+            style={{ stroke: CASE_COLOUR[k] }}
+          />
+        );
+        offset += len;
+        return plan.counts[k] === 0 ? null : dash;
+      })}
+      <text x="90" y="92" textAnchor="middle" className="fill-text text-[30px] font-semibold">
+        {plan.counts.executed}
+      </text>
+      <text x="90" y="112" textAnchor="middle" className="fill-muted-foreground text-xs">
+        {`of ${plan.total} executed`}
+      </text>
+    </svg>
+  );
+}
+
+function CaseLegend({ plan }: { readonly plan: Plan }) {
+  return (
+    <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
+      {CASE_STATUSES.map((k) => (
+        <div key={k} className="flex items-center gap-2">
+          <span
+            className="size-2 rounded-[2px]"
+            style={{ background: CASE_COLOUR[k] }}
+            aria-hidden="true"
+          />
+          <dt className="text-muted-foreground">{k.charAt(0).toUpperCase() + k.slice(1)}</dt>
+          <dd className="ml-auto font-semibold tabular-nums">{plan.counts[k]}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** Design 1a "Test cases, N in plan": a stacked bar (1b: a donut) and a legend with the status counts. */
 export function TestCasesCard({
   plan,
+  variant = 'bar',
 }: {
-  readonly plan: { readonly total: number; readonly counts: Record<CaseStatus, number> };
+  readonly plan: Plan;
+  readonly variant?: 'bar' | 'donut';
 }) {
+  if (variant === 'donut' && plan.total > 0)
+    return (
+      <section
+        aria-label="Test cases"
+        className="flex flex-col items-center gap-3.5 rounded-xl border border-border bg-card p-4"
+      >
+        <PlanDonut plan={plan} />
+        <CaseLegend plan={plan} />
+      </section>
+    );
   return (
     <Card aria-labelledby="cases-h" as="section">
       <CardHeader id="cases-h" title="Test cases" meta={`${plan.total} in plan`} />
@@ -343,25 +443,19 @@ export function TestCasesCard({
           No test plan yet. The orchestrator records it after recon.
         </p>
       ) : (
-        <div className="flex flex-col gap-3 p-4">
-          <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
-            {CASE_STATUSES.map((k) => (
+        <div className="flex flex-col gap-3.5 p-4">
+          <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-[5px]" aria-hidden="true">
+            {CASE_STATUSES.filter((k) => plan.counts[k] > 0).map((k) => (
               <div
                 key={k}
-                className={CASE_BAR[k]}
-                style={{ width: `${(plan.counts[k] / plan.total) * 100}%` }}
+                style={{
+                  width: `${(plan.counts[k] / plan.total) * 100}%`,
+                  background: CASE_COLOUR[k],
+                }}
               />
             ))}
           </div>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
-            {CASE_STATUSES.map((k) => (
-              <div key={k} className="flex items-center gap-2">
-                <span className={`size-2 rounded-[2px] ${CASE_BAR[k]}`} aria-hidden="true" />
-                <dt className="text-muted-foreground">{k.charAt(0).toUpperCase() + k.slice(1)}</dt>
-                <dd className="ml-auto font-semibold tabular-nums">{plan.counts[k]}</dd>
-              </div>
-            ))}
-          </dl>
+          <CaseLegend plan={plan} />
         </div>
       )}
     </Card>
@@ -432,13 +526,19 @@ export function ProgressCard({
 export function CandidateList({
   items,
   running,
+  compact = false,
 }: {
   readonly items: readonly Candidate[];
   readonly running: boolean;
+  readonly compact?: boolean;
 }) {
   return (
     <Card aria-labelledby="cand-h" as="section">
-      <CardHeader id="cand-h" title="Candidate findings" meta="Released only after Gate 3" />
+      <CardHeader
+        id="cand-h"
+        title={<span className="whitespace-nowrap">Candidate findings</span>}
+        meta={compact ? undefined : 'Released only after Gate 3'}
+      />
       {items.length === 0 ? (
         <p className="px-4 py-5 text-[13px] text-muted-foreground">
           {running
@@ -451,22 +551,23 @@ export function CandidateList({
             <li key={c.candidateId} className="flex flex-col gap-1.5 px-4 py-3">
               <div className="flex items-center gap-2">
                 <SeverityChip severity={c.severity} />
-                <span className="ml-auto">
+                <span className="ml-auto inline-flex items-center gap-2">
+                  <VerdictMark
+                    verdict={c.status === 'released' ? 'confirmed' : c.status.replace('_', ' ')}
+                  />
                   {c.status === 'validating' ? (
-                    <span className="text-xs font-medium text-primary">
-                      Validating, replay {c.replays} of 3
+                    <span className="text-[11.5px] font-medium text-primary">
+                      replay {c.replays} of 3
                     </span>
-                  ) : (
-                    <StatusChip value={c.status} />
-                  )}
+                  ) : null}
                 </span>
               </div>
               {c.findingId === null ? (
-                <span className="text-[13px] font-medium leading-5">{c.title}</span>
+                <span className="text-[12.5px] font-medium leading-5">{c.title}</span>
               ) : (
                 <Link
                   href={`/demo/findings/${c.findingId}`}
-                  className="text-[13px] font-medium leading-5 text-primary hover:underline"
+                  className="text-[12.5px] font-medium leading-5 text-text hover:underline"
                 >
                   {c.title}
                 </Link>

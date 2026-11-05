@@ -45,6 +45,8 @@ export const ICONS = {
   approvals: 'M9 11l3 3 8-8 M20 12v7H4V5h11',
   findings: 'M8 6a4 4 0 0 1 8 0v1H8z M6 9h12v6a6 6 0 0 1-12 0z M12 9v12 M3 13h3 M18 13h3',
   reports: 'M14 2H6v20h12V6z M14 2v4h4 M9 13h6 M9 17h6',
+  sun: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z M12 2v2 M12 20v2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M2 12h2 M20 12h2 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4',
+  moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
   plusCircle: 'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20z M12 8v8 M8 12h8',
 } as const;
 
@@ -159,14 +161,18 @@ export function Chip({
     <span
       title={title}
       className={[
-        'inline-flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap border px-2.5 text-xs font-medium',
-        pill ? 'rounded-full' : 'rounded-md',
+        'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border text-xs font-medium',
+        pill ? 'h-[26px] rounded-full px-3' : 'h-6 rounded-md px-2.5',
         t.fg,
-        bordered ? 'border-current bg-transparent' : `${t.bg} border-transparent`,
+        bordered ? `border-current ${t.bg}` : `${t.bg} border-transparent`,
       ].join(' ')}
     >
       {icon ? (
-        <Icon name={icon} size={12} className={pulse ? 'motion-safe:animate-pulse' : undefined} />
+        <Icon
+          name={icon}
+          size={12}
+          className={pulse ? 'motion-safe:animate-[bwpulse_1.4s_ease-in-out_infinite]' : undefined}
+        />
       ) : null}
       {children}
     </span>
@@ -227,29 +233,44 @@ export function StatusChip({ value }: { readonly value: string }) {
 /** IDs, hashes and requests are set in JetBrains Mono. */
 export function IdChip({ children }: { readonly children: ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-md border border-border bg-card px-2 py-0.5 font-mono text-xs font-medium text-foreground">
+    <span className="inline-flex items-center rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-xs font-medium text-foreground">
       {children}
     </span>
   );
 }
 
+/** Gauge and countdown colour: primary under 80 %, warn from 80 %, bad from 100 %. */
+export function gaugeTone(pct: number): 'primary' | 'warn' | 'bad' {
+  if (pct >= 100) return 'bad';
+  return pct >= 80 ? 'warn' : 'primary';
+}
+
 const BUTTON_BASE =
-  'inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-[13px] font-medium transition-[filter,background-color,border-color] duration-150 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-muted-foreground disabled:opacity-100 disabled:shadow-none motion-reduce:transition-none';
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap text-[13px] font-medium transition-[filter,background-color,border-color] duration-150 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus disabled:cursor-not-allowed disabled:shadow-none motion-reduce:transition-none';
+
+/** Disabled buttons go grey; the kill button stays red and fades instead. */
+const DISABLED_GREY =
+  'disabled:border-border-strong disabled:bg-surface-2 disabled:text-muted-foreground';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'deny' | 'kill' | 'danger-soft';
 
 const BUTTON: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-on-primary hover:brightness-90',
-  secondary: 'border border-border-strong bg-card text-foreground hover:bg-surface-2',
-  ghost: 'bg-transparent text-foreground hover:bg-surface-2',
-  deny: 'bg-text text-bg hover:brightness-90',
-  kill: 'bg-kill text-on-kill font-semibold shadow-[0_0_0_4px_var(--kill-soft)] hover:brightness-90',
-  'danger-soft': 'border border-bad text-bad bg-transparent hover:bg-bad-soft',
+  primary: `bg-primary text-on-primary hover:brightness-90 ${DISABLED_GREY}`,
+  secondary: `border border-border-strong bg-card text-foreground hover:bg-surface-2 ${DISABLED_GREY}`,
+  ghost: `bg-transparent text-foreground hover:bg-surface-2 ${DISABLED_GREY}`,
+  deny: `bg-text text-bg hover:brightness-90 ${DISABLED_GREY}`,
+  kill: 'bg-kill text-on-kill font-semibold shadow-[0_0_0_4px_var(--kill-soft)] hover:brightness-90 disabled:opacity-40',
+  'danger-soft': `border border-bad text-bad bg-transparent hover:bg-bad-soft ${DISABLED_GREY}`,
 };
 
 /** Button classes, for use on `<button>` or `<Link>`. Disabled state is set with the `disabled` attribute. */
 export function buttonClass(variant: ButtonVariant = 'primary', extra = ''): string {
-  return [BUTTON_BASE, BUTTON[variant], extra].join(' ');
+  const defaults = [
+    /(^|\s)h-/.test(extra) ? '' : 'h-10',
+    /(^|\s)rounded-/.test(extra) ? '' : 'rounded-lg',
+    /(^|\s)px-/.test(extra) ? '' : 'px-4',
+  ];
+  return [BUTTON_BASE, BUTTON[variant], ...defaults, extra].join(' ');
 }
 
 export function LinkButton({
@@ -378,7 +399,7 @@ export function PageHeader({
   chips,
   actions,
 }: {
-  readonly crumbs: readonly { label: string; href?: string }[];
+  readonly crumbs: readonly { label: string; href?: string; mono?: boolean }[];
   readonly title: ReactNode;
   readonly chips?: ReactNode;
   readonly actions?: ReactNode;
@@ -396,7 +417,13 @@ export function PageHeader({
                     {c.label}
                   </Link>
                 ) : (
-                  <span className="rounded-md border border-border bg-card px-2 py-0.5 font-mono text-xs font-medium text-foreground">
+                  <span
+                    className={
+                      c.mono
+                        ? 'rounded-md border border-border bg-surface px-2 py-0.5 font-mono text-xs font-medium text-foreground'
+                        : undefined
+                    }
+                  >
                     {c.label}
                   </span>
                 )}
@@ -410,6 +437,98 @@ export function PageHeader({
         </div>
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2.5">{actions}</div> : null}
+    </div>
+  );
+}
+
+/** Filter pill: the active one is `bg-text text-bg`. */
+export function filterPillClass(active: boolean): string {
+  return `inline-flex h-7 items-center rounded-full px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${active ? 'bg-text text-bg' : 'bg-surface-2 text-text'}`;
+}
+
+const VERDICT_RING: Record<string, { tone: string; ring: string; label: string }> = {
+  confirmed: { tone: 'text-ok', ring: 'border-2 border-current', label: 'Confirmed' },
+  validating: {
+    tone: 'text-primary',
+    ring: 'border-2 border-current border-t-transparent motion-safe:animate-[bwspin_0.8s_linear_infinite]',
+    label: 'Validating',
+  },
+  suspected: {
+    tone: 'text-warn',
+    ring: 'border-2 border-dashed border-current',
+    label: 'Suspected',
+  },
+  released: { tone: 'text-ok', ring: 'border-2 border-current', label: 'Released' },
+  dismissed: { tone: 'text-muted-foreground', ring: 'border-2 border-current', label: 'Dismissed' },
+};
+
+/** Candidate verdict: a 10 px ring and the word, in one colour. Unknown verdicts render as plain muted text. */
+export function VerdictMark({ verdict }: { readonly verdict: string }) {
+  const v = VERDICT_RING[verdict.toLowerCase()];
+  if (v === undefined)
+    return <span className="text-[11.5px] text-muted-foreground">{verdict}</span>;
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-[11.5px] font-medium ${v.tone}`}>
+      <span aria-hidden="true" className={`size-2.5 rounded-full ${v.ring}`} />
+      {v.label}
+    </span>
+  );
+}
+
+const KIND_TAG: Record<string, string> = {
+  http: 'bg-surface-2 text-text',
+  tool: 'bg-primary-soft text-primary',
+  blocked: 'bg-warn-soft text-warn',
+  gate2: 'bg-warn text-white',
+  finding: 'bg-high-soft text-high',
+  callback: 'bg-ok-soft text-ok',
+};
+
+/** Activity feed kind tag (HTTP, Tool, Blocked, Gate 2, Finding, Callback). */
+export function KindTag({
+  kind,
+  children,
+}: {
+  readonly kind: string;
+  readonly children: ReactNode;
+}) {
+  return (
+    <span
+      className={`inline-flex h-5 shrink-0 items-center rounded-[5px] px-2 text-[11px] font-medium ${KIND_TAG[kind] ?? 'bg-surface-2 text-text'}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** Banner: a warn (decision needed) or kill (run halted) strip, with an optional pinging dot. */
+export function Banner({
+  tone,
+  ping = false,
+  children,
+  actions,
+}: {
+  readonly tone: 'warn' | 'kill';
+  readonly ping?: boolean;
+  readonly children: ReactNode;
+  readonly actions?: ReactNode;
+}) {
+  const colour = tone === 'warn' ? 'border-warn bg-warn-soft' : 'border-kill bg-kill-soft';
+  const dot = tone === 'warn' ? 'bg-warn' : 'bg-kill';
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-[13.5px] text-foreground ${colour}`}
+    >
+      <span aria-hidden="true" className="relative flex size-2.5 shrink-0">
+        {ping ? (
+          <span
+            className={`absolute inset-0 rounded-full ${dot} motion-safe:animate-[bwping_1.6s_ease-out_infinite]`}
+          />
+        ) : null}
+        <span className={`relative size-2.5 rounded-full ${dot}`} />
+      </span>
+      <div className="min-w-0 flex-1">{children}</div>
+      {actions}
     </div>
   );
 }

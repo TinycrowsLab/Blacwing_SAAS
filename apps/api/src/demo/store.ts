@@ -12,7 +12,6 @@ export interface UserRow {
   readonly name: string;
 }
 
-
 export interface AssetRow {
   readonly id: string;
   readonly tenant_id: string;
@@ -42,13 +41,18 @@ export interface RequestRow {
   readonly budget_requests: number;
   readonly budget_seconds: number;
   readonly cost_cap_usd: string;
-  readonly test_accounts: readonly { readonly role: string; readonly header_name: string; readonly header_value: string }[];
+  readonly test_accounts: readonly {
+    readonly role: string;
+    readonly header_name: string;
+    readonly header_value: string;
+  }[];
   readonly status: string;
   readonly decision_reason: string | null;
   readonly decided_at: Date | null;
   readonly created_at: Date;
   readonly requester_name: string | null;
   readonly approver_name: string | null;
+  readonly asset_name: string;
 }
 
 export interface RunRow {
@@ -172,8 +176,9 @@ const ASSET_SELECT = `
   SELECT a.*, u.name AS verified_by_name FROM demo.assets a LEFT JOIN users u ON u.id = a.verified_by`;
 
 const REQUEST_SELECT = `
-  SELECT r.*, req.name AS requester_name, appr.name AS approver_name
+  SELECT r.*, req.name AS requester_name, appr.name AS approver_name, a.name AS asset_name
   FROM demo.assessment_requests r
+  JOIN demo.assets a ON a.id = r.asset_id
   JOIN users req ON req.id = r.requester_id
   LEFT JOIN users appr ON appr.id = r.approver_id`;
 
@@ -268,10 +273,10 @@ export class DemoStore {
   }
 
   async getAsset(tenantId: string, id: string): Promise<AssetRow | null> {
-    const r = await this.pool.query<AssetRow>(`${ASSET_SELECT} WHERE a.tenant_id = $1 AND a.id = $2`, [
-      tenantId,
-      id,
-    ]);
+    const r = await this.pool.query<AssetRow>(
+      `${ASSET_SELECT} WHERE a.tenant_id = $1 AND a.id = $2`,
+      [tenantId, id],
+    );
     return r.rows[0] ?? null;
   }
 
@@ -353,10 +358,10 @@ export class DemoStore {
     );
   }
 
-  async listRequests(tenantId: string, limit: number): Promise<RequestRow[]> {
+  async listPendingGate1(tenantId: string): Promise<RequestRow[]> {
     const r = await this.pool.query<RequestRow>(
-      `${REQUEST_SELECT} WHERE r.tenant_id = $1 ORDER BY r.created_at DESC LIMIT $2`,
-      [tenantId, limit],
+      `${REQUEST_SELECT} WHERE r.tenant_id = $1 AND r.status = 'pending_gate1' ORDER BY r.created_at DESC`,
+      [tenantId],
     );
     return r.rows;
   }
@@ -369,7 +374,7 @@ export class DemoStore {
     return r.rows[0] ?? null;
   }
 
-  /** Conditional update: only a request still pending Gate 1 can be decided (no lost update). */
+  /** Conditional update: only a request still pending Gate 1 can be decided (no lost update). Separation of duties is the service's rule. */
   async decideRequest(
     tenantId: string,
     id: string,
@@ -380,7 +385,7 @@ export class DemoStore {
     const r = await this.pool.query(
       `UPDATE demo.assessment_requests
        SET status = $4, approver_id = $3, decision_reason = $5, decided_at = now()
-       WHERE tenant_id = $1 AND id = $2 AND status = 'pending_gate1' AND requester_id <> $3`,
+       WHERE tenant_id = $1 AND id = $2 AND status = 'pending_gate1'`,
       [tenantId, id, approverId, status, reason],
     );
     return (r.rowCount ?? 0) === 1;
@@ -407,7 +412,14 @@ export class DemoStore {
     await this.pool.query(
       `INSERT INTO demo.runs (id, tenant_id, request_id, created_by, pins, budget_requests)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [row.id, row.tenant_id, row.request_id, row.created_by, JSON.stringify(row.pins), row.budget_requests],
+      [
+        row.id,
+        row.tenant_id,
+        row.request_id,
+        row.created_by,
+        JSON.stringify(row.pins),
+        row.budget_requests,
+      ],
     );
   }
 
@@ -435,10 +447,10 @@ export class DemoStore {
   }
 
   async getRun(tenantId: string, id: string): Promise<RunRow | null> {
-    const r = await this.pool.query<RunRow>(`${RUN_SELECT} WHERE ru.tenant_id = $1 AND ru.id = $2`, [
-      tenantId,
-      id,
-    ]);
+    const r = await this.pool.query<RunRow>(
+      `${RUN_SELECT} WHERE ru.tenant_id = $1 AND ru.id = $2`,
+      [tenantId, id],
+    );
     return r.rows[0] ?? null;
   }
 
@@ -575,7 +587,11 @@ export class DemoStore {
   }
 
   /** Suspected findings are for analysts only: they are left out unless `includeSuspected`. */
-  async listFindings(tenantId: string, limit: number, includeSuspected: boolean): Promise<FindingRow[]> {
+  async listFindings(
+    tenantId: string,
+    limit: number,
+    includeSuspected: boolean,
+  ): Promise<FindingRow[]> {
     const r = await this.pool.query<FindingRow>(
       `${FINDING_SELECT} WHERE f.tenant_id = $1 AND ($3 OR f.status <> 'suspected')
        ORDER BY f.created_at DESC LIMIT $2`,
@@ -584,7 +600,11 @@ export class DemoStore {
     return r.rows;
   }
 
-  async listFindingsForRun(tenantId: string, runId: string, includeSuspected: boolean): Promise<FindingRow[]> {
+  async listFindingsForRun(
+    tenantId: string,
+    runId: string,
+    includeSuspected: boolean,
+  ): Promise<FindingRow[]> {
     const r = await this.pool.query<FindingRow>(
       `${FINDING_SELECT} WHERE f.tenant_id = $1 AND f.run_id = $2 AND ($3 OR f.status <> 'suspected')
        ORDER BY f.created_at`,
@@ -633,7 +653,10 @@ export class DemoStore {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
-      await client.query("SELECT pg_advisory_xact_lock(hashtext('demo.audit_events:' || $1::text))", [tenantId]);
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtext('demo.audit_events:' || $1::text))",
+        [tenantId],
+      );
       const last = await client.query<{ seq: number; hash: string }>(
         'SELECT seq, hash FROM demo.audit_events WHERE tenant_id = $1 ORDER BY seq DESC LIMIT 1',
         [tenantId],
@@ -671,7 +694,11 @@ export class DemoStore {
     }
   }
 
-  async latestAudit(tenantId: string, targetType: string, targetId: string): Promise<AuditRef | null> {
+  async latestAudit(
+    tenantId: string,
+    targetType: string,
+    targetId: string,
+  ): Promise<AuditRef | null> {
     const r = await this.pool.query<{ id: string; hash: string }>(
       `SELECT id, hash FROM demo.audit_events
        WHERE tenant_id = $1 AND target_type = $2 AND target_id = $3 ORDER BY seq DESC LIMIT 1`,

@@ -53,12 +53,12 @@ const RAIL: readonly RailItem[] = [
   },
 ];
 
-export function DemoRail() {
+export function DemoRail({ pendingGate2 }: { readonly pendingGate2: number }) {
   const path = usePathname();
   return (
     <nav
       aria-label="Demo"
-      className="flex flex-col items-center gap-1.5 border-r border-border bg-surface py-3.5"
+      className="hidden flex-col items-center gap-1.5 border-r border-border bg-surface py-3.5 md:flex"
     >
       {RAIL.map((item) => {
         const isActive = item.match(path);
@@ -69,9 +69,15 @@ export function DemoRail() {
             href={item.href}
             title={item.label}
             aria-current={isActive ? 'page' : undefined}
-            className={`${base} ${isActive ? 'bg-primary-soft text-primary' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
+            className={`${base} relative ${isActive ? 'bg-primary-soft text-primary' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
           >
             <Icon name={item.icon} size={19} />
+            {item.icon === 'approvals' && pendingGate2 > 0 ? (
+              <span
+                aria-hidden="true"
+                className="absolute right-[5px] top-[5px] size-2 rounded-full bg-warn motion-safe:animate-[bwpulse_1.4s_ease-in-out_infinite]"
+              />
+            ) : null}
             <span className="sr-only">{item.label}</span>
           </Link>
         );

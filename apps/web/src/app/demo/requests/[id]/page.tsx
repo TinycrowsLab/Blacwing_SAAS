@@ -4,18 +4,18 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import {
+  Banner,
   Card,
   CardHeader,
   Chip,
   Icon,
   INPUT_CLASS,
   IdChip,
-  LinkButton,
   PageHeader,
   StatusChip,
   buttonClass,
 } from '../../../../components/demo/design';
-import { auditLine } from '../../../../components/demo/run-model';
+import { auditLine, shortId } from '../../../../components/demo/run-model';
 import { ContextPanel } from '../../../../components/demo/shell';
 import { getSession } from '../../../../lib/session';
 import { DemoApiError, demoApi } from '../../_lib/demo-api';
@@ -85,12 +85,16 @@ export default async function DemoRequestPage({
     if (caught instanceof DemoApiError && caught.status === HTTP_NOT_FOUND) notFound();
     throw caught;
   }
-  const isRequester = request.viewerIsRequester;
+  const isRequester = request.viewerIsRequester && !request.viewerIsAdmin;
   const pending = request.status === 'pending_gate1';
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3">
       <PageHeader
-        crumbs={[{ label: 'Approvals', href: '/demo' }, { label: 'Gate 1' }, { label: request.id }]}
+        crumbs={[
+          { label: 'Approvals', href: '/demo' },
+          { label: 'Gate 1' },
+          { label: `req_${shortId(request.id)}`, mono: true },
+        ]}
         title={request.assetName ?? 'Assessment request'}
         chips={<StatusChip value={request.status} />}
       />
@@ -109,19 +113,13 @@ export default async function DemoRequestPage({
       )}
 
       {pending ? (
-        <div className="flex items-center gap-3.5 rounded-xl border border-warn bg-warn-soft px-4 py-3">
-          <span className="relative flex size-2.5 shrink-0" aria-hidden="true">
-            <span className="absolute inset-0 rounded-full bg-warn motion-safe:animate-ping" />
-            <span className="absolute inset-0 rounded-full bg-warn" />
-          </span>
-          <span className="flex-1 text-[13.5px]">
-            <strong className="font-semibold">Gate 1: scope approval needed.</strong> The test plan
-            does not run until a second person approves it. No decision means nothing runs.
-          </span>
-        </div>
+        <Banner tone="warn" ping>
+          <strong className="font-semibold">Gate 1: scope approval needed.</strong> The test plan
+          does not run until a second person approves it. No decision means nothing runs.
+        </Banner>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_280px]">
         <div className="flex min-w-0 flex-col gap-4">
           <Card aria-labelledby="scope-h">
             <CardHeader id="scope-h" title="Objective and budget" />
@@ -155,7 +153,10 @@ export default async function DemoRequestPage({
               <dt className="text-muted-foreground">Requested by</dt>
               <dd>{request.requester.name ?? 'unknown'}</dd>
               <dt className="text-muted-foreground">Approved by</dt>
-              <dd>{request.approver?.name ?? 'not yet'}</dd>
+              <dd>
+                {request.approver?.name ?? 'not yet'}
+                {request.selfApproved ? ' (Self-approved by admin)' : ''}
+              </dd>
               <dt className="text-muted-foreground">Decision reason</dt>
               <dd>{request.decisionReason ?? 'none'}</dd>
               <dt className="text-muted-foreground">Test accounts</dt>
@@ -207,7 +208,10 @@ export default async function DemoRequestPage({
                     name="decision"
                     value="reject"
                     type="submit"
-                    className={buttonClass('deny', 'h-12 px-8 text-[14.5px] font-semibold')}
+                    className={buttonClass(
+                      'deny',
+                      'h-12 rounded-[10px] px-8 text-[14.5px] font-semibold',
+                    )}
                   >
                     <Icon name="x" size={16} />
                     Deny
@@ -222,7 +226,7 @@ export default async function DemoRequestPage({
                         ? 'You requested this plan. Asset Owners can approve it.'
                         : undefined
                     }
-                    className={buttonClass('secondary', 'h-12 px-5 text-[14px]')}
+                    className={buttonClass('secondary', 'h-12 rounded-[10px] px-[22px] text-sm')}
                   >
                     Approve at Gate 1
                   </button>
@@ -234,7 +238,7 @@ export default async function DemoRequestPage({
             </Card>
           ) : null}
 
-          {request.status === 'approved' ? (
+          {request.status === 'approved' || request.runId !== null ? (
             <Card aria-labelledby="start-h">
               <CardHeader id="start-h" title="Start the run" />
               <div className="flex flex-col gap-4 p-4">
@@ -242,24 +246,28 @@ export default async function DemoRequestPage({
                   Gate 1 is approved. The run pins the scope, the authorisation and the runner
                   version, then the agent team hunts inside that scope.
                 </p>
-                <form action={startRunAction}>
-                  <input type="hidden" name="requestId" value={request.id} />
-                  <button type="submit" className={buttonClass('primary', 'h-11 px-5')}>
-                    Start run
-                  </button>
-                </form>
+                {request.runId === null ? (
+                  <form action={startRunAction}>
+                    <input type="hidden" name="requestId" value={request.id} />
+                    <button type="submit" className={buttonClass('primary', 'h-11 px-5')}>
+                      Start run
+                    </button>
+                  </form>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <IdChip>{request.runId}</IdChip>
+                    <Link
+                      href={`/demo/runs/${request.runId}`}
+                      className="text-[13.5px] font-medium text-primary hover:underline"
+                    >
+                      Open the live run
+                    </Link>
+                  </div>
+                )}
               </div>
             </Card>
           ) : null}
 
-          {request.runId === null ? null : (
-            <div className="flex items-center gap-3">
-              <IdChip>{request.runId}</IdChip>
-              <LinkButton href={`/demo/runs/${request.runId}`} variant="primary">
-                Open the live run
-              </LinkButton>
-            </div>
-          )}
         </div>
 
         <div className="flex flex-col gap-4">

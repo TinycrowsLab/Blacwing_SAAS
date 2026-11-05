@@ -24,7 +24,18 @@ export interface DemoActor {
   readonly email: string;
   readonly name: string;
   readonly roles: readonly string[];
+  /** The demo admin (BW_DEMO_LOGIN_EMAIL): holds every role and may approve its own requests. */
+  readonly admin?: boolean;
 }
+
+/** Every demo role, held by the admin. */
+export const ALL_ROLES = [
+  'appsec-engineer',
+  'asset-owner',
+  'developer',
+  'org-admin',
+  'auditor',
+] as const;
 
 /** A stable, machine-readable refusal (RFC 9457 problem body, `code` is the registered name). */
 export class DemoRefusal extends HttpException {
@@ -115,10 +126,15 @@ export function requestDto(row: RequestRow): Record<string, unknown> {
   return {
     id: row.id,
     assetId: row.asset_id,
+    assetName: row.asset_name,
     objective: row.objective,
     excludedPaths: row.scope.excludedPaths ?? [],
     intrusiveness: row.intrusiveness,
-    budget: { requests: row.budget_requests, seconds: row.budget_seconds, costUsd: Number(row.cost_cap_usd) },
+    budget: {
+      requests: row.budget_requests,
+      seconds: row.budget_seconds,
+      costUsd: Number(row.cost_cap_usd),
+    },
     status: row.status,
     requester: { id: row.requester_id, name: row.requester_name },
     approver: row.approver_id === null ? null : { id: row.approver_id, name: row.approver_name },
@@ -140,7 +156,11 @@ export function runDto(row: RunRow): Record<string, unknown> {
     paused: row.paused,
     costUsd: Number(row.cost_usd),
     requestsUsed: row.requests_used,
-    budget: { requests: row.budget_requests, seconds: row.budget_seconds, costUsd: Number(row.cost_cap_usd) },
+    budget: {
+      requests: row.budget_requests,
+      seconds: row.budget_seconds,
+      costUsd: Number(row.cost_cap_usd),
+    },
     createdAt: row.created_at.toISOString(),
     startedAt: iso(row.started_at),
     finishedAt: iso(row.finished_at),
@@ -168,7 +188,10 @@ export function findingSummaryDto(row: FindingRow): Record<string, unknown> {
   };
 }
 
-export function findingDto(row: FindingRow, audit: AuditRef | null = null): Record<string, unknown> {
+export function findingDto(
+  row: FindingRow,
+  audit: AuditRef | null = null,
+): Record<string, unknown> {
   return {
     ...findingSummaryDto(row),
     class: row.class,
@@ -187,7 +210,11 @@ export function findingDto(row: FindingRow, audit: AuditRef | null = null): Reco
     delivery:
       row.delivery_status === null || row.delivered_at === null
         ? null
-        : { status: row.delivery_status, detail: row.delivery_detail ?? '', at: row.delivered_at.toISOString() },
+        : {
+            status: row.delivery_status,
+            detail: row.delivery_detail ?? '',
+            at: row.delivered_at.toISOString(),
+          },
     audit,
   };
 }
@@ -268,7 +295,10 @@ export class DemoService {
     private readonly store: DemoStore,
     private readonly tenantId: string,
     private readonly fetchImpl: typeof fetch = fetch,
-    private readonly webhook: WebhookOptions = { webhookUrl: null, consoleOrigin: 'http://localhost:3000' },
+    private readonly webhook: WebhookOptions = {
+      webhookUrl: null,
+      consoleOrigin: 'http://localhost:3000',
+    },
   ) {}
 
   private audit(
@@ -298,17 +328,24 @@ export class DemoService {
 
   private async assetRow(id: string): Promise<AssetRow> {
     const row = await this.store.getAsset(this.tenantId, id);
-    if (row === null) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'asset_not_found', 'No such asset.');
+    if (row === null)
+      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'asset_not_found', 'No such asset.');
     return row;
   }
 
   async createAsset(actor: DemoActor, input: CreateAssetInput): Promise<Record<string, unknown>> {
     requireRole(actor, ['appsec-engineer'], 'Only an appsec engineer can register an asset.');
     const origin = new URL(input.baseUrl).origin;
-    const existing = (await this.store.listAssets(this.tenantId)).find((a) => new URL(a.base_url).origin === origin);
+    const existing = (await this.store.listAssets(this.tenantId)).find(
+      (a) => new URL(a.base_url).origin === origin,
+    );
     if (existing !== undefined) return assetDto(existing);
     const id = newId();
-    const slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, SLUG_MAX);
+    const slug = input.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, SLUG_MAX);
     await this.store.insertAsset({
       id,
       tenant_id: this.tenantId,
@@ -324,15 +361,27 @@ export class DemoService {
   }
 
   /** The asset owner proves control by serving the token, or attests authority (lab or owned system). */
-  async verifyAsset(actor: DemoActor, id: string, input: VerifyInput): Promise<Record<string, unknown>> {
+  async verifyAsset(
+    actor: DemoActor,
+    id: string,
+    input: VerifyInput,
+  ): Promise<Record<string, unknown>> {
     requireRole(actor, ['asset-owner'], 'Only an asset owner can verify ownership.');
     const asset = await this.assetRow(id);
     if (asset.ownership_status === 'verified') {
-      throw new DemoRefusal(HttpStatus.CONFLICT, 'already_verified', 'Ownership is already verified.');
+      throw new DemoRefusal(
+        HttpStatus.CONFLICT,
+        'already_verified',
+        'Ownership is already verified.',
+      );
     }
     if (input.method === 'http_token') await this.checkWellKnownToken(asset);
     if (!(await this.store.markAssetVerified(this.tenantId, id, input.method, actor.id))) {
-      throw new DemoRefusal(HttpStatus.CONFLICT, 'already_verified', 'Ownership was verified concurrently.');
+      throw new DemoRefusal(
+        HttpStatus.CONFLICT,
+        'already_verified',
+        'Ownership was verified concurrently.',
+      );
     }
     return this.asset(id);
   }
@@ -362,7 +411,7 @@ export class DemoService {
     const [counts, assets, requests, runs, findings, pending] = await Promise.all([
       this.store.dashboardCounts(this.tenantId),
       this.store.listAssets(this.tenantId),
-      this.store.listRequests(this.tenantId, RECENT_ITEMS),
+      this.store.listPendingGate1(this.tenantId),
       this.store.listRuns(this.tenantId, RECENT_ITEMS),
       this.store.listFindings(this.tenantId, RECENT_ITEMS, actorHasRole(actor, 'appsec-engineer')),
       this.store.listPendingGate2(this.tenantId),
@@ -380,7 +429,10 @@ export class DemoService {
     };
   }
 
-  async createRequest(actor: DemoActor, input: CreateRequestInput): Promise<Record<string, unknown>> {
+  async createRequest(
+    actor: DemoActor,
+    input: CreateRequestInput,
+  ): Promise<Record<string, unknown>> {
     requireRole(actor, ['appsec-engineer'], 'Only an appsec engineer can request an assessment.');
     const asset = await this.assetRow(input.assetId);
     if (asset.ownership_status !== 'verified') {
@@ -412,19 +464,25 @@ export class DemoService {
   }
 
   /** `audit` is the event just appended by a decision; a plain read looks up the latest one. */
-  async request(id: string, viewerId?: string, audit?: AuditRef): Promise<Record<string, unknown>> {
+  async request(
+    id: string,
+    viewer?: DemoActor,
+    audit?: AuditRef,
+  ): Promise<Record<string, unknown>> {
     const row = await this.store.getRequest(this.tenantId, id);
     if (row === null) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such request.');
     const run = await this.store.findRunByRequest(this.tenantId, id);
     return {
       ...requestDto(row),
       runId: run?.id ?? null,
-      viewerIsRequester: viewerId === row.requester_id,
+      viewerIsRequester: viewer?.id === row.requester_id,
+      viewerIsAdmin: viewer?.admin === true,
+      selfApproved: row.approver_id !== null && row.approver_id === row.requester_id,
       audit: audit ?? (await this.store.latestAudit(this.tenantId, 'request', id)),
     };
   }
 
-  /** Gate 1: a second user approves. The requester can never approve their own request (SoD). */
+  /** Gate 1: a second user approves. Only the demo admin may approve its own request, and the audit says so. */
   async decideGate1(
     actor: DemoActor,
     requestId: string,
@@ -440,7 +498,8 @@ export class DemoService {
         `The request is ${row.status}; Gate 1 is already decided.`,
       );
     }
-    if (actor.id === row.requester_id) {
+    const selfApproved = actor.id === row.requester_id;
+    if (selfApproved && actor.admin !== true) {
       throw new DemoRefusal(
         HttpStatus.FORBIDDEN,
         'separation_of_duties',
@@ -456,10 +515,19 @@ export class DemoService {
       reason,
     );
     if (!ok) {
-      throw new DemoRefusal(HttpStatus.CONFLICT, 'request_not_pending', 'Gate 1 was decided concurrently.');
+      throw new DemoRefusal(
+        HttpStatus.CONFLICT,
+        'request_not_pending',
+        'Gate 1 was decided concurrently.',
+      );
     }
-    const audit = await this.audit(actor, `gate1.${decision}`, 'request', requestId, { decision, reason });
-    return this.request(requestId, actor.id, audit);
+    const audit = await this.audit(actor, `gate1.${decision}`, 'request', requestId, {
+      decision,
+      reason,
+      selfApproved,
+      override: selfApproved ? 'admin' : null,
+    });
+    return this.request(requestId, actor, audit);
   }
 
   async startRun(actor: DemoActor, requestId: string): Promise<Record<string, unknown>> {
@@ -475,10 +543,18 @@ export class DemoService {
     }
     const asset = await this.assetRow(row.asset_id);
     if (asset.ownership_status !== 'verified') {
-      throw new DemoRefusal(HttpStatus.UNPROCESSABLE_ENTITY, 'asset_not_verified', 'Asset ownership is not verified.');
+      throw new DemoRefusal(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'asset_not_verified',
+        'Asset ownership is not verified.',
+      );
     }
     if (!(await this.store.claimRequestForRun(this.tenantId, requestId))) {
-      throw new DemoRefusal(HttpStatus.CONFLICT, 'run_already_started', 'This request already has a run.');
+      throw new DemoRefusal(
+        HttpStatus.CONFLICT,
+        'run_already_started',
+        'This request already has a run.',
+      );
     }
     const runId = newId();
     const pins = {
@@ -493,7 +569,11 @@ export class DemoService {
         id: row.id,
         objective: row.objective,
         intrusiveness: row.intrusiveness,
-        budget: { requests: row.budget_requests, seconds: row.budget_seconds, costUsd: Number(row.cost_cap_usd) },
+        budget: {
+          requests: row.budget_requests,
+          seconds: row.budget_seconds,
+          costUsd: Number(row.cost_cap_usd),
+        },
         testAccounts: row.test_accounts.map((a) => ({ role: a.role, headerName: a.header_name })),
         requesterId: row.requester_id,
         approverId: row.approver_id,
@@ -542,14 +622,16 @@ export class DemoService {
       ...runDto(row),
       lastSeq: events.at(-1)?.seq ?? afterSeq,
       // Suspected findings are for analysts only, so their events are too.
-      events: events.filter((e) => analyst || e.kind !== 'finding.suspected').map((e) => ({
-        seq: e.seq,
-        kind: e.kind,
-        stage: e.stage,
-        message: e.message,
-        data: e.data,
-        at: e.at.toISOString(),
-      })),
+      events: events
+        .filter((e) => analyst || e.kind !== 'finding.suspected')
+        .map((e) => ({
+          seq: e.seq,
+          kind: e.kind,
+          stage: e.stage,
+          message: e.message,
+          data: e.data,
+          at: e.at.toISOString(),
+        })),
       findings: findings.map((f) => findingSummaryDto(f)),
       gate2: gate2.map((g) => gate2Dto(g, now)),
       stats,
@@ -562,8 +644,16 @@ export class DemoService {
     return { items: items.map((row) => exchangeDto(row)), lastSeq: items.at(-1)?.seq ?? afterSeq };
   }
 
-  async setPaused(actor: DemoActor, runId: string, paused: boolean): Promise<Record<string, unknown>> {
-    requireRole(actor, ['appsec-engineer', 'asset-owner'], 'Only an appsec engineer or an asset owner controls a run.');
+  async setPaused(
+    actor: DemoActor,
+    runId: string,
+    paused: boolean,
+  ): Promise<Record<string, unknown>> {
+    requireRole(
+      actor,
+      ['appsec-engineer', 'asset-owner'],
+      'Only an appsec engineer or an asset owner controls a run.',
+    );
     await this.runRow(runId);
     if (!(await this.store.setPaused(this.tenantId, runId, paused))) {
       throw new DemoRefusal(
@@ -608,7 +698,11 @@ export class DemoService {
     }
     const requestedAt = await this.store.requestKill(this.tenantId, runId, actor.id);
     if (requestedAt === null) {
-      throw new DemoRefusal(HttpStatus.CONFLICT, 'run_not_running', 'The run is not queued or running.');
+      throw new DemoRefusal(
+        HttpStatus.CONFLICT,
+        'run_not_running',
+        'The run is not queued or running.',
+      );
     }
     await this.store.appendEvent(runId, {
       kind: 'kill.requested',
@@ -627,13 +721,20 @@ export class DemoService {
     return {
       ...gate2Dto(row, new Date()),
       audit: audit ?? (await this.store.latestAudit(this.tenantId, 'gate2', id)),
-      run: { id: run.id, shortId: shortId(run.id), state: run.state, assetName: run.asset_name, pins: run.pins },
+      run: {
+        id: run.id,
+        shortId: shortId(run.id),
+        state: run.state,
+        assetName: run.asset_name,
+        pins: run.pins,
+      },
     };
   }
 
   private async gate2Row(id: string): Promise<Gate2Row> {
     const row = await this.store.getGate2(this.tenantId, id);
-    if (row === null) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such Gate 2 request.');
+    if (row === null)
+      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such Gate 2 request.');
     return row;
   }
 
@@ -644,15 +745,29 @@ export class DemoService {
     decision: 'approve' | 'deny',
     reason: string | null,
   ): Promise<Record<string, unknown>> {
-    requireRole(actor, ['asset-owner', 'appsec-engineer'], 'Only an asset owner or an appsec engineer decides Gate 2.');
+    requireRole(
+      actor,
+      ['asset-owner', 'appsec-engineer'],
+      'Only an asset owner or an appsec engineer decides Gate 2.',
+    );
     const row = await this.gate2Row(id);
     const run = await this.runRow(row.run_id);
     if (run.state === 'killed') {
-      throw new DemoRefusal(HttpStatus.CONFLICT, 'gate2_closed', 'The run was killed; nothing can be approved.');
+      throw new DemoRefusal(
+        HttpStatus.CONFLICT,
+        'gate2_closed',
+        'The run was killed; nothing can be approved.',
+      );
     }
+    const selfApproved =
+      (await this.store.getRequest(this.tenantId, run.request_id))?.requester_id === actor.id;
     const status = decision === 'approve' ? 'approved' : 'denied';
     if (!(await this.store.decideGate2(this.tenantId, id, status, actor.id, reason))) {
-      throw new DemoRefusal(HttpStatus.CONFLICT, 'gate2_closed', 'The request is already decided or past its deadline.');
+      throw new DemoRefusal(
+        HttpStatus.CONFLICT,
+        'gate2_closed',
+        'The request is already decided or past its deadline.',
+      );
     }
     const audit = await this.audit(actor, `gate2.${decision}`, 'gate2', id, {
       decision,
@@ -660,6 +775,8 @@ export class DemoService {
       method: row.method,
       url: row.url,
       runId: row.run_id,
+      selfApproved,
+      override: selfApproved ? 'admin' : null,
     });
     return this.gate2(id, audit);
   }
@@ -673,13 +790,20 @@ export class DemoService {
     return row;
   }
 
-  async findingDetail(actor: DemoActor, id: string, audit?: AuditRef): Promise<Record<string, unknown>> {
+  async findingDetail(
+    actor: DemoActor,
+    id: string,
+    audit?: AuditRef,
+  ): Promise<Record<string, unknown>> {
     const row = await this.finding(actor, id);
     return findingDto(row, audit ?? (await this.store.latestAudit(this.tenantId, 'finding', id)));
   }
 
   /** Context the report needs: the finding, its run, asset and request. Only released findings are reported. */
-  async reportContext(actor: DemoActor, findingId: string): Promise<{
+  async reportContext(
+    actor: DemoActor,
+    findingId: string,
+  ): Promise<{
     finding: FindingRow;
     run: RunRow;
     asset: AssetRow;
@@ -687,7 +811,11 @@ export class DemoService {
   }> {
     const finding = await this.finding(actor, findingId);
     if (finding.status !== 'released') {
-      throw new DemoRefusal(HttpStatus.CONFLICT, 'finding_not_released', 'Only released findings are reported.');
+      throw new DemoRefusal(
+        HttpStatus.CONFLICT,
+        'finding_not_released',
+        'Only released findings are reported.',
+      );
     }
     const run = await this.runRow(finding.run_id);
     return { finding, run, ...(await this.runContext(run)) };
@@ -695,7 +823,8 @@ export class DemoService {
 
   private async runContext(run: RunRow): Promise<{ asset: AssetRow; request: RequestRow }> {
     const request = await this.store.getRequest(this.tenantId, run.request_id);
-    const asset = request === null ? null : await this.store.getAsset(this.tenantId, request.asset_id);
+    const asset =
+      request === null ? null : await this.store.getAsset(this.tenantId, request.asset_id);
     if (request === null || asset === null) {
       throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'The run has no request or asset.');
     }
@@ -717,7 +846,11 @@ export class DemoService {
   }
 
   async listFindings(actor: DemoActor): Promise<Record<string, unknown>[]> {
-    const rows = await this.store.listFindings(this.tenantId, FINDING_LIST_LIMIT, actorHasRole(actor, 'appsec-engineer'));
+    const rows = await this.store.listFindings(
+      this.tenantId,
+      FINDING_LIST_LIMIT,
+      actorHasRole(actor, 'appsec-engineer'),
+    );
     return rows.map((row) => findingSummaryDto(row));
   }
 
@@ -728,13 +861,34 @@ export class DemoService {
     decision: 'release' | 'dismiss',
     reason: string,
   ): Promise<Record<string, unknown>> {
-    requireRole(actor, ['appsec-engineer'], 'Only an AppSec engineer can release or dismiss a finding.');
+    requireRole(
+      actor,
+      ['appsec-engineer'],
+      'Only an AppSec engineer can release or dismiss a finding.',
+    );
     const finding = await this.finding(actor, id);
     const to = decision === 'release' ? 'released' : 'dismissed';
-    if (!(await this.store.triageFinding(this.tenantId, id, TRIAGE_FROM[decision], to, actor.id, reason))) {
-      throw new DemoRefusal(HttpStatus.CONFLICT, 'finding_not_triageable', `A ${finding.status} finding cannot be ${to}.`);
+    if (
+      !(await this.store.triageFinding(
+        this.tenantId,
+        id,
+        TRIAGE_FROM[decision],
+        to,
+        actor.id,
+        reason,
+      ))
+    ) {
+      throw new DemoRefusal(
+        HttpStatus.CONFLICT,
+        'finding_not_triageable',
+        `A ${finding.status} finding cannot be ${to}.`,
+      );
     }
-    const audit = await this.audit(actor, `finding.${decision}`, 'finding', id, { decision, reason, runId: finding.run_id });
+    const audit = await this.audit(actor, `finding.${decision}`, 'finding', id, {
+      decision,
+      reason,
+      runId: finding.run_id,
+    });
     const severity = severityOf(finding.severity);
     await this.store.appendEvent(finding.run_id, {
       kind: `finding.${to}`,

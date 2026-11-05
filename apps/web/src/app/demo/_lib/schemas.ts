@@ -68,6 +68,8 @@ export const requestSchema = z.object({
   createdAt: iso,
   runId: z.string().nullable().default(null),
   viewerIsRequester: z.boolean().default(false),
+  viewerIsAdmin: z.boolean().default(false),
+  selfApproved: z.boolean().default(false),
   testAccounts: z.array(z.object({ role: z.string(), headerName: z.string() })).default([]),
   audit: auditRefSchema,
 });
@@ -264,6 +266,7 @@ export const auditListSchema = z.object({
       action: z.string(),
       targetType: z.string(),
       targetId: z.string(),
+      payload: z.object({ selfApproved: z.boolean().default(false) }).default({ selfApproved: false }),
       hash: z.string(),
     }),
   ),

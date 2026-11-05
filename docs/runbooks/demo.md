@@ -66,19 +66,22 @@ Open `http://localhost:3000/demo` (the bare origin redirects there), which redir
 The password is `BW_DEV_KEYCLOAK_TEST_USER_PASSWORD` in the repository `.env`. Print it locally with
 `grep BW_DEV_KEYCLOAK_TEST_USER_PASSWORD .env`. Do not paste it into chat or tickets.
 
-### Presenter login (optional)
+### Admin login (optional)
 
-A named login for the person giving the demo, with both the AppSec engineer and asset owner groups. Set it in the
+The named login for the person giving the demo is the demo admin: it is in every tenant role group (AppSec engineer,
+asset owner, developer, org admin, auditor) and can do everything alone, including approving its own Gate 1 and
+Gate 2 requests. Such a decision is recorded as `selfApproved` with `override: admin` in the audit ledger and shown
+as "Self-approved by admin". Set it in the
 gitignored `.env.demo`:
 
 ```
-BW_DEMO_LOGIN_EMAIL=<presenter e-mail>
+BW_DEMO_LOGIN_EMAIL=<admin e-mail>
 BW_DEMO_LOGIN_PASSWORD=<password>
 ```
 
 `node scripts/demo.mjs up` creates or updates it in Keycloak and the demo directory. `node scripts/demo.mjs login`
-does only that step, without a restart. Separation of duties still applies: the presenter cannot approve their own
-Gate 1 or Gate 2 request, so approvals use a second account, such as `owner@acme.test`.
+does only that step, without a restart. Separation of duties still applies to every other user, so it can still be
+shown with a second account such as `owner@acme.test`; it never blocks the admin.
 
 ## Sign in with Google (optional)
 
@@ -165,7 +168,8 @@ The runner drives a Claude agent team through the Claude Agent SDK.
    stored in plaintext in the demo database, so use throwaway accounts only. The model never sees them, and they are
    redacted in stored exchanges and never returned by the API. The run header shows **Grey box** or **Black box**.
    Passive runs send only GET/HEAD/OPTIONS.
-4. **Gate 1**: the requester cannot approve (separation of duties). The asset owner approves.
+4. **Gate 1**: the requester cannot approve (separation of duties); the asset owner approves. The admin login may
+   approve its own request, which is marked as self-approved.
 5. The requester starts the run. **Flight deck**: one lane per agent (orchestrator, recon, web-api-specialist,
    authz-specialist, validator) on a two-minute time axis, the authorisation strip, cost/requests/duration gauges,
    the activity feed with filters and the candidate findings. **Transcript** shows the agents' messages (not verified).
@@ -192,7 +196,7 @@ Gate 1 (with the SoD refusal), a short live hunt, and checks that at least two a
 | Rule | Where |
 |---|---|
 | Ownership verified before any request | API |
-| Requester ≠ approver (Gate 1) | API + DB check |
+| Requester ≠ approver (Gate 1), except the demo admin, recorded as self-approved | API + DB check |
 | Every target request inside the asset origins and outside excluded paths, else refused and shown as a policy block | `apps/worker/src/demo/hunt/scope.ts`, `http-tool.ts` |
 | GET/HEAD/OPTIONS allowed; POST/PUT/PATCH need Gate 2; DELETE/TRACE/CONNECT always refused | same |
 | Request, time and cost budgets | same + SDK `maxBudgetUsd` |
