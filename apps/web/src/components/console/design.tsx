@@ -270,7 +270,7 @@ export function gaugeTone(pct: number): 'primary' | 'warn' | 'bad' {
 }
 
 const BUTTON_BASE =
-  'inline-flex select-none items-center justify-center gap-2 whitespace-nowrap border border-transparent text-[13.5px] font-medium no-underline transition-[filter,background-color,border-color,transform] duration-150 active:translate-y-px focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus focus-visible:border-gold-ink disabled:cursor-not-allowed disabled:shadow-none disabled:active:translate-y-0 motion-reduce:transition-none';
+  'inline-flex select-none items-center justify-center gap-2 whitespace-nowrap border text-[13.5px] font-medium no-underline transition-[filter,background-color,border-color,transform] duration-150 active:translate-y-px focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus focus-visible:border-gold-ink disabled:cursor-not-allowed disabled:shadow-none disabled:active:translate-y-0 motion-reduce:transition-none';
 
 /** Disabled buttons go grey; the kill button stays red and fades instead. */
 const DISABLED_GREY =
@@ -283,11 +283,12 @@ const DISABLED_GREY =
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'deny' | 'kill' | 'danger-soft';
 
 const BUTTON: Record<ButtonVariant, string> = {
-  primary: `bg-gold text-on-gold font-semibold shadow-[inset_0_0_0_1px_rgba(138,99,16,.28)] hover:bg-gold-hi ${DISABLED_GREY}`,
+  // Border colour lives in each variant: a shared border-transparent would beat border-input-strong in the CSS order.
+  primary: `border-transparent bg-gold text-on-gold font-semibold shadow-[inset_0_0_0_1px_rgba(138,99,16,.28)] hover:bg-gold-hi ${DISABLED_GREY}`,
   secondary: `border-input-strong bg-card text-foreground hover:bg-surface-2 ${DISABLED_GREY}`,
-  ghost: `bg-transparent text-muted-foreground hover:bg-surface-2 hover:text-foreground ${DISABLED_GREY}`,
-  deny: `bg-text text-bg font-semibold hover:brightness-110 focus-visible:shadow-[0_0_0_2px_var(--bg),0_0_0_5px_var(--text)] ${DISABLED_GREY}`,
-  kill: 'bg-kill text-on-kill font-semibold hover:brightness-110 focus-visible:ring-kill-soft disabled:opacity-40',
+  ghost: `border-transparent bg-transparent text-muted-foreground hover:bg-surface-2 hover:text-foreground ${DISABLED_GREY}`,
+  deny: `border-transparent bg-text text-bg font-semibold hover:brightness-110 focus-visible:shadow-[0_0_0_2px_var(--bg),0_0_0_5px_var(--text)] ${DISABLED_GREY}`,
+  kill: 'border-transparent bg-kill text-on-kill font-semibold hover:brightness-110 focus-visible:ring-kill-soft disabled:opacity-40',
   'danger-soft': `border-bad bg-transparent text-bad hover:bg-bad-soft ${DISABLED_GREY}`,
 };
 

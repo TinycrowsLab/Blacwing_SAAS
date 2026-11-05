@@ -166,7 +166,7 @@ export function TriageControls({
           <PendingButton
             variant="primary"
             icon="check"
-            shortcut="R"
+            {...(bindRelease === undefined ? {} : { shortcut: 'R' })}
             pendingLabel="Releasing…"
             className="h-11 px-5"
             stayPending
