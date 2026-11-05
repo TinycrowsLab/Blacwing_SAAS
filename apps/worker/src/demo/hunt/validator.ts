@@ -14,6 +14,7 @@ const MAX_VULN_CLASS_CHARS = 100;
 const MAX_CWE_CHARS = 20;
 const MAX_OWASP_CHARS = 60;
 const MAX_DESCRIPTION_CHARS = 4000;
+const MAX_REMEDIATION_CHARS = 1000;
 
 export const oracleSchema = z.object({
   type: z.enum(['body_contains', 'body_regex', 'status_equals', 'header_contains']),
@@ -29,6 +30,8 @@ export const candidateSchema = z.object({
   owasp: z.string().min(1).max(MAX_OWASP_CHARS),
   severity: z.enum(['critical', 'high', 'medium', 'low', 'info']),
   description: z.string().min(1).max(MAX_DESCRIPTION_CHARS),
+  /** The model's fix suggestion, shown labelled "not verified". Optional: the console hides the block when absent. */
+  remediation: z.string().max(MAX_REMEDIATION_CHARS).optional(),
   probe: probeSchema,
   control: probeSchema,
   oracle: oracleSchema,
@@ -140,5 +143,12 @@ export function buildEvidence(candidate: Candidate, probe: Sent, control: Sent, 
     oracle: candidate.oracle,
     replays,
     description: candidate.description,
+    ...remediationOf(candidate),
   };
+}
+
+/** `evidence.remediation` (jsonb, no migration), only when the model gave one. */
+export function remediationOf(candidate: Candidate): { remediation?: string } {
+  const text = candidate.remediation?.trim() ?? '';
+  return text === '' ? {} : { remediation: text };
 }

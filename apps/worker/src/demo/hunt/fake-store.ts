@@ -61,7 +61,7 @@ export class FakeStore implements HuntStore {
     const existing = this.findings.findIndex((f) => f.fingerprint === row.fingerprint);
     if (existing >= 0) {
       const old = this.findings[existing];
-      if (old?.status !== 'suspected' || row.status !== 'released') return Promise.resolve(null);
+      if (old?.status !== 'suspected' || row.status === 'suspected') return Promise.resolve(null);
       this.findings[existing] = { ...row, id: old.id };
       return Promise.resolve(old.id);
     }

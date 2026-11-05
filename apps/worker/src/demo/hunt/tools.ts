@@ -5,10 +5,11 @@ import { newId } from '@blackwing/ids';
 
 import { modelView, probeSchema, sendRequest } from './http-tool.js';
 import { SUBAGENT_NAMES } from './prompts.js';
-import { buildEvidence, candidateSchema, fingerprint, reproCurl, sideEvidence, validateCandidate } from './validator.js';
+import { buildEvidence, candidateSchema, fingerprint, remediationOf, reproCurl, sideEvidence, validateCandidate } from './validator.js';
 import { deliverRelease } from './webhook.js';
 
 import type { HuntContext } from './context.js';
+import type { FindingRow } from './types.js';
 
 const LIST_LIMIT = 100;
 const DEFAULT_LIST_LIMIT = 50;
@@ -22,6 +23,23 @@ const DEFAULT_AGENT = 'unknown';
 
 function text(value: unknown) {
   return { content: [{ type: 'text' as const, text: typeof value === 'string' ? value : JSON.stringify(value) }] };
+}
+
+/**
+ * Stores a validator-proven finding. `auto` (the plan's choice) releases it at once and delivers the webhook; `hold`
+ * keeps it `confirmed` for a human release at Gate 3, which delivers the webhook then (API triage).
+ * Returns the finding id, or null for a duplicate.
+ */
+export async function recordProven(ctx: HuntContext, row: Omit<FindingRow, 'status'>, summary: Record<string, unknown>): Promise<string | null> {
+  const auto = ctx.run.releaseProven === 'auto';
+  const findingId = await ctx.store.insertFinding(ctx.run, { ...row, status: auto ? 'released' : 'confirmed' });
+  if (findingId === null) return null;
+  ctx.state.findings += 1;
+  await ctx.log.emit('finding.confirmed', 'validator', `Confirmed: ${row.title}`, { ...summary, findingId });
+  if (!auto) return findingId;
+  await ctx.log.emit('finding.released', 'validator', `Released automatically: ${row.title} (proven by deterministic replay)`, { ...summary, findingId, auto: true });
+  await deliverRelease(ctx, { id: findingId, title: row.title, severity: row.severity, cwe: row.cwe, owasp: row.owasp, reproCurl: row.reproCurl });
+  return findingId;
 }
 
 export function createHuntServer(ctx: HuntContext) {
@@ -128,21 +146,13 @@ export function createHuntServer(ctx: HuntContext) {
       };
       if (verdict.confirmed && verdict.probe !== null && verdict.control !== null) {
         const evidence = buildEvidence(candidate, verdict.probe, verdict.control, verdict.replays);
-        const findingId = await ctx.store.insertFinding(ctx.run, {
-          ...row,
-          id: newId(),
-          status: 'released',
-          evidence,
-          replay: { replays: verdict.replays, control: { status: verdict.control.status, matched: false } },
-        });
-        if (findingId !== null) {
-          ctx.state.findings += 1;
-          await ctx.log.emit('finding.confirmed', 'validator', `Confirmed: ${candidate.title}`, { ...summary, findingId });
-          await ctx.log.emit('finding.released', 'validator', `Released automatically: ${candidate.title} (proven by deterministic replay)`, { ...summary, findingId, auto: true });
-          await deliverRelease(ctx, { id: findingId, title: candidate.title, severity: candidate.severity, cwe: candidate.cwe, owasp: candidate.owasp, reproCurl: row.reproCurl });
-        }
+        const findingId = await recordProven(
+          ctx,
+          { ...row, id: newId(), evidence, replay: { replays: verdict.replays, control: { status: verdict.control.status, matched: false } } },
+          summary,
+        );
         await finish();
-        return text({ verdict: 'confirmed', findingId, released: true, duplicate: findingId === null });
+        return text({ verdict: 'confirmed', findingId, released: ctx.run.releaseProven === 'auto', duplicate: findingId === null });
       }
       const findingId = await ctx.store.insertFinding(ctx.run, {
         ...row,
@@ -152,6 +162,7 @@ export function createHuntServer(ctx: HuntContext) {
           reason: verdict.reason,
           replays: verdict.replays,
           oracle: candidate.oracle,
+          ...remediationOf(candidate),
           ...(verdict.probe === null ? {} : { probe: sideEvidence(candidate.probe, verdict.probe) }),
         },
         replay: { replays: verdict.replays, control: verdict.control === null ? null : { status: verdict.control.status, matched: verdict.controlMatched } },

@@ -11,6 +11,8 @@ const pinsSchema = z.object({
     objective: z.string(),
     budget: z.object({ requests: z.number(), seconds: z.number(), costUsd: z.number() }),
     intrusiveness: z.enum(['passive', 'active_safe']).default('active_safe'),
+    // Runs pinned before release modes existed keep their behaviour: automatic release.
+    releaseProven: z.enum(['hold', 'auto']).default('auto'),
   }),
 });
 
@@ -64,6 +66,7 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
         costCapUsd: pins.request.budget.costUsd,
         intrusiveness: pins.request.intrusiveness,
         testAccounts: testAccountsSchema.parse(row.test_accounts).map((a) => ({ role: a.role, headerName: a.header_name, headerValue: a.header_value })),
+        releaseProven: pins.request.releaseProven,
       };
     },
     async failStaleRuns(): Promise<StaleRun[]> {
@@ -137,15 +140,15 @@ export function pgHuntStore(pool: pg.Pool): HuntStore {
       return r.rows.map((row) => row.id);
     },
     async insertFinding(run: HuntRun, row: FindingRow): Promise<string | null> {
-      const released = row.status === 'released';
+      const proven = row.status !== 'suspected';
       const r = await pool.query<{ id: string }>(
         `INSERT INTO demo.findings (id, tenant_id, run_id, asset_id, fingerprint, title, test_case_id, class, cwe_id, owasp_category,
            severity, location, status, confidence, oracle, evidence, replay, repro_curl, agent, description, triaged_at, triage_reason)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 1, $14, $15, $16, $17, $18, $19,
            CASE WHEN $13::text = 'released' THEN now() END, CASE WHEN $13::text = 'released' THEN $20::text END)
          ${
-           released
-             ? `ON CONFLICT (tenant_id, fingerprint) DO UPDATE SET status = 'released', triaged_at = now(), triage_reason = EXCLUDED.triage_reason,
+           proven
+             ? `ON CONFLICT (tenant_id, fingerprint) DO UPDATE SET status = EXCLUDED.status, triaged_at = EXCLUDED.triaged_at, triage_reason = EXCLUDED.triage_reason,
                   evidence = EXCLUDED.evidence, replay = EXCLUDED.replay, oracle = EXCLUDED.oracle WHERE demo.findings.status = 'suspected'`
              : 'ON CONFLICT (tenant_id, fingerprint) DO NOTHING'
          }

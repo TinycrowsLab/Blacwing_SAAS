@@ -2,7 +2,7 @@
 // the Gate 2 countdown and the ownership proof.
 import { describe, expect, it, vi } from 'vitest';
 
-import { gate2DecisionSchema } from './controller.js';
+import { gate2DecisionSchema, workspaceSchema } from './controller.js';
 import { ALL_ROLES, DemoRefusal, DemoService, actorHasRole, originsOf, secondsLeft, shortId } from './service.js';
 
 import type { AssetRow, DemoStore, FindingRow, RequestRow } from './store.js';
@@ -300,5 +300,180 @@ describe('demo admin self-approval', () => {
       't1',
       expect.objectContaining({ payload: adminOverride }),
     );
+  });
+});
+
+describe('workspace (B1)', () => {
+  const admin = { id: 'u1', email: 'a@x.test', name: 'A', roles: [...ALL_ROLES], admin: true };
+  const member = { id: 'u2', email: 'b@x.test', name: 'B', roles: ['appsec-engineer'] };
+
+  function workspaceService(name: string) {
+    const store = {
+      getTenant: vi.fn().mockResolvedValue({ id: 't1', name }),
+      renameTenant: vi.fn().mockResolvedValue(true),
+      appendAudit: vi.fn().mockResolvedValue({ eventId: 'e1', hash: 'h1' }),
+    };
+    const service = new DemoService(
+      store as unknown as DemoStore,
+      't1',
+      fetch,
+      { webhookUrl: 'https://hooks.example.com/services/SECRET', consoleOrigin: 'http://console.test' },
+      { gate2TimeoutS: 120 },
+    );
+    return { store, service };
+  }
+
+  it('reports an unnamed workspace as null and exposes the settings the console needs, never the webhook URL', async () => {
+    const { service } = workspaceService('');
+    const dto = await service.workspace(admin);
+    expect(dto).toMatchObject({
+      id: 't1',
+      name: null,
+      settings: {
+        gate2TimeoutS: 120,
+        selfApprove: true,
+        limits: { requests: { min: 10, max: 5000 }, minutes: { min: 1, max: 120 } },
+        webhook: { configured: true, host: 'hooks.example.com' },
+      },
+    });
+    expect(JSON.stringify(dto)).not.toContain('SECRET');
+    expect((await service.workspace(member)).settings).toMatchObject({ selfApprove: false });
+  });
+
+  it('keeps every preset inside the limits', async () => {
+    const { service } = workspaceService('Tinycrows');
+    const { settings } = (await service.workspace(admin)) as {
+      settings: { presets: { minutes: number; requests: number; costUsd: number }[] };
+    };
+    expect(settings.presets.map((p) => p.minutes)).toEqual([10, 30, 120]);
+    for (const p of settings.presets) {
+      expect(p.requests).toBeGreaterThanOrEqual(10);
+      expect(p.requests).toBeLessThanOrEqual(5000);
+      expect(p.costUsd).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it('lets an administrator name the workspace and records it in the ledger', async () => {
+    const { store, service } = workspaceService('Tinycrows');
+    await service.renameWorkspace(admin, 'Tinycrows');
+    expect(store.renameTenant).toHaveBeenCalledWith('t1', 'Tinycrows');
+    expect(store.appendAudit).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ action: 'workspace.named', targetType: 'tenant', payload: { name: 'Tinycrows' } }),
+    );
+  });
+
+  it('refuses a non-administrator', async () => {
+    const { store, service } = workspaceService('');
+    await expect(service.renameWorkspace(member, 'Mine')).rejects.toMatchObject({
+      response: { code: 'admin_required' },
+    });
+    expect(store.renameTenant).not.toHaveBeenCalled();
+  });
+
+  it('validates the name: trimmed, 2 to 60 characters', () => {
+    expect(workspaceSchema.parse({ name: '  Tinycrows  ' })).toEqual({ name: 'Tinycrows' });
+    expect(workspaceSchema.safeParse({ name: ' a ' }).success).toBe(false);
+    expect(workspaceSchema.safeParse({ name: 'x'.repeat(61) }).success).toBe(false);
+  });
+
+  it('adds the tenant name to the dashboard', async () => {
+    const store = {
+      getTenant: vi.fn().mockResolvedValue({ id: 't1', name: 'Tinycrows' }),
+      dashboardCounts: vi.fn().mockResolvedValue({ assets: 0, requestsPendingGate1: 0, runsRunning: 0, confirmedFindings: 0 }),
+      listAssets: vi.fn().mockResolvedValue([]),
+      listPendingGate1: vi.fn().mockResolvedValue([]),
+      listRuns: vi.fn().mockResolvedValue([]),
+      listFindings: vi.fn().mockResolvedValue([]),
+      listPendingGate2: vi.fn().mockResolvedValue([]),
+    };
+    const service = new DemoService(store as unknown as DemoStore, 't1');
+    expect((await service.dashboard(admin)).tenant).toEqual({ id: 't1', name: 'Tinycrows' });
+  });
+});
+
+describe('release mode (B3) and retest clone (B5)', () => {
+  const engineer = { id: 'u1', email: 'a@x.test', name: 'A', roles: ['appsec-engineer'] };
+  const verified = { ...asset('tok'), ownership_status: 'verified' };
+  const stored = (scope: Record<string, unknown>) =>
+    ({
+      id: 'q1',
+      asset_id: 'a1',
+      asset_name: 'X',
+      requester_id: 'u1',
+      requester_name: 'A',
+      approver_id: null,
+      approver_name: null,
+      objective: 'Look for injection.',
+      scope,
+      intrusiveness: 'passive',
+      budget_requests: 300,
+      budget_seconds: 600,
+      cost_cap_usd: '3',
+      test_accounts: [{ role: 'customer_a', header_name: 'Authorization', header_value: 'Bearer secret-a' }],
+      status: 'completed',
+      decision_reason: null,
+      decided_at: null,
+      created_at: new Date(),
+    }) as unknown as RequestRow;
+
+  function requestService(row: RequestRow) {
+    const store = {
+      getAsset: vi.fn().mockResolvedValue(verified),
+      insertRequest: vi.fn().mockResolvedValue(undefined),
+      getRequest: vi.fn().mockResolvedValue(row),
+      findRunByRequest: vi.fn().mockResolvedValue(null),
+      latestAudit: vi.fn().mockResolvedValue(null),
+    };
+    return { store, service: new DemoService(store as unknown as DemoStore, 't1') };
+  }
+
+  it('stores the release mode in the request scope and exposes it in the DTO', async () => {
+    const { store, service } = requestService(stored({ excludedPaths: [], releaseProven: 'auto' }));
+    const dto = await service.createRequest(engineer, {
+      assetId: 'a1',
+      objective: 'x',
+      intrusiveness: 'active_safe',
+      budgetRequests: 300,
+      budgetSeconds: 600,
+      costCapUsd: 3,
+      excludedPaths: [],
+      releaseProven: 'auto',
+      testAccounts: [],
+    });
+    expect(store.insertRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: { excludedPaths: [], releaseProven: 'auto' } }),
+    );
+    expect(dto.releaseProven).toBe('auto');
+  });
+
+  it('treats a request created before release modes as auto (unchanged behaviour)', async () => {
+    const { service } = requestService(stored({ excludedPaths: [] }));
+    expect((await service.request('q1')).releaseProven).toBe('auto');
+  });
+
+  it('clones a request with its answers and test-account values kept server-side', async () => {
+    const { store, service } = requestService(stored({ excludedPaths: ['/admin'], releaseProven: 'hold' }));
+    const dto = await service.cloneRequest(engineer, 'q1');
+    expect(store.insertRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        asset_id: 'a1',
+        objective: 'Look for injection.',
+        intrusiveness: 'passive',
+        budget_requests: 300,
+        budget_seconds: 600,
+        cost_cap_usd: 3,
+        scope: { excludedPaths: ['/admin'], releaseProven: 'hold' },
+        test_accounts: [{ role: 'customer_a', header_name: 'Authorization', header_value: 'Bearer secret-a' }],
+      }),
+    );
+    expect(JSON.stringify(dto)).not.toContain('secret-a');
+    expect(dto.testAccounts).toEqual([{ role: 'customer_a', headerName: 'Authorization' }]);
+  });
+
+  it('refuses a clone without the appsec role', async () => {
+    const { store, service } = requestService(stored({}));
+    await expect(service.cloneRequest({ ...engineer, roles: ['auditor'] }, 'q1')).rejects.toBeInstanceOf(DemoRefusal);
+    expect(store.insertRequest).not.toHaveBeenCalled();
   });
 });

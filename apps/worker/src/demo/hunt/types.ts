@@ -15,6 +15,8 @@ export interface HuntRun {
   readonly intrusiveness: 'passive' | 'active_safe';
   /** Grey-box credentials. The header value stays inside the runner: the model only names the role. */
   readonly testAccounts: readonly { readonly role: string; readonly headerName: string; readonly headerValue: string }[];
+  /** Gate 3 mode chosen on the plan: `hold` keeps proven findings for a human release, `auto` releases them at once. */
+  readonly releaseProven: 'hold' | 'auto';
 }
 
 export interface RunEvent {
@@ -68,8 +70,8 @@ export interface FindingRow {
   readonly evidence: Record<string, unknown>;
   readonly replay: Record<string, unknown>;
   readonly reproCurl: string;
-  /** `released`: validator-proven, released automatically. `suspected`: not confirmed, analysts only. */
-  readonly status: 'released' | 'suspected';
+  /** Validator-proven: `released` (auto release) or `confirmed` (waits for a human release). `suspected`: not proven, analysts only. */
+  readonly status: 'released' | 'confirmed' | 'suspected';
   readonly testCaseId: string | null;
 }
 
@@ -108,7 +110,7 @@ export interface HuntStore {
   /** Moves a still-pending request to `status`; returns the status it ends with. */
   closeGate2(id: string, status: 'denied' | 'expired'): Promise<Gate2Status>;
   denyPendingGate2(runId: string): Promise<string[]>;
-  /** Returns the id of the inserted row (a released row also upgrades a suspected one), or null for a duplicate. */
+  /** Returns the id of the inserted row (a proven row also upgrades a suspected one), or null for a duplicate. */
   insertFinding(run: HuntRun, row: FindingRow): Promise<string | null>;
   /** Records the result of the webhook POST for a released finding. */
   recordDelivery(findingId: string, status: 'delivered' | 'failed', detail: string): Promise<void>;

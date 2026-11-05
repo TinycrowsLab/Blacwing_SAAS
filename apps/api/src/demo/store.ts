@@ -6,6 +6,11 @@ import { GENESIS, auditHash, type AuditFields, type AuditPayload, type AuditRef 
 
 import type pg from 'pg';
 
+export interface TenantRow {
+  readonly id: string;
+  readonly name: string;
+}
+
 export interface UserRow {
   readonly id: string;
   readonly email: string;
@@ -36,7 +41,7 @@ export interface RequestRow {
   readonly requester_id: string;
   readonly approver_id: string | null;
   readonly objective: string;
-  readonly scope: { readonly excludedPaths?: string[] };
+  readonly scope: { readonly excludedPaths?: string[]; readonly releaseProven?: 'hold' | 'auto' };
   readonly intrusiveness: string;
   readonly budget_requests: number;
   readonly budget_seconds: number;
@@ -208,6 +213,37 @@ export class DemoStore {
 
   async close(): Promise<void> {
     await this.pool.end();
+  }
+
+  /** Runs `fn` in one transaction under the tenant's RLS context (`tenants` and `memberships` force row security). */
+  private async inTenant<T>(tenantId: string, fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenantId]);
+      const result = await fn(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getTenant(tenantId: string): Promise<TenantRow | null> {
+    const r = await this.inTenant(tenantId, (c) =>
+      c.query<TenantRow>('SELECT id, name FROM tenants WHERE id = $1', [tenantId]),
+    );
+    return r.rows[0] ?? null;
+  }
+
+  async renameTenant(tenantId: string, name: string): Promise<boolean> {
+    const r = await this.inTenant(tenantId, (c) =>
+      c.query('UPDATE tenants SET name = $2 WHERE id = $1', [tenantId, name]),
+    );
+    return (r.rowCount ?? 0) === 1;
   }
 
   async findActiveUserByEmail(email: string): Promise<UserRow | null> {

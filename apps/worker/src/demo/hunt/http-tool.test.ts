@@ -19,6 +19,7 @@ const run: HuntRun = {
   costCapUsd: 1,
   intrusiveness: 'active_safe',
   testAccounts: [],
+  releaseProven: 'auto',
 };
 const SECRET = 'Bearer s3cret-token-value';
 
@@ -94,6 +95,19 @@ describe('sendRequest policy', () => {
     expect([...store.gate2.values()].map((g) => g.status)).toEqual(['expired']);
     expect(kinds(store)).toEqual(['gate2.requested', 'gate2.decided']);
     expect(store.exchanges[0]).toMatchObject({ outcome: 'denied', reason: 'gate2_expired' });
+  });
+
+  it('puts the exact request body (clamped) on gate2.requested, never a test-account credential', async () => {
+    const { ctx, store } = setup({
+      gate2TimeoutMs: 1000,
+      run: { testAccounts: [{ role: 'customer_a', headerName: 'Authorization', headerValue: SECRET }] },
+    });
+    const body = `{"couponData":"X","pad":"${'p'.repeat(3000)}"}`;
+    await sendRequest(ctx, 'authz-specialist', { method: 'POST', url: 'https://t.example/rest/basket/7/checkout', body, as_role: 'customer_a' }, { purpose: 'coupon', askGate2: true });
+    const requested = store.events.find((e) => e.kind === 'gate2.requested');
+    expect(requested?.data).toMatchObject({ method: 'POST', asRole: 'customer_a' });
+    expect(requested?.data.body).toBe(body.slice(0, 2048));
+    expect(JSON.stringify(store.events)).not.toContain(SECRET);
   });
 
   it('sends after approval and remembers the approval for that method and path only', async () => {

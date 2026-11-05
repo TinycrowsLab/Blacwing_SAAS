@@ -17,6 +17,8 @@ const MODEL_BODY_KB = 8;
 const STORED_BODY_BYTES = STORED_BODY_KB * BYTES_PER_KB;
 const MODEL_BODY_BYTES = MODEL_BODY_KB * BYTES_PER_KB;
 const GATE2_POLL_MS = MS_PER_S;
+/** The Gate 2 card shows the exact request body; it is clamped in the event. */
+const GATE2_BODY_MAX_CHARS = 2048;
 const PAUSE_POLL_MS = 500;
 const MAX_METHOD_LENGTH = 16;
 const MAX_URL_LENGTH = 4096;
@@ -119,6 +121,8 @@ async function awaitGate2(ctx: HuntContext, agent: string, req: HttpRequest, url
     method,
     url: req.url,
     ...(role === undefined ? {} : { asRole: role }),
+    // Agent-authored; test-account credentials are injected as headers by the runner, never into the body.
+    body: (req.body ?? '').slice(0, GATE2_BODY_MAX_CHARS),
     deadlineAt: deadlineAt.toISOString(),
   });
   let status: Gate2Status = 'pending';

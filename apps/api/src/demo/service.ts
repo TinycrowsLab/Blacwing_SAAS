@@ -7,6 +7,7 @@ import { HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { newId } from '@blackwing/ids';
 
 import { verifyChain, type AuditPayload, type AuditRef, type ChainState } from './audit.js';
+import { BUDGET_LIMITS, BUDGET_PRESETS } from './config.js';
 
 import type {
   AssetRow,
@@ -45,6 +46,10 @@ export class DemoRefusal extends HttpException {
 }
 
 export const INTRUSIVENESS = ['passive', 'active_safe'] as const;
+/** Gate 3 release mode of a request: `hold` waits for a human, `auto` releases what the validator proves. */
+export const RELEASE_MODES = ['hold', 'auto'] as const;
+export type ReleaseMode = (typeof RELEASE_MODES)[number];
+const DEFAULT_GATE2_TIMEOUT_S = 300;
 
 const WELL_KNOWN_PATH = '/.well-known/blackwing-verification.txt';
 const VERIFY_TIMEOUT_MS = 5000;
@@ -100,6 +105,9 @@ const TRIAGE_FROM = {
 
 const iso = (date: Date | null): string | null => date?.toISOString() ?? null;
 
+/** Requests created before release modes existed behaved as `auto`; their DTO, pins and clones say so. */
+const releaseModeOf = (row: RequestRow): ReleaseMode => row.scope.releaseProven ?? 'auto';
+
 export function assetDto(row: AssetRow): Record<string, unknown> {
   return {
     id: row.id,
@@ -129,6 +137,7 @@ export function requestDto(row: RequestRow): Record<string, unknown> {
     assetName: row.asset_name,
     objective: row.objective,
     excludedPaths: row.scope.excludedPaths ?? [],
+    releaseProven: releaseModeOf(row),
     intrusiveness: row.intrusiveness,
     budget: {
       requests: row.budget_requests,
@@ -278,12 +287,18 @@ export interface CreateRequestInput {
   readonly budgetSeconds: number;
   readonly costCapUsd: number;
   readonly excludedPaths: readonly string[];
+  readonly releaseProven: ReleaseMode;
   readonly testAccounts: readonly { role: string; headerName: string; headerValue: string }[];
 }
 
 export interface WebhookOptions {
   readonly webhookUrl: string | null;
   readonly consoleOrigin: string;
+}
+
+export interface WorkspaceOptions {
+  /** BW_GATE2_TIMEOUT_S, the deadline the worker gives each Gate 2 request. */
+  readonly gate2TimeoutS: number;
 }
 
 const capitalise = (word: string): string => word.charAt(0).toUpperCase() + word.slice(1);
@@ -299,7 +314,38 @@ export class DemoService {
       webhookUrl: null,
       consoleOrigin: 'http://localhost:3000',
     },
+    private readonly options: WorkspaceOptions = { gate2TimeoutS: DEFAULT_GATE2_TIMEOUT_S },
   ) {}
+
+  /** The workspace and the settings the console needs. `name` is null until the first admin names it (/welcome). */
+  async workspace(actor: DemoActor): Promise<Record<string, unknown>> {
+    const tenant = await this.store.getTenant(this.tenantId);
+    if (tenant === null)
+      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'workspace_not_found', 'The workspace does not exist.');
+    const { webhookUrl } = this.webhook;
+    return {
+      id: tenant.id,
+      name: tenant.name === '' ? null : tenant.name,
+      settings: {
+        gate2TimeoutS: this.options.gate2TimeoutS,
+        selfApprove: actor.admin === true,
+        limits: BUDGET_LIMITS,
+        presets: BUDGET_PRESETS,
+        // The host only: the webhook URL itself can carry a secret token.
+        webhook: { configured: webhookUrl !== null, host: webhookUrl === null ? null : new URL(webhookUrl).host },
+      },
+    };
+  }
+
+  /** Names (or renames) the workspace. Administrators only; recorded in the ledger. */
+  async renameWorkspace(actor: DemoActor, name: string): Promise<Record<string, unknown>> {
+    if (actor.admin !== true)
+      throw new DemoRefusal(HttpStatus.FORBIDDEN, 'admin_required', 'Only an administrator can name the workspace.');
+    if (!(await this.store.renameTenant(this.tenantId, name)))
+      throw new DemoRefusal(HttpStatus.NOT_FOUND, 'workspace_not_found', 'The workspace does not exist.');
+    await this.audit(actor, 'workspace.named', 'tenant', this.tenantId, { name });
+    return this.workspace(actor);
+  }
 
   private audit(
     actor: DemoActor,
@@ -408,7 +454,8 @@ export class DemoService {
   }
 
   async dashboard(actor: DemoActor): Promise<Record<string, unknown>> {
-    const [counts, assets, requests, runs, findings, pending] = await Promise.all([
+    const [tenant, counts, assets, requests, runs, findings, pending] = await Promise.all([
+      this.store.getTenant(this.tenantId),
       this.store.dashboardCounts(this.tenantId),
       this.store.listAssets(this.tenantId),
       this.store.listPendingGate1(this.tenantId),
@@ -418,7 +465,7 @@ export class DemoService {
     ]);
     const now = new Date();
     return {
-      tenant: { id: this.tenantId },
+      tenant: { id: this.tenantId, name: tenant === null || tenant.name === '' ? null : tenant.name },
       actor: { id: actor.id, name: actor.name, roles: actor.roles },
       counts: { ...counts, gate2Pending: pending.length },
       assets: assets.slice(0, RECENT_ITEMS).map((row) => assetDto(row)),
@@ -449,7 +496,7 @@ export class DemoService {
       asset_id: asset.id,
       requester_id: actor.id,
       objective: input.objective,
-      scope: { excludedPaths: [...input.excludedPaths] },
+      scope: { excludedPaths: [...input.excludedPaths], releaseProven: input.releaseProven },
       intrusiveness: input.intrusiveness,
       budget_requests: input.budgetRequests,
       budget_seconds: input.budgetSeconds,
@@ -461,6 +508,27 @@ export class DemoService {
       })),
     });
     return this.request(id);
+  }
+
+  /** Retest: a new pending request with the same answers. The test-account values are copied server-side. */
+  async cloneRequest(actor: DemoActor, id: string): Promise<Record<string, unknown>> {
+    const row = await this.store.getRequest(this.tenantId, id);
+    if (row === null) throw new DemoRefusal(HttpStatus.NOT_FOUND, 'not_found', 'No such request.');
+    return this.createRequest(actor, {
+      assetId: row.asset_id,
+      objective: row.objective,
+      intrusiveness: row.intrusiveness === 'passive' ? 'passive' : 'active_safe',
+      budgetRequests: row.budget_requests,
+      budgetSeconds: row.budget_seconds,
+      costCapUsd: Number(row.cost_cap_usd),
+      excludedPaths: row.scope.excludedPaths ?? [],
+      releaseProven: releaseModeOf(row),
+      testAccounts: row.test_accounts.map((a) => ({
+        role: a.role,
+        headerName: a.header_name,
+        headerValue: a.header_value,
+      })),
+    });
   }
 
   /** `audit` is the event just appended by a decision; a plain read looks up the latest one. */
@@ -575,6 +643,7 @@ export class DemoService {
           costUsd: Number(row.cost_cap_usd),
         },
         testAccounts: row.test_accounts.map((a) => ({ role: a.role, headerName: a.header_name })),
+        releaseProven: releaseModeOf(row),
         requesterId: row.requester_id,
         approverId: row.approver_id,
         decidedAt: iso(row.decided_at),

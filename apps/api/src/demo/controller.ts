@@ -24,12 +24,19 @@ import {
   renderRunReport,
   type ReportFormat,
 } from './report.js';
-import { ALL_ROLES, DemoRefusal, INTRUSIVENESS, type DemoActor, type DemoService } from './service.js';
+import {
+  ALL_ROLES,
+  DemoRefusal,
+  INTRUSIVENESS,
+  RELEASE_MODES,
+  type DemoActor,
+  type DemoService,
+} from './service.js';
 import { DEMO_CONFIG, DEMO_SERVICE, DEMO_STORE } from './tokens.js';
 import { PublicRoute } from '../tenant/public-route.js';
 import { createZodDto, ZodBody, ZodQuery } from '../validation/index.js';
 
-import type { DemoConfig } from './config.js';
+import { BUDGET_LIMITS, type DemoConfig } from './config.js';
 import type { DemoStore } from './store.js';
 
 const LIMITS = {
@@ -40,12 +47,8 @@ const LIMITS = {
   objective: 2000,
   reason: 500,
   statement: 1000,
-  budgetRequestsMin: 10,
-  budgetRequestsMax: 5000,
-  budgetSecondsMin: 60,
-  budgetSecondsMax: 7200,
-  costCapMin: 0.5,
-  costCapMax: 100,
+  workspaceNameMin: 2,
+  workspaceNameMax: 60,
   statementMin: 10,
   testAccounts: 3,
   roleName: 32,
@@ -53,6 +56,8 @@ const LIMITS = {
   headerValue: 4096,
   reasonMin: 8,
 } as const;
+
+const SECONDS_PER_MINUTE = 60;
 
 /** Headers the runner must control itself; a test account cannot set them. */
 const RESERVED_HEADERS = ['host', 'content-length', 'connection', 'transfer-encoding'];
@@ -92,10 +97,15 @@ const createRequestSchema = z.strictObject({
   assetId: z.string().regex(UUID),
   objective: z.string().trim().min(1).max(LIMITS.objective),
   intrusiveness: z.enum(INTRUSIVENESS),
-  budgetRequests: z.int().min(LIMITS.budgetRequestsMin).max(LIMITS.budgetRequestsMax),
-  budgetSeconds: z.int().min(LIMITS.budgetSecondsMin).max(LIMITS.budgetSecondsMax),
-  costCapUsd: z.number().min(LIMITS.costCapMin).max(LIMITS.costCapMax),
+  budgetRequests: z.int().min(BUDGET_LIMITS.requests.min).max(BUDGET_LIMITS.requests.max),
+  budgetSeconds: z
+    .int()
+    .min(BUDGET_LIMITS.minutes.min * SECONDS_PER_MINUTE)
+    .max(BUDGET_LIMITS.minutes.max * SECONDS_PER_MINUTE),
+  costCapUsd: z.number().min(BUDGET_LIMITS.costUsd.min).max(BUDGET_LIMITS.costUsd.max),
   excludedPaths,
+  /** Gate 3: `hold` keeps proven findings for a human release; `auto` releases them as the validator proves them. */
+  releaseProven: z.enum(RELEASE_MODES).default('hold'),
   testAccounts: z
     .array(testAccountSchema)
     .max(LIMITS.testAccounts)
@@ -103,6 +113,10 @@ const createRequestSchema = z.strictObject({
     .refine((accounts) => new Set(accounts.map((a) => a.role.toLowerCase())).size === accounts.length, {
       message: 'Test account roles must be unique.',
     }),
+});
+
+export const workspaceSchema = z.strictObject({
+  name: z.string().trim().min(LIMITS.workspaceNameMin).max(LIMITS.workspaceNameMax),
 });
 
 const decisionSchema = z.strictObject({
@@ -133,6 +147,7 @@ class CreateAssetDto extends createZodDto(createAssetSchema) {}
 class VerifyAssetDto extends createZodDto(verifyAssetSchema) {}
 class CreateRequestDto extends createZodDto(createRequestSchema) {}
 class DecisionDto extends createZodDto(decisionSchema) {}
+class WorkspaceDto extends createZodDto(workspaceSchema) {}
 class KillDto extends createZodDto(killSchema) {}
 class Gate2DecisionDto extends createZodDto(gate2DecisionSchema) {}
 class AfterSeqQueryDto extends createZodDto(afterSeqQuerySchema) {}
@@ -212,6 +227,20 @@ export class DemoController {
     return { id: user.id, email: user.email, name: user.name, roles };
   }
 
+  @Get('workspace')
+  async workspace(@Headers() headers: RequestHeaders): Promise<unknown> {
+    return this.service.workspace(await this.actor(headers));
+  }
+
+  @Post('workspace')
+  @HttpCode(HttpStatus.OK)
+  async renameWorkspace(
+    @Headers() headers: RequestHeaders,
+    @ZodBody(WorkspaceDto) body: WorkspaceDto,
+  ): Promise<unknown> {
+    return this.service.renameWorkspace(await this.actor(headers), body.name);
+  }
+
   @Get('dashboard')
   async dashboard(@Headers() headers: RequestHeaders): Promise<unknown> {
     return this.service.dashboard(await this.actor(headers));
@@ -267,6 +296,12 @@ export class DemoController {
   ): Promise<unknown> {
     const actor = await this.actor(headers);
     return this.service.decideGate1(actor, uuid(id, 'request'), body.decision, body.reason);
+  }
+
+  /** Retest: a new pending request with the same answers. Test-account secrets are copied here, never sent to the browser. */
+  @Post('requests/:id/clone')
+  async cloneRequest(@Headers() headers: RequestHeaders, @Param('id') id: string): Promise<unknown> {
+    return this.service.cloneRequest(await this.actor(headers), uuid(id, 'request'));
   }
 
   @Post('requests/:id/runs')
