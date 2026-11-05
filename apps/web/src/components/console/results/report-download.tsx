@@ -64,7 +64,11 @@ export function ReportDownload({ href, primary }: { readonly href: string; reado
       variant={primary ? 'primary' : 'secondary'}
       icon="download"
       pendingLabel="Building the report…"
-      onAction={download}
+      stayPending
+      onAction={async () => {
+        await download();
+        return false;
+      }}
       className={extra}
     >
       Download report

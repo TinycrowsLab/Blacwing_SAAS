@@ -4,6 +4,7 @@
 // recorded one. Gate 3, the reproduction command and the report download sit beside it.
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { cache ,type  ReactNode } from 'react';
 
 import { Card, CardHeader, Icon, LinkButton, SeverityChip } from '../../../../components/console/design';
 import { CopyField } from '../../../../components/console/design-client';
@@ -15,14 +16,14 @@ import { FindingTriage } from '../../../../components/console/results/triage';
 import { ApiError, callApi } from '../../../../lib/api';
 import { getViewer } from '../../../../lib/auth';
 
-import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
 
 const HTTP_NOT_FOUND = 404;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-async function load(id: string): Promise<FindingDetail | null> {
+/** Cached per request, so the title (metadata) and the page share one API call. */
+const load = cache(async (id: string): Promise<FindingDetail | null> => {
   const session = await getViewer();
   if (session === null || !UUID.test(id)) return null;
   try {
@@ -31,7 +32,7 @@ async function load(id: string): Promise<FindingDetail | null> {
     if (caught instanceof ApiError && caught.status === HTTP_NOT_FOUND) return null;
     throw caught;
   }
-}
+});
 
 export async function generateMetadata({ params }: { readonly params: Promise<{ readonly id: string }> }) {
   const finding = await load((await params).id).catch(() => null);
@@ -66,7 +67,7 @@ export default async function FindingPage({
   const { replays } = finding.evidence;
 
   return (
-    <article className="mx-auto flex w-full max-w-[1180px] flex-col gap-5" aria-labelledby="finding-h">
+    <article className="flex w-full max-w-[1180px] flex-col gap-5" aria-labelledby="finding-h">
       <div className="flex flex-col gap-2">
         <nav aria-label="Breadcrumb">
           <ol className="m-0 flex min-w-0 list-none items-center gap-2 p-0 text-[12.5px] text-muted-foreground">
@@ -120,7 +121,7 @@ export default async function FindingPage({
                 replays.map((r) => (
                   <li key={r.n} className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
                     <span className="w-20 text-muted-foreground">Replay {r.n}</span>
-                    <span className="font-mono">HTTP {r.status}</span>
+                    <span className="whitespace-nowrap font-mono">HTTP {r.status}</span>
                     <span className={`ml-auto inline-flex items-center gap-1.5 font-medium ${r.matched ? 'text-ok' : 'text-bad'}`}>
                       <Icon name={r.matched ? 'check' : 'x'} size={13} />
                       {r.matched ? 'Matched' : 'No match'}
@@ -131,7 +132,7 @@ export default async function FindingPage({
               {finding.replay?.control === null || finding.replay?.control === undefined ? null : (
                 <li className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
                   <span className="w-20 text-muted-foreground">Control</span>
-                  <span className="font-mono">HTTP {finding.replay.control.status}</span>
+                  <span className="whitespace-nowrap font-mono">HTTP {finding.replay.control.status}</span>
                   <span className={`ml-auto inline-flex items-center gap-1.5 font-medium ${finding.replay.control.matched ? 'text-bad' : 'text-ok'}`}>
                     <Icon name={finding.replay.control.matched ? 'x' : 'check'} size={13} />
                     {finding.replay.control.matched ? 'Matched too' : 'No match, as expected'}

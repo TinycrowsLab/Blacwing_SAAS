@@ -60,7 +60,7 @@ export default async function LedgerPage(): Promise<ReactNode> {
   const { items, chain } = ledgerSchema.parse(await callApi(session, '/audit'));
   const head = items[0]?.hash ?? null;
   return (
-    <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-5">
+    <div className="flex w-full max-w-[1100px] flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">Ledger</h1>

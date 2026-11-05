@@ -73,7 +73,11 @@ export function WorkspaceNameForm({ current, canEdit }: { readonly current: stri
           variant={changed && invalid === null ? 'primary' : 'secondary'}
           disabled={!canEdit || !changed || invalid !== null}
           pendingLabel="Saving…"
-          onAction={save}
+          stayPending
+          onAction={async () => {
+            await save();
+            return false;
+          }}
           className="h-11"
         >
           Save

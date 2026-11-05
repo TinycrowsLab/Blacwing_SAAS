@@ -102,7 +102,7 @@ export default async function ResultsPage({
   const initial: FindingDetail[] = firstDetail === null ? [] : [firstDetail];
 
   return (
-    <div className="mx-auto grid w-full max-w-[1180px] gap-8 pb-28 md:pb-4 lg:grid-cols-[minmax(0,1fr)_330px]">
+    <div className="grid w-full max-w-[1180px] gap-8 pb-28 md:pb-4 lg:grid-cols-[minmax(0,1fr)_330px]">
       <section className="flex min-w-0 flex-col gap-5" aria-labelledby="results-h">
         <div className="flex flex-col gap-2">
           <nav aria-label="Breadcrumb">

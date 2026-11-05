@@ -287,7 +287,11 @@ export function ReleaseAll({ ids }: { readonly ids: readonly string[] }) {
             <PendingButton
               pendingLabel={progress ?? 'Releasing…'}
               disabled={!reasonEnough(reason)}
-              onAction={releaseAll}
+              stayPending
+              onAction={async () => {
+                await releaseAll();
+                return false;
+              }}
             >
               Release {ids.length} issues
             </PendingButton>

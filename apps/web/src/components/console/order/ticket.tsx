@@ -118,7 +118,7 @@ export function TicketPill(props: {
   const [open, setOpen] = useState(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-[12.5px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus lg:hidden">
+      <SheetTrigger className="inline-flex h-9 shrink-0 items-center whitespace-nowrap gap-1.5 rounded-full border border-border bg-card px-3.5 text-[12.5px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus lg:hidden">
         <Icon name="file" size={14} />
         Your audit
       </SheetTrigger>

@@ -339,7 +339,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       {/* Header */}
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border px-4 py-2.5 md:px-6">
         <div className="min-w-0 flex-1">
-          <nav aria-label="Breadcrumb" className="text-[12px] text-muted-foreground">
+          <nav aria-label="Breadcrumb" className="hidden text-[12px] text-muted-foreground md:block">
             <Link href="/" className="text-muted-foreground no-underline hover:text-foreground">
               Audits
             </Link>{' '}
@@ -360,7 +360,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
           {terminal || !mounted ? null : <Liveness tone={live.tone} text={live.text} />}
-          <div className="text-right text-[11.5px] leading-[15px] text-muted-foreground">
+          <div className="hidden text-right text-[11.5px] leading-[15px] text-muted-foreground sm:block">
             {terminal ? 'Ran for' : 'Elapsed'}
             <b className="block text-[15px] font-semibold text-foreground tabular-nums" suppressHydrationWarning>
               {hms(elapsedS)}
@@ -384,7 +384,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
           <KillButton run={terminal ? null : { id: run.id, assetName: host }} className="h-10 px-4" />
           <DropdownMenu>
             <DropdownMenuTrigger
-              aria-label="More"
+              aria-label="More actions"
               className="flex size-10 items-center justify-center rounded-[10px] border border-input-strong bg-card text-foreground hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
             >
               <Icon name="more" size={18} />
@@ -462,7 +462,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         <div className="flex min-h-0 min-w-0 flex-col px-4 pt-3 md:px-[22px]">
           <div className="hidden md:block">{map}</div>
           <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <div role="tablist" aria-label="Live audit views" className="flex max-w-full gap-0.5 overflow-x-auto rounded-[10px] bg-surface-2 p-0.5">
+            <div role="tablist" aria-label="Live audit views" className="hidden max-w-full gap-0.5 rounded-[10px] bg-surface-2 p-0.5 md:flex">
               {TABS.map((t) => (
                 <button
                   key={t.id}

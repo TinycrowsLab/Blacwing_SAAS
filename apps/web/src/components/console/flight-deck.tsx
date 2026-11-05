@@ -19,10 +19,15 @@ import {
   type TestCase,
   LANE_WINDOW_S,
   VALIDATOR_REPLAYS,
-  clock,
   pathOf,
 } from './run-model';
 import { agentName } from '../../lib/agents';
+
+/** Seconds-precise local time; these tabs render only in the browser, after a click. */
+const localClock = (iso: string): string => new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(new Date(iso));
+
+/** Activity rows the runner writes as itself or for a person. */
+const WHO: Readonly<Record<string, string>> = { run: 'Blackwing', gate2: 'Your decision', gate3: 'Your release' };
 
 const GAUGE_TONE = {
   primary: { text: 'text-foreground', bar: 'bg-gold' },
@@ -291,7 +296,7 @@ export function RequestsTab({
               className="grid w-full grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-2 text-left text-[12.5px] hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus md:grid-cols-[72px_170px_minmax(0,1fr)_auto_64px]"
             >
               <time dateTime={x.at} className="font-mono text-[11px] text-muted-foreground">
-                {clock(x.at)}
+                {localClock(x.at)}
               </time>
               <span className="hidden truncate md:inline">{agentName(x.agent)}</span>
               <span className="min-w-0 truncate font-mono text-[12px]">
@@ -404,7 +409,7 @@ function AgentLanes({
                 className={`truncate text-[12.5px] ${paused ? 'text-gold-ink' : 'text-muted-foreground'}`}
               >
                 {paused ? 'Waiting. ' : ''}
-                {lane.task === '' ? 'Waiting' : stripMarkdown(lane.task)}
+                {lane.task === '' ? 'No message yet' : stripMarkdown(lane.task)}
               </span>
             </div>
             <svg
@@ -536,9 +541,9 @@ function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) {
               className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-x-3 gap-y-1 px-4 py-[9px] text-[13px] md:grid-cols-[82px_150px_minmax(0,1fr)_auto]"
             >
               <time dateTime={r.at} className="font-mono text-[11.5px] text-muted-foreground">
-                {clock(r.at)}
+                {localClock(r.at)}
               </time>
-              <span className="truncate text-xs font-medium">{agentName(r.agent)}</span>
+              <span className="truncate text-xs font-medium">{WHO[r.agent] ?? agentName(r.agent)}</span>
               <span className="col-start-2 flex min-w-0 items-center gap-2 md:col-start-auto">
                 <KindTag kind={KIND_TAG[r.kind].kind}>{KIND_TAG[r.kind].label}</KindTag>
                 <span title={stripMarkdown(r.text)} className="truncate">

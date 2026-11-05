@@ -97,7 +97,7 @@ export default async function FindingsPage({
   const filtered = filters.status !== undefined || filters.severity !== undefined || filters.target !== undefined;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-5">
+    <div className="flex w-full max-w-[1100px] flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <h1 className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground">Findings</h1>
         <p className="m-0 max-w-[68ch] text-[14px] leading-[22px] text-muted-foreground">

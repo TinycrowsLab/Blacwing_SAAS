@@ -72,10 +72,10 @@ const NEXT_STEPS = (auto: boolean): readonly { title: string; voice: Voice; body
 
 function Fact({ label, value, unit }: { readonly label: string; readonly value: string; readonly unit: string }) {
   return (
-    <div className="flex flex-col gap-1 rounded-[14px] border border-border bg-card px-4 py-3.5">
-      <span className="text-[12.5px] text-muted-foreground">{label}</span>
-      <span className="text-[13px] text-muted-foreground">
-        <b className="text-[19px] font-semibold tabular-nums text-foreground">{value}</b> {unit}
+    <div className="flex min-w-0 flex-col gap-1 rounded-[14px] border border-border bg-card px-3 py-3 sm:px-4 sm:py-3.5">
+      <span className="text-[11.5px] leading-4 text-muted-foreground sm:text-[12.5px]">{label}</span>
+      <span className="text-[12px] text-muted-foreground sm:text-[13px]">
+        <b className="block text-[17px] font-semibold tabular-nums text-foreground sm:inline sm:text-[19px]">{value}</b> {unit}
       </span>
     </div>
   );
@@ -250,8 +250,8 @@ export function PlanView({
       : 'This plan was not approved.';
 
   return (
-    <div className="mx-auto grid w-full max-w-[1100px] gap-8 lg:grid-cols-[minmax(0,640px)_360px] lg:justify-between">
-      <div className="flex min-w-0 flex-col gap-5">
+    <div className="mx-auto grid w-full max-w-[1100px] gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,640px)_360px] lg:justify-between">
+      <div className="flex min-w-0 flex-col gap-5 lg:col-start-1">
         <div className="flex items-center gap-3">
           <span className="text-[12.5px] text-muted-foreground">{pending ? 'New audit' : `Audits / ${host}`}</span>
           <span className="flex-1" />
@@ -282,18 +282,26 @@ export function PlanView({
             s.field === undefined ? (
               <span key={i}>{s.text}</span>
             ) : canEdit ? (
-              <button
+              // A span, not a <button>: buttons cannot wrap across lines, and this value reads as part of the sentence.
+              <span
                 key={i}
-                type="button"
+                role="button"
+                tabIndex={0}
                 aria-expanded={field === s.field}
                 aria-label={`${s.text}. Change ${FIELD_LABEL[s.field].toLowerCase()}`}
                 onClick={() => {
                   open(s.field ?? 'objective');
                 }}
-                className={`inline rounded-[4px] text-left font-semibold underline decoration-gold-ink decoration-dotted decoration-[1.5px] underline-offset-[6px] hover:bg-gold-soft focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${field === s.field ? 'bg-gold-soft' : ''} ${s.field === 'paths' && values.paths.length > 0 ? 'font-mono text-[15px]' : ''}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    open(s.field ?? 'objective');
+                  }
+                }}
+                className={`cursor-pointer rounded-[4px] font-semibold underline decoration-gold-ink decoration-dotted decoration-[1.5px] underline-offset-[6px] [box-decoration-break:clone] hover:bg-gold-soft focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${field === s.field ? 'bg-gold-soft' : ''} ${s.field === 'paths' && values.paths.length > 0 ? 'font-mono text-[15px]' : ''}`}
               >
                 {s.text}
-              </button>
+              </span>
             ) : (
               <b key={i} className="font-semibold">
                 {s.text}
@@ -348,7 +356,6 @@ export function PlanView({
                   stayPending
                   disabled={!limitsOk}
                   pendingLabel="Updating the plan…"
-                  className="border-gold-ink"
                 >
                   <Icon name="check" size={15} />
                   Update the plan
@@ -368,12 +375,25 @@ export function PlanView({
           </div>
         )}
 
-        <div className="grid gap-2.5 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
           <Fact label="Longest it can run" value={`${values.limits.minutes}`} unit="min" />
           <Fact label="Most requests" value={values.limits.requests.toLocaleString()} unit="to one site" />
           <Fact label="Most it can cost" value={usd(values.limits.costUsd)} unit="model spend" />
         </div>
 
+      </div>
+
+      <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pt-[52px]">
+        <div className="lg:sticky lg:top-7">
+          <Gate1Card
+            request={request}
+            viewer={viewer}
+            selfApprove={settings?.selfApprove ?? request.viewerIsAdmin}
+            onBusy={setBusy}
+          />
+        </div>
+      </div>
+      <div className="min-w-0 lg:col-start-1">
         <section aria-labelledby="next-h" className="border-t border-border pt-5">
           <h2 id="next-h" className="m-0 mb-4 text-[13px] font-medium text-muted-foreground">
             What happens next
@@ -398,17 +418,6 @@ export function PlanView({
             ))}
           </ol>
         </section>
-      </div>
-
-      <div className="lg:pt-[52px]">
-        <div className="lg:sticky lg:top-7">
-          <Gate1Card
-            request={request}
-            viewer={viewer}
-            selfApprove={settings?.selfApprove ?? request.viewerIsAdmin}
-            onBusy={setBusy}
-          />
-        </div>
       </div>
     </div>
   );

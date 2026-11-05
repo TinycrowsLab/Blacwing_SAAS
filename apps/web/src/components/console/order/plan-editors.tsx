@@ -80,7 +80,7 @@ export function PathsEditor({
   return (
     <div className="flex flex-col gap-2">
       <ChipInput
-        label="Paths to avoid"
+        label={<span className="sr-only">Paths to avoid</span>}
         values={value}
         onChange={onChange}
         parse={(text, existing) => {

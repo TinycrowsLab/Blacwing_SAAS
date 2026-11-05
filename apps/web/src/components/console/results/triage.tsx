@@ -13,6 +13,7 @@ import { PendingButton, ReasonField } from '../design-client';
 
 import type { FindingDetail } from './model';
 
+// Every PendingButton here passes stayPending and returns false: it then runs the action and resets once it settles.
 export const PROVEN_REASON = 'Proven by replay';
 const HTTP_CONFLICT = 409;
 const COPIED_MS = 1600;
@@ -134,7 +135,11 @@ export function TriageControls({
             variant={release ? 'primary' : 'deny'}
             pendingLabel={release ? 'Releasing…' : 'Dismissing…'}
             disabled={!reasonEnough(reason)}
-            onAction={() => decide(mode, reason)}
+            stayPending
+            onAction={async () => {
+              await decide(mode, reason);
+              return false;
+            }}
           >
             {release ? 'Release to report' : 'Dismiss'}
           </PendingButton>
@@ -164,10 +169,11 @@ export function TriageControls({
             shortcut="R"
             pendingLabel="Releasing…"
             className="h-11 px-5"
-            onAction={() => {
-              if (proven) return decide('release', reason);
-              setMode('release');
-              return true;
+            stayPending
+            onAction={async () => {
+              if (proven) await decide('release', reason);
+              else setMode('release');
+              return false;
             }}
           >
             {proven ? 'Release to report' : 'Review and release…'}

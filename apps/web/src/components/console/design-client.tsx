@@ -88,7 +88,9 @@ export function PendingButton({
     setPending(true);
     let keep = false;
     try {
-      keep = stayPending && (await onAction()) !== false;
+      // Always run the action; `stayPending` only decides whether the button resets afterwards.
+      const result = await onAction();
+      keep = stayPending && result !== false;
     } finally {
       if (!keep) {
         inFlight.current = false;

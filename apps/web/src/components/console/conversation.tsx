@@ -366,10 +366,8 @@ export function Conversation({
   const [hidden, setHidden] = useState<string[]>([]);
   useEffect(() => {
     const root = scroller.current;
-    if (root === null || pendingKey === '') {
-      setHidden([]);
-      return;
-    }
+    setHidden([]);
+    if (root === null || pendingKey === '') return;
     const seen = new Map<string, boolean>();
     const observer = new IntersectionObserver(
       (entries) => {
@@ -428,34 +426,36 @@ export function Conversation({
           )}
         </div>
       </div>
-      {hidden[0] === undefined ? null : (
-        <button
-          type="button"
-          onClick={() => {
-            if (hidden[0] !== undefined) goTo(hidden[0]);
-          }}
-          className="absolute bottom-16 left-1/2 inline-flex h-10 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-gold-ink bg-gold-soft px-4 text-[13px] font-semibold text-gold-ink shadow-float focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
-        >
-          <Icon name="hand" size={15} />
-          {hidden.length === 1 ? 'A decision waits for you' : `${hidden.length} decisions wait for you`} · Show
-        </button>
-      )}
-      {follow || items.length === 0 ? null : (
-        <button
-          type="button"
-          onClick={() => {
-            const el = scroller.current;
-            if (el === null) return;
-            const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            el.scrollTo({ top: el.scrollHeight, behavior: reduce ? 'auto' : 'smooth' });
-            setFollow(true);
-          }}
-          className="absolute bottom-4 left-1/2 inline-flex h-9 -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card px-4 text-[12.5px] font-medium text-foreground shadow-float hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
-        >
-          <Icon name="chevron" size={14} />
-          Jump to latest
-        </button>
-      )}
+      <div className="pointer-events-none absolute inset-x-0 bottom-4 flex flex-col items-center gap-2">
+        {hidden[0] === undefined ? null : (
+          <button
+            type="button"
+            onClick={() => {
+              if (hidden[0] !== undefined) goTo(hidden[0]);
+            }}
+            className="pointer-events-auto inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full border border-gold-ink bg-gold-soft px-4 text-[13px] font-semibold text-gold-ink shadow-float focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+          >
+            <Icon name="hand" size={15} />
+            {hidden.length === 1 ? 'A decision waits for you' : `${hidden.length} decisions wait for you`} · Show
+          </button>
+        )}
+        {follow || items.length === 0 ? null : (
+          <button
+            type="button"
+            onClick={() => {
+              const el = scroller.current;
+              if (el === null) return;
+              const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+              el.scrollTo({ top: el.scrollHeight, behavior: reduce ? 'auto' : 'smooth' });
+              setFollow(true);
+            }}
+            className="pointer-events-auto inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-4 text-[12.5px] font-medium text-foreground shadow-float hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+          >
+            <Icon name="chevron" size={14} />
+            Jump to latest
+          </button>
+        )}
+      </div>
     </div>
   );
 }

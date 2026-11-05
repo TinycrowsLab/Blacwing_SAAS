@@ -56,10 +56,10 @@ export function findKnown(known: readonly Asset[] | null, origin: string): Asset
 
 function NoteChip({ note }: { readonly note: Note }) {
   return (
-    <span className="inline-flex h-6 items-center rounded-md bg-surface-2 px-2 text-[11.5px] text-muted-foreground">
-      {note.text}
+    <span className="inline-flex h-6 items-center gap-1 rounded-md bg-surface-2 px-2 text-[11.5px] text-muted-foreground">
+      {note.text.trim()}
       {note.code === undefined ? null : <code className="font-mono text-[11px] text-foreground">{note.code}</code>}
-      {note.after}
+      {note.after?.trim()}
     </span>
   );
 }

@@ -381,19 +381,20 @@ export function Order({
     <div className="mx-auto grid w-full max-w-[1100px] gap-8 lg:grid-cols-[minmax(0,640px)_340px] lg:justify-between">
       <div className="flex min-w-0 flex-col gap-4">
         <div className="flex items-center gap-3">
-          <span className="text-[12.5px] text-muted-foreground">New audit</span>
-          <span className="flex-1" />
+          <span className="hidden text-[12.5px] text-muted-foreground sm:inline">New audit</span>
+          <span className="hidden flex-1 sm:block" />
           <span aria-hidden="true" className="flex gap-1">
             {[1, 2, 3, 4].map((i) => (
               <span
                 key={i}
-                className={`h-[3px] w-6 rounded-full sm:w-10 ${i < step ? 'bg-gold-ink' : i === step ? 'bg-gold' : 'bg-border-strong'}`}
+                className={`h-[3px] w-5 rounded-full sm:w-10 ${i < step ? 'bg-gold-ink' : i === step ? 'bg-gold' : 'bg-border-strong'}`}
               />
             ))}
           </span>
-          <span className="text-[12.5px] tabular-nums text-muted-foreground">
+          <span className="whitespace-nowrap text-[12.5px] tabular-nums text-muted-foreground">
             Question {step} of {QUESTIONS}
           </span>
+          <span className="flex-1 sm:hidden" />
           <TicketPill {...ticketProps} />
         </div>
 

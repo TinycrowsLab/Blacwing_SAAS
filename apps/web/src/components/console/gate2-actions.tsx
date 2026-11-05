@@ -5,15 +5,12 @@
 // reveals the reason field, and Allow enables at 8 non-space characters (Ctrl/Cmd+Enter submits). Decisions wait for
 // the server, because they must be true. A 409 from another tab or person comes back as the decided request, so the
 // card shows the receipt instead of an error.
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import { buttonClass, Icon, InlineMessage } from './design';
 import { clockLabel, PendingButton, ReasonField, useCountdown } from './design-client';
-import { secondsLeft } from './run-model';
-import { useNow } from './use-now';
 import { reasonEnough } from '../../lib/normalize';
 import { gate2DetailSchema } from '../../lib/schemas';
 
@@ -249,43 +246,4 @@ export function Gate2Actions({
       </p>
     </div>
   );
-}
-
-/** Seconds left and the full window of a Gate 2 request (used by the run view's banner). */
-export function useGate2Clock(
-  deadlineAt: string,
-  createdAt: string | undefined,
-  pending: boolean,
-  initialLeft: number,
-) {
-  const now = useNow(pending);
-  const mounted = now > 0;
-  const live = pending && mounted ? secondsLeft(deadlineAt, now) : 0;
-  const total =
-    createdAt === undefined
-      ? live
-      : Math.max(
-          1,
-          Math.round((new Date(deadlineAt).getTime() - new Date(createdAt).getTime()) / 1000),
-        );
-  const left = pending && !mounted ? initialLeft : live;
-  return { left, total: Math.max(total, left, 1) };
-}
-
-/** shortcut: the old transcript's entry point, kept only until the live view renders Gate2Card (group B); delete then. */
-export function Gate2Buttons({
-  gate2Id,
-  open,
-}: {
-  readonly gate2Id: string;
-  readonly open: boolean;
-}) {
-  return open ? (
-    <Link
-      href={`/decisions/gate2/${encodeURIComponent(gate2Id)}`}
-      className={buttonClass('primary', 'h-10')}
-    >
-      Decide
-    </Link>
-  ) : null;
 }
