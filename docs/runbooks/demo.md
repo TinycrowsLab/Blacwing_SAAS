@@ -51,7 +51,7 @@ result is shown on the finding page. Unset, nothing is sent. Never paste the URL
 | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/login` | 200 |
 | `curl -s -o /dev/null -w "%{redirect_url}" http://127.0.0.1:3000/api/auth/login` | Keycloak `.../realms/blackwing-dev/protocol/openid-connect/auth?...client_id=bw-console-bff` |
 
-Open `http://localhost:3000`, which redirects to the Keycloak login. The sign-in form is the realm
+Open `http://localhost:3000/demo` (the bare origin redirects there), which redirects to the Keycloak login. The sign-in form is the realm
 `blackwing-dev`.
 
 ## Credentials
