@@ -43,7 +43,7 @@ describe('checkScope', () => {
   });
 
   it('refuses excluded paths, their children, case variants and dot-segment tricks', () => {
-    for (const path of ['/admin', '/admin/users', '/ADMIN/x', '/billing', '/public/../admin/x', '/public/%2e%2e/admin']) {
+    for (const path of ['/admin', '/admin/users', '/ADMIN/x', '/billing', '/public/../admin/x', '/public/%2e%2e/admin', '/admin%2Fusers', '/%61dmin']) {
       expect(checkScope(`https://shop.example.com${path}`, scope)).toEqual({ ok: false, rule: 'excluded_path' });
     }
     expect(checkScope('https://shop.example.com/administrator', scope).ok).toBe(true);

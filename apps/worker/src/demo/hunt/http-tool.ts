@@ -147,6 +147,8 @@ export async function sendRequest(ctx: HuntContext, agent: string, req: HttpRequ
   }
   while (ctx.state.paused && !ctx.signal.aborted) await ctx.deps.sleep(PAUSE_POLL_MS);
   if (ctx.signal.aborted) return { ok: false, refusal: 'The run was halted. The request was not sent.' };
+  // Re-check after the Gate 2 / pause waits: parallel agents may have used the budget meanwhile.
+  if (ctx.state.requestsUsed >= ctx.run.budgetRequests) return block(ctx, agent, req, 'request_budget');
 
   ctx.state.requestsUsed += 1;
   const headers: Record<string, string> = { 'user-agent': 'blackwing-hunt/1' };

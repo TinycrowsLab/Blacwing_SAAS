@@ -40,6 +40,14 @@ function isUnder(path: string, prefix: string): boolean {
   return lower === base || lower.startsWith(`${base}/`);
 }
 
+function safeDecode(path: string): string {
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
+}
+
 /** Scheme+host+port must be an allowed origin and the (dot-segment-normalised) path must not sit under an excluded path. */
 export function checkScope(rawUrl: string, scope: Scope): ScopeVerdict {
   let url: URL;
@@ -51,7 +59,9 @@ export function checkScope(rawUrl: string, scope: Scope): ScopeVerdict {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return { ok: false, rule: 'scheme_not_allowed' };
   if (url.username !== '' || url.password !== '') return { ok: false, rule: 'credentials_in_url' };
   if (!scope.allowedOrigins.some((o) => originOf(o) === url.origin)) return { ok: false, rule: 'out_of_scope_origin' };
-  if (scope.excludedPaths.some((p) => isUnder(url.pathname, p))) return { ok: false, rule: 'excluded_path' };
+  // Check the decoded path too: many servers decode %2F, so /api%2Fadmin must not slip past an /api/admin exclusion.
+  const paths = [url.pathname, safeDecode(url.pathname)];
+  if (scope.excludedPaths.some((p) => paths.some((path) => isUnder(path, p)))) return { ok: false, rule: 'excluded_path' };
   return { ok: true, url };
 }
 
