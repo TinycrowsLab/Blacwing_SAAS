@@ -1,6 +1,6 @@
 import { describe as suite, expect, it } from 'vitest';
 
-import { agentLanes, candidates, describe, killConfirmed, mmss, secondsLeft } from './run-model';
+import { agentLanes, candidates, describe, killConfirmed, mergeEvents, mmss, secondsLeft } from './run-model';
 
 import type { DemoRunEvent } from '../../app/demo/_lib/schemas';
 
@@ -112,5 +112,15 @@ suite('event mapping', () => {
       }),
     ]);
     expect(done[0]).toMatchObject({ status: 'confirmed', findingId: 'f1' });
+  });
+});
+
+suite('mergeEvents', () => {
+  it('drops repeated seqs and keeps ascending order', () => {
+    const a = ev(1, 'http.sent', 'recon', {});
+    const b = ev(2, 'http.sent', 'recon', {});
+    const c = ev(3, 'http.sent', 'recon', {});
+    expect(mergeEvents([a, b], [b, c, c]).map((e) => e.seq)).toEqual([1, 2, 3]);
+    expect(mergeEvents([b], [a]).map((e) => e.seq)).toEqual([1, 2]);
   });
 });

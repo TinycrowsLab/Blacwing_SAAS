@@ -20,6 +20,7 @@ import {
   mmss,
   pathOf,
   shortId,
+  mergeEvents,
 } from './run-model';
 import { Transcript } from './transcript';
 import { useNow } from './use-now';
@@ -70,7 +71,7 @@ function AuthStrip({ run, nowMs }: { readonly run: DemoRun; readonly nowMs: numb
       k: 'Max intrusiveness',
       v: (run.pins.request?.intrusiveness ?? 'active_safe').replace(/_/g, '-'),
     },
-    { k: 'Expires', v: end > nowMs ? `in ${Math.ceil((end - nowMs) / 60000)} min` : 'expired' },
+    { k: 'Expires', v: nowMs === 0 ? '' : end > nowMs ? `in ${Math.ceil((end - nowMs) / 60000)} min` : 'expired' },
   ];
   return (
     <div className="flex flex-wrap rounded-xl border border-border bg-card">
@@ -120,7 +121,7 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
       lastSeq.current = Math.max(lastSeq.current, next.lastSeq);
       setStale(false);
       setRun(next);
-      if (next.events.length > 0) setEvents((prev) => [...prev, ...next.events]);
+      if (next.events.length > 0) setEvents((prev) => mergeEvents(prev, next.events));
     } catch {
       setStale(true);
     }
@@ -153,7 +154,7 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
 
   const assetName = run.pins.asset?.name ?? 'Assessment';
   const start = new Date(run.startedAt ?? run.createdAt).getTime();
-  const end = run.finishedAt === null ? nowMs : new Date(run.finishedAt).getTime();
+  const end = run.finishedAt === null ? (nowMs === 0 ? start : nowMs) : new Date(run.finishedAt).getTime();
   const elapsed = Math.max(0, (end - start) / 1000);
   const lanes = useMemo(() => agentLanes(events), [events]);
   const rows = useMemo(() => events.flatMap((e) => describe(e) ?? []), [events]);
@@ -165,7 +166,7 @@ export function RunView({ initial }: { readonly initial: DemoRun }) {
 
   const pausedFrom = (agent: string): number | null => {
     const g = pending.find((x) => x.agent === agent);
-    if (g !== undefined) return g.createdAt === undefined ? nowMs : new Date(g.createdAt).getTime();
+    if (g !== undefined) return g.createdAt === undefined ? (nowMs === 0 ? start : nowMs) : new Date(g.createdAt).getTime();
     return run.paused && lastPause !== undefined ? new Date(lastPause.at).getTime() : null;
   };
 

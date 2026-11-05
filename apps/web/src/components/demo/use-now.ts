@@ -3,10 +3,11 @@
 
 import { useEffect, useState } from 'react';
 
-/** Wall clock in ms, refreshed every second while `active`. */
+/** Wall clock in ms, refreshed every second while `active`. Is 0 until mounted so SSR and the first client render match. */
 export function useNow(active = true): number {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(0);
   useEffect(() => {
+    setNow(Date.now());
     if (!active) return;
     const timer = window.setInterval(() => {
       setNow(Date.now());

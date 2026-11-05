@@ -12,14 +12,16 @@ import { useNow } from './use-now';
 
 export function useGate2Clock(deadlineAt: string, createdAt: string | undefined, pending: boolean) {
   const now = useNow(pending);
-  const left = pending ? secondsLeft(deadlineAt, now) : 0;
+  const mounted = now > 0;
+  const live = pending && mounted ? secondsLeft(deadlineAt, now) : 0;
   const total =
     createdAt === undefined
-      ? left
+      ? live
       : Math.max(
           1,
           Math.round((new Date(deadlineAt).getTime() - new Date(createdAt).getTime()) / 1000),
         );
+  const left = pending && !mounted ? total : live;
   return { left, total: Math.max(total, left, 1) };
 }
 

@@ -202,7 +202,7 @@ function KillDialog({
               )}
               <div className="flex items-center justify-end gap-2.5">
                 <span className="mr-auto text-xs text-muted-foreground">
-                  Recorded in the audit ledger
+                  Recorded in the run log
                 </span>
                 <button type="button" onClick={onClose} className={buttonClass('secondary')}>
                   Cancel

@@ -33,6 +33,13 @@ export function secondsLeft(deadlineAt: string, nowMs: number): number {
   return Math.max(0, Math.ceil((new Date(deadlineAt).getTime() - nowMs) / 1000));
 }
 
+/** Merge polled events into the list: unique by seq, ascending. Overlapping polls can return the same rows. */
+export function mergeEvents(prev: readonly DemoRunEvent[], next: readonly DemoRunEvent[]): DemoRunEvent[] {
+  const bySeq = new Map<number, DemoRunEvent>();
+  for (const e of [...prev, ...next]) bySeq.set(e.seq, e);
+  return [...bySeq.values()].sort((a, b) => a.seq - b.seq);
+}
+
 export function clock(iso: string): string {
   return new Date(iso).toISOString().slice(11, 19);
 }
@@ -178,14 +185,22 @@ export function describe(e: DemoRunEvent): Activity | null {
         ...base,
         agent: 'run',
         kind: 'Run',
-        text: `Run killed by ${str(d.by)}`,
+        text: e.message === '' ? 'Run killed' : e.message,
         meta: `${num(d.haltMs)} ms`,
         isError: true,
       };
-    case 'run.queued':
-    case 'run.started':
+    case 'kill.requested':
     case 'run.paused':
     case 'run.resumed':
+      return {
+        ...base,
+        agent: 'run',
+        kind: 'Run',
+        text: e.message === '' ? e.kind.replace('run.', 'Run ') : e.message,
+        meta: '',
+      };
+    case 'run.queued':
+    case 'run.started':
     case 'run.completed':
       return { ...base, agent: 'run', kind: 'Run', text: e.kind.replace('run.', 'Run '), meta: '' };
     default:

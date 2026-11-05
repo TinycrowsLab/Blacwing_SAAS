@@ -157,7 +157,7 @@ export function Gate2View({ gate2 }: { readonly gate2: z.infer<typeof gate2Detai
                 : ''}
             </p>
           )}
-          <span className="text-xs text-muted-foreground">Recorded in the audit ledger</span>
+          <span className="text-xs text-muted-foreground">Recorded in the run log</span>
         </div>
       </Card>
     </div>

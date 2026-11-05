@@ -505,7 +505,7 @@ export class DemoService {
       kind: paused ? 'run.paused' : 'run.resumed',
       stage: 'control',
       message: `Run ${paused ? 'paused' : 'resumed'} by ${actor.name}.`,
-      data: { by: actor.name },
+      data: { by: actor.id },
     });
     return runDto(await this.runRow(runId));
   }
@@ -526,7 +526,7 @@ export class DemoService {
         kind: 'run.killed',
         stage: 'control',
         message: `Run killed by ${actor.name} before it started.`,
-        data: { by: actor.name, haltMs: 0 },
+        data: { by: actor.id, haltMs: 0 },
       });
       return { killRequestedAt: killedQueued.toISOString() };
     }
@@ -534,6 +534,12 @@ export class DemoService {
     if (requestedAt === null) {
       throw new DemoRefusal(HttpStatus.CONFLICT, 'run_not_running', 'The run is not queued or running.');
     }
+    await this.store.appendEvent(runId, {
+      kind: 'kill.requested',
+      stage: 'control',
+      message: `Kill requested by ${actor.name}.`,
+      data: { by: actor.id },
+    });
     return { killRequestedAt: requestedAt.toISOString() };
   }
 

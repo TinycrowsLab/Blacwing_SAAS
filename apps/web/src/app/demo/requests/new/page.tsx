@@ -206,7 +206,7 @@ export default async function NewRequestPage({
             >
               Submit to Gate 1
             </button>
-            <span className="text-xs text-muted-foreground">Recorded in the audit ledger</span>
+            <span className="text-xs text-muted-foreground">Recorded in the run log</span>
           </div>
         </form>
         <ContextPanel

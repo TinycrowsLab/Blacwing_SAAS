@@ -165,7 +165,7 @@ export default async function DemoRequestPage({
               <CardHeader
                 id="decide-h"
                 title="Gate 1 decision"
-                meta="Recorded in the audit ledger"
+                meta="Recorded in the run log"
               />
               <form action={decideRequestAction} className="flex flex-col gap-4 p-4">
                 <input type="hidden" name="requestId" value={request.id} />

@@ -178,7 +178,7 @@ export async function executeRun(store: HuntStore, run: HuntRun, deps: HuntDeps,
     await store.saveProgress(run.id, used.requestsUsed, used.costUsd);
     await store.denyPendingGate2(run.id);
     const haltMs = await store.markKilled(run);
-    await log.emit('run.killed', 'control', `Run killed; halted in ${haltMs} ms`, { by: halted.killedBy, haltMs });
+    await log.emit('run.killed', 'control', `Run killed. Halt measured in ${haltMs} ms.`, { by: halted.killedBy, haltMs });
     return;
   }
   const settled = settle(halted.reason, failure, end);
