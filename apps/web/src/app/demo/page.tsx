@@ -37,7 +37,7 @@ export default async function DemoDashboard(): Promise<ReactNode> {
       value: data.counts.requestsPendingGate1,
       icon: 'approvals' as const,
     },
-    { label: 'Runs', value: data.counts.runs, icon: 'assessments' as const },
+    { label: 'Running', value: data.counts.runsRunning, icon: 'assessments' as const },
     {
       label: 'Confirmed findings',
       value: data.counts.confirmedFindings,

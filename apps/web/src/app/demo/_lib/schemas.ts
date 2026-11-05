@@ -203,8 +203,9 @@ export const dashboardSchema = z.object({
   counts: z.object({
     assets: z.number(),
     requestsPendingGate1: z.number().default(0),
-    runs: z.number(),
+    runsRunning: z.number().default(0),
     confirmedFindings: z.number(),
+    gate2Pending: z.number().default(0),
   }),
   assets: z.array(assetSchema).default([]),
   requests: z.array(requestSchema).default([]),
