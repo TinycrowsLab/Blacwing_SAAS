@@ -207,11 +207,14 @@ export function Order({
     mounted.current = true;
   }, [step, target, draftId]);
 
-  // Draft kept on this device, 300 ms after the last change, once there is a site.
+  // Draft kept on this device, 300 ms after the last change, once there is a site. A change still waiting when the
+  // order unmounts (browser Back straight after Continue) is written then, so Forward comes back to the same question.
+  const unsavedDraft = useRef<(() => void) | null>(null);
   useEffect(() => {
     if (target === null || submitted.current) return;
     setSaved(false);
-    const timer = window.setTimeout(() => {
+    const write = (): void => {
+      unsavedDraft.current = null;
       if (submitted.current) return;
       saveDraft({
         id: draftId,
@@ -221,12 +224,22 @@ export function Order({
         answers: { focus, text: focusText, care, method },
         savedAt: new Date().toISOString(),
       });
+    };
+    unsavedDraft.current = write;
+    const timer = window.setTimeout(() => {
+      write();
       setSaved(true);
     }, DRAFT_DEBOUNCE_MS);
     return () => {
       window.clearTimeout(timer);
     };
   }, [draftId, target, step, focus, focusText, care, method]);
+  useEffect(
+    () => () => {
+      unsavedDraft.current?.();
+    },
+    [],
+  );
 
   const go = (n: number): void => {
     setError(null);

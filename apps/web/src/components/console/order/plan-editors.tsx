@@ -104,7 +104,9 @@ export function readPathList(
     if (!r.ok) {
       left ??= {
         token: g,
-        why: /\s/.test(g) ? "paths can't contain spaces. Write a space as %20, or put a comma between two paths" : r.message.replace(/\.$/, ''),
+        why: /\s/.test(g)
+          ? "paths can't contain spaces. Write a space as %20, or put a comma between two paths"
+          : r.message.charAt(0).toLowerCase() + r.message.slice(1).replace(/\.$/, ''),
       };
       continue;
     }
@@ -147,20 +149,25 @@ export function PathsEditor({
   const [left, setLeft] = useState<{ token: string; why: string } | null>(null);
   /** The path just committed by a typed space: a bare word next may be the rest of it ("/has space"). */
   const lastSpaced = useRef<string | null>(null);
+  /** True while a commit is applying its own result (which may take a half path back out): not a chip removal. */
+  const committing = useRef(false);
   return (
     <div className="flex flex-col gap-2">
       <ChipInput
         label={<span className="sr-only">Paths to avoid</span>}
         values={value}
         onChange={(next) => {
-          if (next.length < value.length) setLeft(null);
+          if (!committing.current && next.length < value.length) setLeft(null);
+          committing.current = false;
           onChange(next);
         }}
         parse={(text, existing) => {
           const r = readPathList(text, origin, existing, lastSpaced.current);
+          // ChipInput calls onChange only when the list changes.
+          committing.current = r.paths.length !== existing.length || r.paths.some((v, i) => v !== existing[i]);
           if (r.left !== null) setLeft(r.left);
           const last = r.paths.at(-1);
-          lastSpaced.current = / $/.test(text) && last !== undefined && last !== existing.at(-1) ? last : null;
+          lastSpaced.current = text.endsWith(' ') && last !== undefined && last !== existing.at(-1) ? last : null;
           return { values: r.paths, error: null };
         }}
         placeholder="/admin, /billing, or a full link on this site"
