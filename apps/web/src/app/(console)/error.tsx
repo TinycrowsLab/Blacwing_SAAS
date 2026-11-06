@@ -1,11 +1,17 @@
 'use client';
 
 // A page that could not load (the API refused or did not answer) shows this inside the shell, with one way forward.
+// A page left open across a deploy (a stale code chunk) reloads onto the new build instead.
+import { type ReactNode, useEffect } from 'react';
+
 import { buttonClass, Icon } from '../../components/console/design';
+import { reloadIfStaleChunk } from '../../lib/stale-chunk';
 
-import type { ReactNode } from 'react';
 
-export default function ConsoleError({ reset }: { readonly reset: () => void }): ReactNode {
+export default function ConsoleError({ error, reset }: { readonly error: Error; readonly reset: () => void }): ReactNode {
+  useEffect(() => {
+    reloadIfStaleChunk(error);
+  }, [error]);
   return (
     <div role="alert" className="flex max-w-xl flex-col items-start gap-4 rounded-[14px] border border-border bg-card p-6">
       <span className="flex size-10 items-center justify-center rounded-full bg-bad-soft text-bad">

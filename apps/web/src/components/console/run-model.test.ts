@@ -1,6 +1,7 @@
 import { describe as suite, expect, it } from 'vitest';
 
 import {
+  chipGroups,
   agentLanes,
   auditLine,
   candidates,
@@ -284,15 +285,49 @@ suite('conversationItems', () => {
     expect(said).toMatchObject({ text: 'Recon is done.', reply: true });
   });
 
-  it('keeps the planner at top level with its tool chips, and Blackwing lines from the catalogue', () => {
+  it('keeps the planner at top level, and Blackwing lines from the catalogue at the moment they happened', () => {
     expect(items[0]).toMatchObject({ type: 'host', text: 'Audit queued. Scope, limits and authorisation are pinned.' });
     expect(items[1]).toMatchObject({ type: 'host', text: "Claude's team started work." });
     const planner = items[2] as TurnItem;
     expect(planner).toMatchObject({ type: 'turn', agent: 'orchestrator', text: 'I will map the site first.' });
-    expect(planner.tools).toEqual(['recorded 2 test cases']);
-    expect(items.find((i) => i.type === 'host' && i.kind === 'plan.cases')).toMatchObject({
-      text: 'The planner recorded 2 test cases (2 in the plan).',
-    });
+    // Recording the plan happened after recon reported back: no chip on the first turn, the plan line after the thread.
+    expect(planner.tools).toEqual([]);
+    expect(items[3]).toMatchObject({ type: 'thread', to: 'recon' });
+    expect(items[4]).toMatchObject({ type: 'host', kind: 'plan.cases', text: 'The planner recorded 2 test cases (2 in the plan).' });
+  });
+
+  it('opens a new planner turn for a chip that comes after other items', () => {
+    const list = conversationItems([...RUN.slice(0, 8), ev(9, 'agent.tool', 'orchestrator', { agent: 'orchestrator', tool: 'TodoWrite', input: {} }, at(8))], []);
+    expect(list.at(-1)).toMatchObject({ type: 'turn', agent: 'orchestrator', text: null, tools: ['updated its to-do list'] });
+    expect((list[2] as TurnItem).tools).toEqual([]);
+  });
+
+  it('reads down in time: a thread resumes in a continued segment below items that came after it', () => {
+    const list = conversationItems(
+      [
+        ...RUN.slice(0, 8),
+        ev(9, 'agent.tool', 'orchestrator', { agent: 'orchestrator', tool: 'Agent', toolUseId: 'tA', input: { subagent: 'authz-specialist', prompt: 'A' } }, at(20)),
+        ev(10, 'agent.message', 'authz-specialist', { agent: 'authz-specialist', text: 'Started.' }, at(25)),
+        ev(11, 'agent.tool', 'orchestrator', { agent: 'orchestrator', tool: 'Agent', toolUseId: 'tB', input: { subagent: 'web-api-specialist', prompt: 'B' } }, at(140)),
+        ev(12, 'candidate.submitted', 'validator', { agent: 'authz-specialist', candidateId: 'c1', title: 'IDOR', severity: 'high' }, at(150)),
+        ev(13, 'agent.reply', 'authz-specialist', { agent: 'authz-specialist', toolUseId: 'tA', text: 'Found one.' }, at(160)),
+      ],
+      [],
+    );
+    const shape = list.slice(4).map((i) => (i.type === 'thread' ? `${i.continued ? '+' : ''}${i.to}:${i.children.map((c) => c.type).join(',')}` : i.type));
+    expect(shape).toEqual(['authz-specialist:turn', 'web-api-specialist:', '+authz-specialist:validator,turn']);
+    const segs = list.filter((i): i is ThreadItem => i.type === 'thread' && i.to === 'authz-specialist');
+    expect(segs.every((t) => t.replied && t.root === segs[0]?.root)).toBe(true);
+    const times = list.flatMap((i) => (i.type === 'thread' ? [i.at, ...i.children.map((c) => c.at)] : [i.at])).map((t) => Date.parse(t));
+    expect(times).toEqual([...times].sort((a, b) => a - b));
+  });
+
+  it('folds repeated chips', () => {
+    expect(chipGroups(['marked a test case blocked', 'marked a test case blocked', 'used X', 'used X', 'used Y'])).toEqual([
+      'marked 2 test cases blocked',
+      'used X ×2',
+      'used Y',
+    ]);
   });
 
   it("places the planner's note on delegations it just made before those open threads", () => {
@@ -395,7 +430,9 @@ suite('stages', () => {
   });
   it('ends at your review and marks stages a stopped run never reached', () => {
     const s = stages(RUN.slice(0, 3), { terminal: true, approvedBy: null });
-    expect(s.map((x) => x.state)).toEqual(['done', 'skipped', 'skipped', 'skipped', 'skipped', 'current']);
+    expect(s.map((x) => x.state)).toEqual(['done', 'skipped', 'skipped', 'skipped', 'skipped', 'done']);
+    expect(s.at(-1)).toMatchObject({ detail: 'nothing to review' });
+    expect(stages(RUN.slice(0, 3), { terminal: true, approvedBy: null, stopped: true }).at(-1)).toMatchObject({ state: 'stopped' });
     expect(s[0]?.detail).toBe('');
     expect(s[1]?.detail).toBe('not reached');
   });
@@ -431,7 +468,7 @@ suite('teamNodes', () => {
   });
   it('shows agents a stop interrupted as stopped, not done', () => {
     const team = teamNodes(RUN, [], T0 + 20_000, true, true);
-    expect(team.planner).toMatchObject({ state: 'stopped', sub: 'stopped, 3 tasks given' });
+    expect(team.planner).toMatchObject({ state: 'stopped', sub: '3 tasks given' });
     expect(team.specialists.map((n) => [n.id, n.state])).toEqual([
       ['recon', 'done'],
       ['web-api-specialist', 'stopped'],
@@ -447,5 +484,6 @@ suite('liveness', () => {
     expect(liveness(T0 + 2000, T0, null, T0)).toEqual({ tone: 'live', text: 'Live · last event 2 s ago' });
     expect(liveness(T0 + 15_000, T0, null, T0)).toEqual({ tone: 'quiet', text: 'Quiet for 15 s' });
     expect(liveness(T0 + 12_000, T0, T0 + 3000, T0)).toEqual({ tone: 'reconnecting', text: 'Reconnecting… last update 12 s ago' });
+    expect(liveness(T0 + 31_000, T0, null, T0, true)).toEqual({ tone: 'waiting', text: 'Waiting for your decision' });
   });
 });

@@ -24,6 +24,7 @@ import {
   type TurnItem,
   type ValidatorItem,
   VALIDATOR_REPLAYS,
+  chipGroups,
   ruleWords,
 } from './run-model';
 import { agentInitials, agentName } from '../../lib/agents';
@@ -37,8 +38,8 @@ const WINDOW = 400;
 const FOLLOW_SLACK_PX = 96;
 /** A held decision card sits this far below the top edge. */
 const HOLD_GAP_PX = 12;
-/** The card's clock and buttons sit in its first this-many pixels: that part must be on screen to count as seen. */
-const CARD_ACTIONS_PX = 200;
+/** A pending card counts as seen while this much of it (or all of a shorter one) is on screen. */
+const CARD_SEEN_PX = 120;
 /** A click this soon after "Show n more" lands on a row that slid under the pointer: ignore it. */
 const TOGGLE_GUARD_MS = 450;
 
@@ -147,43 +148,46 @@ function CallList({ calls, onOpen }: { readonly calls: readonly CallRow[]; reado
   const toggledAt = useRef(0);
   if (calls.length === 0) return null;
   const shown = all ? calls : calls.slice(0, CALLS_SHOWN);
+  // One quiet group with hairlines, not a stack of boxes (prototype 04).
   return (
-    <div className="mt-1.5 flex flex-col gap-1 pl-8">
-      {shown.map((c) =>
-        c.blocked ? (
-          <div
-            key={c.seq}
-            className="flex min-h-[30px] items-center gap-2.5 rounded-[8px] border border-dashed border-warn bg-warn-soft px-2.5 py-1 text-[11.5px] text-warn"
-          >
-            <Icon name="lock" size={12} />
-            <span className="min-w-0 flex-1">
-              <span className="font-medium">Blocked by scope: not sent</span> ({ruleWords(c.rule ?? '')})
-              <span className="ml-2 font-mono text-[11px] text-muted-foreground">
-                {c.method} {c.path}
-              </span>
-            </span>
-          </div>
-        ) : (
-          <button
-            key={c.seq}
-            type="button"
-            disabled={c.exchangeId === null}
-            onClick={() => {
-              if (c.exchangeId !== null && Date.now() - toggledAt.current > TOGGLE_GUARD_MS) onOpen(c.exchangeId);
-            }}
-            title="Open the request and response"
-            className="flex h-[30px] w-full max-md:h-11 items-center gap-2.5 rounded-[8px] border border-border bg-surface px-2.5 text-left font-mono text-[11.5px] hover:border-border-strong hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus disabled:cursor-default"
-          >
-            <span className="font-medium text-slate">{c.method}</span>
-            <span className="min-w-0 flex-1 truncate">
-              {c.path}
-              {c.asRole === null ? null : <span className="text-muted-foreground"> · as {c.asRole}</span>}
-            </span>
-            <span className={`rounded-[5px] px-1.5 py-px text-[10.5px] font-medium ${statusTone(c.status ?? 0)}`}>{c.status}</span>
-            <span className="w-12 text-right text-[10.5px] text-muted-foreground">{c.ms} ms</span>
-          </button>
-        ),
-      )}
+    <div className="mt-1.5 flex flex-col items-start gap-1 pl-8">
+      <ul className="m-0 w-full list-none divide-y divide-border overflow-hidden rounded-[8px] border border-border bg-surface p-0">
+        {shown.map((c, i) => (
+          <li key={c.seq}>
+            {c.blocked ? (
+              <div className="flex min-h-[30px] items-center gap-2.5 bg-warn-soft px-2.5 py-1 text-[11.5px] text-warn">
+                <Icon name="lock" size={12} />
+                <span className="min-w-0 flex-1">
+                  <span className="font-medium">Blocked by scope: not sent</span> ({ruleWords(c.rule ?? '')})
+                  <span className="ml-2 font-mono text-[11px] text-muted-foreground">
+                    {c.method} {c.path}
+                  </span>
+                </span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={c.exchangeId === null}
+                onClick={() => {
+                  // Only rows "Show n more" just slid under the pointer ignore a click that fast; the first rows never move.
+                  const slid = i >= CALLS_SHOWN && Date.now() - toggledAt.current < TOGGLE_GUARD_MS;
+                  if (c.exchangeId !== null && !slid) onOpen(c.exchangeId);
+                }}
+                title="Open the request and response"
+                className="flex h-[30px] w-full max-md:h-11 items-center gap-2.5 px-2.5 text-left font-mono text-[11.5px] hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus disabled:cursor-default"
+              >
+                <span className="font-medium text-slate">{c.method}</span>
+                <span className="min-w-0 flex-1 truncate">
+                  {c.path}
+                  {c.asRole === null ? null : <span className="text-muted-foreground"> · as {c.asRole}</span>}
+                </span>
+                <span className={`rounded-[5px] px-1.5 py-px text-[10.5px] font-medium ${statusTone(c.status ?? 0)}`}>{c.status}</span>
+                <span className="w-12 text-right text-[10.5px] text-muted-foreground">{c.ms} ms</span>
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
       {calls.length > CALLS_SHOWN ? (
         <button
           type="button"
@@ -192,7 +196,7 @@ function CallList({ calls, onOpen }: { readonly calls: readonly CallRow[]; reado
             toggledAt.current = Date.now();
             setAll(!all);
           }}
-          className="self-start py-0.5 text-[12px] font-medium text-gold-ink hover:underline max-md:min-h-11"
+          className="py-0.5 text-[12px] font-medium text-gold-ink hover:underline max-md:min-h-11"
         >
           {all ? 'Show fewer' : `Show ${calls.length - CALLS_SHOWN} more`}
         </button>
@@ -216,7 +220,14 @@ function Turn({ turn, onOpenCall }: { readonly turn: TurnItem; readonly onOpenCa
             Reply to Planner
           </span>
         ) : null}
-        <VoiceTag voice="claude" />
+        {/* Calls alone are the runner's measurements, not Claude's words. */}
+        {turn.text === null && turn.tools.length === 0 ? (
+          <VoiceTag voice="blackwing" title="Requests as the runner recorded them">
+            Recorded by Blackwing
+          </VoiceTag>
+        ) : (
+          <VoiceTag voice="claude" />
+        )}
         <Time at={turn.at} />
       </div>
       {turn.text === null ? null : (
@@ -227,7 +238,7 @@ function Turn({ turn, onOpenCall }: { readonly turn: TurnItem; readonly onOpenCa
       )}
       {turn.tools.length === 0 ? null : (
         <div className="ml-8 mt-1.5 flex flex-wrap gap-1.5">
-          {turn.tools.map((t, i) => (
+          {chipGroups(turn.tools).map((t, i) => (
             <span key={`${t}-${i}`} className="inline-flex h-[22px] max-w-full items-center gap-1.5 truncate rounded-md bg-surface-2 px-2 text-[11.5px] text-muted-foreground">
               <Icon name="term" size={11} />
               {t}
@@ -340,7 +351,7 @@ function Child({ item, ...p }: ChildProps & { readonly item: ThreadChild }) {
       const row = p.gate2.find((g) => g.id === item.gate2Id);
       if (row !== undefined)
         return (
-          <div data-gate2-pending={row.status === 'pending' ? row.id : undefined}>
+          <div data-gate2-row={row.id} data-gate2-pending={row.status === 'pending' ? row.id : undefined}>
             <Gate2Card gate2={row} body={item.body} asRole={item.asRole} viewerName={p.viewerName} />
           </div>
         );
@@ -354,21 +365,35 @@ function Child({ item, ...p }: ChildProps & { readonly item: ThreadChild }) {
 function Thread({ thread, ...p }: ChildProps & { readonly thread: ThreadItem }) {
   return (
     <div className="flex flex-col">
-      <div className="flex min-w-0 items-center gap-2 text-[12.5px]">
-        <Avatar agent={thread.from} />
-        <span className="font-semibold">{agentName(thread.from)}</span>
-        <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
-          <Icon name="arrow" size={12} />
-          <span className="truncate">{agentName(thread.to)}</span>
-        </span>
-        <VoiceTag voice="claude" />
-        <Time at={thread.at} />
-      </div>
-      <Clamp lines={3} lineHeight={21} className="ml-8 mt-1 rounded-[4px_12px_12px_12px] border border-border bg-surface-2 px-3 py-2 text-[13.5px] leading-[21px]">
-        <span className="whitespace-pre-wrap">{thread.task === '' ? 'No instruction was recorded.' : thread.task}</span>
-      </Clamp>
+      {thread.continued ? (
+        // The same delegation, picked up again below what happened in between.
+        <div className="flex min-w-0 items-center gap-2 text-[12px] text-muted-foreground">
+          <span aria-hidden="true" className="flex w-6 shrink-0 justify-center">
+            <Icon name="reply" size={13} className="-scale-x-100" />
+          </span>
+          <span className="truncate">
+            <span className="font-medium text-foreground">{agentName(thread.to)}</span>, continuing the {agentName(thread.from)}&apos;s task
+          </span>
+        </div>
+      ) : (
+        <>
+          <div className="flex min-w-0 items-center gap-2 text-[12.5px]">
+            <Avatar agent={thread.from} />
+            <span className="font-semibold">{agentName(thread.from)}</span>
+            <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
+              <Icon name="arrow" size={12} />
+              <span className="truncate">{agentName(thread.to)}</span>
+            </span>
+            <VoiceTag voice="claude" />
+            <Time at={thread.at} />
+          </div>
+          <Clamp lines={3} lineHeight={21} className="ml-8 mt-1 rounded-[4px_12px_12px_12px] border border-border bg-surface-2 px-3 py-2 text-[13.5px] leading-[21px]">
+            <span className="whitespace-pre-wrap">{thread.task === '' ? 'No instruction was recorded.' : thread.task}</span>
+          </Clamp>
+        </>
+      )}
       {thread.children.length === 0 ? null : (
-        <div className="ml-3 mt-2.5 flex flex-col gap-3 border-l-2 border-border pl-[18px]">
+        <div className={`ml-3 flex flex-col gap-3 border-l-2 border-border pl-[18px] ${thread.continued ? 'mt-1.5' : 'mt-2.5'}`}>
           {thread.children.map((c) => (
             <Child key={c.key} item={c} {...p} />
           ))}
@@ -436,8 +461,8 @@ export const Conversation = memo(function Conversation({
     const ids: string[] = [];
     root.querySelectorAll<HTMLElement>('[data-gate2-pending]').forEach((el) => {
       const r = el.getBoundingClientRect();
-      const seen = r.top >= box.top - 4 && r.top + Math.min(r.height, CARD_ACTIONS_PX) <= box.bottom + 4;
-      if (!seen) ids.push(el.dataset.gate2Pending ?? '');
+      const visible = Math.min(r.bottom, box.bottom) - Math.max(r.top, box.top);
+      if (visible < Math.min(r.height, CARD_SEEN_PX) - 4) ids.push(el.dataset.gate2Pending ?? '');
     });
     setHidden((prev) => (prev.join(',') === ids.join(',') ? prev : ids));
   }, []);
@@ -479,9 +504,18 @@ export const Conversation = memo(function Conversation({
     const ids = pendingKey === '' ? [] : pendingKey.split(',');
     const fresh = ids.find((id) => !seenPending.current.has(id));
     seenPending.current = new Set(ids);
-    if (hold.current !== null && !ids.includes(hold.current)) hold.current = null;
-    if (fresh !== undefined && followRef.current && hold.current === null) hold.current = fresh;
     const el = scroller.current;
+    if (hold.current !== null && !ids.includes(hold.current)) {
+      // The held decision was answered: keep its receipt where the reader is looking, not jump to the bottom.
+      const receipt = el?.querySelector<HTMLElement>(`[data-gate2-row="${CSS.escape(hold.current)}"]`) ?? null;
+      hold.current = null;
+      if (receipt !== null && el !== null && el.scrollHeight - el.clientHeight - el.scrollTop > FOLLOW_SLACK_PX) {
+        followRef.current = false;
+        setFollow(false);
+        receipt.scrollIntoView({ block: 'nearest' });
+      }
+    }
+    if (fresh !== undefined && followRef.current && hold.current === null) hold.current = fresh;
     if (el !== null && followRef.current) stick(el);
     checkPending();
   }, [pendingKey, checkPending]);
@@ -500,7 +534,16 @@ export const Conversation = memo(function Conversation({
     // Only a new request from the header moves the view, not a new pending list.
   }, [showDecision, goTo]);
 
+  // Typing a reason in a decision card: no floating pill may sit on the field.
+  const [editing, setEditing] = useState(false);
   const p: ChildProps = { gate2, viewerName, resultsHref, onOpenCall, onOpenPlan };
+  const waiting = pendingKey === '' ? 0 : pendingKey.split(',').length;
+  const decisionPill =
+    hidden.length === 0
+      ? null
+      : hidden.length < waiting
+        ? `${hidden.length === 1 ? 'One more decision waits' : `${hidden.length} more decisions wait`} for you · Show`
+        : `${hidden.length === 1 ? 'A decision waits' : `${hidden.length} decisions wait`} for you · Show`;
   const pill =
     'pointer-events-auto inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full px-4 text-[13px] shadow-float focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus';
   return (
@@ -521,13 +564,19 @@ export const Conversation = memo(function Conversation({
           if (!atHold) hold.current = null;
           setFollow(atBottom || atHold);
         }}
+        onFocus={(e) => {
+          setEditing(e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement);
+        }}
+        onBlur={() => {
+          setEditing(false);
+        }}
         role="log"
         aria-label="Conversation"
         aria-live="off"
         className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]"
       >
         {/* Bottom padding keeps the last line clear of the floating pills. */}
-        <div className="mx-auto flex w-full max-w-[820px] flex-col gap-3.5 pb-16 pt-3">
+        <div className="mx-auto flex w-full max-w-[820px] flex-col gap-3.5 pb-16 pr-2 pt-3">
           {items.length > shown.length ? (
             <button
               type="button"
@@ -551,8 +600,8 @@ export const Conversation = memo(function Conversation({
         </div>
       </div>
       {/* One row of pills. Phones show the pinned gold banner instead of the decision pill. */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-3 flex flex-wrap items-center justify-center gap-2 px-3">
-        {hidden[0] === undefined ? null : (
+      <div className={`pointer-events-none absolute inset-x-0 bottom-3 flex flex-wrap items-center justify-center gap-2 px-3 ${editing ? 'hidden' : ''}`}>
+        {hidden[0] === undefined || decisionPill === null ? null : (
           <button
             type="button"
             onClick={() => {
@@ -561,7 +610,7 @@ export const Conversation = memo(function Conversation({
             className={`${pill} border border-gold-ink bg-gold-soft font-semibold text-gold-ink max-md:hidden`}
           >
             <Icon name="hand" size={15} />
-            {hidden.length === 1 ? 'A decision waits for you' : `${hidden.length} decisions wait for you`} · Show
+            {decisionPill}
           </button>
         )}
         {(follow && !below) || items.length === 0 ? null : (

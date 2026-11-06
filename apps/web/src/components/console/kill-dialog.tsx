@@ -19,15 +19,19 @@ const NO_EVENTS = 1_000_000;
 
 export interface StoppableRun {
   readonly id: string;
-  /** The target's name (its host): the dialog asks "Stop testing {assetName}?". */
+  /** The target's name: the dialog asks "Stop testing {assetName}?". */
   readonly assetName: string;
+  /** When it started, so two audits of one target can be told apart. */
+  readonly startedAt?: string | null;
 }
 
 const haltSchema = z.object({
   state: z.string(),
   haltMs: z.number().nullable().default(null),
-  gate2: z.array(z.object({ status: z.string() })).default([]),
+  gate2: z.array(z.object({ status: z.string(), decidedAt: z.string().nullable().default(null) })).default([]),
 });
+/** Clock skew allowed between the browser's "now" and the server's decision times. */
+const SKEW_MS = 1000;
 
 /** Opens the Stop dialog for `run`. Renders nothing visible while `run` is null (not queued, running or paused). */
 export function KillButton({
@@ -99,7 +103,7 @@ export function KillButton({
           type="button"
           onClick={onClick}
           title="Stop testing"
-          className={buttonClass('kill', `size-11 rounded-[10px] px-0 ${className ?? ''}`)}
+          className={buttonClass('kill', `h-11 w-11 rounded-[10px] px-0 ${className ?? ''}`)}
         >
           <Icon name="kill" size={20} />
           <span className="sr-only">Stop testing</span>
@@ -154,6 +158,9 @@ function KillDialog({
     if (busy) return;
     setBusy(true);
     setError(null);
+    // The halt view shows at once (the click settles in well under 2 s); a refusal brings the question back.
+    setRequestedAt(new Date().toISOString());
+    setPhase('stopping');
     try {
       const res = await fetch(`/api/runs/${encodeURIComponent(run.id)}/kill`, {
         method: 'POST',
@@ -167,6 +174,8 @@ function KillDialog({
         audit?: unknown;
       };
       if (!res.ok) {
+        setPhase('confirm');
+        setRequestedAt(null);
         setError(
           body.code === 'run_not_running'
             ? 'This audit has already finished. Nothing is running.'
@@ -178,8 +187,9 @@ function KillDialog({
       }
       setRequestedAt(typeof body.killRequestedAt === 'string' ? body.killRequestedAt : new Date().toISOString());
       setAudit(auditRefSchema.parse(body.audit ?? null));
-      setPhase('stopping');
     } catch {
+      setPhase('confirm');
+      setRequestedAt(null);
       setError("Couldn't reach Blackwing. Nothing was stopped. Try again.");
     } finally {
       setBusy(false);
@@ -215,6 +225,9 @@ function KillDialog({
   const time = (iso: string | null): string =>
     iso === null ? '' : new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' }).format(new Date(iso));
   const halted = phase === 'halted';
+  // Only decisions the stop closed count: one already answered by hand before it was never "pending at stop".
+  const since = requestedAt === null ? Number.POSITIVE_INFINITY : Date.parse(requestedAt) - SKEW_MS;
+  const atStop = (halt?.gate2 ?? []).filter((g) => g.status === 'pending' || (g.decidedAt !== null && Date.parse(g.decidedAt) >= since));
   const steps = [
     { label: 'Stop requested', detail: time(requestedAt), done: requestedAt !== null },
     { label: 'Agents halted', detail: halted ? 'No new request is sent' : 'Waiting for the runner…', done: halted },
@@ -223,10 +236,10 @@ function KillDialog({
       detail:
         halt === null
           ? ''
-          : halt.gate2.length === 0
+          : atStop.length === 0
             ? 'None were waiting'
-            : `${halt.gate2.filter((g) => g.status !== 'pending').length} of ${halt.gate2.length} closed`,
-      done: halted && (halt?.gate2.every((g) => g.status !== 'pending') ?? true),
+            : `${atStop.filter((g) => g.status !== 'pending').length} of ${atStop.length} closed`,
+      done: halted && atStop.every((g) => g.status !== 'pending'),
     },
     {
       label: halt?.haltMs === null || halt?.haltMs === undefined ? 'Halt measured' : `Halt measured in ${halt.haltMs.toLocaleString()} ms`,
@@ -257,7 +270,11 @@ function KillDialog({
               <Icon name="check" size={16} className="text-kill" />
               <span className="flex min-w-0 flex-col">
                 <span className="text-[13.5px] font-semibold">This audit</span>
-                <span className="truncate text-xs text-muted-foreground">{run.assetName}</span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {run.assetName}
+                  {run.startedAt === undefined || run.startedAt === null ? '' : ` · started ${time(run.startedAt)}`} ·{' '}
+                  <span className="font-mono">{shortId(run.id)}</span>
+                </span>
               </span>
             </div>
             {error === null ? null : (

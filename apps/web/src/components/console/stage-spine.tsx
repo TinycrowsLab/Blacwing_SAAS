@@ -51,8 +51,11 @@ export function StageSpine({
   /** The last stage links to the results once the run is over. */
   readonly resultsHref: string | null;
 }) {
-  const index = stages.findIndex((s) => s.state === 'current');
+  // A run that ended with nothing to review has no gold stage: phones then name the last one it reached.
+  const currentAt = stages.findIndex((s) => s.state === 'current');
+  const index = currentAt >= 0 ? currentAt : stages.findLastIndex((s) => s.state !== 'upcoming' && s.state !== 'skipped');
   const current = stages[index];
+  const reached = (s: Stage | undefined): boolean => s !== undefined && s.state !== 'upcoming' && s.state !== 'skipped';
   return (
     <nav aria-label="Audit progress" className="border-b border-border bg-sidebar px-4 py-2.5 md:px-6">
       <p className="m-0 text-[12.5px] text-muted-foreground md:hidden">
@@ -79,9 +82,10 @@ export function StageSpine({
               aria-current={s.state === 'current' ? 'step' : undefined}
             >
               {i > 0 ? (
+                // One rule for every connector: ink only between two stages the run reached, else a grey line.
                 <span
                   aria-hidden="true"
-                  className={`mx-2.5 h-[1.5px] min-w-3 flex-1 ${s.state === 'upcoming' || s.state === 'skipped' ? 'bg-border-strong' : 'bg-text'}`}
+                  className={`mx-2.5 h-[1.5px] min-w-3 flex-1 ${reached(s) && reached(stages[i - 1]) ? 'bg-text' : 'bg-border-strong'}`}
                 />
               ) : null}
               {s.key === 'review' && resultsHref !== null ? (

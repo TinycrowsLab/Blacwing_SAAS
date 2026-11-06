@@ -58,7 +58,9 @@ export function MobileBar({
       {pending > 0 ? (
         <Link
           href="/decisions"
-          className="inline-flex h-8 items-center gap-1.5 rounded-full bg-gold px-3 text-[12.5px] font-semibold text-on-gold no-underline shadow-[inset_0_0_0_1px_rgba(138,99,16,.28)]"
+          title="Decisions waiting for you, across your audits"
+          // A 32 px pill with a 44 px hit area (spec §9).
+          className="relative inline-flex h-8 items-center gap-1.5 rounded-full bg-gold px-3 text-[12.5px] font-semibold text-on-gold no-underline shadow-[inset_0_0_0_1px_rgba(138,99,16,.28)] before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-['']"
         >
           Your turn
           <span className="tabular-nums">{pending}</span>

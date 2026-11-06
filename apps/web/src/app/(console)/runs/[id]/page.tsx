@@ -1,8 +1,10 @@
-// Watch Claude work (experience spec §5). The first render is server-side; the client polls the run route.
+// Watch Claude work (experience spec §5). The first render is server-side; the client polls the run route. When the
+// API is busy (429) or slow at that moment, the page still opens and the client loader keeps trying: a person who just
+// approved an audit never lands on an error page while it runs.
 import Link from 'next/link';
 
 import { buttonClass } from '../../../../components/console/design';
-import { RunView } from '../../../../components/console/run-view';
+import { RunView, RunViewLoader } from '../../../../components/console/run-view';
 import { ApiError, callApi } from '../../../../lib/api';
 import { getViewer } from '../../../../lib/auth';
 import { runSchema } from '../../../../lib/schemas';
@@ -45,6 +47,7 @@ export default async function RunPage({
     return <RunView initial={run} viewerName={session.user.name} />;
   } catch (caught) {
     if (caught instanceof ApiError && caught.status === HTTP_NOT_FOUND) return <NoSuchRun />;
-    throw caught;
+    // Transient (rate limited, timed out, 5xx): the client loads it with back-off instead of an error page.
+    return <RunViewLoader id={id} viewerName={session.user.name} />;
   }
 }

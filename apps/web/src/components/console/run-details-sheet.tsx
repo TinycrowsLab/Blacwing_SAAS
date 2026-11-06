@@ -171,22 +171,39 @@ export function RunDetailsSheet({
   );
 }
 
+/** A small caption over each code box, so request and response read the same way. */
+const Caption = ({ children }: { readonly children: string }) => (
+  <span className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">{children}</span>
+);
+
 function Headers({ headers }: { readonly headers: Readonly<Record<string, string>> | null }) {
   const rows = Object.entries(headers ?? {});
-  if (rows.length === 0) return <p className="m-0 text-[12px] text-muted-foreground">No headers recorded.</p>;
   return (
-    <pre className={`m-0 max-h-48 overflow-auto rounded-[10px] ${EXACT} border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px]`}>
-      {rows.map(([k, v]) => `${k}: ${v}`).join('\n')}
-    </pre>
+    <div className="flex flex-col gap-1">
+      <Caption>Headers</Caption>
+      {rows.length === 0 ? (
+        <p className="m-0 text-[12px] text-muted-foreground">No headers recorded.</p>
+      ) : (
+        <pre className={`m-0 max-h-48 overflow-auto rounded-[10px] ${EXACT} border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px]`}>
+          {rows.map(([k, v]) => `${k}: ${v}`).join('\n')}
+        </pre>
+      )}
+    </div>
   );
 }
 
 function Body({ text }: { readonly text: string | null }) {
-  if (text === null || text === '') return <p className="m-0 text-[12px] text-muted-foreground">No body.</p>;
   return (
-    <pre className={`m-0 max-h-80 overflow-auto whitespace-pre-wrap break-all rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px] ${EXACT}`}>
-      {text}
-    </pre>
+    <div className="flex flex-col gap-1">
+      <Caption>Body</Caption>
+      {text === null || text === '' ? (
+        <p className="m-0 text-[12px] text-muted-foreground">No body.</p>
+      ) : (
+        <pre className={`m-0 max-h-80 overflow-auto whitespace-pre-wrap break-all rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px] ${EXACT}`}>
+          {text}
+        </pre>
+      )}
+    </div>
   );
 }
 

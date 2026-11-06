@@ -265,7 +265,7 @@ export function Gate2Actions({
             onSubmit={() => {
               if (enough) button(allowWrap)?.click();
             }}
-            placeholder="Why is it safe to send this once?"
+            placeholder="Why is it safe to allow this for the rest of the run?"
             autoFocus
             rows={2}
           />

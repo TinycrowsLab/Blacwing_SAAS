@@ -289,7 +289,8 @@ export function agentLanes(events: readonly RunEvent[]): AgentLane[] {
   return manifest(events).map((name) => {
     const mine = events.filter((e) => (str(e.data.agent) || e.stage) === name);
     const turn = mine.findLast((e) => e.kind === 'agent.turn');
-    const message = mine.findLast((e) => e.kind === 'agent.message');
+    // A subagent's report to the planner is its latest word too (the conversation shows the same text).
+    const message = mine.findLast((e) => e.kind === 'agent.message' || e.kind === 'agent.reply');
     const marks = mine.flatMap((e) => {
       const row = describe(e);
       return row?.mark
@@ -552,11 +553,31 @@ export interface ThreadItem {
   /** The delegation's instruction (`prompt`), or its short description when the planner gave no prompt. */
   readonly task: string;
   readonly toolUseId: string | null;
+  /** The key of the delegation this segment belongs to (its own key for the first segment). */
+  readonly root: string;
+  /** A later segment of the same delegation: it resumes below items that happened in between, so time reads down. */
+  readonly continued: boolean;
   replied: boolean;
   readonly children: ThreadChild[];
 }
 
 export type ConversationItem = ThreadItem | ThreadChild;
+
+/** Delegations opened this close together are one fan-out: a sibling's first steps may sit above the next one. */
+const FANOUT_MS = 5000;
+
+/** Repeated identical chips fold into one: "marked 3 test cases blocked", else "used X ×3". */
+export function chipGroups(tools: readonly string[]): string[] {
+  const out: { text: string; n: number }[] = [];
+  for (const t of tools) {
+    const last = out.at(-1);
+    if (last?.text === t) last.n += 1;
+    else out.push({ text: t, n: 1 });
+  }
+  return out.map(({ text, n }) =>
+    n === 1 ? text : text.includes('a test case') ? text.replace('a test case', `${n} test cases`) : `${text} ×${n}`,
+  );
+}
 
 const isDelegation = (e: RunEvent): boolean => e.kind === 'agent.tool' && (str(e.data.tool) === 'Agent' || str(e.data.tool) === 'Task');
 const inputOf = (e: RunEvent): Record<string, unknown> =>
@@ -585,9 +606,11 @@ function callOf(e: RunEvent): CallRow {
  * The run as a conversation (spec §5.2 item 5). A delegation opens a thread (Planner → specialist); the specialist's
  * messages, calls, tool chips, its candidates' validator turns and its Gate 2 requests nest under the newest open
  * thread to that agent; `agent.reply` closes the thread (matched by toolUseId, else the newest open one). Blackwing's
- * own lines come only from the host-line catalogue. Items keep event order; a thread sits where it was opened.
- * shortcut: calls attach to the lane's latest turn, so two parallel delegations to one subagent share a thread's
- * calls; upgrade when http.sent carries the toolUseId.
+ * own lines come only from the host-line catalogue. Time reads down: when something else happened after a thread
+ * (another agent spoke, the planner moved on), the thread resumes in a `continued` segment at the bottom instead of
+ * growing above it. Sibling delegations of one fan-out do not split each other.
+ * shortcut: calls attach to the lane's latest turn wherever it is drawn, so a burst of requests never shreds the
+ * conversation into one-row segments; upgrade when http.sent carries the toolUseId.
  */
 export function conversationItems(
   events: readonly RunEvent[],
@@ -604,14 +627,30 @@ export function conversationItems(
 
   const openThread = (lane: string): ThreadItem | undefined =>
     threads.findLast((t) => t.to === lane && !t.replied) ?? threads.findLast((t) => t.to === lane);
-  const push = (lane: string, item: ThreadChild): void => {
-    const thread = lane === 'orchestrator' ? undefined : openThread(lane);
-    if (thread === undefined) items.push(item);
-    else thread.children.push(item);
+  /** The segment a new child of `thread` goes into: its newest one while nothing else came after it, else a new one. */
+  const segmentOf = (thread: ThreadItem, item: ThreadChild): ThreadItem => {
+    const seg = threads.findLast((t) => t.root === thread.root) ?? thread;
+    const after = items.slice(items.lastIndexOf(seg) + 1);
+    const free = after.every(
+      (x) => x.type === 'thread' && !x.continued && x.children.length === 0 && Date.parse(x.at) - Date.parse(seg.at) <= FANOUT_MS,
+    );
+    if (free) return seg;
+    const next: ThreadItem = { ...seg, key: `${seg.root}-${item.key}`, seq: item.seq, at: item.at, continued: true, children: [] };
+    items.push(next);
+    threads.push(next);
+    return next;
   };
+  const appendTo = (thread: ThreadItem | undefined, item: ThreadChild): void => {
+    if (thread === undefined) items.push(item);
+    else segmentOf(thread, item).children.push(item);
+  };
+  const push = (lane: string, item: ThreadChild): void => {
+    appendTo(lane === 'orchestrator' ? undefined : openThread(lane), item);
+  };
+  /** The turn a chip or call joins. The planner's turns are top level: one with later items below it is closed. */
   const turnFor = (lane: string, e: RunEvent): TurnItem => {
     const existing = turnOf.get(lane);
-    if (existing !== undefined) return existing;
+    if (existing !== undefined && (lane !== 'orchestrator' || items.at(-1) === existing)) return existing;
     const turn: TurnItem = { type: 'turn', key: `t${e.seq}`, seq: e.seq, at: e.at, agent: lane, text: null, reply: false, isError: false, calls: [], tools: [] };
     push(lane, turn);
     turnOf.set(lane, turn);
@@ -641,6 +680,8 @@ export function conversationItems(
             to: subagentOf(e),
             task: str(input.prompt) || str(input.description),
             toolUseId: str(d.toolUseId) || null,
+            root: `d${e.seq}`,
+            continued: false,
             replied: false,
             children: [],
           };
@@ -648,7 +689,8 @@ export function conversationItems(
           items.push(thread);
           threads.push(thread);
           turnOf.delete(thread.to);
-        } else {
+        } else if (str(d.tool) !== 'record_test_cases') {
+          // Recording the plan has its own Blackwing line (plan.cases) at the moment it landed: no second chip.
           turnFor(lane, e).tools.push(toolChip(str(d.tool), inputOf(e)));
         }
         break;
@@ -656,12 +698,12 @@ export function conversationItems(
       case 'agent.message': {
         const turn: TurnItem = { type: 'turn', key: `t${e.seq}`, seq: e.seq, at: e.at, agent: lane, text: str(d.text), reply: false, isError: false, calls: [], tools: [] };
         if (lane === 'orchestrator') {
-          // The planner narrates the delegations it just made ("I started recon, waiting for its results") while they
-          // run: that note reads before the open threads it describes, not after their replies.
+          // The planner narrates the delegations it just made ("I started recon, waiting for its results"): that note
+          // reads before those threads while nothing happened in them yet.
           let at = items.length;
           while (at > 0) {
             const prev = items[at - 1];
-            if (prev?.type !== 'thread' || prev.from !== 'orchestrator' || prev.replied) break;
+            if (prev?.type !== 'thread' || prev.from !== 'orchestrator' || prev.replied || prev.continued || prev.children.length > 0) break;
             at -= 1;
           }
           items.splice(at, 0, turn);
@@ -674,15 +716,17 @@ export function conversationItems(
         const thread =
           (id === '' ? undefined : threads.find((t) => t.toolUseId === id)) ?? threads.find((t) => t.to === lane && !t.replied);
         const text = str(d.text);
-        if (thread !== undefined) thread.replied = true;
-        const last = (thread?.children ?? items).findLast((c): c is TurnItem => c.type === 'turn' && c.agent === lane);
+        const segments = thread === undefined ? [] : threads.filter((t) => t.root === thread.root);
+        const last = (segments.length === 0 ? items : segments.flatMap((t) => t.children)).findLast(
+          (c): c is TurnItem => c.type === 'turn' && c.agent === lane,
+        );
         if (last !== undefined && sameText(last.text, text)) {
           last.reply = true;
           last.isError = d.isError === true;
         } else {
-          const turn: TurnItem = { type: 'turn', key: `r${e.seq}`, seq: e.seq, at: e.at, agent: lane, text, reply: true, isError: d.isError === true, calls: [], tools: [] };
-          (thread?.children ?? items).push(turn);
+          appendTo(thread, { type: 'turn', key: `r${e.seq}`, seq: e.seq, at: e.at, agent: lane, text, reply: true, isError: d.isError === true, calls: [], tools: [] });
         }
+        for (const t of thread === undefined ? [] : threads.filter((x) => x.root === thread.root)) t.replied = true;
         turnOf.delete(lane);
         break;
       }
@@ -794,7 +838,10 @@ export function filterConversation(items: readonly ConversationItem[], agent: st
   }
   if (agent === 'orchestrator')
     return items.flatMap((item): ConversationItem[] => {
-      if (item.type === 'thread') return [{ ...item, children: item.children.filter((c) => c.type === 'turn' && c.reply) }];
+      if (item.type === 'thread') {
+        const children = item.children.filter((c) => c.type === 'turn' && c.reply);
+        return item.continued && children.length === 0 ? [] : [{ ...item, children }];
+      }
       return item.type === 'turn' && item.agent === 'orchestrator' ? [item] : [];
     });
   return items.filter((item) => (item.type === 'thread' ? item.to === agent : item.type !== 'host' && 'agent' in item && item.agent === agent));
@@ -906,6 +953,9 @@ export function stages(
             ? `stopped at ${plan.counts.executed.toLocaleString('en-US')} of ${plan.total.toLocaleString('en-US')}`
             : `stopped${r.detail === '' ? '' : ` · ${r.detail}`}`
           : r.detail;
+    // Nothing was found: the run's end is not a gold "your turn". A finished run is done, a stopped one stopped.
+    if (r.key === 'review' && opts.terminal && cands.length === 0)
+      return { key: r.key, label: r.now, detail: 'nothing to review', state: opts.stopped === true ? 'stopped' : 'done' };
     return { key: r.key, label: state === 'done' ? r.past : r.now, detail, state };
   });
 }
@@ -969,6 +1019,7 @@ export function teamNodes(
   });
   const started = agents.length > 0;
 
+  // The plain sub-line; the state itself is the node's mark (and part of its accessible name).
   const planner = agents.includes('orchestrator')
     ? node(
         'orchestrator',
@@ -976,13 +1027,14 @@ export function teamNodes(
         waiting.has('orchestrator')
           ? 'waiting on you'
           : tasks.length > 0
-            ? `${terminal && stopped ? 'stopped, ' : ''}${plural(tasks.length, 'task', 'tasks')} given`
+            ? `${plural(tasks.length, 'task', 'tasks')} given`
             : terminal
               ? 'no tasks given'
               : 'reading the plan',
       )
     : null;
 
+  const where = (path: string): string => (path === '/' ? 'the home page' : path);
   const specialists = agents
     .filter((id) => id !== 'orchestrator' && id !== 'validator')
     .map((id) => {
@@ -990,11 +1042,11 @@ export function teamNodes(
       const calls = events.filter((e) => e.kind === 'http.sent' && str(e.data.agent) === id);
       const lastPath = calls.length === 0 ? null : pathOf(str(calls.at(-1)?.data.url)).split('?')[0] ?? null;
       const open = mine.some((t) => !t.replied);
+      const sent = plural(calls.length, 'request', 'requests');
       if (waiting.has(id)) return node(id, 'waiting', 'waiting on you');
-      if (open && !terminal) return node(id, 'working', lastPath === null ? 'task received' : `${id === 'recon' ? 'mapping' : 'testing'} ${lastPath}`);
-      if (open && stopped) return node(id, 'stopped', `stopped mid-task, ${plural(calls.length, 'request', 'requests')}`);
-      if (mine.length > 0 || calls.length > 0)
-        return node(id, 'done', `${id === 'recon' ? 'mapped' : 'done'}, ${plural(calls.length, 'request', 'requests')}`);
+      if (open && !terminal) return node(id, 'working', lastPath === null ? 'task received' : `${id === 'recon' ? 'mapping' : 'testing'} ${where(lastPath)}`);
+      if (open && stopped) return node(id, 'stopped', `stopped mid-task, ${sent}`);
+      if (mine.length > 0 || calls.length > 0) return node(id, 'done', id === 'recon' ? `mapped, ${sent}` : `${open ? 'finished' : 'reported back'}, ${sent}`);
       return node(id, 'idle', 'no task yet');
     });
 
@@ -1013,19 +1065,22 @@ export function teamNodes(
   return { planner, specialists, validator, tasks: tasks.length, candidates: cands.length, proven, autoReleased };
 }
 
-/** Header liveness (spec §5.2 item 1): live, quiet after 15 s, reconnecting after a failed poll. */
+/** Header liveness (spec §5.2 item 1): live, quiet after 15 s (waiting, while a decision is open), reconnecting after a failed poll. */
 export function liveness(
   nowMs: number,
   lastEventMs: number,
   failedSinceMs: number | null,
   lastOkMs: number,
-): { readonly tone: 'live' | 'quiet' | 'reconnecting'; readonly text: string } {
+  /** A Gate 2 is open: a quiet run is waiting for the person, not stalled. */
+  waitingOnYou = false,
+): { readonly tone: 'live' | 'quiet' | 'reconnecting' | 'waiting'; readonly text: string } {
   const ago = (ms: number): string => {
     const s = Math.max(0, Math.round((nowMs - ms) / 1000));
     return s < 90 ? `${s} s` : `${Math.round(s / 60)} min`;
   };
   if (failedSinceMs !== null) return { tone: 'reconnecting', text: `Reconnecting… last update ${ago(lastOkMs)} ago` };
   if (nowMs - lastEventMs < QUIET_AFTER_MS) return { tone: 'live', text: `Live · last event ${ago(lastEventMs)} ago` };
+  if (waitingOnYou) return { tone: 'waiting', text: 'Waiting for your decision' };
   return { tone: 'quiet', text: `Quiet for ${ago(lastEventMs)}` };
 }
 

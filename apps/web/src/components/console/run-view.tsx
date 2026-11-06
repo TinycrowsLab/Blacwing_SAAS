@@ -3,10 +3,13 @@
 'use client';
 
 // Watch Claude work (experience spec §5): the live audit. The first render comes from the server; the client polls the
-// run route (afterSeq) every 1.5 s while the tab is visible, backs off on failure (1.5, 3, 6, 10 s) and keeps the data
-// it has. Everything shown is derived from the run DTO and its events in run-model.ts.
+// run route (afterSeq) at once on mount (a cached first paint after Back must not pose as the present), then every 1.5 s
+// while the tab is visible, backs off on failure (1.5, 3, 6, 10 s) and keeps the data it has. Everything shown is
+// derived from the run DTO and its events in run-model.ts. The open tab and agent filter live in the URL, so Back
+// returns to the same view.
 // shortcut: polling, not SSE; upgrade when the API gains an event stream.
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -22,7 +25,7 @@ import {
 
 import { Conversation, shortTime } from './conversation';
 import { buttonClass, Icon, VoiceTag } from './design';
-import { clockLabel, PendingButton } from './design-client';
+import { PendingButton, useCountdown } from './design-client';
 import { FlightDeck, FoundPanel, LimitsPanel, PlanPanel, RequestsTab, TestPlanTab } from './flight-deck';
 import { KillButton } from './kill-dialog';
 import { CARE_LABEL, ExchangeSheet, RunDetailsSheet } from './run-details-sheet';
@@ -40,7 +43,6 @@ import {
   isOpenGate2,
   liveness,
   mergeEvents,
-  pathOf,
   stages,
   teamNodes,
 } from './run-model';
@@ -48,7 +50,8 @@ import { StageSpine } from './stage-spine';
 import { TeamMap } from './team-map';
 import { useNow } from './use-now';
 import { agentName } from '../../lib/agents';
-import { type Run, type RunEvent, runSchema } from '../../lib/schemas';
+import { decisionTitle } from '../../lib/plan-text';
+import { type Gate2, type Run, type RunEvent, runSchema } from '../../lib/schemas';
 
 
 const BACKOFF_MS = [1500, 3000, 6000, 10_000] as const;
@@ -62,6 +65,7 @@ const EXCHANGES_REFRESH_MS = 5000;
 const EXCHANGE_PAGE = 200;
 
 type Tab = 'conversation' | 'plan' | 'requests' | 'deck';
+const AGENT_ID = /^[a-z][a-z0-9-]{0,63}$/;
 const TABS: readonly { id: Tab; label: string }[] = [
   { id: 'conversation', label: 'Conversation' },
   { id: 'plan', label: 'Test plan' },
@@ -123,13 +127,104 @@ function readMapCollapsed(): boolean {
   }
 }
 
-function Liveness({ tone, text }: { readonly tone: 'live' | 'quiet' | 'reconnecting'; readonly text: string }) {
-  const dot = tone === 'live' ? 'bg-ok motion-safe:animate-[bwpulse_1.6s_ease-in-out_infinite]' : tone === 'quiet' ? 'bg-faint' : 'bg-warn';
+function Liveness({ tone, text }: { readonly tone: 'live' | 'quiet' | 'reconnecting' | 'waiting'; readonly text: string }) {
+  const dot =
+    tone === 'live'
+      ? 'bg-ok motion-safe:animate-[bwpulse_1.6s_ease-in-out_infinite]'
+      : tone === 'waiting'
+        ? 'bg-gold'
+        : tone === 'quiet'
+          ? 'bg-faint'
+          : 'bg-warn';
   return (
-    <span role="status" className={`flex items-center gap-1.5 whitespace-nowrap text-[11.5px] ${tone === 'reconnecting' ? 'text-warn' : 'text-muted-foreground'}`}>
+    <span
+      role="status"
+      className={`flex items-center gap-1.5 whitespace-nowrap text-[11.5px] ${tone === 'reconnecting' ? 'text-warn' : tone === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}
+    >
       <span aria-hidden="true" className={`size-[7px] rounded-full ${dot}`} />
       {text}
     </span>
+  );
+}
+
+/** Phones: the first open decision, pinned under the top bar. Same clock (and rounding) as the decision card. */
+function DecisionBanner({ g, more }: { readonly g: Gate2; readonly more: number }) {
+  const clock = useCountdown(g.deadlineAt, g.createdAt);
+  return (
+    <Link
+      href={`/decisions/gate2/${g.id}`}
+      className="flex min-h-12 items-center gap-2.5 border-b border-gold-line bg-gold-soft px-4 py-1.5 text-[13px] text-foreground no-underline md:hidden"
+    >
+      <Icon name="hand" size={16} className="shrink-0 text-gold-ink" />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-semibold">{decisionTitle(g.method, g.url)}</span>
+        <span className="block truncate text-[11.5px] text-muted-foreground">
+          {agentName(g.agent)}
+          {more > 0 ? ` · ${more} more waiting` : ''}
+        </span>
+      </span>
+      <span className="font-semibold tabular-nums text-gold-ink">{clock?.label ?? ''}</span>
+      <span className={buttonClass('primary', 'h-11 px-3.5')}>Decide</span>
+    </Link>
+  );
+}
+
+/**
+ * The first render could not get the run (Blackwing was busy or did not answer in time): the page still opens, says
+ * so calmly, and keeps trying with the same back-off as the live poll.
+ */
+export function RunViewLoader({ id, viewerName }: { readonly id: string; readonly viewerName: string | null }) {
+  const [run, setRun] = useState<Run | null>(null);
+  const [missing, setMissing] = useState(false);
+  const [tries, setTries] = useState(0);
+  useEffect(() => {
+    let live = true;
+    let timer = 0;
+    let n = 0;
+    const attempt = async (): Promise<void> => {
+      try {
+        const res = await fetch(`/api/runs/${encodeURIComponent(id)}?afterSeq=0`, { cache: 'no-store' });
+        if (res.status === 404) {
+          if (live) setMissing(true);
+          return;
+        }
+        if (!res.ok) throw new Error(String(res.status));
+        const next = runSchema.parse(await res.json());
+        if (live) setRun(next);
+      } catch {
+        n += 1;
+        if (!live) return;
+        setTries(n);
+        timer = window.setTimeout(() => void attempt(), BACKOFF_MS[Math.min(n, BACKOFF_MS.length - 1)] ?? BACKOFF_MS[0]);
+      }
+    };
+    void attempt();
+    return () => {
+      live = false;
+      window.clearTimeout(timer);
+    };
+  }, [id]);
+  if (run !== null) return <RunView initial={run} viewerName={viewerName} />;
+  return (
+    <section role="status" className="mx-auto flex max-w-md flex-col items-center gap-3 py-20 text-center">
+      {missing ? (
+        <>
+          <h1 className="m-0 text-[22px] font-semibold leading-8">We couldn&apos;t find that audit</h1>
+          <p className="m-0 text-[14px] leading-6 text-muted-foreground">The link may be old, or the audit belongs to another workspace.</p>
+          <Link href="/" className={buttonClass('primary')}>
+            Go to Home
+          </Link>
+        </>
+      ) : (
+        <>
+          <span aria-hidden="true" className="size-5 rounded-full border-2 border-border-strong border-t-gold-ink motion-safe:animate-[bwspin_0.9s_linear_infinite]" />
+          <h1 className="m-0 text-[18px] font-semibold leading-7">Opening the audit…</h1>
+          <p className="m-0 text-[13.5px] leading-6 text-muted-foreground">
+            {tries === 0 ? 'Loading the latest from Blackwing.' : 'Blackwing is busy for a moment. Reconnecting…'} The audit keeps running either way.
+          </p>
+        </>
+      )}
+    </section>
   );
 }
 
@@ -145,10 +240,19 @@ function download(name: string, text: string): void {
 }
 
 export function RunView({ initial, viewerName }: { readonly initial: Run; readonly viewerName: string | null }) {
+  const params = useSearchParams();
   const [run, setRun] = useState<Run>(initial);
   const [events, setEvents] = useState<RunEvent[]>(initial.events);
-  const [tab, setTab] = useState<Tab>('conversation');
-  const [filter, setFilter] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>(() => {
+    const t = params.get('tab');
+    return TABS.some((x) => x.id === t) ? (t as Tab) : 'conversation';
+  });
+  const [filter, setFilter] = useState<string | null>(() => {
+    const a = params.get('agent');
+    return a !== null && AGENT_ID.test(a) ? a : null;
+  });
+  /** False until the first poll answered: the server's (maybe cached) first paint says nothing about "live". */
+  const [synced, setSynced] = useState(false);
   const [failedSince, setFailedSince] = useState<number | null>(null);
   const [lastOk, setLastOk] = useState(() => Date.now());
   const [controlError, setControlError] = useState<string | null>(null);
@@ -179,6 +283,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       failures.current = 0;
       setFailedSince(null);
       setLastOk(Date.now());
+      setSynced(true);
       setRun(next);
       if (next.events.length > 0) setEvents((prev) => mergeEvents(prev, next.events));
       return true;
@@ -188,6 +293,21 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       return false;
     }
   }, [initial.id]);
+
+  // A first paint from the router cache (Back, a revisit) may be minutes old: catch up at once, live or not.
+  useEffect(() => {
+    void poll();
+  }, [poll]);
+
+  // The view (tab, agent filter) is kept in the URL without a navigation, so Back and a shared link reopen it.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (tab === 'conversation') url.searchParams.delete('tab');
+    else url.searchParams.set('tab', tab);
+    if (filter === null) url.searchParams.delete('agent');
+    else url.searchParams.set('agent', filter);
+    if (url.href !== window.location.href) window.history.replaceState(null, '', url);
+  }, [tab, filter]);
 
   // One timer chain: 1.5 s while healthy, backing off after failures, paused while the tab is hidden.
   useEffect(() => {
@@ -310,7 +430,18 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const cases = useMemo(() => caseList(events), [events]);
   const cands = useMemo(() => candidates(events), [events]);
   const pending = run.gate2.filter((g) => isOpenGate2(g, nowMs));
-  const waitingAgents = useMemo(() => new Set(pending.map((g) => g.agent)), [pending]);
+  const pendingIds = pending.map((g) => g.id).join(',');
+  const waitingAgents = useMemo(() => new Set(pendingIds === '' ? [] : run.gate2.filter((g) => pendingIds.includes(g.id)).map((g) => g.agent)), [pendingIds, run.gate2]);
+  // The sidebar's "Waiting on you" polls every 5 s: when this run's open decisions change, it refreshes now, so the two
+  // counts never disagree on screen.
+  const firstPending = useRef(true);
+  useEffect(() => {
+    if (firstPending.current) {
+      firstPending.current = false;
+      return;
+    }
+    window.dispatchEvent(new Event('bw:refresh'));
+  }, [pendingIds]);
   const stopping = !terminal && events.some((e) => e.kind === 'kill.requested');
   const model = events.find((e) => e.kind === 'run.started')?.data.model;
 
@@ -318,9 +449,10 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const end = run.finishedAt === null ? (mounted ? nowMs : start) : new Date(run.finishedAt).getTime();
   const elapsedS = Math.max(0, (end - start) / 1000);
   const lastEvent = events.at(-1);
-  const polled = liveness(nowMs, lastEvent === undefined ? start : Date.parse(lastEvent.at), failedSince, lastOk);
+  const polled = liveness(nowMs, lastEvent === undefined ? start : Date.parse(lastEvent.at), failedSince, lastOk, pending.length > 0);
   // Paused is not "live": no new request goes out. A failing poll still says so first.
   const live = run.paused && polled.tone !== 'reconnecting' ? { tone: 'quiet' as const, text: 'Paused · no new requests' } : polled;
+  const waitsText = `${pending.length} ${pending.length === 1 ? 'decision waits' : 'decisions wait'} for you`;
   const resultsHref = `/runs/${encodeURIComponent(run.id)}/results`;
 
   const stateText = terminal
@@ -334,9 +466,11 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       : run.state === 'queued'
         ? 'Queued'
         : run.paused
-          ? 'Paused'
+          ? pending.length > 0
+            ? `Paused · ${waitsText}`
+            : 'Paused'
           : pending.length > 0
-            ? `Testing · ${pending.length} ${pending.length === 1 ? 'decision waits' : 'decisions wait'} for you`
+            ? `Testing · ${waitsText}`
             : 'Testing';
   const statePill =
     pending.length > 0 && !terminal ? 'border-gold-line bg-gold-soft text-gold-ink' : 'border-border bg-surface-2 text-foreground';
@@ -351,13 +485,20 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   };
 
   const gate1 = `${approvedBy === 'you' ? 'You' : (approver ?? 'Approved')}${approvedAt === null || !mounted ? '' : `, ${shortTime(approvedAt)}`}`;
-  // Automatic when the request chose it, or when the events show a release nobody made by hand.
-  const gate3 = release === 'auto' || teamMap.autoReleased ? 'Automatic' : terminal ? 'Your turn' : 'After the run';
+  // Automatic when the request chose it, or when the events show a release nobody made by hand. A run that found
+  // nothing leaves nothing to review: never a gold "your turn" for an empty result.
+  const toReview = cands.some((c) => c.status === 'confirmed' || c.status === 'suspected' || c.status === 'not_confirmed');
+  const gate3 = release === 'auto' || teamMap.autoReleased ? 'Automatic' : terminal ? (toReview ? 'Your turn' : 'Nothing to review') : 'After the run';
   const onFilter = (a: string | null): void => {
+    // The filter applies to whichever tab is open (the map sits above all of them).
     setFilter(a);
-    setTab('conversation');
     setTeam(false);
   };
+  // The agent filter applies to every tab, so "Showing one agent" is true wherever it shows.
+  const shownCases = filter === null ? cases : cases.filter((c) => c.agent === filter);
+  const shownLanes = filter === null ? lanes : lanes.filter((l) => l.name === filter);
+  const shownRows = filter === null ? rows : rows.filter((r) => r.agent === filter);
+  const shownExchanges = filter === null ? exchanges.items : exchanges.items.filter((x) => x.agent === filter);
   const mapProps = { team: teamMap, gate1, gate3, ended: terminal, filter, onFilter };
   const onOpenPlan = useCallback((): void => {
     // Phones have no tabs: the plan sits in the "Limits and findings" panel there.
@@ -382,7 +523,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     <>
       <LimitsPanel elapsedS={elapsedS} budget={run.budget} requestsUsed={run.requestsUsed} costUsd={run.costUsd} />
       <PlanPanel cases={cases} waiting={waitingAgents} ended={terminal} />
-      <FoundPanel items={cands} ended={terminal} />
+      <FoundPanel items={cands} ended={terminal} release={release === 'auto' || teamMap.autoReleased ? 'auto' : 'hold'} />
       <p className="m-0 mt-auto border-t border-dashed border-border-strong pt-2.5 text-[11px] leading-4 text-muted-foreground">
         Counts, limits and times come from the runner. Claude&apos;s messages are its own words and stay unverified until the
         validator proves them.
@@ -390,7 +531,8 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     </>
   );
   const exchange = openCall === null ? null : (exchanges.items.find((x) => x.id === openCall.id) ?? null);
-  const firstPending = pending[0];
+  const firstOpen = pending[0];
+  const assetName = run.pins.asset?.name ?? host;
 
   return (
     <section
@@ -402,14 +544,14 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         <div className="min-w-0 max-md:basis-full md:flex-1">
           <nav aria-label="Breadcrumb" className="hidden text-[12px] text-muted-foreground md:block">
             <Link href="/" className="text-muted-foreground no-underline hover:text-foreground">
-              Audits
+              Home
             </Link>{' '}
             / {host}
           </nav>
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h1 className="m-0 truncate text-[19px] font-semibold leading-[26px] tracking-[-0.01em]">{host}</h1>
             {CARE_LABEL[care] === undefined ? null : (
-              <span title={care} className="inline-flex h-[26px] items-center whitespace-nowrap rounded-full bg-surface-2 px-3 text-[12px] font-medium">
+              <span title={care} className="hidden h-[26px] items-center whitespace-nowrap rounded-full bg-surface-2 px-3 text-[12px] font-medium md:inline-flex">
                 {CARE_LABEL[care]}
               </span>
             )}
@@ -433,7 +575,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
-          {terminal || !mounted ? null : <Liveness tone={live.tone} text={live.text} />}
+          {terminal || !mounted || !synced ? null : <Liveness tone={live.tone} text={live.text} />}
           <div className="hidden text-right text-[11.5px] leading-[15px] text-muted-foreground sm:block">
             {terminal ? 'Ran for' : 'Elapsed'}
             <b className="block text-[15px] font-semibold text-foreground tabular-nums" suppressHydrationWarning>
@@ -447,6 +589,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
           ) : (
             <PendingButton
               variant="secondary"
+              className="max-md:h-11"
               icon={run.paused ? 'replay' : 'pause'}
               pendingLabel={run.paused ? 'Resuming…' : 'Pausing…'}
               disabled={stopping || run.state === 'queued'}
@@ -455,8 +598,18 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
               {run.paused ? 'Resume' : 'Pause'}
             </PendingButton>
           )}
-          {/* Phones stop from the top bar's red icon (spec §9), so the header keeps one row. */}
-          <KillButton run={terminal ? null : { id: run.id, assetName: host }} className="h-10 px-4 max-md:hidden" />
+          {/* Phones stop from the top bar's red icon (spec §9), which targets this audit on its own page. */}
+          <KillButton run={terminal ? null : { id: run.id, assetName, startedAt: run.startedAt }} className="h-10 px-4 max-md:hidden" />
+          <button
+            type="button"
+            onClick={() => {
+              setTeam(true);
+            }}
+            className="inline-flex h-11 items-center gap-1.5 rounded-[10px] border border-input-strong bg-card px-3.5 text-[13px] font-medium md:hidden"
+          >
+            <Icon name="team" size={15} />
+            Team
+          </button>
           <DropdownMenu>
             <DropdownMenuTrigger
               ref={moreRef}
@@ -466,6 +619,15 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
               <Icon name="more" size={18} />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[260px] border border-border bg-card text-foreground shadow-float">
+              <DropdownMenuItem
+                className="gap-2.5 lg:hidden"
+                onSelect={() => {
+                  setPanel(true);
+                }}
+              >
+                <Icon name="clock" size={15} />
+                Limits and findings
+              </DropdownMenuItem>
               <DropdownMenuItem
                 className="gap-2.5"
                 onSelect={() => {
@@ -525,26 +687,19 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
           <span>
             <b className="font-semibold text-foreground">Paused.</b> No new request goes out until you resume. An agent may
             finish the thought it is on, and the time limit keeps running.
+            {pending.length > 0 ? (
+              <b className="font-semibold text-gold-ink">
+                {' '}
+                {pending.length === 1 ? 'The open decision keeps its clock' : `The ${pending.length} open decisions keep their clocks`}: no
+                answer in time is a denial.
+              </b>
+            ) : null}
           </span>
         </p>
       ) : null}
 
       {/* Phones: a pending decision pins a gold banner under the top bar. */}
-      {firstPending === undefined ? null : (
-        <Link
-          href={`/decisions/gate2/${firstPending.id}`}
-          className="flex items-center gap-2.5 border-b border-gold-line bg-gold-soft px-4 py-2.5 text-[13px] text-foreground no-underline md:hidden"
-        >
-          <Icon name="hand" size={16} className="text-gold-ink" />
-          <span className="min-w-0 flex-1 truncate font-medium">
-            Claude asks to send <span className="font-mono text-[12.5px]">{firstPending.method.toUpperCase()} {pathOf(firstPending.url)}</span>
-          </span>
-          <span className="font-semibold tabular-nums text-gold-ink" suppressHydrationWarning>
-            {mounted ? clockLabel(Math.max(0, Math.floor((Date.parse(firstPending.deadlineAt) - nowMs) / 1000))) : ''}
-          </span>
-          <span className={buttonClass('primary', 'h-9 px-3.5')}>Decide</span>
-        </Link>
-      )}
+      {firstOpen === undefined || terminal ? null : <DecisionBanner g={firstOpen} more={pending.length - 1} />}
 
       {/* One row that fills the height: the side panel scrolls on its own instead of stretching the page. */}
       <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_316px]">
@@ -564,7 +719,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
               }}
             />
           </div>
-          <div className="mb-1 mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className={`mb-1 mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 ${filter === null ? 'max-md:hidden' : ''}`}>
             <div role="tablist" aria-label="Live audit views" onKeyDown={onTabKey} className="hidden max-w-full gap-0.5 rounded-[10px] bg-surface-2 p-0.5 md:flex">
               {TABS.map((t) => (
                 <button
@@ -590,19 +745,9 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             <button
               type="button"
               onClick={() => {
-                setTeam(true);
-              }}
-              className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border px-4 text-[13px] font-medium md:hidden"
-            >
-              <Icon name="team" size={14} />
-              Team
-            </button>
-            <button
-              type="button"
-              onClick={() => {
                 setPanel(true);
               }}
-              className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border px-4 text-[13px] font-medium md:h-8 md:px-3 md:text-[12.5px] lg:hidden"
+              className="hidden h-8 items-center gap-1.5 rounded-full border border-border px-3 text-[12.5px] font-medium md:inline-flex lg:hidden"
             >
               Limits and findings
             </button>
@@ -653,10 +798,10 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                 }
               />
             ) : tab === 'plan' ? (
-              <TestPlanTab cases={cases} waiting={waitingAgents} ended={terminal} />
+              <TestPlanTab cases={shownCases} waiting={waitingAgents} ended={terminal} />
             ) : tab === 'requests' ? (
               <RequestsTab
-                items={exchanges.items}
+                items={shownExchanges}
                 state={exchanges.state}
                 onOpen={openExchange}
                 onRetry={() => {
@@ -664,7 +809,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                 }}
               />
             ) : (
-              <FlightDeck lanes={lanes} rows={rows} nowMs={end} running={!terminal} pausedFrom={pausedFrom} summary={run.summary} />
+              <FlightDeck lanes={shownLanes} rows={shownRows} nowMs={end} running={!terminal} pausedFrom={pausedFrom} summary={run.summary} startMs={start} />
             )}
           </div>
         </div>
@@ -699,7 +844,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         </SheetContent>
       </Sheet>
       <Sheet open={panel} onOpenChange={setPanel}>
-        <SheetContent side="right" className="flex w-full max-w-[360px] flex-col gap-4 overflow-y-auto border-border bg-card p-5 pt-12 text-foreground">
+        <SheetContent side="bottom" className="flex max-h-[85dvh] flex-col gap-4 overflow-y-auto border-border bg-card p-5 pt-6 text-foreground">
           <SheetTitle className="sr-only">Limits and findings</SheetTitle>
           {sidePanel}
         </SheetContent>

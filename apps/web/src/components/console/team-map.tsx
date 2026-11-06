@@ -4,8 +4,9 @@
 // Claude's team (experience spec §5.2 item 3): Your approval → Planner → one node per subagent in the run.started
 // manifest → Validator → Your review → Report. Node states come from teamNodes() in run-model.ts; clicking a node
 // filters the conversation to that agent. A node spins only while its agent spoke in the last 10 s, never under reduced
-// motion. Plain words first: the gate names and the agents' ids sit in tooltips. Desktop draws a row (collapsible);
-// the phone's Team sheet draws the same nodes as a column.
+// motion. Plain name first, the mono agent id second (spec §1, prototype 04); the gate names sit in tooltips. Every
+// node has the same fixed height and the connectors a fixed width, so the map never changes size mid-run. Desktop draws
+// a row (collapsible); the phone's Team sheet draws the same nodes as a column.
 // The map row has 4px padding because its horizontal scroll box clips the selected and focus rings otherwise.
 import { Icon } from './design';
 
@@ -29,6 +30,7 @@ function NodeButton({
   selected,
   onSelect,
   wide = false,
+  stacked = false,
 }: {
   readonly node: TeamNode;
   /** The technical id, shown in the tooltip (or "replay, no model" for the validator). */
@@ -37,6 +39,8 @@ function NodeButton({
   readonly onSelect: (id: string) => void;
   /** Column layout (phones): full width with a taller touch target. */
   readonly wide?: boolean;
+  /** A narrow row node: the mono id gets its own line. */
+  readonly stacked?: boolean;
 }) {
   const tone = {
     working: 'border-slate bg-surface',
@@ -45,29 +49,38 @@ function NodeButton({
     idle: 'border-border bg-surface',
     stopped: 'border-dashed border-border-strong bg-surface-2',
   }[node.state];
+  const word = STATE_WORD[node.state];
+  const said = node.sub.startsWith(word) ? `${node.name}: ${node.sub}` : `${node.name}, ${word}: ${node.sub}`;
   return (
     <button
       type="button"
       aria-pressed={selected}
       title={`${node.name} (${mono}): ${node.sub}. Click to show only its part of the conversation.`}
-      aria-label={`${node.name}, ${STATE_WORD[node.state]}: ${node.sub}. Show only its part of the conversation.`}
+      aria-label={`${said}. Show only its part of the conversation.`}
       onClick={() => {
         onSelect(node.id);
       }}
       className={`flex w-full min-w-0 flex-col rounded-[10px] border px-2.5 py-1.5 text-left text-[12px] leading-4 transition-shadow hover:shadow-[0_0_0_3px_var(--focus)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${wide ? 'min-h-11 justify-center' : ''} ${tone} ${selected ? 'shadow-[0_0_0_2px_var(--gold-ink)]' : ''}`}
     >
-      <span className="flex items-start gap-1.5 font-semibold text-foreground">
-        <span className="line-clamp-2 break-words">{node.name}</span>
-        {node.state === 'done' ? <span aria-hidden="true" className="ml-auto mt-1 size-[7px] shrink-0 rounded-full bg-ok" /> : null}
-        {node.state === 'stopped' ? <span aria-hidden="true" className="ml-auto mt-[7px] h-[2px] w-2 shrink-0 rounded-full bg-muted-foreground" /> : null}
+      <span className="flex min-w-0 items-baseline gap-1.5 font-semibold text-foreground">
+        <span className="shrink-0">{node.name}</span>
+        {stacked ? null : <span className="min-w-0 truncate font-mono text-[10.5px] font-normal text-muted-foreground">{mono}</span>}
+        {node.state === 'done' ? <span aria-hidden="true" className="ml-auto size-[7px] shrink-0 self-center rounded-full bg-ok" /> : null}
+        {node.state === 'stopped' ? <span aria-hidden="true" className="ml-auto h-[2px] w-2 shrink-0 self-center rounded-full bg-muted-foreground" /> : null}
         {node.state === 'working' ? (
           <Ring
-            className={`ml-auto mt-[3px] text-slate ${node.spinning ? 'border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]' : ''}`}
+            className={`ml-auto self-center text-slate ${node.spinning ? 'border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]' : ''}`}
           />
         ) : null}
       </span>
-      {/* The state, on its own line (two at most): the point of the map, never cut to an ellipsis mid-word. */}
-      <span className={`line-clamp-2 break-words text-[11px] ${node.state === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}>{node.sub}</span>
+      {/* Fixed lines (the tooltip has everything), so the map never changes size mid-run: wide nodes keep the mono
+          id beside the name and one line of action; the narrow planner and validator stack the id, then up to two. */}
+      {stacked ? <span className="truncate font-mono text-[10.5px] text-muted-foreground">{mono}</span> : null}
+      <span
+        className={`text-[11px] ${stacked ? 'line-clamp-2 h-8 break-words' : 'truncate'} ${node.state === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}
+      >
+        {node.sub}
+      </span>
     </button>
   );
 }
@@ -88,15 +101,15 @@ function Diamond({ label, term, who, done }: { readonly label: string; readonly 
   );
 }
 
-/** A connector; with a label ("3 proven") it widens so the words sit clear of both nodes. */
-function Arrow({ label }: { readonly label?: string | undefined }) {
+/** A connector. `wide` ones keep room for a count ("3 proven") from the start, so a label appearing moves nothing. */
+function Arrow({ label, wide = false }: { readonly label?: string | undefined; readonly wide?: boolean }) {
   return (
-    <span className={`flex shrink-0 flex-col items-center gap-0.5 px-1 ${label === undefined ? 'w-5' : 'w-[54px]'}`}>
-      {label === undefined ? null : <small className="whitespace-nowrap text-[10.5px] text-muted-foreground">{label}</small>}
+    <span className={`flex shrink-0 flex-col items-center gap-0.5 px-1 ${wide ? 'w-[56px]' : 'w-5'}`}>
+      <small className="whitespace-nowrap text-[10.5px] text-muted-foreground">{label ?? '\u00a0'}</small>
       <span aria-hidden="true" className="relative h-[1.5px] w-full bg-border-strong">
         <span className="absolute -right-px -top-[3px] border-y-[3.5px] border-l-[5px] border-y-transparent border-l-border-strong" />
       </span>
-      {label === undefined ? null : <small aria-hidden="true" className="invisible text-[10.5px]">.</small>}
+      <small aria-hidden="true" className="invisible text-[10.5px]">.</small>
     </span>
   );
 }
@@ -209,16 +222,16 @@ export function TeamMap({
       <Diamond label="Your approval" term="Gate 1: scope approval" who={gate1} done />
       <Arrow />
       {team.planner === null ? null : (
-        <div className="w-[108px] shrink-0">
-          <NodeButton node={team.planner} mono="orchestrator" selected={filter === team.planner.id} onSelect={select} />
+        <div className="w-[112px] shrink-0">
+          <NodeButton node={team.planner} mono="orchestrator" stacked selected={filter === team.planner.id} onSelect={select} />
         </div>
       )}
       {team.specialists.length === 0 ? (
-        <Arrow label={team.tasks === 0 ? undefined : plural(team.tasks, 'task', 'tasks')} />
+        <Arrow wide label={team.tasks === 0 ? undefined : plural(team.tasks, 'task', 'tasks')} />
       ) : (
         <>
           <Fan rows={team.specialists.length} />
-          <div className="flex min-w-[150px] max-w-[320px] flex-1 flex-col gap-[5px]">
+          <div className="flex min-w-[180px] max-w-[340px] flex-1 flex-col gap-[5px]">
             {team.specialists.map((n) => (
               <NodeButton key={n.id} node={n} mono={n.id} selected={filter === n.id} onSelect={select} />
             ))}
@@ -228,10 +241,10 @@ export function TeamMap({
       )}
       {team.validator === null ? null : (
         <div className="w-[112px] shrink-0">
-          <NodeButton node={team.validator} mono="replay, no model" selected={filter === 'validator'} onSelect={select} />
+          <NodeButton node={team.validator} mono="replay, no model" stacked selected={filter === 'validator'} onSelect={select} />
         </div>
       )}
-      <Arrow label={proven} />
+      <Arrow wide label={proven} />
       <Diamond label="Your review" term="Gate 3: triage and release" who={gate3} done={team.autoReleased && team.proven > 0} />
       <Arrow />
       <div className="shrink-0 rounded-[10px] border border-border bg-surface px-2.5 py-1.5 text-[12px] leading-4">

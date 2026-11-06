@@ -90,7 +90,7 @@ export function LimitsPanel({
 const PLAN_PARTS = [
   { key: 'done', label: 'Done', colour: 'var(--text)' },
   { key: 'running', label: 'Running', colour: 'var(--slate)' },
-  { key: 'waiting', label: 'Waiting on you', colour: 'var(--gold)' },
+  { key: 'waiting', label: 'Held for a decision', colour: 'var(--gold)' },
   { key: 'queued', label: 'Queued', colour: 'var(--border2)' },
   { key: 'skipped', label: 'Skipped', colour: 'var(--faint)' },
   { key: 'blocked', label: 'Blocked', colour: 'var(--warn)' },
@@ -98,7 +98,7 @@ const PLAN_PARTS = [
 ] as const;
 type PlanPart = (typeof PLAN_PARTS)[number]['key'];
 
-/** A case is "waiting on you" while it runs and its agent has a Gate 2 request open; once the run ended, an open case is "not finished". */
+/** A running case is "held for a decision" while its agent has a Gate 2 request open (it counts cases, not decisions); once the run ended, an open case is "not finished". */
 function planPart(c: TestCase, waiting: ReadonlySet<string>, ended: boolean): PlanPart {
   if (ended && (c.status === 'executing' || c.status === 'proposed')) return 'unfinished';
   switch (c.status) {
@@ -170,6 +170,14 @@ function Verdict({ c }: { readonly c: Candidate }) {
       </span>
     );
   const verdict = c.status === 'released' ? 'released' : c.status === 'not_confirmed' ? 'suspected' : c.status;
+  // Kept back is a settled verdict: a flat dash, never a ring that reads as "still working".
+  if (verdict === 'suspected')
+    return (
+      <span className="ml-auto inline-flex items-center gap-1.5 text-[11.5px] font-medium text-muted-foreground">
+        <span aria-hidden="true" className="h-[2px] w-2.5 rounded-full bg-current" />
+        Kept back
+      </span>
+    );
   return (
     <span className="ml-auto">
       <VerdictMark verdict={verdict} />
@@ -177,12 +185,23 @@ function Verdict({ c }: { readonly c: Candidate }) {
   );
 }
 
-export function FoundPanel({ items, ended = false }: { readonly items: readonly Candidate[]; readonly ended?: boolean }) {
+export function FoundPanel({
+  items,
+  ended = false,
+  release = 'hold',
+}: {
+  readonly items: readonly Candidate[];
+  readonly ended?: boolean;
+  /** The request's release mode: proven issues wait for a person, or release themselves. */
+  readonly release?: 'hold' | 'auto';
+}) {
   return (
     <section aria-labelledby="found-h">
       <h2 id="found-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
         {ended ? 'Found' : 'Found so far'}
-        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">private until you release</span>
+        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">
+          {release === 'auto' ? 'proven issues release themselves' : 'private until you release'}
+        </span>
       </h2>
       {items.length === 0 ? (
         <p className="m-0 text-[12px] leading-[18px] text-muted-foreground">
@@ -242,7 +261,7 @@ export function TestPlanTab({
           const part = planPart(c, waiting, ended);
           const word =
             part === 'waiting'
-              ? { label: 'Waiting on you', cls: 'bg-gold-soft text-gold-ink' }
+              ? { label: 'Held for a decision', cls: 'bg-gold-soft text-gold-ink' }
               : part === 'unfinished'
                 ? { label: 'Not finished', cls: 'bg-surface-2 text-muted-foreground' }
                 : (CASE_WORD[c.status] ?? CASE_WORD.proposed);
@@ -398,15 +417,20 @@ function AgentLanes({
   nowMs,
   running,
   pausedFrom,
+  startMs,
 }: {
   readonly lanes: readonly AgentLane[];
   readonly nowMs: number;
   readonly running: boolean;
   /** Per agent: epoch ms since when the lane is paused (Gate 2 wait or run paused). */
   readonly pausedFrom: (agent: string) => number | null;
+  /** When the run started: a finished run's lanes span the whole run, not its last 2 minutes. */
+  readonly startMs: number;
 }) {
-  const from = nowMs - LANE_WINDOW_S * 1000;
-  const pct = (t: number): number => ((t - from) / (LANE_WINDOW_S * 1000)) * 100;
+  const spanMs = running ? LANE_WINDOW_S * 1000 : Math.max(LANE_WINDOW_S * 1000, nowMs - startMs);
+  const from = nowMs - spanMs;
+  const pct = (t: number): number => ((t - from) / spanMs) * 100;
+  const span = running ? 'last 2 minutes' : `the whole run (${Math.max(1, Math.round(spanMs / 60_000))} min)`;
   return (
     <Card aria-label="Agent lanes" as="div">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
@@ -416,7 +440,7 @@ function AgentLanes({
           <Legend shape="square" label="Tool call" />
           <Legend shape="ring" label="Blocked by scope" />
           <Legend shape="diamond" label="Candidate finding" />
-          <span>Last 2 minutes</span>
+          <span>{span.charAt(0).toUpperCase() + span.slice(1)}</span>
         </span>
       </div>
       {lanes.map((lane) => {
@@ -453,7 +477,7 @@ function AgentLanes({
               width="100%"
               height={LANE_H}
               role="img"
-              aria-label={`${agentName(lane.name)} activity, last 2 minutes`}
+              aria-label={`${agentName(lane.name)} activity, ${span}`}
               className="block bg-surface"
             >
               <defs>
@@ -638,6 +662,7 @@ export function FlightDeck({
   running,
   pausedFrom,
   summary,
+  startMs,
 }: {
   readonly lanes: readonly AgentLane[];
   readonly rows: readonly Activity[];
@@ -645,10 +670,11 @@ export function FlightDeck({
   readonly running: boolean;
   readonly pausedFrom: (agent: string) => number | null;
   readonly summary: string | null;
+  readonly startMs: number;
 }) {
   return (
     <div className="flex flex-col gap-3">
-      {lanes.length === 0 ? null : <AgentLanes lanes={lanes} nowMs={nowMs} running={running} pausedFrom={pausedFrom} />}
+      {lanes.length === 0 ? null : <AgentLanes lanes={lanes} nowMs={nowMs} running={running} pausedFrom={pausedFrom} startMs={startMs} />}
       <ActivityTable rows={rows} />
       {summary === null ? null : <SummaryCard text={summary} />}
     </div>

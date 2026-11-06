@@ -62,6 +62,15 @@ const typing = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
+/**
+ * The audit Stop acts on (button, Ctrl+Shift+. and the phone's red icon): on an audit's own page that audit, or none
+ * once it ended (never another audit behind the one on screen); elsewhere the newest live one.
+ */
+function stopTarget<T extends { readonly id: string }>(live: readonly T[], path: string): T | undefined {
+  const onRun = /^\/runs\/([^/]+)/.exec(path)?.[1];
+  return onRun === undefined ? live[0] : live.find((r) => r.id === decodeURIComponent(onRun));
+}
+
 function hostOf(url: string): string {
   try {
     return new URL(url).host;
@@ -292,7 +301,7 @@ function SidebarBody({
   const drafts = useDrafts();
   const decisions = data === null ? 0 : data.gate2.length + data.plans.length + data.releases.length;
   const live = data?.live ?? [];
-  const newest = live[0];
+  const newest = stopTarget(live, path);
   const onNewestPage = newest !== undefined && path.startsWith(`/runs/${newest.id}`);
   const name = data?.workspaceName ?? workspaceName;
   const empty =
@@ -363,7 +372,7 @@ function SidebarBody({
         // Stays mounted when the run ends, so the open dialog can show the halt it measured.
         <div className={newest === undefined ? 'contents' : 'mt-3'}>
           <KillButton
-            run={newest === undefined ? null : { id: newest.id, assetName: newest.assetName ?? 'this audit' }}
+            run={newest === undefined ? null : { id: newest.id, assetName: newest.assetName ?? 'this audit', startedAt: newest.startedAt }}
             variant="pill"
             label={`${live.length} ${live.length === 1 ? 'audit' : 'audits'} running`}
             shortcut
@@ -488,6 +497,7 @@ export function ConsoleSidebar({
 }) {
   const { data, failed, refresh } = useSidebarData(initial);
   const router = useRouter();
+  const path = usePathname();
   useTitlePrefix(data?.gate2.length ?? 0);
 
   useEffect(() => {
@@ -510,12 +520,12 @@ export function ConsoleSidebar({
   }, [router]);
 
   const props = { data, failed, refresh, workspaceName, viewer };
-  const newest = data?.live[0];
+  const newest = stopTarget(data?.live ?? [], path);
   return (
     <>
       <MobileBar
         pending={data === null ? 0 : data.gate2.length + data.plans.length + data.releases.length}
-        live={newest === undefined ? null : { id: newest.id, assetName: newest.assetName ?? 'this audit' }}
+        live={newest === undefined ? null : { id: newest.id, assetName: newest.assetName ?? 'this audit', startedAt: newest.startedAt }}
       >
         <SidebarBody {...props} inSheet />
       </MobileBar>
