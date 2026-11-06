@@ -234,7 +234,7 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-2 text-muted-foreground">
                     <Icon name="web" size={18} />
                   </span>
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="flex min-w-0 flex-1 basis-[220px] flex-col gap-0.5">
                     <span className="truncate text-[14.5px] font-semibold text-foreground">{a.name}</span>
                     <span className="truncate font-mono text-[12px] text-muted-foreground">{origin}</span>
                     {a.allowedOrigins.some((o) => o !== origin) ? (

@@ -358,6 +358,26 @@ export function Conversation({
     if (el !== null && follow) el.scrollTop = el.scrollHeight;
   }, [signature, follow]);
 
+  // A layout change (a resize, a card collapsing to its receipt, "Show all") is not the reader scrolling away: while
+  // following, stay at the bottom, and let only scrolls at an unchanged size turn following off.
+  const followRef = useRef(follow);
+  followRef.current = follow;
+  const size = useRef({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = scroller.current;
+    const content = el?.firstElementChild;
+    if (el === null || content === null || content === undefined) return;
+    const observer = new ResizeObserver(() => {
+      if (followRef.current) el.scrollTop = el.scrollHeight;
+      size.current = { w: el.clientWidth, h: el.scrollHeight };
+    });
+    observer.observe(el);
+    observer.observe(content);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   // A pending decision can sit in an earlier thread: while it is out of view a bar points to it.
   const pendingKey = gate2
     .filter((g) => g.status === 'pending')
@@ -396,6 +416,12 @@ export function Conversation({
         ref={scroller}
         onScroll={(e) => {
           const el = e.currentTarget;
+          const resized = el.clientWidth !== size.current.w || el.scrollHeight !== size.current.h;
+          size.current = { w: el.clientWidth, h: el.scrollHeight };
+          if (resized && followRef.current) {
+            el.scrollTop = el.scrollHeight;
+            return;
+          }
           setFollow(el.scrollHeight - el.scrollTop - el.clientHeight < FOLLOW_SLACK_PX);
         }}
         role="log"

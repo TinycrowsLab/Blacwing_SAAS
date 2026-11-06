@@ -94,11 +94,13 @@ const PLAN_PARTS = [
   { key: 'queued', label: 'Queued', colour: 'var(--border2)' },
   { key: 'skipped', label: 'Skipped', colour: 'var(--faint)' },
   { key: 'blocked', label: 'Blocked', colour: 'var(--warn)' },
+  { key: 'unfinished', label: 'Not finished', colour: 'var(--border2)' },
 ] as const;
 type PlanPart = (typeof PLAN_PARTS)[number]['key'];
 
-/** A case is "waiting on you" while it runs and its agent has a Gate 2 request open. */
-function planPart(c: TestCase, waiting: ReadonlySet<string>): PlanPart {
+/** A case is "waiting on you" while it runs and its agent has a Gate 2 request open; once the run ended, an open case is "not finished". */
+function planPart(c: TestCase, waiting: ReadonlySet<string>, ended: boolean): PlanPart {
+  if (ended && (c.status === 'executing' || c.status === 'proposed')) return 'unfinished';
   switch (c.status) {
     case 'executed':
       return 'done';
@@ -113,10 +115,18 @@ function planPart(c: TestCase, waiting: ReadonlySet<string>): PlanPart {
   }
 }
 
-export function PlanPanel({ cases, waiting }: { readonly cases: readonly TestCase[]; readonly waiting: ReadonlySet<string> }) {
+export function PlanPanel({
+  cases,
+  waiting,
+  ended,
+}: {
+  readonly cases: readonly TestCase[];
+  readonly waiting: ReadonlySet<string>;
+  readonly ended: boolean;
+}) {
   const counts = new Map<PlanPart, number>();
-  for (const c of cases) counts.set(planPart(c, waiting), (counts.get(planPart(c, waiting)) ?? 0) + 1);
-  const parts = PLAN_PARTS.filter((p) => (counts.get(p.key) ?? 0) > 0 || p.key === 'done' || p.key === 'queued');
+  for (const c of cases) counts.set(planPart(c, waiting, ended), (counts.get(planPart(c, waiting, ended)) ?? 0) + 1);
+  const parts = PLAN_PARTS.filter((p) => (counts.get(p.key) ?? 0) > 0 || p.key === 'done' || (p.key === 'queued' && !ended));
   return (
     <section aria-labelledby="plan-h">
       <h2 id="plan-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
@@ -210,7 +220,15 @@ const CASE_WORD: Readonly<Record<string, { label: string; cls: string }>> = {
 };
 
 /** The Test plan tab: every case the planner recorded, who it went to and where it stands. */
-export function TestPlanTab({ cases, waiting }: { readonly cases: readonly TestCase[]; readonly waiting: ReadonlySet<string> }) {
+export function TestPlanTab({
+  cases,
+  waiting,
+  ended,
+}: {
+  readonly cases: readonly TestCase[];
+  readonly waiting: ReadonlySet<string>;
+  readonly ended: boolean;
+}) {
   if (cases.length === 0)
     return (
       <p className="m-0 rounded-[14px] border border-dashed border-border-strong px-5 py-6 text-[13px] text-muted-foreground">
@@ -221,8 +239,13 @@ export function TestPlanTab({ cases, waiting }: { readonly cases: readonly TestC
     <Card as="section" aria-label="Test plan">
       <ol className="m-0 list-none divide-y divide-border p-0">
         {cases.map((c) => {
-          const part = planPart(c, waiting);
-          const word = part === 'waiting' ? { label: 'Waiting on you', cls: 'bg-gold-soft text-gold-ink' } : (CASE_WORD[c.status] ?? CASE_WORD.proposed);
+          const part = planPart(c, waiting, ended);
+          const word =
+            part === 'waiting'
+              ? { label: 'Waiting on you', cls: 'bg-gold-soft text-gold-ink' }
+              : part === 'unfinished'
+                ? { label: 'Not finished', cls: 'bg-surface-2 text-muted-foreground' }
+                : (CASE_WORD[c.status] ?? CASE_WORD.proposed);
           return (
             <li key={c.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-4 py-2.5 text-[13px]">
               <span className="min-w-0">

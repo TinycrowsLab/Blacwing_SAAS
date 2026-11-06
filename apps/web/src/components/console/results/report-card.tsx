@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 import { usd } from '../../../lib/plan-text';
 import { Icon, SeverityChip } from '../design';
+import { SEVERITIES } from './model';
 import { ReportDownload, RunAgain } from './report-download';
 
 import type { ReactNode } from 'react';
@@ -21,8 +22,6 @@ function Row({ label, children }: { readonly label: string; readonly children: R
     </div>
   );
 }
-
-const SEVERITIES = ['critical', 'high', 'medium', 'low', 'info'];
 
 export function ReportCard(props: {
   readonly runId: string;

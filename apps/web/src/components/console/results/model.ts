@@ -37,7 +37,16 @@ export const findingDetailSchema = findingSchema.extend({
 });
 export type FindingDetail = z.infer<typeof findingDetailSchema>;
 
-const SEVERITY_ORDER = ['critical', 'high', 'medium', 'low', 'info'];
+/** The findings filters (shared by the server page, which reads the URL, and the client list). */
+export const FINDING_STATUSES = [
+  { key: 'confirmed', label: 'Awaiting release' },
+  { key: 'released', label: 'Released' },
+  { key: 'suspected', label: 'Kept back' },
+  { key: 'dismissed', label: 'Dismissed' },
+] as const;
+export const SEVERITIES = ['critical', 'high', 'medium', 'low', 'info'] as const;
+
+const SEVERITY_ORDER: readonly string[] = SEVERITIES;
 const rank = (severity: string): number => {
   const i = SEVERITY_ORDER.indexOf(severity);
   return i === -1 ? SEVERITY_ORDER.length : i;

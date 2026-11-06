@@ -312,7 +312,7 @@ suite('conversationItems', () => {
     expect(authz?.children.map((c) => c.type)).toEqual(['turn', 'gate2']);
     expect(authz?.children[1]).toMatchObject({ body: '{"a":1}', asRole: null, decided: null });
     const decided = conversationItems([...RUN, ev(26, 'gate2.decided', 'gate2', { gate2Id: 'g1', status: 'expired' }, at(320))], [G1]);
-    const g = (decided.filter((i) => i.type === 'thread')[2] as ThreadItem).children[1];
+    const g = decided.filter((i): i is ThreadItem => i.type === 'thread')[2]?.children[1];
     expect(g).toMatchObject({ decided: 'Denied automatically: no answer in 5 min.' });
   });
 
@@ -332,7 +332,7 @@ suite('conversationItems', () => {
     expect(filterConversation(items, 'validator').map((i) => i.type)).toEqual(['validator']);
     const planner = filterConversation(items, 'orchestrator');
     expect(planner.filter((i) => i.type === 'thread')).toHaveLength(3);
-    expect((planner.find((i) => i.type === 'thread') as ThreadItem).children.every((c) => c.type === 'turn' && c.reply)).toBe(true);
+    expect(planner.find((i): i is ThreadItem => i.type === 'thread')?.children.every((c) => c.type === 'turn' && c.reply)).toBe(true);
   });
 });
 

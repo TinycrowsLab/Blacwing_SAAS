@@ -320,7 +320,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const sidePanel: ReactNode = (
     <>
       <LimitsPanel elapsedS={elapsedS} budget={run.budget} requestsUsed={run.requestsUsed} costUsd={run.costUsd} />
-      <PlanPanel cases={cases} waiting={waitingAgents} />
+      <PlanPanel cases={cases} waiting={waitingAgents} ended={terminal} />
       <FoundPanel items={cands} />
       <p className="m-0 mt-auto border-t border-dashed border-border-strong pt-2.5 text-[11px] leading-4 text-muted-foreground">
         Counts, limits and times come from the runner. Claude&apos;s messages are its own words and stay unverified until the
@@ -545,7 +545,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                 }
               />
             ) : tab === 'plan' ? (
-              <TestPlanTab cases={cases} waiting={waitingAgents} />
+              <TestPlanTab cases={cases} waiting={waitingAgents} ended={terminal} />
             ) : tab === 'requests' ? (
               <RequestsTab
                 items={exchanges.items}
