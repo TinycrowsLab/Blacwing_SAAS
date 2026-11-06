@@ -14,9 +14,7 @@ import { fetchGate2, Gate2Actions, type Gate2Detail } from './gate2-actions';
 import { pathOf } from './run-model';
 import { useNow } from './use-now';
 import { agentName } from '../../lib/agents';
-import { sidebarSchema } from '../../lib/schemas';
-
-import type { Gate2 } from '../../lib/schemas';
+import { sidebarSchema, type Gate2 } from '../../lib/schemas';
 
 type Card = Gate2 | Gate2Detail;
 
@@ -337,7 +335,8 @@ export function Gate2Card({
   const pending = current.status === 'pending';
   const confirmedExpired = pending && server !== null && server.secondsLeft === 0;
   // Dropped from the inbox but the server still has it open (and in time): it is still a question, not a receipt.
-  const stillOpen = checks > 0 && server !== null && server.status === 'pending' && server.secondsLeft > 0;
+  const stillOpen =
+    checks > 0 && server !== null && server.status === 'pending' && server.secondsLeft > 0;
   const needsCheck =
     pending &&
     !confirmedExpired &&
@@ -429,7 +428,10 @@ export function Gate2Card({
         {receipt}
         <p className="m-0 flex flex-wrap gap-x-5 gap-y-1 text-[13px]">
           {next === null ? null : (
-            <Link href={next.href} className={`inline-flex min-h-11 items-center md:min-h-0 ${LINK}`}>
+            <Link
+              href={next.href}
+              className={`inline-flex min-h-11 items-center md:min-h-0 ${LINK}`}
+            >
               {next.label}
               <Icon name="right" size={14} className="ml-1" />
             </Link>
@@ -437,7 +439,10 @@ export function Gate2Card({
           <Link href={runLink} className={`inline-flex min-h-11 items-center md:min-h-0 ${LINK}`}>
             Open the audit
           </Link>
-          <Link href="/decisions" className={`inline-flex min-h-11 items-center md:min-h-0 ${LINK}`}>
+          <Link
+            href="/decisions"
+            className={`inline-flex min-h-11 items-center md:min-h-0 ${LINK}`}
+          >
             All decisions
           </Link>
         </p>

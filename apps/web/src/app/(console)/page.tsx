@@ -215,6 +215,9 @@ export default async function HomePage({
         givenName={session.user.givenName}
         serverGreeting={greetingFor(new Date().getHours())}
         named={params.named === '1'}
+        waiting={(dashboard?.requests ?? [])
+          .filter((r) => r.status === 'pending_gate1')
+          .map((r) => ({ id: r.id, assetId: r.assetId }))}
       />
       {dashboard === null ? <HomeRetry /> : firstVisit ? <HowItWorks /> : <Returning d={dashboard} />}
     </div>

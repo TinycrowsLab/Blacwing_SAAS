@@ -5,7 +5,7 @@
 // the statement for the person. Shared by the order and Targets.
 import { type ReactNode, useState } from 'react';
 
-import { dayLabel, isVerified, originOf } from './shared';
+import { dayLabel, isVerified, originOf, RECOMMEND_PILL, recommendedProof } from './shared';
 import { verifyTargetAction } from '../../../app/(console)/audits/actions';
 import { Icon, InlineMessage } from '../design';
 import { CopyField, PendingButton } from '../design-client';
@@ -17,12 +17,6 @@ export type ProofMethod = 'file' | 'attest';
 /** "Confirmed by Jatin Singh: authorised to test https://x.example." (sent as owner_attestation). */
 export const attestationStatement = (name: string, origin: string): string =>
   `Confirmed by ${name}: authorised to test ${origin}.`;
-
-/** The API says "{url} did not answer 200 with the verification token."; the sentence around it already names the URL. */
-function failureDetail(message: string, url: string): string {
-  const rest = message.startsWith(url) ? `it ${message.slice(url.length).trim()}` : message;
-  return rest.replace(/\.$/, '');
-}
 
 /** Sends the attestation; the order's Continue and Targets' Confirm both use it. */
 export async function attest(
@@ -50,14 +44,14 @@ function ChoiceCard({
   readonly checked: boolean;
   readonly onPick: () => void;
   readonly title: ReactNode;
-  readonly badge?: ReactNode;
+  readonly badge?: ReactNode | undefined;
   readonly line: ReactNode;
   readonly index?: number | undefined;
   readonly children?: ReactNode;
 }) {
   return (
     <div
-      className={`rounded-[14px] border transition-colors ${checked ? 'border-gold-ink bg-card' : 'border-border bg-card hover:border-border-strong'}`}
+      className={`rounded-[14px] border transition-colors ${checked ? 'border-gold-ink bg-gold-soft' : 'border-border bg-card hover:border-border-strong hover:bg-surface-2'}`}
     >
       <label className="flex min-h-16 cursor-pointer gap-3 rounded-[14px] p-4 has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-focus">
         <input
@@ -97,6 +91,7 @@ export function VerifyOwnership({
   onVerified,
   confirmButton = false,
   showIndex = false,
+  primaryCheck = false,
 }: {
   /** Null while the site is being registered: the file rows show placeholders. */
   readonly asset: Asset | null;
@@ -109,6 +104,8 @@ export function VerifyOwnership({
   /** Targets: a Confirm button under the tick (the order's Continue does it there). */
   readonly confirmButton?: boolean;
   readonly showIndex?: boolean;
+  /** The order: Check now is the step's one primary action while the file way is picked. */
+  readonly primaryCheck?: boolean;
 }) {
   const [checked, setChecked] = useState<{ ok: boolean; message: string } | null>(null);
   const [attestError, setAttestError] = useState<string | null>(null);
@@ -129,7 +126,7 @@ export function VerifyOwnership({
               : 'The site is verified as yours.'}
           </b>{' '}
           <span className="text-muted-foreground">
-            {asset.ownership.method === 'http_token' ? 'File found on the site' : 'Confirmed'}
+            {asset.ownership.method === 'http_token' ? 'Verified with a file' : 'Confirmed'}
             {asset.ownership.verifiedBy === null ? '' : ` by ${asset.ownership.verifiedBy}`}
             {asset.ownership.verifiedAt === null ? '' : `, ${dayLabel(asset.ownership.verifiedAt)}`}
             .
@@ -142,6 +139,8 @@ export function VerifyOwnership({
   const path = url === null ? null : new URL(url).pathname;
   const token = asset?.verification?.token ?? null;
   const origin = asset === null ? '' : originOf(asset);
+  const recommended = asset === null ? 'file' : recommendedProof(new URL(origin).host);
+  const recommendPill = <span className={RECOMMEND_PILL}>Recommended</span>;
 
   const check = async (): Promise<void> => {
     if (asset === null) return;
@@ -155,7 +154,7 @@ export function VerifyOwnership({
         ok: false,
         message:
           r.code === 'verification_failed' && url !== null
-            ? `We fetched ${url} and didn't find the token (${failureDetail(r.message, url)}). Check that it's served at the site root, then try again.`
+            ? `We fetched ${url}, but ${r.message.replace(/\.$/, '')}.`
             : r.message,
       });
     }
@@ -174,11 +173,7 @@ export function VerifyOwnership({
           onMethod('file');
         }}
         title="Put a file on the site"
-        badge={
-          <span className="inline-flex h-5 items-center rounded-md bg-gold-soft px-2 text-[11px] font-semibold text-gold-ink">
-            Recommended
-          </span>
-        }
+        badge={recommended === 'file' ? recommendPill : undefined}
         line="Anyone can check it, and it proves you control the server."
         index={showIndex ? 1 : undefined}
       >
@@ -201,7 +196,7 @@ export function VerifyOwnership({
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-3">
             <PendingButton
-              variant="secondary"
+              variant={primaryCheck ? 'primary' : 'secondary'}
               onAction={check}
               pendingLabel="Looking for the file…"
               disabled={asset === null}
@@ -225,6 +220,7 @@ export function VerifyOwnership({
           onMethod('attest');
         }}
         title="I'm responsible for this system"
+        badge={recommended === 'attest' ? recommendPill : undefined}
         line="For internal hosts and labs that can't serve a file. You confirm in one tick, and it's recorded with your name."
         index={showIndex ? 2 : undefined}
       >

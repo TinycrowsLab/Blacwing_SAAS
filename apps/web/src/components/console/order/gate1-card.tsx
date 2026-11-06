@@ -101,6 +101,7 @@ export function Gate1Card({
   viewer,
   selfApprove,
   onBusy,
+  unsaved = null,
 }: {
   readonly request: AssessmentRequest;
   readonly viewer: Person;
@@ -108,6 +109,8 @@ export function Gate1Card({
   readonly selfApprove: boolean;
   /** Edits are locked while a decision is in flight. */
   readonly onBusy: (busy: boolean) => void;
+  /** The plan editor that is open with a change not yet applied (its name), or null. */
+  readonly unsaved?: string | null;
 }) {
   const router = useRouter();
   const [reason, setReason] = useState('');
@@ -139,8 +142,19 @@ export function Gate1Card({
     return false;
   };
 
+  // A long plan page is scrolled down on a phone: start the run page from the top, so the swap never shows a blank
+  // stretch below a shorter page.
+  const toRun = (runId: string): void => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    router.push(`/runs/${runId}`);
+  };
+
   const approve = async (): Promise<boolean> => {
     setError(null);
+    if (unsaved !== null) {
+      setError(`You changed ${unsaved.toLowerCase()} but haven't applied it. Press Update the plan, or Cancel, then approve.`);
+      return false;
+    }
     if (!requireReason()) return false;
     onBusy(true);
     const r = await approveAndStartAction(request.id, reason);
@@ -151,7 +165,7 @@ export function Gate1Card({
     }
     setPhase('starting');
     refreshSidebar();
-    router.push(`/runs/${r.data.runId}`);
+    toRun(r.data.runId);
     return true;
   };
 
@@ -207,7 +221,7 @@ export function Gate1Card({
                 return false;
               }
               refreshSidebar();
-              router.push(`/runs/${r.data.runId}`);
+              toRun(r.data.runId);
               return true;
             }}
             stayPending
@@ -309,6 +323,8 @@ export function Gate1Card({
           <PendingButton
             onAction={approve}
             stayPending
+            disabled={!reasonEnough(reason)}
+            {...(reasonEnough(reason) ? {} : { describedBy: 'gate1-need' })}
             pendingLabel={phase === 'starting' ? 'Starting…' : 'Approving…'}
             className="h-12 rounded-xl text-[14.5px]"
           >
@@ -317,6 +333,11 @@ export function Gate1Card({
           </PendingButton>
         </span>
       </div>
+      {reasonEnough(reason) ? null : (
+        <p id="gate1-need" className="m-0 -mt-1.5 text-center text-[12px] text-muted-foreground">
+          {reviewer ? 'Write your reason above to decide.' : 'Write a reason above, or pick one, to approve.'}
+        </p>
+      )}
       {reviewer ? null : (
         <p className="m-0 text-center text-[13px] text-muted-foreground">
           or{' '}

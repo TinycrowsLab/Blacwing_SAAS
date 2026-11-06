@@ -12,8 +12,15 @@ describe('host lines', () => {
   it('follows the catalogue', () => {
     expect(line('run.queued')).toBe('Audit queued. Scope, limits and authorisation are pinned.');
     expect(line('plan.cases', { cases: [1, 2, 3], total: 9 })).toBe(
-      'The planner recorded 3 test cases (9 in the plan). Read them under Test plan.',
+      'The planner recorded 3 test cases (9 in the plan).',
     );
+    expect(line('plan.cases', { agent: 'authz-specialist', cases: [1], total: 9 })).toBe(
+      'The Access control specialist recorded 1 test case (9 in the plan).',
+    );
+    expect(line('run.completed', {})).toBe('Finished: Claude completed its plan. Your results are ready.');
+    expect(
+      hostLine({ kind: 'run.paused', data: {}, message: 'Run paused by Jatin Singh.' }, { viewerName: 'Jatin Singh' }),
+    ).toBe('Paused by you.');
     expect(line('gate2.decided', { status: 'approved', by: 'u1' })).toBe('You allowed POST /rest/checkout for this run.');
     expect(line('gate2.decided', { status: 'denied', by: 'u1' })).toBe('You denied POST /rest/checkout.');
     expect(line('gate2.decided', { status: 'denied' })).toBe('Denied POST /rest/checkout: the audit was stopping.');

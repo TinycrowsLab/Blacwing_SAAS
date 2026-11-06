@@ -36,7 +36,8 @@ export const SheetContent = React.forwardRef<
   SheetContentProps
 >(({ side, className, children, ...props }, ref) => (
   <SheetPrimitive.Portal>
-    <SheetPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/50" />
+    {/* A fixed dark scrim (the console Modal uses the same): foreground/50 turned the page light in dark mode. */}
+    <SheetPrimitive.Overlay className="fixed inset-0 z-50 bg-[rgba(23,21,15,0.45)]" />
     <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
       {children}
       <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

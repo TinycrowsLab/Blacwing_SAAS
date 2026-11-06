@@ -71,11 +71,14 @@ export function PathsEditor({
   onChange,
   origin,
   locked,
+  onText,
 }: {
   readonly value: readonly string[];
   readonly onChange: (v: readonly string[]) => void;
   readonly origin: string | null;
   readonly locked: readonly string[];
+  /** The typed text not yet turned into a chip (the plan's Update includes it). */
+  readonly onText: (text: string) => void;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -90,9 +93,11 @@ export function PathsEditor({
         placeholder="/admin, /billing, or a full link on this site"
         locked={locked}
         describe={(v) => (v === '/' ? 'the whole site' : `${v} and everything under it`)}
+        onText={onText}
       />
       <p className="m-0 text-[12.5px] text-muted-foreground">
-        Paste a list or type one at a time. A path keeps Claude out of it and everything under it.
+        A path keeps Claude out of it and everything under it. Spaces, commas and new lines separate paths, so paste a
+        whole list (write a space inside a path as <code className="font-mono">%20</code>).
       </p>
     </div>
   );
@@ -136,7 +141,9 @@ function settle(row: AccountRow, field: 'headerName' | 'headerValue', text: stri
   }
   if (field === 'headerName') return { ...row, headerName: text, note: null };
   const b = bearerize(row.headerName, text);
-  return { ...row, headerValue: b.value, note: b.note };
+  // The "Added Bearer" note stays while the value still starts with the Bearer we added.
+  const kept = row.note !== undefined && row.note !== null && /^Bearer\s/.test(row.headerValue) && /^Bearer\s/.test(text);
+  return { ...row, headerValue: b.value, note: b.note ?? (kept ? (row.note ?? null) : null) };
 }
 
 export function AccountsEditor({
@@ -188,6 +195,7 @@ export function AccountsEditor({
           ) : null}
           {rows.map((r, i) => {
             const slug = slugifyRole(r.role);
+            const taken = slug !== null && rows.slice(0, i).some((x) => slugifyRole(x.role) === slug);
             return (
               <div key={i} className="flex flex-col gap-2 rounded-[12px] border border-border p-3">
                 <div className="grid gap-2 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.6fr)_auto]">
@@ -199,6 +207,7 @@ export function AccountsEditor({
                       placeholder="customer"
                       autoComplete="off"
                       spellCheck={false}
+                      aria-invalid={taken || undefined}
                       onChange={(e) => {
                         set(i, { ...r, role: e.target.value });
                       }}
@@ -245,7 +254,11 @@ export function AccountsEditor({
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
-                  {slug !== null && slug !== r.role ? (
+                  {taken ? (
+                    <span className="text-bad">
+                      Another account is already <code className="font-mono">{slug}</code>. Give this role its own name.
+                    </span>
+                  ) : slug !== null && slug !== r.role ? (
                     <span>
                       Saved as <code className="font-mono text-foreground">{slug}</code>
                     </span>

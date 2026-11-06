@@ -41,6 +41,7 @@ export default async function PlanPage({
     .catch(() => null);
   return (
     <PlanView
+      key={request.id}
       request={request}
       asset={asset}
       settings={workspace?.settings ?? null}

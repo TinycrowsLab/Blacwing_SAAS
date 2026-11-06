@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { gate2Question, roleFromPathKey } from './gate2-view';
+import { gate2Question, plainWhy, roleFromPathKey } from './gate2-view';
 
 describe('Gate 2 question', () => {
   it('reads the role from the worker gate key', () => {
@@ -12,5 +12,11 @@ describe('Gate 2 question', () => {
   it('asks with the role, or without signing in', () => {
     expect(gate2Question('customer_a')).toBe('Allow Claude to send this request as customer_a?');
     expect(gate2Question(null)).toBe('Allow Claude to send this request without signing in?');
+  });
+
+  it('names the authorisation level by the label people chose it by', () => {
+    expect(plainWhy('POST is a state-changing method; the authorisation covers only active-safe requests.')).toBe(
+      'POST is a state-changing method; the authorisation covers only “Probe gently” requests.',
+    );
   });
 });

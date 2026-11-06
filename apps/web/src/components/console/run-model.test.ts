@@ -291,8 +291,53 @@ suite('conversationItems', () => {
     expect(planner).toMatchObject({ type: 'turn', agent: 'orchestrator', text: 'I will map the site first.' });
     expect(planner.tools).toEqual(['recorded 2 test cases']);
     expect(items.find((i) => i.type === 'host' && i.kind === 'plan.cases')).toMatchObject({
-      text: 'The planner recorded 2 test cases (2 in the plan). Read them under Test plan.',
+      text: 'The planner recorded 2 test cases (2 in the plan).',
     });
+  });
+
+  it("places the planner's note on delegations it just made before those open threads", () => {
+    const list = conversationItems(
+      [
+        ...RUN.slice(0, 4),
+        ev(5, 'agent.message', 'orchestrator', { agent: 'orchestrator', text: 'Recon is running; I am waiting.' }, at(4)),
+        ...RUN.slice(4, 8),
+      ],
+      [],
+    );
+    expect(list.map((i) => (i.type === 'thread' ? `thread:${i.to}` : i.type === 'turn' ? i.text : i.type))).toEqual([
+      'host',
+      'host',
+      'I will map the site first.',
+      'Recon is running; I am waiting.',
+      'thread:recon',
+    ]);
+  });
+
+  it('words test-case updates instead of showing case ids', () => {
+    const list = conversationItems(
+      [ev(1, 'agent.tool', 'orchestrator', { agent: 'orchestrator', tool: 'update_test_case', input: { id: 'tc-login-sqli', status: 'executed' } })],
+      [],
+    );
+    expect((list[0] as TurnItem).tools).toEqual(['finished a test case']);
+  });
+
+  it('puts a call sent after a decision after its receipt', () => {
+    const list = conversationItems(
+      [
+        ...RUN,
+        ev(26, 'gate2.decided', 'gate2', { gate2Id: 'g1', status: 'approved', by: 'u1' }, at(30)),
+        ev(27, 'http.sent', 'authz-specialist', { agent: 'authz-specialist', method: 'POST', url: `${URL0}/api/Users`, status: 201, ms: 7, exchangeId: 'x9' }, at(31)),
+      ],
+      [{ ...G1, status: 'approved' }],
+    );
+    const authz = list.filter((i): i is ThreadItem => i.type === 'thread')[2];
+    expect(authz?.children.map((c) => c.type)).toEqual(['turn', 'gate2', 'turn']);
+    expect((authz?.children[2] as TurnItem).calls.map((c) => c.exchangeId)).toEqual(['x9']);
+  });
+
+  it('says "you" for the viewer in Blackwing lines', () => {
+    const list = conversationItems([{ ...ev(1, 'run.paused', 'run', {}), message: 'Run paused by Jatin Singh.' }], [], 'Jatin Singh');
+    expect(list[0]).toMatchObject({ type: 'host', text: 'Paused by you.' });
   });
 
   it('groups calls, blocked rows and the validator turn under the asking specialist', () => {
@@ -343,7 +388,7 @@ suite('stages', () => {
       ['approved', 'done', 'Approved', 'by you'],
       ['mapping', 'done', 'Mapped', '2 requests'],
       ['planning', 'done', 'Planned', '2 test cases'],
-      ['testing', 'done', 'Testing', '1 of 2 done'],
+      ['testing', 'active', 'Testing', '1 of 2 done'],
       ['proving', 'current', 'Proving', '1 candidate, 1 proven'],
       ['review', 'upcoming', 'Your review', ''],
     ]);
@@ -353,6 +398,12 @@ suite('stages', () => {
     expect(s.map((x) => x.state)).toEqual(['done', 'skipped', 'skipped', 'skipped', 'skipped', 'current']);
     expect(s[0]?.detail).toBe('');
     expect(s[1]?.detail).toBe('not reached');
+  });
+  it('never ticks work a stopped run left open', () => {
+    const s = stages(RUN, { terminal: true, approvedBy: 'you', stopped: true });
+    expect(s.find((x) => x.key === 'testing')).toMatchObject({ state: 'stopped', label: 'Testing', detail: 'stopped at 1 of 2' });
+    expect(s.find((x) => x.key === 'proving')).toMatchObject({ state: 'done', label: 'Proved' });
+    expect(s.at(-1)).toMatchObject({ state: 'current' });
   });
 });
 
@@ -377,6 +428,17 @@ suite('teamNodes', () => {
   it('is no longer waiting once the decision window closed, and done when the run is over', () => {
     expect(teamNodes(RUN, [{ ...G1, status: 'denied' }], T0 + 20_000, false).specialists[2]?.state).toBe('working');
     expect(teamNodes(RUN, [], T0 + 20_000, true).specialists.map((n) => n.state)).toEqual(['done', 'done', 'done']);
+  });
+  it('shows agents a stop interrupted as stopped, not done', () => {
+    const team = teamNodes(RUN, [], T0 + 20_000, true, true);
+    expect(team.planner).toMatchObject({ state: 'stopped', sub: 'stopped, 3 tasks given' });
+    expect(team.specialists.map((n) => [n.id, n.state])).toEqual([
+      ['recon', 'done'],
+      ['web-api-specialist', 'stopped'],
+      ['authz-specialist', 'stopped'],
+    ]);
+    expect(team.autoReleased).toBe(false);
+    expect(teamNodes([...RUN, ev(26, 'finding.released', 'gate3', { findingId: 'f1', auto: true })], [], T0, false).autoReleased).toBe(true);
   });
 });
 

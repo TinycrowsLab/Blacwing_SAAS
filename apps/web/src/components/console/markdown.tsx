@@ -10,7 +10,7 @@ function inline(text: string, line = 0): ReactNode[] {
   return text.split(INLINE).map((part, i) => {
     const key = `${line}-${i}`;
     if (part.startsWith('**') && part.endsWith('**') && part.length > 4)
-      return <strong key={key}>{part.slice(2, -2)}</strong>;
+      return <strong key={key}>{inline(part.slice(2, -2), line)}</strong>;
     if (part.startsWith('`') && part.endsWith('`') && part.length > 2)
       return (
         <code key={key} className="rounded bg-surface-2 px-1 py-px font-mono text-[0.92em]">
@@ -128,7 +128,7 @@ export function Markdown({
 /** Plain one-line text for places that cannot render markdown (lane task, activity rows). */
 export const stripMarkdown = (text: string): string =>
   text
-    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^#{1,6}\s+(.*?):?\s*$/gm, '$1 ·')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\s+/g, ' ')

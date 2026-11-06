@@ -25,15 +25,18 @@ function TicketBody({
   current,
   details,
   saved,
+  inSheet = false,
 }: {
   readonly lines: readonly TicketLine[];
   readonly current: number;
   readonly details: readonly TicketDetail[];
   readonly saved: boolean;
+  /** In the phone sheet the close button sits top right: the header keeps clear of it. */
+  readonly inSheet?: boolean;
 }) {
   return (
     <>
-      <div className="flex items-center justify-between px-5 pb-2 pt-5">
+      <div className={`flex items-center justify-between pb-2 pl-5 pt-5 ${inSheet ? 'pr-14' : 'pr-5'}`}>
         <h2 className="m-0 text-[16px] font-semibold text-foreground">Your audit</h2>
         <span aria-live="polite" className="inline-flex items-center gap-1 text-[12px] text-muted-foreground">
           {saved ? (
@@ -128,7 +131,7 @@ export function TicketPill(props: {
         className="max-h-[85dvh] overflow-y-auto rounded-t-[18px] border-border bg-card p-0"
       >
         <SheetTitle className="sr-only">Your audit</SheetTitle>
-        <TicketBody {...props} />
+        <TicketBody {...props} inSheet />
       </SheetContent>
     </Sheet>
   );

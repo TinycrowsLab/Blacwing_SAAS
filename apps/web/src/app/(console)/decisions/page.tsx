@@ -94,7 +94,9 @@ export default async function DecisionsPage(): Promise<ReactNode> {
   );
   const runIds = [...new Set(gate2.map((g) => g.runId))];
   const runs = new Map(
-    await Promise.all(runIds.map(async (runId) => [runId, await askedInRun(session, runId)] as const)),
+    await Promise.all(
+      runIds.map(async (runId) => [runId, await askedInRun(session, runId)] as const),
+    ),
   );
   const gate2Items = gate2.map((g) => {
     const run = runs.get(g.runId);

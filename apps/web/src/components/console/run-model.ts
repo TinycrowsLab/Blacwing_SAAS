@@ -444,13 +444,20 @@ export const ruleWords = (rule: string): string => RULE_WORDS[rule] ?? rule.repl
 
 const plural = (n: number, one: string, many: string): string => `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
 
-/** A non-delegation tool call as a short chip under the turn that made it. */
+const CASE_UPDATE: Readonly<Record<string, string>> = {
+  executing: 'started a test case',
+  executed: 'finished a test case',
+  skipped: 'skipped a test case',
+  blocked: 'marked a test case blocked',
+};
+
+/** A non-delegation tool call as a short chip under the turn that made it (words, never raw case ids). */
 export function toolChip(tool: string, input: Readonly<Record<string, unknown>>): string {
   switch (tool) {
     case 'record_test_cases':
       return `recorded ${plural(Array.isArray(input.cases) ? input.cases.length : 0, 'test case', 'test cases')}`;
     case 'update_test_case':
-      return str(input.id) === '' ? 'updated a test case' : `marked ${str(input.id)} ${str(input.status) || 'updated'}`;
+      return CASE_UPDATE[str(input.status)] ?? 'updated a test case';
     case 'submit_candidate':
       return str(input.title) === '' ? 'submitted a candidate' : `submitted a candidate: ${str(input.title)}`;
     case 'list_exchanges':
@@ -582,7 +589,11 @@ function callOf(e: RunEvent): CallRow {
  * shortcut: calls attach to the lane's latest turn, so two parallel delegations to one subagent share a thread's
  * calls; upgrade when http.sent carries the toolUseId.
  */
-export function conversationItems(events: readonly RunEvent[], gate2: readonly Gate2[]): ConversationItem[] {
+export function conversationItems(
+  events: readonly RunEvent[],
+  gate2: readonly Gate2[],
+  viewerName: string | null = null,
+): ConversationItem[] {
   const items: ConversationItem[] = [];
   const threads: ThreadItem[] = [];
   const turnOf = new Map<string, TurnItem>();
@@ -644,7 +655,17 @@ export function conversationItems(events: readonly RunEvent[], gate2: readonly G
       }
       case 'agent.message': {
         const turn: TurnItem = { type: 'turn', key: `t${e.seq}`, seq: e.seq, at: e.at, agent: lane, text: str(d.text), reply: false, isError: false, calls: [], tools: [] };
-        push(lane, turn);
+        if (lane === 'orchestrator') {
+          // The planner narrates the delegations it just made ("I started recon, waiting for its results") while they
+          // run: that note reads before the open threads it describes, not after their replies.
+          let at = items.length;
+          while (at > 0) {
+            const prev = items[at - 1];
+            if (prev?.type !== 'thread' || prev.from !== 'orchestrator' || prev.replied) break;
+            at -= 1;
+          }
+          items.splice(at, 0, turn);
+        } else push(lane, turn);
         turnOf.set(lane, turn);
         break;
       }
@@ -742,6 +763,8 @@ export function conversationItems(events: readonly RunEvent[], gate2: readonly G
         };
         gate2Items.set(g.gate2Id, g);
         push(lane, g);
+        // A call sent after the decision reads after its receipt, not above the question.
+        turnOf.delete(lane);
         break;
       }
       case 'gate2.decided': {
@@ -753,7 +776,7 @@ export function conversationItems(events: readonly RunEvent[], gate2: readonly G
         break;
       }
       default:
-        host(e, hostLine(e));
+        host(e, hostLine(e, { viewerName }));
     }
   }
   return items;
@@ -797,7 +820,8 @@ function delegations(events: readonly RunEvent[]): Delegation[] {
   return list;
 }
 
-export type StageState = 'done' | 'current' | 'upcoming' | 'skipped';
+/** `active`: still busy behind the current stage. `stopped`: the run ended before this stage's work did. */
+export type StageState = 'done' | 'current' | 'active' | 'stopped' | 'upcoming' | 'skipped';
 
 export interface Stage {
   readonly key: 'approved' | 'mapping' | 'planning' | 'testing' | 'proving' | 'review';
@@ -814,7 +838,7 @@ const CORE_LANES = new Set(['orchestrator', 'recon', 'validator']);
  */
 export function stages(
   events: readonly RunEvent[],
-  opts: { readonly terminal: boolean; readonly approvedBy: string | null },
+  opts: { readonly terminal: boolean; readonly approvedBy: string | null; readonly stopped?: boolean },
 ): Stage[] {
   const recon = events.filter((e) => e.kind === 'http.sent' && str(e.data.agent) === 'recon').length;
   const reconTasks = delegations(events).filter((x) => x.to === 'recon').length;
@@ -831,12 +855,13 @@ export function stages(
   const current = reached.lastIndexOf(true);
   // A stage before the current one keeps its present-tense label while its work is still open.
   const open = plan.counts.executing + plan.counts.proposed;
+  // A stage ticks only when its own work ended, never because a later stage started or the run was stopped.
   const finished = [
     true,
-    opts.terminal || reached[2] === true || (reconTasks > 0 && delegations(events).every((x) => x.to !== 'recon' || x.replied)),
+    reached[2] === true || (reconTasks > 0 && delegations(events).every((x) => x.to !== 'recon' || x.replied)),
     reached[2] === true,
-    opts.terminal || (plan.total > 0 && open === 0),
-    opts.terminal || (cands.length > 0 && cands.every((c) => c.status !== 'validating')),
+    (plan.total > 0 && open === 0) || (opts.terminal && opts.stopped !== true && plan.total === 0),
+    cands.length > 0 && cands.every((c) => c.status !== 'validating'),
     opts.terminal,
   ];
   const rows: { key: Stage['key']; now: string; past: string; detail: string }[] = [
@@ -857,16 +882,36 @@ export function stages(
     },
     { key: 'review', now: 'Your review', past: 'Your review', detail: '' },
   ];
+  const lastWork = reached.slice(0, -1).lastIndexOf(true);
   return rows.map((r, i) => {
-    const state: StageState = i === current ? 'current' : i > current ? 'upcoming' : reached[i] ? 'done' : 'skipped';
+    const state: StageState =
+      i === current
+        ? 'current'
+        : i > current
+          ? 'upcoming'
+          : !reached[i]
+            ? 'skipped'
+            : finished[i] === true
+              ? 'done'
+              : opts.terminal
+                ? 'stopped'
+                : 'active';
     // A run that ended early never reached the stages after its last activity: "not reached", not "skipped".
-    const lastWork = reached.slice(0, -1).lastIndexOf(true);
     const missed = opts.terminal && i > lastWork ? 'not reached' : 'skipped';
-    return { key: r.key, label: state === 'done' && finished[i] === true ? r.past : r.now, detail: state === 'skipped' ? missed : r.detail, state };
+    const detail =
+      state === 'skipped'
+        ? missed
+        : state === 'stopped'
+          ? r.key === 'testing' && plan.total > 0
+            ? `stopped at ${plan.counts.executed.toLocaleString('en-US')} of ${plan.total.toLocaleString('en-US')}`
+            : `stopped${r.detail === '' ? '' : ` · ${r.detail}`}`
+          : r.detail;
+    return { key: r.key, label: state === 'done' ? r.past : r.now, detail, state };
   });
 }
 
-export type NodeState = 'working' | 'waiting' | 'done' | 'idle';
+/** `stopped`: the run was stopped while this agent still had work open (never shown as done). */
+export type NodeState = 'working' | 'waiting' | 'done' | 'idle' | 'stopped';
 
 export interface TeamNode {
   readonly id: string;
@@ -885,6 +930,8 @@ export interface Team {
   readonly tasks: number;
   readonly candidates: number;
   readonly proven: number;
+  /** A proven issue was released without a person (the request chose automatic release). */
+  readonly autoReleased: boolean;
 }
 
 /** A Gate 2 request still waiting for a person (pending and before its deadline; before mount `nowMs` is 0). */
@@ -895,7 +942,14 @@ export const isOpenGate2 = (g: Gate2, nowMs: number): boolean =>
  * Claude's team map (spec §5.2 item 3): only agents in the `run.started` manifest are drawn. Waiting beats working: a
  * pending Gate 2 for the agent makes it gold. Done means every delegation to it has a reply (or the run is over).
  */
-export function teamNodes(events: readonly RunEvent[], gate2: readonly Gate2[], nowMs: number, terminal: boolean): Team {
+export function teamNodes(
+  events: readonly RunEvent[],
+  gate2: readonly Gate2[],
+  nowMs: number,
+  terminal: boolean,
+  /** The run was stopped (or failed) rather than finishing: open work reads "stopped", not "done". */
+  stopped = false,
+): Team {
   const agents = manifest(events);
   const tasks = delegations(events);
   const cands = candidates(events);
@@ -918,11 +972,11 @@ export function teamNodes(events: readonly RunEvent[], gate2: readonly Gate2[], 
   const planner = agents.includes('orchestrator')
     ? node(
         'orchestrator',
-        waiting.has('orchestrator') ? 'waiting' : terminal ? 'done' : started ? 'working' : 'idle',
+        waiting.has('orchestrator') ? 'waiting' : terminal ? (stopped ? 'stopped' : 'done') : started ? 'working' : 'idle',
         waiting.has('orchestrator')
           ? 'waiting on you'
           : tasks.length > 0
-            ? `${plural(tasks.length, 'task', 'tasks')} given`
+            ? `${terminal && stopped ? 'stopped, ' : ''}${plural(tasks.length, 'task', 'tasks')} given`
             : terminal
               ? 'no tasks given'
               : 'reading the plan',
@@ -938,6 +992,7 @@ export function teamNodes(events: readonly RunEvent[], gate2: readonly Gate2[], 
       const open = mine.some((t) => !t.replied);
       if (waiting.has(id)) return node(id, 'waiting', 'waiting on you');
       if (open && !terminal) return node(id, 'working', lastPath === null ? 'task received' : `${id === 'recon' ? 'mapping' : 'testing'} ${lastPath}`);
+      if (open && stopped) return node(id, 'stopped', `stopped mid-task, ${plural(calls.length, 'request', 'requests')}`);
       if (mine.length > 0 || calls.length > 0)
         return node(id, 'done', `${id === 'recon' ? 'mapped' : 'done'}, ${plural(calls.length, 'request', 'requests')}`);
       return node(id, 'idle', 'no task yet');
@@ -945,14 +1000,17 @@ export function teamNodes(events: readonly RunEvent[], gate2: readonly Gate2[], 
 
   const proving = cands.filter((c) => c.status === 'validating');
   const validator = agents.includes('validator')
-    ? proving.length > 0 && !terminal
+    ? proving.length > 0 && terminal && stopped
+      ? node('validator', 'stopped', `stopped while proving, ${proven} of ${cands.length} proven`)
+      : proving.length > 0 && !terminal
       ? node('validator', 'working', `replay ${Math.min(proving.at(-1)?.replays ?? 0, VALIDATOR_REPLAYS)} of ${VALIDATOR_REPLAYS}`)
       : cands.length > 0
         ? node('validator', 'done', `${proven} of ${cands.length} proven`)
         : node('validator', 'idle', 'nothing to prove yet')
     : null;
 
-  return { planner, specialists, validator, tasks: tasks.length, candidates: cands.length, proven };
+  const autoReleased = events.some((e) => e.kind === 'finding.released' && e.data.auto === true);
+  return { planner, specialists, validator, tasks: tasks.length, candidates: cands.length, proven, autoReleased };
 }
 
 /** Header liveness (spec §5.2 item 1): live, quiet after 15 s, reconnecting after a failed poll. */

@@ -48,7 +48,10 @@ export default async function Gate2Page({
     <>
       <div className="hidden md:block">
         <PageHeader
-          crumbs={[{ label: 'Decisions', href: '/decisions' }, { label: 'Request during an audit' }]}
+          crumbs={[
+            { label: 'Decisions', href: '/decisions' },
+            { label: 'Request during an audit' },
+          ]}
           title={name}
         />
       </div>

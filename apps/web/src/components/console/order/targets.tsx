@@ -6,17 +6,17 @@ import { useState } from 'react';
 
 import { AskField, findKnown, useNormalized } from './ask-field';
 import { LocalTime } from './local-time';
-import { dayLabel, isVerified, originOf, refreshSidebar } from './shared';
+import { dayLabel, isVerified, originOf, recommendedProof, refreshSidebar } from './shared';
 import { type ProofMethod, VerifyOwnership } from './verify-ownership';
 import { ensureTargetAction } from '../../../app/(console)/audits/actions';
 import { normalizeTarget } from '../../../lib/normalize';
-import { buttonClass, EmptyState, Icon, InlineMessage, LinkButton } from '../design';
+import { buttonClass, Icon, InlineMessage, LinkButton } from '../design';
 import { ChipInput, PendingButton } from '../design-client';
 
 import type { Asset } from '../../../lib/schemas';
 
 function VerifyPanel({ asset, viewerName, onVerified }: { readonly asset: Asset; readonly viewerName: string; readonly onVerified: (a: Asset) => void }) {
-  const [method, setMethod] = useState<ProofMethod>('file');
+  const [method, setMethod] = useState<ProofMethod>(() => recommendedProof(new URL(originOf(asset)).host));
   const [attested, setAttested] = useState(false);
   return (
     <div className="flex flex-col gap-3 border-t border-dashed border-border-strong bg-sidebar px-4 py-4 sm:px-5">
@@ -156,6 +156,52 @@ function AddTarget({
   );
 }
 
+const FIRST_STEPS = [
+  { title: 'Add the address', body: 'The web app you want audited.' },
+  { title: "Prove it's yours", body: "A small file on the site, or your word for an internal system." },
+  { title: 'Start an audit', body: 'Claude plans it; nothing runs until you approve.' },
+] as const;
+
+/** No targets yet: what a target is, how proving it works, and the one way forward. */
+function FirstTarget({ onAdd }: { readonly onAdd: () => void }) {
+  return (
+    <section
+      aria-labelledby="targets-empty-h"
+      className="flex flex-col items-center gap-5 rounded-[18px] border border-dashed border-border-strong bg-card px-5 py-10 text-center sm:px-10"
+    >
+      <span className="flex size-11 items-center justify-center rounded-[12px] bg-gold-soft text-gold-ink shadow-[inset_0_0_0_1px_var(--gold-line)]">
+        <Icon name="host" size={20} />
+      </span>
+      <div className="flex max-w-[460px] flex-col gap-1.5">
+        <h2 id="targets-empty-h" className="m-0 text-[17px] font-semibold text-foreground">
+          No targets yet.
+        </h2>
+        <p className="m-0 text-[13.5px] leading-[21px] text-muted-foreground">
+          A target is a web app Claude may audit. Add its address, then show it&apos;s yours. Nothing is sent to the site
+          until you choose how.
+        </p>
+      </div>
+      <ol className="m-0 grid w-full max-w-[640px] list-none gap-2.5 p-0 text-left sm:grid-cols-3">
+        {FIRST_STEPS.map((s, i) => (
+          <li key={s.title} className="flex gap-2.5 rounded-[12px] bg-surface-2 px-3.5 py-3">
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-card text-[11.5px] font-semibold tabular-nums text-foreground shadow-[inset_0_0_0_1px_var(--border)]">
+              {i + 1}
+            </span>
+            <span className="flex flex-col gap-0.5">
+              <span className="text-[13px] font-semibold text-foreground">{s.title}</span>
+              <span className="text-[12px] leading-[17px] text-muted-foreground">{s.body}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+      <button type="button" onClick={onAdd} className={buttonClass('primary', 'h-11 rounded-xl px-5')}>
+        <Icon name="plus" size={16} />
+        Add target
+      </button>
+    </section>
+  );
+}
+
 export function Targets({ initial, viewerName }: { readonly initial: readonly Asset[]; readonly viewerName: string }) {
   const [assets, setAssets] = useState<readonly Asset[]>(initial);
   const [adding, setAdding] = useState(false);
@@ -179,6 +225,7 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
             type="button"
             onClick={() => {
               setAdding(true);
+              setOpen(null);
             }}
             className={buttonClass('primary', 'h-11 rounded-xl')}
           >
@@ -203,22 +250,10 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
       ) : null}
 
       {assets.length === 0 && !adding ? (
-        <EmptyState
-          icon="host"
-          title="No targets yet."
-          body="Add the first one, and we'll help you prove it's yours."
-          action={
-            <button
-              type="button"
-              onClick={() => {
-                setAdding(true);
-              }}
-              className={buttonClass('primary', 'h-11 rounded-xl')}
-            >
-              <Icon name="plus" size={16} />
-              Add target
-            </button>
-          }
+        <FirstTarget
+          onAdd={() => {
+            setAdding(true);
+          }}
         />
       ) : null}
 
@@ -262,7 +297,7 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                     )}
                     {verified && a.ownership.verifiedAt !== null ? (
                       <span className="text-[11.5px] text-muted-foreground">
-                        {a.ownership.method === 'http_token' ? 'File' : 'Confirmed'}
+                        {a.ownership.method === 'http_token' ? 'Verified with a file' : 'Confirmed'}
                         {a.ownership.verifiedBy === null ? '' : ` by ${a.ownership.verifiedBy}`},{' '}
                         <LocalTime iso={a.ownership.verifiedAt} format={dayLabel} />
                       </span>
@@ -282,6 +317,7 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                       aria-expanded={expanded}
                       onClick={() => {
                         setOpen(expanded ? null : a.id);
+                        setAdding(false);
                       }}
                       className={buttonClass('secondary', 'h-10 w-full sm:w-auto')}
                     >

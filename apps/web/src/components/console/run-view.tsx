@@ -7,7 +7,7 @@
 // it has. Everything shown is derived from the run DTO and its events in run-model.ts.
 // shortcut: polling, not SSE; upgrade when the API gains an event stream.
 import Link from 'next/link';
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   DropdownMenu,
@@ -20,7 +20,7 @@ import {
   SheetTitle,
 } from '@blackwing/ui';
 
-import { Conversation } from './conversation';
+import { Conversation, shortTime } from './conversation';
 import { buttonClass, Icon, VoiceTag } from './design';
 import { clockLabel, PendingButton } from './design-client';
 import { FlightDeck, FoundPanel, LimitsPanel, PlanPanel, RequestsTab, TestPlanTab } from './flight-deck';
@@ -40,6 +40,7 @@ import {
   isOpenGate2,
   liveness,
   mergeEvents,
+  pathOf,
   stages,
   teamNodes,
 } from './run-model';
@@ -47,11 +48,14 @@ import { StageSpine } from './stage-spine';
 import { TeamMap } from './team-map';
 import { useNow } from './use-now';
 import { agentName } from '../../lib/agents';
-import { decisionTitle } from '../../lib/plan-text';
 import { type Run, type RunEvent, runSchema } from '../../lib/schemas';
 
 
 const BACKOFF_MS = [1500, 3000, 6000, 10_000] as const;
+/** Pause and Resume give up after this long, so the answer (or the error) lands inside the 2 s budget. */
+const CONTROL_TIMEOUT_MS = 1500;
+const MAP_KEY = 'bw.run.mapCollapsed';
+const NETWORK_ERROR = "Couldn't reach Blackwing. Nothing changed. Try again.";
 /** The Requests tab refreshes this often while it is open and the run is live. */
 const EXCHANGES_REFRESH_MS = 5000;
 /** The API returns at most this many exchanges per page (store EXCHANGE_PAGE). */
@@ -73,8 +77,6 @@ function hostOf(url: string | undefined): string | null {
     return null;
   }
 }
-
-const hhmm = (iso: string): string => new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
 
 /** The recorded exchanges, loaded page by page on demand (Requests tab, call sheet) and topped up while live. */
 function useExchanges(runId: string) {
@@ -113,6 +115,14 @@ function useExchanges(runId: string) {
   return { items, state, load };
 }
 
+function readMapCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(MAP_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 function Liveness({ tone, text }: { readonly tone: 'live' | 'quiet' | 'reconnecting'; readonly text: string }) {
   const dot = tone === 'live' ? 'bg-ok motion-safe:animate-[bwpulse_1.6s_ease-in-out_infinite]' : tone === 'quiet' ? 'bg-faint' : 'bg-warn';
   return (
@@ -146,6 +156,11 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const [team, setTeam] = useState(false);
   const [panel, setPanel] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [mapCollapsed, setMapCollapsed] = useState(false);
+  const [showDecision, setShowDecision] = useState(0);
+  const moreRef = useRef<HTMLButtonElement>(null);
+  const callOrigin = useRef<HTMLElement | null>(null);
+  const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
   const [openCall, setOpenCall] = useState<{ id: string; state: 'loading' | 'ready' | 'missing' | 'error' } | null>(null);
   const lastSeq = useRef(initial.lastSeq);
   const failures = useRef(0);
@@ -159,6 +174,8 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       if (!res.ok) throw new Error(String(res.status));
       const next = runSchema.parse(await res.json());
       lastSeq.current = Math.max(lastSeq.current, next.lastSeq);
+      // Back online: an earlier "couldn't reach" message no longer holds.
+      if (failures.current > 0) setControlError((e) => (e === NETWORK_ERROR ? null : e));
       failures.current = 0;
       setFailedSince(null);
       setLastOk(Date.now());
@@ -202,6 +219,22 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     };
   }, [terminal, poll]);
 
+  // The Stop dialog (and anything else that changes the run) asks for an immediate refresh, so the page behind the
+  // halt view catches up at once instead of on the next poll.
+  useEffect(() => {
+    const now = (): void => {
+      void poll();
+    };
+    window.addEventListener('bw:refresh', now);
+    return () => {
+      window.removeEventListener('bw:refresh', now);
+    };
+  }, [poll]);
+
+  useEffect(() => {
+    setMapCollapsed(readMapCollapsed());
+  }, []);
+
   // The Requests tab stays current while it is open.
   useEffect(() => {
     if (tab !== 'requests') return;
@@ -216,26 +249,32 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     };
   }, [tab, terminal, exchanges.load]);
 
+  const { items: exchangeItems, load: loadExchanges } = exchanges;
   const openExchange = useCallback(
     (id: string): void => {
-      if (exchanges.items.some((x) => x.id === id)) {
+      // Closing the sheet returns the keyboard to the row that opened it.
+      if (document.activeElement instanceof HTMLElement && document.activeElement !== document.body) callOrigin.current = document.activeElement;
+      if (exchangeItems.some((x) => x.id === id)) {
         setOpenCall({ id, state: 'ready' });
         return;
       }
       setOpenCall({ id, state: 'loading' });
-      void exchanges.load().then((fresh) => {
+      void loadExchanges().then((fresh) => {
         setOpenCall((cur) =>
           cur?.id !== id ? cur : { id, state: fresh === null ? 'error' : fresh.some((x) => x.id === id) ? 'ready' : 'missing' },
         );
       });
     },
-    [exchanges],
+    [exchangeItems, loadExchanges],
   );
 
   async function control(action: 'pause' | 'resume'): Promise<void> {
     setControlError(null);
     try {
-      const res = await fetch(`/api/runs/${encodeURIComponent(run.id)}/${action}`, { method: 'POST' });
+      const res = await fetch(`/api/runs/${encodeURIComponent(run.id)}/${action}`, {
+        method: 'POST',
+        signal: AbortSignal.timeout(CONTROL_TIMEOUT_MS),
+      });
       if (!res.ok) {
         const problem = (await res.json().catch(() => ({}))) as { message?: unknown };
         setControlError(typeof problem.message === 'string' ? problem.message : `Couldn't ${action} the audit. Try again.`);
@@ -244,7 +283,8 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       await poll();
       window.dispatchEvent(new Event('bw:refresh'));
     } catch {
-      setControlError("Couldn't reach Blackwing. Nothing changed. Try again.");
+      // shortcut: a timed-out request may still land on the server; the next poll shows the real state either way.
+      setControlError(NETWORK_ERROR);
     }
   }
 
@@ -258,10 +298,15 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const approvedBy = approver === null ? null : approver === viewerName ? 'you' : approver;
   const mounted = nowMs > 0;
 
-  const items = useMemo(() => conversationItems(events, run.gate2), [events, run.gate2]);
+  // The decision list is a new array on every poll; keep its identity while its content is the same so the
+  // conversation (memoised) re-renders only when something changed.
+  const gate2Key = JSON.stringify(run.gate2);
+  const gate2 = useMemo(() => run.gate2, [gate2Key]);
+  const stopped = run.state === 'killed' || run.state === 'failed';
+  const items = useMemo(() => conversationItems(events, gate2, viewerName), [events, gate2, viewerName]);
   const shownItems = useMemo(() => (filter === null ? items : filterConversation(items, filter)), [items, filter]);
-  const spine = useMemo(() => stages(events, { terminal, approvedBy }), [events, terminal, approvedBy]);
-  const teamMap = useMemo(() => teamNodes(events, run.gate2, nowMs, terminal), [events, run.gate2, nowMs, terminal]);
+  const spine = useMemo(() => stages(events, { terminal, approvedBy, stopped }), [events, terminal, approvedBy, stopped]);
+  const teamMap = useMemo(() => teamNodes(events, gate2, nowMs, terminal, stopped), [events, gate2, nowMs, terminal, stopped]);
   const cases = useMemo(() => caseList(events), [events]);
   const cands = useMemo(() => candidates(events), [events]);
   const pending = run.gate2.filter((g) => isOpenGate2(g, nowMs));
@@ -273,7 +318,9 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const end = run.finishedAt === null ? (mounted ? nowMs : start) : new Date(run.finishedAt).getTime();
   const elapsedS = Math.max(0, (end - start) / 1000);
   const lastEvent = events.at(-1);
-  const live = liveness(nowMs, lastEvent === undefined ? start : Date.parse(lastEvent.at), failedSince, lastOk);
+  const polled = liveness(nowMs, lastEvent === undefined ? start : Date.parse(lastEvent.at), failedSince, lastOk);
+  // Paused is not "live": no new request goes out. A failing poll still says so first.
+  const live = run.paused && polled.tone !== 'reconnecting' ? { tone: 'quiet' as const, text: 'Paused · no new requests' } : polled;
   const resultsHref = `/runs/${encodeURIComponent(run.id)}/results`;
 
   const stateText = terminal
@@ -303,25 +350,39 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     return run.paused && lastPause !== undefined ? new Date(lastPause.at).getTime() : null;
   };
 
-  const gate1 = `${approvedBy === 'you' ? 'You' : (approver ?? 'Approved')}${approvedAt === null || !mounted ? '' : `, ${hhmm(approvedAt)}`}`;
-  const map = (
-    <TeamMap
-      team={teamMap}
-      gate1={gate1}
-      gate3={release === 'auto' ? 'Automatic' : 'You, later'}
-      filter={filter}
-      onFilter={(a) => {
-        setFilter(a);
-        setTab('conversation');
-        setTeam(false);
-      }}
-    />
-  );
+  const gate1 = `${approvedBy === 'you' ? 'You' : (approver ?? 'Approved')}${approvedAt === null || !mounted ? '' : `, ${shortTime(approvedAt)}`}`;
+  // Automatic when the request chose it, or when the events show a release nobody made by hand.
+  const gate3 = release === 'auto' || teamMap.autoReleased ? 'Automatic' : terminal ? 'Your turn' : 'After the run';
+  const onFilter = (a: string | null): void => {
+    setFilter(a);
+    setTab('conversation');
+    setTeam(false);
+  };
+  const mapProps = { team: teamMap, gate1, gate3, ended: terminal, filter, onFilter };
+  const onOpenPlan = useCallback((): void => {
+    // Phones have no tabs: the plan sits in the "Limits and findings" panel there.
+    if (window.matchMedia('(min-width: 768px)').matches) setTab('plan');
+    else setPanel(true);
+  }, []);
+  const showPending = (): void => {
+    setFilter(null);
+    setTab('conversation');
+    setShowDecision((n) => n + 1);
+  };
+  const onTabKey = (e: KeyboardEvent<HTMLDivElement>): void => {
+    const i = TABS.findIndex((t) => t.id === tab);
+    const next =
+      e.key === 'ArrowRight' ? TABS[(i + 1) % TABS.length] : e.key === 'ArrowLeft' ? TABS[(i - 1 + TABS.length) % TABS.length] : e.key === 'Home' ? TABS[0] : e.key === 'End' ? TABS.at(-1) : undefined;
+    if (next === undefined) return;
+    e.preventDefault();
+    setTab(next.id);
+    tabRefs.current[next.id]?.focus();
+  };
   const sidePanel: ReactNode = (
     <>
       <LimitsPanel elapsedS={elapsedS} budget={run.budget} requestsUsed={run.requestsUsed} costUsd={run.costUsd} />
       <PlanPanel cases={cases} waiting={waitingAgents} ended={terminal} />
-      <FoundPanel items={cands} />
+      <FoundPanel items={cands} ended={terminal} />
       <p className="m-0 mt-auto border-t border-dashed border-border-strong pt-2.5 text-[11px] leading-4 text-muted-foreground">
         Counts, limits and times come from the runner. Claude&apos;s messages are its own words and stay unverified until the
         validator proves them.
@@ -352,10 +413,23 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                 {CARE_LABEL[care]}
               </span>
             )}
-            <span className={`inline-flex h-[26px] items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] font-medium ${statePill}`}>
-              {terminal ? null : <span aria-hidden="true" className={`size-1.5 rounded-full ${pending.length > 0 ? 'bg-gold' : 'bg-text'}`} />}
-              {stateText}
-            </span>
+            {pending.length > 0 && !terminal ? (
+              <button
+                type="button"
+                onClick={showPending}
+                title="Show the decision"
+                className={`inline-flex h-[26px] items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] font-medium hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${statePill}`}
+              >
+                <span aria-hidden="true" className="size-1.5 rounded-full bg-gold" />
+                {stateText}
+                <Icon name="arrow" size={12} />
+              </button>
+            ) : (
+              <span className={`inline-flex h-[26px] items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] font-medium ${statePill}`}>
+                {terminal ? null : <span aria-hidden="true" className="size-1.5 rounded-full bg-text" />}
+                {stateText}
+              </span>
+            )}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
@@ -385,12 +459,13 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
           <KillButton run={terminal ? null : { id: run.id, assetName: host }} className="h-10 px-4 max-md:hidden" />
           <DropdownMenu>
             <DropdownMenuTrigger
+              ref={moreRef}
               aria-label="More actions"
-              className="flex size-10 items-center justify-center rounded-[10px] border border-input-strong bg-card text-foreground hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+              className="flex size-10 max-md:size-11 items-center justify-center rounded-[10px] border border-input-strong bg-card text-foreground hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
             >
               <Icon name="more" size={18} />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[230px]">
+            <DropdownMenuContent align="end" className="w-[260px] border border-border bg-card text-foreground shadow-float">
               <DropdownMenuItem
                 className="gap-2.5"
                 onSelect={() => {
@@ -431,7 +506,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <span aria-live="polite" className="sr-only">
+          <span aria-live="polite" className={copied ? 'whitespace-nowrap text-[12px] font-medium text-ok' : 'sr-only'}>
             {copied ? 'Run id copied' : ''}
           </span>
         </div>
@@ -442,7 +517,17 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         )}
       </header>
 
-      <StageSpine stages={spine} approvedAt={approvedAt === null || !mounted ? null : hhmm(approvedAt)} resultsHref={terminal ? resultsHref : null} />
+      <StageSpine stages={spine} approvedAt={approvedAt === null || !mounted ? null : shortTime(approvedAt)} resultsHref={terminal ? resultsHref : null} />
+
+      {run.paused && !terminal && !stopping ? (
+        <p role="status" className="m-0 flex items-center gap-2 border-b border-border bg-surface-2 px-4 py-2 text-[12.5px] text-muted-foreground md:px-6">
+          <Icon name="pause" size={14} className="shrink-0 text-foreground" />
+          <span>
+            <b className="font-semibold text-foreground">Paused.</b> No new request goes out until you resume. An agent may
+            finish the thought it is on, and the time limit keeps running.
+          </span>
+        </p>
+      ) : null}
 
       {/* Phones: a pending decision pins a gold banner under the top bar. */}
       {firstPending === undefined ? null : (
@@ -451,7 +536,9 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
           className="flex items-center gap-2.5 border-b border-gold-line bg-gold-soft px-4 py-2.5 text-[13px] text-foreground no-underline md:hidden"
         >
           <Icon name="hand" size={16} className="text-gold-ink" />
-          <span className="min-w-0 flex-1 truncate font-medium">{decisionTitle(firstPending.method, firstPending.url)}</span>
+          <span className="min-w-0 flex-1 truncate font-medium">
+            Claude asks to send <span className="font-mono text-[12.5px]">{firstPending.method.toUpperCase()} {pathOf(firstPending.url)}</span>
+          </span>
           <span className="font-semibold tabular-nums text-gold-ink" suppressHydrationWarning>
             {mounted ? clockLabel(Math.max(0, Math.floor((Date.parse(firstPending.deadlineAt) - nowMs) / 1000))) : ''}
           </span>
@@ -459,16 +546,35 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         </Link>
       )}
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_316px]">
+      {/* One row that fills the height: the side panel scrolls on its own instead of stretching the page. */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_316px]">
         <div className="flex min-h-0 min-w-0 flex-col px-4 pt-3 md:px-[22px]">
-          <div className="hidden md:block">{map}</div>
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <div role="tablist" aria-label="Live audit views" className="hidden max-w-full gap-0.5 rounded-[10px] bg-surface-2 p-0.5 md:flex">
+          <div className="hidden md:block">
+            <TeamMap
+              {...mapProps}
+              collapsed={mapCollapsed}
+              onToggle={() => {
+                const next = !mapCollapsed;
+                setMapCollapsed(next);
+                try {
+                  window.localStorage.setItem(MAP_KEY, next ? '1' : '0');
+                } catch {
+                  // per-viewer convenience only
+                }
+              }}
+            />
+          </div>
+          <div className="mb-1 mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <div role="tablist" aria-label="Live audit views" onKeyDown={onTabKey} className="hidden max-w-full gap-0.5 rounded-[10px] bg-surface-2 p-0.5 md:flex">
               {TABS.map((t) => (
                 <button
                   key={t.id}
                   type="button"
                   role="tab"
+                  ref={(el) => {
+                    tabRefs.current[t.id] = el;
+                  }}
+                  tabIndex={tab === t.id ? 0 : -1}
                   id={`tab-${t.id}`}
                   aria-selected={tab === t.id}
                   aria-controls={`panel-${t.id}`}
@@ -486,7 +592,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
               onClick={() => {
                 setTeam(true);
               }}
-              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border px-3 text-[12.5px] font-medium md:hidden"
+              className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border px-4 text-[13px] font-medium md:hidden"
             >
               <Icon name="team" size={14} />
               Team
@@ -496,7 +602,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
               onClick={() => {
                 setPanel(true);
               }}
-              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border px-3 text-[12.5px] font-medium lg:hidden"
+              className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border px-4 text-[13px] font-medium md:h-8 md:px-3 md:text-[12.5px] lg:hidden"
             >
               Limits and findings
             </button>
@@ -506,7 +612,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                 onClick={() => {
                   setFilter(null);
                 }}
-                className="inline-flex h-8 items-center gap-1.5 rounded-full bg-gold-soft px-3 text-[12.5px] font-medium text-gold-ink md:hidden"
+                className="inline-flex h-11 items-center gap-1.5 rounded-full bg-gold-soft px-4 text-[13px] font-medium text-gold-ink md:hidden"
               >
                 Only {agentName(filter)}
                 <Icon name="x" size={12} />
@@ -527,15 +633,17 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             role="tabpanel"
             id={`panel-${tab}`}
             aria-labelledby={`tab-${tab}`}
-            className={`flex min-h-0 flex-1 flex-col ${tab === 'conversation' ? '' : 'overflow-y-auto pb-6 pt-3'}`}
+            className={`flex min-h-0 flex-1 flex-col ${tab === 'conversation' ? '' : 'overflow-y-auto pb-6 pt-3 [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]'}`}
           >
             {tab === 'conversation' ? (
               <Conversation
                 items={shownItems}
-                gate2={run.gate2}
+                gate2={gate2}
                 viewerName={viewerName}
                 resultsHref={resultsHref}
                 onOpenCall={openExchange}
+                onOpenPlan={onOpenPlan}
+                showDecision={showDecision}
                 emptyText={
                   filter !== null
                     ? `Nothing from the ${agentName(filter)} yet.`
@@ -560,13 +668,21 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             )}
           </div>
         </div>
-        <aside aria-label="Limits and findings" className="hidden min-h-0 flex-col gap-4 overflow-y-auto border-l border-border bg-surface px-[18px] py-3.5 lg:flex">
+        <aside aria-label="Limits and findings" className="hidden min-h-0 flex-col gap-4 overflow-y-auto border-l border-border bg-surface px-[18px] py-3.5 [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin] lg:flex">
           {sidePanel}
         </aside>
       </div>
 
-      <RunDetailsSheet run={run} model={typeof model === 'string' ? model : null} open={details} onOpenChange={setDetails} />
+      <RunDetailsSheet
+        run={run}
+        model={typeof model === 'string' ? model : null}
+        autoReleased={teamMap.autoReleased}
+        open={details}
+        onOpenChange={setDetails}
+        returnFocus={() => moreRef.current}
+      />
       <ExchangeSheet
+        returnFocus={() => callOrigin.current}
         exchange={exchange}
         state={openCall?.state ?? 'closed'}
         onOpenChange={(o) => {
@@ -577,9 +693,9 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         }}
       />
       <Sheet open={team} onOpenChange={setTeam}>
-        <SheetContent side="bottom" className="max-h-[80dvh] overflow-y-auto border-border bg-card p-4 text-foreground">
+        <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto border-border bg-card p-4 pt-5 text-foreground">
           <SheetTitle className="sr-only">Claude&apos;s team</SheetTitle>
-          {map}
+          <TeamMap {...mapProps} layout="column" />
         </SheetContent>
       </Sheet>
       <Sheet open={panel} onOpenChange={setPanel}>

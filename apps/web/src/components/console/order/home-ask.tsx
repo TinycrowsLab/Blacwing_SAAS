@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useSyncExternalStore } from 'react';
 
-import { AskField, findKnown, useKnownTargets, useNormalized } from './ask-field';
+import { AskField, findKnown, useKnownTargets, useNormalized, type WaitingPlan } from './ask-field';
 import { greetingFor, isVerified } from './shared';
 import { normalizeTarget } from '../../../lib/normalize';
 import { Icon } from '../design';
@@ -21,12 +21,15 @@ export function HomeAsk({
   givenName,
   serverGreeting,
   named,
+  waiting,
 }: {
   readonly givenName: string;
   /** The greeting at the server's hour, so the first paint matches; the reader's own clock takes over at once. */
   readonly serverGreeting: string;
   /** Just named on /welcome: the one-time note under the greeting. */
   readonly named: boolean;
+  /** Plans waiting for approval: a site that already has one says so (no second plan by accident). */
+  readonly waiting: readonly WaitingPlan[];
 }) {
   const router = useRouter();
   const greeting = useSyncExternalStore(
@@ -40,6 +43,9 @@ export function HomeAsk({
   const result = useNormalized(text);
   const known = useKnownTargets();
   const begin = useRef<HTMLDivElement>(null);
+  const shownError = showError || text.includes('://');
+  // Muted while the field shows its error: a gold Begin that does nothing reads as a missed click.
+  const blocked = text.trim() === '' || (shownError && !normalizeTarget(text).ok);
 
   const go = (): boolean => {
     const r = normalizeTarget(text);
@@ -58,7 +64,7 @@ export function HomeAsk({
     <PendingButton
       onAction={go}
       stayPending
-      disabled={text.trim() === ''}
+      disabled={blocked}
       pendingLabel="Opening…"
       className="h-12 w-full rounded-xl px-[22px] text-[14.5px] sm:w-auto"
     >
@@ -112,14 +118,17 @@ export function HomeAsk({
           }}
           result={result}
           known={known}
-          showError={showError || text.includes('://')}
+          showError={shownError}
           onBlur={() => {
             setShowError(text.trim() !== '');
           }}
           onEnter={() => {
-            begin.current?.querySelector<HTMLButtonElement>('button')?.click();
+            if (blocked) setShowError(true);
+            else begin.current?.querySelector<HTMLButtonElement>('button')?.click();
           }}
           action={button}
+          waiting={waiting}
+          autoFocus
         />
         <div className="hidden flex-wrap gap-2 text-[12px] text-muted-foreground sm:flex">
           <span className="rounded-full bg-surface-2 px-2.5 py-1">A web address, an IP with a port, or a full URL all work</span>

@@ -22,8 +22,7 @@ const answerSchema = gate2DetailSchema.extend({ alreadyDecided: z.boolean().opti
 const problemSchema = z.object({ message: z.string().optional() }).loose();
 
 type Decision =
-  | { ok: true; gate2: Gate2Detail; alreadyDecided: boolean }
-  | { ok: false; message: string | null };
+  { ok: true; gate2: Gate2Detail; alreadyDecided: boolean } | { ok: false; message: string | null };
 
 async function postDecision(
   id: string,
@@ -143,9 +142,10 @@ export function Gate2Actions({
   const allowWrap = useRef<HTMLDivElement>(null);
   const [allowing, setAllowing] = useState(false);
   const [reason, setReason] = useState('');
-  const [failed, setFailed] = useState<{ decision: 'approve' | 'deny'; message: string | null } | null>(
-    null,
-  );
+  const [failed, setFailed] = useState<{
+    decision: 'approve' | 'deny';
+    message: string | null;
+  } | null>(null);
   const clock = useCountdown(deadlineAt, createdAt);
   const enough = reasonEnough(reason);
   const owns = useOwnsKeys(root);

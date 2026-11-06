@@ -59,6 +59,55 @@ const verifySchema = z.discriminatedUnion('method', [
 ]);
 export type VerifyInput = z.infer<typeof verifySchema>;
 
+const VERIFY_TIMEOUT_MS = 5000;
+const HTTP_NOT_FOUND = 404;
+const HTTP_FORBIDDEN = 403;
+const HTTP_SERVER_ERROR = 500;
+const HTTP_REDIRECT_MIN = 300;
+const HTTP_REDIRECT_MAX = 399;
+
+/** The connection error's code from fetch (undici puts it on `cause`). */
+const errorCode = (error: unknown): string => {
+  if (error instanceof Error && error.name === 'TimeoutError') return 'TIMEOUT';
+  const cause: unknown = error instanceof Error ? error.cause : undefined;
+  return typeof cause === 'object' && cause !== null && 'code' in cause && typeof cause.code === 'string' ? cause.code : '';
+};
+
+/**
+ * Why the file check failed, in plain words ("the name doesn't resolve", "the site answered with a web page").
+ * shortcut: the API only says pass or fail, so the console fetches the same well-known URL once more to name the
+ * cause (only after a failed check the person asked for). Upgrade when the API returns a cause code.
+ */
+async function fileCheckCause(url: string, token: string): Promise<string> {
+  const host = new URL(url).host;
+  let response: Response;
+  try {
+    response = await fetch(url, { redirect: 'manual', cache: 'no-store', signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS) });
+  } catch (error) {
+    const code = errorCode(error);
+    if (code === 'ENOTFOUND' || code === 'EAI_AGAIN')
+      return `the name ${host} doesn't resolve to an address. Check the spelling, or that the name exists`;
+    if (code === 'ECONNREFUSED') return `nothing answered at ${host} (the connection was refused). Check that the site is running`;
+    if (code === 'TIMEOUT' || code === 'UND_ERR_CONNECT_TIMEOUT')
+      return `the site didn't answer within ${VERIFY_TIMEOUT_MS / 1000} seconds`;
+    if (/CERT|TLS|SSL/.test(code)) return "the site's HTTPS certificate isn't trusted";
+    return `we couldn't connect to ${host}`;
+  }
+  const status = response.status;
+  if (status >= HTTP_REDIRECT_MIN && status <= HTTP_REDIRECT_MAX)
+    return `the site redirected to another address (HTTP ${status}). The file must be served at this exact address`;
+  if (status === HTTP_NOT_FOUND) return "there's no file there yet (the site answered 404, not found)";
+  if (status === HTTP_FORBIDDEN || status === HTTP_UNAUTHORIZED)
+    return `the site refused the request (HTTP ${status}). The file must be public`;
+  if (status >= HTTP_SERVER_ERROR) return `the site had an error (HTTP ${status})`;
+  if (!response.ok) return `the site answered HTTP ${status}`;
+  const body = (await response.text().catch(() => '')).slice(0, 65_536);
+  if (body.includes(token)) return 'the file is there now. Check again';
+  if (/html/i.test(response.headers.get('content-type') ?? '') || /^\s*</.test(body))
+    return 'the site answered with a web page, not the file. Apps that answer every address with their own page need the file served before the app';
+  return "the file is there, but it doesn't contain the token. Paste the token exactly, with nothing else";
+}
+
 /** Proves ownership by the well-known file or by attestation. "Already verified" (another tab) counts as success. */
 export async function verifyTargetAction(assetId: string, verify: VerifyInput): Promise<ActionResult<Asset>> {
   const session = await getViewer();
@@ -71,6 +120,14 @@ export async function verifyTargetAction(assetId: string, verify: VerifyInput): 
   );
   if (!result.ok && result.status === HTTP_CONFLICT)
     return toResult(async () => assetSchema.parse(await callApi(session, `/assets/${enc(id.data)}`)));
+  if (!result.ok && result.code === 'verification_failed') {
+    // The URL and token come from the API's own record of the asset, never from the browser.
+    const asset = await callApi(session, `/assets/${enc(id.data)}`)
+      .then((b) => assetSchema.parse(b))
+      .catch(() => null);
+    const v = asset?.verification ?? null;
+    if (v !== null && v.token !== null) return { ...result, message: await fileCheckCause(v.wellKnownUrl, v.token) };
+  }
   return result;
 }
 

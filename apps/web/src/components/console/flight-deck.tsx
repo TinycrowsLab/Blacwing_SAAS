@@ -8,7 +8,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { Card, KindTag, SeverityChip, VerdictMark, filterPillClass, gaugeTone } from './design';
+import { Card, Icon, KindTag, SeverityChip, VerdictMark, gaugeTone } from './design';
 import { Markdown, stripMarkdown } from './markdown';
 import {
   type Activity,
@@ -177,11 +177,11 @@ function Verdict({ c }: { readonly c: Candidate }) {
   );
 }
 
-export function FoundPanel({ items }: { readonly items: readonly Candidate[] }) {
+export function FoundPanel({ items, ended = false }: { readonly items: readonly Candidate[]; readonly ended?: boolean }) {
   return (
     <section aria-labelledby="found-h">
       <h2 id="found-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
-        Found so far
+        {ended ? 'Found' : 'Found so far'}
         <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">private until you release</span>
       </h2>
       {items.length === 0 ? (
@@ -212,7 +212,7 @@ export function FoundPanel({ items }: { readonly items: readonly Candidate[] }) 
 }
 
 const CASE_WORD: Readonly<Record<string, { label: string; cls: string }>> = {
-  executed: { label: 'Done', cls: 'bg-surface-2 text-foreground' },
+  executed: { label: 'Done', cls: 'bg-ok-soft text-ok' },
   executing: { label: 'Running', cls: 'bg-slate-soft text-slate' },
   proposed: { label: 'Queued', cls: 'bg-surface-2 text-muted-foreground' },
   skipped: { label: 'Skipped', cls: 'bg-surface-2 text-muted-foreground' },
@@ -257,13 +257,23 @@ export function TestPlanTab({
                   {c.note === '' ? '' : ` · ${c.note}`}
                 </span>
               </span>
-              <span className={`inline-flex h-[22px] items-center rounded-md px-2 text-[11.5px] font-medium ${word?.cls ?? ''}`}>{word?.label}</span>
+              <span className={`inline-flex h-[22px] items-center gap-1 rounded-md px-2 text-[11.5px] font-medium ${word?.cls ?? ''}`}>
+                {word?.label === 'Done' ? <Icon name="check" size={11} /> : null}
+                {word?.label}
+              </span>
             </li>
           );
         })}
       </ol>
     </Card>
   );
+}
+
+/** The same status pill as the conversation's call rows. */
+export function statusTone(status: number): string {
+  if (status === 0 || status >= 500) return 'bg-bad-soft text-bad';
+  if (status >= 300) return 'bg-med-soft text-med';
+  return 'bg-ok-soft text-ok';
 }
 
 const OUTCOME_CLS: Readonly<Record<string, string>> = {
@@ -316,7 +326,7 @@ export function RequestsTab({
               onClick={() => {
                 onOpen(x.id);
               }}
-              className="grid w-full grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-2 text-left text-[12.5px] hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus md:grid-cols-[72px_170px_minmax(0,1fr)_auto_64px]"
+              className="grid w-full grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-2 text-left text-[12.5px] hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus max-md:min-h-11 md:grid-cols-[84px_minmax(120px,max-content)_minmax(0,1fr)_auto_64px]"
             >
               <time dateTime={x.at} className="font-mono text-[11px] text-muted-foreground">
                 {localClock(x.at)}
@@ -325,9 +335,13 @@ export function RequestsTab({
               <span className="min-w-0 truncate font-mono text-[12px]">
                 <span className="font-medium text-slate">{x.method}</span> {pathOf(x.url)}
               </span>
-              <span className={`text-[11.5px] font-medium ${OUTCOME_CLS[x.outcome] ?? ''}`}>
-                {x.outcome === 'sent' ? x.status : x.outcome === 'blocked' ? 'Blocked' : x.outcome === 'denied' ? 'Denied' : 'Failed'}
-              </span>
+              {x.outcome === 'sent' && x.status !== null ? (
+                <span className={`justify-self-end rounded-[5px] px-1.5 py-px text-[10.5px] font-medium tabular-nums ${statusTone(x.status)}`}>{x.status}</span>
+              ) : (
+                <span className={`text-[11.5px] font-medium ${OUTCOME_CLS[x.outcome] ?? ''}`}>
+                  {x.outcome === 'blocked' ? 'Blocked' : x.outcome === 'denied' ? 'Denied' : 'Failed'}
+                </span>
+              )}
               <span className="hidden text-right text-[11px] text-muted-foreground md:inline">
                 {x.durationMs === null ? '' : `${x.durationMs} ms`}
               </span>
@@ -547,7 +561,7 @@ function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) {
               onClick={() => {
                 setFilter(f);
               }}
-              className={filterPillClass(filter === f)}
+              className={`inline-flex h-7 items-center rounded-full border px-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${filter === f ? 'border-border bg-surface text-foreground shadow-[0_1px_2px_rgba(23,21,15,.06)]' : 'border-transparent bg-surface-2 text-muted-foreground hover:text-foreground'}`}
             >
               {f}
             </button>
@@ -557,7 +571,7 @@ function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) {
       {shown.length === 0 ? (
         <p className="px-4 py-6 text-[13px] text-muted-foreground">Nothing to show yet.</p>
       ) : (
-        <ol className="max-h-[480px] divide-y divide-border overflow-auto">
+        <ol className="max-h-[480px] divide-y divide-border overflow-auto [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]">
           {shown.map((r) => (
             <li
               key={r.seq}
@@ -568,7 +582,14 @@ function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) {
               </time>
               <span className="truncate text-xs font-medium">{WHO[r.agent] ?? agentName(r.agent)}</span>
               <span className="col-start-2 flex min-w-0 items-center gap-2 md:col-start-auto">
-                <KindTag kind={KIND_TAG[r.kind].kind}>{KIND_TAG[r.kind].label}</KindTag>
+                {/* Decisions are gold ("your turn"); warn stays for limits near their end. */}
+                {r.kind === 'Gate 2' ? (
+                  <span className="inline-flex h-5 shrink-0 items-center rounded-[5px] bg-gold-soft px-2 text-[11px] font-medium text-gold-ink">
+                    {KIND_TAG[r.kind].label}
+                  </span>
+                ) : (
+                  <KindTag kind={KIND_TAG[r.kind].kind}>{KIND_TAG[r.kind].label}</KindTag>
+                )}
                 <span title={stripMarkdown(r.text)} className="truncate">
                   {stripMarkdown(r.text)}
                 </span>

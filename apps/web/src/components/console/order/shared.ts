@@ -64,9 +64,19 @@ const PRIVATE_HOST =
 
 export type Care = 'passive' | 'active_safe';
 
+/** A loopback or private-network host ("localhost:3001", "10.0.0.5"): it can't be checked from outside. */
+export const isPrivateHost = (host: string): boolean => PRIVATE_HOST.test(host);
+
 /** Q4's recommendation from the host: gentle probing suits staging, local and lab hosts; a live site gets look-only. */
 export const recommendedCare = (host: string): Care =>
-  PRIVATE_HOST.test(host) || STAGING.test(host.replace(/:\d+$/, '')) ? 'active_safe' : 'passive';
+  isPrivateHost(host) || STAGING.test(host.replace(/:\d+$/, '')) ? 'active_safe' : 'passive';
+
+/** Q2's recommendation: a file for a public site, the owner's word for a private one (a lab app may not serve files). */
+export const recommendedProof = (host: string): 'file' | 'attest' => (isPrivateHost(host) ? 'attest' : 'file');
+
+/** "Recommended" and the Q4 hints: a white pill with a gold ring, legible on a selected (gold-soft) card too. */
+export const RECOMMEND_PILL =
+  'inline-flex h-5 items-center rounded-md bg-card px-2 text-[11px] font-semibold text-gold-ink shadow-[inset_0_0_0_1px_var(--gold-line)]';
 
 export const CARE = {
   passive: { label: "Look, don't touch", line: 'Reads only: GET, HEAD and OPTIONS.', badge: 'Suits a live site' },

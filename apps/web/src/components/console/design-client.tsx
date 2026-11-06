@@ -11,8 +11,9 @@ import { REASON_MIN, reasonChars } from '../../lib/normalize';
 const SLOW_MS = 2000;
 
 /**
- * A button that never loses a click (spec §10.4). It shows `pendingLabel` with a spinner from pointerdown (or
- * Enter/Space), locks its width, ignores repeated activations while `onAction` runs, and says "Still working…" after
+ * A button that never loses a click (spec §10.4). It shows `pendingLabel` with a spinner from a mouse pointerdown (or
+ * Enter/Space; a touch shows it on the tap itself, because swapping the label under a finger detaches the click
+ * target), locks its width, ignores repeated activations while `onAction` runs, and says "Still working…" after
  * 2 s. It resets when `onAction` settles, unless `stayPending` and the action did not return `false` (use it when the
  * action navigates away, so the button does not flicker back before the next page shows).
  */
@@ -111,9 +112,11 @@ export function PendingButton({
       aria-describedby={describedBy}
       style={pending && minWidth !== undefined ? { minWidth } : undefined}
       onPointerDown={(e) => {
-        if (e.button === 0) arm();
+        if (e.button === 0 && e.pointerType === 'mouse') arm();
       }}
-      onPointerLeave={disarm}
+      onPointerLeave={(e) => {
+        if (e.pointerType === 'mouse') disarm();
+      }}
       onPointerCancel={disarm}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') arm();
@@ -201,7 +204,7 @@ export function CopyField({
               setState(ok ? 'copied' : 'failed');
             });
           }}
-          className={buttonClass('secondary', 'h-8 shrink-0 rounded-lg px-3 text-[12.5px]')}
+          className={buttonClass('secondary', 'h-8 min-w-[96px] shrink-0 justify-center rounded-lg px-3 text-[12.5px]')}
         >
           <Icon name={state === 'copied' ? 'check' : 'copy'} size={14} />
           <span aria-live="polite">
@@ -286,15 +289,15 @@ export function ReasonField({
         }}
         className="w-full resize-y rounded-[10px] border border-input-strong bg-card px-3.5 py-2.5 text-[14px] leading-[21px] text-foreground placeholder:text-muted-foreground focus-visible:border-gold-ink focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus disabled:bg-surface-2"
       />
-      <div id={`${id}-count`} className="flex items-center justify-between gap-3 text-[12px]" aria-live="polite">
-        <span className="text-muted-foreground">{footnote}</span>
+      <div id={`${id}-count`} className="flex items-start justify-between gap-3 text-[12px]" aria-live="polite">
+        <span className="min-w-0 text-muted-foreground">{footnote}</span>
         {enough ? (
-          <span className="inline-flex items-center gap-1 font-medium text-ok">
+          <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap font-medium text-ok">
             <Icon name="check" size={12} />
             Enough detail
           </span>
         ) : (
-          <span className="tabular-nums text-muted-foreground">
+          <span className="shrink-0 whitespace-nowrap tabular-nums text-muted-foreground">
             {n} of {min} characters
           </span>
         )}
@@ -307,7 +310,8 @@ export function ReasonField({
  * A list typed or pasted as chips (excluded paths, extra origins). `parse` turns text into the new list, e.g.
  * `(text, existing) => { const r = normalizePaths(text, origin, existing); return { values: r.paths, error: r.error }; }`.
  * Space, comma, Enter, paste and blur commit; Backspace on an empty field removes the last chip. `locked` chips (set
- * on the target) show with a lock and cannot be removed.
+ * on the target) show with a lock and cannot be removed. `onText` reports the typed, not yet committed text, so an
+ * action can include it without waiting for the blur (Enter on an empty field is left to the form).
  */
 export function ChipInput({
   label,
@@ -318,6 +322,7 @@ export function ChipInput({
   locked = [],
   lockedNote = 'set on the target',
   describe,
+  onText,
 }: {
   readonly label: ReactNode;
   readonly values: readonly string[];
@@ -328,9 +333,14 @@ export function ChipInput({
   readonly lockedNote?: string;
   /** How a chip reads, e.g. "/admin and everything under it". */
   readonly describe?: (value: string) => ReactNode;
+  readonly onText?: (text: string) => void;
 }) {
   const id = useId();
-  const [text, setText] = useState('');
+  const [text, setTextState] = useState('');
+  const setText = (next: string): void => {
+    setTextState(next);
+    onText?.(next);
+  };
   const [error, setError] = useState<string | null>(null);
   const commit = (raw: string): void => {
     if (raw.trim() === '') return;
@@ -395,7 +405,7 @@ export function ChipInput({
             commit(`${text}${e.clipboardData.getData('text')}`);
           }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && text.trim() !== '') {
               e.preventDefault();
               commit(text);
             } else if (e.key === 'Backspace' && text === '' && values.length > 0) {

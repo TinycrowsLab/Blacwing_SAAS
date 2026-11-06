@@ -701,7 +701,7 @@ export function OptionCard({
         )}
         {checked && children !== undefined ? <span className="mt-2 flex flex-col gap-2">{children}</span> : null}
       </span>
-      {index === undefined ? null : <Kbd className="text-muted-foreground">{index}</Kbd>}
+      {index === undefined ? null : <Kbd className="text-muted-foreground max-sm:hidden">{index}</Kbd>}
     </label>
   );
 }

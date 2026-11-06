@@ -310,7 +310,8 @@ function SidebarBody({
   };
   const earlierSub = (r: SidebarData['earlier'][number]): string => {
     const at = r.finishedAt ?? r.createdAt;
-    const when = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(at));
+    // The reader's locale only after mount (`now` is 0 on the server and at hydration): no hydration mismatch.
+    const when = now === 0 ? at.slice(0, 10) : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(at));
     const word = r.state === 'completed' ? 'Finished' : r.state === 'killed' ? 'Stopped' : r.state === 'failed' ? 'Stopped with an error' : r.state;
     return `${word} · ${when}`;
   };
@@ -334,7 +335,7 @@ function SidebarBody({
       >
         <Icon name="plus" size={16} />
         New audit
-        <Kbd className="ml-auto text-muted-foreground">N</Kbd>
+        {inSheet ? null : <Kbd className="ml-auto text-muted-foreground">N</Kbd>}
       </Link>
       <nav aria-label="Main" className="flex flex-col gap-0.5">
         {NAV.map((item) => {
@@ -370,7 +371,7 @@ function SidebarBody({
           />
         </div>
       )}
-      <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 pb-2">
+      <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 pb-2 [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]">
         {data === null ? (
           <p className="m-0 px-2.5 pt-4 text-[12.5px] leading-5 text-muted-foreground">
             Couldn&apos;t load your audits.{' '}
@@ -492,6 +493,8 @@ export function ConsoleSidebar({
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.ctrlKey || e.metaKey || e.altKey || typing(e.target)) return;
+      // Not while a dialog or an inline editor has focus: the key belongs to it.
+      if (e.target instanceof Element && e.target.closest('[role="dialog"], [data-no-shortcuts]') !== null) return;
       if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
         router.push('/audits/new');

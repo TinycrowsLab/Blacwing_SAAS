@@ -1,5 +1,7 @@
 // The stage spine (experience spec §5.2 item 2): one slim row, Approved → Mapping → Planning → Testing → Proving →
-// Your review, derived from the run's events in run-model.ts. Phones show "Testing · stage 4 of 6" instead.
+// Your review, derived from the run's events in run-model.ts. Phones show "Testing · stage 4 of 6" instead. A stage
+// ticks only when its own work ended: one still busy behind the current stage shows a slate ring, one a stopped run
+// left open a dashed ring with "stopped at …".
 import Link from 'next/link';
 
 import { Icon } from './design';
@@ -17,6 +19,18 @@ function Mark({ state }: { readonly state: Stage['state'] }) {
     return (
       <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-gold-ink bg-gold-soft">
         <span className="size-[7px] rounded-full bg-gold" />
+      </span>
+    );
+  if (state === 'active')
+    return (
+      <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-slate bg-surface">
+        <span className="size-[6px] rounded-full bg-slate" />
+      </span>
+    );
+  if (state === 'stopped')
+    return (
+      <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-dashed border-muted-foreground bg-surface">
+        <span className="h-[1.5px] w-[7px] rounded-full bg-muted-foreground" />
       </span>
     );
   return (
@@ -46,32 +60,36 @@ export function StageSpine({
         {current === undefined ? '' : ` · stage ${index + 1} of ${stages.length}`}
         {current?.detail ? ` · ${current.detail}` : ''}
       </p>
-      <ol className="m-0 hidden list-none items-center p-0 md:flex">
+      <ol className="m-0 hidden list-none items-center overflow-x-auto p-0 [scrollbar-width:none] md:flex">
         {stages.map((s, i) => {
           const detail = i === 0 && approvedAt !== null ? `${s.detail}${s.detail === '' ? '' : ', '}${approvedAt}` : s.detail;
           const body = (
             <>
               <Mark state={s.state} />
-              <span className={s.state === 'current' ? 'font-semibold text-foreground' : s.state === 'done' ? 'text-foreground' : ''}>
+              <span className={s.state === 'current' ? 'font-semibold text-foreground' : s.state === 'done' || s.state === 'active' ? 'text-foreground' : ''}>
                 {s.label}
               </span>
               {detail === '' ? null : <small className="text-[11.5px] font-normal text-muted-foreground">{detail}</small>}
             </>
           );
           return (
-            <li key={s.key} className="flex min-w-0 items-center" aria-current={s.state === 'current' ? 'step' : undefined}>
+            <li
+              key={s.key}
+              className={`flex items-center ${i > 0 ? 'flex-1' : 'shrink-0'}`}
+              aria-current={s.state === 'current' ? 'step' : undefined}
+            >
               {i > 0 ? (
                 <span
                   aria-hidden="true"
-                  className={`mx-2.5 h-[1.5px] w-3 min-w-3 flex-1 lg:w-8 ${s.state === 'done' || s.state === 'current' ? 'bg-text' : 'bg-border-strong'}`}
+                  className={`mx-2.5 h-[1.5px] min-w-3 flex-1 ${s.state === 'upcoming' || s.state === 'skipped' ? 'bg-border-strong' : 'bg-text'}`}
                 />
               ) : null}
               {s.key === 'review' && resultsHref !== null ? (
-                <Link href={resultsHref} className="flex items-center gap-[7px] whitespace-nowrap text-[12.5px] text-muted-foreground no-underline hover:underline">
+                <Link href={resultsHref} className="flex shrink-0 items-center gap-[7px] whitespace-nowrap text-[12.5px] text-muted-foreground no-underline hover:underline">
                   {body}
                 </Link>
               ) : (
-                <span className="flex items-center gap-[7px] whitespace-nowrap text-[12.5px] text-muted-foreground">{body}</span>
+                <span className="flex shrink-0 items-center gap-[7px] whitespace-nowrap text-[12.5px] text-muted-foreground">{body}</span>
               )}
             </li>
           );

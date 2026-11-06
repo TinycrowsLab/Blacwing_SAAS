@@ -2,6 +2,7 @@
 
 // "What should we audit?" (experience spec §3.2, §10.1): one forgiving field. What was typed becomes an origin, every
 // change is said out loud as a chip, and a site already added is recognised. Never type="url", so no native popups.
+import Link from 'next/link';
 import { type ReactNode, useEffect, useState } from 'react';
 import { z } from 'zod';
 
@@ -64,15 +65,23 @@ function NoteChip({ note }: { readonly note: Note }) {
   );
 }
 
+/** A plan waiting for Gate 1: its id and its site. */
+export interface WaitingPlan {
+  readonly id: string;
+  readonly assetId: string;
+}
+
 /** The live line under the field: what we understood, or the one fix. */
 export function TargetLine({
   result,
   known,
   showError,
+  waiting = [],
 }: {
   readonly result: TargetResult;
   readonly known: readonly Asset[] | null;
   readonly showError: boolean;
+  readonly waiting?: readonly WaitingPlan[];
 }) {
   if (!result.ok) {
     if (result.empty === true || !showError) return null;
@@ -84,6 +93,7 @@ export function TargetLine({
     );
   }
   const existing = findKnown(known, result.origin);
+  const plan = existing === undefined ? undefined : waiting.find((w) => w.assetId === existing.id);
   return (
     <div className="flex flex-col gap-2">
       <p className="m-0 flex items-start gap-2 text-[13.5px] leading-5 text-muted-foreground">
@@ -109,6 +119,14 @@ export function TargetLine({
             : "You already added this site. It isn't verified yet."}
         </p>
       )}
+      {plan === undefined ? null : (
+        <p className="m-0 pl-[26px] text-[12.5px] text-foreground">
+          A plan for this site is already waiting for your approval.{' '}
+          <Link href={`/audits/${plan.id}`} className="font-semibold text-gold-ink underline underline-offset-2">
+            Open that plan
+          </Link>
+        </p>
+      )}
     </div>
   );
 }
@@ -130,6 +148,7 @@ export function AskField({
   action,
   variant = 'plain',
   autoFocus = false,
+  waiting,
 }: {
   readonly id: string;
   readonly label: ReactNode;
@@ -143,12 +162,13 @@ export function AskField({
   readonly action?: ReactNode;
   readonly variant?: 'hero' | 'plain';
   readonly autoFocus?: boolean;
+  readonly waiting?: readonly WaitingPlan[];
 }) {
   const hero = variant === 'hero';
   const invalid = showError && !result.ok && result.empty !== true;
   return (
     <div
-      className={`flex flex-col rounded-[18px] border bg-card transition-[border-color,box-shadow] focus-within:border-gold-ink focus-within:ring-[3px] focus-within:ring-focus ${invalid ? 'border-bad' : 'border-input-strong'} ${hero ? 'shadow-[0_8px_28px_rgba(31,23,4,.06)]' : ''}`}
+      className={`flex flex-col rounded-[18px] border bg-card transition-[border-color,box-shadow] focus-within:ring-[3px] ${invalid ? 'border-bad focus-within:border-bad focus-within:ring-bad-soft' : 'border-input-strong focus-within:border-gold-ink focus-within:ring-focus'} ${hero ? 'shadow-[0_8px_28px_rgba(31,23,4,.06)]' : ''}`}
     >
       <label htmlFor={id} className="px-4 pt-3.5 text-[12.5px] font-medium text-muted-foreground sm:px-5">
         {label}
@@ -187,7 +207,7 @@ export function AskField({
         aria-live="polite"
         className={`border-t border-dashed border-border px-4 py-3 sm:px-5 ${!result.ok && (result.empty === true || !showError) ? 'hidden' : ''}`}
       >
-        <TargetLine result={result} known={known} showError={showError} />
+        <TargetLine result={result} known={known} showError={showError} {...(waiting === undefined ? {} : { waiting })} />
       </div>
       {action === undefined ? null : <div className="px-4 pb-4 sm:hidden">{action}</div>}
     </div>

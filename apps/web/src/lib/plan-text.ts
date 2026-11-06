@@ -29,10 +29,22 @@ const count = (n: number, one: string, many: string): string =>
 export const usd = (n: number): string =>
   n.toLocaleString(LOCALE, { style: 'currency', currency: 'USD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2 });
 
+const SENTENCE_END = /(?<=\.)\s/;
+/** The person's own note is read back in full up to this length, then clipped. */
+const NOTE_MAX = 140;
+
 /** "Look for injection and APIs. Focus on checkout." becomes "injection and APIs". */
 export function objectivePhrase(objective: string): string {
-  const first = (objective.trim().split(/(?<=\.)\s/)[0] ?? '').replace(/^look for\s+/i, '').replace(/\.$/, '');
+  const first = (objective.trim().split(SENTENCE_END)[0] ?? '').replace(/^look for\s+/i, '').replace(/\.$/, '');
   return first === '' ? 'the OWASP Top 10' : first.charAt(0).toLowerCase() + first.slice(1);
+}
+
+/** What the person wrote after the first sentence ("Focus on checkout"), clipped; null when nothing. */
+export function objectiveNote(objective: string): string | null {
+  const parts = objective.trim().split(SENTENCE_END);
+  const rest = parts.slice(1).join(' ').replace(/\s+/g, ' ').trim().replace(/\.$/, '');
+  if (rest === '') return null;
+  return rest.length > NOTE_MAX ? `${rest.slice(0, NOTE_MAX - 1).trimEnd()}…` : rest;
 }
 
 export function limitsPhrase(p: Pick<PlanInput, 'minutes' | 'requests' | 'costUsd'>): string {
@@ -41,17 +53,19 @@ export function limitsPhrase(p: Pick<PlanInput, 'minutes' | 'requests' | 'costUs
 
 export function planSegments(p: PlanInput): PlanSegment[] {
   const gentle = p.intrusiveness === 'active_safe';
+  const note = objectiveNote(p.objective);
+  const anywhere = p.excludedPaths.length === 0;
   return [
     { text: 'We will audit ' },
     { text: p.host, field: 'host' },
     { text: ' for ' },
-    { text: objectivePhrase(p.objective), field: 'objective' },
+    { text: `${objectivePhrase(p.objective)}${note === null ? '' : `, with your note: \u201c${note}\u201d`}`, field: 'objective' },
     { text: ". Claude's agents will " },
     { text: gentle ? 'probe gently' : 'only look, never touch', field: 'intrusiveness' },
     {
-      text: `: ${gentle ? 'crafted read requests that should not change data' : 'GET, HEAD and OPTIONS only'}. Anything that would change data waits for your yes. They will stay out of `,
+      text: `: ${gentle ? 'crafted read requests that should not change data' : 'GET, HEAD and OPTIONS requests'}. Anything that would change data waits for your yes. They ${anywhere ? 'may go' : 'will stay out of'} `,
     },
-    { text: p.excludedPaths.length === 0 ? 'nothing extra' : list(p.excludedPaths), field: 'paths' },
+    { text: anywhere ? 'anywhere on the site' : list(p.excludedPaths), field: 'paths' },
     { text: ' and test as ' },
     {
       text:

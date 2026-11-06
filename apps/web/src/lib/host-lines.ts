@@ -1,5 +1,6 @@
 // Blackwing's own voice in the live conversation (experience spec §5.2): deterministic templates over run events.
 // Every line states only what the event carries; an event without a line returns null.
+import { agentName } from './agents';
 
 export interface HostEvent {
   readonly kind: string;
@@ -12,6 +13,8 @@ export interface HostContext {
   readonly request?: { readonly method: string; readonly url: string } | undefined;
   /** BW_GATE2_TIMEOUT_S from GET /workspace, for "no answer in {m} min". */
   readonly gate2TimeoutS?: number | undefined;
+  /** The signed-in person's name, so "Paused by {name}" reads "Paused by you" for them. */
+  readonly viewerName?: string | null | undefined;
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
@@ -58,7 +61,10 @@ export function hostLine(event: HostEvent, ctx: HostContext = {}): string | null
     case 'plan.cases': {
       const n = Array.isArray(d.cases) ? d.cases.length : 0;
       const total = num(d.total) ?? n;
-      return `The planner recorded ${n} test ${n === 1 ? 'case' : 'cases'} (${total} in the plan). Read them under Test plan.`;
+      // The event names the agent that recorded them (a specialist can add cases too). The screen links to the plan.
+      const agent = str(d.agent);
+      const who = agent === null || agent === 'orchestrator' ? 'The planner' : `The ${agentName(agent)}`;
+      return `${who} recorded ${n} test ${n === 1 ? 'case' : 'cases'} (${total} in the plan).`;
     }
     case 'gate2.decided': {
       const status = str(d.status);
@@ -75,7 +81,8 @@ export function hostLine(event: HostEvent, ctx: HostContext = {}): string | null
     }
     case 'run.paused': {
       const who = byName(event.message);
-      return who === null ? 'Paused.' : `Paused by ${who}.`;
+      if (who === null) return 'Paused.';
+      return `Paused by ${ctx.viewerName !== undefined && ctx.viewerName !== null && who === ctx.viewerName ? 'you' : who}.`;
     }
     case 'run.resumed':
       return 'Resumed.';
@@ -86,7 +93,8 @@ export function hostLine(event: HostEvent, ctx: HostContext = {}): string | null
       return ms === null ? 'Stopped. Every agent halted.' : `Stopped. Every agent halted in ${ms.toLocaleString('en-US')} ms.`;
     }
     case 'run.completed':
-      return `Finished: ${finishReason(d.reason)}. Your results are ready.`;
+      // Without a reason the planner ended on its own: "Finished: finished its plan" would stutter.
+      return `Finished: ${str(d.reason) === null ? 'Claude completed its plan' : finishReason(d.reason)}. Your results are ready.`;
     case 'run.failed':
       return `The run stopped with an error: ${str(d.reason) ?? 'unknown'}. Findings so far are kept.`;
     default:

@@ -5,11 +5,11 @@
 // polls it, so a decision made elsewhere shows within seconds.
 import { z } from 'zod';
 
+import { isUuid } from '../../../../(console)/decisions/asked';
 import { ApiError, callApi } from '../../../../../lib/api';
 import { getViewer } from '../../../../../lib/auth';
 import { getAsUser } from '../../../../../lib/post-route';
 import { gate2DetailSchema } from '../../../../../lib/schemas';
-import { isUuid } from '../../../../(console)/decisions/asked';
 
 export const dynamic = 'force-dynamic';
 

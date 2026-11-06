@@ -17,6 +17,19 @@ import { limitsPhrase } from '../../lib/plan-text';
 import type { Run } from '../../lib/schemas';
 import type { ReactNode } from 'react';
 
+/** Restores focus to what opened the sheet (Radix has no trigger to return to for a controlled sheet). */
+const refocus =
+  (target: (() => HTMLElement | null) | undefined) =>
+  (e: Event): void => {
+    const el = target?.();
+    if (el?.isConnected !== true) return;
+    e.preventDefault();
+    el.focus();
+  };
+
+/** Proof bodies show the exact bytes: no ligatures ("<!--" must not render as an arrow). */
+const EXACT = '[font-feature-settings:"liga"_0,"calt"_0] [font-variant-ligatures:none]';
+
 const SHEET =
   'w-full max-w-[560px] gap-0 overflow-y-auto border-border bg-card p-0 text-foreground sm:max-w-[560px] [&>button]:right-5 [&>button]:top-5';
 
@@ -58,14 +71,19 @@ const mono = (text: string): ReactNode => <span className="font-mono text-[12px]
 export function RunDetailsSheet({
   run,
   model,
+  autoReleased,
   open,
   onOpenChange,
+  returnFocus,
 }: {
   readonly run: Run;
   /** The model named by run.started, or null before the run starts. */
   readonly model: string | null;
+  /** The events show an automatic release (used when the request did not pin its choice). */
+  readonly autoReleased: boolean;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
+  readonly returnFocus?: () => HTMLElement | null;
 }) {
   const asset = run.pins.asset;
   const req = pinnedRequestSchema.safeParse(run.pins.request ?? {});
@@ -77,7 +95,7 @@ export function RunDetailsSheet({
     iso === null || iso === undefined ? 'Not recorded' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className={SHEET}>
+      <SheetContent side="right" className={SHEET} onCloseAutoFocus={refocus(returnFocus)}>
         <div className="border-b border-border px-6 pb-4 pt-5">
           <SheetTitle className="text-[18px] font-semibold">Run details</SheetTitle>
           <SheetDescription className="mt-1 text-[12.5px] text-muted-foreground">
@@ -126,13 +144,12 @@ export function RunDetailsSheet({
           <Row label="Limits">
             Stops at the first of {limitsPhrase({ minutes: Math.round(budget.seconds / 60), requests: budget.requests, costUsd: budget.costUsd })}
           </Row>
-          <Row label="Proven issues">
-            {request?.releaseProven === 'auto'
-              ? 'Released automatically'
-              : request?.releaseProven === 'hold'
-                ? 'Wait for your release'
-                : 'Not recorded'}
-          </Row>
+          {/* Older requests did not pin the choice: say what the run shows, or leave the row out. */}
+          {request?.releaseProven === 'auto' || autoReleased ? (
+            <Row label="Proven issues">Released automatically</Row>
+          ) : request?.releaseProven === 'hold' ? (
+            <Row label="Proven issues">Wait for your release</Row>
+          ) : null}
         </Section>
         <Section title="Authorisation">
           <Row label="Approved by">{auth?.signedBy ?? 'Not recorded'}</Row>
@@ -158,7 +175,7 @@ function Headers({ headers }: { readonly headers: Readonly<Record<string, string
   const rows = Object.entries(headers ?? {});
   if (rows.length === 0) return <p className="m-0 text-[12px] text-muted-foreground">No headers recorded.</p>;
   return (
-    <pre className="m-0 max-h-48 overflow-auto rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px]">
+    <pre className={`m-0 max-h-48 overflow-auto rounded-[10px] ${EXACT} border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px]`}>
       {rows.map(([k, v]) => `${k}: ${v}`).join('\n')}
     </pre>
   );
@@ -167,7 +184,7 @@ function Headers({ headers }: { readonly headers: Readonly<Record<string, string
 function Body({ text }: { readonly text: string | null }) {
   if (text === null || text === '') return <p className="m-0 text-[12px] text-muted-foreground">No body.</p>;
   return (
-    <pre className="m-0 max-h-80 overflow-auto whitespace-pre-wrap break-all rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px]">
+    <pre className={`m-0 max-h-80 overflow-auto whitespace-pre-wrap break-all rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px] ${EXACT}`}>
       {text}
     </pre>
   );
@@ -185,16 +202,18 @@ export function ExchangeSheet({
   state,
   onOpenChange,
   onRetry,
+  returnFocus,
 }: {
   readonly exchange: Exchange | null;
   /** `loading` while the page of exchanges is fetched, `missing` when the id is not (yet) recorded. */
   readonly state: 'closed' | 'loading' | 'ready' | 'missing' | 'error';
   readonly onOpenChange: (open: boolean) => void;
   readonly onRetry: () => void;
+  readonly returnFocus?: () => HTMLElement | null;
 }) {
   return (
     <Sheet open={state !== 'closed'} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className={SHEET}>
+      <SheetContent side="right" className={SHEET} onCloseAutoFocus={refocus(returnFocus)}>
         <div className="border-b border-border px-6 pb-4 pt-5">
           <SheetTitle className="pr-8 text-[16px] font-semibold">
             {exchange === null ? 'Request' : (
@@ -240,7 +259,7 @@ export function ExchangeSheet({
             </dl>
             <div className="flex flex-col gap-2">
               <h3 className="m-0 text-[13px] font-semibold">Request</h3>
-              <p className="m-0 break-all font-mono text-[12px]">
+              <p className={`m-0 break-all font-mono text-[12px] ${EXACT}`}>
                 {exchange.method} {exchange.url}
               </p>
               <Headers headers={exchange.requestHeaders} />

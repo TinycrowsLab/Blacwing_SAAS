@@ -17,7 +17,9 @@ import {
   FOCUS_CHIPS,
   type FocusKey,
   isVerified,
+  RECOMMEND_PILL,
   recommendedCare,
+  recommendedProof,
   refreshSidebar,
   toggleFocus,
   typing,
@@ -63,12 +65,15 @@ const okTarget = (raw: string | null): OkTarget | null => {
   return r.ok ? r : null;
 };
 
+/** Labels up to this length never break inside (not even at a hyphen); a longer one may, so it never overflows. */
+const NOWRAP_LABEL = 30;
+
 /** A host that wraps after its dots and colon on a phone, never mid-label. */
 function Breakable({ text }: { readonly text: string }) {
   return text.split(/(?<=[.:])/).map((part, i) => (
     <Fragment key={i}>
       {i === 0 ? null : <wbr />}
-      {part}
+      {part.length <= NOWRAP_LABEL ? <span className="whitespace-nowrap">{part}</span> : part}
     </Fragment>
   ));
 }
@@ -126,13 +131,16 @@ export function Order({
   const [showError, setShowError] = useState(false);
   const [target, setTarget] = useState<OkTarget | null>(first);
   const [asset, setAsset] = useState<Asset | null>(firstAsset);
-  const [method, setMethod] = useState<ProofMethod>('file');
+  const [method, setMethod] = useState<ProofMethod>(first === null ? 'file' : recommendedProof(first.host));
   const [attested, setAttested] = useState(false);
   const [focus, setFocus] = useState<FocusKey[]>([BROAD]);
   const [focusText, setFocusText] = useState('');
   const [care, setCare] = useState<Care | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [inText, setInText] = useState(false);
+  /** Set once the plan is created: no draft is saved after that (a pending debounce would leave a ghost draft). */
+  const submitted = useRef(false);
   const h1 = useRef<HTMLHeadingElement>(null);
   const footer = useRef<HTMLDivElement>(null);
   const mounted = useRef(false);
@@ -187,9 +195,10 @@ export function Order({
 
   // Draft kept on this device, 300 ms after the last change, once there is a site.
   useEffect(() => {
-    if (target === null) return;
+    if (target === null || submitted.current) return;
     setSaved(false);
     const timer = window.setTimeout(() => {
+      if (submitted.current) return;
       saveDraft({
         id: draftId,
         origin: target.origin,
@@ -239,7 +248,10 @@ export function Order({
         }
         a = created.data;
       }
-      if (target?.origin !== r.origin) setAttested(false);
+      if (target?.origin !== r.origin) {
+        setAttested(false);
+        setMethod(recommendedProof(r.host));
+      }
       setTarget(r);
       setAsset(a);
       go(isVerified(a) ? Q.focus : Q.proof);
@@ -284,9 +296,11 @@ export function Order({
       setError(r.message);
       return false;
     }
+    submitted.current = true;
     removeDraft(draftId);
     refreshSidebar();
-    router.push(`/audits/${r.data.id}`);
+    // Replace, so browser Back does not reopen question 4 of an order that is already a plan.
+    router.replace(`/audits/${r.data.id}`);
     return true;
   };
 
@@ -299,6 +313,14 @@ export function Order({
           ? asset !== null
           : true;
 
+  /** Why Continue is not ready yet, said next to it (a disabled button alone does not explain itself). */
+  const stepHint =
+    step === 2 && !canContinue
+      ? method === 'file'
+        ? 'Put the file on the site and press Check now, or choose \u201cI\u2019m responsible for this system\u201d.'
+        : 'Tick the box to confirm, then continue.'
+      : null;
+
   const pressContinue = (): void => {
     footer.current?.querySelector<HTMLButtonElement>('[data-continue-wrap] button')?.click();
   };
@@ -309,12 +331,13 @@ export function Order({
       if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey) return;
       const el = e.target instanceof Element ? e.target : null;
       if (el?.closest('[role="dialog"]')) return;
+      // While typing, Esc belongs to the field (it closes the browser's suggestions); it never leaves the order.
+      if (typing(e.target)) return;
       if (e.key === 'Escape') {
         e.preventDefault();
         back();
         return;
       }
-      if (typing(e.target)) return;
       if (e.key === 'Enter') {
         if (el !== null && (el.closest('button') !== null || el.closest('a') !== null)) return;
         e.preventDefault();
@@ -387,7 +410,11 @@ export function Order({
       h1: 'How careful should Claude be?',
       lede: (
         <>
-          How Claude&apos;s agents may touch <b className="font-medium text-foreground">{host}</b>.
+          How Claude&apos;s agents may touch{' '}
+          <b className="font-medium text-foreground [overflow-wrap:anywhere]">
+            <Breakable text={host} />
+          </b>
+          .
         </>
       ),
     },
@@ -395,16 +422,24 @@ export function Order({
   const head = heads[step] ?? heads[1];
 
   return (
-    <div className="mx-auto grid w-full max-w-[1100px] gap-8 lg:grid-cols-[minmax(0,640px)_340px] lg:justify-between">
+    <div className="mx-auto grid w-full max-w-[1100px] gap-8 lg:grid-cols-[minmax(0,640px)_340px] lg:justify-center lg:gap-10">
       <div className="flex min-w-0 flex-col gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={back}
+            aria-label="Back"
+            className={buttonClass('ghost', '-ml-2 size-9 shrink-0 px-0 md:hidden')}
+          >
+            <Icon name="arrow" size={18} className="rotate-180" />
+          </button>
           <span className="hidden text-[12.5px] text-muted-foreground sm:inline">New audit</span>
           <span className="hidden flex-1 sm:block" />
           <span aria-hidden="true" className="flex gap-1">
             {STEPS.map((i) => (
               <span
                 key={i}
-                className={`h-[3px] w-5 rounded-full sm:w-10 ${i < step ? 'bg-gold-ink' : i === step ? 'bg-gold' : 'bg-border-strong'}`}
+                className={`h-[3px] w-4 rounded-full sm:w-10 ${i < step ? 'bg-gold-ink' : i === step ? 'bg-gold' : 'bg-border-strong'}`}
               />
             ))}
           </span>
@@ -430,7 +465,16 @@ export function Order({
         ) : null}
         {step > Q.focus ? <Receipt label="Look for" value={lines[2]?.value ?? ''} onChange={() => { go(Q.focus); }} /> : null}
 
-        <section aria-labelledby="order-h1" className="flex flex-col gap-5">
+        <section
+          aria-labelledby="order-h1"
+          className="flex flex-col gap-5"
+          onFocusCapture={(e) => {
+            setInText(e.target instanceof HTMLTextAreaElement);
+          }}
+          onBlurCapture={() => {
+            setInText(false);
+          }}
+        >
           <div className="flex flex-col gap-1.5">
             <h1
               id="order-h1"
@@ -479,6 +523,7 @@ export function Order({
                 refreshSidebar();
               }}
               showIndex
+              primaryCheck
             />
           ) : null}
 
@@ -502,11 +547,7 @@ export function Order({
                     title={CARE[c].label}
                     description={CARE[c].line}
                     badge={
-                      recommendedCare(host) === c ? (
-                        <span className="inline-flex h-5 items-center rounded-md bg-gold-soft px-2 text-[11px] font-semibold text-gold-ink">
-                          {CARE[c].badge}
-                        </span>
-                      ) : undefined
+                      recommendedCare(host) === c ? <span className={RECOMMEND_PILL}>{CARE[c].badge}</span> : undefined
                     }
                     index={i + 1}
                   />
@@ -528,23 +569,31 @@ export function Order({
 
         {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
 
+        {/* Phones: Continue is pinned full width to the bottom of the screen (Back is in the top row); the spacer keeps
+            the last option above it. */}
+        <div aria-hidden="true" className="h-[120px] md:hidden" />
         <div
           ref={footer}
-          className="sticky bottom-0 z-10 -mx-4 flex items-center gap-3 border-t border-border bg-bg px-4 py-3 sm:-mx-6 sm:px-6 md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:py-1"
+          className="fixed inset-x-0 bottom-0 z-20 flex flex-col gap-2 border-t border-border bg-bg px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 md:static md:z-auto md:flex-row md:flex-wrap md:items-center md:gap-3 md:border-0 md:bg-transparent md:p-0 md:py-1"
         >
-          <button type="button" onClick={back} className={buttonClass('ghost', 'h-12 px-4 md:order-2')}>
-            Back
-          </button>
-          <span className="flex flex-1 md:order-1 md:flex-none [&_button]:w-full md:[&_button]:w-auto">
+          {stepHint === null ? null : (
+            <p id="order-hint" className="m-0 text-[12.5px] leading-[18px] text-muted-foreground md:order-4 md:basis-full">
+              {stepHint}
+            </p>
+          )}
+          <span className="flex [&_button]:w-full md:order-1 md:[&_button]:w-auto">
             <ContinueButton
               step={step}
               disabled={!canContinue}
               onAction={next}
-              title={step === 2 && !canContinue ? 'Verify ownership first' : undefined}
+              describedBy={stepHint === null ? undefined : 'order-hint'}
             />
           </span>
+          <button type="button" onClick={back} className={buttonClass('ghost', 'h-12 px-4 max-md:hidden md:order-2')}>
+            Back
+          </button>
           <span className="hidden text-[12.5px] text-muted-foreground md:order-3 md:inline">
-            Enter to continue · Esc to go back
+            {inText ? 'Ctrl+Enter to continue' : 'Enter to continue · Esc to go back'}
           </span>
         </div>
       </div>
@@ -561,12 +610,12 @@ function ContinueButton({
   step,
   disabled,
   onAction,
-  title,
+  describedBy,
 }: {
   readonly step: number;
   readonly disabled: boolean;
   readonly onAction: () => Promise<boolean>;
-  readonly title: string | undefined;
+  readonly describedBy: string | undefined;
 }) {
   const pending: Record<number, string> = {
     1: 'Checking…',
@@ -582,7 +631,7 @@ function ContinueButton({
         stayPending={step === QUESTIONS}
         pendingLabel={pending[step] ?? 'Continuing…'}
         className="h-12 rounded-xl px-[22px] text-[14.5px]"
-        {...(title === undefined ? {} : { title })}
+        {...(describedBy === undefined ? {} : { describedBy })}
       >
         Continue
         <Icon name="arrow" size={16} />

@@ -2,7 +2,7 @@
 
 // The plan read-back and Gate 1 (experience spec §3.4): one paragraph from a template (lib/plan-text), every value
 // underlined and editable in place while the plan is pending; the limits as facts; what happens next; your approval.
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { Gate1Card, type Person } from './gate1-card';
@@ -20,6 +20,7 @@ import {
 import { type AccountValue, recallAccounts, rememberAccounts } from './secrets';
 import { type Care, originOf, refreshSidebar } from './shared';
 import { replacePlanAction } from '../../../app/(console)/audits/actions';
+import { normalizePaths } from '../../../lib/normalize';
 import { type PlanField, planSegments, usd } from '../../../lib/plan-text';
 import { buttonClass, Icon, InlineMessage, LinkButton, type Voice, VoiceTag } from '../design';
 import { PendingButton } from '../design-client';
@@ -89,16 +90,19 @@ function PathsText({ text }: { readonly text: string }) {
   );
 }
 
+/** One limit: a row (label left, value right) on a phone, a tile from sm up. */
 function Fact({ label, value, unit }: { readonly label: string; readonly value: string; readonly unit: string }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 rounded-[14px] border border-border bg-card px-3 py-3 sm:px-4 sm:py-3.5">
-      <span className="text-[11.5px] leading-4 text-muted-foreground sm:text-[12.5px]">{label}</span>
-      <span className="text-[12px] text-muted-foreground sm:text-[13px]">
-        <b className="block text-[17px] font-semibold tabular-nums text-foreground sm:inline sm:text-[19px]">{value}</b> {unit}
+    <div className="flex min-w-0 items-baseline justify-between gap-3 rounded-[14px] border border-border bg-card px-4 py-3 sm:flex-col sm:items-start sm:justify-start sm:gap-1 sm:py-3.5">
+      <span className="text-[12.5px] leading-4 text-muted-foreground">{label}</span>
+      <span className="whitespace-nowrap text-[13px] text-muted-foreground">
+        <b className="text-[17px] font-semibold tabular-nums text-foreground sm:text-[19px]">{value}</b> {unit}
       </span>
     </div>
   );
 }
+
+const isField = (v: string | null): v is PlanField => v !== null && v in FIELD_LABEL;
 
 export function PlanView({
   request,
@@ -113,6 +117,7 @@ export function PlanView({
   readonly viewer: Person;
 }) {
   const router = useRouter();
+  const updatedParam = useSearchParams().get('updated');
   const values = valuesOf(request);
   const origin = asset === null ? null : originOf(asset);
   const host = origin === null ? (request.assetName ?? 'the site') : new URL(origin).host;
@@ -130,22 +135,57 @@ export function PlanView({
     request.testAccounts.map((a) => ({ role: a.role, headerName: a.headerName, headerValue: '' }));
   const [rows, setRows] = useState<readonly AccountRow[]>(startRows);
   const [error, setError] = useState<string | null>(null);
+  /** Paths typed but not yet a chip: Update includes them, so a click never depends on the field's blur. */
+  const [pathText, setPathText] = useState('');
+  /** The value just changed by Update the plan (from ?updated=), highlighted until the next edit. */
+  const [updated, setUpdated] = useState<PlanField | null>(isField(updatedParam) ? updatedParam : null);
   const panel = useRef<HTMLDivElement>(null);
+  const h1 = useRef<HTMLHeadingElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
+
+  // Focus lands on the heading (spec §10.4); "?updated=" is shown once, then dropped so a reload does not repeat it.
+  useEffect(() => {
+    h1.current?.focus();
+    if (updatedParam !== null) window.history.replaceState(window.history.state, '', window.location.pathname);
+  }, [updatedParam]);
 
   const open = (f: PlanField): void => {
     if (!canEdit) return;
+    opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setEdit(values);
     setRows(startRows());
     setLimitsOk(true);
     setError(null);
+    setPathText('');
+    setUpdated(null);
     setField(f);
   };
+  const close = (): void => {
+    setField(null);
+    setError(null);
+    opener.current?.focus();
+  };
+  // The editor's own field gets focus (the chip field, or the picked option), so typing goes where it belongs.
   useEffect(() => {
-    if (field !== null) panel.current?.focus();
+    const p = panel.current;
+    if (field === null || p === null) return;
+    const first =
+      p.querySelector<HTMLElement>(field === 'paths' ? 'input' : 'input:checked') ??
+      p.querySelector<HTMLElement>('input, textarea, a[href]');
+    (first ?? p).focus();
   }, [field]);
 
   const save = async (): Promise<boolean> => {
     setError(null);
+    let paths = edit.paths;
+    if (field === 'paths' && pathText.trim() !== '') {
+      const typed = normalizePaths(pathText, origin, edit.paths);
+      if (typed.error !== null && typed.error !== '') {
+        setError(typed.error);
+        return false;
+      }
+      paths = typed.paths;
+    }
     let accounts: readonly AccountValue[];
     if (field === 'accounts' || missingValues) {
       const checked = checkAccounts(rows);
@@ -166,7 +206,7 @@ export function PlanView({
       minutes: edit.limits.minutes,
       requests: edit.limits.requests,
       costUsd: edit.limits.costUsd,
-      excludedPaths: [...edit.paths],
+      excludedPaths: [...paths],
       releaseProven: edit.release,
       testAccounts: [...accounts],
     });
@@ -176,15 +216,28 @@ export function PlanView({
     }
     rememberAccounts(r.data.id, accounts);
     refreshSidebar();
-    router.replace(`/audits/${r.data.id}`);
+    router.replace(`/audits/${r.data.id}?updated=${field ?? 'objective'}`);
     return true;
   };
+
+  const rowsChanged =
+    JSON.stringify(rows.map((r) => [r.role, r.headerName, r.headerValue])) !==
+    JSON.stringify(startRows().map((r) => [r.role, r.headerName, r.headerValue]));
+  /** An editor with a change not yet applied: Approve waits for Update or Cancel. */
+  const unsaved =
+    field !== null &&
+    field !== 'host' &&
+    (JSON.stringify(edit) !== JSON.stringify(values) || rowsChanged || pathText.trim() !== '' || !limitsOk)
+      ? FIELD_LABEL[field]
+      : null;
+  const locked = asset?.excludedPaths ?? [];
+  const allPaths = [...new Set([...locked, ...values.paths])];
 
   const segments = planSegments({
     host,
     objective: values.objective,
     intrusiveness: values.care,
-    excludedPaths: values.paths,
+    excludedPaths: allPaths,
     roles: request.testAccounts.map((a) => a.role),
     minutes: values.limits.minutes,
     requests: values.limits.requests,
@@ -232,7 +285,8 @@ export function PlanView({
               setEdit({ ...edit, paths });
             }}
             origin={origin}
-            locked={asset?.excludedPaths ?? []}
+            locked={locked}
+            onText={setPathText}
           />
         );
       case 'accounts':
@@ -269,7 +323,7 @@ export function PlanView({
       : 'This plan was not approved.';
 
   return (
-    <div className="mx-auto grid w-full max-w-[1100px] gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,640px)_380px] lg:justify-between">
+    <div className="mx-auto grid w-full max-w-[1100px] gap-x-10 gap-y-6 lg:grid-cols-[minmax(0,640px)_380px] lg:justify-center">
       <div className="flex min-w-0 flex-col gap-5 lg:col-start-1">
         <div className="flex items-center gap-3">
           <span className="text-[12.5px] text-muted-foreground">{pending ? 'New audit' : `Audits / ${host}`}</span>
@@ -291,7 +345,11 @@ export function PlanView({
             <Icon name="file" size={14} />
             The plan
           </p>
-          <h1 className="m-0 text-[28px] font-semibold leading-[36px] tracking-[-0.01em] text-foreground sm:text-[30px] sm:leading-[38px]">
+          <h1
+            ref={h1}
+            tabIndex={-1}
+            className="m-0 text-[28px] font-semibold leading-[36px] tracking-[-0.01em] text-foreground focus:outline-none sm:text-[30px] sm:leading-[38px]"
+          >
             {heading}
           </h1>
         </div>
@@ -317,19 +375,24 @@ export function PlanView({
                     open(s.field ?? 'objective');
                   }
                 }}
-                className={`cursor-pointer rounded-[4px] font-semibold underline decoration-gold-ink decoration-dotted decoration-[1.5px] underline-offset-[6px] [box-decoration-break:clone] hover:bg-gold-soft focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${field === s.field ? 'bg-gold-soft' : ''}`}
+                className={`box-decoration-clone cursor-pointer rounded-[4px] font-medium underline decoration-gold decoration-dotted decoration-[1.5px] underline-offset-[6px] transition-colors hover:bg-gold-soft focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${field === s.field || updated === s.field ? 'bg-gold-soft' : ''}`}
               >
-                {s.field === 'paths' && values.paths.length > 0 ? <PathsText text={s.text} /> : s.text}
+                {s.field === 'paths' && allPaths.length > 0 ? <PathsText text={s.text} /> : s.text}
               </span>
             ) : (
-              <b key={i} className="font-semibold">
+              <b key={i} className="font-medium">
                 {s.text}
               </b>
             ),
           )}
         </p>
 
-        {field === null ? (
+        {field === null && updated !== null ? (
+          <p role="status" className="m-0 flex items-center gap-2 text-[12.5px] font-medium text-ok">
+            <Icon name="check" size={14} />
+            Plan updated: {FIELD_LABEL[updated].toLowerCase()} changed. Nothing has been sent to the site yet.
+          </p>
+        ) : field === null ? (
           <p className="m-0 flex items-center gap-2 text-[12.5px] text-muted-foreground">
             <Icon name="info" size={14} />
             {canEdit
@@ -343,11 +406,18 @@ export function PlanView({
             ref={panel}
             tabIndex={-1}
             role="group"
+            data-no-shortcuts
             aria-label={`Change ${FIELD_LABEL[field].toLowerCase()}`}
             onKeyDown={(e) => {
+              // Keys typed here belong to the editor: never the page's single-key shortcuts (N opens a new audit).
+              if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) e.stopPropagation();
               if (e.key === 'Escape') {
                 e.preventDefault();
-                setField(null);
+                close();
+              } else if (e.key === 'Enter' && !e.isDefaultPrevented() && e.target instanceof HTMLInputElement) {
+                // Enter applies the change (spec §10.4); a chip field with text makes its chip first.
+                e.preventDefault();
+                panel.current?.querySelector<HTMLButtonElement>('[data-update] button')?.click();
               }
             }}
             className="flex flex-col gap-4 rounded-[16px] border border-gold-line bg-card p-4 shadow-[0_8px_28px_rgba(31,23,4,.06)] focus:outline-none sm:p-5"
@@ -357,9 +427,7 @@ export function PlanView({
               <button
                 type="button"
                 aria-label="Close"
-                onClick={() => {
-                  setField(null);
-                }}
+                onClick={close}
                 className={buttonClass('ghost', 'size-9 px-0')}
               >
                 <Icon name="x" size={16} />
@@ -368,33 +436,36 @@ export function PlanView({
             {editor(field)}
             {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
             {field === 'host' ? null : (
-              <div className="flex flex-wrap items-center gap-2.5">
-                <PendingButton
-                  variant="secondary"
-                  onAction={save}
-                  stayPending
-                  disabled={!limitsOk}
-                  pendingLabel="Updating the plan…"
-                >
-                  <Icon name="check" size={15} />
-                  Update the plan
-                </PendingButton>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setField(null);
-                  }}
-                  className={buttonClass('ghost')}
-                >
+              // mousedown keeps focus in the field: its blur would turn typed text into a chip, move this row, and
+              // the click would land off the button. Update reads the typed text itself instead.
+              <div
+                className="flex flex-wrap items-center gap-2.5"
+                onMouseDown={(e) => {
+                  if (e.target instanceof Element && e.target.closest('button') !== null) e.preventDefault();
+                }}
+              >
+                <span data-update className="contents">
+                  <PendingButton
+                    variant="secondary"
+                    onAction={save}
+                    stayPending
+                    disabled={!limitsOk}
+                    pendingLabel="Updating the plan…"
+                  >
+                    <Icon name="check" size={15} />
+                    Update the plan
+                  </PendingButton>
+                </span>
+                <button type="button" onClick={close} className={buttonClass('ghost')}>
                   Cancel
                 </button>
-                <span className="text-[12px] text-muted-foreground">Esc to close</span>
+                <span className="hidden text-[12px] text-muted-foreground sm:inline">Enter to update · Esc to close</span>
               </div>
             )}
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+        <div className="grid gap-2 sm:grid-cols-3 sm:gap-2.5">
           <Fact label="Longest it can run" value={`${values.limits.minutes}`} unit="min" />
           <Fact label="Most requests" value={values.limits.requests.toLocaleString()} unit="to one site" />
           <Fact label="Most it can cost" value={usd(values.limits.costUsd)} unit="model spend" />
@@ -409,6 +480,7 @@ export function PlanView({
             viewer={viewer}
             selfApprove={settings?.selfApprove ?? request.viewerIsAdmin}
             onBusy={setBusy}
+            unsaved={unsaved}
           />
         </div>
       </div>
