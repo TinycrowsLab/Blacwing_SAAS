@@ -5,12 +5,13 @@
 import { useState } from 'react';
 
 import { AskField, findKnown, useNormalized } from './ask-field';
+import { LocalTime } from './local-time';
 import { dayLabel, isVerified, originOf, refreshSidebar } from './shared';
 import { type ProofMethod, VerifyOwnership } from './verify-ownership';
 import { ensureTargetAction } from '../../../app/(console)/audits/actions';
-import { buttonClass, EmptyState, Icon, InlineMessage, LinkButton } from '../design';
-import { PendingButton } from '../design-client';
 import { normalizeTarget } from '../../../lib/normalize';
+import { buttonClass, EmptyState, Icon, InlineMessage, LinkButton } from '../design';
+import { ChipInput, PendingButton } from '../design-client';
 
 import type { Asset } from '../../../lib/schemas';
 
@@ -36,6 +37,21 @@ function VerifyPanel({ asset, viewerName, onVerified }: { readonly asset: Asset;
   );
 }
 
+const MAX_ORIGINS = 50;
+
+/** Extra origins typed or pasted as a list, through the same forgiving normaliser as the site itself. */
+function addOrigins(raw: string, existing: readonly string[]): { values: readonly string[]; error: string | null } {
+  const values = [...existing];
+  let error: string | null = null;
+  for (const token of raw.split(/[\s,]+/).filter(Boolean)) {
+    const r = normalizeTarget(token);
+    if (!r.ok) error = r.message;
+    else if (!values.includes(r.origin)) values.push(r.origin);
+  }
+  if (values.length > MAX_ORIGINS) error = `Up to ${MAX_ORIGINS} addresses.`;
+  return { values: values.slice(0, MAX_ORIGINS), error };
+}
+
 function AddTarget({
   assets,
   onAdded,
@@ -48,6 +64,7 @@ function AddTarget({
   const [text, setText] = useState('');
   const [showError, setShowError] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [extra, setExtra] = useState<readonly string[] | null>(null);
   const result = useNormalized(text);
   const add = async (): Promise<boolean> => {
     setError(null);
@@ -61,7 +78,11 @@ function AddTarget({
       onAdded(existing);
       return true;
     }
-    const created = await ensureTargetAction(r.origin, r.host);
+    const created = await ensureTargetAction(
+      r.origin,
+      r.host,
+      (extra ?? []).filter((o) => o !== r.origin),
+    );
     if (!created.ok) {
       setError(created.message);
       return false;
@@ -85,7 +106,7 @@ function AddTarget({
         }}
         result={result}
         known={assets}
-        showError={showError || /:\/\//.test(text)}
+        showError={showError || text.includes('://')}
         onBlur={() => {
           setShowError(text.trim() !== '');
         }}
@@ -94,6 +115,31 @@ function AddTarget({
         }}
         autoFocus
       />
+      {extra === null ? (
+        <button
+          type="button"
+          onClick={() => {
+            setExtra([]);
+          }}
+          className="inline-flex h-9 items-center gap-1.5 self-start rounded-lg px-2 text-[13px] font-medium text-gold-ink hover:bg-gold-soft focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+        >
+          <Icon name="plus" size={14} />
+          This app also calls another address
+        </button>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <ChipInput
+            label="Other addresses it calls"
+            values={extra}
+            onChange={setExtra}
+            parse={(raw, existing) => addOrigins(raw, existing)}
+            placeholder="api.example.com, cdn.example.com"
+          />
+          <p className="m-0 text-[12.5px] text-muted-foreground">
+            Claude may send requests to these too, for example the app&apos;s API on its own address.
+          </p>
+        </div>
+      )}
       {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
       <div className="flex flex-wrap items-center gap-2.5">
         <span data-add-target className="contents">
@@ -191,6 +237,12 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate text-[14.5px] font-semibold text-foreground">{a.name}</span>
                     <span className="truncate font-mono text-[12px] text-muted-foreground">{origin}</span>
+                    {a.allowedOrigins.some((o) => o !== origin) ? (
+                      <span className="truncate text-[12px] text-muted-foreground">
+                        Also calls:{' '}
+                        <span className="font-mono">{a.allowedOrigins.filter((o) => o !== origin).join(', ')}</span>
+                      </span>
+                    ) : null}
                     {a.excludedPaths.length === 0 ? null : (
                       <span className="truncate text-[12px] text-muted-foreground">
                         Always avoided: <span className="font-mono">{a.excludedPaths.join(', ')}</span>
@@ -211,7 +263,8 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                     {verified && a.ownership.verifiedAt !== null ? (
                       <span className="text-[11.5px] text-muted-foreground">
                         {a.ownership.method === 'http_token' ? 'File' : 'Confirmed'}
-                        {a.ownership.verifiedBy === null ? '' : ` by ${a.ownership.verifiedBy}`}, {dayLabel(a.ownership.verifiedAt)}
+                        {a.ownership.verifiedBy === null ? '' : ` by ${a.ownership.verifiedBy}`},{' '}
+                        <LocalTime iso={a.ownership.verifiedAt} format={dayLabel} />
                       </span>
                     ) : null}
                   </span>

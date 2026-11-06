@@ -6,9 +6,9 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { dayLabel, isVerified } from './shared';
-import { Icon } from '../design';
 import { normalizeTarget, type Note, type TargetResult } from '../../../lib/normalize';
 import { type Asset, assetSchema } from '../../../lib/schemas';
+import { Icon } from '../design';
 
 const DEBOUNCE_MS = 150;
 const listSchema = z.object({ items: z.array(assetSchema) });

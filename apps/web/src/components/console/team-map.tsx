@@ -4,6 +4,7 @@
 // Claude's team (experience spec §5.2 item 3): Gate 1 → Planner → one node per subagent in the run.started manifest →
 // Validator → Gate 3 → Report. Node states come from teamNodes() in run-model.ts; clicking a node filters the
 // conversation to that agent. A node spins only while its agent spoke in the last 10 s, never under reduced motion.
+// The map row has 4px padding because its horizontal scroll box clips the selected and focus rings otherwise.
 import { Icon } from './design';
 
 import type { Team, TeamNode } from './run-model';
@@ -161,7 +162,7 @@ export function TeamMap({
       {team.planner === null && team.specialists.length === 0 ? (
         <p className="m-0 py-3 text-[12.5px] text-muted-foreground">The team appears when the run starts.</p>
       ) : (
-        <div className="flex items-center overflow-x-auto pb-0.5">
+        <div className="flex items-center overflow-x-auto p-[4px]">
           <Diamond label="Gate 1" who={gate1} done />
           <Arrow />
           {team.planner === null ? null : (
@@ -174,7 +175,7 @@ export function TeamMap({
           ) : (
             <>
               <Fan rows={team.specialists.length} />
-              <div className="flex min-w-[170px] max-w-[260px] flex-1 flex-col gap-[5px]">
+              <div className="flex min-w-[170px] max-w-[300px] flex-1 flex-col gap-[5px]">
                 {team.specialists.map((n) => (
                   <NodeButton key={n.id} node={n} mono={n.id} selected={filter === n.id} onSelect={select} />
                 ))}

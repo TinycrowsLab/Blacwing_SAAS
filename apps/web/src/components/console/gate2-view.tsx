@@ -6,7 +6,7 @@
 // gate2.requested event, the deterministic whyOutside text. Only the dashed box holds Claude's words.
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Chip, Icon, Receipt } from './design';
 import { Countdown, useCountdown } from './design-client';
@@ -196,6 +196,7 @@ export function Gate2Card({
   asRole,
   variant = 'inline',
   viewerName = null,
+  focusDeny = false,
   onDecided,
 }: {
   readonly gate2: Card;
@@ -203,10 +204,17 @@ export function Gate2Card({
   readonly asRole?: string | null;
   readonly variant?: 'inline' | 'page';
   readonly viewerName?: string | null;
+  /** Inline only: take the focus on mount (the inbox's first card). The full page always does. */
+  readonly focusDeny?: boolean;
   readonly onDecided?: (gate2: Gate2Detail) => void;
 }) {
   const [decided, setDecided] = useState<Gate2Detail | null>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
   const current: Card = decided ?? gate2;
+  // The buttons that had the focus are gone once decided: keep the keyboard on the receipt instead of the page top.
+  useEffect(() => {
+    if (decided !== null) receiptRef.current?.focus({ preventScroll: true });
+  }, [decided]);
   const clock = useCountdown(gate2.deadlineAt, gate2.createdAt);
   const expiredLocally = current.status === 'pending' && clock !== null && clock.secondsLeft === 0;
   const role = asRole === undefined ? roleFromPathKey(gate2.pathKey) : asRole;
@@ -218,7 +226,9 @@ export function Gate2Card({
 
   if (current.status !== 'pending' || expiredLocally) {
     const receipt = (
-      <DecisionReceipt gate2={current} expiredLocally={expiredLocally} viewerName={viewerName} />
+      <div ref={receiptRef} tabIndex={-1} className="rounded-[14px] focus:outline-none">
+        <DecisionReceipt gate2={current} expiredLocally={expiredLocally} viewerName={viewerName} />
+      </div>
     );
     if (variant === 'inline') return receipt;
     return (
@@ -292,7 +302,7 @@ export function Gate2Card({
           deadlineAt={gate2.deadlineAt}
           createdAt={gate2.createdAt}
           layout="column"
-          focusDeny={variant === 'page' ? 'always' : 'if-idle'}
+          focusDeny={variant === 'page' || focusDeny ? 'always' : 'if-idle'}
           onDecided={done}
         />
       </div>
@@ -381,9 +391,40 @@ interface InboxItem {
   readonly asRole?: string | null | undefined;
 }
 
+/** A Decisions section heading: plain title, a gold count when above 0, the technical term in mono, one lede line. */
+export function InboxHeading({
+  title,
+  term,
+  lede,
+  count,
+}: {
+  readonly title: string;
+  readonly term: string;
+  readonly lede: string;
+  readonly count: number;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <h2 className="m-0 flex items-center gap-2 text-[15px] font-semibold text-foreground">
+        {title}
+        {count > 0 ? (
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold-soft px-1.5 text-[11.5px] font-semibold tabular-nums text-gold-ink">
+            {count}
+          </span>
+        ) : null}
+        <span className="font-mono text-[11px] font-normal text-muted-foreground">{term}</span>
+      </h2>
+      <p className="m-0 text-[13px] text-muted-foreground">{lede}</p>
+    </div>
+  );
+}
+
+const INBOX_TITLE = 'Requests during a run';
+
 /**
- * The inbox's Gate 2 list. The server sends what is pending (soonest deadline first); a request decided here stays on
- * screen as its receipt after the refresh drops it, so the person sees what they just did.
+ * The inbox's Gate 2 section. The server sends what is pending (soonest deadline first); a request decided here stays
+ * on screen as its receipt after the refresh drops it (the section too), so the person sees what they just did. The
+ * first open card takes the focus, so D denies the most urgent request straight away.
  */
 export function Gate2Inbox({
   items,
@@ -394,21 +435,31 @@ export function Gate2Inbox({
 }) {
   const [kept, setKept] = useState<readonly InboxItem[]>([]);
   const shown = [...items, ...kept.filter((k) => !items.some((i) => i.gate2.id === k.gate2.id))];
+  if (shown.length === 0) return null;
   return (
-    <div className="flex flex-col gap-3">
-      {shown.map((item) => (
-        <Gate2Card
-          key={item.gate2.id}
-          gate2={item.gate2}
-          body={item.body}
-          {...(item.asRole === undefined ? {} : { asRole: item.asRole })}
-          viewerName={viewerName}
-          onDecided={(g) => {
-            setKept((k) => [...k, { ...item, gate2: g }]);
-          }}
-        />
-      ))}
-    </div>
+    <section className="flex flex-col gap-3" aria-label={INBOX_TITLE}>
+      <InboxHeading
+        title={INBOX_TITLE}
+        term="Gate 2"
+        lede="Claude wants to send something that could change data. No answer means denied."
+        count={items.length}
+      />
+      <div className="flex flex-col gap-3">
+        {shown.map((item, index) => (
+          <Gate2Card
+            key={item.gate2.id}
+            gate2={item.gate2}
+            body={item.body}
+            {...(item.asRole === undefined ? {} : { asRole: item.asRole })}
+            viewerName={viewerName}
+            focusDeny={index === 0}
+            onDecided={(g) => {
+              setKept((k) => [...k, { ...item, gate2: g }]);
+            }}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 

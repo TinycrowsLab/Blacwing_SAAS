@@ -6,8 +6,6 @@ import { useId, useState } from 'react';
 
 import { FocusPicker } from './focus-picker';
 import { CARE, type Care, composeObjective, readObjective } from './shared';
-import { buttonClass, Icon, INPUT_CLASS, InlineMessage, OptionCard } from '../design';
-import { ChipInput } from '../design-client';
 import {
   bearerize,
   headerNameError,
@@ -20,6 +18,8 @@ import {
   splitHeaderPaste,
 } from '../../../lib/normalize';
 import { usd } from '../../../lib/plan-text';
+import { buttonClass, Icon, INPUT_CLASS, InlineMessage, OptionCard } from '../design';
+import { ChipInput } from '../design-client';
 
 import type { AccountValue } from './secrets';
 import type { Workspace } from '../../../lib/schemas';

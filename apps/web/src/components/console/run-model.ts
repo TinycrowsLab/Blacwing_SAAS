@@ -859,7 +859,10 @@ export function stages(
   ];
   return rows.map((r, i) => {
     const state: StageState = i === current ? 'current' : i > current ? 'upcoming' : reached[i] ? 'done' : 'skipped';
-    return { key: r.key, label: state === 'done' && finished[i] === true ? r.past : r.now, detail: state === 'skipped' ? 'skipped' : r.detail, state };
+    // A run that ended early never reached the stages after its last activity: "not reached", not "skipped".
+    const lastWork = reached.slice(0, -1).lastIndexOf(true);
+    const missed = opts.terminal && i > lastWork ? 'not reached' : 'skipped';
+    return { key: r.key, label: state === 'done' && finished[i] === true ? r.past : r.now, detail: state === 'skipped' ? missed : r.detail, state };
   });
 }
 
@@ -916,7 +919,13 @@ export function teamNodes(events: readonly RunEvent[], gate2: readonly Gate2[], 
     ? node(
         'orchestrator',
         waiting.has('orchestrator') ? 'waiting' : terminal ? 'done' : started ? 'working' : 'idle',
-        waiting.has('orchestrator') ? 'waiting on you' : tasks.length === 0 ? 'reading the plan' : `${plural(tasks.length, 'task', 'tasks')} given`,
+        waiting.has('orchestrator')
+          ? 'waiting on you'
+          : tasks.length > 0
+            ? `${plural(tasks.length, 'task', 'tasks')} given`
+            : terminal
+              ? 'no tasks given'
+              : 'reading the plan',
       )
     : null;
 

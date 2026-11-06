@@ -28,17 +28,26 @@ const invalid = (message: string): ActionResult<never> => ({ ok: false, code: 'i
 const webOrigin = z.url({ protocol: /^https?$/ }).max(2048);
 const uuid = z.uuid();
 
-/** Registers the site (or finds it: the API reuses an asset with the same origin). */
-export async function ensureTargetAction(origin: string, host: string): Promise<ActionResult<Asset>> {
+/**
+ * Registers the site (or finds it: the API reuses an asset with the same origin). `extraOrigins` are other addresses
+ * the app calls (Targets' "This app also calls another address"); they join the scope.
+ */
+export async function ensureTargetAction(
+  origin: string,
+  host: string,
+  extraOrigins: readonly string[] = [],
+): Promise<ActionResult<Asset>> {
   const session = await getViewer();
   if (session === null) return signedOut;
-  const input = z.object({ origin: webOrigin, host: z.string().trim().min(1).max(120) }).safeParse({ origin, host });
+  const input = z
+    .object({ origin: webOrigin, host: z.string().trim().min(1).max(120), extraOrigins: z.array(webOrigin).max(50) })
+    .safeParse({ origin, host, extraOrigins });
   if (!input.success) return invalid("That doesn't look like a web address yet.");
   return toResult(async () =>
     assetSchema.parse(
       await callApi(session, '/assets', {
         method: 'POST',
-        body: { name: input.data.host, baseUrl: input.data.origin },
+        body: { name: input.data.host, baseUrl: input.data.origin, extraOrigins: input.data.extraOrigins },
       }),
     ),
   );

@@ -25,7 +25,10 @@ function failureDetail(message: string, url: string): string {
 }
 
 /** Sends the attestation; the order's Continue and Targets' Confirm both use it. */
-export async function attest(asset: Asset, viewerName: string): Promise<{ asset: Asset } | { error: string }> {
+export async function attest(
+  asset: Asset,
+  viewerName: string,
+): Promise<{ asset: Asset } | { error: string }> {
   const r = await verifyTargetAction(asset.id, {
     method: 'owner_attestation',
     statement: attestationStatement(viewerName, originOf(asset)),
@@ -77,7 +80,9 @@ function ChoiceCard({
           </kbd>
         )}
       </label>
-      {checked && children !== undefined ? <div className="flex flex-col gap-3 px-4 pb-4 sm:pl-[46px]">{children}</div> : null}
+      {checked && children !== undefined ? (
+        <div className="flex flex-col gap-3 px-4 pb-4 sm:pl-[46px]">{children}</div>
+      ) : null}
     </div>
   );
 }
@@ -110,16 +115,24 @@ export function VerifyOwnership({
 
   if (asset !== null && isVerified(asset))
     return (
-      <div role="status" className="flex items-start gap-3 rounded-[14px] border border-border bg-ok-soft px-4 py-3.5">
+      <div
+        role="status"
+        className="flex items-start gap-3 rounded-[14px] border border-border bg-ok-soft px-4 py-3.5"
+      >
         <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-ok text-white">
           <Icon name="check" size={12} />
         </span>
         <span className="text-[13.5px] leading-5 text-foreground">
-          <b className="font-semibold">The site is verified as yours.</b>{' '}
+          <b className="font-semibold">
+            {checked?.ok === true
+              ? 'Found it. The site is verified as yours.'
+              : 'The site is verified as yours.'}
+          </b>{' '}
           <span className="text-muted-foreground">
             {asset.ownership.method === 'http_token' ? 'File found on the site' : 'Confirmed'}
             {asset.ownership.verifiedBy === null ? '' : ` by ${asset.ownership.verifiedBy}`}
-            {asset.ownership.verifiedAt === null ? '' : `, ${dayLabel(asset.ownership.verifiedAt)}`}.
+            {asset.ownership.verifiedAt === null ? '' : `, ${dayLabel(asset.ownership.verifiedAt)}`}
+            .
           </span>
         </span>
       </div>
@@ -149,7 +162,11 @@ export function VerifyOwnership({
   };
 
   return (
-    <div role="radiogroup" aria-label="How to show the site is yours" className="flex flex-col gap-3">
+    <div
+      role="radiogroup"
+      aria-label="How to show the site is yours"
+      className="flex flex-col gap-3"
+    >
       <ChoiceCard
         name="proof"
         checked={method === 'file'}
@@ -167,33 +184,39 @@ export function VerifyOwnership({
       >
         <div className="grid items-center gap-x-3 gap-y-1.5 sm:grid-cols-[124px_minmax(0,1fr)]">
           <span className="text-[12.5px] text-muted-foreground">1. Create the file</span>
-          {path === null ? <div className="h-10 rounded-[10px] bg-surface-2" /> : <CopyField value={path} />}
-          <span className="mt-1.5 text-[12.5px] text-muted-foreground sm:mt-0">2. Paste this in it</span>
-          {token === null ? <div className="h-10 rounded-[10px] bg-surface-2" /> : <CopyField value={token} />}
+          {path === null ? (
+            <div className="h-10 rounded-[10px] bg-surface-2" />
+          ) : (
+            <CopyField value={path} />
+          )}
+          <span className="mt-1.5 text-[12.5px] text-muted-foreground sm:mt-0">
+            2. Paste this in it
+          </span>
+          {token === null ? (
+            <div className="h-10 rounded-[10px] bg-surface-2" />
+          ) : (
+            <CopyField value={token} />
+          )}
         </div>
-        {checked?.ok === true ? (
-          <p role="status" className="m-0 flex items-center gap-2 rounded-[10px] bg-ok-soft px-3 py-2.5 text-[13px] font-medium text-ok">
-            <Icon name="check" size={14} />
-            {checked.message}
-            <span className="ml-auto text-[12px] font-normal">Checked just now</span>
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <PendingButton
-                variant="secondary"
-                onAction={check}
-                pendingLabel="Looking for the file…"
-                disabled={asset === null}
-                icon="search"
-              >
-                Check now
-              </PendingButton>
-              <span className="text-[12px] text-muted-foreground">Served as plain text at the site root.</span>
-            </div>
-            {checked === null ? null : <InlineMessage tone="bad">{checked.message}</InlineMessage>}
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <PendingButton
+              variant="secondary"
+              onAction={check}
+              pendingLabel="Looking for the file…"
+              disabled={asset === null}
+              icon="search"
+            >
+              Check now
+            </PendingButton>
+            <span className="text-[12px] text-muted-foreground">
+              Served as plain text at the site root.
+            </span>
           </div>
-        )}
+          {checked === null || checked.ok ? null : (
+            <InlineMessage tone="bad">{checked.message}</InlineMessage>
+          )}
+        </div>
       </ChoiceCard>
       <ChoiceCard
         name="proof"

@@ -8,9 +8,12 @@ import { useRef, useState, useSyncExternalStore } from 'react';
 
 import { AskField, findKnown, useKnownTargets, useNormalized } from './ask-field';
 import { greetingFor, isVerified } from './shared';
+import { normalizeTarget } from '../../../lib/normalize';
 import { Icon } from '../design';
 import { PendingButton } from '../design-client';
-import { normalizeTarget } from '../../../lib/normalize';
+
+const PROOF_STEP = 2;
+const FOCUS_STEP = 3;
 
 const noSubscribe = (): (() => void) => () => undefined;
 
@@ -45,7 +48,8 @@ export function HomeAsk({
       return false;
     }
     const existing = findKnown(known, r.origin);
-    const step = existing !== undefined && isVerified(existing) ? 3 : 2;
+    // Question 3 when the site is already verified (ownership is settled), otherwise question 2.
+    const step = existing !== undefined && isVerified(existing) ? FOCUS_STEP : PROOF_STEP;
     router.push(`/audits/new?target=${encodeURIComponent(r.origin)}&step=${step}`);
     return true;
   };
@@ -108,7 +112,7 @@ export function HomeAsk({
           }}
           result={result}
           known={known}
-          showError={showError || /:\/\//.test(text)}
+          showError={showError || text.includes('://')}
           onBlur={() => {
             setShowError(text.trim() !== '');
           }}

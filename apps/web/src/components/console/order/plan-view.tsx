@@ -20,13 +20,15 @@ import {
 import { type AccountValue, recallAccounts, rememberAccounts } from './secrets';
 import { type Care, originOf, refreshSidebar } from './shared';
 import { replacePlanAction } from '../../../app/(console)/audits/actions';
+import { type PlanField, planSegments, usd } from '../../../lib/plan-text';
 import { buttonClass, Icon, InlineMessage, LinkButton, type Voice, VoiceTag } from '../design';
 import { PendingButton } from '../design-client';
-import { type PlanField, planSegments, usd } from '../../../lib/plan-text';
 
 import type { Asset, AssessmentRequest, Workspace } from '../../../lib/schemas';
 
 const SECONDS_PER_MINUTE = 60;
+/** The order's four questions, all answered by now. */
+const ANSWERED = [1, 2, 3, 4] as const; // eslint-disable-line @typescript-eslint/no-magic-numbers -- the question numbers
 
 const FIELD_LABEL: Record<PlanField, string> = {
   host: 'The site',
@@ -69,6 +71,23 @@ const NEXT_STEPS = (auto: boolean): readonly { title: string; voice: Voice; body
       ? { title: 'Proof, then release', voice: 'blackwing', body: 'Each issue is replayed with a control. Proven ones are released, as you chose.' }
       : { title: 'Proof, then you release', voice: 'you', body: 'Each issue is replayed with a control. You choose what ships.' },
   ];
+
+/** "/admin, /billing and /ftp": the paths in mono, the words between them in the sentence's own type. */
+function PathsText({ text }: { readonly text: string }) {
+  return (
+    <>
+      {text.split(/(\/[^\s,]*)/).map((part, i) =>
+        i % 2 === 1 ? (
+          <code key={i} className="font-mono text-[15px]">
+            {part}
+          </code>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
 
 function Fact({ label, value, unit }: { readonly label: string; readonly value: string; readonly unit: string }) {
   return (
@@ -250,7 +269,7 @@ export function PlanView({
       : 'This plan was not approved.';
 
   return (
-    <div className="mx-auto grid w-full max-w-[1100px] gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,640px)_360px] lg:justify-between">
+    <div className="mx-auto grid w-full max-w-[1100px] gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,640px)_380px] lg:justify-between">
       <div className="flex min-w-0 flex-col gap-5 lg:col-start-1">
         <div className="flex items-center gap-3">
           <span className="text-[12.5px] text-muted-foreground">{pending ? 'New audit' : `Audits / ${host}`}</span>
@@ -258,7 +277,7 @@ export function PlanView({
           {pending ? (
             <>
               <span aria-hidden="true" className="flex gap-1">
-                {[1, 2, 3, 4].map((i) => (
+                {ANSWERED.map((i) => (
                   <span key={i} className="h-[3px] w-6 rounded-full bg-gold-ink sm:w-10" />
                 ))}
               </span>
@@ -298,9 +317,9 @@ export function PlanView({
                     open(s.field ?? 'objective');
                   }
                 }}
-                className={`cursor-pointer rounded-[4px] font-semibold underline decoration-gold-ink decoration-dotted decoration-[1.5px] underline-offset-[6px] [box-decoration-break:clone] hover:bg-gold-soft focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${field === s.field ? 'bg-gold-soft' : ''} ${s.field === 'paths' && values.paths.length > 0 ? 'font-mono text-[15px]' : ''}`}
+                className={`cursor-pointer rounded-[4px] font-semibold underline decoration-gold-ink decoration-dotted decoration-[1.5px] underline-offset-[6px] [box-decoration-break:clone] hover:bg-gold-soft focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${field === s.field ? 'bg-gold-soft' : ''}`}
               >
-                {s.text}
+                {s.field === 'paths' && values.paths.length > 0 ? <PathsText text={s.text} /> : s.text}
               </span>
             ) : (
               <b key={i} className="font-semibold">

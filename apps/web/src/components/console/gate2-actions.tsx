@@ -5,7 +5,6 @@
 // reveals the reason field, and Allow enables at 8 non-space characters (Ctrl/Cmd+Enter submits). Decisions wait for
 // the server, because they must be true. A 409 from another tab or person comes back as the decided request, so the
 // card shows the receipt instead of an error.
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 
@@ -86,7 +85,6 @@ export function Gate2Actions({
   readonly focusDeny: 'always' | 'if-idle';
   readonly onDecided: (gate2: Gate2Detail) => void;
 }) {
-  const router = useRouter();
   const root = useRef<HTMLDivElement>(null);
   const denyWrap = useRef<HTMLDivElement>(null);
   const allowWrap = useRef<HTMLDivElement>(null);
@@ -105,8 +103,8 @@ export function Gate2Actions({
       return false;
     }
     onDecided(result.gate2);
+    // The sidebar, the inbox and the live run each refresh on this event; the card itself already shows the receipt.
     window.dispatchEvent(new Event('bw:refresh'));
-    router.refresh();
     return true;
   };
 
@@ -114,6 +112,8 @@ export function Gate2Actions({
     const deny = denyWrap.current?.querySelector('button');
     if (deny === undefined || deny === null) return;
     const active = document.activeElement;
+    // Never take the focus from someone typing (a reason in another card, a field elsewhere).
+    if (typing(active)) return;
     if (focusDeny === 'always' || active === null || active === document.body)
       deny.focus({ preventScroll: true });
   }, [focusDeny]);

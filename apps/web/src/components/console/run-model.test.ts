@@ -348,10 +348,11 @@ suite('stages', () => {
       ['review', 'upcoming', 'Your review', ''],
     ]);
   });
-  it('ends at your review and marks unreached stages skipped', () => {
+  it('ends at your review and marks stages a stopped run never reached', () => {
     const s = stages(RUN.slice(0, 3), { terminal: true, approvedBy: null });
     expect(s.map((x) => x.state)).toEqual(['done', 'skipped', 'skipped', 'skipped', 'skipped', 'current']);
     expect(s[0]?.detail).toBe('');
+    expect(s[1]?.detail).toBe('not reached');
   });
 });
 

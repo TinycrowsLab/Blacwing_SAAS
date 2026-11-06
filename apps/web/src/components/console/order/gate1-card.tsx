@@ -5,11 +5,12 @@
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
+import { LocalTime } from './local-time';
 import { refreshSidebar } from './shared';
 import { approveAndStartAction, denyPlanAction, startAuditAction } from '../../../app/(console)/audits/actions';
+import { reasonEnough, REASON_MIN } from '../../../lib/normalize';
 import { buttonClass, Icon, InlineMessage, LinkButton, Receipt } from '../design';
 import { PendingButton, ReasonField } from '../design-client';
-import { reasonEnough, REASON_MIN } from '../../../lib/normalize';
 
 import type { AssessmentRequest } from '../../../lib/schemas';
 
@@ -172,18 +173,22 @@ export function Gate1Card({
   if (!pending) {
     const approved = request.status === 'approved';
     const by = request.approver?.name ?? 'someone';
-    const at = request.decidedAt === null ? '' : `, ${when(request.decidedAt)}`;
+    const at =
+      request.decidedAt === null ? null : (
+        <>
+          , <LocalTime iso={request.decidedAt} format={when} />
+        </>
+      );
     const replaced = request.decisionReason === REPLACED;
     return (
       <Shell>
         <Receipt
           tone={approved ? 'ok' : replaced ? 'muted' : 'bad'}
           title={
-            approved
-              ? `Approved by ${by}${at}`
-              : replaced
-                ? `Replaced by an edited plan${at}`
-                : `Not approved by ${by}${at}`
+            <>
+              {approved ? `Approved by ${by}` : replaced ? 'Replaced by an edited plan' : `Not approved by ${by}`}
+              {at}
+            </>
           }
           detail={request.decisionReason === null || replaced ? undefined : `“${request.decisionReason}”`}
           hash={request.audit?.hash ?? null}

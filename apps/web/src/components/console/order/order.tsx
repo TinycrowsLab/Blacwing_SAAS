@@ -4,7 +4,7 @@
 // server round trip), answered questions collapse into receipts, the ticket fills in, and the draft is kept on this
 // device. Enter continues, Esc goes back, number keys pick an option, and focus lands on each question's H1.
 import { useRouter, useSearchParams } from 'next/navigation';
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import { AskField, findKnown, useNormalized } from './ask-field';
@@ -25,15 +25,18 @@ import {
 import { Ticket, TicketPill, type TicketDetail, type TicketLine } from './ticket';
 import { attest, type ProofMethod, VerifyOwnership } from './verify-ownership';
 import { createAuditAction, ensureTargetAction } from '../../../app/(console)/audits/actions';
-import { buttonClass, Icon, InlineMessage, OptionCard } from '../design';
-import { PendingButton } from '../design-client';
 import { readDrafts, removeDraft, saveDraft } from '../../../lib/drafts';
 import { normalizeTarget, type TargetResult } from '../../../lib/normalize';
 import { limitsPhrase } from '../../../lib/plan-text';
+import { buttonClass, Icon, InlineMessage, OptionCard } from '../design';
+import { PendingButton } from '../design-client';
 
 import type { Asset } from '../../../lib/schemas';
 
-const QUESTIONS = 4;
+/** The four questions, by name (spec §3.3). */
+const Q = { site: 1, proof: 2, focus: 3, care: 4 } as const;
+const QUESTIONS = Q.care;
+const STEPS = [Q.site, Q.proof, Q.focus, Q.care] as const;
 const DRAFT_DEBOUNCE_MS = 300;
 const FOCUS_KEYS = FOCUS_CHIPS.map((c) => c.key);
 
@@ -59,6 +62,16 @@ const okTarget = (raw: string | null): OkTarget | null => {
   const r = normalizeTarget(raw);
   return r.ok ? r : null;
 };
+
+/** A host that wraps after its dots and colon on a phone, never mid-label. */
+function Breakable({ text }: { readonly text: string }) {
+  return text.split(/(?<=[.:])/).map((part, i) => (
+    <Fragment key={i}>
+      {i === 0 ? null : <wbr />}
+      {part}
+    </Fragment>
+  ));
+}
 
 function Receipt({ label, value, onChange }: { readonly label: string; readonly value: ReactNode; readonly onChange: () => void }) {
   return (
@@ -105,7 +118,7 @@ export function Order({
     first === null
       ? 1
       : firstAsset !== null && isVerified(firstAsset)
-        ? Math.max(3, Math.min(QUESTIONS, initialStep))
+        ? Math.max(Q.focus, Math.min(QUESTIONS, initialStep))
         : 2;
 
   const [step, setStep] = useState(startStep);
@@ -229,7 +242,7 @@ export function Order({
       if (target?.origin !== r.origin) setAttested(false);
       setTarget(r);
       setAsset(a);
-      go(isVerified(a) ? 3 : 2);
+      go(isVerified(a) ? Q.focus : Q.proof);
       return false;
     }
     if (step === 2) {
@@ -244,11 +257,11 @@ export function Order({
         setAsset(r.asset);
         refreshSidebar();
       }
-      go(3);
+      go(Q.focus);
       return false;
     }
-    if (step === 3) {
-      go(4);
+    if (step === Q.focus) {
+      go(Q.care);
       return false;
     }
     if (asset === null || target === null) return false;
@@ -282,7 +295,7 @@ export function Order({
       ? live.ok || text.trim() !== ''
       : step === 2
         ? verified || (asset !== null && method === 'attest' && attested)
-        : step === 4
+        : step === Q.care
           ? asset !== null
           : true;
 
@@ -311,10 +324,10 @@ export function Order({
       const n = Number(e.key);
       if (!Number.isInteger(n) || n < 1) return;
       if (step === 2 && !verified && n <= 2) setMethod(n === 1 ? 'file' : 'attest');
-      else if (step === 3 && n <= FOCUS_CHIPS.length) {
+      else if (step === Q.focus && n <= FOCUS_CHIPS.length) {
         const key = FOCUS_CHIPS[n - 1]?.key;
         if (key !== undefined) setFocus((f) => toggleFocus(f, key, !f.includes(key)));
-      } else if (step === 4 && n <= 2) setCare(n === 1 ? 'passive' : 'active_safe');
+      } else if (step === Q.care && n <= 2) setCare(n === 1 ? 'passive' : 'active_safe');
     };
     window.addEventListener('keydown', onKey);
     return () => {
@@ -330,8 +343,8 @@ export function Order({
       label: "Proof it's yours",
       value: verified ? (asset.ownership.method === 'http_token' ? 'File found on the site' : 'Confirmed by you') : null,
     },
-    { label: 'What to look for', value: step >= 3 ? focusPhrase.charAt(0).toUpperCase() + focusPhrase.slice(1) : null },
-    { label: 'How careful', value: step >= 4 ? CARE[chosenCare].label : null },
+    { label: 'What to look for', value: step >= Q.focus ? focusPhrase.charAt(0).toUpperCase() + focusPhrase.slice(1) : null },
+    { label: 'How careful', value: step >= Q.care ? CARE[chosenCare].label : null },
   ];
   const details: TicketDetail[] = [
     { label: 'Paths to avoid', value: 'None', tag: 'Default' },
@@ -357,7 +370,11 @@ export function Order({
     2: {
       h1: (
         <>
-          Is <span className="break-all">{host}</span> yours?
+          Is{' '}
+          <span className="[overflow-wrap:anywhere]">
+            <Breakable text={host} />
+          </span>{' '}
+          yours?
         </>
       ),
       lede: 'We only test sites you can show you control. Pick the way that suits you.',
@@ -384,7 +401,7 @@ export function Order({
           <span className="hidden text-[12.5px] text-muted-foreground sm:inline">New audit</span>
           <span className="hidden flex-1 sm:block" />
           <span aria-hidden="true" className="flex gap-1">
-            {[1, 2, 3, 4].map((i) => (
+            {STEPS.map((i) => (
               <span
                 key={i}
                 className={`h-[3px] w-5 rounded-full sm:w-10 ${i < step ? 'bg-gold-ink' : i === step ? 'bg-gold' : 'bg-border-strong'}`}
@@ -411,7 +428,7 @@ export function Order({
         {step > 2 && verified ? (
           <Receipt label="Proof" value={lines[1]?.value ?? ''} onChange={() => { go(2); }} />
         ) : null}
-        {step > 3 ? <Receipt label="Look for" value={lines[2]?.value ?? ''} onChange={() => { go(3); }} /> : null}
+        {step > Q.focus ? <Receipt label="Look for" value={lines[2]?.value ?? ''} onChange={() => { go(Q.focus); }} /> : null}
 
         <section aria-labelledby="order-h1" className="flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
@@ -440,7 +457,7 @@ export function Order({
               }}
               result={live}
               known={assets}
-              showError={showError || /:\/\//.test(text)}
+              showError={showError || text.includes('://')}
               onBlur={() => {
                 setShowError(text.trim() !== '');
               }}
@@ -465,11 +482,11 @@ export function Order({
             />
           ) : null}
 
-          {step === 3 ? (
+          {step === Q.focus ? (
             <FocusPicker keys={focus} onKeys={setFocus} text={focusText} onText={setFocusText} onSubmit={pressContinue} showIndex />
           ) : null}
 
-          {step === 4 ? (
+          {step === Q.care ? (
             <div className="flex flex-col gap-3">
               <fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
                 <legend className="sr-only">How careful</legend>

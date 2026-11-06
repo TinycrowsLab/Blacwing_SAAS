@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { askedInRun } from './asked';
 import { EmptyState, Icon, LinkButton, SeverityChip } from '../../../components/console/design';
-import { Gate2Inbox, InboxRefresh } from '../../../components/console/gate2-view';
+import { Gate2Inbox, InboxHeading, InboxRefresh } from '../../../components/console/gate2-view';
 import { callApi } from '../../../lib/api';
 import { getViewer } from '../../../lib/auth';
 import { objectivePhrase } from '../../../lib/plan-text';
@@ -42,16 +42,7 @@ function Section({
 }) {
   return (
     <section className="flex flex-col gap-3" aria-label={title}>
-      <div className="flex flex-col gap-0.5">
-        <h2 className="m-0 flex items-center gap-2 text-[15px] font-semibold text-foreground">
-          {title}
-          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold-soft px-1.5 text-[11.5px] font-semibold tabular-nums text-gold-ink">
-            {count}
-          </span>
-          <span className="font-mono text-[11px] font-normal text-muted-foreground">{term}</span>
-        </h2>
-        <p className="m-0 text-[13px] text-muted-foreground">{lede}</p>
-      </div>
+      <InboxHeading title={title} term={term} lede={lede} count={count} />
       {children}
     </section>
   );
@@ -120,6 +111,16 @@ export default async function DecisionsPage(): Promise<ReactNode> {
         </p>
       </header>
 
+      {/* Always mounted: a request decided here keeps its receipt after the refresh drops it from the list. */}
+      <Gate2Inbox
+        items={gate2Items.map(({ gate2: g, body, asRole, known }) => ({
+          gate2: g,
+          body,
+          asRole: known ? asRole : undefined,
+        }))}
+        viewerName={session.user.name}
+      />
+
       {nothing ? (
         <EmptyState
           icon="check"
@@ -132,24 +133,6 @@ export default async function DecisionsPage(): Promise<ReactNode> {
           }
         />
       ) : null}
-
-      {gate2.length === 0 ? null : (
-        <Section
-          title="Requests during a run"
-          term="Gate 2"
-          lede="Claude wants to send something that could change data. No answer means denied."
-          count={gate2.length}
-        >
-          <Gate2Inbox
-            items={gate2Items.map(({ gate2: g, body, asRole, known }) => ({
-              gate2: g,
-              body,
-              asRole: known ? asRole : undefined,
-            }))}
-            viewerName={session.user.name}
-          />
-        </Section>
-      )}
 
       {plans.length === 0 ? null : (
         <Section

@@ -64,10 +64,10 @@ function Clamp({ lines, children, className = '' }: { readonly lines: number; re
     };
   }, [open, children]);
   return (
-    <div className={className}>
+    <div className={`min-w-0 ${className}`}>
       <div
         ref={ref}
-        className="overflow-hidden"
+        className={open ? 'overflow-x-auto' : 'overflow-hidden'}
         style={open ? undefined : { display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: lines }}
       >
         {children}
@@ -172,16 +172,16 @@ function CallList({ calls, onOpen }: { readonly calls: readonly CallRow[]; reado
 function Turn({ turn, onOpenCall }: { readonly turn: TurnItem; readonly onOpenCall: (id: string) => void }) {
   return (
     <div className="flex flex-col">
-      <div className="flex min-w-0 items-center gap-2 text-[12.5px]">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px]">
         <Avatar agent={turn.agent} />
         <span className="font-semibold">{agentName(turn.agent)}</span>
         {agentName(turn.agent) === turn.agent ? null : (
           <span className="hidden font-mono text-[10.5px] text-muted-foreground sm:inline">{turn.agent}</span>
         )}
         {turn.reply ? (
-          <span className="flex items-center gap-1 text-muted-foreground">
-            <Icon name="reply" size={12} />
-            Planner
+          <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-surface-2 px-2 py-px text-[11px] font-medium text-muted-foreground">
+            <Icon name="reply" size={11} />
+            Reply to Planner
           </span>
         ) : null}
         <VoiceTag voice="claude" />
@@ -401,7 +401,7 @@ export function Conversation({
         role="log"
         aria-label="Conversation"
         aria-live="off"
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain"
       >
         <div className="mx-auto flex w-full max-w-[820px] flex-col gap-3.5 pb-6 pt-3">
           {items.length > shown.length ? (

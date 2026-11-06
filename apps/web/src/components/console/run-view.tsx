@@ -338,7 +338,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     >
       {/* Header */}
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border px-4 py-2.5 md:px-6">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 max-md:basis-full md:flex-1">
           <nav aria-label="Breadcrumb" className="hidden text-[12px] text-muted-foreground md:block">
             <Link href="/" className="text-muted-foreground no-underline hover:text-foreground">
               Audits
@@ -348,11 +348,11 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h1 className="m-0 truncate text-[19px] font-semibold leading-[26px] tracking-[-0.01em]">{host}</h1>
             {CARE_LABEL[care] === undefined ? null : (
-              <span title={care} className="inline-flex h-[26px] items-center rounded-full bg-surface-2 px-3 text-[12px] font-medium">
+              <span title={care} className="inline-flex h-[26px] items-center whitespace-nowrap rounded-full bg-surface-2 px-3 text-[12px] font-medium">
                 {CARE_LABEL[care]}
               </span>
             )}
-            <span className={`inline-flex h-[26px] items-center gap-1.5 rounded-full border px-3 text-[12px] font-medium ${statePill}`}>
+            <span className={`inline-flex h-[26px] items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] font-medium ${statePill}`}>
               {terminal ? null : <span aria-hidden="true" className={`size-1.5 rounded-full ${pending.length > 0 ? 'bg-gold' : 'bg-text'}`} />}
               {stateText}
             </span>
@@ -381,7 +381,8 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
               {run.paused ? 'Resume' : 'Pause'}
             </PendingButton>
           )}
-          <KillButton run={terminal ? null : { id: run.id, assetName: host }} className="h-10 px-4" />
+          {/* Phones stop from the top bar's red icon (spec §9), so the header keeps one row. */}
+          <KillButton run={terminal ? null : { id: run.id, assetName: host }} className="h-10 px-4 max-md:hidden" />
           <DropdownMenu>
             <DropdownMenuTrigger
               aria-label="More actions"

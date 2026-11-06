@@ -1,4 +1,6 @@
 // The run report as a download (HTML, Markdown, JSON or SARIF), rendered by the API.
+import { z } from 'zod';
+
 import { ApiError, callApi } from '../../../../../lib/api';
 import { getViewer } from '../../../../../lib/auth';
 
@@ -6,11 +8,12 @@ export const dynamic = 'force-dynamic';
 
 const FORMATS = ['html', 'md', 'json', 'sarif'] as const;
 
-interface RenderedReport {
-  readonly contentType: string;
-  readonly filename: string;
-  readonly body: string;
-}
+// The filename goes into a header: only safe characters, so a quote or newline can never break it.
+const renderedSchema = z.object({
+  contentType: z.string().min(1),
+  filename: z.string().regex(/^[\w.-]{1,120}$/),
+  body: z.string(),
+});
 
 export async function GET(
   request: Request,
@@ -22,9 +25,8 @@ export async function GET(
   const asked = new URL(request.url).searchParams.get('format');
   const format = FORMATS.find((f) => f === asked) ?? 'html';
   try {
-    const report = await callApi<RenderedReport>(
-      session,
-      `/runs/${encodeURIComponent(id)}/report?format=${format}`,
+    const report = renderedSchema.parse(
+      await callApi(session, `/runs/${encodeURIComponent(id)}/report?format=${format}`),
     );
     return new Response(report.body, {
       headers: {
