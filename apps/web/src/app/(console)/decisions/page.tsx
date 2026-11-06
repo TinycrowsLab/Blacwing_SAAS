@@ -5,7 +5,12 @@ import { z } from 'zod';
 
 import { askedInRun } from './asked';
 import { EmptyState, Icon, LinkButton, SeverityChip } from '../../../components/console/design';
-import { Gate2Inbox, InboxHeading, InboxRefresh } from '../../../components/console/gate2-view';
+import {
+  Gate2Inbox,
+  InboxHeading,
+  InboxRefresh,
+  When,
+} from '../../../components/console/gate2-view';
 import { callApi } from '../../../lib/api';
 import { getViewer } from '../../../lib/auth';
 import { objectivePhrase } from '../../../lib/plan-text';
@@ -19,13 +24,7 @@ export const metadata: Metadata = { title: 'Decisions' };
 
 const findingsSchema = z.object({ items: z.array(findingSummarySchema) });
 
-const when = (iso: string): string =>
-  new Intl.DateTimeFormat(undefined, {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(iso));
+const capital = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
 function Section({
   title,
@@ -67,8 +66,13 @@ function Row({
       >
         {lead}
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-[14px] font-medium text-foreground">{title}</span>
-          <span className="truncate text-[12.5px] text-muted-foreground">{sub}</span>
+          {/* Phones wrap to two lines: the objective and the time are what tell two plans apart. */}
+          <span className="line-clamp-2 text-[14px] font-medium text-foreground md:line-clamp-1">
+            {title}
+          </span>
+          <span className="line-clamp-2 text-[12.5px] text-muted-foreground md:line-clamp-1">
+            {sub}
+          </span>
         </span>
         <Icon name="right" size={16} className="shrink-0 text-muted-foreground" />
       </Link>
@@ -88,12 +92,20 @@ export default async function DecisionsPage(): Promise<ReactNode> {
   const gate2 = [...dashboard.pendingGate2].sort(
     (a, b) => Date.parse(a.deadlineAt) - Date.parse(b.deadlineAt),
   );
-  const asked = await Promise.all(
-    [...new Set(gate2.map((g) => g.runId))].map((runId) => askedInRun(session, runId)),
+  const runIds = [...new Set(gate2.map((g) => g.runId))];
+  const runs = new Map(
+    await Promise.all(runIds.map(async (runId) => [runId, await askedInRun(session, runId)] as const)),
   );
   const gate2Items = gate2.map((g) => {
-    const a = asked.find((m) => m.has(g.id))?.get(g.id);
-    return { gate2: g, body: a?.body ?? null, asRole: a?.asRole ?? null, known: a !== undefined };
+    const run = runs.get(g.runId);
+    const a = run?.asked.get(g.id);
+    return {
+      gate2: g,
+      body: a?.body ?? null,
+      // Unknown (the event was not found): the card reads the role from the gate key.
+      asRole: a === undefined ? undefined : a.asRole,
+      audit: run?.audit ?? null,
+    };
   });
   const plans = dashboard.requests.filter((r) => r.status === 'pending_gate1');
   const releases = (findings ?? dashboard.findings).filter((f) => f.status === 'confirmed');
@@ -112,14 +124,7 @@ export default async function DecisionsPage(): Promise<ReactNode> {
       </header>
 
       {/* Always mounted: a request decided here keeps its receipt after the refresh drops it from the list. */}
-      <Gate2Inbox
-        items={gate2Items.map(({ gate2: g, body, asRole, known }) => ({
-          gate2: g,
-          body,
-          asRole: known ? asRole : undefined,
-        }))}
-        viewerName={session.user.name}
-      />
+      <Gate2Inbox items={gate2Items} viewerName={session.user.name} />
 
       {nothing ? (
         <EmptyState
@@ -147,7 +152,12 @@ export default async function DecisionsPage(): Promise<ReactNode> {
                 key={p.id}
                 href={`/audits/${p.id}`}
                 title={`Approve the plan for ${p.assetName ?? 'your site'}`}
-                sub={`${objectivePhrase(p.objective)} · asked by ${p.requester.name ?? 'a teammate'}, ${when(p.createdAt)}`}
+                sub={
+                  <>
+                    {capital(objectivePhrase(p.objective))} · asked by{' '}
+                    {p.requester.name ?? 'a teammate'}, <When iso={p.createdAt} />
+                  </>
+                }
               />
             ))}
           </ul>

@@ -1,14 +1,14 @@
-// The full-page Gate 2 decision (notifications and phones; prototype 06). The request's body and role come from the
-// run's gate2.requested event; without it the card reads the role from the gate key.
+// The full-page Gate 2 decision (notifications and phones; prototype 06). The heading names the audit that asks; the
+// card's template question is the only question. The request's body and role come from the run's gate2.requested
+// event; without it the card reads the role from the gate key.
 import { notFound } from 'next/navigation';
 
 import { PageHeader } from '../../../../../components/console/design';
-import { Gate2Card } from '../../../../../components/console/gate2-view';
+import { Gate2Card, hostOf } from '../../../../../components/console/gate2-view';
 import { ApiError, callApi } from '../../../../../lib/api';
 import { getViewer } from '../../../../../lib/auth';
-import { decisionTitle } from '../../../../../lib/plan-text';
 import { gate2DetailSchema } from '../../../../../lib/schemas';
-import { askedInRun } from '../../asked';
+import { askedInRun, isUuid } from '../../asked';
 
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -24,9 +24,12 @@ export default async function Gate2Page({
 }: {
   readonly params: Promise<{ readonly id: string }>;
 }): Promise<ReactNode> {
+  const { id } = await params;
+  // shortcut: notFound() here renders the not-found page with HTTP 200, because the console's loading boundary has
+  // already streamed; a 404 status needs the check in middleware.
+  if (!isUuid(id)) notFound();
   const session = await getViewer();
   if (session === null) return null;
-  const { id } = await params;
   let gate2;
   try {
     gate2 = gate2DetailSchema.parse(await callApi(session, `/gate2/${encodeURIComponent(id)}`));
@@ -38,24 +41,24 @@ export default async function Gate2Page({
       notFound();
     throw caught;
   }
-  const asked = (await askedInRun(session, gate2.runId)).get(gate2.id) ?? null;
+  const { asked, audit } = await askedInRun(session, gate2.runId);
+  const ask = asked.get(gate2.id) ?? null;
+  const name = audit?.assetName ?? gate2.run?.assetName ?? hostOf(gate2.url);
   return (
     <>
       <div className="hidden md:block">
         <PageHeader
-          crumbs={[
-            { label: 'Decisions', href: '/decisions' },
-            { label: gate2.run?.assetName ?? 'Request during a run' },
-          ]}
-          title={decisionTitle(gate2.method, gate2.url)}
+          crumbs={[{ label: 'Decisions', href: '/decisions' }, { label: 'Request during an audit' }]}
+          title={name}
         />
       </div>
       <Gate2Card
         gate2={gate2}
-        body={asked?.body ?? null}
-        {...(asked === null ? {} : { asRole: asked.asRole })}
+        body={ask?.body ?? null}
+        {...(ask === null ? {} : { asRole: ask.asRole })}
         variant="page"
         viewerName={session.user.name}
+        audit={audit}
       />
     </>
   );
