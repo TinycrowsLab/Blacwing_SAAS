@@ -90,7 +90,7 @@ export function LimitsPanel({
 const PLAN_PARTS = [
   { key: 'done', label: 'Done', colour: 'var(--text)' },
   { key: 'running', label: 'Running', colour: 'var(--slate)' },
-  { key: 'waiting', label: 'Held for a decision', colour: 'var(--gold)' },
+  { key: 'waiting', label: 'Waiting on you', colour: 'var(--gold)' },
   { key: 'queued', label: 'Queued', colour: 'var(--border2)' },
   { key: 'skipped', label: 'Skipped', colour: 'var(--faint)' },
   { key: 'blocked', label: 'Blocked', colour: 'var(--warn)' },
@@ -197,9 +197,9 @@ export function FoundPanel({
 }) {
   return (
     <section aria-labelledby="found-h">
-      <h2 id="found-h" className="mb-2 flex items-baseline text-[12.5px] font-semibold">
-        {ended ? 'Found' : 'Found so far'}
-        <span className="ml-auto text-[11.5px] font-normal text-muted-foreground">
+      <h2 id="found-h" className="mb-2 flex min-w-0 items-baseline gap-2 text-[12.5px] font-semibold">
+        <span className="shrink-0 whitespace-nowrap">{ended ? 'Found' : 'Found so far'}</span>
+        <span className="ml-auto min-w-0 truncate text-right text-[11.5px] font-normal text-muted-foreground">
           {release === 'auto' ? 'proven issues release themselves' : 'private until you release'}
         </span>
       </h2>
@@ -457,20 +457,24 @@ function AgentLanes({
                   aria-hidden="true"
                   className={`size-2 shrink-0 rounded-full ${paused ? 'bg-gold' : running ? 'bg-slate motion-safe:animate-[bwpulse_1.6s_ease-in-out_infinite]' : 'bg-muted-foreground'}`}
                 />
-                <span className="whitespace-nowrap text-[13px] font-medium">{agentName(lane.name)}</span>
-                <span className="hidden truncate font-mono text-[11px] text-muted-foreground xl:inline">{lane.name}</span>
+                <span className="min-w-0 truncate text-[13px] font-medium">{agentName(lane.name)}</span>
                 <span className="ml-auto hidden whitespace-nowrap text-[11.5px] tabular-nums text-muted-foreground lg:inline">
                   {lane.deterministic
                     ? 'replay, no model'
                     : `${lane.turns} turns, $${lane.costUsd.toFixed(2)}`}
                 </span>
               </span>
+              {/* The mono id is never cut; the latest words give way. A lane that has only used tools so far shows
+                  its latest request instead of "no message". */}
               <span
-                title={stripMarkdown(lane.task)}
-                className={`truncate text-[12.5px] ${paused ? 'text-gold-ink' : 'text-muted-foreground'}`}
+                title={lane.task === '' ? lane.last : stripMarkdown(lane.task)}
+                className={`flex min-w-0 items-baseline gap-1 text-[12.5px] ${paused ? 'text-gold-ink' : 'text-muted-foreground'}`}
               >
-                {paused ? 'Waiting. ' : ''}
-                {lane.task === '' ? 'No message yet' : stripMarkdown(lane.task)}
+                <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{lane.name} ·</span>
+                <span className="min-w-0 truncate">
+                  {paused ? 'Waiting. ' : ''}
+                  {lane.task !== '' ? stripMarkdown(lane.task) : lane.last !== '' ? `Latest request: ${lane.last}` : 'Nothing yet'}
+                </span>
               </span>
             </div>
             <svg
@@ -606,7 +610,8 @@ function ActivityTable({ rows }: { readonly rows: readonly Activity[] }) {
       {shown.length === 0 ? (
         <p className="px-4 py-6 text-[13px] text-muted-foreground">Nothing to show yet.</p>
       ) : (
-        <ol className="max-h-[480px] divide-y divide-border overflow-auto [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]">
+        // The tab pane already scrolls: no scroll box inside it.
+        <ol className="divide-y divide-border">
           {shown.map((r) => (
             <li
               key={r.seq}

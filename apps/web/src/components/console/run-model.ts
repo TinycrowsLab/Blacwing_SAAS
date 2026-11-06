@@ -266,6 +266,8 @@ export interface AgentLane {
   readonly turns: number;
   readonly costUsd: number;
   readonly task: string;
+  /** The lane's latest request as the runner recorded it ("GET /x"), for a lane that has not spoken yet. */
+  readonly last: string;
   /** The validator is code, not a model: no turns or cost. */
   readonly deterministic: boolean;
   readonly marks: readonly {
@@ -299,11 +301,13 @@ export function agentLanes(events: readonly RunEvent[]): AgentLane[] {
     });
     const deterministic = name === 'validator';
     const latest = deterministic ? events.findLast((e) => describe(e)?.agent === name) : undefined;
+    const lastCall = mine.findLast((e) => e.kind === 'http.sent');
     return {
       name,
       turns: num(turn?.data.turns),
       costUsd: num(turn?.data.costUsd),
       task: deterministic ? ((latest && describe(latest)?.text) ?? '') : str(message?.data.text),
+      last: lastCall === undefined ? '' : (describe(lastCall)?.text ?? ''),
       deterministic,
       marks,
     };
@@ -583,7 +587,17 @@ const isDelegation = (e: RunEvent): boolean => e.kind === 'agent.tool' && (str(e
 const inputOf = (e: RunEvent): Record<string, unknown> =>
   typeof e.data.input === 'object' && e.data.input !== null ? (e.data.input as Record<string, unknown>) : {};
 const subagentOf = (e: RunEvent): string => str(inputOf(e).subagent) || 'general-purpose';
-const sameText = (a: string | null, b: string): boolean => a !== null && a.trim() === b.trim();
+/**
+ * The reply repeats the specialist's last turn: the same words, or one is the start of the other (the runner clips a
+ * reply at 4,000 characters, and a tool result may add a trailer). Returns the longer text, or null when they differ.
+ */
+const sameText = (a: string | null, b: string): string | null => {
+  if (a === null) return null;
+  const x = a.trim();
+  const y = b.trim();
+  if (x === '' || y === '') return x === y ? x : null;
+  return x.startsWith(y) ? a : y.startsWith(x) ? b : null;
+};
 
 function callOf(e: RunEvent): CallRow {
   const d = e.data;
@@ -720,7 +734,9 @@ export function conversationItems(
         const last = (segments.length === 0 ? items : segments.flatMap((t) => t.children)).findLast(
           (c): c is TurnItem => c.type === 'turn' && c.agent === lane,
         );
-        if (last !== undefined && sameText(last.text, text)) {
+        const same = last === undefined ? null : sameText(last.text, text);
+        if (last !== undefined && same !== null) {
+          last.text = same;
           last.reply = true;
           last.isError = d.isError === true;
         } else {
@@ -857,7 +873,11 @@ function delegations(events: readonly RunEvent[]): Delegation[] {
   const list: Delegation[] = [];
   for (const e of events) {
     if (isDelegation(e)) list.push({ to: subagentOf(e), toolUseId: str(e.data.toolUseId), replied: false });
-    else if (e.kind === 'agent.reply') {
+    // The plan is built from recon's map: once it is recorded, recon's earlier tasks are over (the spine says
+    // "Mapped" at the same moment), even when the runner recorded no reply.
+    else if (e.kind === 'plan.cases') {
+      for (const x of list) if (x.to === 'recon') x.replied = true;
+    } else if (e.kind === 'agent.reply') {
       const id = str(e.data.toolUseId);
       const lane = str(e.data.agent);
       const match = (id === '' ? undefined : list.find((x) => x.toolUseId === id)) ?? list.find((x) => x.to === lane && !x.replied);
@@ -1065,23 +1085,24 @@ export function teamNodes(
   return { planner, specialists, validator, tasks: tasks.length, candidates: cands.length, proven, autoReleased };
 }
 
-/** Header liveness (spec §5.2 item 1): live, quiet after 15 s (waiting, while a decision is open), reconnecting after a failed poll. */
+/**
+ * Header liveness (spec §5.2 item 1): three states only. Live while events arrive, quiet after 15 s without one (an open
+ * decision does not change it: other agents may still be working), reconnecting after a failed poll. `short` is the
+ * phone's one-word form.
+ */
 export function liveness(
   nowMs: number,
   lastEventMs: number,
   failedSinceMs: number | null,
   lastOkMs: number,
-  /** A Gate 2 is open: a quiet run is waiting for the person, not stalled. */
-  waitingOnYou = false,
-): { readonly tone: 'live' | 'quiet' | 'reconnecting' | 'waiting'; readonly text: string } {
+): { readonly tone: 'live' | 'quiet' | 'reconnecting'; readonly text: string; readonly short: string } {
   const ago = (ms: number): string => {
     const s = Math.max(0, Math.round((nowMs - ms) / 1000));
     return s < 90 ? `${s} s` : `${Math.round(s / 60)} min`;
   };
-  if (failedSinceMs !== null) return { tone: 'reconnecting', text: `Reconnecting… last update ${ago(lastOkMs)} ago` };
-  if (nowMs - lastEventMs < QUIET_AFTER_MS) return { tone: 'live', text: `Live · last event ${ago(lastEventMs)} ago` };
-  if (waitingOnYou) return { tone: 'waiting', text: 'Waiting for your decision' };
-  return { tone: 'quiet', text: `Quiet for ${ago(lastEventMs)}` };
+  if (failedSinceMs !== null) return { tone: 'reconnecting', text: `Reconnecting… last update ${ago(lastOkMs)} ago`, short: 'Reconnecting…' };
+  if (nowMs - lastEventMs < QUIET_AFTER_MS) return { tone: 'live', text: `Live · last event ${ago(lastEventMs)} ago`, short: 'Live' };
+  return { tone: 'quiet', text: `Quiet for ${ago(lastEventMs)}`, short: `Quiet for ${ago(lastEventMs)}` };
 }
 
 /** GET /runs/:id/exchanges: the recorded requests and responses (bodies are excerpts, credentials redacted). */

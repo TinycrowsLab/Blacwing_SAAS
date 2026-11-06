@@ -39,7 +39,7 @@ function NodeButton({
   readonly onSelect: (id: string) => void;
   /** Column layout (phones): full width with a taller touch target. */
   readonly wide?: boolean;
-  /** A narrow row node: the mono id gets its own line. */
+  /** A narrow row node (planner, validator): the action gets two lines. */
   readonly stacked?: boolean;
 }) {
   const tone = {
@@ -60,24 +60,23 @@ function NodeButton({
       onClick={() => {
         onSelect(node.id);
       }}
-      className={`flex w-full min-w-0 flex-col rounded-[10px] border px-2.5 py-1.5 text-left text-[12px] leading-4 transition-shadow hover:shadow-[0_0_0_3px_var(--focus)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${wide ? 'min-h-11 justify-center' : ''} ${tone} ${selected ? 'shadow-[0_0_0_2px_var(--gold-ink)]' : ''}`}
+      className={`flex w-full min-w-0 flex-col rounded-[10px] border px-2 py-1 text-left text-[12px] leading-4 transition-shadow hover:shadow-[0_0_0_3px_var(--focus)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${wide ? 'min-h-11 justify-center' : ''} ${tone} ${selected ? 'shadow-[0_0_0_2px_var(--gold-ink)]' : ''}`}
     >
-      <span className="flex min-w-0 items-baseline gap-1.5 font-semibold text-foreground">
-        <span className="shrink-0">{node.name}</span>
-        {stacked ? null : <span className="min-w-0 truncate font-mono text-[10.5px] font-normal text-muted-foreground">{mono}</span>}
-        {node.state === 'done' ? <span aria-hidden="true" className="ml-auto size-[7px] shrink-0 self-center rounded-full bg-ok" /> : null}
-        {node.state === 'stopped' ? <span aria-hidden="true" className="ml-auto h-[2px] w-2 shrink-0 self-center rounded-full bg-muted-foreground" /> : null}
+      {/* Line 1: the plain name (it gives way, never the state mark). */}
+      <span className="flex min-w-0 items-center gap-1.5 font-semibold text-foreground">
+        <span className="min-w-0 truncate">{node.name}</span>
+        {node.state === 'done' ? <span aria-hidden="true" className="ml-auto size-[7px] shrink-0 rounded-full bg-ok" /> : null}
+        {node.state === 'stopped' ? <span aria-hidden="true" className="ml-auto h-[2px] w-2 shrink-0 rounded-full bg-muted-foreground" /> : null}
         {node.state === 'working' ? (
-          <Ring
-            className={`ml-auto self-center text-slate ${node.spinning ? 'border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]' : ''}`}
-          />
+          <Ring className={`ml-auto text-slate ${node.spinning ? 'border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]' : ''}`} />
         ) : null}
       </span>
-      {/* Fixed lines (the tooltip has everything), so the map never changes size mid-run: wide nodes keep the mono
-          id beside the name and one line of action; the narrow planner and validator stack the id, then up to two. */}
-      {stacked ? <span className="truncate font-mono text-[10.5px] text-muted-foreground">{mono}</span> : null}
+      {/* Fixed lines (the tooltip has everything), so the map never changes size mid-run: the name, then the mono id on
+          its own line (never cut at the widths the row allows), then the latest action, which gives way first. The
+          narrow planner and validator give the action two lines. */}
+      <span className="truncate font-mono text-[10.5px] leading-[14px] text-muted-foreground">{mono}</span>
       <span
-        className={`text-[11px] ${stacked ? 'line-clamp-2 h-8 break-words' : 'truncate'} ${node.state === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}
+        className={`text-[11px] leading-[14px] ${stacked ? 'line-clamp-2 h-7 break-words' : 'truncate'} ${node.state === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}
       >
         {node.sub}
       </span>
@@ -104,7 +103,7 @@ function Diamond({ label, term, who, done }: { readonly label: string; readonly 
 /** A connector. `wide` ones keep room for a count ("3 proven") from the start, so a label appearing moves nothing. */
 function Arrow({ label, wide = false }: { readonly label?: string | undefined; readonly wide?: boolean }) {
   return (
-    <span className={`flex shrink-0 flex-col items-center gap-0.5 px-1 ${wide ? 'w-[48px]' : 'w-5'}`}>
+    <span className={`flex shrink-0 flex-col items-center gap-0.5 px-1 ${wide ? 'w-12' : 'w-4'}`}>
       <small className="whitespace-nowrap text-[10.5px] text-muted-foreground">{label ?? '\u00a0'}</small>
       <span aria-hidden="true" className="relative h-[1.5px] w-full bg-border-strong">
         <span className="absolute -right-px -top-[3px] border-y-[3.5px] border-l-[5px] border-y-transparent border-l-border-strong" />
@@ -119,7 +118,7 @@ function Fan({ rows, reverse = false }: { readonly rows: number; readonly revers
   const ys = Array.from({ length: rows }, (_, i) => ((i + 0.5) / Math.max(rows, 1)) * 100);
   const d = ys.map((y) => (reverse ? `M0 ${y} C13 ${y} 13 50 26 50` : `M0 50 C13 50 13 ${y} 26 ${y}`)).join(' ');
   return (
-    <svg aria-hidden="true" viewBox="0 0 26 100" preserveAspectRatio="none" className="h-full w-[26px] shrink-0 self-stretch">
+    <svg aria-hidden="true" viewBox="0 0 26 100" preserveAspectRatio="none" className="h-full w-5 shrink-0 self-stretch">
       <path d={d} fill="none" strokeWidth="1.5" vectorEffect="non-scaling-stroke" style={{ stroke: 'var(--border2)' }} />
     </svg>
   );
@@ -222,7 +221,7 @@ export function TeamMap({
       <Diamond label="Your approval" term="Gate 1: scope approval" who={gate1} done />
       <Arrow />
       {team.planner === null ? null : (
-        <div className="w-[104px] shrink-0">
+        <div className="w-[100px] shrink-0">
           <NodeButton node={team.planner} mono="orchestrator" stacked selected={filter === team.planner.id} onSelect={select} />
         </div>
       )}
@@ -231,7 +230,7 @@ export function TeamMap({
       ) : (
         <>
           <Fan rows={team.specialists.length} />
-          <div className="flex min-w-[168px] max-w-[340px] flex-1 flex-col gap-[5px]">
+          <div className="flex min-w-[170px] max-w-[300px] flex-1 flex-col gap-[5px]">
             {team.specialists.map((n) => (
               <NodeButton key={n.id} node={n} mono={n.id} selected={filter === n.id} onSelect={select} />
             ))}
@@ -240,7 +239,7 @@ export function TeamMap({
         </>
       )}
       {team.validator === null ? null : (
-        <div className="w-[104px] shrink-0">
+        <div className="w-[128px] shrink-0">
           <NodeButton node={team.validator} mono="replay, no model" stacked selected={filter === 'validator'} onSelect={select} />
         </div>
       )}
@@ -265,19 +264,20 @@ export function TeamMap({
             onClick={() => {
               onFilter(null);
             }}
-            className="inline-flex h-6 items-center gap-1 rounded-full bg-gold-soft px-2.5 text-[11.5px] font-medium text-gold-ink hover:underline max-md:min-h-11"
+            className="inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-full bg-gold-soft px-2.5 text-[11.5px] font-medium text-gold-ink hover:underline max-md:min-h-11"
           >
             Showing one agent · Show everyone
             <Icon name="x" size={11} />
           </button>
         )}
-        {collapsed && !column ? null : legend}
+        {/* One header line whatever happens: in the row, the filter chip takes the legend's place. */}
+        {(collapsed || filter !== null) && !column ? null : legend}
         {onToggle === undefined || column ? null : (
           <button
             type="button"
             aria-expanded={!collapsed}
             onClick={onToggle}
-            className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11.5px] font-medium text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${collapsed ? 'ml-auto' : ''}`}
+            className={`inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-md px-2 text-[11.5px] font-medium text-muted-foreground hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${collapsed || filter !== null ? 'ml-auto' : ''}`}
           >
             {collapsed ? 'Show map' : 'Hide map'}
             <Icon name="chevron" size={12} className={collapsed ? '' : 'rotate-180'} />

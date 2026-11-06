@@ -44,7 +44,19 @@ export async function POST(
   const { id } = await params;
   if (!isUuid(id)) return Response.json({ code: 'not_found' }, { status: 404, headers: noStore });
   const body = bodySchema.safeParse(await request.json().catch(() => null));
-  if (!body.success) return Response.json({ code: 'invalid_body' }, { status: 400 });
+  if (!body.success) {
+    // The one cause a person can fix: say so, instead of a "try again" that can never succeed.
+    const tooLong = body.error.issues.some((i) => i.path[0] === 'reason' && i.code === 'too_big');
+    return Response.json(
+      {
+        code: 'invalid_body',
+        ...(tooLong
+          ? { message: `the reason is longer than ${MAX_REASON} characters. Shorten it and allow again.` }
+          : {}),
+      },
+      { status: 400, headers: noStore },
+    );
+  }
   const path = `/gate2/${encodeURIComponent(id)}`;
   try {
     return Response.json(

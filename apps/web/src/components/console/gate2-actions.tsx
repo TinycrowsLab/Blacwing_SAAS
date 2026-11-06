@@ -21,6 +21,21 @@ export const FOOTNOTE =
 /** Fired with the decided request, so every card for it in this tab (and a "Deny all") shows the same receipt. */
 export const DECIDED_EVENT = 'bw:gate2-decided';
 
+// Decided in this tab. A card rendered again from the router cache (Back, or the sidebar link within its 30 s
+// staleTime) shows the receipt at once instead of the old question, so a fast D never meets a 409.
+const decidedInTab = new Map<string, Gate2Detail>();
+export const decidedHere = (id: string): Gate2Detail | null => decidedInTab.get(id) ?? null;
+export function announceDecided(gate2: Gate2Detail): void {
+  decidedInTab.set(gate2.id, gate2);
+  window.dispatchEvent(new CustomEvent(DECIDED_EVENT, { detail: gate2 }));
+}
+
+/** The route and the API cap a reason at this length; the field stops there too. */
+export const MAX_REASON = 500;
+const NEAR_LIMIT = 400;
+// One tap, like Gate 1's reasons: each says why changing data here is safe.
+const REASONS = ['Our own test lab', 'Test account we own', 'Needed to prove the finding'] as const;
+
 const answerSchema = gate2DetailSchema.extend({ alreadyDecided: z.boolean().optional() });
 const problemSchema = z.object({ message: z.string().optional() }).loose();
 
@@ -175,7 +190,7 @@ function writeDraft(id: string, text: string): void {
 }
 
 /**
- * The decision buttons. `layout="column"` is the card's right column (the card goes full width while allowing);
+ * The decision buttons. `layout="column"` is the card's right column (it keeps its width while allowing);
  * `"sheet"` is the phone's sticky footer (56 px Deny). `onDecided` gets the decided request, from this tab or from
  * whoever decided first (`alreadyDecided`). `footnote={false}` when the list shows the footnote once for all cards.
  */
@@ -192,7 +207,10 @@ export function Gate2Actions({
   readonly deadlineAt: string;
   readonly createdAt?: string | undefined;
   readonly layout: 'column' | 'sheet';
-  /** Focus Deny once, on mount, with a mouse or keyboard (the full page). Never on touch, never in a list. */
+  /**
+   * Focus Deny once, on mount (the full page, and the inbox's first card), so Enter or D denies. shortcut: skipped on
+   * a coarse pointer (touch), where a focus ring with no keyboard only confuses; revisit if phones with keyboards matter.
+   */
   readonly autoFocus: boolean;
   readonly footnote?: boolean;
   readonly onDecided: (gate2: Gate2Detail, alreadyDecided: boolean) => void;
@@ -234,7 +252,7 @@ export function Gate2Actions({
     quietUntil = Date.now() + QUIET_MS;
     writeDraft(gate2Id, '');
     onDecided(result.gate2, result.alreadyDecided);
-    window.dispatchEvent(new CustomEvent(DECIDED_EVENT, { detail: result.gate2 }));
+    announceDecided(result.gate2);
     // The sidebar, the inbox and the live run each refresh on this event; the card itself already shows the receipt.
     window.dispatchEvent(new Event('bw:refresh'));
     return true;
@@ -282,32 +300,31 @@ export function Gate2Actions({
         </button>
       </InlineMessage>
     );
-  // Key hints only where keys exist (a fine pointer's screen, md and up) and only on the card that owns the keys.
+  // Key hints only where keys exist (md and up, a fine pointer) and only on the card that owns the keys. max-md:hidden,
+  // not hidden + md:inline-flex: the Kbd's own inline-flex comes later in the built CSS and would win on phones.
   const kbd = (k: string) =>
-    owns && !sheet ? <Kbd className="hidden md:inline-flex">{k}</Kbd> : null;
+    owns && !sheet ? <Kbd className="max-md:hidden pointer-coarse:hidden">{k}</Kbd> : null;
 
-  // Allowing: the reason and its own submit sit together; Deny steps back to a secondary button beside Cancel.
+  // Deny never moves or changes weight: ink with the ring at the top of the column, whether or not Allow is open.
   // The column's Deny follows prototype 04: × at the left, the label centred, the key at the right.
   const deny = (
     <div ref={denyWrap} className="contents">
       <PendingButton
-        variant={allowing ? 'secondary' : 'deny'}
+        variant="deny"
         pendingLabel="Denying…"
         stayPending
         onAction={() => decide('deny')}
         className={
-          allowing
-            ? sheet
+          sheet
+            ? allowing
               ? 'h-11 w-full rounded-[14px]'
-              : 'h-10'
-            : sheet
-              ? 'h-14 w-full rounded-[14px] text-base'
-              : `h-11 w-full px-3.5 focus-visible:ring-0 ${owns ? 'md:shadow-[0_0_0_2px_var(--card),0_0_0_4px_var(--gold-ink)]' : ''}`
+              : 'h-14 w-full rounded-[14px] text-base'
+            : `h-11 w-full px-3.5 focus-visible:ring-0 ${owns ? 'md:shadow-[0_0_0_2px_var(--card),0_0_0_4px_var(--gold-ink)]' : ''}`
         }
       >
-        {allowing || sheet ? (
+        {sheet ? (
           <span className="inline-flex items-center gap-2">
-            <Icon name="x" size={sheet && !allowing ? 18 : 15} />
+            <Icon name="x" size={allowing ? 15 : 18} />
             Deny
           </span>
         ) : (
@@ -325,7 +342,6 @@ export function Gate2Actions({
     <div
       ref={root}
       data-gate2-open=""
-      data-allowing={allowing ? '' : undefined}
       className={`flex flex-col ${sheet ? 'gap-2.5' : 'gap-2'}`}
       onKeyDown={(e) => {
         if (e.key === 'Escape' && allowing) {
@@ -335,54 +351,72 @@ export function Gate2Actions({
         }
       }}
     >
+      {sheet ? null : (
+        <>
+          {deny}
+          {error('deny')}
+        </>
+      )}
       {allowing ? (
         <>
           <ReasonField
             label="Reason (needed to allow)"
             value={reason}
             onChange={(text) => {
-              setReason(text);
-              writeDraft(gate2Id, text);
+              // A paste longer than the cap is cut here, and the count says so, instead of failing at the server.
+              const kept = text.slice(0, MAX_REASON);
+              setReason(kept);
+              writeDraft(gate2Id, kept);
             }}
             onSubmit={() => {
               if (enough) button(allowWrap)?.click();
             }}
             placeholder="Why is it safe to allow this for the rest of the run?"
+            suggestions={REASONS}
+            footnote={
+              reason.length < NEAR_LIMIT
+                ? 'Kept on the ledger with your name'
+                : `${reason.length} of ${MAX_REASON} characters, the most a reason can hold`
+            }
             autoFocus
-            rows={2}
+            rows={sheet ? 2 : 3}
           />
-          <div className={sheet ? 'flex flex-col gap-2' : 'flex flex-wrap items-center gap-2'}>
-            <div ref={allowWrap} className="contents">
-              <PendingButton
-                variant="primary"
-                pendingLabel="Allowing…"
-                disabled={!enough}
-                title={enough ? undefined : 'Write a reason of at least 8 characters first'}
-                stayPending
-                onAction={() => decide('approve')}
-                className={sheet ? 'h-12 w-full rounded-[14px] text-[14px]' : 'h-10 px-5'}
-              >
-                Allow for this run
-              </PendingButton>
-            </div>
-            <div className={sheet ? 'grid grid-cols-2 gap-2' : 'contents'}>
+          <div ref={allowWrap} className="contents">
+            <PendingButton
+              variant="primary"
+              pendingLabel="Allowing…"
+              disabled={!enough}
+              title={enough ? undefined : 'Write a reason of at least 8 characters first'}
+              stayPending
+              onAction={() => decide('approve')}
+              className={sheet ? 'h-12 w-full rounded-[14px] text-[14px]' : 'h-10 w-full'}
+            >
+              Allow for this run
+            </PendingButton>
+          </div>
+          {sheet ? (
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={close}
-                className={buttonClass('ghost', sheet ? 'h-11 w-full rounded-[14px]' : 'h-10')}
+                className={buttonClass('ghost', 'h-11 w-full rounded-[14px]')}
               >
                 Cancel
               </button>
-              {sheet ? deny : <div className="ml-auto flex">{deny}</div>}
+              {deny}
             </div>
-          </div>
+          ) : (
+            <button type="button" onClick={close} className={buttonClass('ghost', 'h-10 w-full')}>
+              Cancel
+            </button>
+          )}
           {error('approve')}
-          {error('deny')}
+          {sheet ? error('deny') : null}
         </>
       ) : (
         <>
-          {deny}
-          {error('deny')}
+          {sheet ? deny : null}
+          {sheet ? error('deny') : null}
           <button
             type="button"
             onClick={() => {

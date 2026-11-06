@@ -42,6 +42,7 @@ import {
   hms,
   isOpenGate2,
   liveness,
+  manifest,
   mergeEvents,
   stages,
   teamNodes,
@@ -127,26 +128,31 @@ function readMapCollapsed(): boolean {
   }
 }
 
-function Liveness({ tone, text }: { readonly tone: 'live' | 'quiet' | 'reconnecting' | 'waiting'; readonly text: string }) {
-  const dot =
-    tone === 'live'
-      ? 'bg-ok motion-safe:animate-[bwpulse_1.6s_ease-in-out_infinite]'
-      : tone === 'waiting'
-        ? 'bg-gold'
-        : tone === 'quiet'
-          ? 'bg-faint'
-          : 'bg-warn';
+function Liveness({
+  tone,
+  text,
+  short,
+  className = '',
+}: {
+  readonly tone: 'live' | 'quiet' | 'reconnecting';
+  readonly text: string;
+  /** Phones: the one-word form beside the state pill. */
+  readonly short?: string;
+  readonly className?: string;
+}) {
+  const dot = tone === 'live' ? 'bg-ok motion-safe:animate-[bwpulse_1.6s_ease-in-out_infinite]' : tone === 'quiet' ? 'bg-faint' : 'bg-warn';
   return (
     <span
       role="status"
-      // Phones: its own short line, so the 44 px controls below never wrap whatever the text says.
-      className={`flex items-center gap-1.5 whitespace-nowrap text-[11.5px] max-md:basis-full ${tone === 'reconnecting' ? 'text-warn' : tone === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}
+      className={`flex items-center gap-1.5 whitespace-nowrap text-[11.5px] ${tone === 'reconnecting' ? 'text-warn' : 'text-muted-foreground'} ${className}`}
     >
       <span aria-hidden="true" className={`size-[7px] rounded-full ${dot}`} />
-      {text}
+      {short ?? text}
     </span>
   );
 }
+
+const CLOCK_TONE = { normal: 'text-gold-ink', warn: 'text-warn', bad: 'text-bad' } as const;
 
 /** Phones: the first open decision, pinned under the top bar. Same clock (and rounding) as the decision card. */
 function DecisionBanner({ g, more }: { readonly g: Gate2; readonly more: number }) {
@@ -164,7 +170,8 @@ function DecisionBanner({ g, more }: { readonly g: Gate2; readonly more: number 
           {more > 0 ? ` · +${more} more` : ''}
         </span>
       </span>
-      <span className="font-semibold tabular-nums text-gold-ink">{clock?.label ?? ''}</span>
+      {/* The card's colours for the same clock: gold, then warn under 60 s and bad under 15 s (spec §11.1). */}
+      <span className={`font-semibold tabular-nums ${CLOCK_TONE[clock?.tone ?? 'normal']}`}>{clock?.label ?? ''}</span>
       <span className={buttonClass('primary', 'h-11 px-3.5')}>Decide</span>
     </Link>
   );
@@ -248,10 +255,13 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
     const t = params.get('tab');
     return TABS.some((x) => x.id === t) ? (t as Tab) : 'conversation';
   });
-  const [filter, setFilter] = useState<string | null>(() => {
+  const [rawFilter, setFilter] = useState<string | null>(() => {
     const a = params.get('agent');
     return a !== null && AGENT_ID.test(a) ? a : null;
   });
+  // Only an agent of this run filters (a stale or made-up ?agent= is ignored, and drops out of the URL).
+  const agents = useMemo(() => manifest(events), [events]);
+  const filter = rawFilter !== null && agents.includes(rawFilter) ? rawFilter : null;
   /** False until the first poll answered: the server's (maybe cached) first paint says nothing about "live". */
   const [synced, setSynced] = useState(false);
   const [failedSince, setFailedSince] = useState<number | null>(null);
@@ -324,19 +334,27 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         });
       }, delay);
     };
-    const onVisible = (): void => {
-      if (document.visibilityState !== 'visible') return;
+    const now = (): void => {
       window.clearTimeout(timer);
       void poll().then(() => {
         if (!stopped) schedule();
       });
     };
+    const onVisible = (): void => {
+      if (document.visibilityState === 'visible') now();
+    };
+    // Back online: catch up at once instead of waiting out the back-off.
+    const onOnline = (): void => {
+      if (document.visibilityState === 'visible') now();
+    };
     schedule();
     document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onOnline);
     return () => {
       stopped = true;
       window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onOnline);
     };
   }, [terminal, poll]);
 
@@ -450,12 +468,15 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   const end = run.finishedAt === null ? (mounted ? nowMs : start) : new Date(run.finishedAt).getTime();
   const elapsedS = Math.max(0, (end - start) / 1000);
   const lastEvent = events.at(-1);
-  const polled = liveness(nowMs, lastEvent === undefined ? start : Date.parse(lastEvent.at), failedSince, lastOk, pending.length > 0);
+  const polled = liveness(nowMs, lastEvent === undefined ? start : Date.parse(lastEvent.at), failedSince, lastOk);
   // Paused is not "live": no new request goes out. A failing poll still says so first.
-  const live = run.paused && polled.tone !== 'reconnecting' ? { tone: 'quiet' as const, text: 'Paused · no new requests' } : polled;
+  const live = run.paused && polled.tone !== 'reconnecting' ? { tone: 'quiet' as const, text: 'Paused · no new requests', short: 'Paused' } : polled;
   const waitsText = `${pending.length} ${pending.length === 1 ? 'decision waits' : 'decisions wait'} for you`;
   const resultsHref = `/runs/${encodeURIComponent(run.id)}/results`;
 
+  // The pill names the same stage the spine marks current, so the two never disagree.
+  const stage = spine.find((x) => x.state === 'current');
+  const working = stage === undefined || stage.key === 'approved' ? 'Starting' : stage.key === 'review' ? 'Testing' : stage.label;
   const stateText = terminal
     ? run.state === 'completed'
       ? 'Finished'
@@ -471,12 +492,16 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             ? `Paused · ${waitsText}`
             : 'Paused'
           : pending.length > 0
-            ? `Testing · ${waitsText}`
-            : 'Testing';
+            ? `${working} · ${waitsText}`
+            : working;
   const statePill =
     pending.length > 0 && !terminal ? 'border-gold-line bg-gold-soft text-gold-ink' : 'border-border bg-surface-2 text-foreground';
 
   const lanes = useMemo(() => agentLanes(events), [events]);
+  // The runner saves its request count every few seconds; the events show each request as it goes. Both are real
+  // counts of sent requests: show the higher, so the gauge never trails the spine.
+  const sentCount = useMemo(() => events.filter((e) => e.kind === 'http.sent').length, [events]);
+  const requestsUsed = Math.max(run.requestsUsed, sentCount);
   const rows = useMemo(() => events.flatMap((e) => describe(e) ?? []), [events]);
   const lastPause = events.findLast((e) => e.kind === 'run.paused');
   const pausedFrom = (agent: string): number | null => {
@@ -522,7 +547,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
   };
   const sidePanel: ReactNode = (
     <>
-      <LimitsPanel elapsedS={elapsedS} budget={run.budget} requestsUsed={run.requestsUsed} costUsd={run.costUsd} />
+      <LimitsPanel elapsedS={elapsedS} budget={run.budget} requestsUsed={requestsUsed} costUsd={run.costUsd} />
       <PlanPanel cases={cases} waiting={waitingAgents} ended={terminal} />
       <FoundPanel items={cands} ended={terminal} release={release === 'auto' || teamMap.autoReleased ? 'auto' : 'hold'} />
       <p className="m-0 mt-auto border-t border-dashed border-border-strong pt-2.5 text-[11px] leading-4 text-muted-foreground">
@@ -531,62 +556,68 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
       </p>
     </>
   );
+  const liveShown = !terminal && mounted && synced;
+  const statePillEl: ReactNode =
+    pending.length > 0 && !terminal ? (
+      <button
+        type="button"
+        onClick={showPending}
+        title="Show the decision"
+        className={`inline-flex h-[26px] min-w-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] font-medium hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${statePill}`}
+      >
+        <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-gold" />
+        <span className="truncate">{stateText}</span>
+        <Icon name="arrow" size={12} />
+      </button>
+    ) : (
+      <span className={`inline-flex h-[26px] items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] font-medium ${statePill}`}>
+        {terminal ? null : <span aria-hidden="true" className="size-1.5 rounded-full bg-text" />}
+        {stateText}
+      </span>
+    );
   const exchange = openCall === null ? null : (exchanges.items.find((x) => x.id === openCall.id) ?? null);
   const firstOpen = pending[0];
-  const assetName = run.pins.asset?.name ?? host;
 
   return (
     <section
       aria-label={`Live audit of ${host}`}
       className="-mx-4 -my-5 flex h-[calc(100dvh-52px)] flex-col sm:-mx-6 md:-mx-8 md:-my-7 md:h-dvh"
     >
-      {/* Header */}
-      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border px-4 py-2.5 md:px-6">
-        <div className="min-w-0 max-md:basis-full md:flex-1">
+      {/* Header. Phones: the host and the 44 px controls share the first line, the state and liveness the second. */}
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border px-4 py-2.5 md:gap-y-2 md:px-6">
+        <div className="min-w-0 flex-1">
           <nav aria-label="Breadcrumb" className="hidden text-[12px] text-muted-foreground md:block">
             <Link href="/" className="text-muted-foreground no-underline hover:text-foreground">
-              Home
+              Audits
             </Link>{' '}
             / {host}
           </nav>
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h1 className="m-0 truncate text-[19px] font-semibold leading-[26px] tracking-[-0.01em]">{host}</h1>
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="m-0 min-w-0 truncate text-[19px] font-semibold leading-[26px] tracking-[-0.01em]">{host}</h1>
             {CARE_LABEL[care] === undefined ? null : (
-              <span title={care} className="hidden h-[26px] items-center whitespace-nowrap rounded-full bg-surface-2 px-3 text-[12px] font-medium md:inline-flex">
+              <span title={care} className="hidden h-[26px] shrink-0 items-center whitespace-nowrap rounded-full bg-surface-2 px-3 text-[12px] font-medium md:inline-flex">
                 {CARE_LABEL[care]}
               </span>
             )}
-            {pending.length > 0 && !terminal ? (
-              <button
-                type="button"
-                onClick={showPending}
-                title="Show the decision"
-                className={`inline-flex h-[26px] items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] font-medium hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${statePill}`}
-              >
-                <span aria-hidden="true" className="size-1.5 rounded-full bg-gold" />
-                {stateText}
-                <Icon name="arrow" size={12} />
-              </button>
-            ) : (
-              <span className={`inline-flex h-[26px] items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] font-medium ${statePill}`}>
-                {terminal ? null : <span aria-hidden="true" className="size-1.5 rounded-full bg-text" />}
-                {stateText}
-              </span>
-            )}
+            <span className="hidden shrink-0 md:contents">{statePillEl}</span>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5 md:gap-2.5">
-          {terminal || !mounted || !synced ? null : <Liveness tone={live.tone} text={live.text} />}
+        <div className="flex shrink-0 items-center gap-1.5 md:gap-2.5">
+          {liveShown ? <Liveness tone={live.tone} text={live.text} className="max-md:hidden" /> : null}
           <div className="hidden text-right text-[11.5px] leading-[15px] text-muted-foreground sm:block">
             {terminal ? 'Ran for' : 'Elapsed'}
             <b className="block text-[15px] font-semibold text-foreground tabular-nums" suppressHydrationWarning>
               {hms(elapsedS)}
             </b>
           </div>
+          {/* One gold next step: the conversation's last line carries it; other views get it here. */}
           {terminal ? (
-            <Link href={resultsHref} className={buttonClass('secondary', 'h-10')}>
-              See results
-            </Link>
+            tab === 'conversation' && filter === null ? null : (
+              <Link href={resultsHref} className={buttonClass('primary', 'h-10 max-md:h-11')}>
+                See results
+                <Icon name="arrow" size={14} />
+              </Link>
+            )
           ) : (
             <PendingButton
               variant="secondary"
@@ -602,16 +633,17 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             </PendingButton>
           )}
           {/* Phones stop from the top bar's red icon (spec §9), which targets this audit on its own page. */}
-          <KillButton run={terminal ? null : { id: run.id, assetName, startedAt: run.startedAt }} className="h-10 px-4 max-md:hidden" />
+          <KillButton run={terminal ? null : { id: run.id, assetName: host, startedAt: run.startedAt }} className="h-10 px-4 max-md:hidden" />
           <button
             type="button"
+            aria-label="Claude's team"
+            title="Claude's team"
             onClick={() => {
               setTeam(true);
             }}
-            className="inline-flex h-11 items-center gap-1.5 rounded-[10px] border border-input-strong bg-card px-3 text-[13px] font-medium md:hidden"
+            className="inline-flex size-11 items-center justify-center rounded-[10px] border border-input-strong bg-card md:hidden"
           >
-            <Icon name="team" size={15} />
-            Team
+            <Icon name="team" size={16} />
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -675,6 +707,10 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             {copied ? 'Run id copied' : ''}
           </span>
         </div>
+        <div className="flex basis-full items-center gap-2.5 md:hidden">
+          {statePillEl}
+          {liveShown ? <Liveness tone={live.tone} text={live.text} short={live.short} /> : null}
+        </div>
         {controlError === null ? null : (
           <p role="alert" className="m-0 w-full text-[12.5px] text-bad">
             {controlError}
@@ -682,8 +718,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
         )}
       </header>
 
-      {/* The approval time is on the team map's first diamond: the spine keeps one line at 1440. */}
-      <StageSpine stages={spine} approvedAt={null} resultsHref={terminal ? resultsHref : null} />
+      <StageSpine stages={spine} approvedAt={approvedAt === null || !mounted ? null : shortTime(approvedAt)} resultsHref={terminal ? resultsHref : null} />
 
       {run.paused && !terminal && !stopping ? (
         <p role="status" className="m-0 flex items-center gap-2 border-b border-border bg-surface-2 px-4 py-2 text-[12.5px] text-muted-foreground md:px-6">
@@ -793,6 +828,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
                 onOpenCall={openExchange}
                 onOpenPlan={onOpenPlan}
                 showDecision={showDecision}
+                waitingFirst={!terminal && !items.some((i) => i.type === 'turn' || i.type === 'thread')}
                 emptyText={
                   filter !== null
                     ? `Nothing from the ${agentName(filter)} yet.`

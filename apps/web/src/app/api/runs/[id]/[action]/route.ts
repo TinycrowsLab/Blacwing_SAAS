@@ -22,10 +22,27 @@ export async function GET(
   return getAsUser(`/runs/${encodeURIComponent(id)}/exchanges?afterSeq=${afterSeq}`, (body) => exchangeListSchema.parse(body));
 }
 
+/**
+ * Defence in depth on top of the SameSite session cookie: a run control only comes from this console's own pages.
+ * Browsers send Sec-Fetch-Site (and Origin) on every POST; another site, even a sibling localhost port, is refused.
+ */
+function crossSite(request: Request): boolean {
+  const site = request.headers.get('sec-fetch-site');
+  if (site !== null && site !== 'same-origin' && site !== 'none') return true;
+  const origin = request.headers.get('origin');
+  if (origin === null) return false;
+  try {
+    return new URL(origin).host !== (request.headers.get('x-forwarded-host') ?? request.headers.get('host'));
+  } catch {
+    return true;
+  }
+}
+
 export async function POST(
   request: Request,
   { params }: { readonly params: Promise<{ readonly id: string; readonly action: string }> },
 ): Promise<Response> {
+  if (crossSite(request)) return Response.json({ code: 'cross_site', message: 'Run controls only work from Blackwing itself.' }, { status: 403 });
   const { id, action } = await params;
   const parsed = actionSchema.safeParse(action);
   if (!parsed.success) return Response.json({ code: 'not_found' }, { status: 404 });

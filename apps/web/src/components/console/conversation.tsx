@@ -38,8 +38,8 @@ const WINDOW = 400;
 const FOLLOW_SLACK_PX = 96;
 /** A held decision card sits this far below the top edge. */
 const HOLD_GAP_PX = 12;
-/** A pending card counts as seen while this much of it (or all of a shorter one) is on screen. */
-const CARD_SEEN_PX = 120;
+/** A pending card counts as seen while this much of it (its header and clock) is on screen. */
+const CARD_SEEN_PX = 56;
 /** A click this soon after "Show n more" lands on a row that slid under the pointer: ignore it. */
 const TOGGLE_GUARD_MS = 450;
 
@@ -220,11 +220,16 @@ function Turn({ turn, onOpenCall }: { readonly turn: TurnItem; readonly onOpenCa
             Reply to Planner
           </span>
         ) : null}
-        {/* Calls alone are the runner's measurements, not Claude's words. */}
+        {/* Calls alone are the runner's measurements, not Claude's words: say what they are. */}
         {turn.text === null && turn.tools.length === 0 ? (
-          <VoiceTag voice="blackwing" title="Requests as the runner recorded them">
-            Recorded by Blackwing
-          </VoiceTag>
+          <>
+            <span className="text-muted-foreground">
+              sent {turn.calls.length === 1 ? 'a request' : `${turn.calls.length.toLocaleString('en-US')} requests`}
+            </span>
+            <VoiceTag voice="blackwing" title="Each request as the runner recorded it">
+              Recorded by Blackwing
+            </VoiceTag>
+          </>
         ) : (
           <VoiceTag voice="claude" />
         )}
@@ -266,24 +271,24 @@ function ValidatorTurn({ v, onOpenCall }: { readonly v: ValidatorItem; readonly 
           <span className="font-medium">{v.title}</span>
         </p>
         {v.verdict === 'proving' ? (
-          <p className="m-0 flex items-center gap-2 rounded-[10px] bg-slate-soft px-3 py-[7px] text-[13px] text-slate">
-            <span aria-hidden="true" className="size-2.5 rounded-full border-2 border-current border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]" />
+          <p className="m-0 flex items-start gap-2 rounded-[10px] bg-slate-soft px-3 py-[7px] text-[13px] text-slate">
+            <span aria-hidden="true" className="mt-[5px] size-2.5 shrink-0 rounded-full border-2 border-current border-t-transparent motion-safe:animate-[bwspin_0.9s_linear_infinite]" />
             <span>
               Proving: replay {Math.min(v.replays, VALIDATOR_REPLAYS)} of {VALIDATOR_REPLAYS}
               {v.control === null ? '' : ` · Negative control: ${v.control.matched ? 'it matched too' : 'behaved as expected'} (${v.control.status})`}
             </span>
           </p>
         ) : v.verdict === 'proven' ? (
-          <p className="m-0 flex items-center gap-2 rounded-[10px] bg-ok-soft px-3 py-[7px] text-[13px] text-ok">
-            <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full border-2 border-current" />
+          <p className="m-0 flex items-start gap-2 rounded-[10px] bg-ok-soft px-3 py-[7px] text-[13px] text-ok">
+            <span aria-hidden="true" className="mt-[5px] size-2.5 shrink-0 rounded-full border-2 border-current" />
             <span>
               <b className="font-semibold">Proven.</b> Replayed {v.matched} of {VALIDATOR_REPLAYS} times; the control behaved as expected.{' '}
               {v.autoReleased ? 'Released automatically.' : 'Waits for your release.'}
             </span>
           </p>
         ) : (
-          <p className="m-0 flex items-center gap-2 rounded-[10px] border border-dashed border-border-strong bg-surface-2 px-3 py-[7px] text-[13px] text-muted-foreground">
-            <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full border-2 border-dashed border-current" />
+          <p className="m-0 flex items-start gap-2 rounded-[10px] border border-dashed border-border-strong bg-surface-2 px-3 py-[7px] text-[13px] text-muted-foreground">
+            <span aria-hidden="true" className="mt-[5px] size-2.5 shrink-0 rounded-full border-2 border-dashed border-current" />
             <span>
               <b className="font-semibold text-foreground">Not proven:</b> {v.reason ?? 'the replay did not hold'}. Kept back from the report.
             </span>
@@ -304,11 +309,15 @@ function HostLine({
   readonly resultsHref: string | null;
   readonly onOpenPlan?: (() => void) | null;
 }) {
+  // The run's last line carries the one next step (spec §5.2): gold for a finished run, quiet for a stopped one.
   const finished = item.kind === 'run.completed';
+  const end = finished || item.kind === 'run.killed' || item.kind === 'run.failed';
   return (
-    <div className={`flex items-start gap-2.5 text-[12.5px] leading-[19px] ${finished ? 'rounded-[12px] border border-gold-line bg-gold-soft p-3' : ''}`}>
+    <div
+      className={`flex items-start gap-2.5 text-[12.5px] leading-[19px] ${finished ? 'rounded-[12px] border border-gold-line bg-gold-soft p-3' : end ? 'rounded-[12px] border border-border bg-surface-2 p-3' : ''}`}
+    >
       <CrowTile />
-      <span className={finished ? 'flex flex-1 flex-wrap items-center gap-3 font-medium text-foreground' : 'text-muted-foreground'}>
+      <span className={end ? 'flex flex-1 flex-wrap items-center gap-3 font-medium text-foreground' : 'text-muted-foreground'}>
         {item.text}
         {item.kind === 'plan.cases' && onOpenPlan !== null ? (
           <>
@@ -318,7 +327,7 @@ function HostLine({
             </button>
           </>
         ) : null}
-        {finished && resultsHref !== null ? (
+        {end && resultsHref !== null ? (
           <Link href={resultsHref} className={buttonClass('primary', 'h-9 px-4')}>
             See results
             <Icon name="arrow" size={14} />
@@ -393,7 +402,7 @@ function Thread({ thread, ...p }: ChildProps & { readonly thread: ThreadItem }) 
         </>
       )}
       {thread.children.length === 0 ? null : (
-        <div className={`ml-3 flex flex-col gap-3 border-l-2 border-border pl-[18px] ${thread.continued ? 'mt-1.5' : 'mt-2.5'}`}>
+        <div className={`ml-3 flex flex-col gap-3 border-l-2 border-border pl-[18px] max-md:ml-1 max-md:pl-2.5 ${thread.continued ? 'mt-1.5' : 'mt-2.5'}`}>
           {thread.children.map((c) => (
             <Child key={c.key} item={c} {...p} />
           ))}
@@ -411,6 +420,7 @@ export const Conversation = memo(function Conversation({
   onOpenCall,
   onOpenPlan,
   emptyText,
+  waitingFirst = false,
   showDecision,
 }: {
   readonly items: readonly ConversationItem[];
@@ -422,6 +432,8 @@ export const Conversation = memo(function Conversation({
   /** "Open the test plan" under the plan line: the tab on desktop, the panel on phones. */
   readonly onOpenPlan: () => void;
   readonly emptyText: string;
+  /** The run is live and no agent has spoken yet: a quiet moving line says so (spec §8). */
+  readonly waitingFirst?: boolean;
   /** Bumped by the header's "decision waits" pill: bring the first pending card into view and focus it. */
   readonly showDecision: number;
 }) {
@@ -544,8 +556,11 @@ export const Conversation = memo(function Conversation({
       : hidden.length < waiting
         ? `${hidden.length === 1 ? 'One more decision waits' : `${hidden.length} more decisions wait`} for you · Show`
         : `${hidden.length === 1 ? 'A decision waits' : `${hidden.length} decisions wait`} for you · Show`;
+  // The decision pill is the more important target: never both, so "Jump to latest" never points past a decision.
+  const jump = !(follow && !below) && items.length > 0 && decisionPill === null;
+  const pills = !editing && (decisionPill !== null || jump);
   const pill =
-    'pointer-events-auto inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full px-4 text-[13px] shadow-float focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus';
+    'inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-4 text-[13px] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus';
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
@@ -575,8 +590,7 @@ export const Conversation = memo(function Conversation({
         aria-live="off"
         className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]"
       >
-        {/* Bottom padding keeps the last line clear of the floating pills. */}
-        <div className="mx-auto flex w-full max-w-[820px] flex-col gap-3.5 pb-16 pr-2 pt-3">
+        <div className="mx-auto flex w-full max-w-[820px] flex-col gap-3.5 pb-6 pr-2 pt-3">
           {items.length > shown.length ? (
             <button
               type="button"
@@ -597,42 +611,51 @@ export const Conversation = memo(function Conversation({
           {shown.map((item) =>
             item.type === 'thread' ? <Thread key={item.key} thread={item} {...p} /> : <Child key={item.key} item={item} {...p} />,
           )}
+          {waitingFirst && shown.length > 0 ? (
+            <div role="status" className="flex items-center gap-2.5 text-[12.5px] text-muted-foreground">
+              <span aria-hidden="true" className="flex size-5 shrink-0 items-center justify-center">
+                <span className="size-3 rounded-full border-2 border-border-strong border-t-gold-ink motion-safe:animate-[bwspin_0.9s_linear_infinite]" />
+              </span>
+              Waiting for the first agent…
+            </div>
+          ) : null}
         </div>
       </div>
-      {/* One row of pills. Phones show the pinned gold banner instead of the decision pill. */}
-      <div className={`pointer-events-none absolute inset-x-0 bottom-3 flex flex-wrap items-center justify-center gap-2 px-3 ${editing ? 'hidden' : ''}`}>
-        {hidden[0] === undefined || decisionPill === null ? null : (
-          <button
-            type="button"
-            onClick={() => {
-              if (hidden[0] !== undefined) goTo(hidden[0]);
-            }}
-            className={`${pill} border border-gold-ink bg-gold-soft font-semibold text-gold-ink max-md:hidden`}
-          >
-            <Icon name="hand" size={15} />
-            {decisionPill}
-          </button>
-        )}
-        {(follow && !below) || items.length === 0 ? null : (
-          <button
-            type="button"
-            onClick={() => {
-              const el = scroller.current;
-              if (el === null) return;
-              hold.current = null;
-              setBelow(false);
-              el.scrollTo({ top: el.scrollHeight, behavior: reduceMotion() ? 'auto' : 'smooth' });
-              setFollow(true);
-            }}
-            // Held at a decision on a phone, the pill would sit on the card's buttons: only offer it there once the
-            // reader scrolled away.
-            className={`${pill} border border-border bg-card font-medium text-foreground hover:bg-surface-2 ${follow ? 'max-md:hidden' : ''}`}
-          >
-            <Icon name="chevron" size={14} />
-            Jump to latest
-          </button>
-        )}
-      </div>
+      {/* The pills get their own strip under the log (never on top of a line or a card's buttons). Phones show the
+          pinned gold banner instead of the decision pill. */}
+      {pills ? (
+        <div className={`flex shrink-0 flex-wrap items-center justify-center gap-2 border-t border-border px-3 py-1.5 ${jump ? '' : 'max-md:hidden'}`}>
+          {hidden[0] === undefined || decisionPill === null ? null : (
+            <button
+              type="button"
+              onClick={() => {
+                if (hidden[0] !== undefined) goTo(hidden[0]);
+              }}
+              className={`${pill} border border-gold-ink bg-gold-soft font-semibold text-gold-ink max-md:hidden`}
+            >
+              <Icon name="hand" size={15} />
+              {decisionPill}
+            </button>
+          )}
+          {jump ? (
+            <button
+              type="button"
+              onClick={() => {
+                const el = scroller.current;
+                if (el === null) return;
+                hold.current = null;
+                setBelow(false);
+                el.scrollTo({ top: el.scrollHeight, behavior: reduceMotion() ? 'auto' : 'smooth' });
+                setFollow(true);
+              }}
+              className={`${pill} border border-border bg-card font-medium text-foreground hover:bg-surface-2`}
+            >
+              <Icon name="chevron" size={14} />
+              Jump to latest
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 });

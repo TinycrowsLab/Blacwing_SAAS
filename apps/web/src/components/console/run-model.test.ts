@@ -285,6 +285,30 @@ suite('conversationItems', () => {
     expect(said).toMatchObject({ text: 'Recon is done.', reply: true });
   });
 
+  it('folds a clipped reply (a prefix of the last turn) into that turn, keeping the full text', () => {
+    const long = `${'Mapped the API. '.repeat(300)}End.`;
+    const list = conversationItems(
+      [
+        ...RUN.slice(0, 6),
+        ev(7, 'agent.message', 'recon', { agent: 'recon', text: long }, at(6)),
+        ev(8, 'agent.reply', 'recon', { agent: 'recon', toolUseId: 'tu1', text: long.slice(0, 4000) }, at(7)),
+      ],
+      [],
+    );
+    const said = (list.find((i): i is ThreadItem => i.type === 'thread')?.children ?? []).filter((c): c is TurnItem => c.type === 'turn' && c.text !== null);
+    expect(said).toHaveLength(1);
+    expect(said[0]).toMatchObject({ text: long, reply: true });
+  });
+
+  it('keeps a different reply as its own turn', () => {
+    const list = conversationItems([...RUN.slice(0, 7), ev(8, 'agent.reply', 'recon', { agent: 'recon', toolUseId: 'tu1', text: 'Here is the map.' }, at(7))], []);
+    const turns = (list.find((i): i is ThreadItem => i.type === 'thread')?.children ?? []).filter((c): c is TurnItem => c.type === 'turn' && c.text !== null);
+    expect(turns.map((t) => [t.text, t.reply])).toEqual([
+      ['Recon is done.', false],
+      ['Here is the map.', true],
+    ]);
+  });
+
   it('keeps the planner at top level, and Blackwing lines from the catalogue at the moment they happened', () => {
     expect(items[0]).toMatchObject({ type: 'host', text: 'Audit queued. Scope, limits and authorisation are pinned.' });
     expect(items[1]).toMatchObject({ type: 'host', text: "Claude's team started work." });
@@ -459,6 +483,12 @@ suite('teamNodes', () => {
     expect(team).toMatchObject({ tasks: 3, candidates: 1, proven: 1 });
     expect(teamNodes(RUN.slice(0, 1), [], T0, false)).toMatchObject({ planner: null, specialists: [], validator: null });
   });
+  it('agrees with the spine: recon is done once the plan is recorded, even without a reply', () => {
+    const noReply = RUN.filter((e) => e.kind !== 'agent.reply');
+    expect(teamNodes(noReply.slice(0, 7), [], T0 + 7000, false).specialists[0]).toMatchObject({ id: 'recon', state: 'working' });
+    expect(teamNodes(noReply, [], T0 + 20_000, false).specialists[0]).toMatchObject({ id: 'recon', state: 'done' });
+    expect(stages(noReply, { terminal: false, approvedBy: 'you' }).find((x) => x.key === 'mapping')).toMatchObject({ state: 'done', label: 'Mapped' });
+  });
   it('spins only while the agent spoke in the last 10 s', () => {
     const web = (now: number) => teamNodes(RUN, [], now, false).specialists[1];
     expect(web(T0 + 20_000)).toMatchObject({ state: 'working', spinning: true });
@@ -482,10 +512,9 @@ suite('teamNodes', () => {
 });
 
 suite('liveness', () => {
-  it('reads live, then quiet, then reconnecting', () => {
-    expect(liveness(T0 + 2000, T0, null, T0)).toEqual({ tone: 'live', text: 'Live · last event 2 s ago' });
-    expect(liveness(T0 + 15_000, T0, null, T0)).toEqual({ tone: 'quiet', text: 'Quiet for 15 s' });
-    expect(liveness(T0 + 12_000, T0, T0 + 3000, T0)).toEqual({ tone: 'reconnecting', text: 'Reconnecting… last update 12 s ago' });
-    expect(liveness(T0 + 31_000, T0, null, T0, true)).toEqual({ tone: 'waiting', text: 'Waiting for your decision' });
+  it('reads live, then quiet, then reconnecting, and nothing else', () => {
+    expect(liveness(T0 + 2000, T0, null, T0)).toEqual({ tone: 'live', text: 'Live · last event 2 s ago', short: 'Live' });
+    expect(liveness(T0 + 15_000, T0, null, T0)).toEqual({ tone: 'quiet', text: 'Quiet for 15 s', short: 'Quiet for 15 s' });
+    expect(liveness(T0 + 12_000, T0, T0 + 3000, T0)).toEqual({ tone: 'reconnecting', text: 'Reconnecting… last update 12 s ago', short: 'Reconnecting…' });
   });
 });
