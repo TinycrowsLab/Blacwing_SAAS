@@ -2,14 +2,17 @@
 // every decision you made, and the report. Every number is the runner's; the headline and lede are templates.
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { z } from 'zod';
 
 import { EmptyState, Icon } from '../../../../../components/console/design';
 import { YourDecisions } from '../../../../../components/console/results/decisions';
 import { IssueList, KeptBack, ReleaseAll } from '../../../../../components/console/results/issue-list';
+import { LiveRefresh } from '../../../../../components/console/results/live-refresh';
 import {
   decisions,
   findingDetailSchema,
   gate2Outcome,
+  headline,
   ledgerSchema,
   splitFindings,
   stopLine,
@@ -19,7 +22,6 @@ import {
 import { ReportCard } from '../../../../../components/console/results/report-card';
 import { ApiError, callApi } from '../../../../../lib/api';
 import { getViewer } from '../../../../../lib/auth';
-import { resultsHeadline } from '../../../../../lib/plan-text';
 import { LIVE_RUN_STATES, requestSchema, runSchema, workspaceSchema, type Run } from '../../../../../lib/schemas';
 
 import type { Metadata } from 'next';
@@ -29,6 +31,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Results' };
 
 const HTTP_NOT_FOUND = 404;
+const releaseModeSchema = z.object({ releaseProven: z.enum(['hold', 'auto']) });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const plural = (n: number, one: string, many: string): string => `${n.toLocaleString()} ${n === 1 ? one : many}`;
@@ -63,10 +66,8 @@ export default async function ResultsPage({
   const { proven, kept } = splitFindings(run);
   const first = proven[0];
   // The side calls are optional: a failure leaves its line out (or says so) instead of failing the page.
-  const [request, ledger, workspace, firstDetail] = await Promise.all([
-    callApi(session, `/requests/${encodeURIComponent(run.requestId)}`)
-      .then((b) => requestSchema.parse(b))
-      .catch(() => null),
+  const [rawRequest, ledger, workspace, firstDetail] = await Promise.all([
+    callApi(session, `/requests/${encodeURIComponent(run.requestId)}`).catch(() => null),
     callApi(session, '/audit')
       .then((b) => ledgerSchema.parse(b))
       .catch(() => null),
@@ -82,12 +83,14 @@ export default async function ResultsPage({
 
   const host = hostOf(run);
   const live = LIVE_RUN_STATES.includes(run.state);
-  const stop = stopLine(run, Date.now());
+  const cases = testCases(run.events);
+  const stop = stopLine(run, Date.now(), cases);
   const severities = proven.map((f) => f.severity);
   const awaiting = proven.filter((f) => f.status === 'confirmed');
   const released = proven.filter((f) => f.status === 'released').length;
-  const cases = testCases(run.events);
-  const auto = (request?.releaseProven ?? 'auto') === 'auto';
+  const request = requestSchema.safeParse(rawRequest).data ?? null;
+  // Read from the raw answer: the schema defaults a missing mode, and an unknown mode says nothing rather than guess.
+  const releaseMode = releaseModeSchema.safeParse(rawRequest).data?.releaseProven ?? null;
   const rows = decisions({
     run,
     request,
@@ -107,8 +110,6 @@ export default async function ResultsPage({
         <div className="flex flex-col gap-2">
           <nav aria-label="Breadcrumb">
             <ol className="m-0 flex list-none flex-wrap items-center gap-2 p-0 text-[12.5px] text-muted-foreground">
-              <li>Audits</li>
-              <li aria-hidden="true">/</li>
               <li>
                 <Link href={`/runs/${run.id}`} className="hover:text-foreground">
                   {host}
@@ -129,19 +130,28 @@ export default async function ResultsPage({
               </Link>
             ) : null}
           </p>
-          <h1 id="results-h" className="m-0 text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground sm:text-[30px] sm:leading-[38px]">
-            {resultsHeadline(severities)}
+          <h1 id="results-h" className="m-0 text-balance text-[28px] font-semibold leading-9 tracking-[-0.01em] text-foreground sm:text-[30px] sm:leading-[38px]">
+            {live
+              ? proven.length === 0
+                ? 'Claude is still testing. Nothing is proven yet.'
+                : `Claude has proved ${plural(proven.length, 'issue', 'issues')} so far.`
+              : headline(proven)}
           </h1>
           <p className="m-0 max-w-[68ch] text-[15px] leading-6 text-muted-foreground [&_b]:font-semibold [&_b]:text-foreground">
             {proven.length > 0 ? (
               <>
-                {did} Each issue below was replayed by the validator with a control.{' '}
-                {auto ? 'Proven issues were released automatically, as you chose.' : 'Nothing reaches your report until you release it.'}
+                {did} Each issue below was replayed by the validator with a control.
+                {releaseMode === 'auto'
+                  ? ' Proven issues were released automatically, as you chose on the plan.'
+                  : releaseMode === null
+                    ? null
+                    : ' Nothing reaches your report until you release it.'}
               </>
             ) : (
               <>
-                {did} The validator could not prove any issue
+                {did} The validator {live ? 'has not proved any issue yet' : 'could not prove any issue'}
                 {kept.length > 0 ? `, so ${plural(kept.length, 'suspected issue is', 'suspected issues are')} kept back below.` : '.'}
+                {live ? ' This page updates on its own.' : null}
               </>
             )}
           </p>
@@ -150,7 +160,7 @@ export default async function ResultsPage({
         {proven.length === 0 ? (
           <EmptyState
             icon="shield"
-            title="No issues were proven."
+            title={live ? 'Nothing to release yet.' : 'Nothing to release.'}
             body={
               live
                 ? 'Claude is still testing. Proven issues appear here as soon as the validator confirms them.'
@@ -175,6 +185,8 @@ export default async function ResultsPage({
           severities={severities}
           released={released}
           awaiting={awaiting.length}
+          undecided={kept.filter((f) => f.status === 'suspected').length}
+          live={live}
           cases={cases}
           requests={{ used: run.requestsUsed, cap: run.budget.requests }}
           cost={{ used: run.costUsd, cap: run.budget.costUsd }}
@@ -183,6 +195,7 @@ export default async function ResultsPage({
           ledgerHead={ledger?.items[0]?.hash ?? null}
         />
       </aside>
+      {live ? <LiveRefresh /> : null}
     </div>
   );
 }

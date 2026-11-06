@@ -4,6 +4,7 @@
 import { agentName } from '../../../lib/agents';
 import { Chip, Icon, VoiceTag } from '../design';
 import { Markdown } from '../markdown';
+import { Path } from './decisions';
 
 import type { FindingDetail } from './model';
 import type { ReactNode } from 'react';
@@ -41,10 +42,19 @@ export function oracleWords(oracle: FindingDetail['oracle']): string | null {
   }
 }
 
+/** The validator's reason in plain words ("oracle" is the engine's word for the expected result). */
+export function plainReason(reason: string): string {
+  const replay = /^probe replay (\d+) did not match the oracle$/i.exec(reason.trim());
+  if (replay !== null) return `replay ${replay[1]} did not show the issue again`;
+  if (/^the negative control also matched the oracle$/i.test(reason.trim()))
+    return 'the control showed the same result, so the probe proves nothing';
+  return reason.replace(/\bthe oracle\b/gi, 'the expected result').replace(/\boracle\b/gi, 'expected result');
+}
+
 /** Proven, or why not: counts come from the stored replays, never from the model. */
 export function proofSentence(f: FindingDetail): { proven: boolean; text: string } {
   if (f.evidence.reason !== undefined)
-    return { proven: false, text: `Not proven: ${f.evidence.reason}. Kept back from the report.` };
+    return { proven: false, text: `Not proven: ${plainReason(f.evidence.reason)}. Kept back from the report.` };
   const n = f.evidence.replays.length;
   const matched = f.evidence.replays.filter((r) => r.matched).length;
   const control = f.replay?.control;
@@ -93,8 +103,8 @@ function ProofSide({
           </span>
         )}
       </div>
-      <pre className="m-0 whitespace-pre-wrap break-all px-3.5 py-3 font-mono text-[12px] leading-5 text-foreground">
-        {line ?? 'Not recorded'}
+      <pre className="m-0 whitespace-pre-wrap px-3.5 py-3 font-mono text-[12px] leading-5 text-foreground">
+        {line === null ? 'Not recorded' : <Path text={line} />}
       </pre>
     </div>
   );

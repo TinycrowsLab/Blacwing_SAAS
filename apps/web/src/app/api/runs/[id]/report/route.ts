@@ -22,8 +22,9 @@ export async function GET(
   const session = await getViewer();
   if (session === null) return new Response('Sign in first.', { status: 401 });
   const { id } = await params;
-  const asked = new URL(request.url).searchParams.get('format');
-  const format = FORMATS.find((f) => f === asked) ?? 'html';
+  const asked = (new URL(request.url).searchParams.get('format') ?? 'html').trim().toLowerCase();
+  const format = FORMATS.find((f) => f === asked);
+  if (format === undefined) return new Response('Choose a format: html, md, json or sarif.', { status: 400 });
   try {
     const report = renderedSchema.parse(
       await callApi(session, `/runs/${encodeURIComponent(id)}/report?format=${format}`),

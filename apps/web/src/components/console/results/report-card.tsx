@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers -- display truncation (hashes) */
 // The report card (experience spec §7): a receipt of what the audit did (the runner's numbers), what the report holds
-// (released issues only), the download, the webhook line (truthful: the configured host, or a link to Settings) and
-// the ledger seal. Then the retest card.
+// (released issues only), the download, the webhook line (truthful: the configured host, who can connect one, or a
+// link to Settings when the status is unknown) and the ledger seal. Then the retest card, once the audit has ended.
 import Link from 'next/link';
 
 import { usd } from '../../../lib/plan-text';
@@ -30,6 +30,9 @@ export function ReportCard(props: {
   readonly severities: readonly string[];
   readonly released: number;
   readonly awaiting: number;
+  /** Kept-back findings nobody has decided on yet: Download stays secondary until they are. */
+  readonly undecided: number;
+  readonly live: boolean;
   readonly cases: { executed: number; total: number };
   readonly requests: { used: number; cap: number };
   readonly cost: { used: number; cap: number };
@@ -57,14 +60,14 @@ export function ReportCard(props: {
         <div className="flex flex-col gap-2.5 px-5">
           <Row label="Proven issues">{n}</Row>
           {counts.length === 0 ? null : (
-            <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+            <ul className="m-0 grid list-none grid-cols-2 gap-1.5 p-0">
               {counts.map(([s, c]) => (
-                <span key={s} className="flex items-center gap-1.5">
+                <li key={s} className="flex items-center gap-2 rounded-lg border border-border px-2 py-1">
+                  <b className="min-w-4 text-[13px] tabular-nums text-foreground">{c}</b>
                   <SeverityChip severity={s} />
-                  <b className="text-[12.5px] tabular-nums text-foreground">× {c}</b>
-                </span>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
           <Row label="Test cases">
             {props.cases.executed.toLocaleString()} <small>of {props.cases.total.toLocaleString()}</small>
@@ -81,7 +84,11 @@ export function ReportCard(props: {
         </div>
         <p className="mx-5 mb-0 mt-3 border-t border-dashed border-border-strong pt-3 text-[13px] leading-5 text-muted-foreground">
           {n === 0 ? (
-            'Nothing was proven, so the report lists what was tested and no issues.'
+            props.live ? (
+              'Nothing is proven yet. The report fills in as Claude proves issues.'
+            ) : (
+              'Nothing was proven, so the report lists what was tested and no issues.'
+            )
           ) : (
             <>
               <b className="font-semibold text-foreground">
@@ -93,19 +100,24 @@ export function ReportCard(props: {
           )}
         </p>
         <div className="flex flex-col gap-2.5 px-5 pb-4 pt-3">
-          <ReportDownload href={`/api/runs/${props.runId}/report`} primary={props.awaiting === 0} />
-          {props.webhook === null ? null : props.webhook.configured ? (
-            <p className="m-0 text-center text-[12.5px] text-muted-foreground">
-              Released issues go to <span className="font-medium text-foreground">{props.webhook.host ?? 'your webhook'}</span>.
-            </p>
-          ) : (
-            <p className="m-0 text-center text-[12.5px] text-muted-foreground">
-              Send released issues to your tools:{' '}
+          <ReportDownload
+            href={`/api/runs/${props.runId}/report`}
+            primary={!props.live && props.awaiting === 0 && props.undecided === 0}
+          />
+          <p className="m-0 text-center text-[12.5px] leading-5 text-muted-foreground">
+            {props.webhook === null ? (
               <Link href="/settings#webhook" className="font-medium text-gold-ink underline-offset-2 hover:underline">
-                connect a webhook
+                Where released issues are sent
               </Link>
-            </p>
-          )}
+            ) : props.webhook.configured ? (
+              <>
+                Released issues are also posted to{' '}
+                <span className="font-medium text-foreground">{props.webhook.host ?? 'your webhook'}</span>.
+              </>
+            ) : (
+              'Released issues stay in Blackwing. Ask your administrator to connect a webhook to send them to your tools.'
+            )}
+          </p>
         </div>
         {props.ledgerHead === null ? null : (
           <div className="flex items-center gap-2 border-t border-border bg-sidebar px-5 py-2.5 text-[12px] text-muted-foreground">
@@ -119,6 +131,7 @@ export function ReportCard(props: {
           </div>
         )}
       </section>
+      {props.live ? null : (
       <section aria-labelledby="again-h" className="flex flex-col gap-1.5 rounded-[14px] border border-border bg-card px-4 py-3.5">
         <h2 id="again-h" className="m-0 text-[14.5px] font-semibold text-foreground">
           After you fix them
@@ -130,6 +143,7 @@ export function ReportCard(props: {
           <RunAgain requestId={props.requestId} />
         </div>
       </section>
+      )}
     </div>
   );
 }

@@ -575,7 +575,9 @@ export const Conversation = memo(function Conversation({
               el.scrollTo({ top: el.scrollHeight, behavior: reduceMotion() ? 'auto' : 'smooth' });
               setFollow(true);
             }}
-            className={`${pill} border border-border bg-card font-medium text-foreground hover:bg-surface-2`}
+            // Held at a decision on a phone, the pill would sit on the card's buttons: only offer it there once the
+            // reader scrolled away.
+            className={`${pill} border border-border bg-card font-medium text-foreground hover:bg-surface-2 ${follow ? 'max-md:hidden' : ''}`}
           >
             <Icon name="chevron" size={14} />
             Jump to latest

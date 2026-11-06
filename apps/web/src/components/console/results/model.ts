@@ -3,6 +3,7 @@
 import { z } from 'zod';
 
 import { finishReason } from '../../../lib/host-lines';
+import { resultsHeadline } from '../../../lib/plan-text';
 import { findingSchema, type AssessmentRequest, type Run } from '../../../lib/schemas';
 
 export type FindingSummary = Run['findings'][number];
@@ -75,8 +76,15 @@ export function splitFindings(run: Pick<Run, 'events' | 'findings'>): {
   return { proven: proven.sort(bySeverity), kept: kept.sort(bySeverity) };
 }
 
-/** Test cases from the plan events: the latest plan total and how many ended `executed`. */
-export function testCases(events: readonly RunEvent[]): { executed: number; total: number } {
+export interface CaseCounts {
+  readonly executed: number;
+  readonly skipped: number;
+  readonly blocked: number;
+  readonly total: number;
+}
+
+/** Test cases from the plan events: the latest plan total and how each case ended. */
+export function testCases(events: readonly RunEvent[]): CaseCounts {
   const ids = new Set<string>();
   let total = 0;
   const latest = new Map<string, string>();
@@ -95,8 +103,23 @@ export function testCases(events: readonly RunEvent[]): { executed: number; tota
       if (id !== null && status !== null) latest.set(id, status);
     }
   }
-  const executed = [...latest.values()].filter((s) => s === 'executed').length;
-  return { executed, total: Math.max(total, ids.size, executed) };
+  const ended = (status: string): number => [...latest.values()].filter((s) => s === status).length;
+  const executed = ended('executed');
+  return { executed, skipped: ended('skipped'), blocked: ended('blocked'), total: Math.max(total, ids.size, executed) };
+}
+
+/**
+ * The results H1 from the template (lib/plan-text): the count is every proven issue, the advice ("Fix the critical one
+ * first") only counts the ones still open, so a dismissed issue is never the one to start with. The compound word keeps
+ * a non-breaking hyphen, so the headline never splits "high-severity".
+ */
+export function headline(proven: readonly FindingSummary[]): string {
+  const all = proven.map((f) => f.severity);
+  const open = proven.filter((f) => f.status !== 'dismissed').map((f) => f.severity);
+  // resultsHeadline of only-low severities is the bare count sentence, so it measures the advice that follows.
+  const bare = (list: readonly string[]): string => resultsHeadline(list.map(() => 'low'));
+  const advice = resultsHeadline(open).slice(bare(open).length);
+  return `${bare(all)}${open.length === 0 ? '' : advice}`.replace('high-severity', 'high\u2011severity');
 }
 
 const MS_PER_S = 1000;
@@ -112,10 +135,25 @@ export function duration(ms: number): string {
   return `${Math.floor(m / MIN_PER_H)}h ${String(m % MIN_PER_H).padStart(2, '0')}m`;
 }
 
+/** Why a completed run ended, from the runner's reason or else from how far it got through its test cases. */
+function completedWhy(reason: unknown, cases: CaseCounts | undefined): string {
+  if (typeof reason === 'string' && reason !== '') return finishReason(reason);
+  if (cases === undefined || cases.total === 0 || cases.executed >= cases.total) return finishReason(reason);
+  const rest = [
+    cases.skipped > 0 ? `skipped ${cases.skipped}` : null,
+    cases.blocked > 0 ? `${cases.blocked} blocked` : null,
+    cases.total - cases.executed - cases.skipped - cases.blocked > 0
+      ? `${cases.total - cases.executed - cases.skipped - cases.blocked} not reached`
+      : null,
+  ].filter(Boolean);
+  return `Claude ended after ${cases.executed} of ${cases.total} test cases${rest.length === 0 ? '' : ` (${rest.join(', ')})`}`;
+}
+
 /** The eyebrow over the results headline: how long it ran and why it stopped, in words. */
 export function stopLine(
   run: Pick<Run, 'state' | 'startedAt' | 'finishedAt' | 'createdAt' | 'events'>,
   now: number,
+  cases?: CaseCounts,
 ): { tone: 'ok' | 'muted' | 'bad'; text: string } {
   const start = Date.parse(run.startedAt ?? run.createdAt);
   const end = run.finishedAt === null ? now : Date.parse(run.finishedAt);
@@ -123,7 +161,7 @@ export function stopLine(
   switch (run.state) {
     case 'completed': {
       const done = run.events.findLast((e) => e.kind === 'run.completed');
-      return { tone: 'ok', text: `Finished in ${took} · ${finishReason(done?.data.reason)}` };
+      return { tone: 'ok', text: `Finished in ${took} · ${completedWhy(done?.data.reason, cases)}` };
     }
     case 'killed':
       return { tone: 'muted', text: `Stopped after ${took} · you stopped testing` };

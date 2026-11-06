@@ -1,11 +1,27 @@
 // "Your decisions" (experience spec §7): every human decision on this audit with its reason and time, and the ledger's
 // chain state. Rows come from `decisions()` (model.ts); nothing here is invented.
 import Link from 'next/link';
+import { Fragment } from 'react';
 
 import { Icon } from '../design';
 import { LocalTime } from './local-time';
 
 import type { DecisionRow, Ledger } from './model';
+
+/** A request line in mono that wraps only after a "/", "?" or "&", never in the middle of a word. */
+export function Path({ text, className = '' }: { readonly text: string; readonly className?: string }) {
+  const parts = text.split(/(?<=[/?&])/);
+  return (
+    <span className={`font-mono [overflow-wrap:anywhere] ${className}`}>
+      {parts.map((p, i) => (
+        <Fragment key={i}>
+          {i === 0 ? null : <wbr />}
+          {p}
+        </Fragment>
+      ))}
+    </span>
+  );
+}
 
 export function YourDecisions({
   rows,
@@ -34,7 +50,7 @@ export function YourDecisions({
                 {r.subject === null ? null : r.subject.mono ? (
                   <>
                     {' '}
-                    <span className="break-all font-mono text-[12px]">{r.subject.text}</span>
+                    <Path text={r.subject.text} className="text-[12px]" />
                   </>
                 ) : (
                   <> &ldquo;{r.subject.text}&rdquo;</>
@@ -53,11 +69,14 @@ export function YourDecisions({
       <p className="m-0 mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-5 text-muted-foreground">
         <Icon name="ledger" size={13} className="mt-[3px] shrink-0" />
         {chain === null ? (
-          <span>Each decision is recorded in the ledger. We couldn&rsquo;t check the chain just now.</span>
+          <span>
+            Decisions made by a person are recorded in the ledger; automatic ones come from the audit&rsquo;s own record.
+            We couldn&rsquo;t check the chain just now.
+          </span>
         ) : chain.verified ? (
           <span>
-            Each decision is recorded in the ledger. Chain verified, {chain.count.toLocaleString()}{' '}
-            {chain.count === 1 ? 'event' : 'events'}.
+            Decisions made by a person are recorded in the ledger; automatic ones come from the audit&rsquo;s own record.
+            Chain verified, {chain.count.toLocaleString()} {chain.count === 1 ? 'event' : 'events'}.
           </span>
         ) : (
           <Link href="/ledger#verify" className="font-medium text-bad underline-offset-2 hover:underline">

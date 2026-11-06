@@ -1,9 +1,10 @@
 'use client';
 
-// Settings (experience spec §2, §8): the workspace name, editable (2 to 60 characters, checked as you type, saved
-// through the same action /welcome uses), and the theme. The administrator's settings are read-only on the page.
+// Settings (experience spec §2, §8): the workspace name, editable (2 to 60 characters, checked as you type and on
+// Enter, runs of spaces folded to one, saved through the same action /welcome uses), and the theme. The
+// administrator's settings are read-only on the page.
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { nameWorkspaceAction } from '../../../app/welcome/actions';
 import { WORKSPACE_NAME_MAX, workspaceNameError } from '../../../lib/workspace-name';
@@ -11,21 +12,31 @@ import { buttonClass, Icon, INPUT_CLASS, InlineMessage } from '../design';
 import { PendingButton } from '../design-client';
 import { useDarkTheme } from '../theme-toggle';
 
+/** "  Tinycrows   Security " is saved as "Tinycrows Security". */
+const tidy = (name: string): string => name.trim().replace(/\s+/g, ' ');
+
 export function WorkspaceNameForm({ current, canEdit }: { readonly current: string; readonly canEdit: boolean }) {
   const router = useRouter();
+  const input = useRef<HTMLInputElement>(null);
   const [saved, setSaved] = useState(current);
   const [name, setName] = useState(current);
   const [touched, setTouched] = useState(false);
   const [state, setState] = useState<{ kind: 'idle' } | { kind: 'saved' } | { kind: 'failed'; message: string }>({
     kind: 'idle',
   });
-  const invalid = workspaceNameError(name);
-  const changed = name.trim() !== saved;
+  const invalid = workspaceNameError(tidy(name));
+  const changed = tidy(name) !== saved;
+  // The error shows as soon as an edit makes the name invalid, and on Enter or leaving the field.
+  const showError = (touched || changed) && invalid !== null;
 
   async function save(): Promise<boolean> {
     setTouched(true);
-    if (invalid !== null || !changed) return false;
-    const result = await nameWorkspaceAction(name);
+    if (invalid !== null) {
+      input.current?.focus();
+      return false;
+    }
+    if (!changed) return false;
+    const result = await nameWorkspaceAction(tidy(name));
     if (!result.ok) {
       setState({ kind: 'failed', message: result.message });
       return false;
@@ -52,12 +63,13 @@ export function WorkspaceNameForm({ current, canEdit }: { readonly current: stri
       </label>
       <div className="flex flex-wrap items-start gap-2">
         <input
+          ref={input}
           id="ws-name"
           value={name}
           disabled={!canEdit}
           autoComplete="organization"
           maxLength={WORKSPACE_NAME_MAX * 2}
-          aria-invalid={touched && invalid !== null}
+          aria-invalid={showError}
           aria-describedby="ws-name-help"
           onChange={(e) => {
             setName(e.target.value);
@@ -71,7 +83,8 @@ export function WorkspaceNameForm({ current, canEdit }: { readonly current: stri
         <PendingButton
           type="submit"
           variant={changed && invalid === null ? 'primary' : 'secondary'}
-          disabled={!canEdit || !changed || invalid !== null}
+          // Enabled while invalid, so Enter or a click explains what to fix instead of doing nothing.
+          disabled={!canEdit || (!changed && invalid === null)}
           pendingLabel="Saving…"
           stayPending
           onAction={async () => {
@@ -97,10 +110,10 @@ export function WorkspaceNameForm({ current, canEdit }: { readonly current: stri
         ) : null}
       </div>
       <div id="ws-name-help" aria-live="polite" className="flex flex-col gap-1">
-        {touched && invalid !== null ? <InlineMessage tone="bad">{invalid}</InlineMessage> : null}
+        {showError ? <InlineMessage tone="bad">{invalid}</InlineMessage> : null}
         {state.kind === 'failed' ? <InlineMessage tone="bad">{state.message}</InlineMessage> : null}
         {state.kind === 'saved' ? <InlineMessage tone="ok">Saved. Everyone in the workspace sees the new name.</InlineMessage> : null}
-        {state.kind === 'idle' && (!touched || invalid === null) ? (
+        {state.kind === 'idle' && !showError ? (
           <span className="text-[12.5px] text-muted-foreground">
             {canEdit ? '2 to 60 characters. The change is recorded in the ledger.' : 'Only an administrator can rename the workspace.'}
           </span>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { z } from 'zod';
 
 import { Chip, EmptyState, Icon } from '../../../components/console/design';
+import { Path } from '../../../components/console/results/decisions';
 import { LocalTime } from '../../../components/console/results/local-time';
 import { actionLabel, ledgerSchema, type LedgerItem } from '../../../components/console/results/model';
 import { callApi } from '../../../lib/api';
@@ -16,12 +17,14 @@ import type { ReactNode } from 'react';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Ledger' };
 
-const TARGET_HREF: Readonly<Record<string, (id: string) => string>> = {
-  request: (id) => `/audits/${id}`,
-  run: (id) => `/runs/${id}`,
-  finding: (id) => `/findings/${id}`,
-  gate2: (id) => `/decisions/gate2/${id}`,
+const TARGET: Readonly<Record<string, { href: (id: string) => string; label: string }>> = {
+  request: { href: (id) => `/audits/${id}`, label: 'View audit' },
+  run: { href: (id) => `/runs/${id}`, label: 'View audit' },
+  finding: { href: (id) => `/findings/${id}`, label: 'View finding' },
+  gate2: { href: (id) => `/decisions/gate2/${id}`, label: 'View request' },
 };
+/** Newest entries shown at first; "Show all" lists the rest. */
+const PAGE = 50;
 
 const findingTitles = z.object({ items: z.array(z.object({ id: z.string(), title: z.string() })) });
 
@@ -46,10 +49,10 @@ function Detail({ item, title }: { readonly item: LedgerItem; readonly title: st
   return (
     <span className="text-muted-foreground">
       {method !== null && url !== null ? (
-        <span className="break-all font-mono text-[12px]">
+        <>
           {' '}
-          {method.toUpperCase()} {pathOf(url)}
-        </span>
+          <Path text={`${method.toUpperCase()} ${pathOf(url)}`} className="text-[12px]" />
+        </>
       ) : null}
       {item.action === 'workspace.named' && name !== null ? <> &ldquo;{name}&rdquo;</> : null}
       {title === undefined ? null : <span className="text-foreground"> &ldquo;{title}&rdquo;</span>}
@@ -58,9 +61,14 @@ function Detail({ item, title }: { readonly item: LedgerItem; readonly title: st
   );
 }
 
-export default async function LedgerPage(): Promise<ReactNode> {
+export default async function LedgerPage({
+  searchParams,
+}: {
+  readonly searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<ReactNode> {
   const session = await getViewer();
   if (session === null) return null;
+  const all = (await searchParams).all !== undefined;
   // The ledger stores ids; the findings list names them. Without it the entries still read, just unnamed.
   const [{ items, chain }, findings] = await Promise.all([
     callApi(session, '/audit').then((b) => ledgerSchema.parse(b)),
@@ -70,6 +78,9 @@ export default async function LedgerPage(): Promise<ReactNode> {
   ]);
   const titles = new Map(findings.map((f) => [f.id, f.title]));
   const head = items[0]?.hash ?? null;
+  const shown = all ? items : items.slice(0, PAGE);
+  // Naming the workspace is always entry #1, so "nothing else yet" is the real first-run state of the ledger.
+  const onlySetup = items.every((e) => e.action === 'workspace.named');
   return (
     <div className="flex w-full max-w-[1100px] flex-col gap-5">
       <div className="flex flex-col gap-1.5">
@@ -112,14 +123,19 @@ export default async function LedgerPage(): Promise<ReactNode> {
             <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-[13.5px] leading-5">
               <span className="font-semibold text-foreground">
                 {chain.verified
-                  ? `Chain verified: all ${chain.count.toLocaleString()} ${chain.count === 1 ? 'entry links' : 'entries link'} up.`
+                  ? chain.count === 1
+                    ? 'Chain verified: 1 entry, sealed.'
+                    : `Chain verified: all ${chain.count.toLocaleString()} entries link up.`
                   : `Chain check failed at entry #${chain.brokenAtSeq}. Entries from there on cannot be trusted.`}
               </span>
               <span className="text-muted-foreground">
                 Checked when you opened this page.{' '}
                 {head === null ? null : (
                   <>
-                    Newest fingerprint <span className="break-all font-mono text-[12px] text-foreground">sha256 {head}</span>
+                    Newest fingerprint{' '}
+                    <span className="font-mono text-[12px] text-foreground" title={`sha256 ${head}`}>
+                      {head.slice(0, 8)}…{head.slice(-4)}
+                    </span>
                   </>
                 )}
               </span>
@@ -127,8 +143,8 @@ export default async function LedgerPage(): Promise<ReactNode> {
           </section>
 
           <ol className="m-0 flex list-none flex-col overflow-hidden rounded-[14px] border border-border bg-card p-0">
-            {items.map((e) => {
-              const href = TARGET_HREF[e.targetType]?.(e.targetId);
+            {shown.map((e) => {
+              const target = TARGET[e.targetType];
               return (
                 <li
                   key={e.eventId}
@@ -140,16 +156,19 @@ export default async function LedgerPage(): Promise<ReactNode> {
                   <span className="min-w-0 break-words text-[13.5px] leading-[21px] text-foreground">
                     <span className="font-medium">{e.actor.name}</span> · {actionLabel(e.action).toLowerCase()}
                     <Detail item={e} title={e.targetType === 'finding' ? titles.get(e.targetId) : undefined} />
-                    {e.payload.selfApproved === true ? (
+                    {(e.action === 'gate1.approve' || e.action === 'gate2.approve') && e.payload.selfApproved === true ? (
                       <span className="ml-2 inline-flex align-middle">
-                        <Chip tone="gold">Self-approved</Chip>
+                        <Chip tone="muted">Self-approved</Chip>
                       </span>
                     ) : null}
-                    {href === undefined ? null : (
+                    {target === undefined ? null : (
                       <>
                         {' '}
-                        <Link href={href} className="whitespace-nowrap text-[12.5px] font-medium text-gold-ink underline-offset-2 hover:underline">
-                          Open
+                        <Link
+                          href={target.href(e.targetId)}
+                          className="whitespace-nowrap text-[12.5px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                        >
+                          {target.label}
                         </Link>
                       </>
                     )}
@@ -161,7 +180,19 @@ export default async function LedgerPage(): Promise<ReactNode> {
               );
             })}
           </ol>
-          {items.length < chain.count ? (
+          {onlySetup ? (
+            <p className="m-0 text-[13px] leading-5 text-muted-foreground">
+              Approving a plan, deciding on a request, releasing a finding or stopping an audit each adds an entry here.
+            </p>
+          ) : null}
+          {shown.length < items.length ? (
+            <p className="m-0 text-[12.5px] text-muted-foreground">
+              Showing the newest {shown.length.toLocaleString()} of {chain.count.toLocaleString()} entries.{' '}
+              <Link href="/ledger?all=1" className="font-medium text-gold-ink underline-offset-2 hover:underline">
+                Show all
+              </Link>
+            </p>
+          ) : items.length < chain.count ? (
             <p className="m-0 text-[12.5px] text-muted-foreground">
               Showing the newest {items.length.toLocaleString()} of {chain.count.toLocaleString()} entries. The check
               covers all of them.

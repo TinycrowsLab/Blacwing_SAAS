@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { oracleWords, proofSentence, requestLine } from './issue-body';
+import { oracleWords, plainReason, proofSentence, requestLine } from './issue-body';
 import {
   actionLabel,
   decisions,
   duration,
   findingDetailSchema,
   gate2Outcome,
+  headline,
   splitFindings,
   stopLine,
   testCases,
@@ -72,8 +73,8 @@ describe('testCases', () => {
       ev(4, 'case.status', { caseId: 'x', status: 'executed' }),
       ev(5, 'case.status', { caseId: 'y', status: 'skipped' }),
     ];
-    expect(testCases(events)).toEqual({ executed: 1, total: 3 });
-    expect(testCases([])).toEqual({ executed: 0, total: 0 });
+    expect(testCases(events)).toEqual({ executed: 1, skipped: 1, blocked: 0, total: 3 });
+    expect(testCases([])).toEqual({ executed: 0, skipped: 0, blocked: 0, total: 0 });
   });
 });
 
@@ -90,6 +91,11 @@ describe('duration and stopLine', () => {
       text: 'Finished in 18m 12s · stopped at the time limit',
     });
     expect(stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')] }, 0).text).toContain('finished its plan');
+    // No reason from the runner: the words follow the cases, never "finished its plan" when a third was not run.
+    expect(
+      stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')] }, 0, { executed: 6, skipped: 2, blocked: 0, total: 9 })
+        .text,
+    ).toBe('Finished in 18m 12s · Claude ended after 6 of 9 test cases (skipped 2, 1 not reached)');
     expect(stopLine({ ...base, state: 'killed', events: [] }, 0).text).toBe('Stopped after 18m 12s · you stopped testing');
     expect(stopLine({ ...base, state: 'failed', events: [ev(1, 'run.failed', { reason: 'model_error' })] }, 0).tone).toBe('bad');
   });
@@ -184,5 +190,20 @@ describe('actionLabel', () => {
   it('words known ledger actions and passes unknown ones through', () => {
     expect(actionLabel('gate2.deny')).toBe('Denied a request');
     expect(actionLabel('asset.created')).toBe('asset.created');
+  });
+});
+
+describe('headline and plain reasons', () => {
+  it('counts every proven issue but advises only on open ones', () => {
+    expect(headline([])).toBe('No issues were proven.');
+    expect(headline([finding('a', 'high', 'confirmed'), finding('b', 'low', 'released')])).toBe(
+      'Claude proved 2 issues. Start with the high\u2011severity one.',
+    );
+    expect(headline([finding('a', 'critical', 'dismissed'), finding('b', 'low', 'released')])).toBe('Claude proved 2 issues.');
+  });
+  it('rewrites the engine word "oracle"', () => {
+    expect(plainReason('probe replay 1 did not match the oracle')).toBe('replay 1 did not show the issue again');
+    expect(plainReason('the negative control also matched the oracle')).not.toContain('oracle');
+    expect(plainReason('timeout')).toBe('timeout');
   });
 });

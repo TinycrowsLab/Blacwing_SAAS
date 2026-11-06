@@ -2,58 +2,51 @@
 
 // The issue list of the results page (experience spec §7): the first issue is open, the rest expand in place (fetched
 // once through /api/findings/[id] and cached). Gate 3 sits on each open issue; "Release all proven" sends one request
-// per finding with the shared reason, so the ledger records one event each. R releases the open issue.
+// per finding with the shared reason (one server action, so the ledger records one event each and the page refreshes
+// once). R releases the open issue.
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { buttonClass, Icon, InlineMessage, SeverityChip, Skeleton } from '../design';
 import { PendingButton, ReasonField } from '../design-client';
 import { IssueBody } from './issue-body';
-import { LocalTime } from './local-time';
 import { findingDetailSchema, type FindingDetail, type FindingSummary } from './model';
-import { announceChange, CopyButton, PROVEN_REASON, TriageControls, useReleaseKey } from './triage';
-import { triageFindingAction } from '../../../app/(console)/findings/actions';
+import { announceChange, CopyButton, escapeCloses, PROVEN_REASON, TriageControls, useReleaseKey } from './triage';
+import { releaseFindingsAction } from '../../../app/(console)/findings/actions';
 import { reasonEnough } from '../../../lib/normalize';
 
-const HTTP_CONFLICT = 409;
-
-/** "Awaiting your release", "Released by you, 14:41", "Released automatically", "Dismissed", "Kept back". */
-export function IssueStatus({
-  status,
-  triage,
-  viewerName,
-}: {
-  readonly status: string;
-  readonly triage: FindingDetail['triage'] | undefined;
-  readonly viewerName: string;
-}) {
+/**
+ * One short status, the same everywhere (lists, issue headers, detail): who decided and when is said once, in the
+ * open issue. Each state has its own mark, so none looks like missing styling.
+ */
+export function IssueStatus({ status }: { readonly status: string }) {
+  const base = 'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[12.5px] font-medium';
   if (status === 'confirmed')
-    return <span className="text-[12.5px] font-medium text-gold-ink">Awaiting your release</span>;
-  if (status === 'released') {
-    const by = triage?.by ?? null;
     return (
-      <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-ok">
-        <span aria-hidden="true" className="size-2.5 rounded-full border-2 border-current" />
-        {triage === undefined ? (
-          'Released'
-        ) : by === null ? (
-          'Released automatically'
-        ) : (
-          <>
-            Released by {by === viewerName ? 'you' : by}
-            {triage === null ? null : (
-              <>
-                , <LocalTime iso={triage.at} />
-              </>
-            )}
-          </>
-        )}
+      <span className={`${base} text-gold-ink`}>
+        <span aria-hidden="true" className="size-2 rounded-full bg-current" />
+        Awaiting your release
       </span>
     );
-  }
-  if (status === 'dismissed') return <span className="text-[12.5px] font-medium text-muted-foreground">Dismissed</span>;
-  return <span className="text-[12.5px] font-medium text-muted-foreground">Kept back</span>;
+  if (status === 'released')
+    return (
+      <span className={`${base} text-ok`}>
+        <span aria-hidden="true" className="size-2.5 rounded-full border-2 border-current" />
+        Released
+      </span>
+    );
+  if (status === 'dismissed')
+    return (
+      <span className={`${base} text-muted-foreground`}>
+        <Icon name="minus" size={13} />
+        Dismissed
+      </span>
+    );
+  return (
+    <span className={`${base} h-[22px] rounded-full border border-dashed border-border-strong px-2 text-muted-foreground`}>
+      Kept back
+    </span>
+  );
 }
 
 type Load = { state: 'loading' } | { state: 'error' } | { state: 'ready'; finding: FindingDetail };
@@ -158,7 +151,7 @@ export function IssueList({
                   {s.title}
                 </span>
                 <span className="ml-auto flex items-center gap-2">
-                  <IssueStatus status={status} triage={finding?.triage} viewerName={viewerName} />
+                  <IssueStatus status={status} />
                   <Icon
                     name="chevron"
                     size={16}
@@ -193,6 +186,7 @@ export function IssueList({
                     <div className="border-t border-border pt-3.5">
                       <TriageControls
                         finding={d.finding}
+                        viewerName={viewerName}
                         onDone={(updated) => {
                           if (updated === null) drop(s.id);
                           else put(updated);
@@ -228,25 +222,23 @@ export function IssueList({
 
 /** "Release all proven": one triage call per awaiting finding with the shared reason (one ledger event each). */
 export function ReleaseAll({ ids }: { readonly ids: readonly string[] }) {
-  const router = useRouter();
   const [asking, setAsking] = useState(false);
   const [reason, setReason] = useState(PROVEN_REASON);
-  const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const busy = useRef(false);
   if (ids.length < 2) return null;
 
   async function releaseAll(): Promise<void> {
+    if (busy.current || !reasonEnough(reason)) return;
+    busy.current = true;
     setError(null);
-    let failed = 0;
-    for (const [i, id] of ids.entries()) {
-      setProgress(`Releasing ${i + 1} of ${ids.length}…`);
-      const result = await triageFindingAction(id, 'release', reason);
-      if (!result.ok && result.status !== HTTP_CONFLICT) failed += 1;
-    }
-    setProgress(null);
-    if (failed > 0) setError(`${failed} of ${ids.length} could not be released. The others are released; try again.`);
+    const result = await releaseFindingsAction(ids, reason);
+    busy.current = false;
+    if (!result.ok) setError(result.message);
+    else if (result.data.failed > 0)
+      setError(`${result.data.failed} of ${ids.length} could not be released. The others are released; try again.`);
     else setAsking(false);
-    announceChange(router);
+    announceChange();
   }
 
   return (
@@ -270,7 +262,12 @@ export function ReleaseAll({ ids }: { readonly ids: readonly string[] }) {
         )}
       </div>
       {asking ? (
-        <div className="flex flex-col gap-3">
+        <div
+          className="flex flex-col gap-3"
+          onKeyDown={escapeCloses(() => {
+            setAsking(false);
+          })}
+        >
           <ReasonField
             label={`Why release all ${ids.length} to the report?`}
             value={reason}
@@ -285,7 +282,7 @@ export function ReleaseAll({ ids }: { readonly ids: readonly string[] }) {
           {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
           <div className="flex flex-wrap items-center gap-2">
             <PendingButton
-              pendingLabel={progress ?? 'Releasing…'}
+              pendingLabel={`Releasing ${ids.length} issues…`}
               disabled={!reasonEnough(reason)}
               stayPending
               onAction={async () => {

@@ -2,14 +2,15 @@
 
 // Gate 3 on one finding (experience spec §6.3): `Release to report` (gold, key R) and `Dismiss…` (reason required).
 // A proven finding is released with the reason "Proven by replay", which the person can change first; a kept-back
-// finding needs its own reason. Decisions wait for the server (they must be true), then the page refreshes.
-import { useRouter } from 'next/navigation';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+// finding needs its own reason. Decisions wait for the server (they must be true); the action's response carries the
+// refreshed page. Esc closes a reason form.
+import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { triageFindingAction } from '../../../app/(console)/findings/actions';
 import { reasonEnough } from '../../../lib/normalize';
 import { buttonClass, Icon, InlineMessage } from '../design';
 import { PendingButton, ReasonField } from '../design-client';
+import { LocalTime } from './local-time';
 
 import type { FindingDetail } from './model';
 
@@ -19,10 +20,46 @@ const HTTP_CONFLICT = 409;
 const COPIED_MS = 1600;
 const DISMISS_SUGGESTIONS = ['Not exploitable here', 'Accepted risk, tracked', 'Duplicate of another issue'];
 
-/** Every mutation tells the sidebar and the page to refresh (spec §10.5). */
-export function announceChange(router: ReturnType<typeof useRouter>): void {
+/** Every mutation tells the sidebar to refresh (spec §10.5); the page itself comes back with the action's response. */
+export function announceChange(): void {
   window.dispatchEvent(new Event('bw:refresh'));
-  router.refresh();
+}
+
+/** Esc inside a reason form closes it (spec §10.4) without reaching page-level shortcuts. */
+export function escapeCloses(close: () => void) {
+  return (e: KeyboardEvent<HTMLElement>): void => {
+    if (e.key !== 'Escape') return;
+    e.preventDefault();
+    e.stopPropagation();
+    close();
+  };
+}
+
+/** Who decided and when, with the reason: "Dismissed by you · 6 Nov, 09:10 · "Accepted risk, tracked"". */
+export function Decided({ finding, viewerName }: { readonly finding: FindingDetail; readonly viewerName: string }) {
+  if (finding.status !== 'released' && finding.status !== 'dismissed') return null;
+  const t = finding.triage;
+  const released = finding.status === 'released';
+  const by = t?.by ?? null;
+  const who = by === null ? (released ? 'automatically, as chosen on the plan' : '') : `by ${by === viewerName ? 'you' : by}`;
+  return (
+    <div className="flex flex-col gap-0.5 text-[13px] leading-5">
+      <p className="m-0 text-foreground">
+        <span className="font-medium">
+          {released ? 'Released' : 'Dismissed'} {who}
+        </span>
+        <span className="text-muted-foreground">
+          {t === null ? null : <LocalTime iso={t.at} style="datetime" prefix=" · " />}
+          {t?.reason ? <> · &ldquo;{t.reason}&rdquo;</> : null}
+        </span>
+      </p>
+      <p className="m-0 text-[12.5px] text-muted-foreground">
+        {released
+          ? 'It is in the report. Dismissing it takes it out again, with a reason.'
+          : 'It stays off the report. The decision and its reason are on the ledger.'}
+      </p>
+    </div>
+  );
 }
 
 /** Copies text; says so for a moment. */
@@ -60,18 +97,19 @@ export function CopyButton({ text, label }: { readonly text: string; readonly la
 
 export function TriageControls({
   finding,
+  viewerName,
   onDone,
   bindRelease,
   trailing,
 }: {
   readonly finding: FindingDetail;
+  readonly viewerName: string;
   readonly onDone: (updated: FindingDetail | null) => void;
   /** The page binds the R key to this finding's release while it is open. */
   readonly bindRelease?: (release: (() => void) | null) => void;
   /** Secondary actions (copy, details) at the end of the button row. */
   readonly trailing?: ReactNode;
 }) {
-  const router = useRouter();
   const proven = finding.status === 'confirmed';
   const [mode, setMode] = useState<'idle' | 'release' | 'dismiss'>('idle');
   const [reason, setReason] = useState(proven ? PROVEN_REASON : '');
@@ -94,7 +132,7 @@ export function TriageControls({
     // 409: someone already decided; refreshing shows their decision.
     onDone(result.ok ? result.data : null);
     setMode('idle');
-    announceChange(router);
+    announceChange();
     return true;
   }
 
@@ -112,12 +150,27 @@ export function TriageControls({
     };
   });
 
-  if (!canRelease && !canDismiss) return trailing === undefined ? null : <div className="flex flex-wrap gap-1">{trailing}</div>;
+  const cancel = (): void => {
+    setMode('idle');
+    setError(null);
+    setReason(proven ? PROVEN_REASON : '');
+  };
+
+  if (!canRelease && !canDismiss)
+    return (
+      <div className="flex flex-col gap-2.5">
+        <Decided finding={finding} viewerName={viewerName} />
+        {trailing === undefined ? null : <div className="flex flex-wrap gap-1">{trailing}</div>}
+      </div>
+    );
 
   if (mode !== 'idle') {
     const release = mode === 'release';
     return (
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface-2/60 p-3.5">
+      <div
+        onKeyDown={escapeCloses(cancel)}
+        className="flex flex-col gap-3 rounded-xl border border-border bg-surface-2/60 p-3.5"
+      >
         <ReasonField
           label={release ? 'Why release it to the report?' : 'Why dismiss it?'}
           value={reason}
@@ -146,11 +199,7 @@ export function TriageControls({
           <button
             type="button"
             className={buttonClass('ghost')}
-            onClick={() => {
-              setMode('idle');
-              setError(null);
-              setReason(proven ? PROVEN_REASON : '');
-            }}
+            onClick={cancel}
           >
             Cancel
           </button>
@@ -160,7 +209,8 @@ export function TriageControls({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2.5">
+      <Decided finding={finding} viewerName={viewerName} />
       <div className="flex flex-wrap items-center gap-2">
         {canRelease ? (
           <PendingButton
@@ -195,7 +245,7 @@ export function TriageControls({
       </div>
       {proven ? (
         <p className="m-0 text-[12px] text-muted-foreground">
-          Released with the reason &ldquo;{reason}&rdquo;, kept on the ledger with your name.{' '}
+          Will be released with the reason &ldquo;{reason}&rdquo; and kept on the ledger with your name.{' '}
           <button
             type="button"
             className="font-medium text-gold-ink underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
@@ -233,11 +283,12 @@ export function useReleaseKey(enabled = true): { current: (() => void) | null } 
 }
 
 /** Gate 3 on the finding detail page: the same controls, with R bound to Release. */
-export function FindingTriage({ finding }: { readonly finding: FindingDetail }) {
+export function FindingTriage({ finding, viewerName }: { readonly finding: FindingDetail; readonly viewerName: string }) {
   const release = useReleaseKey();
   return (
     <TriageControls
       finding={finding}
+      viewerName={viewerName}
       onDone={() => undefined}
       bindRelease={(fn) => {
         release.current = fn;

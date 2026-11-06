@@ -1,10 +1,12 @@
-// The finding report as a download (HTML or Markdown), rendered by the API.
+// The finding report as a download (HTML or Markdown), rendered by the API. Any other format is a 400, never a guess.
 import { z } from 'zod';
 
 import { ApiError, callApi } from '../../../../../lib/api';
 import { getViewer } from '../../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
+
+const FORMATS = ['html', 'md'] as const;
 
 // The filename goes into a header: only safe characters, so a quote or newline can never break it.
 const renderedSchema = z.object({
@@ -20,7 +22,9 @@ export async function GET(
   const session = await getViewer();
   if (session === null) return new Response('Sign in first.', { status: 401 });
   const { id } = await params;
-  const format = new URL(request.url).searchParams.get('format') === 'md' ? 'md' : 'html';
+  const asked = (new URL(request.url).searchParams.get('format') ?? 'html').trim().toLowerCase();
+  const format = FORMATS.find((f) => f === asked);
+  if (format === undefined) return new Response('Choose a format: html or md.', { status: 400 });
   try {
     const report = renderedSchema.parse(
       await callApi(session, `/findings/${encodeURIComponent(id)}/report?format=${format}`),
