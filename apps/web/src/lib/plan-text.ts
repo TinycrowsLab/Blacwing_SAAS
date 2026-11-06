@@ -66,7 +66,8 @@ export function planSegments(p: PlanInput): PlanSegment[] {
       text: `: ${gentle ? 'crafted read requests that should not change data' : 'GET, HEAD and OPTIONS requests'}. Anything that would change data waits for your yes. They ${anywhere ? 'may go' : 'will stay out of'} `,
     },
     { text: anywhere ? 'anywhere on the site' : list(p.excludedPaths), field: 'paths' },
-    { text: ' and test as ' },
+    // A list of paths ends its own sentence, so it never runs on into the roles.
+    { text: anywhere ? ' and test as ' : '. They test as ' },
     {
       text:
         p.roles.length === 0

@@ -651,6 +651,10 @@ export function VoiceTag({
  * Selected cards are gold-soft with a gold-ink edge. `index` shows the number key (1 to 9) the page binds.
  * `children` is shown under the card text only while the card is selected (e.g. the verification steps).
  */
+/** A radio drawn with tokens: a hollow ring and a gold-ink dot when picked (Edge's native dark radio reads as filled). */
+export const RADIO_CLASS =
+  'mt-0.5 size-[18px] shrink-0 cursor-pointer appearance-none rounded-full border-[1.5px] border-input-strong bg-card transition-colors checked:border-gold-ink checked:bg-[radial-gradient(circle,var(--gold-ink)_0_4px,transparent_4.5px)] focus-visible:outline-none disabled:cursor-not-allowed';
+
 export function OptionCard({
   type = 'radio',
   name,
@@ -689,7 +693,7 @@ export function OptionCard({
         onChange={(e) => {
           onChange(value, e.target.checked);
         }}
-        className="mt-0.5 size-[18px] shrink-0 accent-[var(--gold-ink)] focus-visible:outline-none"
+        className={type === 'radio' ? RADIO_CLASS : 'mt-0.5 size-[18px] shrink-0 accent-[var(--gold-ink)] focus-visible:outline-none'}
       />
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex flex-wrap items-center gap-2">

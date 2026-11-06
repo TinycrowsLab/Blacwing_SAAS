@@ -190,7 +190,7 @@ export default async function FindingPage({
                   The same probe the validator sent. It is a {method} request: it reads and changes nothing.
                 </p>
               )}
-              <pre className="m-0 max-h-60 overflow-auto whitespace-pre rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px] text-foreground">
+              <pre className="m-0 max-h-60 overflow-auto whitespace-pre-wrap [overflow-wrap:anywhere] rounded-[10px] border border-border bg-code p-3 font-mono text-[11.5px] leading-[18px] text-foreground">
                 {finding.reproCurl}
               </pre>
             </section>

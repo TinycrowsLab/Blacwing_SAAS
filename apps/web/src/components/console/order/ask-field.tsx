@@ -3,7 +3,7 @@
 // "What should we audit?" (experience spec §3.2, §10.1): one forgiving field. What was typed becomes an origin, every
 // change is said out loud as a chip, and a site already added is recognised. Never type="url", so no native popups.
 import Link from 'next/link';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react';
 import { z } from 'zod';
 
 import { dayLabel, isVerified } from './shared';
@@ -12,6 +12,15 @@ import { type Asset, assetSchema } from '../../../lib/schemas';
 import { Icon } from '../design';
 
 const DEBOUNCE_MS = 150;
+/** Below the md breakpoint the long placeholder is cut mid-word: a phone gets the short one. */
+const NARROW = '(max-width: 767px)';
+const subscribeNarrow = (on: () => void): (() => void) => {
+  const m = window.matchMedia(NARROW);
+  m.addEventListener('change', on);
+  return () => {
+    m.removeEventListener('change', on);
+  };
+};
 const listSchema = z.object({ items: z.array(assetSchema) });
 
 /** The normalised target, recomputed 150 ms after the last keystroke. */
@@ -165,6 +174,11 @@ export function AskField({
   readonly waiting?: readonly WaitingPlan[];
 }) {
   const hero = variant === 'hero';
+  const narrow = useSyncExternalStore(
+    subscribeNarrow,
+    () => window.matchMedia(NARROW).matches,
+    () => false,
+  );
   const invalid = showError && !result.ok && result.empty !== true;
   return (
     <div
@@ -185,7 +199,7 @@ export function AskField({
           spellCheck={false}
           autoFocus={autoFocus}
           value={text}
-          placeholder="Paste a web address, like app.yourcompany.com"
+          placeholder={narrow ? 'Paste a web address' : 'Paste a web address, like app.yourcompany.com'}
           aria-invalid={invalid || undefined}
           aria-describedby={`${id}-line`}
           onChange={(e) => {

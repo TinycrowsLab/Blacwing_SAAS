@@ -2,7 +2,7 @@
 'use client';
 
 // Interactive primitives of the experience spec (§10.4, §6.2, §10.2, §10.3). Server-safe primitives are in ./design.
-import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 import { buttonClass, Icon, InlineMessage, type ButtonVariant, type IconName, Kbd } from './design';
 import { useNow } from './use-now';
@@ -193,9 +193,15 @@ export function CopyField({
       {label === undefined ? null : <span className="text-[12.5px] font-medium text-foreground">{label}</span>}
       <div className="flex min-w-0 items-center gap-2 rounded-[10px] border border-border bg-code py-1 pl-3 pr-1">
         <span
-          className={`min-w-0 flex-1 select-all break-all py-1.5 text-[12.5px] leading-5 text-foreground ${mono ? 'font-mono' : ''}`}
+          className={`min-w-0 flex-1 select-all py-1.5 text-[12.5px] leading-5 text-foreground [overflow-wrap:anywhere] ${mono ? 'font-mono' : ''}`}
         >
-          {value}
+          {/* A path or URL may wrap after each slash, never mid-word; a long token still wraps anywhere. */}
+          {value.split(/(?<=\/)/).map((part, i) => (
+            <Fragment key={i}>
+              {i === 0 ? null : <wbr />}
+              {part}
+            </Fragment>
+          ))}
         </span>
         <button
           type="button"

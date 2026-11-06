@@ -2,7 +2,7 @@
 
 // Targets (experience spec §2, §4, bug 13): the sites in this workspace. "Add target" runs the order's first two
 // steps inline; verification shows only for the row where the person picks Verify.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { AskField, findKnown, useNormalized } from './ask-field';
 import { LocalTime } from './local-time';
@@ -15,9 +15,49 @@ import { ChipInput, PendingButton } from '../design-client';
 
 import type { Asset } from '../../../lib/schemas';
 
-function VerifyPanel({ asset, viewerName, onVerified }: { readonly asset: Asset; readonly viewerName: string; readonly onVerified: (a: Asset) => void }) {
+function VerifyPanel({
+  asset,
+  viewerName,
+  onVerified,
+  onClose,
+}: {
+  readonly asset: Asset;
+  readonly viewerName: string;
+  readonly onVerified: (a: Asset) => void;
+  readonly onClose: () => void;
+}) {
   const [method, setMethod] = useState<ProofMethod>(() => recommendedProof(new URL(originOf(asset)).host));
   const [attested, setAttested] = useState(false);
+  if (isVerified(asset)) {
+    const origin = originOf(asset);
+    return (
+      <div
+        role="status"
+        className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-dashed border-border-strong bg-ok-soft px-4 py-4 sm:px-5"
+      >
+        <span className="flex min-w-0 flex-1 basis-[240px] items-start gap-3">
+          <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-ok text-white">
+            <Icon name="check" size={12} />
+          </span>
+          <span className="text-[13.5px] leading-5 text-foreground">
+            <b className="font-semibold">{asset.ownership.method === 'http_token' ? 'Found it. ' : ''}The site is verified as yours.</b>{' '}
+            <span className="text-muted-foreground">Claude may audit it once you approve a plan.</span>
+          </span>
+        </span>
+        <LinkButton
+          href={`/audits/new?target=${encodeURIComponent(origin)}&step=3`}
+          variant="primary"
+          className="h-10 w-full sm:w-auto"
+        >
+          Start an audit of {new URL(origin).host}
+          <Icon name="arrow" size={15} />
+        </LinkButton>
+        <button type="button" onClick={onClose} className={buttonClass('ghost', 'h-10 max-sm:w-full')}>
+          Close
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-3 border-t border-dashed border-border-strong bg-sidebar px-4 py-4 sm:px-5">
       <p className="m-0 text-[13.5px] text-muted-foreground">
@@ -58,7 +98,8 @@ function AddTarget({
   onCancel,
 }: {
   readonly assets: readonly Asset[];
-  readonly onAdded: (a: Asset) => void;
+  /** `existed`: the address was already a target, so nothing new was added. */
+  readonly onAdded: (a: Asset, existed: boolean) => void;
   readonly onCancel: () => void;
 }) {
   const [text, setText] = useState('');
@@ -75,7 +116,7 @@ function AddTarget({
     }
     const existing = findKnown(assets, r.origin);
     if (existing !== undefined) {
-      onAdded(existing);
+      onAdded(existing, true);
       return true;
     }
     const created = await ensureTargetAction(
@@ -88,7 +129,7 @@ function AddTarget({
       return false;
     }
     refreshSidebar();
-    onAdded(created.data);
+    onAdded(created.data, false);
     return true;
   };
   return (
@@ -206,6 +247,13 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
   const [assets, setAssets] = useState<readonly Asset[]>(initial);
   const [adding, setAdding] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
+  /** A site added again: its row is scrolled to and marked, so the click is never lost. */
+  const [again, setAgain] = useState<string | null>(null);
+  const justVerified = open !== null && assets.some((a) => a.id === open && isVerified(a));
+  useEffect(() => {
+    if (again === null) return;
+    document.getElementById(`target-${again}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [again]);
 
   const upsert = (a: Asset): void => {
     setAssets((list) => (list.some((x) => x.id === a.id) ? list.map((x) => (x.id === a.id ? a : x)) : [a, ...list]));
@@ -226,8 +274,9 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
             onClick={() => {
               setAdding(true);
               setOpen(null);
+              setAgain(null);
             }}
-            className={buttonClass('primary', 'h-11 rounded-xl')}
+            className={buttonClass(justVerified ? 'secondary' : 'primary', 'h-11 rounded-xl')}
           >
             <Icon name="plus" size={16} />
             Add target
@@ -241,9 +290,10 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
           onCancel={() => {
             setAdding(false);
           }}
-          onAdded={(a) => {
+          onAdded={(a, existed) => {
             upsert(a);
             setAdding(false);
+            setAgain(existed ? a.id : null);
             if (!isVerified(a)) setOpen(a.id);
           }}
         />
@@ -264,7 +314,17 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
             const origin = originOf(a);
             const expanded = open === a.id;
             return (
-              <li key={a.id} className="overflow-hidden rounded-[14px] border border-border bg-card">
+              <li
+                key={a.id}
+                id={`target-${a.id}`}
+                className={`overflow-hidden rounded-[14px] border bg-card transition-shadow ${again === a.id ? 'border-gold-ink shadow-[0_0_0_3px_var(--gold-line)]' : 'border-border'}`}
+              >
+                {again === a.id ? (
+                  <p role="status" className="m-0 flex items-center gap-2 border-b border-gold-line bg-gold-soft px-4 py-2 text-[12.5px] text-gold-ink sm:px-5">
+                    <Icon name="info" size={13} />
+                    You already added this site{isVerified(a) ? ', and it is verified' : ''}.
+                  </p>
+                ) : null}
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3.5 sm:px-5">
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-2 text-muted-foreground">
                     <Icon name="web" size={18} />
@@ -303,7 +363,7 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                       </span>
                     ) : null}
                   </span>
-                  {verified ? (
+                  {verified && expanded ? null : verified ? (
                     <LinkButton
                       href={`/audits/new?target=${encodeURIComponent(origin)}&step=3`}
                       variant="secondary"
@@ -332,6 +392,9 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                     onVerified={(v) => {
                       upsert(v);
                       refreshSidebar();
+                    }}
+                    onClose={() => {
+                      setOpen(null);
                     }}
                   />
                 ) : null}

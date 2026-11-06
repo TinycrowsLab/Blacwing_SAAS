@@ -4,7 +4,7 @@
 // the order at question 2, or 3 when the site is already verified.
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import { AskField, findKnown, useKnownTargets, useNormalized, type WaitingPlan } from './ask-field';
 import { greetingFor, isVerified } from './shared';
@@ -26,8 +26,8 @@ export function HomeAsk({
   readonly givenName: string;
   /** The greeting at the server's hour, so the first paint matches; the reader's own clock takes over at once. */
   readonly serverGreeting: string;
-  /** Just named on /welcome: the one-time note under the greeting. */
-  readonly named: boolean;
+  /** The workspace name just chosen on /welcome: the one-time note under the greeting. Null otherwise. */
+  readonly named: string | null;
   /** Plans waiting for approval: a site that already has one says so (no second plan by accident). */
   readonly waiting: readonly WaitingPlan[];
 }) {
@@ -39,7 +39,12 @@ export function HomeAsk({
   );
   const [text, setText] = useState('');
   const [showError, setShowError] = useState(false);
-  const [note, setNote] = useState(named);
+  const [note, setNote] = useState(named !== null);
+  // The note shows once: "?named=1" leaves the address at once, so a reload or a copied link never repeats it.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('named'))
+      window.history.replaceState(window.history.state, '', window.location.pathname);
+  }, []);
   const result = useNormalized(text);
   const known = useKnownTargets();
   const begin = useRef<HTMLDivElement>(null);
@@ -82,9 +87,11 @@ export function HomeAsk({
         <h1 className="m-0 text-[30px] font-semibold leading-[38px] tracking-[-0.02em] text-foreground sm:text-[36px] sm:leading-[46px]">
           {greeting}, {givenName}.
         </h1>
-        {note ? (
-          <p className="m-0 flex w-fit items-center gap-2 rounded-full bg-gold-soft py-1 pl-3 pr-1 text-[12.5px] text-gold-ink shadow-[inset_0_0_0_1px_var(--gold-line)]">
-            Named from your Google account.
+        {note && named !== null ? (
+          <p className="m-0 flex w-fit max-w-full items-center gap-2 rounded-full bg-gold-soft py-1 pl-3 pr-1 text-[12.5px] text-gold-ink shadow-[inset_0_0_0_1px_var(--gold-line)]">
+            <span className="min-w-0">
+              Your workspace <b className="font-semibold">&ldquo;{named}&rdquo;</b> was named from your Google account.
+            </span>
             <Link href="/settings" className="font-semibold underline underline-offset-2">
               Rename
             </Link>
@@ -93,7 +100,6 @@ export function HomeAsk({
               aria-label="Dismiss"
               onClick={() => {
                 setNote(false);
-                window.history.replaceState(window.history.state, '', '/');
               }}
               className="flex size-6 items-center justify-center rounded-full hover:bg-gold-line focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
             >
@@ -128,7 +134,6 @@ export function HomeAsk({
           }}
           action={button}
           waiting={waiting}
-          autoFocus
         />
         <div className="hidden flex-wrap gap-2 text-[12px] text-muted-foreground sm:flex">
           <span className="rounded-full bg-surface-2 px-2.5 py-1">A web address, an IP with a port, or a full URL all work</span>

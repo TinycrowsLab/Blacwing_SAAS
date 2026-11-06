@@ -71,7 +71,8 @@ export const isPrivateHost = (host: string): boolean => PRIVATE_HOST.test(host);
 export const recommendedCare = (host: string): Care =>
   isPrivateHost(host) || STAGING.test(host.replace(/:\d+$/, '')) ? 'active_safe' : 'passive';
 
-/** Q2's recommendation: a file for a public site, the owner's word for a private one (a lab app may not serve files). */
+/** Q2's recommendation: a file for a public site, the owner's word for a private one (a lab app may not serve files,
+ * and the check comes from Blackwing's server, which may not reach it). */
 export const recommendedProof = (host: string): 'file' | 'attest' => (isPrivateHost(host) ? 'attest' : 'file');
 
 /** "Recommended" and the Q4 hints: a white pill with a gold ring, legible on a selected (gold-soft) card too. */
@@ -92,6 +93,12 @@ export const dayLabel = (iso: string): string =>
   new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
 
 export const isVerified = (a: Pick<Asset, 'ownership'>): boolean => a.ownership.status === 'verified';
+
+/**
+ * A plan someone said yes to at Gate 1. The run moves the request on ('running', then 'completed', or back to
+ * 'approved' after a stop), so anything past pending that is not a refusal was approved.
+ */
+export const wasApproved = (status: string): boolean => status !== 'pending_gate1' && status !== 'rejected';
 
 /** The site's origin from what the API stored. */
 export const originOf = (a: Pick<Asset, 'baseUrl'>): string => {

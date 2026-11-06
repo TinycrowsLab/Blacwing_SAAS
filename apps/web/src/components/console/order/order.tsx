@@ -29,7 +29,7 @@ import { attest, type ProofMethod, VerifyOwnership } from './verify-ownership';
 import { createAuditAction, ensureTargetAction } from '../../../app/(console)/audits/actions';
 import { readDrafts, removeDraft, saveDraft } from '../../../lib/drafts';
 import { normalizeTarget, type TargetResult } from '../../../lib/normalize';
-import { limitsPhrase } from '../../../lib/plan-text';
+import { limitsPhrase, usd } from '../../../lib/plan-text';
 import { buttonClass, Icon, InlineMessage, OptionCard } from '../design';
 import { PendingButton } from '../design-client';
 
@@ -148,18 +148,32 @@ export function Order({
 
   const chosenCare: Care = care ?? (target === null ? 'passive' : recommendedCare(target.host));
 
-  // A draft from the sidebar brings its answers back (this device only).
+  // This order's draft brings its answers and its question back (this device only): from the sidebar's draft link, and
+  // on browser Back then Forward, where the router cache may replay the page as it was first opened (question 2).
+  // Draft ids are random per order, so a draft found here is always this order's own.
+  const restored = useRef(false);
   useEffect(() => {
-    if (!restoreDraft) return;
+    // Once, on mount: later changes are the person's own.
+    if (restored.current) return;
+    restored.current = true;
     const d = readDrafts().find((x) => x.id === draftId);
-    if (d === undefined) return;
+    if (d === undefined || (!restoreDraft && d.origin !== first?.origin)) return;
     const a = answersSchema.safeParse(d.answers);
     if (!a.success) return;
     if (a.data.focus !== undefined && a.data.focus.length > 0) setFocus(a.data.focus);
     if (a.data.text !== undefined) setFocusText(a.data.text);
     if (a.data.care !== undefined) setCare(a.data.care);
     if (a.data.method !== undefined) setMethod(a.data.method);
-  }, [restoreDraft, draftId]);
+    if (d.step <= startStep || d.step > QUESTIONS || first === null) return;
+    // Questions 3 and 4 need the site verified: ask the API (it reuses the asset) rather than trust a cached page.
+    if (d.step >= Q.focus && (firstAsset === null || !isVerified(firstAsset)))
+      void ensureTargetAction(first.origin, first.host).then((r) => {
+        if (!r.ok) return;
+        setAsset(r.data);
+        if (isVerified(r.data)) setStep(d.step);
+      });
+    else setStep(d.step);
+  }, [draftId, restoreDraft, startStep, first, firstAsset]);
 
   // Coming from Home with a new site: register it (the API reuses an existing one) so question 2 has its token.
   useEffect(() => {
@@ -219,17 +233,19 @@ export function Order({
     setStep(n);
   };
 
+  const verified = asset !== null && isVerified(asset);
+
   const back = useCallback((): void => {
+    // Back skips what Continue skipped: question 2 has nothing to ask once the site is verified.
+    const to = step === Q.focus && verified ? Q.site : step - 1;
     // Back from the first question shown leaves the order (Home is where it started).
-    if (step === 1 || step <= startStep) {
+    if (to < 1 || to < startStep) {
       router.push('/');
       return;
     }
     setError(null);
-    setStep((s) => Math.max(1, s - 1));
-  }, [step, startStep, router]);
-
-  const verified = asset !== null && isVerified(asset);
+    setStep(to);
+  }, [step, startStep, verified, router]);
 
   const next = async (): Promise<boolean> => {
     setError(null);
@@ -277,17 +293,13 @@ export function Order({
       return false;
     }
     if (asset === null || target === null) return false;
-    if (limits === null) {
-      setError("We couldn't load your workspace limits. Reload the page and try again.");
-      return false;
-    }
     const r = await createAuditAction({
       assetId: asset.id,
       objective: composeObjective(focus, focusText),
       intrusiveness: chosenCare,
-      minutes: limits.minutes,
-      requests: limits.requests,
-      costUsd: limits.costUsd,
+      minutes: limits?.minutes ?? null,
+      requests: limits?.requests ?? null,
+      costUsd: limits?.costUsd ?? null,
       excludedPaths: [],
       releaseProven: 'hold',
       testAccounts: [],
@@ -372,15 +384,14 @@ export function Order({
   const details: TicketDetail[] = [
     { label: 'Paths to avoid', value: 'None', tag: 'Default' },
     { label: 'Signed-in testing', value: 'As a visitor', tag: 'Default' },
-    ...(limits === null
-      ? []
-      : [
-          {
-            label: 'Limits',
-            value: `${limits.minutes} min · ${limits.requests.toLocaleString()} req · $${limits.costUsd}`,
-            tag: 'Suggested' as const,
-          },
-        ]),
+    {
+      label: 'Limits',
+      value:
+        limits === null
+          ? "Your workspace's suggestion"
+          : `${limits.minutes} min · ${limits.requests.toLocaleString('en-US')} req · ${usd(limits.costUsd)}`,
+      tag: 'Suggested' as const,
+    },
     { label: 'Proven issues', value: 'Wait for your release', tag: 'Default' },
   ];
   const ticketProps = { lines, current: step - 1, details, saved };
@@ -400,7 +411,9 @@ export function Order({
           yours?
         </>
       ),
-      lede: 'We only test sites you can show you control. Pick the way that suits you.',
+      lede: verified
+        ? 'Nothing to do here: the site is already verified as yours.'
+        : 'We only test sites you can show you control. Pick the way that suits you.',
     },
     3: {
       h1: 'What should Claude look for?',
@@ -558,11 +571,11 @@ export function Order({
                 Either way, anything that would change data waits for your yes, and destructive requests (like DELETE) are
                 never sent.
               </p>
-              {limits === null ? null : (
-                <p className="m-0 text-[12.5px] text-muted-foreground">
-                  Next, I&apos;ll read the plan back: suggested limits are {limitsPhrase(limits)}.
-                </p>
-              )}
+              <p className="m-0 text-[12.5px] text-muted-foreground">
+                {limits === null
+                  ? "Next, I'll read the plan back with your workspace's suggested limits."
+                  : `Next, I'll read the plan back: suggested limits are ${limitsPhrase(limits)}.`}
+              </p>
             </div>
           ) : null}
         </section>

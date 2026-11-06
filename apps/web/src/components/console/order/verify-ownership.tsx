@@ -7,7 +7,7 @@ import { type ReactNode, useState } from 'react';
 
 import { dayLabel, isVerified, originOf, RECOMMEND_PILL, recommendedProof } from './shared';
 import { verifyTargetAction } from '../../../app/(console)/audits/actions';
-import { Icon, InlineMessage } from '../design';
+import { Icon, InlineMessage, RADIO_CLASS } from '../design';
 import { CopyField, PendingButton } from '../design-client';
 
 import type { Asset } from '../../../lib/schemas';
@@ -59,7 +59,7 @@ function ChoiceCard({
           name={name}
           checked={checked}
           onChange={onPick}
-          className="mt-0.5 size-[18px] shrink-0 accent-[var(--gold-ink)] focus-visible:outline-none"
+          className={RADIO_CLASS}
         />
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="flex flex-wrap items-center gap-2">
@@ -140,7 +140,9 @@ export function VerifyOwnership({
   const token = asset?.verification?.token ?? null;
   const origin = asset === null ? '' : originOf(asset);
   const recommended = asset === null ? 'file' : recommendedProof(new URL(origin).host);
-  const recommendPill = <span className={RECOMMEND_PILL}>Recommended</span>;
+  const recommendPill = (
+    <span className={RECOMMEND_PILL}>{recommended === 'attest' ? 'Recommended for local addresses' : 'Recommended'}</span>
+  );
 
   const check = async (): Promise<void> => {
     if (asset === null) return;
@@ -154,7 +156,7 @@ export function VerifyOwnership({
         ok: false,
         message:
           r.code === 'verification_failed' && url !== null
-            ? `We fetched ${url}, but ${r.message.replace(/\.$/, '')}.`
+            ? `We fetched ${url} and didn't find the token: ${r.message.replace(/\.$/, '')}.`
             : r.message,
       });
     }
@@ -221,7 +223,11 @@ export function VerifyOwnership({
         }}
         title="I'm responsible for this system"
         badge={recommended === 'attest' ? recommendPill : undefined}
-        line="For internal hosts and labs that can't serve a file. You confirm in one tick, and it's recorded with your name."
+        line={
+          recommended === 'attest'
+            ? "Local and lab apps often can't serve an extra file. You confirm in one tick, and it's recorded with your name."
+            : "For internal hosts and labs that can't serve a file. You confirm in one tick, and it's recorded with your name."
+        }
         index={showIndex ? 2 : undefined}
       >
         <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-[10px] border border-border bg-surface-2 px-3.5 py-3 text-[13.5px] text-foreground has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-focus">
@@ -232,8 +238,14 @@ export function VerifyOwnership({
               onAttested(e.target.checked);
               setAttestError(null);
             }}
-            className="mt-0.5 size-[18px] shrink-0 accent-[var(--gold-ink)] focus-visible:outline-none"
+            className="sr-only"
           />
+          <span
+            aria-hidden="true"
+            className={`mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border-[1.5px] ${attested ? 'border-gold-ink bg-gold-ink text-bg' : 'border-input-strong bg-card'}`}
+          >
+            {attested ? <Icon name="check" size={12} /> : null}
+          </span>
           <span className="min-w-0 break-words">
             I&apos;m authorised to test <b className="font-semibold">{origin}</b>.
           </span>

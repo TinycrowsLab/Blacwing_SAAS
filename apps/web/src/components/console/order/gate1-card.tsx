@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { LocalTime } from './local-time';
-import { refreshSidebar } from './shared';
+import { refreshSidebar, wasApproved } from './shared';
 import { approveAndStartAction, denyPlanAction, startAuditAction } from '../../../app/(console)/audits/actions';
 import { reasonEnough, REASON_MIN } from '../../../lib/normalize';
 import { buttonClass, Icon, InlineMessage, LinkButton, Receipt } from '../design';
@@ -114,6 +114,24 @@ export function Gate1Card({
 }) {
   const router = useRouter();
   const [reason, setReason] = useState('');
+  // The reason survives a reload of this tab. Read after mount, so the server and the first client render agree.
+  const reasonKey = `bw:gate1-reason:${request.id}`;
+  useEffect(() => {
+    try {
+      const kept = window.sessionStorage.getItem(reasonKey);
+      if (kept !== null) setReason(kept);
+    } catch {
+      // Storage blocked: the field simply starts empty.
+    }
+  }, [reasonKey]);
+  const keepReason = (v: string): void => {
+    setReason(v);
+    try {
+      window.sessionStorage.setItem(reasonKey, v);
+    } catch {
+      // Storage blocked: nothing to keep.
+    }
+  };
   const [error, setError] = useState<string | null>(null);
   const [needReason, setNeedReason] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'starting'>('idle');
@@ -185,7 +203,7 @@ export function Gate1Card({
   };
 
   if (!pending) {
-    const approved = request.status === 'approved';
+    const approved = wasApproved(request.status);
     const by = request.approver?.name ?? 'someone';
     const at =
       request.decidedAt === null ? null : (
@@ -209,7 +227,7 @@ export function Gate1Card({
         />
         {approved && request.runId !== null ? (
           <LinkButton href={`/runs/${request.runId}`} variant="primary" className="h-12 rounded-xl text-[14.5px]">
-            Watch Claude&apos;s team work
+            {request.status === 'running' ? <>Watch Claude&apos;s team work</> : 'Open the audit'}
             <Icon name="arrow" size={16} />
           </LinkButton>
         ) : approved ? (
@@ -297,7 +315,7 @@ export function Gate1Card({
           }
           value={reason}
           onChange={(v) => {
-            setReason(v);
+            keepReason(v);
             setNeedReason(false);
             setError(null);
           }}

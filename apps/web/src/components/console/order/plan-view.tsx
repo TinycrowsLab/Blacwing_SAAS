@@ -15,12 +15,12 @@ import {
   type LimitValues,
   ObjectiveEditor,
   PathsEditor,
+  readPathList,
   ReleaseEditor,
 } from './plan-editors';
 import { type AccountValue, recallAccounts, rememberAccounts } from './secrets';
-import { type Care, originOf, refreshSidebar } from './shared';
+import { type Care, originOf, refreshSidebar, wasApproved } from './shared';
 import { replacePlanAction } from '../../../app/(console)/audits/actions';
-import { normalizePaths } from '../../../lib/normalize';
 import { type PlanField, planSegments, usd } from '../../../lib/plan-text';
 import { buttonClass, Icon, InlineMessage, LinkButton, type Voice, VoiceTag } from '../design';
 import { PendingButton } from '../design-client';
@@ -28,6 +28,8 @@ import { PendingButton } from '../design-client';
 import type { Asset, AssessmentRequest, Workspace } from '../../../lib/schemas';
 
 const SECONDS_PER_MINUTE = 60;
+const REPLACED = 'Replaced by an edited plan';
+const NEXT_STEP_COUNT = 4;
 /** The order's four questions, all answered by now. */
 const ANSWERED = [1, 2, 3, 4] as const; // eslint-disable-line @typescript-eslint/no-magic-numbers -- the question numbers
 
@@ -179,9 +181,9 @@ export function PlanView({
     setError(null);
     let paths = edit.paths;
     if (field === 'paths' && pathText.trim() !== '') {
-      const typed = normalizePaths(pathText, origin, edit.paths);
-      if (typed.error !== null && typed.error !== '') {
-        setError(typed.error);
+      const typed = readPathList(pathText, origin, edit.paths);
+      if (typed.left !== null) {
+        setError(`Left out ${typed.left.token}: ${typed.left.why}.`);
         return false;
       }
       paths = typed.paths;
@@ -316,11 +318,19 @@ export function PlanView({
     }
   };
 
+  const approved = wasApproved(request.status);
+  const approver = request.approver?.name ?? null;
   const heading = pending
     ? 'Here is what we will do.'
-    : request.status === 'approved'
-      ? 'This is the plan you approved.'
-      : 'This plan was not approved.';
+    : approved
+      ? approver === null || approver === viewer.name
+        ? 'This is the plan you approved.'
+        : `This is the plan ${approver} approved.`
+      : request.decisionReason === REPLACED
+        ? 'This plan was replaced by an edited one.'
+        : 'This plan was not approved.';
+  /** The timeline's progress: the current stop (gold) and those already done (ticked). */
+  const reached = pending ? 0 : approved ? (request.status === 'completed' ? NEXT_STEP_COUNT : 1) : -1;
 
   return (
     <div className="mx-auto grid w-full max-w-[1100px] gap-x-10 gap-y-6 lg:grid-cols-[minmax(0,640px)_380px] lg:justify-center">
@@ -395,11 +405,18 @@ export function PlanView({
         ) : field === null ? (
           <p className="m-0 flex items-center gap-2 text-[12.5px] text-muted-foreground">
             <Icon name="info" size={14} />
-            {canEdit
-              ? 'Click any underlined part to change it. Nothing has been sent to the site yet.'
+            {canEdit ? (
+              <span>
+                <span className="pointer-coarse:hidden">Click</span>
+                <span className="hidden pointer-coarse:inline">Tap</span> any underlined part to change it. Nothing has
+                been sent to the site yet.
+              </span>
+            )
               : pending
                 ? 'Nothing has been sent to the site yet.'
-                : 'The plan is pinned to the run: scope, limits and authorisation cannot change under it.'}
+                : approved
+                  ? 'The plan is pinned to the run: scope, limits and authorisation cannot change under it.'
+                  : 'Nothing was sent to the site.'}
           </p>
         ) : (
           <div
@@ -493,15 +510,22 @@ export function PlanView({
             {NEXT_STEPS(values.release === 'auto').map((s, i) => (
               <li key={s.title} className="relative flex gap-3 sm:flex-col sm:gap-2">
                 <span className="flex items-center sm:w-full">
-                  <span
-                    aria-hidden="true"
-                    className={`size-3 shrink-0 rounded-full border-2 ${i === 0 && pending ? 'border-gold-ink bg-gold' : 'border-border-strong bg-card'}`}
-                  />
+                  {i < reached ? (
+                    <span className="flex size-3 shrink-0 items-center justify-center rounded-full bg-gold-ink text-bg">
+                      <Icon name="check" size={8} />
+                    </span>
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className={`size-3 shrink-0 rounded-full border-2 ${i === reached ? 'border-gold-ink bg-gold' : 'border-border-strong bg-card'}`}
+                    />
+                  )}
                   <span aria-hidden="true" className="hidden h-px flex-1 bg-border-strong sm:block" />
                 </span>
                 <span className="flex flex-col gap-1">
                   <span className="flex flex-wrap items-center gap-1.5 text-[13.5px] font-semibold text-foreground">
                     {s.title} <VoiceTag voice={s.voice} />
+                    {i < reached ? <span className="sr-only">(done)</span> : null}
                   </span>
                   <span className="text-[12.5px] leading-[18px] text-muted-foreground">{s.body}</span>
                 </span>

@@ -1,11 +1,12 @@
 'use client';
 
 // The findings list with its filters (experience spec §2, §8). The server sends every finding once; filtering happens
-// here, so a filter click is instant (no server round trip). The URL is the filter state: a click writes it with
-// history.replaceState and the list reads it back through useSearchParams, so Back, a reload or a shared link all show
-// the same filtered list. URL values are read forgivingly (any case, spaces, the label or the key).
+// here, so a filter click is instant (local state, no server round trip). The URL follows with history.replaceState,
+// and the list re-reads it whenever the router's URL changes (useSearchParams), so Back, a reload or a shared link all
+// show the same filtered list. URL values are read forgivingly (any case, spaces, the label or the key).
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import { agentName } from '../../../lib/agents';
 import { buttonClass, EmptyState, SeverityChip } from '../design';
@@ -14,6 +15,8 @@ import { LocalTime } from './local-time';
 import { FINDING_STATUSES, SEVERITIES, type FindingSummary } from './model';
 
 const cap = (v: string): string => v.charAt(0).toUpperCase() + v.slice(1);
+/** A URL value this long may be the start of a label ("kept" for Kept back). */
+const PREFIX_MIN = 4;
 const fold = (v: string): string => v.trim().toLowerCase().replace(/[\s_-]+/g, ' ');
 
 export interface FindingFilters {
@@ -36,7 +39,11 @@ export function parseFilters(
   const severity = want('severity');
   const target = want('target');
   return {
-    status: FINDING_STATUSES.find((s) => status !== null && (fold(s.key) === status || fold(s.label) === status))?.key,
+    status: FINDING_STATUSES.find(
+      (s) =>
+        status !== null &&
+        (fold(s.key) === status || fold(s.label) === status || (status.length >= PREFIX_MIN && fold(s.label).startsWith(status))),
+    )?.key,
     severity: SEVERITIES.find((s) => s === severity),
     target: targets.find((t) => target !== null && fold(t) === target),
   };
@@ -89,9 +96,16 @@ function FilterRow({
 export function FindingsTable({ items }: { readonly items: readonly FindingSummary[] }) {
   const params = useSearchParams();
   const targets = [...new Set(items.map((f) => f.assetName).filter((n): n is string => n !== null))].sort();
-  const filters = parseFilters((k) => params.get(k), targets);
+  const fromUrl = parseFilters((k) => params.get(k), targets);
+  const [filters, setFilters] = useState<FindingFilters>(fromUrl);
+  const urlKey = params.toString();
+  useEffect(() => {
+    setFilters(parseFilters((k) => new URLSearchParams(urlKey).get(k), targets));
+    // targets derive from items; the URL is what changes on Back.
+  }, [urlKey]);
 
   const write = (next: FindingFilters): void => {
+    setFilters(next);
     const query = new URLSearchParams();
     for (const [k, v] of Object.entries(next)) if (typeof v === 'string') query.set(k, v);
     const text = query.toString();

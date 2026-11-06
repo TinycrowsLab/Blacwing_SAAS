@@ -5,7 +5,8 @@ import { notFound } from 'next/navigation';
 import { PlanView } from '../../../../components/console/order/plan-view';
 import { ApiError, callApi } from '../../../../lib/api';
 import { getViewer } from '../../../../lib/auth';
-import { assetSchema, requestSchema, workspaceSchema } from '../../../../lib/schemas';
+import { assetSchema, requestSchema } from '../../../../lib/schemas';
+import { loadWorkspace, retryOnce } from '../load';
 
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -26,19 +27,15 @@ export default async function PlanPage({
   const { id } = await params;
   if (!UUID.test(id)) notFound();
   const [request, workspace] = await Promise.all([
-    callApi(session, `/requests/${encodeURIComponent(id)}`)
-      .then((b) => requestSchema.parse(b))
-      .catch((error: unknown) => {
+    retryOnce(async () => requestSchema.parse(await callApi(session, `/requests/${encodeURIComponent(id)}`))).catch((error: unknown) => {
         if (error instanceof ApiError && error.status === HTTP_NOT_FOUND) notFound();
         throw error;
       }),
-    callApi(session, '/workspace')
-      .then((b) => workspaceSchema.parse(b))
-      .catch(() => null),
+    loadWorkspace(session),
   ]);
-  const asset = await callApi(session, `/assets/${encodeURIComponent(request.assetId)}`)
-    .then((b) => assetSchema.parse(b))
-    .catch(() => null);
+  const asset = await retryOnce(async () =>
+    assetSchema.parse(await callApi(session, `/assets/${encodeURIComponent(request.assetId)}`)),
+  ).catch(() => null);
   return (
     <PlanView
       key={request.id}

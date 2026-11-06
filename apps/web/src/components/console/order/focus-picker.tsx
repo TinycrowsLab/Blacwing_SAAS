@@ -45,7 +45,7 @@ export function FocusPicker({
               />
               <span
                 aria-hidden="true"
-                className={`mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border ${on ? 'border-gold-ink bg-gold-ink text-white' : 'border-input-strong bg-card'}`}
+                className={`mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border ${on ? 'border-gold-ink bg-gold-ink text-bg' : 'border-input-strong bg-card'}`}
               >
                 {on ? <Icon name="check" size={12} /> : null}
               </span>

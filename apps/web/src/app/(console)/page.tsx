@@ -19,6 +19,12 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Home' };
 
 const RECENT_FINDINGS = 5;
+/** Most serious first (the promise of step 4 below). */
+const SEVERITY_RANK: Readonly<Record<string, number>> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+const rank = (severity: string): number => SEVERITY_RANK[severity] ?? Object.keys(SEVERITY_RANK).length;
+/** Severity, then the one waiting longest. */
+const bySeverity = (a: Dashboard['findings'][number], b: Dashboard['findings'][number]): number =>
+  rank(a.severity) - rank(b.severity) || (a.createdAt ?? '').localeCompare(b.createdAt ?? '');
 
 const HOW = [
   { n: 1, who: 'you', tag: 'You · 1 min', title: 'Tell me what to audit', body: "The site, how you prove it's yours, what worries you, and how careful to be." },
@@ -76,7 +82,9 @@ function Row({ href, dot, title, sub, end }: { readonly href: string; readonly d
 
 function Returning({ d }: { readonly d: Dashboard }) {
   const plans = d.requests.filter((r) => r.status === 'pending_gate1');
-  const releases = d.findings.filter((f) => f.status === 'confirmed');
+  const releases = d.findings.filter((f) => f.status === 'confirmed').sort(bySeverity);
+  // Recent findings leaves out what "Waiting on you" already lists.
+  const recent = d.findings.filter((f) => f.status !== 'confirmed').slice(0, RECENT_FINDINGS);
   const live = d.runs.filter((r) => LIVE_RUN_STATES.includes(r.state));
   const waiting = d.pendingGate2.length + plans.length + releases.length;
   return (
@@ -126,7 +134,7 @@ function Returning({ d }: { readonly d: Dashboard }) {
           ))}
         </Section>
       )}
-      {d.findings.length === 0 ? null : (
+      {recent.length === 0 ? null : (
         <Section
           id="home-findings"
           title="Recent findings"
@@ -136,7 +144,7 @@ function Returning({ d }: { readonly d: Dashboard }) {
             </Link>
           }
         >
-          {d.findings.slice(0, RECENT_FINDINGS).map((f) => (
+          {recent.map((f) => (
             <Row
               key={f.id}
               href={`/findings/${f.id}`}
@@ -214,7 +222,7 @@ export default async function HomePage({
       <HomeAsk
         givenName={session.user.givenName}
         serverGreeting={greetingFor(new Date().getHours())}
-        named={params.named === '1'}
+        named={params.named === '1' ? (dashboard?.tenant?.name ?? null) : null}
         waiting={(dashboard?.requests ?? [])
           .filter((r) => r.status === 'pending_gate1')
           .map((r) => ({ id: r.id, assetId: r.assetId }))}

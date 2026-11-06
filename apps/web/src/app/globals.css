@@ -205,6 +205,11 @@
   --shadow-pop: var(--pop-shadow);
 }
 
+/* The page never shifts sideways when it grows tall enough to scroll (Edge on Windows draws a classic scrollbar). */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   -webkit-font-smoothing: antialiased;
   font-variant-numeric: tabular-nums;

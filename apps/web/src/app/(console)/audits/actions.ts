@@ -9,6 +9,8 @@ import { z } from 'zod';
 import { type ActionResult, ApiError, callApi, toResult } from '../../../lib/api';
 import { getViewer } from '../../../lib/auth';
 import { type Asset, assetSchema, type AssessmentRequest, requestSchema } from '../../../lib/schemas';
+import { wasApproved } from '../../../components/console/order/shared';
+import { loadWorkspace, suggestedLimits } from './load';
 
 const enc = encodeURIComponent;
 const HTTP_CONFLICT = 409;
@@ -59,7 +61,10 @@ const verifySchema = z.discriminatedUnion('method', [
 ]);
 export type VerifyInput = z.infer<typeof verifySchema>;
 
+/** The API's own wait for the file (apps/api demo service VERIFY_TIMEOUT_MS). */
 const VERIFY_TIMEOUT_MS = 5000;
+/** A check that took this close to the API's wait timed out there: no second fetch, no second wait. */
+const TIMEOUT_SLACK_MS = 400;
 const HTTP_NOT_FOUND = 404;
 const HTTP_FORBIDDEN = 403;
 const HTTP_SERVER_ERROR = 500;
@@ -102,10 +107,10 @@ async function fileCheckCause(url: string, token: string): Promise<string> {
   if (status >= HTTP_SERVER_ERROR) return `the site had an error (HTTP ${status})`;
   if (!response.ok) return `the site answered HTTP ${status}`;
   const body = (await response.text().catch(() => '')).slice(0, 65_536);
-  if (body.includes(token)) return 'the file is there now. Check again';
+  if (body.includes(token)) return 'it has just appeared. Press Check now again';
   if (/html/i.test(response.headers.get('content-type') ?? '') || /^\s*</.test(body))
     return 'the site answered with a web page, not the file. Apps that answer every address with their own page need the file served before the app';
-  return "the file is there, but it doesn't contain the token. Paste the token exactly, with nothing else";
+  return 'the file is there, but its content is different. Paste the token exactly, with nothing else';
 }
 
 /** Proves ownership by the well-known file or by attestation. "Already verified" (another tab) counts as success. */
@@ -115,9 +120,11 @@ export async function verifyTargetAction(assetId: string, verify: VerifyInput): 
   const id = uuid.safeParse(assetId);
   const body = verifySchema.safeParse(verify);
   if (!id.success || !body.success) return invalid('Pick a way to show the site is yours.');
+  const started = Date.now();
   const result = await toResult(async () =>
     assetSchema.parse(await callApi(session, `/assets/${enc(id.data)}/verify`, { method: 'POST', body: body.data })),
   );
+  const timedOut = Date.now() - started >= VERIFY_TIMEOUT_MS - TIMEOUT_SLACK_MS;
   if (!result.ok && result.status === HTTP_CONFLICT)
     return toResult(async () => assetSchema.parse(await callApi(session, `/assets/${enc(id.data)}`)));
   if (!result.ok && result.code === 'verification_failed') {
@@ -126,7 +133,13 @@ export async function verifyTargetAction(assetId: string, verify: VerifyInput): 
       .then((b) => assetSchema.parse(b))
       .catch(() => null);
     const v = asset?.verification ?? null;
-    if (v !== null && v.token !== null) return { ...result, message: await fileCheckCause(v.wellKnownUrl, v.token) };
+    if (v !== null && v.token !== null)
+      return {
+        ...result,
+        message: timedOut
+          ? `the site didn't answer within ${VERIFY_TIMEOUT_MS / 1000} seconds`
+          : await fileCheckCause(v.wellKnownUrl, v.token),
+      };
   }
   return result;
 }
@@ -141,9 +154,9 @@ const auditSchema = z.object({
   assetId: z.uuid(),
   objective: z.string().trim().min(1).max(2000),
   intrusiveness: z.enum(['passive', 'active_safe']),
-  minutes: z.number().int().positive(),
-  requests: z.number().int().positive(),
-  costUsd: z.number().positive(),
+  minutes: z.number().int().positive().nullable(),
+  requests: z.number().int().positive().nullable(),
+  costUsd: z.number().positive().nullable(),
   excludedPaths: z.array(z.string().startsWith('/').max(512)).max(50),
   releaseProven: z.enum(['hold', 'auto']),
   testAccounts: z.array(accountSchema).max(3),
@@ -152,8 +165,15 @@ export type AuditInput = z.infer<typeof auditSchema>;
 
 async function createRequest(
   session: NonNullable<Awaited<ReturnType<typeof getViewer>>>,
-  a: AuditInput,
+  input: AuditInput,
 ): Promise<AssessmentRequest> {
+  const a = input;
+  // The page could not load the workspace's suggestion: read it here, so the order never dead-ends on a reload.
+  const limits =
+    a.minutes !== null && a.requests !== null && a.costUsd !== null
+      ? { minutes: a.minutes, requests: a.requests, costUsd: a.costUsd }
+      : suggestedLimits(await loadWorkspace(session));
+  if (limits === null) throw new Error('workspace limits unavailable');
   return requestSchema.parse(
     await callApi(session, '/requests', {
       method: 'POST',
@@ -161,9 +181,9 @@ async function createRequest(
         assetId: a.assetId,
         objective: a.objective,
         intrusiveness: a.intrusiveness,
-        budgetRequests: a.requests,
-        budgetSeconds: a.minutes * SECONDS_PER_MINUTE,
-        costCapUsd: a.costUsd,
+        budgetRequests: limits.requests,
+        budgetSeconds: limits.minutes * SECONDS_PER_MINUTE,
+        costCapUsd: limits.costUsd,
         excludedPaths: a.excludedPaths,
         releaseProven: a.releaseProven,
         testAccounts: a.testAccounts,
@@ -236,7 +256,7 @@ export async function approveAndStartAction(
     if (approved.status !== HTTP_CONFLICT) return approved;
     const current = await toResult(async () => requestSchema.parse(await callApi(session, `/requests/${enc(id.data)}`)));
     if (!current.ok) return current;
-    if (current.data.status !== 'approved')
+    if (!wasApproved(current.data.status))
       return { ok: false, code: 'request_not_pending', message: approved.message, status: HTTP_CONFLICT };
     if (current.data.runId !== null) return { ok: true, data: { runId: current.data.runId } };
   }

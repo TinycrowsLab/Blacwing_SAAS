@@ -17,7 +17,7 @@ describe('plan read-back', () => {
 
   it('fills the template exactly', () => {
     expect(planText(plan)).toBe(
-      "We will audit staging.example.com for who can see whose data and injection, with your note: \u201cFocus on checkout\u201d. Claude's agents will probe gently: crafted read requests that should not change data. Anything that would change data waits for your yes. They will stay out of /admin and /internal and test as 2 signed-in roles, customer_a and customer_b. We stop at 30 minutes, 1,000 requests or $8 of model spend, whichever comes first. Anything Claude proves waits for your release.",
+      "We will audit staging.example.com for who can see whose data and injection, with your note: \u201cFocus on checkout\u201d. Claude's agents will probe gently: crafted read requests that should not change data. Anything that would change data waits for your yes. They will stay out of /admin and /internal. They test as 2 signed-in roles, customer_a and customer_b. We stop at 30 minutes, 1,000 requests or $8 of model spend, whichever comes first. Anything Claude proves waits for your release.",
     );
   });
 

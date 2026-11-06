@@ -2,14 +2,15 @@
 
 // The editors behind each underlined value of the plan (experience spec §3.3 optional details, §10.2, §10.3). Every
 // input is forgiving: paths become prefix chips, limits are clamped with a note, a pasted header splits itself.
-import { useId, useState } from 'react';
+import { type ReactNode, useId, useRef, useState } from 'react';
 
 import { FocusPicker } from './focus-picker';
 import { CARE, type Care, composeObjective, readObjective } from './shared';
 import {
   bearerize,
   headerNameError,
-  normalizePaths,
+  MAX_PATHS,
+  normalizePath,
   parseCost,
   parseMinutes,
   parseRequests,
@@ -66,6 +67,68 @@ export function CareEditor({ value, onChange }: { readonly value: Care; readonly
   );
 }
 
+const SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i;
+
+/**
+ * Splits a typed or pasted list into the paths meant (spec §10.2). A bare word straight after a path with only a space
+ * between ("/has space") is one path with a space in it, so it is refused rather than turned into two exclusions.
+ * `after` is the path committed just before, when the person typed a space after it.
+ */
+export function readPathList(
+  text: string,
+  origin: string | null,
+  existing: readonly string[],
+  after: string | null = null,
+): { paths: readonly string[]; left: { token: string; why: string } | null } {
+  const groups: string[] = [];
+  const parts = text.split(/([\s,]+)/);
+  let joinedAfter = false;
+  for (let i = 0; i < parts.length; i += 2) {
+    const token = parts[i] ?? '';
+    if (token === '') continue;
+    const sep = i === 0 ? (after === null ? '' : ' ') : (parts[i - 1] ?? '');
+    const prev = groups.length === 0 && i === 0 ? after : groups.at(-1);
+    const continues =
+      prev !== null && prev !== undefined && /^[ \t]+$/.test(sep) && prev.startsWith('/') && !token.startsWith('/') && !SCHEME.test(token);
+    if (continues && groups.length === 0) {
+      groups.push(`${prev} ${token}`);
+      joinedAfter = true;
+    } else if (continues) groups[groups.length - 1] = `${prev} ${token}`;
+    else groups.push(token);
+  }
+  // The path committed before this word was half of a path with a space: it comes back out.
+  let paths = joinedAfter && after !== null ? existing.filter((p) => p !== after) : [...existing];
+  let left: { token: string; why: string } | null = null;
+  for (const g of groups) {
+    const r = normalizePath(g, origin);
+    if (!r.ok) {
+      left ??= {
+        token: g,
+        why: /\s/.test(g) ? "paths can't contain spaces. Write a space as %20, or put a comma between two paths" : r.message.replace(/\.$/, ''),
+      };
+      continue;
+    }
+    if (paths.includes(r.path)) continue;
+    if (paths.length >= MAX_PATHS) {
+      left ??= { token: g, why: `up to ${MAX_PATHS} paths` };
+      continue;
+    }
+    paths = [...paths, r.path];
+  }
+  return { paths, left };
+}
+
+/** "/admin" in mono, then "and everything under it" in the sentence's own type. */
+const describePath = (v: string): ReactNode =>
+  v === '/' ? (
+    <span className="font-sans">the whole site</span>
+  ) : (
+    <>
+      {v}
+      <span className="ml-1 font-sans text-muted-foreground">and everything under it</span>
+    </>
+  );
+
 export function PathsEditor({
   value,
   onChange,
@@ -80,23 +143,51 @@ export function PathsEditor({
   /** The typed text not yet turned into a chip (the plan's Update includes it). */
   readonly onText: (text: string) => void;
 }) {
+  // What was left out, and why, stays until the person dismisses it or removes a chip: a later valid path never hides it.
+  const [left, setLeft] = useState<{ token: string; why: string } | null>(null);
+  /** The path just committed by a typed space: a bare word next may be the rest of it ("/has space"). */
+  const lastSpaced = useRef<string | null>(null);
   return (
     <div className="flex flex-col gap-2">
       <ChipInput
         label={<span className="sr-only">Paths to avoid</span>}
         values={value}
-        onChange={onChange}
+        onChange={(next) => {
+          if (next.length < value.length) setLeft(null);
+          onChange(next);
+        }}
         parse={(text, existing) => {
-          const r = normalizePaths(text, origin, existing);
-          return { values: r.paths, error: r.error };
+          const r = readPathList(text, origin, existing, lastSpaced.current);
+          if (r.left !== null) setLeft(r.left);
+          const last = r.paths.at(-1);
+          lastSpaced.current = / $/.test(text) && last !== undefined && last !== existing.at(-1) ? last : null;
+          return { values: r.paths, error: null };
         }}
         placeholder="/admin, /billing, or a full link on this site"
         locked={locked}
-        describe={(v) => (v === '/' ? 'the whole site' : `${v} and everything under it`)}
+        describe={describePath}
         onText={onText}
       />
+      {left === null ? null : (
+        <div role="alert" className="flex items-start gap-2 rounded-[10px] bg-bad-soft px-3 py-2 text-[13px] leading-5 text-bad">
+          <Icon name="warn" size={15} className="mt-[2px] shrink-0" />
+          <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+            Left out <code className="font-mono text-[12.5px]">{left.token}</code>: {left.why}.
+          </span>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => {
+              setLeft(null);
+            }}
+            className="-my-1 flex size-7 shrink-0 items-center justify-center rounded-md hover:bg-bad/10 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+          >
+            <Icon name="x" size={13} />
+          </button>
+        </div>
+      )}
       <p className="m-0 text-[12.5px] text-muted-foreground">
-        A path keeps Claude out of it and everything under it. Spaces, commas and new lines separate paths, so paste a
+        A path keeps Claude out of it and everything under it. Commas, spaces and new lines separate paths, so paste a
         whole list (write a space inside a path as <code className="font-mono">%20</code>).
       </p>
     </div>
@@ -308,16 +399,22 @@ function CustomField({
   label,
   initial,
   parse,
+  show,
   onValue,
 }: {
   readonly label: string;
   readonly initial: string;
   readonly parse: (text: string) => ReturnType<typeof parseMinutes>;
+  /** How a settled value is written back into the field on blur ("5h" becomes "120 min" once clamped). */
+  readonly show: (v: number) => string;
   readonly onValue: (v: number | null) => void;
 }) {
   const id = useId();
   const [text, setText] = useState(initial);
-  const r = parse(text);
+  /** The clamp note survives the rewrite on blur, so the person still sees why the number changed. */
+  const [kept, setKept] = useState<string | null>(null);
+  const parsed = parse(text);
+  const r = parsed.ok && parsed.note === null && kept !== null ? { ...parsed, note: kept } : parsed;
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="text-[12px] font-medium text-foreground">
@@ -332,8 +429,14 @@ function CustomField({
         aria-invalid={!r.ok || undefined}
         onChange={(e) => {
           setText(e.target.value);
+          setKept(null);
           const next = parse(e.target.value);
           onValue(next.ok ? next.value : null);
+        }}
+        onBlur={() => {
+          if (!parsed.ok) return;
+          setText(show(parsed.value));
+          if (parsed.note !== null) setKept(parsed.note);
         }}
         className={`${INPUT_CLASS} h-10`}
       />
@@ -371,7 +474,7 @@ export function LimitsEditor({
   return (
     <fieldset className="m-0 flex flex-col gap-2.5 border-0 p-0">
       <legend className="sr-only">Limits</legend>
-      <div className="grid gap-2.5 sm:grid-cols-3">
+      <div className="flex flex-col gap-2">
         {settings.presets.map((p) => (
           <OptionCard
             key={p.key}
@@ -385,9 +488,10 @@ export function LimitsEditor({
             title={p.label}
             description={
               <>
-                {p.minutes} min · {p.requests.toLocaleString()} requests
-                <br />
-                Most it can cost <b className="font-medium text-foreground">{usd(p.costUsd)}</b>
+                {p.minutes} min · {p.requests.toLocaleString('en-US')} requests ·{' '}
+                <span className="whitespace-nowrap">
+                  most it can cost <b className="font-medium text-foreground">{usd(p.costUsd)}</b>
+                </span>
               </>
             }
           />
@@ -410,6 +514,7 @@ export function LimitsEditor({
             label="Longest it can run"
             initial={`${value.minutes} min`}
             parse={(t) => parseMinutes(t, r('minutes'))}
+            show={(v) => `${v} min`}
             onValue={(v) => {
               update({ ...parts, minutes: v });
             }}
@@ -418,14 +523,16 @@ export function LimitsEditor({
             label="Most requests"
             initial={value.requests.toLocaleString('en-US')}
             parse={(t) => parseRequests(t, r('requests'))}
+            show={(v) => v.toLocaleString('en-US')}
             onValue={(v) => {
               update({ ...parts, requests: v });
             }}
           />
           <CustomField
             label="Most it can cost"
-            initial={`$${value.costUsd}`}
+            initial={usd(value.costUsd)}
             parse={(t) => parseCost(t, r('costUsd'))}
+            show={usd}
             onValue={(v) => {
               update({ ...parts, costUsd: v });
             }}
