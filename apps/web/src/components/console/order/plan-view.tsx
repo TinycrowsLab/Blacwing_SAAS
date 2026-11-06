@@ -406,11 +406,8 @@ export function PlanView({
           <p className="m-0 flex items-center gap-2 text-[12.5px] text-muted-foreground">
             <Icon name="info" size={14} />
             {canEdit ? (
-              <span>
-                <span className="pointer-coarse:hidden">Click</span>
-                <span className="hidden pointer-coarse:inline">Tap</span> any underlined part to change it. Nothing has
-                been sent to the site yet.
-              </span>
+              // Neutral on purpose: a phone with a mouse, or a laptop with a touch screen, reads it right either way.
+              'Change any underlined part. Nothing has been sent to the site yet.'
             )
               : pending
                 ? 'Nothing has been sent to the site yet.'

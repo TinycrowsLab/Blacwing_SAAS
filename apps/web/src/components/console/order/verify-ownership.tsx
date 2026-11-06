@@ -156,7 +156,7 @@ export function VerifyOwnership({
         ok: false,
         message:
           r.code === 'verification_failed' && url !== null
-            ? `We fetched ${url} and didn't find the token: ${r.message.replace(/\.$/, '')}.`
+            ? `We checked ${url}: ${r.message.replace(/\.$/, '')}.`
             : r.message,
       });
     }
