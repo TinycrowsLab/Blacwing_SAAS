@@ -123,7 +123,15 @@ export function IssueBody({ finding, children }: { readonly finding: FindingDeta
 
       <section className="flex flex-col gap-2">
         <Label voice="blackwing">
-          <b>How it was proved</b> · by the validator
+          {proof.proven ? (
+            <>
+              <b>How it was proved</b> · by the validator
+            </>
+          ) : (
+            <>
+              <b>What the validator saw</b> · not proven
+            </>
+          )}
         </Label>
         <div className="grid gap-2.5 md:grid-cols-2">
           <ProofSide

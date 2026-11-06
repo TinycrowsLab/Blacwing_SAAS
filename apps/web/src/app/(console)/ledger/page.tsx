@@ -2,6 +2,7 @@
 // Ledger (experience spec §2, §8): every decision in the workspace, newest first, hash-chained. The API re-verifies
 // the whole chain on each load; the pill says what it found.
 import Link from 'next/link';
+import { z } from 'zod';
 
 import { Chip, EmptyState, Icon } from '../../../components/console/design';
 import { LocalTime } from '../../../components/console/results/local-time';
@@ -22,6 +23,8 @@ const TARGET_HREF: Readonly<Record<string, (id: string) => string>> = {
   gate2: (id) => `/decisions/gate2/${id}`,
 };
 
+const findingTitles = z.object({ items: z.array(z.object({ id: z.string(), title: z.string() })) });
+
 const text = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v : null);
 
 function pathOf(url: string): string {
@@ -34,7 +37,7 @@ function pathOf(url: string): string {
 }
 
 /** The one line of context an entry carries: the request it allowed, the name it set, the reason given. */
-function Detail({ item }: { readonly item: LedgerItem }) {
+function Detail({ item, title }: { readonly item: LedgerItem; readonly title: string | undefined }) {
   const p = item.payload;
   const method = text(p.method);
   const url = text(p.url);
@@ -49,6 +52,7 @@ function Detail({ item }: { readonly item: LedgerItem }) {
         </span>
       ) : null}
       {item.action === 'workspace.named' && name !== null ? <> &ldquo;{name}&rdquo;</> : null}
+      {title === undefined ? null : <span className="text-foreground"> &ldquo;{title}&rdquo;</span>}
       {reason === null ? null : <> &ldquo;{reason}&rdquo;</>}
     </span>
   );
@@ -57,7 +61,14 @@ function Detail({ item }: { readonly item: LedgerItem }) {
 export default async function LedgerPage(): Promise<ReactNode> {
   const session = await getViewer();
   if (session === null) return null;
-  const { items, chain } = ledgerSchema.parse(await callApi(session, '/audit'));
+  // The ledger stores ids; the findings list names them. Without it the entries still read, just unnamed.
+  const [{ items, chain }, findings] = await Promise.all([
+    callApi(session, '/audit').then((b) => ledgerSchema.parse(b)),
+    callApi(session, '/findings')
+      .then((b) => findingTitles.parse(b).items)
+      .catch(() => []),
+  ]);
+  const titles = new Map(findings.map((f) => [f.id, f.title]));
   const head = items[0]?.hash ?? null;
   return (
     <div className="flex w-full max-w-[1100px] flex-col gap-5">
@@ -128,7 +139,7 @@ export default async function LedgerPage(): Promise<ReactNode> {
                   </span>
                   <span className="min-w-0 break-words text-[13.5px] leading-[21px] text-foreground">
                     <span className="font-medium">{e.actor.name}</span> · {actionLabel(e.action).toLowerCase()}
-                    <Detail item={e} />
+                    <Detail item={e} title={e.targetType === 'finding' ? titles.get(e.targetId) : undefined} />
                     {e.payload.selfApproved === true ? (
                       <span className="ml-2 inline-flex align-middle">
                         <Chip tone="gold">Self-approved</Chip>
