@@ -151,7 +151,7 @@ export default async function ResultsPage({
                 : `Claude has proved ${plural(proven.length, 'issue', 'issues')} so far.`
               : headline(proven)}
           </h1>
-          <p className="m-0 max-w-[68ch] text-[15px] leading-6 text-muted-foreground [&_b]:font-semibold [&_b]:text-foreground">
+          <p className="m-0 text-[15px] leading-6 text-muted-foreground [&_b]:font-semibold [&_b]:text-foreground">
             {proven.length > 0 ? (
               <>
                 {did} Each issue below was replayed by the validator with a control.

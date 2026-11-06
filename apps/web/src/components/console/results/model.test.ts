@@ -95,12 +95,12 @@ describe('duration and stopLine', () => {
     expect(
       stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [] }, 0, { executed: 6, skipped: 2, blocked: 0, total: 9 })
         .text,
-    ).toBe('Finished in 18m 12s · Claude finished after 6 of 9 test cases (2 skipped as not relevant, 1 not reached)');
+    ).toBe('Finished in 18m 12s · Claude ran 6 of 9 test cases (2 skipped as not relevant, 1 not reached)');
     // "Blocked" is said in plain words: with a denied request, that is why.
     expect(
       stopLine({ ...base, state: 'completed', events: [ev(1, 'run.completed')], gate2: [gate2('a', 'denied')] }, 0, { executed: 6, skipped: 0, blocked: 2, total: 8 })
         .text,
-    ).toBe('Finished in 18m 12s · Claude finished after 6 of 8 test cases (2 needed requests that were denied)');
+    ).toBe('Finished in 18m 12s · Claude ran 6 of 8 test cases (2 needed denied requests)');
     expect(stopLine({ ...base, state: 'killed', events: [], gate2: [] }, 0).text).toBe('Stopped after 18m 12s · you stopped testing');
     expect(stopLine({ ...base, state: 'failed', events: [ev(1, 'run.failed', { reason: 'model_error' })], gate2: [] }, 0).tone).toBe('bad');
   });

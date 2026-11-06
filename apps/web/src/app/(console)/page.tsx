@@ -2,6 +2,7 @@
 // returning person also sees what waits for them, what is in progress and the latest findings (each hidden when empty).
 import Link from 'next/link';
 
+import { retryOnce } from './audits/load';
 import { Icon, type IconName, SeverityChip, StatusChip, VoiceTag } from '../../components/console/design';
 import { Countdown } from '../../components/console/design-client';
 import { HomeAsk } from '../../components/console/order/home-ask';
@@ -222,9 +223,8 @@ export default async function HomePage({
   if (session === null) return null;
   const [params, dashboard] = await Promise.all([
     searchParams,
-    callApi(session, '/dashboard')
-      .then((b) => dashboardSchema.parse(b))
-      .catch(() => null),
+    // One busy moment (a 429 under load) is tried once more before Home says it couldn't load.
+    retryOnce(async () => dashboardSchema.parse(await callApi(session, '/dashboard'))).catch(() => null),
   ]);
   // Nothing live, waiting or found yet: explain how an audit works instead of empty lists.
   const firstVisit =

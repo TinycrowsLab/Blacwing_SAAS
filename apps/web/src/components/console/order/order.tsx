@@ -615,7 +615,8 @@ export function Order({
 
         {error === null ? null : (
           <InlineMessage tone="bad">
-            {error}{' '}
+            {/* The button below is the fix, so the message does not say it twice. */}
+            {error.replace(/;\s*try again[^.]*\.$/i, '.')}{' '}
             <button
               type="button"
               onClick={() => {

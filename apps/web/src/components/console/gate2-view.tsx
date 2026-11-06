@@ -256,7 +256,7 @@ function Earlier({
             {who} denied {what} at {time} in this audit.
           </>
         )}{' '}
-        Claude is asking again, for a different reason.
+        Claude is asking again.
       </span>
     </p>
   );
@@ -470,7 +470,7 @@ function DeadlinePanel({
           <>
             <dt className="text-muted-foreground">Audit</dt>
             <dd className="m-0 text-right text-foreground">
-              {whoseAudit(audit).replace(/^./, (c) => c.toUpperCase())}, started{' '}
+              {audit.mine ? 'Yours' : (audit.requester ?? 'A teammate')},{' '}
               <When iso={audit.startedAt} />
             </dd>
           </>
@@ -919,7 +919,7 @@ function AuditHeader({
   };
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <div className="flex flex-col gap-x-3 gap-y-1 sm:flex-row sm:items-center">
         <p className="m-0 min-w-0 flex-1 text-[13px] leading-5 text-muted-foreground">
           <span className="font-semibold text-foreground">
             {audit?.assetName ?? hostOf(item.gate2.url)}
@@ -931,19 +931,24 @@ function AuditHeader({
             </>
           )}
         </p>
-        <Link href={`/runs/${item.gate2.runId}`} className={`text-[12.5px] ${LINK}`}>
-          Open the live audit
-        </Link>
-        {openIds.length < 2 ? null : (
-          <PendingButton
-            variant="secondary"
-            pendingLabel="Denying…"
-            onAction={denyAll}
-            className="h-8 px-3 text-[12.5px]"
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/runs/${item.gate2.runId}`}
+            className={`inline-flex min-h-11 items-center text-[12.5px] sm:min-h-0 ${LINK}`}
           >
-            Deny all {openIds.length}
-          </PendingButton>
-        )}
+            Open the live audit
+          </Link>
+          {openIds.length < 2 ? null : (
+            <PendingButton
+              variant="secondary"
+              pendingLabel="Denying…"
+              onAction={denyAll}
+              className="h-8 px-3 text-[12.5px] max-sm:ml-auto max-sm:h-11"
+            >
+              Deny all {openIds.length}
+            </PendingButton>
+          )}
+        </div>
       </div>
       {failed === 0 ? null : (
         <InlineMessage tone="bad">

@@ -154,7 +154,8 @@ export function PlanView({
   const approval = useRef<HTMLDivElement>(null);
   const [approvalSeen, setApprovalSeen] = useState(true);
   useEffect(() => {
-    const el = approval.current;
+    // The approve button itself, not the card's header: the bar stays until the person can press it.
+    const el = approval.current?.querySelector('[data-approve] button') ?? approval.current;
     if (el === null || !pending) return;
     const io = new IntersectionObserver(([e]) => {
       setApprovalSeen(e?.isIntersecting ?? true);
@@ -574,7 +575,8 @@ export function PlanView({
             type="button"
             onClick={() => {
               approval.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-              approval.current?.querySelector<HTMLElement>('textarea, button')?.focus({ preventScroll: true });
+              const card = approval.current;
+              (card?.querySelector('textarea') ?? card?.querySelector('button'))?.focus({ preventScroll: true });
             }}
             className={buttonClass('primary', 'h-12 w-full rounded-xl text-[14.5px]')}
           >

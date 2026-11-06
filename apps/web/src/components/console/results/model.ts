@@ -147,7 +147,7 @@ function notRun(cases: CaseCounts, run: Pick<Run, 'events' | 'gate2'>): string[]
     b === 0
       ? null
       : denied
-        ? `${b} needed ${b === 1 ? 'a request that was' : 'requests that were'} denied`
+        ? `${b} needed ${b === 1 ? 'a denied request' : 'denied requests'}`
         : refused
           ? `${b} ${b === 1 ? 'was' : 'were'} stopped by the safety rules`
           : `${b} could not run`;
@@ -164,7 +164,7 @@ function completedWhy(reason: unknown, cases: CaseCounts | undefined, run: Pick<
   if (typeof reason === 'string' && reason !== '') return finishReason(reason);
   if (cases === undefined || cases.total === 0 || cases.executed >= cases.total) return 'Claude finished its plan';
   const rest = notRun(cases, run);
-  return `Claude finished after ${cases.executed} of ${cases.total} test cases${rest.length === 0 ? '' : ` (${rest.join(', ')})`}`;
+  return `Claude ran ${cases.executed} of ${cases.total} test cases${rest.length === 0 ? '' : ` (${rest.join(', ')})`}`;
 }
 
 /** The eyebrow over the results headline: how long it ran and why it stopped, in words. */

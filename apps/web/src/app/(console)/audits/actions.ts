@@ -95,7 +95,7 @@ async function fileCheckCause(url: string, token: string): Promise<string> {
   } catch (error) {
     const code = errorCode(error);
     if (code === 'ENOTFOUND' || code === 'EAI_AGAIN')
-      return `the name ${host} doesn't resolve to an address. Check the spelling, or that the name exists`;
+      return `the name ${new URL(url).hostname} doesn't resolve to an address. Check the spelling, or that the name exists`;
     if (code === 'ECONNREFUSED') return `nothing answered at ${host} (the connection was refused). Check that the site is running`;
     if (code === 'TIMEOUT' || code === 'UND_ERR_CONNECT_TIMEOUT')
       return `the site didn't answer within ${VERIFY_TIMEOUT_MS / 1000} seconds`;

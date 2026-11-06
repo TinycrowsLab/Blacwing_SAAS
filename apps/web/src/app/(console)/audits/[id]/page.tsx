@@ -1,6 +1,7 @@
 // The plan read-back and Gate 1 (experience spec §3.4). The request, its site and the workspace settings load in
 // parallel; the page is the plan paragraph, the facts, what happens next and the approval card.
 import { notFound } from 'next/navigation';
+import { z } from 'zod';
 
 import { PlanView } from '../../../../components/console/order/plan-view';
 import { ApiError, callApi } from '../../../../lib/api';
@@ -15,15 +16,20 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'The plan' };
 
 const HTTP_NOT_FOUND = 404;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REPLACED = 'Replaced by an edited plan';
 /** An edit creates the new plan, then retires the old one: both within a few seconds. */
 const REPLACE_WINDOW_MS = 15_000;
-/** Runs started after the edit that are checked for the new plan (it may have been approved since). */
-const RUNS_TO_CHECK = 3;
+/** Decided plans after the edit that are checked for the new one (it may since be approved, or edited again). */
+const DECIDED_TO_CHECK = 4;
+const ledgerSchema = z.object({
+  items: z.array(z.object({ at: z.string(), action: z.string(), targetType: z.string(), targetId: z.string() })),
+});
 
 /**
  * The plan that replaced this one: same site, same person, created as this one was retired. Looked up only for a
- * replaced plan, so its page can link on instead of offering a fresh start.
+ * replaced plan, so its page links on instead of offering a fresh start. The new plan is either still waiting
+ * (/dashboard) or was decided after the edit (a Gate 1 event on the ledger: approved, or itself edited again).
  * shortcut: matched by time (the API keeps no link between the two). Upgrade when the API records the replacement.
  */
 async function successorOf(session: Viewer, plan: AssessmentRequest): Promise<string | null> {
@@ -34,23 +40,29 @@ async function successorOf(session: Viewer, plan: AssessmentRequest): Promise<st
     r.assetId === plan.assetId &&
     r.requester.id === plan.requester.id &&
     Math.abs(Date.parse(r.createdAt) - decided) < REPLACE_WINDOW_MS;
-  const d = await retryOnce(async () => dashboardSchema.parse(await callApi(session, '/dashboard'))).catch(() => null);
-  if (d === null) return null;
-  const waiting = d.requests.find((r) => isNext(r));
+  const [d, ledger] = await Promise.all([
+    retryOnce(async () => dashboardSchema.parse(await callApi(session, '/dashboard'))).catch(() => null),
+    retryOnce(async () => ledgerSchema.parse(await callApi(session, '/audit'))).catch(() => null),
+  ]);
+  const waiting = d?.requests.find((r) => isNext(r));
   if (waiting !== undefined) return waiting.id;
-  const later = d.runs
-    .filter((r) => Date.parse(r.createdAt) >= decided)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    .slice(0, RUNS_TO_CHECK);
-  for (const run of later) {
+  const decidedSince = [
+    ...new Set(
+      (ledger?.items ?? [])
+        .filter((e) => e.targetType === 'request' && e.action.startsWith('gate1.') && e.targetId !== plan.id)
+        .filter((e) => Date.parse(e.at) >= decided)
+        .sort((a, b) => a.at.localeCompare(b.at))
+        .map((e) => e.targetId),
+    ),
+  ].slice(0, DECIDED_TO_CHECK);
+  for (const id of decidedSince) {
     const r = await retryOnce(async () =>
-      requestSchema.parse(await callApi(session, `/requests/${encodeURIComponent(run.requestId)}`)),
+      requestSchema.parse(await callApi(session, `/requests/${encodeURIComponent(id)}`)),
     ).catch(() => null);
     if (r !== null && isNext(r)) return r.id;
   }
   return null;
 }
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function PlanPage({
   params,

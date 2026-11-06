@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { InlineMessage } from '../design';
 import { PendingButton } from '../design-client';
 import { runAgainAction } from './actions';
+import { useNudge } from './triage';
 
 const FORMATS = [
   { key: 'html', label: 'HTML' },
@@ -151,6 +152,7 @@ export function ReportDownload({
 /** "Run this audit again": a new pending audit with the same answers, opened at its plan. */
 export function RunAgain({ requestId }: { readonly requestId: string }) {
   const router = useRouter();
+  const nudge = useNudge();
   const [error, setError] = useState<string | null>(null);
   return (
     <div className="flex flex-col gap-2">
@@ -168,7 +170,9 @@ export function RunAgain({ requestId }: { readonly requestId: string }) {
             return false;
           }
           window.dispatchEvent(new Event('bw:refresh'));
+          const from = window.location.pathname;
           router.push(`/audits/${result.data.id}`);
+          nudge(() => window.location.pathname !== from);
           return true;
         }}
       >
