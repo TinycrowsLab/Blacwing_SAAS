@@ -17,3 +17,18 @@ export function LocalTime({ iso, format }: { readonly iso: string; readonly form
   );
   return <time dateTime={iso}>{text}</time>;
 }
+
+/** "1:32 pm" today, "6 Nov 2026, 1:32 pm" on another day: the one way the order and the plan write a moment. */
+export const momentText = (iso: string): string => {
+  const d = new Date(iso);
+  const today = new Date().toDateString() === d.toDateString();
+  return new Intl.DateTimeFormat(
+    undefined,
+    today ? { hour: 'numeric', minute: '2-digit' } : { dateStyle: 'medium', timeStyle: 'short' },
+  ).format(d);
+};
+
+/** A moment for a server component (it cannot hand a format function to the client). */
+export function LocalMoment({ iso }: { readonly iso: string }) {
+  return <LocalTime iso={iso} format={momentText} />;
+}

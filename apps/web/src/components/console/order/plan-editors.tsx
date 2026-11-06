@@ -69,6 +69,16 @@ export function CareEditor({ value, onChange }: { readonly value: Care; readonly
 
 const SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i;
 
+/** A token that did not become a path, and why (every one is named, not only the first). */
+export interface LeftOut {
+  readonly token: string;
+  readonly why: string;
+}
+
+/** "Left out /a b: paths can't contain spaces…; left out x: …" as one line for the plan's error. */
+export const leftOutText = (left: readonly LeftOut[]): string =>
+  left.map((l, i) => `${i === 0 ? 'Left out' : 'left out'} ${l.token}: ${l.why}`).join('; ') + '.';
+
 /**
  * Splits a typed or pasted list into the paths meant (spec §10.2). A bare word straight after a path with only a space
  * between ("/has space") is one path with a space in it, so it is refused rather than turned into two exclusions.
@@ -79,7 +89,7 @@ export function readPathList(
   origin: string | null,
   existing: readonly string[],
   after: string | null = null,
-): { paths: readonly string[]; left: { token: string; why: string } | null } {
+): { paths: readonly string[]; left: readonly LeftOut[] } {
   const groups: string[] = [];
   const parts = text.split(/([\s,]+)/);
   let joinedAfter = false;
@@ -98,21 +108,21 @@ export function readPathList(
   }
   // The path committed before this word was half of a path with a space: it comes back out.
   let paths = joinedAfter && after !== null ? existing.filter((p) => p !== after) : [...existing];
-  let left: { token: string; why: string } | null = null;
+  const left: LeftOut[] = [];
   for (const g of groups) {
     const r = normalizePath(g, origin);
     if (!r.ok) {
-      left ??= {
+      left.push({
         token: g,
         why: /\s/.test(g)
-          ? "paths can't contain spaces. Write a space as %20, or put a comma between two paths"
+          ? "paths can't contain spaces. Start each path with /, or write a space inside one as %20"
           : r.message.charAt(0).toLowerCase() + r.message.slice(1).replace(/\.$/, ''),
-      };
+      });
       continue;
     }
     if (paths.includes(r.path)) continue;
     if (paths.length >= MAX_PATHS) {
-      left ??= { token: g, why: `up to ${MAX_PATHS} paths` };
+      left.push({ token: g, why: `up to ${MAX_PATHS} paths` });
       continue;
     }
     paths = [...paths, r.path];
@@ -146,7 +156,7 @@ export function PathsEditor({
   readonly onText: (text: string) => void;
 }) {
   // What was left out, and why, stays until the person dismisses it or removes a chip: a later valid path never hides it.
-  const [left, setLeft] = useState<{ token: string; why: string } | null>(null);
+  const [left, setLeft] = useState<readonly LeftOut[]>([]);
   /** The path just committed by a typed space: a bare word next may be the rest of it ("/has space"). */
   const lastSpaced = useRef<string | null>(null);
   /** True while a commit is applying its own result (which may take a half path back out): not a chip removal. */
@@ -157,7 +167,7 @@ export function PathsEditor({
         label={<span className="sr-only">Paths to avoid</span>}
         values={value}
         onChange={(next) => {
-          if (!committing.current && next.length < value.length) setLeft(null);
+          if (!committing.current && next.length < value.length) setLeft([]);
           committing.current = false;
           onChange(next);
         }}
@@ -165,7 +175,9 @@ export function PathsEditor({
           const r = readPathList(text, origin, existing, lastSpaced.current);
           // ChipInput calls onChange only when the list changes.
           committing.current = r.paths.length !== existing.length || r.paths.some((v, i) => v !== existing[i]);
-          if (r.left !== null) setLeft(r.left);
+          // Every token left out stays listed (a later one adds to the list, never replaces it).
+          if (r.left.length > 0)
+            setLeft((prev) => [...prev.filter((p) => !r.left.some((l) => l.token === p.token)), ...r.left]);
           const last = r.paths.at(-1);
           lastSpaced.current = text.endsWith(' ') && last !== undefined && last !== existing.at(-1) ? last : null;
           return { values: r.paths, error: null };
@@ -175,17 +187,21 @@ export function PathsEditor({
         describe={describePath}
         onText={onText}
       />
-      {left === null ? null : (
+      {left.length === 0 ? null : (
         <div role="alert" className="flex items-start gap-2 rounded-[10px] bg-bad-soft px-3 py-2 text-[13px] leading-5 text-bad">
           <Icon name="warn" size={15} className="mt-[2px] shrink-0" />
-          <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
-            Left out <code className="font-mono text-[12.5px]">{left.token}</code>: {left.why}.
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5 [overflow-wrap:anywhere]">
+            {left.map((l) => (
+              <span key={l.token}>
+                Left out <code className="font-mono text-[12.5px]">{l.token}</code>: {l.why}.
+              </span>
+            ))}
           </span>
           <button
             type="button"
             aria-label="Dismiss"
             onClick={() => {
-              setLeft(null);
+              setLeft([]);
             }}
             className="-my-1 flex size-7 shrink-0 items-center justify-center rounded-md hover:bg-bad/10 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
           >
@@ -194,8 +210,8 @@ export function PathsEditor({
         </div>
       )}
       <p className="m-0 text-[12.5px] text-muted-foreground">
-        A path keeps Claude out of it and everything under it. Commas, spaces and new lines separate paths, so paste a
-        whole list (write a space inside a path as <code className="font-mono">%20</code>).
+        A path keeps Claude out of it and everything under it. Paste a whole list: commas and new lines separate paths,
+        and so does a space before the next <code className="font-mono">/</code>.
       </p>
     </div>
   );
@@ -248,11 +264,14 @@ export function AccountsEditor({
   rows,
   onRows,
   missingValues,
+  valuesOnly = false,
 }: {
   readonly rows: readonly AccountRow[];
   readonly onRows: (rows: readonly AccountRow[]) => void;
   /** The plan has accounts whose values this tab does not know (after a reload). */
   readonly missingValues: boolean;
+  /** Another editor is open: only the accounts' values are asked for, so an edit can keep them. */
+  readonly valuesOnly?: boolean;
 }) {
   const id = useId();
   const signedIn = rows.length > 0;
@@ -261,7 +280,7 @@ export function AccountsEditor({
   };
   return (
     <div className="flex flex-col gap-3">
-      <fieldset className="m-0 grid gap-2.5 border-0 p-0 sm:grid-cols-2">
+      <fieldset className={`m-0 grid gap-2.5 border-0 p-0 sm:grid-cols-2 ${valuesOnly ? 'hidden' : ''}`}>
         <legend className="sr-only">Signed-in testing</legend>
         <OptionCard
           name="plan-accounts"
@@ -286,7 +305,7 @@ export function AccountsEditor({
       </fieldset>
       {signedIn ? (
         <div className="flex flex-col gap-3">
-          {missingValues ? (
+          {missingValues && !valuesOnly ? (
             <InlineMessage tone="gold">
               Values are never sent back to the browser. Paste them again to keep these accounts.
             </InlineMessage>
@@ -296,7 +315,7 @@ export function AccountsEditor({
             const taken = slug !== null && rows.slice(0, i).some((x) => slugifyRole(x.role) === slug);
             return (
               <div key={i} className="flex flex-col gap-2 rounded-[12px] border border-border p-3">
-                <div className="grid gap-2 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.6fr)_auto]">
+                <div className={`grid gap-2 ${valuesOnly ? 'sm:grid-cols-[minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.6fr)]' : 'sm:grid-cols-[minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.6fr)_auto]'}`}>
                   <label className="flex flex-col gap-1 text-[12px] font-medium text-foreground" htmlFor={`${id}-r${i}`}>
                     Role
                     <input
@@ -333,23 +352,25 @@ export function AccountsEditor({
                       value={r.headerValue}
                       autoComplete="off"
                       spellCheck={false}
-                      placeholder="Bearer … or paste the whole header"
+                      placeholder="Paste the token or header"
                       onChange={(e) => {
                         set(i, settle(r, 'headerValue', e.target.value));
                       }}
                       className={`${INPUT_CLASS} h-10 font-mono text-[13px]`}
                     />
                   </label>
-                  <button
-                    type="button"
-                    aria-label={`Remove account ${i + 1}`}
-                    onClick={() => {
-                      onRows(rows.filter((_, j) => j !== i));
-                    }}
-                    className={buttonClass('ghost', 'h-10 self-end px-3')}
-                  >
-                    <Icon name="x" size={15} />
-                  </button>
+                  {valuesOnly ? null : (
+                    <button
+                      type="button"
+                      aria-label={`Remove account ${i + 1}`}
+                      onClick={() => {
+                        onRows(rows.filter((_, j) => j !== i));
+                      }}
+                      className={buttonClass('ghost', 'h-10 self-end px-3')}
+                    >
+                      <Icon name="x" size={15} />
+                    </button>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
                   {taken ? (
@@ -366,7 +387,7 @@ export function AccountsEditor({
               </div>
             );
           })}
-          {rows.length < MAX_ACCOUNTS ? (
+          {rows.length < MAX_ACCOUNTS && !valuesOnly ? (
             <button
               type="button"
               onClick={() => {

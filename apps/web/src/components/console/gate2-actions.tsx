@@ -158,7 +158,7 @@ function useOwnsKeys(root: RefObject<HTMLDivElement | null>): boolean {
 
 // A reason survives a reload (spec §10: drafts are safe state). Per tab, per request; storage may be unavailable.
 const draftKey = (id: string): string => `bw:gate2-reason:${id}`;
-function readDraft(id: string): string {
+export function readDraft(id: string): string {
   try {
     return window.sessionStorage.getItem(draftKey(id)) ?? '';
   } catch {

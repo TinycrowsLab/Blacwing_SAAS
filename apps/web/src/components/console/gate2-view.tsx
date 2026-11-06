@@ -17,6 +17,7 @@ import {
   Gate2Actions,
   type Gate2Detail,
   postDecision,
+  readDraft,
 } from './gate2-actions';
 import { pathOf } from './run-model';
 import { useNow } from './use-now';
@@ -185,7 +186,7 @@ function ClaudeReason({
   );
 }
 
-/** One plain line first, then the runner's own rule (deterministic, so it stays, in muted text). */
+/** One plain line first, then the runner's own rule (deterministic, so it stays: muted, and folded on phones). */
 function WhyAsked({
   gate2,
   role,
@@ -195,15 +196,23 @@ function WhyAsked({
   readonly role: string | null;
   readonly phone?: boolean;
 }) {
+  const rule = gate2.whyOutside === '' ? null : plainWhy(gate2.whyOutside);
   return (
-    <div className={phone ? 'mt-2' : 'mt-2.5'}>
+    <div className={phone ? 'mt-1' : 'mt-2.5'}>
       <p className="m-0 text-[13px] leading-5 text-foreground">
         <span className="font-medium">Why you&apos;re asked: </span>
         {plainLead(gate2, role)}
       </p>
-      {gate2.whyOutside === '' ? null : (
+      {rule === null ? null : phone ? (
+        <details className="mt-0.5 text-[12px] leading-[18px] text-muted-foreground">
+          <summary className="inline-flex min-h-11 cursor-pointer items-center font-medium text-gold-ink">
+            The exact rule
+          </summary>
+          <p className="m-0">{rule}</p>
+        </details>
+      ) : (
         <p className="m-0 mt-0.5 text-[12px] leading-[18px] text-muted-foreground">
-          The rule: {plainWhy(gate2.whyOutside)}
+          The rule: {rule}
         </p>
       )}
     </div>
@@ -810,7 +819,7 @@ export function Gate2Card({
             <WhyAsked gate2={gate2} role={role} phone />
             <Link
               href={runLink}
-              className="mt-1 inline-flex min-h-11 items-center text-[13px] font-medium text-gold-ink"
+              className="inline-flex min-h-11 items-center text-[13px] font-medium text-gold-ink"
             >
               Open the live audit
             </Link>
@@ -968,6 +977,12 @@ export function Gate2Inbox({
     setPrev(items);
     setSeen(merge(seen, items));
   }
+  // A request with a reason typed before a reload opens again, so the draft is where the person left it.
+  useEffect(() => {
+    const drafts = seen.filter((i) => readDraft(i.gate2.id) !== '').map((i) => i.gate2.id);
+    if (drafts.length > 0) setExpanded((s) => new Set([...s, ...drafts]));
+    // Once, after mount: storage is the browser's.
+  }, []);
   const listed = new Set(items.map((i) => i.gate2.id));
   const isOpen = (i: InboxItem): boolean => !closed.has(i.gate2.id) && listed.has(i.gate2.id);
   const open = items.filter((i) => !closed.has(i.gate2.id)).length;

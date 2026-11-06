@@ -31,8 +31,14 @@ export const FOCUS_CHIPS = [
 export type FocusKey = (typeof FOCUS_CHIPS)[number]['key'];
 export const BROAD: FocusKey = 'broad';
 
+/**
+ * "a, b and c". Two phrases where one has its own "and" get a comma ("weak login and session handling, and injection
+ * flaws"), so the two areas never run together.
+ */
 const list = (items: readonly string[]): string =>
-  new Intl.ListFormat('en-US', { style: 'long', type: 'conjunction' }).format(items);
+  items.length === 2 && items.some((i) => i.includes(' and '))
+    ? `${items[0] ?? ''}, and ${items[1] ?? ''}`
+    : new Intl.ListFormat('en-US', { style: 'long', type: 'conjunction' }).format(items);
 
 /** "Look for {phrases}. {free text}" (spec §3.3). Nothing picked means the broad sweep. */
 export function composeObjective(keys: readonly FocusKey[], text: string): string {

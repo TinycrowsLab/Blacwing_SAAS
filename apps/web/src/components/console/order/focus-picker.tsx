@@ -54,7 +54,7 @@ export function FocusPicker({
                 <span className="text-[12.5px] leading-[18px] text-muted-foreground">{c.hint}</span>
               </span>
               {showIndex ? (
-                <kbd className="hidden h-[18px] min-w-[18px] items-center justify-center rounded-[5px] border border-current px-1 font-mono text-[10.5px] text-muted-foreground opacity-60 sm:inline-flex">
+                <kbd className="hidden h-[18px] min-w-[18px] items-center justify-center rounded-[5px] border border-current px-1 font-mono text-[11px] text-muted-foreground opacity-60 sm:inline-flex">
                   {i + 1}
                 </kbd>
               ) : null}

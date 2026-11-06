@@ -31,6 +31,8 @@ const CARE: Readonly<Record<string, string>> = {
   active_safe: 'Probe gently',
 };
 const MINUTE_S = 60;
+// One screen of choices, not a wall: the rest are a click away on Findings.
+const RELEASES_SHOWN = 5;
 
 function Section({
   title,
@@ -197,7 +199,7 @@ export default async function DecisionsPage(): Promise<ReactNode> {
           count={releases.length + keptBack}
         >
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {releases.map((f) => (
+            {releases.slice(0, RELEASES_SHOWN).map((f) => (
               <Row
                 key={f.id}
                 href={`/findings/${f.id}`}
@@ -206,6 +208,14 @@ export default async function DecisionsPage(): Promise<ReactNode> {
                 sub={`Proven by replay${f.assetName === null ? '' : ` · ${f.assetName}`} · release or dismiss`}
               />
             ))}
+            {releases.length <= RELEASES_SHOWN ? null : (
+              <Row
+                href="/findings?status=confirmed"
+                lead={<Icon name="findings" size={16} className="shrink-0 text-muted-foreground" />}
+                title={`${releases.length - RELEASES_SHOWN} more proven issues to release`}
+                sub="All of them, filtered, on Findings"
+              />
+            )}
             {keptBack === 0 ? null : (
               <Row
                 href="/findings?status=suspected"

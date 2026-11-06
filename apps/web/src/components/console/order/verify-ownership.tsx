@@ -38,7 +38,6 @@ function ChoiceCard({
   badge,
   line,
   index,
-  children,
 }: {
   readonly name: string;
   readonly checked: boolean;
@@ -47,13 +46,12 @@ function ChoiceCard({
   readonly badge?: ReactNode | undefined;
   readonly line: ReactNode;
   readonly index?: number | undefined;
-  readonly children?: ReactNode;
 }) {
   return (
     <div
       className={`rounded-[14px] border transition-colors ${checked ? 'border-gold-ink bg-gold-soft' : 'border-border bg-card hover:border-border-strong hover:bg-surface-2'}`}
     >
-      <label className="flex min-h-16 cursor-pointer gap-3 rounded-[14px] p-4 has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-focus">
+      <label className="flex h-full min-h-16 cursor-pointer gap-3 rounded-[14px] p-4 has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-focus">
         <input
           type="radio"
           name={name}
@@ -69,20 +67,18 @@ function ChoiceCard({
           <span className="text-[13px] leading-5 text-muted-foreground">{line}</span>
         </span>
         {index === undefined ? null : (
-          <kbd className="hidden h-[18px] min-w-[18px] items-center justify-center self-start rounded-[5px] border border-current px-1 font-mono text-[10.5px] text-muted-foreground opacity-60 sm:inline-flex">
+          <kbd className="hidden h-[18px] min-w-[18px] items-center justify-center self-start rounded-[5px] border border-current px-1 font-mono text-[11px] text-muted-foreground opacity-60 sm:inline-flex">
             {index}
           </kbd>
         )}
       </label>
-      {checked && children !== undefined ? (
-        <div className="flex flex-col gap-3 px-4 pb-4 sm:pl-[46px]">{children}</div>
-      ) : null}
     </div>
   );
 }
 
 export function VerifyOwnership({
   asset,
+  origin: knownOrigin = null,
   viewerName,
   method,
   onMethod,
@@ -95,6 +91,8 @@ export function VerifyOwnership({
 }: {
   /** Null while the site is being registered: the file rows show placeholders. */
   readonly asset: Asset | null;
+  /** The site's origin, known before it is registered (the order): the tick's wording never waits for the API. */
+  readonly origin?: string | null;
   readonly viewerName: string;
   readonly method: ProofMethod;
   readonly onMethod: (m: ProofMethod) => void;
@@ -138,8 +136,8 @@ export function VerifyOwnership({
   const url = asset?.verification?.wellKnownUrl ?? null;
   const path = url === null ? null : new URL(url).pathname;
   const token = asset?.verification?.token ?? null;
-  const origin = asset === null ? '' : originOf(asset);
-  const recommended = asset === null ? 'file' : recommendedProof(new URL(origin).host);
+  const origin = asset === null ? (knownOrigin ?? '') : originOf(asset);
+  const recommended = origin === '' ? 'file' : recommendedProof(new URL(origin).host);
   const recommendPill = (
     <span className={RECOMMEND_PILL}>{recommended === 'attest' ? 'Recommended for local addresses' : 'Recommended'}</span>
   );
@@ -162,116 +160,107 @@ export function VerifyOwnership({
     }
   };
 
+  // The two ways sit side by side and the chosen one's steps open below them, so picking a card never moves the other
+  // one out from under the pointer.
   return (
-    <div
-      role="radiogroup"
-      aria-label="How to show the site is yours"
-      className="flex flex-col gap-3"
-    >
-      <ChoiceCard
-        name="proof"
-        checked={method === 'file'}
-        onPick={() => {
-          onMethod('file');
-        }}
-        title="Put a file on the site"
-        badge={recommended === 'file' ? recommendPill : undefined}
-        line="Anyone can check it, and it proves you control the server."
-        index={showIndex ? 1 : undefined}
-      >
-        <div className="grid items-center gap-x-3 gap-y-1.5 sm:grid-cols-[124px_minmax(0,1fr)]">
-          <span className="text-[12.5px] text-muted-foreground">1. Create the file</span>
-          {path === null ? (
-            <div className="h-10 rounded-[10px] bg-surface-2" />
-          ) : (
-            <CopyField value={path} />
-          )}
-          <span className="mt-1.5 text-[12.5px] text-muted-foreground sm:mt-0">
-            2. Paste this in it
-          </span>
-          {token === null ? (
-            <div className="h-10 rounded-[10px] bg-surface-2" />
-          ) : (
-            <CopyField value={token} />
-          )}
-        </div>
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <PendingButton
-              variant={primaryCheck ? 'primary' : 'secondary'}
-              onAction={check}
-              pendingLabel="Looking for the file…"
-              disabled={asset === null}
-              icon="search"
-            >
-              Check now
-            </PendingButton>
-            <span className="text-[12px] text-muted-foreground">
-              Served as plain text at the site root.
-            </span>
+    <div className="flex flex-col gap-3">
+      <div role="radiogroup" aria-label="How to show the site is yours" className="grid gap-3 sm:grid-cols-2">
+        <ChoiceCard
+          name="proof"
+          checked={method === 'file'}
+          onPick={() => {
+            onMethod('file');
+          }}
+          title="Put a file on the site"
+          badge={recommended === 'file' ? recommendPill : undefined}
+          line="Anyone can check it, and it proves you control the server."
+          index={showIndex ? 1 : undefined}
+        />
+        <ChoiceCard
+          name="proof"
+          checked={method === 'attest'}
+          onPick={() => {
+            onMethod('attest');
+          }}
+          title="I'm responsible for this system"
+          badge={recommended === 'attest' ? recommendPill : undefined}
+          line={
+            recommended === 'attest'
+              ? "Local and lab apps often can't serve an extra file. One tick, recorded with your name."
+              : "For internal hosts and labs that can't serve a file. One tick, recorded with your name."
+          }
+          index={showIndex ? 2 : undefined}
+        />
+      </div>
+      {method === 'file' ? (
+        <div className="flex flex-col gap-3 rounded-[14px] border border-border bg-card p-4">
+          <div className="grid items-center gap-x-3 gap-y-1.5 sm:grid-cols-[124px_minmax(0,1fr)]">
+            <span className="text-[12.5px] text-muted-foreground">1. Create the file</span>
+            {path === null ? <div className="h-10 rounded-[10px] bg-surface-2" /> : <CopyField value={path} />}
+            <span className="mt-1.5 text-[12.5px] text-muted-foreground sm:mt-0">2. Paste this in it</span>
+            {token === null ? <div className="h-10 rounded-[10px] bg-surface-2" /> : <CopyField value={token} />}
           </div>
-          {checked === null || checked.ok ? null : (
-            <InlineMessage tone="bad">{checked.message}</InlineMessage>
-          )}
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <PendingButton
+                variant={primaryCheck ? 'primary' : 'secondary'}
+                onAction={check}
+                pendingLabel="Looking for the file…"
+                disabled={asset === null}
+                icon="search"
+              >
+                Check now
+              </PendingButton>
+              <span className="text-[12px] text-muted-foreground">Served as plain text at the site root.</span>
+            </div>
+            {checked === null || checked.ok ? null : <InlineMessage tone="bad">{checked.message}</InlineMessage>}
+          </div>
         </div>
-      </ChoiceCard>
-      <ChoiceCard
-        name="proof"
-        checked={method === 'attest'}
-        onPick={() => {
-          onMethod('attest');
-        }}
-        title="I'm responsible for this system"
-        badge={recommended === 'attest' ? recommendPill : undefined}
-        line={
-          recommended === 'attest'
-            ? "Local and lab apps often can't serve an extra file. You confirm in one tick, and it's recorded with your name."
-            : "For internal hosts and labs that can't serve a file. You confirm in one tick, and it's recorded with your name."
-        }
-        index={showIndex ? 2 : undefined}
-      >
-        <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-[10px] border border-border bg-surface-2 px-3.5 py-3 text-[13.5px] text-foreground has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-focus">
-          <input
-            type="checkbox"
-            checked={attested}
-            onChange={(e) => {
-              onAttested(e.target.checked);
-              setAttestError(null);
-            }}
-            className="sr-only"
-          />
-          <span
-            aria-hidden="true"
-            className={`mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border-[1.5px] ${attested ? 'border-gold-ink bg-gold-ink text-bg' : 'border-input-strong bg-card'}`}
-          >
-            {attested ? <Icon name="check" size={12} /> : null}
-          </span>
-          <span className="min-w-0 break-words">
-            I&apos;m authorised to test <b className="font-semibold">{origin}</b>.
-          </span>
-        </label>
-        <span className="text-[12px] text-muted-foreground">
-          Recorded as &ldquo;{attestationStatement(viewerName, origin)}&rdquo;
-        </span>
-        {confirmButton && asset !== null ? (
-          <div>
-            <PendingButton
-              variant="secondary"
-              disabled={!attested}
-              {...(attested ? {} : { title: 'Tick the box first' })}
-              pendingLabel="Recording…"
-              onAction={async () => {
-                const r = await attest(asset, viewerName);
-                if ('error' in r) setAttestError(r.error);
-                else onVerified(r.asset);
+      ) : (
+        <div className="flex flex-col gap-2.5 rounded-[14px] border border-border bg-card p-4">
+          <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-[10px] border border-border bg-surface-2 px-3.5 py-3 text-[13.5px] text-foreground has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-focus">
+            <input
+              type="checkbox"
+              checked={attested}
+              onChange={(e) => {
+                onAttested(e.target.checked);
+                setAttestError(null);
               }}
+              className="sr-only"
+            />
+            <span
+              aria-hidden="true"
+              className={`mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border-[1.5px] ${attested ? 'border-gold-ink bg-gold-ink text-bg' : 'border-input-strong bg-card'}`}
             >
-              Confirm
-            </PendingButton>
-          </div>
-        ) : null}
-        {attestError === null ? null : <InlineMessage tone="bad">{attestError}</InlineMessage>}
-      </ChoiceCard>
+              {attested ? <Icon name="check" size={12} /> : null}
+            </span>
+            <span className="min-w-0 break-words">
+              I&apos;m authorised to test <b className="font-semibold">{origin}</b>.
+            </span>
+          </label>
+          <span className="text-[12px] text-muted-foreground">
+            Recorded as &ldquo;{attestationStatement(viewerName, origin)}&rdquo;
+          </span>
+          {confirmButton && asset !== null ? (
+            <div>
+              <PendingButton
+                variant="secondary"
+                disabled={!attested}
+                {...(attested ? {} : { title: 'Tick the box first' })}
+                pendingLabel="Recording…"
+                onAction={async () => {
+                  const r = await attest(asset, viewerName);
+                  if ('error' in r) setAttestError(r.error);
+                  else onVerified(r.asset);
+                }}
+              >
+                Confirm
+              </PendingButton>
+            </div>
+          ) : null}
+          {attestError === null ? null : <InlineMessage tone="bad">{attestError}</InlineMessage>}
+        </div>
+      )}
     </div>
   );
 }

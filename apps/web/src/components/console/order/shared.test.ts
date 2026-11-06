@@ -6,7 +6,7 @@ import { composeObjective, readObjective, recommendedCare, toggleFocus } from '.
 describe('objective chips', () => {
   it('composes the objective from the template and reads it back', () => {
     const o = composeObjective(['access', 'login'], 'Checkout matters most.');
-    expect(o).toBe('Look for broken access control and weak login and session handling. Checkout matters most.');
+    expect(o).toBe('Look for broken access control, and weak login and session handling. Checkout matters most.');
     expect(readObjective(o)).toEqual({ keys: ['access', 'login'], text: 'Checkout matters most.' });
   });
 

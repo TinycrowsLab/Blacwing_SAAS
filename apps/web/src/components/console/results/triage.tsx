@@ -5,7 +5,16 @@
 // finding needs its own reason. Decisions wait for the server (they must be true); the action's response carries the
 // refreshed page, and the decision is committed in the same transition, so the issue, the banner and the report card
 // change together. Esc closes a reason form; Ctrl+Enter sends it.
-import { type KeyboardEvent, type ReactNode, startTransition, useEffect, useRef, useState, useTransition } from 'react';
+import {
+  type KeyboardEvent,
+  type ReactNode,
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 
 import { triageFindingAction } from '../../../app/(console)/findings/actions';
 import { reasonEnough } from '../../../lib/normalize';
@@ -31,6 +40,7 @@ export const REASON_NOTE = 'Kept on the ledger with your name · Ctrl+Enter to s
  */
 export function useSettledAction(): { settling: boolean; run: (action: () => Promise<void>) => Promise<void> } {
   const [settling, start] = useTransition();
+  const nudge = useNudge();
   const waiting = useRef<{ seen: boolean; done: () => void } | null>(null);
   useEffect(() => {
     const w = waiting.current;
@@ -43,10 +53,35 @@ export function useSettledAction(): { settling: boolean; run: (action: () => Pro
   }, [settling]);
   const run = (action: () => Promise<void>): Promise<void> =>
     new Promise((resolve) => {
-      waiting.current = { seen: false, done: resolve };
+      const w = { seen: false, done: resolve };
+      waiting.current = w;
       start(action);
+      nudge(() => waiting.current !== w);
     });
   return { settling, run };
+}
+
+const NUDGE_MS = 150;
+const NUDGE_MAX = 40;
+
+/**
+ * shortcut: in Edge (Next 15.5, React 19.3) a refreshed page's transition is sometimes left suspended without a ping,
+ * so the new page only appears with the next unrelated update (the sidebar's 5 s poll): measured 2 to 5 s instead of
+ * ~0.2 s. Any update makes React retry it, so this sends small no-op updates until `done()` says the page is in (at
+ * most 6 s). Remove once the upstream bug is fixed (re-measure `router.refresh()` on /ledger).
+ */
+export function useNudge(): (done: () => boolean) => void {
+  const [, setTick] = useState(0);
+  return useCallback((done: () => boolean) => {
+    let n = 0;
+    const tick = (): void => {
+      if (done() || n > NUDGE_MAX) return;
+      n += 1;
+      setTick((x) => x + 1);
+      window.setTimeout(tick, NUDGE_MS);
+    };
+    window.setTimeout(tick, NUDGE_MS);
+  }, []);
 }
 
 /** Every mutation tells the sidebar to refresh (spec §10.5); the page itself comes back with the action's response. */

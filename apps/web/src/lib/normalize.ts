@@ -26,6 +26,11 @@ export type TargetResult =
   | { readonly ok: false; readonly message: string; readonly empty?: true };
 
 const NOT_WEB = "That doesn't look like a web address yet. Try something like app.example.com";
+const PARTIAL_IP = 'That looks like an IP address, but not all four numbers are there. Write it in full, like 192.168.1.20';
+/** A host of only numbers (or 0x hex) and dots: browsers read "127.1" or "0x7f.0.0.1" as another address. */
+const NUMERIC_HOST = /^(0x[0-9a-f]*|\d+)(\.(0x[0-9a-f]*|\d+))*\.?$/i;
+/** The whole input is an e-mail address ("jatin@tinycrows.com"): its domain is the site meant. */
+const EMAIL = /^[^\s/:@]+@[^\s/:@]+\.[^\s/:@]+$/;
 const NOT_HTTP = 'Blackwing audits web apps over http or https.';
 const PRIVATE =
   /^(localhost|[^.]+\.local|127(\.\d{1,3}){3}|10(\.\d{1,3}){3}|192\.168(\.\d{1,3}){2}|172\.(1[6-9]|2\d|3[01])(\.\d{1,3}){2}|\[::1\])(:\d+)?$/i;
@@ -56,6 +61,7 @@ export function normalizeTarget(raw: string): TargetResult {
     ? text.replace(WRAP_END_IPV6, '')
     : text.replace(WRAP_START, '').replace(WRAP_END, '');
   const notes: Note[] = [];
+  const email = EMAIL.test(text);
   const scheme = SCHEME.exec(text)?.[1]?.toLowerCase();
   let withScheme = text;
   if (scheme !== undefined) {
@@ -73,12 +79,16 @@ export function normalizeTarget(raw: string): TargetResult {
   } catch {
     return { ok: false, message: NOT_WEB };
   }
-  if (!validHost(url.hostname)) return { ok: false, message: NOT_WEB };
   const typedHost = authorityOf(withScheme.replace(SCHEME, ''));
+  // Only a full dotted quad is an IP address here: the URL parser would silently turn "1.2.3" into 1.2.0.3.
+  const typedName = typedHost.replace(/:\d*$/, '');
+  if (NUMERIC_HOST.test(typedName) && !IPV4.test(typedName)) return { ok: false, message: PARTIAL_IP };
+  if (!validHost(url.hostname)) return { ok: false, message: NOT_WEB };
   if (/[A-Z]/.test(typedHost)) notes.push({ text: 'Lower-cased the address' });
-  if (url.username !== '' || url.password !== '') {
+  if (email && scheme === undefined) notes.push({ text: 'Used the domain of the e-mail address' });
+  else if (url.password !== '')
     notes.push({ text: 'Removed a username and password. Add test accounts on the plan instead.' });
-  }
+  else if (url.username !== '') notes.push({ text: 'Removed a username. Add test accounts on the plan instead.' });
   const rest = `${url.pathname}${url.search}${url.hash}`;
   const pathSetAside = rest === '/' ? undefined : rest;
   if (pathSetAside !== undefined) notes.push({ text: 'Set aside ', code: pathSetAside });
@@ -114,7 +124,8 @@ export function normalizePath(token: string, origin: string | null): PathResult 
     } catch {
       return { ok: false, message: "That doesn't look like a path. Try /admin" };
     }
-    if (origin !== null && url.origin !== origin)
+    // The same host typed with the other scheme (https for an http site) still means this site's path.
+    if (origin !== null && url.origin !== origin && url.host !== new URL(origin).host)
       return { ok: false, message: "That's on another site, so it's already out of scope." };
     text = url.pathname;
   }

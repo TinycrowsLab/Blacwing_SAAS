@@ -23,7 +23,7 @@ export default async function TargetsPage(): Promise<ReactNode> {
     .catch(() => null);
   if (items === null)
     return (
-      <div className="mx-auto w-full max-w-[920px]">
+      <div className="mx-auto w-full max-w-[780px]">
         <InlineMessage tone="bad">We couldn&apos;t load your targets. Reload the page to try again.</InlineMessage>
       </div>
     );

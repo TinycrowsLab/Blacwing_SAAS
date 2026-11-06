@@ -6,10 +6,11 @@ import { Icon, type IconName, SeverityChip, StatusChip, VoiceTag } from '../../c
 import { Countdown } from '../../components/console/design-client';
 import { HomeAsk } from '../../components/console/order/home-ask';
 import { HomeRetry } from '../../components/console/order/home-retry';
+import { LocalMoment } from '../../components/console/order/local-time';
 import { greetingFor } from '../../components/console/order/shared';
 import { callApi } from '../../lib/api';
 import { getViewer } from '../../lib/auth';
-import { decisionTitle } from '../../lib/plan-text';
+import { decisionTitle, objectivePhrase } from '../../lib/plan-text';
 import { type Dashboard, dashboardSchema, LIVE_RUN_STATES } from '../../lib/schemas';
 
 import type { Metadata } from 'next';
@@ -105,9 +106,24 @@ function Returning({ d }: { readonly d: Dashboard }) {
               end={<Countdown deadlineAt={g.deadlineAt} {...(g.createdAt === undefined ? {} : { createdAt: g.createdAt })} className="text-[12.5px]" />}
             />
           ))}
-          {plans.map((r) => (
-            <Row key={r.id} href={`/audits/${r.id}`} dot="bg-gold" title={`Approve the plan for ${r.assetName ?? 'your site'}`} sub="The plan is ready for your approval" />
-          ))}
+          {plans.map((r) => {
+            // Two plans for one site differ by what they look for and when they were made.
+            const look = objectivePhrase(r.objective);
+            return (
+              <Row
+                key={r.id}
+                href={`/audits/${r.id}`}
+                dot="bg-gold"
+                title={`Approve the plan for ${r.assetName ?? 'your site'}`}
+                sub={
+                  <>
+                    {look.charAt(0).toUpperCase()}
+                    {look.slice(1)} · made <LocalMoment iso={r.createdAt} />
+                  </>
+                }
+              />
+            );
+          })}
           {releases.map((f) => (
             <Row
               key={f.id}

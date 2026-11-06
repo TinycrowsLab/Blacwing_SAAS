@@ -44,6 +44,9 @@ export function HomeAsk({
   useEffect(() => {
     if (new URLSearchParams(window.location.search).has('named'))
       window.history.replaceState(window.history.state, '', window.location.pathname);
+    // The assistant leads: the cursor waits in the field. Not on a phone, where focus would pop the keyboard over the
+    // greeting before it is read.
+    if (!window.matchMedia('(max-width: 767px)').matches) document.getElementById('home-target')?.focus();
   }, []);
   const result = useNormalized(text);
   const known = useKnownTargets();
@@ -135,12 +138,16 @@ export function HomeAsk({
           action={button}
           waiting={waiting}
         />
-        <div className="hidden flex-wrap gap-2 text-[12px] text-muted-foreground sm:flex">
-          <span className="rounded-full bg-surface-2 px-2.5 py-1">A web address, an IP with a port, or a full URL all work</span>
-          <span className="rounded-full bg-surface-2 px-2.5 py-1">
-            Press <b className="font-semibold text-foreground">Enter</b> to begin
-          </span>
-        </div>
+        {/* Plain hints, not chips: nothing here is clickable. Enter is mentioned only while it would begin. */}
+        <p className="m-0 hidden px-1 text-[12.5px] text-muted-foreground sm:block">
+          A web address, an IP with a port, or a full URL all work.
+          {blocked && shownError ? null : (
+            <>
+              {' '}
+              Press <b className="font-semibold text-foreground">Enter</b> to begin.
+            </>
+          )}
+        </p>
       </div>
     </div>
   );

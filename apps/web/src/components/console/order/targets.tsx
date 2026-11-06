@@ -243,8 +243,15 @@ function FirstTarget({ onAdd }: { readonly onAdd: () => void }) {
   );
 }
 
+/** Verified first (ready for an audit), then the rest; by name within each. Kept in place while the page is open. */
+const byReadiness = (a: Asset, b: Asset): number =>
+  Number(isVerified(b)) - Number(isVerified(a)) || a.name.localeCompare(b.name);
+
+/** One width for every row's action (Verify, Close, New audit), so the status column lines up. */
+const ACTION_WIDTH = 'sm:w-[112px]';
+
 export function Targets({ initial, viewerName }: { readonly initial: readonly Asset[]; readonly viewerName: string }) {
-  const [assets, setAssets] = useState<readonly Asset[]>(initial);
+  const [assets, setAssets] = useState<readonly Asset[]>(() => [...initial].sort(byReadiness));
   const [adding, setAdding] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   /** A site added again: its row is scrolled to and marked, so the click is never lost. */
@@ -254,13 +261,18 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
     if (again === null) return;
     document.getElementById(`target-${again}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [again]);
+  // An opened Verify panel comes fully into view (a row low on the page would open below the fold).
+  useEffect(() => {
+    if (open === null) return;
+    document.getElementById(`target-${open}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [open]);
 
   const upsert = (a: Asset): void => {
     setAssets((list) => (list.some((x) => x.id === a.id) ? list.map((x) => (x.id === a.id ? a : x)) : [a, ...list]));
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[920px] flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-[780px] flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1.5">
           <h1 className="m-0 text-[28px] font-semibold leading-[36px] tracking-[-0.01em] text-foreground">Targets</h1>
@@ -344,7 +356,7 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                       </span>
                     )}
                   </span>
-                  <span className="flex flex-col items-start gap-0.5 sm:items-end">
+                  <span className="flex flex-col items-start gap-0.5 sm:w-[200px] sm:items-end sm:text-right">
                     {verified ? (
                       <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-ok-soft px-2.5 text-[12px] font-medium text-ok">
                         <Icon name="check" size={12} />
@@ -367,7 +379,7 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                     <LinkButton
                       href={`/audits/new?target=${encodeURIComponent(origin)}&step=3`}
                       variant="secondary"
-                      className="h-10 w-full sm:w-auto"
+                      className={`h-10 w-full ${ACTION_WIDTH}`}
                     >
                       New audit
                     </LinkButton>
@@ -379,7 +391,7 @@ export function Targets({ initial, viewerName }: { readonly initial: readonly As
                         setOpen(expanded ? null : a.id);
                         setAdding(false);
                       }}
-                      className={buttonClass('secondary', 'h-10 w-full sm:w-auto')}
+                      className={buttonClass('secondary', `h-10 w-full ${ACTION_WIDTH}`)}
                     >
                       {expanded ? 'Close' : 'Verify'}
                     </button>

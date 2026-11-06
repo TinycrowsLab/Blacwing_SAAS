@@ -68,14 +68,23 @@ const okTarget = (raw: string | null): OkTarget | null => {
 /** Labels up to this length never break inside (not even at a hyphen); a longer one may, so it never overflows. */
 const NOWRAP_LABEL = 30;
 
-/** A host that wraps after its dots and colon on a phone, never mid-label. */
-function Breakable({ text }: { readonly text: string }) {
-  return text.split(/(?<=[.:])/).map((part, i) => (
-    <Fragment key={i}>
-      {i === 0 ? null : <wbr />}
-      {part.length <= NOWRAP_LABEL ? <span className="whitespace-nowrap">{part}</span> : part}
-    </Fragment>
-  ));
+/**
+ * A host in a sentence. A short one never wraps ("127.0.0.1:3001" stays whole, with the punctuation after it); a long
+ * one wraps after its dots and colon, never mid-label.
+ */
+function Host({ text, after = '' }: { readonly text: string; readonly after?: string }) {
+  if (text.length <= NOWRAP_LABEL) return <span className="whitespace-nowrap">{`${text}${after}`}</span>;
+  return (
+    <span className="[overflow-wrap:anywhere]">
+      {text.split(/(?<=[.:])/).map((part, i) => (
+        <Fragment key={i}>
+          {i === 0 ? null : <wbr />}
+          {part.length <= NOWRAP_LABEL ? <span className="whitespace-nowrap">{part}</span> : part}
+        </Fragment>
+      ))}
+      {after}
+    </span>
+  );
 }
 
 function Receipt({ label, value, onChange }: { readonly label: string; readonly value: ReactNode; readonly onChange: () => void }) {
@@ -139,6 +148,8 @@ export function Order({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [inText, setInText] = useState(false);
+  /** Bumped by Try again when registering the site for question 2 failed: the registration runs again. */
+  const [attempt, setAttempt] = useState(0);
   /** Set once the plan is created: no draft is saved after that (a pending debounce would leave a ghost draft). */
   const submitted = useRef(false);
   const h1 = useRef<HTMLHeadingElement>(null);
@@ -175,9 +186,10 @@ export function Order({
     else setStep(d.step);
   }, [draftId, restoreDraft, startStep, first, firstAsset]);
 
-  // Coming from Home with a new site: register it (the API reuses an existing one) so question 2 has its token.
+  // Question 2's file needs the site registered for its token (the API reuses an existing one). The tick needs nothing
+  // yet: it registers on Continue, so a site only looked at never becomes a target.
   useEffect(() => {
-    if (target === null || asset !== null || step < 2) return;
+    if (target === null || asset !== null || step < 2 || (step === Q.proof && method !== 'file')) return;
     let active = true;
     void ensureTargetAction(target.origin, target.host).then((r) => {
       if (!active) return;
@@ -187,7 +199,7 @@ export function Order({
     return () => {
       active = false;
     };
-  }, [target, asset, step]);
+  }, [target, asset, step, method, attempt]);
 
   // A link to a fresh /audits/new while this order is open (sidebar New audit, the N key) may come from the router
   // cache with the same key: start a new order with a new draft id instead of keeping these answers.
@@ -249,8 +261,9 @@ export function Order({
   const verified = asset !== null && isVerified(asset);
 
   const back = useCallback((): void => {
-    // Back skips what Continue skipped: question 2 has nothing to ask once the site is verified.
-    const to = step === Q.focus && verified ? Q.site : step - 1;
+    // Back skips what Continue skipped (question 2 has nothing to ask once the site is verified), but never past the
+    // first question this order showed: question 2 then says the site is verified.
+    const to = step === Q.focus && verified && startStep <= Q.site ? Q.site : step - 1;
     // Back from the first question shown leaves the order (Home is where it started).
     if (to < 1 || to < startStep) {
       router.push('/');
@@ -268,29 +281,33 @@ export function Order({
         setShowError(true);
         return false;
       }
-      let a = target?.origin === r.origin ? asset : (findKnown(assets, r.origin) ?? null);
-      if (a === null) {
-        const created = await ensureTargetAction(r.origin, r.host);
-        if (!created.ok) {
-          setError(created.message);
-          return false;
-        }
-        a = created.data;
-      }
+      // Nothing is registered here: question 2 does that when it needs to (see above).
+      const a = target?.origin === r.origin ? asset : (findKnown(assets, r.origin) ?? null);
       if (target?.origin !== r.origin) {
         setAttested(false);
         setMethod(recommendedProof(r.host));
       }
       setTarget(r);
       setAsset(a);
-      go(isVerified(a) ? Q.focus : Q.proof);
+      go(a !== null && isVerified(a) ? Q.focus : Q.proof);
       return false;
     }
     if (step === 2) {
-      if (asset === null) return false;
-      if (!isVerified(asset)) {
+      if (target === null) return false;
+      let a = asset;
+      if (a === null) {
         if (method !== 'attest' || !attested) return false;
-        const r = await attest(asset, viewerName);
+        const created = await ensureTargetAction(target.origin, target.host);
+        if (!created.ok) {
+          setError(created.message);
+          return false;
+        }
+        a = created.data;
+        setAsset(a);
+      }
+      if (!isVerified(a)) {
+        if (method !== 'attest' || !attested) return false;
+        const r = await attest(a, viewerName);
         if ('error' in r) {
           setError(r.error);
           return false;
@@ -329,11 +346,13 @@ export function Order({
     return true;
   };
 
+  const shownError = showError || text.includes('://');
   const canContinue =
     step === 1
-      ? live.ok || text.trim() !== ''
+      ? // Muted while the field shows its error, as on Home: a gold Continue that does nothing reads as a missed click.
+        text.trim() !== '' && !(shownError && !normalizeTarget(text).ok)
       : step === 2
-        ? verified || (asset !== null && method === 'attest' && attested)
+        ? verified || (target !== null && method === 'attest' && attested)
         : step === Q.care
           ? asset !== null
           : true;
@@ -385,26 +404,31 @@ export function Order({
 
   const host = target?.host ?? '';
   const focusPhrase = composeObjective(focus, '').replace(/^Look for /, '').replace(/\.$/, '');
+  const note = focusText.trim().replace(/\s+/g, ' ');
+  /** What to look for, with the person's own note, as the ticket and the receipt read it. */
+  const lookFor = `${focusPhrase.charAt(0).toUpperCase()}${focusPhrase.slice(1)}${note === '' ? '' : ` \u00b7 \u201c${note}\u201d`}`;
   const lines: TicketLine[] = [
     { label: 'Site', value: target === null ? null : target.host },
     {
       label: "Proof it's yours",
       value: verified ? (asset.ownership.method === 'http_token' ? 'File found on the site' : 'Confirmed by you') : null,
     },
-    { label: 'What to look for', value: step >= Q.focus ? focusPhrase.charAt(0).toUpperCase() + focusPhrase.slice(1) : null },
+    { label: 'What to look for', value: step >= Q.focus ? lookFor : null },
     { label: 'How careful', value: step >= Q.care ? CARE[chosenCare].label : null },
   ];
   const details: TicketDetail[] = [
     { label: 'Paths to avoid', value: 'None', tag: 'Default' },
     { label: 'Signed-in testing', value: 'As a visitor', tag: 'Default' },
-    {
-      label: 'Limits',
-      value:
-        limits === null
-          ? "Your workspace's suggestion"
-          : `${limits.minutes} min · ${limits.requests.toLocaleString('en-US')} req · ${usd(limits.costUsd)}`,
-      tag: 'Suggested' as const,
-    },
+    // The limits come from the workspace; when they did not load, the row is left out rather than stating none.
+    ...(limits === null
+      ? []
+      : [
+          {
+            label: 'Limits',
+            value: `${limits.minutes} min · ${limits.requests.toLocaleString('en-US')} req · ${usd(limits.costUsd)}`,
+            tag: 'Suggested' as const,
+          },
+        ]),
     { label: 'Proven issues', value: 'Wait for your release', tag: 'Default' },
   ];
   const ticketProps = { lines, current: step - 1, details, saved };
@@ -417,11 +441,7 @@ export function Order({
     2: {
       h1: (
         <>
-          Is{' '}
-          <span className="[overflow-wrap:anywhere]">
-            <Breakable text={host} />
-          </span>{' '}
-          yours?
+          Is <Host text={host} /> yours?
         </>
       ),
       lede: verified
@@ -437,10 +457,9 @@ export function Order({
       lede: (
         <>
           How Claude&apos;s agents may touch{' '}
-          <b className="font-medium text-foreground [overflow-wrap:anywhere]">
-            <Breakable text={host} />
+          <b className="font-medium text-foreground">
+            <Host text={host} after="." />
           </b>
-          .
         </>
       ),
     },
@@ -489,7 +508,7 @@ export function Order({
         {step > 2 && verified ? (
           <Receipt label="Proof" value={lines[1]?.value ?? ''} onChange={() => { go(2); }} />
         ) : null}
-        {step > Q.focus ? <Receipt label="Look for" value={lines[2]?.value ?? ''} onChange={() => { go(Q.focus); }} /> : null}
+        {step > Q.focus ? <Receipt label="Look for" value={lookFor} onChange={() => { go(Q.focus); }} /> : null}
 
         <section
           aria-labelledby="order-h1"
@@ -527,7 +546,7 @@ export function Order({
               }}
               result={live}
               known={assets}
-              showError={showError || text.includes('://')}
+              showError={shownError}
               onBlur={() => {
                 setShowError(text.trim() !== '');
               }}
@@ -539,6 +558,7 @@ export function Order({
           {step === 2 ? (
             <VerifyOwnership
               asset={asset}
+              origin={target?.origin ?? null}
               viewerName={viewerName}
               method={method}
               onMethod={setMethod}
@@ -593,7 +613,24 @@ export function Order({
           ) : null}
         </section>
 
-        {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
+        {error === null ? null : (
+          <InlineMessage tone="bad">
+            {error}{' '}
+            <button
+              type="button"
+              onClick={() => {
+                // A failed registration has no Continue to press yet (the file way needs it first): run it again.
+                if (step === Q.proof && asset === null && method === 'file') {
+                  setError(null);
+                  setAttempt((n) => n + 1);
+                } else pressContinue();
+              }}
+              className="rounded font-semibold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+            >
+              Try again
+            </button>
+          </InlineMessage>
+        )}
 
         {/* Phones: Continue is pinned full width to the bottom of the screen (Back is in the top row); the spacer keeps
             the last option above it. */}

@@ -261,19 +261,25 @@ export function ReasonField({
       </label>
       {suggestions.length === 0 ? null : (
         <div className="flex flex-wrap gap-1.5">
-          {suggestions.map((s) => (
-            <button
-              key={s}
-              type="button"
-              disabled={disabled}
-              onClick={() => {
-                onChange(s);
-              }}
-              className="inline-flex h-7 items-center rounded-full border border-border bg-surface-2 px-3 text-[12px] text-foreground hover:border-gold-line hover:bg-gold-soft focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
-            >
-              {s}
-            </button>
-          ))}
+          {suggestions.map((s) => {
+            // The picked suggestion stays marked, so the click visibly landed (not only in the text box).
+            const on = value.trim() === s;
+            return (
+              <button
+                key={s}
+                type="button"
+                disabled={disabled}
+                aria-pressed={on}
+                onClick={() => {
+                  onChange(s);
+                }}
+                className={`inline-flex h-7 items-center gap-1 rounded-full border px-3 text-[12px] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus ${on ? 'border-gold-ink bg-gold-soft font-medium text-gold-ink' : 'border-border bg-surface-2 text-foreground hover:border-gold-line hover:bg-gold-soft'}`}
+              >
+                {on ? <Icon name="check" size={12} /> : null}
+                {s}
+              </button>
+            );
+          })}
         </div>
       )}
       <textarea

@@ -83,7 +83,7 @@ function TicketBody({
               <dt className="text-muted-foreground">{d.label}</dt>
               <dd className="m-0 flex items-center gap-2 text-right text-foreground">
                 {d.value}
-                <span className="inline-flex h-[18px] items-center rounded-[5px] bg-surface-2 px-1.5 text-[10.5px] font-semibold text-muted-foreground">
+                <span className="inline-flex h-[18px] items-center rounded-[5px] bg-surface-2 px-1.5 text-[11px] font-semibold text-muted-foreground">
                   {d.tag}
                 </span>
               </dd>

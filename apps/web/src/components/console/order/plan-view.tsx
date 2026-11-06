@@ -5,12 +5,13 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-import { Gate1Card, type Person } from './gate1-card';
+import { DISCARDED, Gate1Card, type Person } from './gate1-card';
 import {
   type AccountRow,
   AccountsEditor,
   CareEditor,
   checkAccounts,
+  leftOutText,
   LimitsEditor,
   type LimitValues,
   ObjectiveEditor,
@@ -105,14 +106,19 @@ function Fact({ label, value, unit }: { readonly label: string; readonly value: 
 }
 
 const isField = (v: string | null): v is PlanField => v !== null && v in FIELD_LABEL;
+const list = (items: readonly string[]): string =>
+  new Intl.ListFormat('en-US', { style: 'long', type: 'conjunction' }).format(items);
 
 export function PlanView({
   request,
   asset,
   settings,
   viewer,
+  replacedBy = null,
 }: {
   readonly request: AssessmentRequest;
+  /** The plan that replaced this one (an edit), when it was found. */
+  readonly replacedBy?: string | null;
   readonly asset: Asset | null;
   /** Null when the workspace settings did not load: limits then cannot be edited. */
   readonly settings: Workspace['settings'] | null;
@@ -144,6 +150,20 @@ export function PlanView({
   const panel = useRef<HTMLDivElement>(null);
   const h1 = useRef<HTMLHeadingElement>(null);
   const opener = useRef<HTMLElement | null>(null);
+  /** The approval card; on a phone it sits below the plan, so a bar leads to it until it is on screen. */
+  const approval = useRef<HTMLDivElement>(null);
+  const [approvalSeen, setApprovalSeen] = useState(true);
+  useEffect(() => {
+    const el = approval.current;
+    if (el === null || !pending) return;
+    const io = new IntersectionObserver(([e]) => {
+      setApprovalSeen(e?.isIntersecting ?? true);
+    });
+    io.observe(el);
+    return () => {
+      io.disconnect();
+    };
+  }, [pending]);
 
   // Focus lands on the heading (spec §10.4); "?updated=" is shown once, then dropped so a reload does not repeat it.
   useEffect(() => {
@@ -182,8 +202,8 @@ export function PlanView({
     let paths = edit.paths;
     if (field === 'paths' && pathText.trim() !== '') {
       const typed = readPathList(pathText, origin, edit.paths);
-      if (typed.left !== null) {
-        setError(`Left out ${typed.left.token}: ${typed.left.why}.`);
+      if (typed.left.length > 0) {
+        setError(leftOutText(typed.left));
         return false;
       }
       paths = typed.paths;
@@ -192,10 +212,8 @@ export function PlanView({
     if (field === 'accounts' || missingValues) {
       const checked = checkAccounts(rows);
       if ('error' in checked) {
-        if (field !== 'accounts') {
-          setError("Paste the test account values again first: they're never sent back to the browser.");
-          setField('accounts');
-        } else setError(checked.error);
+        // The values are asked for right here (below the editor), so the person stays on what they were changing.
+        setError(field === 'accounts' ? checked.error : `To keep your test accounts: ${checked.error.charAt(0).toLowerCase()}${checked.error.slice(1)}`);
         return false;
       }
       accounts = checked.accounts;
@@ -328,7 +346,9 @@ export function PlanView({
         : `This is the plan ${approver} approved.`
       : request.decisionReason === REPLACED
         ? 'This plan was replaced by an edited one.'
-        : 'This plan was not approved.';
+        : request.decisionReason === DISCARDED
+          ? 'This plan was discarded.'
+          : 'This plan was not approved.';
   /** The timeline's progress: the current stop (gold) and those already done (ticked). */
   const reached = pending ? 0 : approved ? (request.status === 'completed' ? NEXT_STEP_COUNT : 1) : -1;
 
@@ -448,6 +468,18 @@ export function PlanView({
               </button>
             </div>
             {editor(field)}
+            {missingValues && field !== 'accounts' && field !== 'host' ? (
+              // shortcut: an edit re-creates the request and the API never returns account values, so they are asked
+              // for here, up front. Upgrade when the API copies them across a replacement (PATCH /requests/:id).
+              <div className="flex flex-col gap-2.5 border-t border-dashed border-border-strong pt-3.5">
+                <InlineMessage tone="gold">
+                  This plan signs in as <b>{list(request.testAccounts.map((a) => a.role))}</b>. Changing the plan needs
+                  {request.testAccounts.length === 1 ? ' that account\u2019s value' : ' those accounts\u2019 values'} again:
+                  they&apos;re never sent back to the browser.
+                </InlineMessage>
+                <AccountsEditor rows={rows} onRows={setRows} missingValues valuesOnly />
+              </div>
+            ) : null}
             {error === null ? null : <InlineMessage tone="bad">{error}</InlineMessage>}
             {field === 'host' ? null : (
               // mousedown keeps focus in the field: its blur would turn typed text into a chip, move this row, and
@@ -487,7 +519,7 @@ export function PlanView({
 
       </div>
 
-      <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pt-[52px]">
+      <div ref={approval} className="scroll-mt-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pt-[52px]">
         <div className="lg:sticky lg:top-7">
           <Gate1Card
             request={request}
@@ -495,10 +527,11 @@ export function PlanView({
             selfApprove={settings?.selfApprove ?? request.viewerIsAdmin}
             onBusy={setBusy}
             unsaved={unsaved}
+            replacedBy={replacedBy}
           />
         </div>
       </div>
-      <div className="min-w-0 lg:col-start-1">
+      <div className={`min-w-0 lg:col-start-1 ${pending ? 'max-lg:pb-20' : ''}`}>
         <section aria-labelledby="next-h" className="border-t border-border pt-5">
           <h2 id="next-h" className="m-0 mb-4 text-[13px] font-medium text-muted-foreground">
             What happens next
@@ -519,10 +552,12 @@ export function PlanView({
                   )}
                   <span aria-hidden="true" className="hidden h-px flex-1 bg-border-strong sm:block" />
                 </span>
-                <span className="flex flex-col gap-1">
-                  <span className="flex flex-wrap items-center gap-1.5 text-[13.5px] font-semibold text-foreground">
-                    {s.title} <VoiceTag voice={s.voice} />
-                    {i < reached ? <span className="sr-only">(done)</span> : null}
+                <span className="flex flex-col items-start gap-1">
+                  {/* The voice tag sits on its own line above every title, so the four stops line up. */}
+                  <VoiceTag voice={s.voice} />
+                  <span className="text-[13.5px] font-semibold text-foreground">
+                    {s.title}
+                    {i < reached ? <span className="sr-only"> (done)</span> : null}
                   </span>
                   <span className="text-[12.5px] leading-[18px] text-muted-foreground">{s.body}</span>
                 </span>
@@ -531,6 +566,23 @@ export function PlanView({
           </ol>
         </section>
       </div>
+      {pending && !approvalSeen && field === null ? (
+        // Phones: the plan is long and the approval sits below it. One bar leads there (it hides once the card shows,
+        // so the card's own button stays the only gold one on screen).
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-bg px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 lg:hidden">
+          <button
+            type="button"
+            onClick={() => {
+              approval.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+              approval.current?.querySelector<HTMLElement>('textarea, button')?.focus({ preventScroll: true });
+            }}
+            className={buttonClass('primary', 'h-12 w-full rounded-xl text-[14.5px]')}
+          >
+            Go to your approval
+            <Icon name="arrow" size={16} className="rotate-90" />
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

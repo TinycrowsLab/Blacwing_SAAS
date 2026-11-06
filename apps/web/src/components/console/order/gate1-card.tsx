@@ -5,7 +5,7 @@
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
-import { LocalTime } from './local-time';
+import { LocalTime, momentText } from './local-time';
 import { refreshSidebar, wasApproved } from './shared';
 import { approveAndStartAction, denyPlanAction, startAuditAction } from '../../../app/(console)/audits/actions';
 import { reasonEnough, REASON_MIN } from '../../../lib/normalize';
@@ -18,6 +18,8 @@ const SUGGESTIONS = ['Staging, refreshed nightly', 'Our own test lab', 'Pre-rele
 const WAITING_REFRESH_MS = 10_000;
 const COPIED_MS = 1800;
 const REPLACED = 'Replaced by an edited plan';
+/** The ledger reason when the person who asked for a plan discards it before anyone approves it. */
+export const DISCARDED = 'Discarded by the requester before approval';
 
 export interface Person {
   readonly name: string;
@@ -44,12 +46,6 @@ function Avatar({ person }: { readonly person: Person }) {
     <img src={person.image} alt="" width={32} height={32} referrerPolicy="no-referrer" className="size-8 shrink-0 rounded-full" />
   );
 }
-
-export const when = (iso: string): string => {
-  const d = new Date(iso);
-  const today = new Date().toDateString() === d.toDateString();
-  return new Intl.DateTimeFormat(undefined, today ? { hour: '2-digit', minute: '2-digit' } : { dateStyle: 'medium', timeStyle: 'short' }).format(d);
-};
 
 function useCopyLink(): [boolean, () => void] {
   const [copied, setCopied] = useState(false);
@@ -102,6 +98,7 @@ export function Gate1Card({
   selfApprove,
   onBusy,
   unsaved = null,
+  replacedBy = null,
 }: {
   readonly request: AssessmentRequest;
   readonly viewer: Person;
@@ -111,6 +108,8 @@ export function Gate1Card({
   readonly onBusy: (busy: boolean) => void;
   /** The plan editor that is open with a change not yet applied (its name), or null. */
   readonly unsaved?: string | null;
+  /** The plan that replaced this one, when found: its link is the way on. */
+  readonly replacedBy?: string | null;
 }) {
   const router = useRouter();
   const [reason, setReason] = useState('');
@@ -137,6 +136,7 @@ export function Gate1Card({
   const [phase, setPhase] = useState<'idle' | 'starting'>('idle');
   const [copied, copyLink] = useCopyLink();
   const [askedApprover, setAskedApprover] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
   const field = useRef<HTMLDivElement>(null);
   const pending = request.status === 'pending_gate1';
   const isRequester = request.viewerIsRequester;
@@ -202,27 +202,49 @@ export function Gate1Card({
     return true;
   };
 
+  /** The requester changes their mind: the plan is withdrawn (on the ledger) and leaves Waiting on you. */
+  const discard = async (): Promise<boolean> => {
+    setError(null);
+    onBusy(true);
+    const r = await denyPlanAction(request.id, DISCARDED);
+    if (!r.ok) {
+      onBusy(false);
+      setError(`Couldn't discard the plan: ${r.message}`);
+      return false;
+    }
+    refreshSidebar();
+    router.push('/');
+    return true;
+  };
+
   if (!pending) {
     const approved = wasApproved(request.status);
     const by = request.approver?.name ?? 'someone';
     const at =
       request.decidedAt === null ? null : (
         <>
-          , <LocalTime iso={request.decidedAt} format={when} />
+          , <LocalTime iso={request.decidedAt} format={momentText} />
         </>
       );
     const replaced = request.decisionReason === REPLACED;
+    const discarded = request.decisionReason === DISCARDED;
     return (
       <Shell>
         <Receipt
-          tone={approved ? 'ok' : replaced ? 'muted' : 'bad'}
+          tone={approved ? 'ok' : replaced || discarded ? 'muted' : 'bad'}
           title={
             <>
-              {approved ? `Approved by ${by}` : replaced ? 'Replaced by an edited plan' : `Not approved by ${by}`}
+              {approved
+                ? `Approved by ${by}`
+                : replaced
+                  ? 'Replaced by an edited plan'
+                  : discarded
+                    ? `Discarded by ${by}`
+                    : `Not approved by ${by}`}
               {at}
             </>
           }
-          detail={request.decisionReason === null || replaced ? undefined : `“${request.decisionReason}”`}
+          detail={request.decisionReason === null || replaced || discarded ? undefined : `“${request.decisionReason}”`}
           hash={request.audit?.hash ?? null}
         />
         {approved && request.runId !== null ? (
@@ -249,6 +271,11 @@ export function Gate1Card({
             Start the audit
             <Icon name="arrow" size={16} />
           </PendingButton>
+        ) : replaced && replacedBy !== null ? (
+          <LinkButton href={`/audits/${replacedBy}`} variant="primary" className="h-11 rounded-xl">
+            Open the edited plan
+            <Icon name="arrow" size={15} />
+          </LinkButton>
         ) : (
           <LinkButton href="/audits/new" variant={replaced ? 'secondary' : 'primary'} className="h-11 rounded-xl">
             Start a new audit
@@ -356,7 +383,27 @@ export function Gate1Card({
           {reviewer ? 'Write your reason above to decide.' : 'Write a reason above, or pick one, to approve.'}
         </p>
       )}
-      {reviewer ? null : (
+      {reviewer ? null : discarding ? (
+        <div role="group" aria-label="Discard this plan" className="flex flex-col gap-2.5 rounded-[12px] bg-surface-2 p-3">
+          <p className="m-0 text-[13px] leading-5 text-foreground">
+            Discard this plan? Nothing was sent to the site. It leaves Waiting on you, and the ledger keeps a note.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <PendingButton variant="deny" onAction={discard} stayPending pendingLabel="Discarding…" className="h-10">
+              Discard
+            </PendingButton>
+            <button
+              type="button"
+              onClick={() => {
+                setDiscarding(false);
+              }}
+              className={buttonClass('ghost', 'h-10')}
+            >
+              Keep it
+            </button>
+          </div>
+        </div>
+      ) : (
         <p className="m-0 text-center text-[13px] text-muted-foreground">
           or{' '}
           <button
@@ -365,6 +412,16 @@ export function Gate1Card({
             className="rounded font-medium text-gold-ink hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
           >
             <span aria-live="polite">{copied ? 'link copied for a colleague' : 'ask a colleague to approve'}</span>
+          </button>
+          {' · '}
+          <button
+            type="button"
+            onClick={() => {
+              setDiscarding(true);
+            }}
+            className="rounded font-medium text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus"
+          >
+            discard it
           </button>
         </p>
       )}

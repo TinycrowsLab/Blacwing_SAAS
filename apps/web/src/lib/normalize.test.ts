@@ -41,6 +41,7 @@ describe('normalizeTarget (§10.1 table)', () => {
     ['<https://example.com>.', 'https://example.com', []],
     ['[::1]:8080', 'http://[::1]:8080', ['Added http:// (local address)']],
     ['192.168.1.20', 'http://192.168.1.20', ['Added http:// (local address)']],
+    ['jatin@tinycrows.com', 'https://tinycrows.com', ['Added https://', 'Used the domain of the e-mail address']],
   ])('%s gives %s', (raw, origin, notes) => {
     expect(target(raw)).toMatchObject({ origin, notes });
   });
@@ -185,5 +186,13 @@ describe('test accounts and reasons (§10.3)', () => {
     expect(reasonChars('  a b  c ')).toBe(3);
     expect(reasonEnough('Our test lab')).toBe(true);
     expect(reasonEnough('lab     ')).toBe(false);
+  });
+});
+
+describe('normalizeTarget never reads a short or hex IP as another address', () => {
+  it.each(['127.1', '0x7f.0.0.1:3001', '1.2.3', '010.0.0.1'])('%s is refused', (raw) => {
+    expect(target(raw)).toEqual({
+      error: 'That looks like an IP address, but not all four numbers are there. Write it in full, like 192.168.1.20',
+    });
   });
 });

@@ -6,7 +6,7 @@
 // the page keeps what was typed and says what to fix. Conflicts that mean "already done" are mapped to success.
 import { z } from 'zod';
 
-import { loadWorkspace, suggestedLimits } from './load';
+import { loadWorkspace, retryOnce, suggestedLimits } from './load';
 import { wasApproved } from '../../../components/console/order/shared';
 import { type ActionResult, ApiError, callApi, toResult } from '../../../lib/api';
 import { getViewer } from '../../../lib/auth';
@@ -15,6 +15,7 @@ import { type Asset, assetSchema, type AssessmentRequest, requestSchema } from '
 const enc = encodeURIComponent;
 const HTTP_CONFLICT = 409;
 const HTTP_UNAUTHORIZED = 401;
+const HTTP_SERVICE_UNAVAILABLE = 503;
 const SECONDS_PER_MINUTE = 60;
 const REPLACED_REASON = 'Replaced by an edited plan';
 
@@ -45,12 +46,15 @@ export async function ensureTargetAction(
     .object({ origin: webOrigin, host: z.string().trim().min(1).max(120), extraOrigins: z.array(webOrigin).max(50) })
     .safeParse({ origin, host, extraOrigins });
   if (!input.success) return invalid("That doesn't look like a web address yet.");
-  return toResult(async () =>
-    assetSchema.parse(
-      await callApi(session, '/assets', {
-        method: 'POST',
-        body: { name: input.data.host, baseUrl: input.data.origin, extraOrigins: input.data.extraOrigins },
-      }),
+  // Safe to try twice: the API reuses the asset with the same origin, so a retry never adds a second target.
+  return toResult(() =>
+    retryOnce(async () =>
+      assetSchema.parse(
+        await callApi(session, '/assets', {
+          method: 'POST',
+          body: { name: input.data.host, baseUrl: input.data.origin, extraOrigins: input.data.extraOrigins },
+        }),
+      ),
     ),
   );
 }
@@ -109,7 +113,7 @@ async function fileCheckCause(url: string, token: string): Promise<string> {
   const body = (await response.text().catch(() => '')).slice(0, 65_536);
   if (body.includes(token)) return 'it has just appeared. Press Check now again';
   if (/html/i.test(response.headers.get('content-type') ?? '') || /^\s*</.test(body))
-    return 'the site answered with a web page, not the file. Apps that answer every address with their own page need the file served before the app';
+    return "the site answered with a web page, not the file. Check that the file is served at the site root, then try again";
   return 'the file is there, but its content is different. Paste the token exactly, with nothing else';
 }
 
@@ -173,7 +177,13 @@ async function createRequest(
     a.minutes !== null && a.requests !== null && a.costUsd !== null
       ? { minutes: a.minutes, requests: a.requests, costUsd: a.costUsd }
       : suggestedLimits(await loadWorkspace(session));
-  if (limits === null) throw new Error('workspace limits unavailable');
+  // No silent default: the limits are the workspace's (GET /workspace). Say exactly what is missing.
+  if (limits === null)
+    throw new ApiError(
+      HTTP_SERVICE_UNAVAILABLE,
+      'limits_unavailable',
+      "Blackwing couldn't load your workspace's limits, so the plan can't be prepared yet. Your answers are kept; try again in a moment.",
+    );
   return requestSchema.parse(
     await callApi(session, '/requests', {
       method: 'POST',

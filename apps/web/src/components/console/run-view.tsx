@@ -139,7 +139,8 @@ function Liveness({ tone, text }: { readonly tone: 'live' | 'quiet' | 'reconnect
   return (
     <span
       role="status"
-      className={`flex items-center gap-1.5 whitespace-nowrap text-[11.5px] ${tone === 'reconnecting' ? 'text-warn' : tone === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}
+      // Phones: its own short line, so the 44 px controls below never wrap whatever the text says.
+      className={`flex items-center gap-1.5 whitespace-nowrap text-[11.5px] max-md:basis-full ${tone === 'reconnecting' ? 'text-warn' : tone === 'waiting' ? 'font-medium text-gold-ink' : 'text-muted-foreground'}`}
     >
       <span aria-hidden="true" className={`size-[7px] rounded-full ${dot}`} />
       {text}
@@ -783,7 +784,7 @@ export function RunView({ initial, viewerName }: { readonly initial: Run; readon
             aria-labelledby={`tab-${tab}`}
             className={`flex min-h-0 flex-1 flex-col ${tab === 'conversation' ? '' : 'overflow-y-auto pb-6 pt-3 [scrollbar-color:var(--border2)_transparent] [scrollbar-width:thin]'}`}
           >
-            {tab === 'conversation' ? (
+            {tab !== 'conversation' && !mounted ? null : tab === 'conversation' ? (
               <Conversation
                 items={shownItems}
                 gate2={gate2}

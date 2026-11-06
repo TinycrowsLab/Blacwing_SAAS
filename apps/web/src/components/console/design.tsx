@@ -606,7 +606,7 @@ export function queryText(value: string | string[] | undefined): string | undefi
 export function Kbd({ children, className = '' }: { readonly children: ReactNode; readonly className?: string }) {
   return (
     <kbd
-      className={`inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[5px] border border-current px-1 font-mono text-[10.5px] font-medium leading-none opacity-60 ${className}`}
+      className={`inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[5px] border border-current px-1 font-mono text-[11px] font-medium leading-none opacity-60 ${className}`}
     >
       {children}
     </kbd>

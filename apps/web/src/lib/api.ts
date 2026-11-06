@@ -6,6 +6,7 @@ import type { Viewer } from './auth';
 const DEFAULT_API_ORIGIN = 'http://127.0.0.1:13400';
 const REQUEST_TIMEOUT_MS = 8000;
 const HTTP_SERVICE_UNAVAILABLE = 503;
+const HTTP_TOO_MANY = 429;
 
 export class ApiError extends Error {
   override readonly name = 'ApiError';
@@ -25,6 +26,9 @@ interface ProblemBody {
 }
 
 function problemOf(status: number, body: unknown): ApiError {
+  // The API's rate limit is a busy moment, not a refusal: say so in words a person can act on.
+  if (status === HTTP_TOO_MANY)
+    return new ApiError(status, 'rate_limited', 'Blackwing is busy for a moment. Your answers are kept; try again in a few seconds.');
   const problem = (typeof body === 'object' && body !== null ? body : {}) as ProblemBody;
   const code = typeof problem.code === 'string' ? problem.code : 'api_error';
   const detail =
@@ -46,19 +50,33 @@ export type ActionResult<T> =
 
 const HTTP_BAD_GATEWAY = 502;
 
-/** Runs an API call for a server action and maps any failure to an ActionResult (never throws). */
+/** fetch failed to connect, or gave up waiting: the API was not reached at all. */
+const unreachable = (error: unknown): boolean =>
+  error instanceof TypeError || (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError'));
+
+/**
+ * Runs an API call for a server action and maps any failure to an ActionResult (never throws). Only a failed connection
+ * says "Couldn't reach"; anything else on our side says so, never blaming the network for it.
+ */
 export async function toResult<T>(call: () => Promise<T>): Promise<ActionResult<T>> {
   try {
     return { ok: true, data: await call() };
   } catch (error) {
     if (error instanceof ApiError)
       return { ok: false, code: error.code, message: error.message, status: error.status };
-    return {
-      ok: false,
-      code: 'unreachable',
-      message: "Couldn't reach Blackwing. Your answers are kept. Retry",
-      status: HTTP_BAD_GATEWAY,
-    };
+    return unreachable(error)
+      ? {
+          ok: false,
+          code: 'unreachable',
+          message: "Couldn't reach Blackwing. Your answers are kept; try again in a moment.",
+          status: HTTP_BAD_GATEWAY,
+        }
+      : {
+          ok: false,
+          code: 'unexpected',
+          message: 'Something went wrong on our side. Your answers are kept; try again in a moment.',
+          status: HTTP_BAD_GATEWAY,
+        };
   }
 }
 
